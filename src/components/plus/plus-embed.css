@@ -8,15 +8,17 @@
    none of it runs under `prefers-reduced-motion`.
    ========================================================================== */
 
+@import "./plus-tokens.css";
+
 .plus-embed {
   container-type: inline-size;
-  --po-gutter: 16px;
+  --po-gutter: var(--po-space-4);
   min-block-size: 0;
   inline-size: 100%;
-  border-radius: 24px;
-  padding: 18px var(--po-gutter) 20px;
+  border-radius: var(--po-radius-lg);
+  padding: var(--po-space-5) var(--po-gutter) var(--po-space-5);
   overflow: hidden;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: var(--po-shadow-1);
 }
 .plus-embed .plus-body {
   flex: none;
@@ -41,13 +43,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 16px;
-  padding-block-end: 14px;
+  gap: var(--po-space-2) var(--po-space-4);
+  padding-block-end: var(--po-space-4);
 }
 .pl-head .pl-fig {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--po-space-1);
   min-inline-size: 0;
 }
 .pl-head .pl-fig b {
@@ -66,10 +68,10 @@
   display: inline-flex;
   align-items: center;
   min-block-size: 32px;
-  padding: 2px 14px;
-  border-radius: 999px;
+  padding: var(--po-space-1) var(--po-space-4);
+  border-radius: var(--po-radius-pill);
   background: oklch(0.26 0.03 260 / 0.8);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.075);
+  box-shadow: var(--po-shadow-1);
   font-weight: 700;
   font-size: 15px;
   color: var(--po-text);
@@ -77,13 +79,13 @@
 .pl-duel-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--po-space-3);
   inline-size: 100%;
 }
 .pl-duel-head .pl-side {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--po-space-1);
   min-inline-size: 0;
 }
 .pl-duel-head .pl-side:last-child {
@@ -104,7 +106,7 @@
 .pl-stage {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: var(--po-radius-md);
   min-block-size: 480px;
   max-block-size: 480px;
   isolation: isolate;
@@ -149,25 +151,25 @@
 }
 .pl-lock {
   position: absolute;
-  inset-inline: 14px;
-  inset-block-end: 12px;
+  inset-inline: var(--po-space-4);
+  inset-block-end: var(--po-space-3);
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px 14px;
-  border-radius: 20px;
+  gap: var(--po-space-2);
+  padding: var(--po-space-3) var(--po-space-4) var(--po-space-4);
+  border-radius: var(--po-radius-md);
   text-align: center;
   background: oklch(0.12 0.04 262 / 0.8);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: var(--po-shadow-1);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 .pl-stage--compact .pl-lock {
   flex-direction: row;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: var(--po-space-3) var(--po-space-3);
 }
 .pl-stage--compact .plus-lock {
   display: none;
@@ -188,14 +190,14 @@
 }
 .pl-cta {
   inline-size: auto;
-  min-inline-size: 190px;
+  min-inline-size: 192px;
   max-inline-size: 100%;
   text-decoration: none;
 }
 .pl-cta:focus-visible,
 .pl-preview:focus-visible {
   outline: 2px solid var(--po-sky);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .pl-lock {
@@ -219,10 +221,10 @@
 }
 .plus-embed--preview {
   padding: 0;
-  border-radius: 20px;
+  border-radius: var(--po-radius-md);
 }
 .plus-embed--preview .pl-stage {
-  border-radius: 20px;
+  border-radius: var(--po-radius-md);
 }
 .plus-embed--preview .pl-headline {
   font-size: 20px;
@@ -233,19 +235,19 @@
   place-items: center;
   inline-size: 36px;
   block-size: 36px;
-  border-radius: 999px;
+  border-radius: var(--po-radius-pill);
   background: var(--po-mint);
   color: var(--po-on-mint);
 }
 .pl-go svg {
-  inline-size: 18px;
-  block-size: 18px;
+  inline-size: 20px;
+  block-size: 20px;
 }
 
 /* ---------- member states ---------- */
 .pl-note {
   margin: 0;
-  padding-block: 28px;
+  padding-block: var(--po-space-7);
   text-align: center;
   font-size: 16px;
   font-weight: 600;
@@ -253,7 +255,7 @@
 }
 .pl-skeleton {
   block-size: 220px;
-  border-radius: 20px;
+  border-radius: var(--po-radius-md);
   background: linear-gradient(180deg, oklch(0.225 0.03 260), oklch(0.19 0.03 260));
 }
 
@@ -263,15 +265,15 @@
   align-items: center;
   flex: none;
   min-block-size: 24px;
-  padding: 2px 10px;
-  border-radius: 999px;
+  padding: var(--po-space-1) var(--po-space-3);
+  border-radius: var(--po-radius-pill);
   background: #0d1320;
   border: 1px solid color-mix(in srgb, #4be895 55%, transparent);
   line-height: 0;
 }
 .pl-mark .plus-logo {
   color: #fff;
-  block-size: 14px;
+  block-size: 16px;
   inline-size: auto;
 }
 
@@ -280,7 +282,7 @@
   inline-size: auto;
 }
 .pl-title {
-  margin-block-end: 14px;
+  margin-block-end: var(--po-space-4);
 }
 
 /* A narrow panel (the card page's desktop column): four tabs still fit on one line. */
@@ -291,5 +293,63 @@
   .plus-embed .ps-seg button {
     font-size: 12px;
     padding: 0;
+  }
+}
+
+/* ---------- Micro-interactions (docs/product/botolago-plus-polish-brief.md, "Motion spec") ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .pl-cta,
+  .pl-preview {
+    transition:
+      transform var(--po-dur-fast) var(--po-ease-out),
+      box-shadow var(--po-dur-lift) var(--po-ease-out);
+  }
+  .pl-cta:active,
+  .pl-preview:active {
+    transform: scale(0.97);
+  }
+  /* loading: a sheen over the skeleton, three passes, then still */
+  .pl-skeleton {
+    position: relative;
+    overflow: hidden;
+  }
+  .pl-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.07), transparent);
+    transform: translateX(-100%);
+    animation: pl-shimmer var(--po-dur-shimmer) ease-in-out 3 both;
+  }
+  [dir="rtl"] .pl-skeleton::after {
+    transform: translateX(100%);
+    animation-name: pl-shimmer-rtl;
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .pl-preview:hover {
+    transform: translateY(-2px);
+  }
+  .pl-preview:hover .plus-embed {
+    box-shadow: var(--po-shadow-2);
+  }
+  .pl-preview:active {
+    transform: scale(0.97);
+  }
+}
+@keyframes pl-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes pl-shimmer-rtl {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
   }
 }
