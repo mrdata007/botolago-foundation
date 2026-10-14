@@ -39,20 +39,27 @@ export type LiveFreshness = "not_live" | "fresh" | "stale" | "expired";
 export const LIVE_STALE_AFTER_MS = 2 * 60_000;
 
 /**
- * Live data not written for this long, while a half is being played, is quiet.
- * The live refresh writes a running fixture on every 60 second tick, because
- * its minute moves (docs/backend/SOFASCORE_LIVE_EDGE.md), so five minutes is
- * several missed ticks.
+ * Live data not written for this long is quiet, but ONLY where a write is due
+ * every tick: a half is being played AND the fixture carries a running minute
+ * strictly below the end of its period. The live refresh then writes the
+ * fixture on every 60 second tick because the minute moves
+ * (docs/backend/SOFASCORE_LIVE_EDGE.md), so five minutes is several missed
+ * ticks.
  */
 export const LIVE_DATA_QUIET_AFTER_MS = 5 * 60_000;
 
 /**
- * The same, between the halves or in a shoot-out: no clock runs, so a fixture
- * whose score has not changed is not written at all (half-time lasts a
- * quarter of an hour and is entirely quiet). Generous on purpose: a healthy
- * half-time must not be called out of date.
+ * Everywhere else a healthy feed writes nothing for a long time, because a row
+ * is written only when the score, status, period or computed minute changes
+ * (sofascore-live-refresh.ts `classifyCall`): the minute stops at 45 / 90 /
+ * 105 / 120 (added time), is null when the provider sends no half start or no
+ * clock (SportsMonks has none either), and does not exist at half-time or in a
+ * shoot-out. A goalless half is 45 minutes without a write and half-time is a
+ * quarter of an hour more, so this is an hour. It is a limit on how long
+ * silence is believed, not a promise: the three-hour expiry still ends a live
+ * claim that nothing backs.
  */
-export const LIVE_BREAK_DATA_QUIET_AFTER_MS = 30 * 60_000;
+export const LIVE_UNWRITTEN_DATA_QUIET_AFTER_MS = 60 * 60_000;
 
 /** A stale live read this long after kickoff is no longer shown as live. */
 export const LIVE_EXPIRED_AFTER_KICKOFF_MS = 3 * 60 * 60_000;
@@ -66,13 +73,29 @@ export const LIVE_EXPIRED_AFTER_KICKOFF_MS = 3 * 60 * 60_000;
 export const RETURN_REFETCH_AFTER_MS = 15_000;
 
 type FreshnessMatch = Pick<Match, "status" | "kickoff"> &
-  Partial<Pick<Match, "period" | "dataUpdatedAt">>;
+  Partial<Pick<Match, "period" | "minute" | "dataUpdatedAt">>;
 
 const RUNNING_PERIODS: readonly NonNullable<Match["period"]>[] = [
   "first_half",
   "second_half",
   "extra_time",
 ];
+
+/** The minutes the clock stops at: nothing is written while it sits on one. */
+const PERIOD_END_MINUTES: readonly number[] = [45, 90, 105, 120];
+
+/**
+ * Whether the live refresh is writing this fixture every tick: a half is being
+ * played and the minute is a number that is not the end of a period.
+ */
+function writtenEveryTick(match: FreshnessMatch): boolean {
+  return (
+    match.period !== undefined &&
+    RUNNING_PERIODS.includes(match.period) &&
+    typeof match.minute === "number" &&
+    !PERIOD_END_MINUTES.includes(match.minute)
+  );
+}
 
 function dataTime(match: FreshnessMatch): number | null {
   const time = match.dataUpdatedAt === undefined ? NaN : Date.parse(match.dataUpdatedAt);
@@ -84,6 +107,12 @@ function dataTime(match: FreshnessMatch): number | null {
  * `dataUpdatedAt`), in milliseconds; 0 or less means unknown and is treated as
  * a fresh read rather than alarming the reader about a read that just
  * happened.
+ *
+ * RESIDUAL: the age of the data is `now` (this device's clock) minus a server
+ * timestamp, and the API gives no server "now" to correct it by. A device
+ * clock that is minutes fast ages the data by as much; with the generous limit
+ * almost everywhere that only matters for a running minute below its cap
+ * (5 minutes), where a clock more than that fast reads healthy data as stale.
  */
 export function liveFreshness(
   match: FreshnessMatch | undefined,
@@ -94,10 +123,9 @@ export function liveFreshness(
 
   const readIsOld = updatedAt > 0 && now - updatedAt > LIVE_STALE_AFTER_MS;
   const written = dataTime(match);
-  const quietAfter =
-    match.period !== undefined && RUNNING_PERIODS.includes(match.period)
-      ? LIVE_DATA_QUIET_AFTER_MS
-      : LIVE_BREAK_DATA_QUIET_AFTER_MS;
+  const quietAfter = writtenEveryTick(match)
+    ? LIVE_DATA_QUIET_AFTER_MS
+    : LIVE_UNWRITTEN_DATA_QUIET_AFTER_MS;
   const dataIsQuiet = written !== null && now - written > quietAfter;
 
   const kickoff = Date.parse(match.kickoff);

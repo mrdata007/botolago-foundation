@@ -173,6 +173,14 @@ describe("the matchday strip", () => {
     return render(<MatchdayStrip />, queryClient);
   };
 
+  test("the link is named by the score sentence, never by dashes read out", async () => {
+    expect(await strip(unknown)).toContain(`aria-label="${UNAVAILABLE}"`);
+    expect(await strip(goalless)).toContain('aria-label="Score : FUS 0, Raja 0"');
+    const scheduled = await strip({ ...live, status: "scheduled" });
+    expect(scheduled).not.toContain('aria-label="Score');
+    expect(scheduled).not.toContain("indisponible");
+  });
+
   test("an unknown score is a dash, a real 0–0 is 0 – 0", async () => {
     expect(await strip(unknown)).toContain("— – —");
     expect(await strip(unknown)).not.toContain("0 – 0");

@@ -10,6 +10,8 @@ import { useEffect, useId, useMemo, useState, type ComponentProps } from "react"
 import {
   footballService,
   hasLeagueTable,
+  keepLastGoodSections,
+  type FootballMatchDetailPage,
   type FootballSeason,
   type FootballStandings,
   type MatchSectionKey,
@@ -47,6 +49,7 @@ import { useLiveFreshness } from "@/components/matches/use-live-freshness";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
+import { presentScore } from "@/lib/match-score";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -187,9 +190,21 @@ function MatchDetailPage() {
 
   const serverDetail =
     lang === "fr" && loaderData?.detail.match.id === matchId ? loaderData.detail : undefined;
+  const queryClient = useQueryClient();
   const detailQ = useQuery({
     queryKey: ["football", "match-detail", matchId, lang],
-    queryFn: () => footballService.getMatchDetailPage(matchId, lang),
+    // A refresh in which one optional section fails keeps the earlier good
+    // copy of that section instead of replacing it with an error card.
+    queryFn: async () =>
+      keepLastGoodSections(
+        await footballService.getMatchDetailPage(matchId, lang),
+        queryClient.getQueryData<FootballMatchDetailPage>([
+          "football",
+          "match-detail",
+          matchId,
+          lang,
+        ]),
+      ),
     // Identical on the server and in the browser's first render — see the
     // loader. Without it the two trees disagree. With its real age, so a seed
     // the router kept from an earlier visit is refetched, not trusted as new.
@@ -239,7 +254,6 @@ function MatchDetailPage() {
   // The final whistle moves the "Face à face" tab's table. This page shows no
   // live strip, so it hears the whistle from its own reads of the match, in
   // either language (`rereadTableOnFinish`).
-  const queryClient = useQueryClient();
   useEffect(
     () => rereadTableOnFinish(queryClient, ["football", "match-detail", matchId]),
     [queryClient, matchId],
@@ -384,6 +398,7 @@ function MatchDetailPage() {
     />
   );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
+  const presented = presentScore(match);
   const lineupsUnavailable = {
     lineups: failed("lineups")
       ? sectionError(t("matches.detail.section_failed.lineups"))
@@ -621,8 +636,11 @@ function MatchDetailPage() {
           scorer={goal.playerId ? names.get(goal.playerId) : undefined}
           assist={goal.relatedPlayerId ? names.get(goal.relatedPlayerId) : undefined}
           score={
+            // Only a score the provider gave: an unknown one is no score.
+            presented.home !== null &&
+            presented.away !== null &&
             scoreCountsEveryGoal(match, live.events)
-              ? { home: match.homeScore ?? 0, away: match.awayScore ?? 0 }
+              ? { home: presented.home, away: presented.away }
               : undefined
           }
           onDone={dismiss}

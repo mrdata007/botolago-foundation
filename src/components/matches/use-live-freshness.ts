@@ -68,7 +68,8 @@ export function useLiveFreshness({
   refetch,
 }: {
   match:
-    | (Pick<Match, "status" | "kickoff"> & Partial<Pick<Match, "period" | "dataUpdatedAt">>)
+    | (Pick<Match, "status" | "kickoff"> &
+        Partial<Pick<Match, "period" | "minute" | "dataUpdatedAt">>)
     | undefined;
   updatedAt: number;
   refetch: () => unknown;

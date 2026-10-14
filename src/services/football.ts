@@ -237,6 +237,60 @@ function settledSection<T>(result: PromiseSettledResult<readonly T[]>): {
   };
 }
 
+/** What `footballService.getMatchDetailPage` answers. */
+export type FootballMatchDetailPage = Awaited<
+  ReturnType<typeof footballService.getMatchDetailPage>
+>;
+
+/**
+ * A refresh of the match page in which a section failed keeps the copy of that
+ * section the page already held, if it held a good one: the page is refetched
+ * every 30 seconds through a live match, and one hiccup of the pressure read
+ * must not replace good lineups or a good timeline with an error card (before
+ * sections were separate, a failed refresh rejected and the page kept all of
+ * its last read). The error card is for a section with no earlier good copy.
+ * The restored section reports `ok`, as the copy it holds is a good read.
+ *
+ * `previous` must be the page of the same match and language (the query key's
+ * own). The header, the one thing that is always read, is never carried over.
+ */
+export function keepLastGoodSections(
+  next: FootballMatchDetailPage,
+  previous: FootballMatchDetailPage | undefined,
+): FootballMatchDetailPage {
+  if (!previous || previous.match.id !== next.match.id) return next;
+  const restore = (section: MatchSectionKey) =>
+    next.sections[section].status === "failed" && previous.sections[section].status === "ok";
+  if (!MATCH_SECTIONS.some(restore)) return next;
+
+  const headToHead = restore("headToHead") ? previous.headToHead : next.headToHead;
+  const outcome = (section: MatchSectionKey) =>
+    restore(section) ? previous.sections[section] : next.sections[section];
+  return {
+    ...next,
+    headToHead,
+    // The meetings are part of "the matches on the page"; the clubs come from
+    // the header and the meetings of those same two clubs, so they stay.
+    matches: restore("headToHead") ? [next.match, ...previous.headToHead] : next.matches,
+    live: {
+      ...next.live,
+      events: restore("timeline") ? previous.live.events : next.live.events,
+      stats: restore("statistics") ? previous.live.stats : next.live.stats,
+    },
+    lineups: restore("lineups") ? previous.lineups : next.lineups,
+    pressure: restore("pressure") ? previous.pressure : next.pressure,
+    absences: restore("absences") ? previous.absences : next.absences,
+    sections: {
+      headToHead: outcome("headToHead"),
+      timeline: outcome("timeline"),
+      statistics: outcome("statistics"),
+      lineups: outcome("lineups"),
+      pressure: outcome("pressure"),
+      absences: outcome("absences"),
+    },
+  };
+}
+
 export interface FootballSeason {
   readonly id: string;
   /** The competition the season belongs to (Botola Pro): its fixtures are listed by it. */
