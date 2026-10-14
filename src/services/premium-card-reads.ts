@@ -47,4 +47,7 @@ export const premiumCardReadsService = {
   async duel(otherTeamId: string, season: string | null, signal?: AbortSignal) {
     return (await getPremiumCardReadsRepository()).duel(otherTeamId, season, context(signal));
   },
+  async chooseCardDesign(code: string) {
+    return (await getPremiumCardReadsRepository()).chooseCardDesign(code, context());
+  },
 };

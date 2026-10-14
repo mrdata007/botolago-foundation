@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { Children, isValidElement, useState, type ReactElement, type ReactNode } from "react";
 
 import { CumChart, LeadChart, SignedBars } from "./plus-season-charts";
 import { isMissing, RATING_CODES, type RatingCode } from "./plus-season-data";
@@ -241,6 +241,8 @@ interface RowOpts {
 
 function MRow({ label, a, b, o = {} }: { label: string; a: number; b: number; o?: RowOpts }) {
   const { t } = usePlusCopy();
+  // A comparison without both figures is not written (never a dash).
+  if (isMissing(a) || isMissing(b)) return null;
   let w = "";
   if (!isMissing(a) && !isMissing(b) && a !== b && !o.neutral)
     w = (o.low ? a < b : a > b) ? "l" : "r";
@@ -273,12 +275,22 @@ function CompareTab() {
   const youBest = Math.max(...R.you);
   const youWorst = Math.min(...R.you);
   const dec = (v: number) => num(v, 1);
-  const group = (title: string, rows: ReactNode) => (
-    <section className="ps-card" aria-label={title}>
-      <h2 className="ps-label">{title}</h2>
-      <div className="ps-cmp">{rows}</div>
-    </section>
-  );
+  const group = (title: string, rows: ReactNode) => {
+    // The group's heading goes with its rows: none with both figures, no group.
+    const shown = Children.toArray(
+      (rows as ReactElement<{ children?: ReactNode }>).props.children,
+    ).filter((row) => {
+      if (!isValidElement<{ a?: number; b?: number }>(row)) return true;
+      return !isMissing(row.props.a) && !isMissing(row.props.b);
+    });
+    if (shown.length === 0) return null;
+    return (
+      <section className="ps-card" aria-label={title}>
+        <h2 className="ps-label">{title}</h2>
+        <div className="ps-cmp">{shown}</div>
+      </section>
+    );
+  };
   return (
     <>
       <div className="ps-cmp-h" aria-hidden>
@@ -456,13 +468,14 @@ function DecisionsTab() {
   const rivalName = people.rival.name;
   const youBest = Math.max(...R.you);
   const sBest = Math.max(...R.rival);
-  const points: DualRow[] = [
+  const known = (rows: DualRow[]) => rows.filter((r) => !isMissing(r.a) && !isMissing(r.b));
+  const points: DualRow[] = known([
     { label: t("plus.s2.b_points"), a: S.total, b: S.rivalTotal, max: 700 },
     { label: t("plus.s2.t_wins"), a: S.wins, b: S.rivalWins, max: J },
     { label: t("plus.s2.tile_best"), a: youBest, b: sBest, max: 80 },
     { label: t("plus.s2.m_above"), a: S.above, b: S.rivalAbove, max: J },
-  ];
-  const decisions: DualRow[] = [
+  ]);
+  const decisions: DualRow[] = known([
     { label: ratingName(t, "CAP"), a: S.captainTotal, b: rv.captain, max: 120 },
     { label: ratingName(t, "SEL"), a: S.starters, b: S.rivalStarters, max: 600 },
     {
@@ -472,7 +485,7 @@ function DecisionsTab() {
       max: 24,
       fmt: (v) => num(v, 0, true),
     },
-  ];
+  ]);
   const who = (
     <div className="ps-who" aria-hidden>
       <span className="k">{t("plus.s2.you")}</span>
@@ -486,7 +499,7 @@ function DecisionsTab() {
     { label: ratingName(t, "SEL"), v: S.gapTerms.starters },
     { label: t("plus.s2.l_penalties"), v: S.gapTerms.penalty },
     { label: t("plus.s2.th_gap"), v: S.total - S.rivalTotal, cls: "mint" },
-  ];
+  ].filter((term) => !isMissing(term.v));
   return (
     <>
       <section className="ps-card" aria-label={t("plus.s2.b_points")}>
@@ -498,7 +511,7 @@ function DecisionsTab() {
       </section>
       <section className="ps-card" aria-label={t("plus.s2.tab_decisions")}>
         <h2 className="ps-label">{t("plus.s2.tab_decisions")}</h2>
-        {who}
+        {decisions.length > 0 ? who : null}
         {decisions.map((r, i) => (
           <Dual row={r} i={i} key={r.label} />
         ))}
@@ -513,14 +526,16 @@ function DecisionsTab() {
           ))}
         </ul>
       </section>
-      <section className="ps-card ps-score-card" aria-labelledby="ps-x-cat">
-        <h2 className="ps-hl" id="ps-x-cat">
-          {f("plus.s2.x_cat_h", {
-            k: <Fig>{S.categoriesWon}</Fig>,
-            n: <Fig>{S.categoryCount}</Fig>,
-          })}
-        </h2>
-      </section>
+      {isMissing(S.categoriesWon) ? null : (
+        <section className="ps-card ps-score-card" aria-labelledby="ps-x-cat">
+          <h2 className="ps-hl" id="ps-x-cat">
+            {f("plus.s2.x_cat_h", {
+              k: <Fig>{S.categoriesWon}</Fig>,
+              n: <Fig>{S.categoryCount}</Fig>,
+            })}
+          </h2>
+        </section>
+      )}
     </>
   );
 }
@@ -551,7 +566,7 @@ function NotesTab() {
                   <span className="n">
                     <Num value={row.a} />
                   </span>
-                  <small>{rankOf(ra, leagueSize)}</small>
+                  {isMissing(ra) ? null : <small>{rankOf(ra, leagueSize)}</small>}
                 </div>
                 <div className="mid">
                   {row.code === "OVR" ? null : <RatingIcon code={row.code} size={24} />}
@@ -561,7 +576,7 @@ function NotesTab() {
                   <span className="n">
                     <Num value={row.b} />
                   </span>
-                  <small>{rankOf(rb, leagueSize)}</small>
+                  {isMissing(rb) ? null : <small>{rankOf(rb, leagueSize)}</small>}
                 </div>
               </li>
             );

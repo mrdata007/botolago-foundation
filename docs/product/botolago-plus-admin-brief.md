@@ -74,3 +74,66 @@ Visual
 
 Out of scope: checkout, the billing webhook, the member-facing `/plus` page, any change to
 prices, settings or the state machine, any database write by an agent.
+
+---
+
+# Reorganisation (lane 3 of the BotolaGO+ plan, branch `claude/plus-admin-organize`)
+
+Owner-approved 2026-10-14 ("organize it"). Scope: the admin only. Evidence: the four-part audit
+(admin/staff part C) with screenshots at 390 and 1280, French and Arabic. Nothing here changes who
+may do what: the database still checks permission, MFA, recent authentication and the audit on every
+call; no access check is loosened, no migration, no new RPC.
+
+## What must be preserved
+
+- Every permission, MFA, recent-auth and audit behaviour: `premium.read` to open, `premium.grant`
+  to grant or revoke, the in-page two-press confirm step, the reason (8 to 500) on each audited
+  read and each action, idempotency keys. The nav entry is still a link, never an authority.
+- The shell's look (white bar, round chips, kit cards), French/Arabic pairs next to the component,
+  logical properties only, `AdminDatum` for LTR data.
+- The public rule: the product name is never typed, only the logo. Staff-only labels may draw the
+  logo next to the word « Abonnements ».
+- `src/components/plus/*`, `src/components/curva/*` and the dictionaries are not touched (other lanes).
+
+## Changes
+
+1. Nav: grouped (Équipe, Contenu, Communauté, Abonnements, Football) with an icon per entry, and
+   « Abonnements » (with the logo) placed right after « Utilisateurs ». Group and icon live in the
+   contract list; the shell only draws them.
+2. Admin home: the module cards are built from that same list, as links, per group, filtered on the
+   caller's permissions (the four static, unclickable cards go). An « Abonnements » card shows the
+   mode and the subscriber count, read through the existing premium admin overview (no new RPC);
+   if the read fails the card is still a link, without figures.
+3. `/admin/plus`: a banner at the top by mode (off / preview / on). Counts first, then the member
+   lookup, then formulas and settings (the lookup was 1,500px down).
+4. « Mon compte »: one press fills the lookup with the signed-in user's own id. The lookup reason is
+   reused to prefill the grant reason (still editable, still required).
+5. Grant: « jusqu'au {date} » shown before confirming; neutral panel instead of rose; after a grant
+   a notice « where to look » with links to /profile and /curva/carte (and a warning when the mode
+   is off).
+6. Recent-sign-in refusal: a « Se reconnecter » button that returns to /admin/plus.
+7. Plain-language errors with no migration numbers; « Interrupteurs » becomes « Réglages »; product
+   codes are not shown (an unknown product reads « Autre formule »).
+8. A dev-only admin shell sample (`/dev/admin-shell-sample`, not found outside a dev server) that
+   draws the real nav, home and the plus page on sample data, so it can be reviewed without a database.
+
+## Acceptance criteria
+
+Functional
+- Nav order and grouping as above; « Abonnements » is adjacent to « Utilisateurs »; every entry has
+  a group and an icon (unit test); entries still filtered on permission.
+- Every home card is a link to its route; no card without a link; the Abonnements card shows mode
+  and count, and degrades to a plain link when the overview fails.
+- The mode banner reads off / preview / on and is absent while loading or on error.
+- « Mon compte » fills the signed-in id; the grant reason starts as the lookup reason; the confirm
+  prompt contains the end date; the post-grant notice has both links.
+- `recent_auth_required` shows « Se reconnecter » (to /auth/login, next=/admin/plus).
+- No string shown to staff contains a migration number or a product code (unit test).
+- The typed brand name appears nowhere in the sources (existing test, extended).
+- `bun test` for src/backend/admin, src/components/admin, src/routes, src/lib; typecheck; lint.
+
+Visual
+- Shell sample and plus sample at 390 and 1280, French and Arabic (right to left): grant, revoke,
+  banners for off/preview/on, error state, refusal. No horizontal overflow measured by element
+  rectangles, tap targets at least 44px, the grant panel neutral (not rose).
+- Before/after screenshots kept outside the repository.
