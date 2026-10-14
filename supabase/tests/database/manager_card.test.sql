@@ -1668,6 +1668,12 @@ select extensions.ok(
       -- ops_health_checks calls app_private.manager_card_health() (20261010120300),
       -- and so do the earlier versions later checks wrap (ops_health_checks_before_*)
       and p.proname !~ '^ops_health_checks(_before_[a-z0-9_]+)?$'
+      -- The BotolaGO+ premium card reads (20261013100400) read the card's history
+      -- to show a member their own past: display only, they write nothing
+      -- (premium_card_reads.test.sql checks that), and nothing computes from them.
+      and p.proname <> all (array[
+        'get_my_card_career', 'get_card_duel', 'card_week_rows', 'card_captain_rows',
+        'card_transfer_rows', 'card_reads_mode', 'card_resolve_season'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(

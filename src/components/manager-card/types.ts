@@ -12,6 +12,13 @@ export type StatCode = (typeof STAT_CODES)[number];
 export type CardLang = "fr" | "ar";
 export type CardTheme = "light" | "dark";
 export type BeatName = "make" | "tick" | "first" | "tier" | "legend" | "founder" | "castoff";
+/**
+ * The finish a card is drawn in (BotolaGO+). Cosmetic only: the rating, the tier and every word stay
+ * the same. `standard` is the free card, whose metal follows the earned tier. Mirrors
+ * `CARD_EDITIONS` of `backend/manager-card/contracts.ts`.
+ */
+export const CARD_EDITION_CODES = ["standard", "holo", "electric", "pixel", "chrome"] as const;
+export type CardEdition = (typeof CARD_EDITION_CODES)[number];
 export type TokenSize = 24 | 28 | 32 | 44 | 56 | 64 | 80;
 
 export interface CardClub {
@@ -68,6 +75,11 @@ export interface CardProfile {
    * five tokens in a row show five materials. A card that carries a rating never needs it.
    */
   ladder?: true;
+  /**
+   * The paid finish. Absent (and `standard`, and anything a renderer does not know) draws the free
+   * card, whose metal follows `tier`. Set by `to-profile.ts` only for a paid edition.
+   */
+  edition?: CardEdition;
 }
 
 /** The words a renderer may print or speak, from the app dictionary (WP1 `cardStrings`). */
