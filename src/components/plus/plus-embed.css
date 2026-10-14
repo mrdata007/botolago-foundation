@@ -9,6 +9,7 @@
    ========================================================================== */
 
 .plus-embed {
+  container-type: inline-size;
   --po-gutter: 16px;
   min-block-size: 0;
   inline-size: 100%;
@@ -256,4 +257,18 @@
 }
 .pl-title {
   margin-block-end: 14px;
+}
+
+/* A narrow panel (the card page's desktop column): four tabs still fit on one line. */
+@container (max-width: 300px) {
+  .plus-embed .ps-tabs {
+    margin-inline: -8px;
+  }
+  .plus-embed .ps-seg button {
+    font-size: 12px;
+    padding: 0;
+  }
+}
+.pl-stage--compact .pl-veil {
+  background: linear-gradient(180deg, oklch(0.15 0.03 260 / 0.2), oklch(0.12 0.04 262 / 0.7));
 }
