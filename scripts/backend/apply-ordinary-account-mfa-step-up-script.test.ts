@@ -303,10 +303,10 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
     // player review RPCs of 20261011130000, the two public ranking exclusion
     // RPCs of 20261011160000, the four BotolaGO+ staff RPCs of 20261013100200, the
     // RapidAPI call count of 20261013110000 and the SofaScore limited-statistics
-    // list of 20261013160100).
+    // list of 20261013160100, and the three SofaScore review-list actions of 20261014170000).
     const staff = [...functions.matchAll(/'((?:admin|editorial)_[a-z_0-9]+)'/g)].map((m) => m[1]);
-    expect(staff).toHaveLength(77);
-    expect(new Set(staff).size).toBe(77);
+    expect(staff).toHaveLength(80);
+    expect(new Set(staff).size).toBe(80);
     expect(functions).toContain(
       "and not (f.statements ~ 'app_private\\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\\('\n       and f.proname = any (array[",
     );
