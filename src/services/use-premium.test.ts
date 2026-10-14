@@ -9,7 +9,7 @@ import {
   type PremiumStatus,
 } from "@/backend/premium/contracts";
 
-import { derivePremium } from "./use-premium";
+import { derivePremium, premiumReady } from "./use-premium";
 
 /**
  * Who sees BotolaGO+ in each database mode (docs/product/botolago-plus-staff-preview-brief.md).
@@ -153,5 +153,26 @@ describe("who sees BotolaGO+, by database mode and reader", () => {
     const checkout = { ...STATUS_ON, checkoutEnabled: true };
     expect(derivePremium(checkout, MEMBER, true).checkoutEnabled).toBe(true);
     expect(derivePremium(PREMIUM_STATUS_OFF, MEMBER, true).checkoutEnabled).toBe(false);
+  });
+});
+
+describe("premiumReady: no answer before the session is restored", () => {
+  it("waits while the session is still loading, even when the status has answered", () => {
+    expect(premiumReady({ statusPending: false, authLoading: true, mineLoading: false })).toBe(
+      false,
+    );
+  });
+  it("waits for the status and for a signed-in reader's membership", () => {
+    expect(premiumReady({ statusPending: true, authLoading: false, mineLoading: false })).toBe(
+      false,
+    );
+    expect(premiumReady({ statusPending: false, authLoading: false, mineLoading: true })).toBe(
+      false,
+    );
+  });
+  it("is ready once all three have answered", () => {
+    expect(premiumReady({ statusPending: false, authLoading: false, mineLoading: false })).toBe(
+      true,
+    );
   });
 });

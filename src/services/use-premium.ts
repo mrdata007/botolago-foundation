@@ -92,8 +92,25 @@ function useOffPremium(): PremiumView {
   return OFF_VIEW;
 }
 
+/**
+ * The first answer is in: the status has answered, the session has been restored, and a signed-in
+ * reader's membership has answered. Waiting for the session matters in preview: a returning member
+ * reads as signed out until it is restored, and an offer screen that saw "ready, not a member" then
+ * would close before the membership could be asked.
+ */
+export function premiumReady(input: {
+  statusPending: boolean;
+  authLoading: boolean;
+  mineLoading: boolean;
+}): boolean {
+  return !input.statusPending && !input.authLoading && !input.mineLoading;
+}
+
 function useLivePremium(): PremiumView {
-  const user = useOptionalAuth()?.user ?? null;
+  const auth = useOptionalAuth();
+  // No provider (a server render without one): nothing to restore.
+  const authLoading = auth?.status === "loading";
+  const user = auth?.user ?? null;
   const userId = user?.id ?? null;
   const status = useQuery({
     queryKey: premiumKeys.status,
@@ -118,7 +135,11 @@ function useLivePremium(): PremiumView {
   const restore = useCallback(() => premiumService.restore(), []);
   return useMemo(
     () => ({
-      ready: !status.isPending && !mine.isLoading,
+      ready: premiumReady({
+        statusPending: status.isPending,
+        authLoading,
+        mineLoading: mine.isLoading,
+      }),
       ...derivePremium(status.data, mine.data, userId !== null),
       startCheckout,
       cancel,
@@ -127,6 +148,7 @@ function useLivePremium(): PremiumView {
     [
       status.isPending,
       status.data,
+      authLoading,
       mine.isLoading,
       mine.data,
       userId,
