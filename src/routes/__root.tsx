@@ -19,6 +19,7 @@ import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
+import { SectionWarmup } from "@/components/shell/SectionWarmup";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -320,6 +321,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
+  // The router's loading screen (PendingScreen) is for the pages inside this
+  // one: it needs the language and auth providers this route sets up. The
+  // root itself shows nothing while it is pending, as it always did.
+  pendingComponent: () => null,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
@@ -360,6 +365,7 @@ function RootComponent() {
               <NativePushBridge />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
               <ManagerCardLiveMarker />
+              <SectionWarmup />
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
