@@ -150,7 +150,9 @@ describe("summaries print counts and labels, never names", () => {
       },
       incidents: { incidents: [{ incidentType: "goal", assist1: { name: "X" } }] },
       statistics: {
-        statistics: [{ groups: [{ statisticsItems: [{ key: "shotsOnGoal" }, { key: "totalTackle" }] }] }],
+        statistics: [
+          { groups: [{ statisticsItems: [{ key: "shotsOnGoal" }, { key: "totalTackle" }] }] },
+        ],
       },
     });
     expect(full.fullCoverage).toBe(true);
