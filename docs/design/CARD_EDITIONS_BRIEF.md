@@ -77,3 +77,8 @@ lane only draws it.
   differs is the live prism, the glints, the drift and the bezel.
 - The card's DOM faces that take only a tier (`palette(tier)`: the back, the burst) keep the tier
   palette; the edition shows on the face and in tokens and the share picture.
+- The holo prism sits above the band and leaves the rating column clear; the tier's own prism
+  overlay (above the text) is dropped on the holo edition. Measured from pixels, the small text on
+  the first cut read 3.1:1 under it; the fix is what makes every edition clear 4.5:1.
+- The crackle is three still copies of the outline shown in turn by a CSS animation, not SMIL: the
+  `prefers-reduced-motion` media query reaches it, so there is no SVG animation to pause.

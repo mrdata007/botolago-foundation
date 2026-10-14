@@ -274,6 +274,11 @@ export const EDITION_METAL: Readonly<Record<PaidEdition, Metal>> = {
   // deep teal ocean body, an iridescent wedge, a hue-turning chrome bezel; the live prism is CSS
   holo: {
     ...METAL.champion,
+    // a little less light in the face than CHAMPION's, so the small text keeps 4.5:1 under the prism
+    faceGlow:
+      "radial-gradient(70% 40% at 78% 14%, rgba(30, 200, 200, 0.4), transparent), radial-gradient(60% 30% at 15% 60%, rgba(20, 140, 150, 0.16), transparent)",
+    ink: "#f4fffd",
+    ink2: "#d9fbf5",
     aura: "conic-gradient(from var(--sh-hue, 0deg), #3ee08a, #36c9f0, #5b7cff, #36c9f0, #3ee08a)",
   },
   electric: {
@@ -351,7 +356,7 @@ export const EDITION_METAL: Readonly<Record<PaidEdition, Metal>> = {
       "radial-gradient(60% 34% at 20% 64%, rgba(255, 255, 255, 0.5), transparent), radial-gradient(70% 40% at 80% 12%, rgba(255, 255, 255, 0.35), transparent)",
     frame: ["#f2f4f7", "#8b929b", "#2a2e35", "#c9ced4", "#3b4049", "#e3e6ea", "#8b929b"],
     ink: "#2b2f36",
-    ink2: "#3d434c",
+    ink2: "#2b2f36",
     line: "#9aa3ad",
     bandline: "rgba(255, 255, 255, 0.95)",
     rib: "transparent",

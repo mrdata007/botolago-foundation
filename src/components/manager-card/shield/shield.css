@@ -1024,6 +1024,11 @@
   pointer-events: none;
 }
 
+/* the holo edition's prism is its own layer under the text; the tier's overlay above the text goes */
+.mc-shield--ed-holo .mc-sl--foil::before {
+  display: none;
+}
+
 /* the live layers: under the text, cut to the face */
 .mc-sl--fx {
   overflow: hidden;
@@ -1039,8 +1044,11 @@
   height: 100%;
 }
 
-/* holo: a prism foil in diagonal bands that follows the light */
+/* holo: a prism foil in diagonal bands that follows the light; it stays above the band, so the
+   club, the stats and the serial keep the plain face behind them */
 .mc-fx--prism {
+  bottom: auto;
+  height: 64.6%;
   background: conic-gradient(
     from calc(40deg + var(--sh-hue, 0deg) + var(--mc-ax, 0) * 60deg) at
       calc(50% + var(--mc-ax, 0) * 30%) calc(45% + var(--mc-ay, 0) * 30%),
@@ -1050,9 +1058,27 @@
     #4fd8ff,
     #5ef0a8
   );
-  -webkit-mask: repeating-linear-gradient(118deg, #000 0 2.2cqw, rgb(0 0 0 / 0.25) 2.2cqw 5.6cqw);
-  mask: repeating-linear-gradient(118deg, #000 0 2.2cqw, rgb(0 0 0 / 0.25) 2.2cqw 5.6cqw);
-  opacity: 0.3;
+  /* the bands, with the rating column left clear so « OVR » and the tier word keep their ground */
+  -webkit-mask:
+    radial-gradient(38% 25% at 18% 21%, transparent 60%, #000 100%),
+    repeating-linear-gradient(118deg, #000 0 2.2cqw, rgb(0 0 0 / 0.2) 2.2cqw 5.6cqw);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(38% 25% at 18% 21%, transparent 60%, #000 100%),
+    repeating-linear-gradient(118deg, #000 0 2.2cqw, rgb(0 0 0 / 0.2) 2.2cqw 5.6cqw);
+  mask-composite: intersect;
+  opacity: 0.24;
+}
+
+.mc-shield[dir="rtl"] .mc-fx--prism {
+  -webkit-mask:
+    radial-gradient(38% 25% at 82% 21%, transparent 60%, #000 100%),
+    repeating-linear-gradient(242deg, #000 0 2.2cqw, rgb(0 0 0 / 0.2) 2.2cqw 5.6cqw);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(38% 25% at 82% 21%, transparent 60%, #000 100%),
+    repeating-linear-gradient(242deg, #000 0 2.2cqw, rgb(0 0 0 / 0.2) 2.2cqw 5.6cqw);
+  mask-composite: intersect;
 }
 
 /* holo and electric: glints */
