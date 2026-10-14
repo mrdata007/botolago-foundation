@@ -46,6 +46,7 @@ export function PlusOffer({
   onBack,
   onClose,
   onManage,
+  onCarry,
 }: {
   step: PlusStep;
   via?: PlusContext;
@@ -58,6 +59,8 @@ export function PlusOffer({
   onBack: () => void;
   onClose: () => void;
   onManage: () => void;
+  /** The offer continues on another page (sign-up): note where it began, so Close leaves it all. */
+  onCarry?: () => void;
 }) {
   const { t, lang } = usePlusCopy();
   const { dir: pageDir } = useI18n();
@@ -168,6 +171,7 @@ export function PlusOffer({
   const onBuy = async () => {
     // Not signed in: sign up first (a free account), then this same screen again.
     if (!premium.signedIn) {
+      onCarry?.();
       void navigate({ to: "/auth/register", search: { next: href } });
       return;
     }
@@ -313,6 +317,7 @@ export function PlusOffer({
               <Link
                 to="/auth/register"
                 search={{ next: href }}
+                onClick={onCarry}
                 className="plus-note plus-note--link"
                 data-testid="plus-note-signup"
               >
