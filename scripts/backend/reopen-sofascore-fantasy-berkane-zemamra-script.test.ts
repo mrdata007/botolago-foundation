@@ -30,6 +30,9 @@ describe("reopen-sofascore-fantasy-berkane-zemamra.sql", () => {
       "a.sofascore_event_id <> '17256978'",
       "a.status not in ('gave_up', 'held')",
       "a.match_data is null",
+      "m.entity_type = 'fixture'",
+      "app_private.fantasy_adaptive_enabled(x.gameweek_id)",
+      "interval '504 hours'",
       "an observation is already recorded",
       "g.status in ('finalizing', 'finalized', 'corrected')",
     ]) {
