@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -8,6 +9,7 @@ import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/compo
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { sharedPositions } from "@/lib/league-table";
+import { presentScore, scoreSentence } from "@/lib/match-score";
 import { cn } from "@/lib/utils";
 import type { FootballSeason } from "@/services/football";
 import type { Club, Match, TableRow } from "@/types/domain";
@@ -44,6 +46,7 @@ export function HeadToHead({
   standingsFailed = false,
   onRetryStandings,
   meetings,
+  meetingsUnavailable,
 }: {
   home: Club;
   away: Club;
@@ -67,6 +70,11 @@ export function HeadToHead({
   standingsFailed?: boolean;
   onRetryStandings?: () => void;
   meetings: readonly Match[];
+  /**
+   * Said in place of the meetings when their read FAILED (with its retry):
+   * "no meetings yet" would claim the two clubs have never met.
+   */
+  meetingsUnavailable?: ReactNode;
 }) {
   const { t, tr, lang } = useI18n();
   const clubOf = (id: string) => (id === home.id ? home : id === away.id ? away : undefined);
@@ -188,7 +196,9 @@ export function HeadToHead({
 
       <Section className={cn(!tableSection && "mt-0 sm:mt-0")}>
         <SectionHeader title={t("matches.detail.head_to_head")} />
-        {meetings.length === 0 ? (
+        {meetingsUnavailable ? (
+          meetingsUnavailable
+        ) : meetings.length === 0 ? (
           <EmptyState compact>{t("matches.detail.no_h2h")}</EmptyState>
         ) : (
           <UiCard padding="none" className={cn("overflow-hidden", ui.radius.sheet)}>
@@ -317,13 +327,13 @@ function MeetingRow({
     year: "numeric",
   }).format(new Date(meeting.kickoff));
   const winner = meetingWinner(meeting);
-  const hs = meeting.homeScore ?? 0;
-  const as = meeting.awayScore ?? 0;
-  const label = `${date} — ${t("matches.a11y.score")
-    .replace("{home}", tr(home.shortName))
-    .replace("{hs}", String(hs))
-    .replace("{away}", tr(away.shortName))
-    .replace("{as}", String(as))}`;
+  const score = presentScore(meeting);
+  const label = `${date} — ${scoreSentence(
+    score,
+    { home: tr(home.shortName), away: tr(away.shortName) },
+    t("matches.a11y.score"),
+    t("matches.a11y.score_unavailable"),
+  )}`;
   // Two lines at most rather than an ellipsis: Arabic club names ("الوداد
   // الرياضي") are wider than half a 390px row.
   const name = (club: Club) =>
@@ -358,9 +368,9 @@ function MeetingRow({
           {/* Three flex children in a container that follows the page
               direction, so home is on the right in Arabic like its name. */}
           <span className={cn("flex items-center gap-1.5", ui.score.row, ui.tone.default)}>
-            <bdi>{hs}</bdi>
+            <bdi>{score.homeText}</bdi>
             <span aria-hidden>–</span>
-            <bdi>{as}</bdi>
+            <bdi>{score.awayText}</bdi>
           </span>
         </span>
         <span className="flex min-w-0 items-center justify-end gap-2 py-2 text-end">

@@ -14,6 +14,7 @@ import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { liveClock } from "@/lib/live-minute";
 import { useLiveStageLabels } from "./live-stage";
 import { BallIcon } from "./BallIcon";
+import { presentScore, scoreSentence } from "@/lib/match-score";
 import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -120,13 +121,14 @@ export function MatchScoreHeader({
   );
   const venue = tr(match.venue).trim();
 
-  const hs = match.homeScore ?? 0;
-  const as = match.awayScore ?? 0;
-  const scoreA11y = t("matches.a11y.score")
-    .replace("{home}", tr(home.shortName))
-    .replace("{hs}", String(hs))
-    .replace("{away}", tr(away.shortName))
-    .replace("{as}", String(as));
+  // An unknown score is a dash and is announced as unavailable, never as 0–0.
+  const score = presentScore(match);
+  const scoreA11y = scoreSentence(
+    score,
+    { home: tr(home.shortName), away: tr(away.shortName) },
+    t("matches.a11y.score"),
+    t("matches.a11y.score_unavailable"),
+  );
 
   const showScore = isLive || unconfirmed || isFinished;
   const hasScorers = showScore && hasScoreEvents(events);
@@ -175,9 +177,9 @@ export function MatchScoreHeader({
             >
               <span className="sr-only">{scoreA11y}</span>
               <span aria-hidden className={cn("flex items-center gap-3", ui.score.hero)}>
-                <FlipScore value={hs} />
+                <FlipScore value={score.home} />
                 <span>–</span>
-                <FlipScore value={as} />
+                <FlipScore value={score.away} />
               </span>
             </div>
           ) : isScheduled ? (

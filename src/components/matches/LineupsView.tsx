@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { MatchAbsenceDto, MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -73,6 +73,7 @@ export function LineupsView({
   palettes,
   phase,
   absences = [],
+  unavailable,
 }: {
   lineups: readonly Lineup[];
   home: Club;
@@ -80,9 +81,17 @@ export function LineupsView({
   palettes: { home: ClubPalette; away: ClubPalette };
   phase: MatchDataPhase;
   absences?: readonly MatchAbsenceDto[];
+  /**
+   * Said in place of a part whose read FAILED (with its retry): not the same
+   * as the provider having nothing, which `phase` words. The empty `lineups`
+   * or `absences` then only means nothing was read.
+   */
+  unavailable?: { lineups?: ReactNode; absences?: ReactNode };
 }) {
   const { t } = useI18n();
-  const absent = <Absences absences={absences} home={home} away={away} palettes={palettes} />;
+  const absent = unavailable?.absences ?? (
+    <Absences absences={absences} home={home} away={away} palettes={palettes} />
+  );
 
   const homeLineup = lineups.find((lineup) => lineup.team.id === home.id);
   const awayLineup = lineups.find((lineup) => lineup.team.id === away.id);
@@ -90,7 +99,9 @@ export function LineupsView({
   if (!homeLineup && !awayLineup) {
     return (
       <div className="grid gap-4">
-        <MatchDataState phase={phase} message={noLineupsMessage(phase, t)} />
+        {unavailable?.lineups ?? (
+          <MatchDataState phase={phase} message={noLineupsMessage(phase, t)} />
+        )}
         {absent}
       </div>
     );

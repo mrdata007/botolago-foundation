@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { MatchStatisticComparisonDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -85,6 +85,7 @@ export function StatComparison({
   isLive,
   phase,
   pressure = [],
+  unavailable,
 }: {
   stats: readonly Stat[];
   home: Club;
@@ -94,6 +95,12 @@ export function StatComparison({
   phase: MatchDataPhase;
   /** The provider's pressure index, minute by minute; empty draws no chart. */
   pressure?: readonly PressurePoint[];
+  /**
+   * Said in place of a part whose read FAILED (with its retry), which is not
+   * the same as the provider having none: the empty `stats` or `pressure` then
+   * only means nothing was read.
+   */
+  unavailable?: { stats?: ReactNode; pressure?: ReactNode };
 }) {
   const { t, tr, lang } = useI18n();
   const nf = useMemo(
@@ -111,14 +118,16 @@ export function StatComparison({
     />
   );
 
-  const chart = <PressureChart points={pressure} home={home} away={away} palettes={palettes} />;
+  const chart = unavailable?.pressure ?? (
+    <PressureChart points={pressure} home={home} away={away} palettes={palettes} />
+  );
 
   if (stats.length === 0) {
     return (
       <section>
         {heading}
         {chart}
-        <MatchDataState phase={phase} message={noStatsMessage(phase, t)} />
+        {unavailable?.stats ?? <MatchDataState phase={phase} message={noStatsMessage(phase, t)} />}
       </section>
     );
   }

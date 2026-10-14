@@ -543,6 +543,7 @@ export const fantasyService = {
       previousRank: standing.previousRank,
       gameweekScore: standing.gameweekPoints ?? 0,
       totalScore: standing.totalPoints,
+      calculatedAt: standing.calculatedAt,
     }));
   },
   /**

@@ -101,6 +101,12 @@ export interface LeagueStanding {
   previousRank: number | null;
   gameweekScore: number;
   totalScore: number;
+  /**
+   * ISO. When the ranking service calculated this row (the API's
+   * `calculatedAt`); absent from the mock board. It is what dates a league's
+   * standings (`leagueFreshness`).
+   */
+  calculatedAt?: string;
 }
 
 /**

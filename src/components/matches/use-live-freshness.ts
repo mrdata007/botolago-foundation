@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { liveFreshness, shouldRefetchOnReturn, type LiveFreshness } from "@/lib/match-freshness";
+import {
+  freshnessSince,
+  liveFreshness,
+  shouldRefetchOnReturn,
+  type LiveFreshness,
+} from "@/lib/match-freshness";
 import type { Match } from "@/types/domain";
 
 /** The events that mean the reader is back on the page. */
@@ -51,6 +56,10 @@ const FRESHNESS_TICK_MS = 15_000;
  * `mounted: false`: the server render and the first browser render agree, and
  * the age of the read is only told once the browser's own clock reads it.
  *
+ * `shownAt` is the time the note names: the last read while fresh and, once the
+ * page is behind, the older of the read and the data's last change, so a read
+ * that merely fetched an old row again is not reported as an update.
+ *
  * `refetch` must not throw; React Query's does not.
  */
 export function useLiveFreshness({
@@ -58,10 +67,13 @@ export function useLiveFreshness({
   updatedAt,
   refetch,
 }: {
-  match: Pick<Match, "status" | "kickoff"> | undefined;
+  match:
+    | (Pick<Match, "status" | "kickoff"> &
+        Partial<Pick<Match, "period" | "minute" | "dataUpdatedAt">>)
+    | undefined;
   updatedAt: number;
   refetch: () => unknown;
-}): { freshness: LiveFreshness; now: number; mounted: boolean } {
+}): { freshness: LiveFreshness; shownAt: number; now: number; mounted: boolean } {
   const [now, setNow] = useState(() => Date.now());
   const [mounted, setMounted] = useState(false);
   const live = match?.status === "live";
@@ -91,6 +103,10 @@ export function useLiveFreshness({
     setMounted(true);
   }, [updatedAt]);
 
-  if (!mounted) return { freshness: live ? "fresh" : "not_live", now, mounted };
-  return { freshness: liveFreshness(match, updatedAt, now), now, mounted };
+  if (!mounted) {
+    return { freshness: live ? "fresh" : "not_live", shownAt: updatedAt, now, mounted };
+  }
+  const freshness = liveFreshness(match, updatedAt, now);
+  const shownAt = freshness === "fresh" ? updatedAt : freshnessSince(match, updatedAt);
+  return { freshness, shownAt, now, mounted };
 }

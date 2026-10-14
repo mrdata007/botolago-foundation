@@ -136,6 +136,7 @@ function fixture(
   const status = season.isCurrent ? sourceStatus : "finished";
   const kickoff = shiftYear(source.kickoff, season.yearOffset);
   const historicalScore = matchIndex.get(source.id)! % 3;
+  const lastWrite = status.startsWith("live") ? new Date().toISOString() : kickoff;
   return {
     id: matchUuid(source.id, season),
     competition,
@@ -174,10 +175,14 @@ function fixture(
     penaltyAwayScore: null,
     winnerTeamId: null,
     attendance: null,
-    providerUpdatedAt: kickoff,
+    // A mock fixture in play is a feed that is being written: its data is as
+    // current as the moment it is asked for (the match page would otherwise
+    // call a mock live match out of date, `liveFreshness`). Every other mock
+    // fixture keeps its kickoff, as before.
+    providerUpdatedAt: lastWrite,
     sourceSequence: 1,
     finalizedAt: status === "finished" ? kickoff : null,
-    updatedAt: kickoff,
+    updatedAt: lastWrite,
   };
 }
 

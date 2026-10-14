@@ -7,6 +7,7 @@ import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { liveClock } from "@/lib/live-minute";
+import { presentScore, scoreSentence } from "@/lib/match-score";
 import { useLiveStageLabels } from "./live-stage";
 import { cn } from "@/lib/utils";
 import { FlipScore, TickingMinute } from "./FlipScore";
@@ -52,6 +53,7 @@ export function LiveStrip() {
 
   const clubById = (id: string) => liveQ.data?.clubs.find((club) => club.id === id);
   const scoreTemplate = t("matches.a11y.score");
+  const scoreUnavailable = t("matches.a11y.score_unavailable");
 
   return (
     <RevealOnArrive show={present} transparent>
@@ -77,8 +79,7 @@ export function LiveStrip() {
             const home = clubById(match.homeClubId);
             const away = clubById(match.awayClubId);
             if (!home || !away) return null;
-            const hs = match.homeScore ?? 0;
-            const as = match.awayScore ?? 0;
+            const score = presentScore(match);
             const clock = liveClock({
               stages,
               minute: match.minute,
@@ -86,11 +87,12 @@ export function LiveStrip() {
               addedTime: match.addedTime,
             });
             const minute = clock.minute ? `${clock.minute}′` : (clock.stage ?? "");
-            const label = `${scoreTemplate
-              .replace("{home}", tr(home.shortName))
-              .replace("{hs}", String(hs))
-              .replace("{away}", tr(away.shortName))
-              .replace("{as}", String(as))}${minute ? ` — ${minute}` : ""}`;
+            const label = `${scoreSentence(
+              score,
+              { home: tr(home.shortName), away: tr(away.shortName) },
+              scoreTemplate,
+              scoreUnavailable,
+            )}${minute ? ` — ${minute}` : ""}`;
             const colours = clubMatchPalettes(home, away);
             return (
               <li key={match.id} className="shrink-0">
@@ -123,9 +125,9 @@ export function LiveStrip() {
                   {/* Three flex children in a container that follows the page
                     direction, so home is on the right in Arabic. */}
                   <span className={cn("flex items-center gap-1", ui.score.row)}>
-                    <FlipScore value={hs} />
+                    <FlipScore value={score.home} />
                     <span aria-hidden>–</span>
-                    <FlipScore value={as} />
+                    <FlipScore value={score.away} />
                   </span>
                   <span>{away.crestPlaceholder}</span>
                   <span

@@ -119,6 +119,14 @@ export interface Match {
    * to come leaves it out.
    */
   calledOff?: boolean;
+  /**
+   * ISO. When the stored fixture last changed: the later of the provider's own
+   * change time and the moment our row was last written. It is how old the
+   * DATA is, which is not how old the page's last READ is (a read of an old
+   * row is brand new). Absent where the source gives none (`liveFreshness`
+   * then falls back on the kickoff). Never a made-up "now".
+   */
+  dataUpdatedAt?: string;
 }
 
 export interface TableRow {
