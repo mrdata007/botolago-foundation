@@ -1,4 +1,4 @@
-import { estimateAspect } from "./eclat/estimate";
+import { estimateAspect } from "./shield/estimate";
 import type { CardRenderer } from "./renderer";
 import type { CardLang, CardProfile } from "./types";
 
@@ -12,13 +12,17 @@ import type { CardLang, CardProfile } from "./types";
  * inside `load`. `estimateAspect` is the cheap height ÷ width the box reserves before the
  * renderer has loaded.
  *
- * Today this is Éclat (`./eclat`, entered through `curva-renderer.ts`, whose name is the chunk's).
- * `load` waits for the faces the card measures and prints (within a second and a half) before it
- * hands the renderer over, so the first card is drawn with the right faces. `estimateAspect` is
- * Éclat's own `estimate.ts`, the one module of the folder that is in the main bundle: it imports
- * nothing but a type. Every Éclat card has the same shape (1 : 1.618), so the estimate is exact and
- * the box never changes size when the card arrives. The plain renderer (`./plain-renderer`) stays
- * as the small stand-in the unit tests use.
+ * Today this is the collector shield (`./shield`, entered through `curva-shield-renderer.ts`, whose
+ * name is the chunk's; owner's design of 2026-10-13). `load` waits for the faces the card fits and
+ * prints (within a second and a half) before it hands the renderer over, so the first card is drawn
+ * with the right faces. `estimateAspect` is the shield's own `estimate.ts`, the one module of the
+ * folder that is in the main bundle: it imports nothing but a type. Every shield card has the same
+ * shape (100 : 136.6), so the estimate is exact and the box never changes size when the card
+ * arrives.
+ *
+ * Éclat (`./eclat`, the shirt on a honeycomb) stays in the tree with its tests: going back to it is
+ * this file pointing at `./eclat/estimate` and `./eclat/curva-renderer` (`eclatRenderer`) again.
+ * The plain renderer (`./plain-renderer`) stays as the small stand-in the unit tests use.
  */
 export interface ActiveRenderer {
   readonly id: string;
@@ -28,11 +32,11 @@ export interface ActiveRenderer {
 }
 
 export const activeRenderer: ActiveRenderer = {
-  id: "eclat-v1",
+  id: "shield-v1",
   load: async () => {
-    const module = await import("./eclat/curva-renderer");
+    const module = await import("./shield/curva-shield-renderer");
     await module.ready();
-    return module.eclatRenderer;
+    return module.shieldRenderer;
   },
   estimateAspect,
 };

@@ -13,6 +13,8 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { FIXTURES, type FixtureId } from "@/backend/manager-card/fixtures";
 import { dictionaries } from "@/i18n/dictionaries";
+import { activeRenderer } from "@/components/manager-card/active-renderer";
+import { fromMyCard } from "@/components/manager-card/to-profile";
 import { I18nProvider } from "@/i18n/provider";
 import type { Club, Gameweek } from "@/types/domain";
 
@@ -200,7 +202,9 @@ describe("G1 for a manager", () => {
     expect(html).not.toContain("data-stage-rail");
     // until the renderer's chunk has loaded, an ellipse under the reserved box; the card's own shadow replaces it
     expect(html).toContain("data-stage-shadow");
-    expect(html).toContain("aspect-ratio:1 / 1.618");
+    expect(html).toContain(
+      `aspect-ratio:1 / ${activeRenderer.estimateAspect(fromMyCard(FIXTURES.rated.card!), "fr")}`,
+    );
     expect(html).toContain("md:w-[336px]");
   });
 

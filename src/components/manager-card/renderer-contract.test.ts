@@ -245,9 +245,9 @@ describe("the active renderer (active-renderer.ts)", () => {
         const profile = fromMyCard(FIXTURES[id].card!, { sample: true });
         const estimate = activeRenderer.estimateAspect(profile, lang);
         const real = active.aspect(profile, STRINGS[lang]);
-        // Every Éclat card is 1 : 1.618 (plan D6), so the estimate is exact.
-        expect(estimate).toBe(1.618);
-        expect(real).toBe(1.618);
+        // Every shield card is 100 : 136.6 (one shape for every card), so the estimate is exact.
+        expect(estimate).toBe(1.366);
+        expect(real).toBe(1.366);
       }
     }
   });
