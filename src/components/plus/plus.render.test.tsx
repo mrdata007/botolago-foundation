@@ -123,17 +123,43 @@ describe("the other screens", () => {
     expect(visible).toContain(fr["plus.rule"]);
     expect(visible).toContain("Voir les avantages");
   });
-  it("screen 2: the best journée, the rivalry with one column per person, three benefits", () => {
-    const html = render(<PlusSeasonScreen onNext={noop} titleRef={null} />);
+  it("screen 2: « Votre saison », four tabs, numbers from the example season, the way into the duel", () => {
+    const html = render(
+      <PlusSeasonScreen onNext={noop} titleRef={null} duelOpen={false} onDuel={noop} />,
+    );
     const visible = text(html);
-    expect(visible).toContain("Votre meilleure journée de la saison");
-    expect(visible).toContain("Votre record : J.9, 71 points.");
-    expect(visible).toContain("Vous menez de 3 journées");
-    expect(html.match(/class="plus-col2"/g)).toHaveLength(2);
-    expect(html.match(/data-won="true"/g)).toHaveLength(7);
-    expect(html.match(/data-won="false"/g)).toHaveLength(4);
-    expect(html.match(/<li>[^<]*<svg/g)).toHaveLength(3);
+    expect(visible).toContain("Votre saison");
+    expect(html.match(/role="tab"/g)).toHaveLength(4);
+    expect(html.match(/role="tablist"/g)).toHaveLength(1);
+    expect(html.match(/aria-selected="true"/g)).toHaveLength(1);
+    for (const label of ["Résumé", "Points", "Décisions", "Note"]) expect(visible).toContain(label);
+    // the first tab: the gap to the league and the duel in one line, every figure computed
+    expect(visible).toContain("+41 points au-dessus de la ligue");
+    expect(visible).toContain("575");
+    expect(visible).toContain("616");
+    expect(visible).toContain("655");
+    expect(visible).toContain("Vous menez Sami de 14 points");
+    expect(visible).toContain("Voir le duel");
+    expect(visible).toContain("Exemple");
     expect(visible).toContain("Choisir mon pass");
+    // no sub-text paragraphs: the removed explanations are gone
+    expect(visible).not.toContain("Ce que ça dit");
+  });
+  it("screen 2: the duel, its common header, four tabs, the lead drawn once on the race tab", () => {
+    const html = render(
+      <PlusSeasonScreen onNext={noop} titleRef={null} duelOpen={true} onDuel={noop} />,
+    );
+    const visible = text(html);
+    expect(visible).toContain("Détail du duel");
+    expect(html.match(/role="tab"/g)).toHaveLength(4);
+    for (const label of ["Course", "Comparaison", "Décisions", "Notes"])
+      expect(visible).toContain(label);
+    expect(visible).toContain("Vous menez Sami de 14 points");
+    expect(visible).toContain("616 points contre 602");
+    expect(visible).toContain("7 journées gagnées sur 11");
+    // « Écart à chaque journée » is bars only; the cumulative lead is the third card's line
+    expect(html.match(/class="draw l-lead"/g)).toHaveLength(1);
+    expect(html.match(/class="draw l-you"/g)).toHaveLength(1);
   });
   it("screen 4: the card, one access line, « Gérer dans Profil », « Ouvrir ma saison »", () => {
     const html = render(

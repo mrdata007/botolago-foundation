@@ -47,6 +47,7 @@ export function PlusOffer({
   const [style, setStyle] = useState<PlusStyle>("holo");
   const [plan, setPlan] = useState<PremiumProductCode>("plus_yearly");
   const [requested, setStep] = useState<PlusStep>(standalone ? 3 : initialStep);
+  const [duelOpen, setDuelOpen] = useState(false);
   const [toast, setToast] = useState<{ text: string; n: number } | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,6 +76,7 @@ export function PlusOffer({
   const go = useCallback(
     (to: number) => {
       if (standalone) return;
+      setDuelOpen(false);
       setStep(clampStep(Math.max(1, Math.min(TOTAL, to))));
     },
     [standalone],
@@ -153,9 +155,9 @@ export function PlusOffer({
   };
 
   const note =
-    standalone || step === 3
+    standalone || step === 3 || step === 2
       ? null
-      : step === 2 || (example && premium.signedIn)
+      : example && premium.signedIn
         ? t("plus.note.example")
         : example
           ? t("plus.note.guest")
@@ -173,7 +175,7 @@ export function PlusOffer({
               aria-hidden={standalone || step === 1 || step === TOTAL ? true : undefined}
               tabIndex={standalone || step === 1 || step === TOTAL ? -1 : undefined}
               aria-label={t("common.back")}
-              onClick={() => go(step - 1)}
+              onClick={() => (step === 2 && duelOpen ? setDuelOpen(false) : go(step - 1))}
             >
               <svg
                 className="plus-flip"
@@ -259,7 +261,14 @@ export function PlusOffer({
                   titleRef={titleRef}
                 />
               ) : null}
-              {step === 2 ? <PlusSeasonScreen onNext={() => go(3)} titleRef={titleRef} /> : null}
+              {step === 2 ? (
+                <PlusSeasonScreen
+                  onNext={() => go(3)}
+                  titleRef={titleRef}
+                  duelOpen={duelOpen}
+                  onDuel={setDuelOpen}
+                />
+              ) : null}
               {step === 3 ? (
                 <PlusPaywallScreen
                   now={now}
