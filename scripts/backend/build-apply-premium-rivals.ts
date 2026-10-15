@@ -127,7 +127,13 @@ const RUN_BLOCK = (mode: string, probe: string) => `-- HOW TO RUN
 --   nothing is saved. Do not edit a check to make it pass: a check firing means
 --   the database is not in the state this script expects.`;
 
-const FINISH = (mode: string, state: string, label: string, applied: string, version: string) => `-- ---------------------------------------------------------------------------
+const FINISH = (
+  mode: string,
+  state: string,
+  label: string,
+  applied: string,
+  version: string,
+) => `-- ---------------------------------------------------------------------------
 -- The end. In a rehearsal this raises on purpose, carrying the computed state,
 -- which rolls the whole transaction back. In apply mode it passes and the
 -- transaction is committed below.

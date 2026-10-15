@@ -1,5 +1,5 @@
 import { Copy, Download, ImageDown, MessageCircle, Share2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useNativeImageActions } from "@/components/native/use-native-image-actions";
@@ -50,6 +50,7 @@ export function ShareImageSheet({
   campaign,
   testIdPrefix = "pepites",
   onEvent,
+  trigger,
 }: {
   label: string;
   render: () => Promise<Blob>;
@@ -66,6 +67,8 @@ export function ShareImageSheet({
   testIdPrefix?: string;
   /** Called for each share step; never given any content of the share. */
   onEvent?: (event: ShareSheetEvent) => void;
+  /** Replaces the round share button: the caller draws its own and calls `open` to show the sheet. */
+  trigger?: (open: () => void) => ReactNode;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -129,9 +132,13 @@ export function ShareImageSheet({
 
   return (
     <>
-      <UiIconButton aria-label={label} onClick={() => setOpen(true)} data-testid={testId}>
-        <Share2 aria-hidden />
-      </UiIconButton>
+      {trigger ? (
+        trigger(() => setOpen(true))
+      ) : (
+        <UiIconButton aria-label={label} onClick={() => setOpen(true)} data-testid={testId}>
+          <Share2 aria-hidden />
+        </UiIconButton>
+      )}
       <UiSheet open={open} onOpenChange={setOpen} title={label}>
         <div className="flex flex-col gap-3 p-4">
           {image ? (

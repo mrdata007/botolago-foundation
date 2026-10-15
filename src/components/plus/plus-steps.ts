@@ -12,7 +12,7 @@ export function clampStep(value: number | undefined): PlusStep {
 export const DEFAULT_PLUS_STEP: PlusStep = 3;
 
 /** Where the reader came from, so the paywall's headline can say what they were looking at. */
-export const PLUS_CONTEXTS = ["season", "duel", "career", "editions"] as const;
+export const PLUS_CONTEXTS = ["season", "duel", "career", "editions", "rivals"] as const;
 export type PlusContext = (typeof PLUS_CONTEXTS)[number];
 
 /** An address's `via` as a context, or nothing for an unknown value. */

@@ -544,3 +544,32 @@ app_private.premium_settings;` first. Switching the mode off
 > stop the webhook recording events. A delivery already in flight can finish
 > after the pause: check the Edge Function logs as well as the setting. Pause
 > automatic account deletion too (above) before a write to the erase function.
+
+## Rivaux (pinned rivals and the lead-change notification)
+
+Migrations `20261015130000` (the notification type, alone), `20261015130100` (tables, reads, text) and
+`20261015130200` (the tick and its two jobs); design in
+[`docs/product/botolago-plus-rivals-brief.md`](../product/botolago-plus-rivals-brief.md).
+
+- **Apply, staging first, in this order, each from its own SQL-editor paste:**
+  `scripts/backend/apply-20261015130000-rivals-notification-type.sql` (let it commit), then
+  `scripts/backend/apply-20261015130100-rivals.sql`. Both ship as a rehearsal that ends in a deliberate
+  error; change the mode line to `apply` to save. Rebuilt by
+  `bun scripts/backend/build-apply-premium-rivals.ts`, checked by
+  `apply-premium-rivals-script.test.ts`. The second one is a writer (four tables, two scheduled jobs):
+  AGENTS.md "One writer at a time" applies.
+- **Ships off.** The five `api` functions answer `{"available": false}` while BotolaGO+ or the Manager
+  Card reads are off. `rivals-tick` is scheduled but does nothing until
+  `select app_private.rivals_configure(true);`, and then only for members who turned the notification on
+  (`api.set_rivals_notify`, off by default) before the journée was published. In-app only: no push, no
+  email.
+- **Privacy.** A friend's journée scores and totals are what the league already shows. Their captain
+  and last transfer come back only when they switched their card history on
+  (`app.card_history_visibility`, unchanged, default off). Pins are readable by their owner only; the
+  friend is not told. A pin whose two managers no longer share an active private league is not returned
+  and is dropped the next time its owner pins someone.
+- **Erasure.** `app.pinned_rivals`, `app.rival_preferences` and `app_private.rival_lead_notices`
+  cascade from `app.profiles`, so the account erasure removes a member's rows and every pin that
+  points at an erased account.
+- **Pause before a write** to those tables: `select app_private.rivals_configure(false);` and restore
+  afterwards (AGENTS.md, "Check the scheduled jobs too").

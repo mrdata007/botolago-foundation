@@ -92,7 +92,9 @@ describe("guarded apply scripts for BotolaGO+ Rivaux", () => {
   test("the migrations add no ungated writer: the tick is switched off by default", () => {
     const tick = migrationFile("20261015130200", "rivals_tick");
     const base = migrationFile("20261015130100", "rivals");
-    expect(base).toContain("insert into app_private.rivals_settings (id, enabled) values (true, false);");
+    expect(base).toContain(
+      "insert into app_private.rivals_settings (id, enabled) values (true, false);",
+    );
     expect(base).toContain("notify_lead_change boolean not null default false");
     expect(tick).toContain("return jsonb_build_object('outcome', 'off');");
     expect(tick).not.toMatch(/'push'/);
