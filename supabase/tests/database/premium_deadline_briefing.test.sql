@@ -30,12 +30,6 @@ $$;
 create function pg_temp.tm(t text) returns uuid language sql immutable as $$
   select pg_temp.id(400 + pg_temp.idx(t))
 $$;
-create function pg_temp.fp(n integer) returns uuid language sql immutable as $$
-  select pg_temp.id(1000 + n)
-$$;
-create function pg_temp.gw(n integer) returns uuid language sql immutable as $$
-  select pg_temp.id(20 + n)
-$$;
 
 -- A statement's outcome: 'ok', or its SQLSTATE and message. Whatever it did is
 -- undone either way (it may be several statements).
