@@ -55,6 +55,8 @@ export { getGuestStore, noteServerTime, serverNow };
 
 export const predictionsKeys = {
   all: ["predictions"] as const,
+  /** Every ranking: scope, journée or season, and viewer all follow. */
+  boards: ["predictions", "board"] as const,
   round: (roundNumber: number | null, lang: string) =>
     ["predictions", "round", roundNumber ?? "current", lang] as const,
   mine: (uid: string, roundNumber: number) => ["predictions", "mine", uid, roundNumber] as const,
@@ -400,6 +402,23 @@ export function scoringMoved(
 }
 
 /**
+ * A match was scored (or scored again) while the page was open: what depends
+ * on the points is read again. The player's own picks (when signed in) and
+ * every ranking -- the journée's and the season's, a visitor's included --
+ * share the scoring, and a ranking is fresh for five minutes, so only this
+ * makes a mounted one catch up. The reader's unsent picks are not a query;
+ * they stay in the save queue and its draft, untouched.
+ */
+export function refreshAfterScoring(
+  queryClient: QueryClient,
+  uid: string | null,
+  roundNumber: number,
+): void {
+  if (uid) void queryClient.invalidateQueries({ queryKey: predictionsKeys.mine(uid, roundNumber) });
+  void queryClient.invalidateQueries({ queryKey: predictionsKeys.boards });
+}
+
+/**
  * What the page says about saving: the queue's state, a visitor's picks kept
  * on the phone, or `step_up` -- a save the server refused until the one-time
  * code is in (`PT403 mfa_required`).
@@ -578,18 +597,17 @@ export function usePredictionsRound(
   }, [refetchMine]);
 
   // A match was scored (or scored again) while the page was open: the round
-  // says so through scoringVersion, and the points come with the player's own
-  // predictions, so those are read again.
+  // says so through scoringVersion. The points come with the player's own
+  // predictions and the rankings, so those are read again together (a visitor
+  // has no picks but sees the rankings too).
   const scoringVersion = round?.round?.scoringVersion ?? null;
   const seenScoring = useRef<{ key: string; version: number } | null>(null);
   useEffect(() => {
-    if (!uid || resolvedNumber === null || scoringVersion === null) return;
-    const next = { key: `${uid}:${resolvedNumber}`, version: scoringVersion };
+    if (resolvedNumber === null || scoringVersion === null) return;
+    const next = { key: `${uid ?? ""}:${resolvedNumber}`, version: scoringVersion };
     const moved = scoringMoved(seenScoring.current, next);
     seenScoring.current = next;
-    if (moved) {
-      void queryClient.invalidateQueries({ queryKey: predictionsKeys.mine(uid, resolvedNumber) });
-    }
+    if (moved) refreshAfterScoring(queryClient, uid, resolvedNumber);
   }, [uid, resolvedNumber, scoringVersion, queryClient]);
 
   // ---- saving (signed in) --------------------------------------------------

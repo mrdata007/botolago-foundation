@@ -30,8 +30,13 @@ import { markManagerCardOff, useManagerCardLive } from "./manager-card-status";
 export const managerCardKeys = {
   status: ["manager-card", "status"] as const,
   me: (userId: string) => ["manager-card", "me", userId] as const,
-  cards: (teamIds: readonly string[]) =>
-    ["manager-card", "cards", [...teamIds].sort().join(",")] as const,
+  /**
+   * Other managers' cards, as `viewerId` is allowed to see them: the edition a card shows depends
+   * on who looks (a paid edition in preview shows to its owner only), so the viewer's id is in
+   * the key. It also lets sign-out forget the entry (`forgetAccountQueries`).
+   */
+  cards: (viewerId: string, teamIds: readonly string[]) =>
+    ["manager-card", "cards", viewerId, [...teamIds].sort().join(",")] as const,
   history: (userId: string, seasonId: string | null) =>
     ["manager-card", "history", userId, seasonId] as const,
 };
@@ -187,11 +192,12 @@ export function useManagerCards(
 ): UseQueryResult<MemberCardDto[], ManagerCardError> {
   const queryClient = useQueryClient();
   const live = useManagerCardLive();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
+  const viewerId = user?.id ?? null;
   const ids = [...new Set(teamIds)];
   return useQuery<MemberCardDto[], ManagerCardError>({
-    queryKey: managerCardKeys.cards(ids),
-    enabled: live && status === "authenticated" && ids.length > 0,
+    queryKey: managerCardKeys.cards(viewerId ?? "", ids),
+    enabled: live && status === "authenticated" && viewerId !== null && ids.length > 0,
     staleTime: 5 * 60_000,
     retry: retryCardRead,
     queryFn: async ({ signal }) => {

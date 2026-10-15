@@ -57,16 +57,16 @@ export const fr = {
   "notifications.filter.fantasy": "Fantasy",
   "notifications.filter.news": "Actualités",
   "notifications.empty_title": "Rien de nouveau pour l'instant",
-  "notifications.empty_body":
-    "Vos rappels de match, alertes Fantasy et actualités de vos clubs apparaîtront ici.",
+  "notifications.empty_body": "C’est ici que s’affichent vos notifications.",
   "notifications.dismiss": "Supprimer la notification",
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
-  "notifications.signin_body": "Vos rappels de match et alertes Fantasy arrivent ici.",
+  "notifications.signin_body": "Connectez-vous pour consulter vos notifications.",
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
-  "reminders.sign_in_reason": "Connectez-vous pour être rappelé avant le match.",
+  "reminders.sign_in_reason": "Connectez-vous pour enregistrer un rappel pour ce match.",
+  "reminders.toast.saved": "Rappel enregistré pour ce match.",
   "reminders.toast.on":
     "Rappel activé. Vous serez prévenu(e) environ une heure avant le coup d'envoi.",
   "reminders.toast.needs_email":
@@ -1137,6 +1137,8 @@ export const fr = {
   "fpl.notifications": "Notifications",
   "fpl.notifications_body":
     "Recevez par e-mail un rappel avant chaque date limite et le bilan de chaque journée de votre équipe BotolaGO Fantasy.",
+  "fpl.notifications_body_neutral":
+    "Choisissez les rappels et les e-mails Fantasy que vous souhaitez. La date limite officielle reste toujours affichée dans l’application.",
   "fpl.emails": "E-mails",
   "fpl.follow": "Suivre BotolaGO",
   "fpl.more_about": "En savoir plus sur BotolaGO Fantasy",
@@ -2920,6 +2922,7 @@ export const fr = {
   "card.serial": "BOT #{serial}",
   "card.provisional": "Provisoire",
   "card.sample": "Exemple",
+  "card.load_failed": "La carte n’a pas pu s’afficher. Vérifiez votre connexion, puis réessayez.",
   "card.founder_line": "Fondateur 2026",
   "card.stat.cap": "CAP",
   "card.stat.sel": "SEL",

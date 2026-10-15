@@ -5,12 +5,18 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { activeRenderer } from "./active-renderer";
+import { CardLoadFailed } from "./CardLoadFailed";
 import { cardLabel, useCardStrings } from "./copy";
 import { useInnerHtml } from "./inner-html";
 import { mountPointerBehaviour } from "./mount-pointer";
 import { cachedRender, widthBucket } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
-import { useCardRenderer, useCardTheme } from "./use-card-renderer";
+import {
+  retryCardRenderer,
+  useCardRenderer,
+  useCardRendererFailed,
+  useCardTheme,
+} from "./use-card-renderer";
 import type { BeatRoot } from "./renderer";
 import type { BeatName, CardProfile } from "./types";
 import { useCardCrest, withCrest } from "./use-card-crest";
@@ -74,6 +80,7 @@ export function ManagerCard({
   const crest = useCardCrest(given.club, strings.lang);
   const profile = useMemo(() => withCrest(given, crest), [given, crest]);
   const renderer = useCardRenderer();
+  const rendererFailed = useCardRendererFailed();
   const theme = useCardTheme();
   const [scope] = useState(newIdScope);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -165,6 +172,12 @@ export function ManagerCard({
     >
       {html ? (
         <div ref={hostRef} dangerouslySetInnerHTML={inner} />
+      ) : rendererFailed ? (
+        <CardLoadFailed
+          aspect={activeRenderer.estimateAspect(profile, strings.lang)}
+          label={label}
+          onRetry={retryCardRenderer}
+        />
       ) : (
         <div style={{ aspectRatio: `1 / ${activeRenderer.estimateAspect(profile, strings.lang)}` }}>
           <UiSkeleton className={cn("h-full w-full", ui.radius.sheet)} />

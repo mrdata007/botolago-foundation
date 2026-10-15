@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import { reportOperationalError } from "@/lib/operational-errors";
+
 import { activeRenderer } from "./active-renderer";
 import type { CardRenderer } from "./renderer";
 import type { CardTheme } from "./types";
@@ -15,21 +17,59 @@ import type { CardTheme } from "./types";
  */
 let loaded: CardRenderer | null = null;
 let pending: Promise<void> | null = null;
+let failed = false;
+let attempt = 0;
 const listeners = new Set<() => void>();
+
+/**
+ * How long the chunk may take before the card gives up and offers a retry. A dropped connection
+ * fails the import at once; a stalled one never settles, and without this limit the skeleton
+ * would stay for good (audit 2026-10-14, SEC-04).
+ */
+export const RENDERER_LOAD_TIMEOUT_MS = 15_000;
+let loadTimeoutMs = RENDERER_LOAD_TIMEOUT_MS;
+
+function notify(): void {
+  for (const listener of [...listeners]) listener();
+}
 
 function ensureLoaded(): void {
   if (loaded || pending) return;
+  const mine = ++attempt;
+  const wasFailed = failed;
+  failed = false;
+  const timer = setTimeout(() => giveUp("timeout"), loadTimeoutMs);
+  // A failure ends this attempt only if no newer one has started since; a chunk that arrives
+  // late still counts (below), so a slow phone recovers by itself.
+  const giveUp = (reason: string) => {
+    clearTimeout(timer);
+    if (loaded || mine !== attempt) return;
+    pending = null;
+    failed = true;
+    notify();
+    reportOperationalError("manager_card.renderer", "renderer_load_failed", { reason });
+  };
   pending = activeRenderer.load().then(
     (renderer) => {
+      clearTimeout(timer);
+      if (loaded) return;
       loaded = renderer;
       pending = null;
-      for (const listener of [...listeners]) listener();
+      failed = false;
+      notify();
     },
-    () => {
-      // A failed chunk is retried by the next card that mounts; the box stays a reserved box.
-      pending = null;
-    },
+    () => giveUp("error"),
   );
+  if (wasFailed) notify();
+}
+
+/**
+ * Ask for the renderer again after a failure (the card's « Réessayer »). Nothing happens when it
+ * is loaded or already loading. Never loops by itself: one call, one attempt.
+ */
+export function retryCardRenderer(): void {
+  if (loaded) return;
+  ensureLoaded();
 }
 
 /**
@@ -52,6 +92,18 @@ function subscribeRenderer(listener: () => void): () => void {
   };
 }
 
+/**
+ * True once the renderer's chunk failed to arrive (it errored or took longer than
+ * `RENDERER_LOAD_TIMEOUT_MS`) and until a retry succeeds. False on the server and while hydrating.
+ */
+export function useCardRendererFailed(): boolean {
+  return useSyncExternalStore(
+    subscribeRenderer,
+    () => failed,
+    () => false,
+  );
+}
+
 /** The loaded renderer, or null on the server, while hydrating, and until its chunk arrives. */
 export function useCardRenderer(): CardRenderer | null {
   return useSyncExternalStore(
@@ -65,8 +117,18 @@ export function useCardRenderer(): CardRenderer | null {
 export function setLoadedRendererForTests(renderer: CardRenderer | null): void {
   loaded = renderer;
   pending = null;
-  for (const listener of [...listeners]) listener();
+  failed = false;
+  attempt += 1;
+  loadTimeoutMs = RENDERER_LOAD_TIMEOUT_MS;
+  notify();
 }
+
+/** For tests: the load state, and a shorter limit than the real one. */
+export const rendererStateForTests = {
+  failed: () => failed,
+  loaded: () => loaded,
+  setTimeoutMs: (ms: number) => void (loadTimeoutMs = ms),
+};
 
 /* ------------------------------------------------------------------------------------------ */
 /* The theme the card is drawn in                                                               */
