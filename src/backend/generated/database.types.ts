@@ -1259,8 +1259,16 @@ export type Database = {
       }
       get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
+      get_my_briefing_alternatives: {
+        Args: { p_limit?: number; p_player_out: string }
+        Returns: Json
+      }
       get_my_card_career: { Args: { p_season?: string }; Returns: Json }
       get_my_card_history_visibility: { Args: never; Returns: Json }
+      get_my_deadline_briefing: {
+        Args: { p_season_id?: string }
+        Returns: Json
+      }
       get_my_fantasy_history: {
         Args: {
           p_before_gameweek_sequence?: number
