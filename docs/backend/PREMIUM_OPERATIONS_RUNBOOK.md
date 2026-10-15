@@ -666,3 +666,85 @@ Migrations `20261015130000` (the notification type, alone), `20261015130100` (ta
   points at an erased account.
 - **Pause before a write** to those tables: `select app_private.rivals_configure(false);` and restore
   afterwards (AGENTS.md, "Check the scheduled jobs too").
+
+## Saison (paiement manuel)
+
+Owner decisions, 2026-10-15: BotolaGO+ is **one purchase, « Saison 2026/27 »**, 200 MAD, the same price
+whenever it is bought, valid **until the end of the current Fantasy season**
+(`app.fantasy_seasons.ends_at` of `app_private.fantasy_prize_current_season()`). No subscription, no
+renewal, no cancel, no grace. Fantasy itself stays free. For now it is paid by hand (bank transfer, or
+CashPlus / Wafacash at an agency); there is no card checkout. Migrations `20261016150000_premium_season_schema`
+and `20261016150100_premium_season_api`, applied by
+`scripts/backend/apply-20261016150000-premium-season.sql` (rebuilt by
+`bun scripts/backend/build-apply-premium-season.ts`, checked by `apply-premium-season-script.test.ts`).
+Screens and copy: [`docs/product/botolago-plus-season-brief.md`](../product/botolago-plus-season-brief.md).
+
+**What the migrations do.**
+
+- `app_private.premium_products`: adds `plus_season` (200 MAD, `period_months` null, never renews,
+  sort order 0, active). `plus_monthly` and `plus_yearly` become **inactive, not deleted** (grants,
+  entitlements and billing events reference them): `api.premium_status` no longer lists them, so its
+  `savingMinor` is null, and `api.service_apply_billing_event` ignores a purchase of them
+  (`ignored_product`). Members who already hold one keep it. A product without months cannot renew.
+- `api.premium_status().prices[]` is `{code, periodMonths, renews, priceMinor, currency, validUntil}`;
+  for the Saison `periodMonths` is null and `validUntil` is the season end (null with no season).
+- `app_private.premium_payment_details`: one row, empty on arrival, typed by the owner. `app_private.premium_pay_codes`:
+  one personal code per account. `app_private.premium_grants` gains `product_code`, `payment_method`
+  (`bank_transfer`, `cashplus`, `wafacash`, `free`), `payment_reference` (1 to 80 characters), `amount_minor`
+  and `currency`, all nullable: every earlier grant is unchanged. A paid method always carries its reference.
+- A Saison is a **grant** from now to the season end, so `app_private.has_premium` and every member read already
+  count it. `api.get_my_premium` reports its product (`plus_season`; null for an older complimentary access),
+  `source: "grant"`, `cancelAtPeriodEnd: true` and `currentPeriodEnd` the grant's end.
+
+**Ships off.** While `premium_settings.mode` is `off` the two member reads answer `{"available": false}` and
+nothing is visible. Nothing about the payment details is in code or in a migration.
+
+**How the owner sets the payment details.** In `/admin/plus`, « Coordonnées de paiement » (permission
+`premium.grant`, second factor, recent authentication, a reason): holder, bank, RIB, CashPlus / Wafacash
+recipient, WhatsApp number, a note in French and in Arabic. `api.admin_set_premium_payment_details(details,
+reason, idempotency key)` replaces all seven fields (a blank one clears it), checks the formats (RIB 10 to 40
+letters, digits, spaces, dots and dashes; WhatsApp number stored as `+` and 8 to 16 digits, whatever
+separators were typed), and audits **the names of the fields that changed, never their values**; the
+idempotency record keeps only `{"saved": true}`. `api.admin_get_premium_payment_details()` (`premium.read`)
+shows them. Buyers read them with `api.get_premium_payment_details()` while the mode is not `off`; it answers
+`{"available": false}` until a WhatsApp number is set. The details are visible to every signed-in account once
+the mode is `preview` or `on`: type them only when the Saison is about to be offered.
+
+**How staff activate a Saison** (`/admin/plus`, permission `premium.grant`, recent authentication):
+
+1. The buyer pays, then sends the receipt on WhatsApp with their code (`BG-` and six characters, shown on
+   the « Payer » screen, `api.get_my_premium_pay_code`; the alphabet has no 0, O, 1 or I).
+2. Staff look the account up by that code (`api.admin_find_premium_member_by_code`, `premium.read`, with a
+   reason; any case, dash optional; audited as the member read) or by account id.
+3. Staff check the receipt against the bank statement or the agency slip, then activate:
+   `api.admin_activate_premium_season(user, method, reference, reason, idempotency key)`. The reference
+   (transfer number, agency receipt number) is required unless the method is `free` (an offered Saison, amount 0).
+   It writes one grant to the season end with product `plus_season`, the method, the reference and the amount,
+   audited as `premium.activate_season`. Repeating the same key answers the first grant.
+4. Refusals: `PT409 season_already_active` (a live grant already lasts to the season end; revoke it first if it
+   was a mistake), `PT409 premium_season_unavailable` (no Fantasy season is open or in play),
+   `PT409 premium_season_ended`, `PT400 premium_grant_period_invalid` (the season end is more than 400 days away:
+   a data mistake in `app.fantasy_seasons`), `PT400 premium_payment_reference_required`.
+5. A wrong activation: `api.admin_revoke_premium` ends it at once; the grant row stays as the record.
+
+The member read (`api.admin_get_premium_member`) shows each grant's `productCode`, `paymentMethod`,
+`paymentReference` and `amountMinor`. The older « Offrir un accès » (`api.admin_grant_premium`, 400 days at most)
+stays and carries no product or payment.
+
+**What this does not do.** It does not reconcile payments with the bank: staff are the control, which is why the
+reference and the audit entry exist. It does not refund: revoke the grant, then refund outside the app. Account
+deletion removes the grant, the payment record on it and the payment code with the account (cascade); the
+admin audit entries stay, with the reference. `api.service_apply_billing_event` is not changed: a provider event for
+`plus_season` has no months to count from and is not expected (no provider is connected).
+
+**Applying.** Staging first, then production: rehearsal, re-read
+`select to_regclass('app_private.premium_pay_codes') is null;` (must say `true`), then `'apply'` in the
+`bg.premium_season_mode` line. **Applying is a database write**, the rehearsal included: follow `AGENTS.md`,
+"One writer at a time, per database". No scheduled job touches these tables, so nothing needs pausing. The script
+checks that no grant, entitlement, billing event or product row is lost, that `plus_monthly` and `plus_yearly`
+still exist but are inactive, that `plus_season` is active, and that the switch did not move.
+`supabase/tests/database/premium_season.test.sql` is the alarm for the behaviour; CI's `database-quality` job is
+the authority.
+
+**Rolling back.** Not expected. A forward migration can set the two old products active again and the Saison
+inactive; the grants it made keep working until their end. Switching BotolaGO+ off hides everything.

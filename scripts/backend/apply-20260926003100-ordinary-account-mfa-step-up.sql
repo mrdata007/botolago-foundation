@@ -4775,6 +4775,9 @@ begin
          -- BotolaGO+ memberships (20261013100200).
          'admin_premium_overview', 'admin_get_premium_member', 'admin_grant_premium',
          'admin_revoke_premium',
+         -- The Saison: payment details, finding a member by code, activating (20261016150100).
+         'admin_get_premium_payment_details', 'admin_set_premium_payment_details',
+         'admin_find_premium_member_by_code', 'admin_activate_premium_season',
            'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
            'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
            'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
