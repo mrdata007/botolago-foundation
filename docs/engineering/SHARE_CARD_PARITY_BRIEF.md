@@ -16,9 +16,12 @@ that `shield/full.ts` + `shield.css` make on screen. Rendered side by side
 2. The paid editions (BotolaGO+) lose their finish: Pixel's pixel field, Electric's crackling
    border, glow and sparks, Holo's prism foil and sparks are drawn by `full.ts` (`editionFx`) and
    never by `image.ts`.
-3. A tier word wider than the rating (CHAMPION, LEGEND, LASTREET) is centred on the rating column
-   in the picture and runs over the card's left edge; the app left-aligns it under the number
-   (`.mc-shield__tier`, `text-align: start`).
+3. The rating column is laid out differently. The picture centred the tier word on a fixed
+   column and fixed « OVR » in place, so CHAMPION and LEGEND ran over the card's left edge.
+   Measured in a browser, the app's column starts 4.5 % in from the inline start, is at least
+   22 % wide and grows to its widest line; the number and the tier word are each centred in it,
+   and « OVR » follows the number's end. (This corrects the first reading of this brief, which
+   said the tier word is left-aligned.)
 
 ## Must be preserved
 
@@ -33,7 +36,7 @@ that `shield/full.ts` + `shield.css` make on screen. Rendered side by side
 ## Improvements
 
 1. `fitWidth` in picture pixels, so the club name reads as it does on the card.
-2. The tier word sits where the card puts it (inline start of the rating column, not centred).
+2. The rating column is laid out by the card's rule (see 3 above), measured with the real fonts.
 3. Still versions of the paid editions' layers in the art: Pixel (the pixel field), Electric
    (glow, crackle border, sparks), Holo (prism foil bands, sparks), as one frame of what the
    card shows. Chrome has no extra layers in the card, so nothing to add.
