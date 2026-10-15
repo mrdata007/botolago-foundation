@@ -596,3 +596,69 @@ app_private.premium_settings;` first. Switching the mode off
 > stop the webhook recording events. A delivery already in flight can finish
 > after the pause: check the Edge Function logs as well as the setting. Pause
 > automatic account deletion too (above) before a write to the erase function.
+
+## Premium round recap: « Votre journée expliquée »
+
+Migration `20261015120000_premium_round_recap.sql`, applied by
+`scripts/backend/apply-20261015120000-premium-round-recap.sql` **after** the league
+context. It adds one api function (`api.get_round_recap(p_gameweek uuid, p_league uuid)`)
+and two helpers (`app_private.round_recap_league`, `round_recap_captain`); no table, no
+column, no job, no setting and no row, and it replaces nothing. The read is `STABLE`
+and writes nothing, so it needs no entry in `AGENTS.md`. **Applying the migration is a
+database write**, the rehearsal included: follow `AGENTS.md`, "One writer at a time, per
+database", with a baseline read before and a comparison after. Production only through
+the guarded script, which the owner runs; nothing here was run against any database
+(pgTAP `premium_round_recap.test.sql` is the check, in CI's `database-quality` job).
+
+It explains one journée of the caller's own team: the score and its parts, the eleven
+and the bench with their published points, the effective captain, the journée's
+confirmed transfers with this journée's points of the player out and in, and the gap
+to the average of ONE private league (members only, averages hidden under three
+managers). « Vos autres choix » is a remainder (`othersIsRemainder: true`), not a
+per-player measure.
+
+- **Points, never ratings.** The Fantasy ledger does not say which `rating` line is a
+  real SofaScore rating and which is the 5 given to a player who appeared without one
+  (`FANTASY_RATING_POINTS.md`). The read serves points only. A player whose points are
+  not published has `pending: true` and `points: null`. If the ledger ever records which
+  fives are the no-rating rule, add a `rated` flag here and let the screen say « sans
+  note ».
+- **The captain** is the scoring result's `effectiveCaptainId`, else the lineup's
+  captain who played, else the vice-captain who played; counted points = his points plus
+  the result's captain bonus. The lineup's own `multiplier` column is not the scoring
+  multiplier and is not used.
+- **No absence data.** The app has no injury or suspension source; the read serves none.
+- Journées offered: those with a result for the caller's team whose status is
+  provisional, finalizing, finalized or corrected. A cancelled journée's results do not
+  count towards ranks.
+
+## Rivaux (pinned rivals and the lead-change notification)
+
+Migrations `20261015130000` (the notification type, alone), `20261015130100` (tables, reads, text) and
+`20261015130200` (the tick and its two jobs); design in
+[`docs/product/botolago-plus-rivals-brief.md`](../product/botolago-plus-rivals-brief.md).
+
+- **Apply, staging first, in this order, each from its own SQL-editor paste:**
+  `scripts/backend/apply-20261015130000-rivals-notification-type.sql` (let it commit), then
+  `scripts/backend/apply-20261015130100-rivals.sql`. Both ship as a rehearsal that ends in a deliberate
+  error; change the mode line to `apply` to save. Rebuilt by
+  `bun scripts/backend/build-apply-premium-rivals.ts`, checked by
+  `apply-premium-rivals-script.test.ts`. The second one is a writer (four tables, two scheduled jobs):
+  AGENTS.md "One writer at a time" applies.
+- **Ships off.** The five `api` functions answer `{"available": false}` while BotolaGO+ or the Manager
+  Card reads are off. `rivals-tick` is scheduled but does nothing until
+  `select app_private.rivals_configure(true);`, and then only for members who turned the notification on
+  (`api.set_rivals_notify`, off by default) before the journée was published. In-app, plus a push
+  to each working phone when the member has push and Fantasy reminders on (a pending delivery that the
+  push claim sends only while `app_private.notification_push_settings.mode` allows, as for the Manager
+  Card rating change; topic Fantasy, life 12 hours). No email.
+- **Privacy.** A friend's journée scores and totals are what the league already shows. Their captain
+  and last transfer come back only when they switched their card history on
+  (`app.card_history_visibility`, unchanged, default off). Pins are readable by their owner only; the
+  friend is not told. A pin whose two managers no longer share an active private league is not returned
+  and is dropped the next time its owner pins someone.
+- **Erasure.** `app.pinned_rivals`, `app.rival_preferences` and `app_private.rival_lead_notices`
+  cascade from `app.profiles`, so the account erasure removes a member's rows and every pin that
+  points at an erased account.
+- **Pause before a write** to those tables: `select app_private.rivals_configure(false);` and restore
+  afterwards (AGENTS.md, "Check the scheduled jobs too").

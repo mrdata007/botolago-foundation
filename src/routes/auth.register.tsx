@@ -34,7 +34,7 @@ import {
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { markWelcomeDone } from "@/lib/welcome";
-import { authNextSearch } from "@/lib/auth-callback";
+import { authLanding, authNextSearch } from "@/lib/auth-callback";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 
@@ -168,7 +168,7 @@ function RegisterPage() {
     }
     markWelcomeDone();
     if (res.data?.profileComplete) {
-      navigate({ to: next });
+      navigate(authLanding(next));
       return;
     }
     navigate({ to: "/auth/profile-setup", search: { next } });

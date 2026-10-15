@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { CalendarClock, LogIn, UserPlus } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import {
   ui,
   UiCard,
@@ -64,6 +65,10 @@ export function FantasyPhaseBody({
   className?: string;
 }) {
   const { t } = useI18n();
+  // Back to the page as it is now (a selected round, a tab); the route the
+  // gate stands for is the answer only where the address has nothing to add.
+  const returnSearch = useAuthReturnSearch();
+  const resume = returnSearch.next ?? next;
 
   if (phase === "loading" || phase === "no_team") {
     // The Fantasy layout is known in advance — a strip, the pitch card and a
@@ -133,11 +138,11 @@ export function FantasyPhaseBody({
       </h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.prompt.body")}</p>
       <div className="mt-4 grid gap-2">
-        <UiLinkButton to="/auth/login" search={{ next }} variant="gradient">
+        <UiLinkButton to="/auth/login" search={{ next: resume }} variant="gradient">
           <LogIn className="h-4 w-4" aria-hidden />
           {t("auth.prompt.login")}
         </UiLinkButton>
-        <UiLinkButton to="/auth/register" search={{ next }} variant="ink">
+        <UiLinkButton to="/auth/register" search={{ next: resume }} variant="ink">
           <UserPlus className="h-4 w-4" aria-hidden />
           {t("auth.prompt.register")}
         </UiLinkButton>

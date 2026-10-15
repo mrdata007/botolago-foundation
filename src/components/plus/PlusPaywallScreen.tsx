@@ -336,6 +336,8 @@ function headline(t: (key: TranslationKey) => string, context: PlusContext | und
       return t("plus.ctx.career");
     case "editions":
       return t("plus.ctx.editions");
+    case "rivals":
+      return t("plus.ctx.rivals");
     case "briefing":
       return t("plus.ctx.briefing");
     default:

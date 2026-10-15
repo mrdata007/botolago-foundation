@@ -77,7 +77,7 @@ function MfaChallengePage() {
       // the account has not completed profile setup yet. The code is already
       // accepted here; update-password still requires the authenticated session.
       if (next === "/auth/update-password" || (next !== "/" && signedIn?.profileComplete)) {
-        window.location.href = sanitizeAuthCallbackNext(next);
+        window.location.replace(sanitizeAuthCallbackNext(next));
         return;
       }
       if (signedIn?.profileComplete) {

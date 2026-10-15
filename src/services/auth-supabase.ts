@@ -120,11 +120,30 @@ function getCallbackUrl(next?: string): string {
   return `${getRedirectBase()}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 }
 
+/** No response at all, or a gateway / edge answer that says the server was not reached. */
+function isTransportStatus(status: number): boolean {
+  return (
+    status === 0 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    (status >= 520 && status <= 530)
+  );
+}
+
 function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   if (!err) return "generic";
   const msg = (err.message ?? "").toLowerCase();
   const status = err.status ?? 0;
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
+  // The client's own "the request did not get a usable answer" error: its
+  // message is whatever the browser said, so go by the name rather than the
+  // wording (audit QA-04). auth-js throws it for status 0 (no response) and
+  // for a gateway or edge failure (502-504, 520-530), but also for a plain
+  // 500/501 from the server (a mailer that failed, for one). Those stay
+  // "generic": calling them a lost connection would also break the password
+  // reset's refusal to tell an existing account from an unknown one.
+  if (err.name === "AuthRetryableFetchError" && isTransportStatus(status)) return "network";
   if (status === 401 || msg.includes("session_not_found")) return "session_expired";
   if (msg.includes("invalid login") || msg.includes("invalid credentials")) return "credentials";
   // Asking to delete the account bans it at once (account deletion migration
@@ -141,7 +160,8 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   if (msg.includes("weak password") || msg.includes("password should")) return "weak_password";
   if (msg.includes("provider is not enabled") || msg.includes("provider disabled"))
     return "provider_unavailable";
-  if (msg.includes("failed to fetch") || msg.includes("network")) return "network";
+  if (msg.includes("failed to fetch") || msg.startsWith("load failed") || msg.includes("network"))
+    return "network";
   if (msg.includes("username_taken")) return "username_taken";
   if (msg.includes("reserved_username") || msg.includes("username_reserved"))
     return "reserved_username";

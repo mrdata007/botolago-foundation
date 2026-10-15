@@ -1,7 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -9,6 +15,7 @@ import { isMfaStepUpError } from "@/backend/auth/step-up";
 import type { ResetInviteCodeDto } from "@/backend/predictions/contracts";
 import { mapPredictionsError } from "@/backend/predictions/errors";
 import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
+import { LeagueReadNotice } from "@/components/fantasy/LeagueReadNotice";
 import { LeagueUpdatedLine } from "@/components/fantasy/LeagueUpdatedLine";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
@@ -32,6 +39,7 @@ import {
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
+  UiAlert,
   UiButton,
   UiCard,
   UiEmptyState,
@@ -56,6 +64,11 @@ import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import {
+  leagueStandingsRefetchInterval,
+  mergeLeagueStandingsPages,
+  type LeagueStandingCursor,
+} from "@/services/fantasy-league-pages";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { predictionsService } from "@/services/predictions";
@@ -148,12 +161,23 @@ function LeagueDetailBody() {
     queryFn: () => fantasyService.getLeague(leagueId),
     enabled: screen.phase === "ready",
   });
-  const standingsQ = useQuery({
-    queryKey: key("standings", leagueId),
-    queryFn: () => fantasyService.getLeagueStandings(leagueId),
-    refetchInterval: 60_000,
+  // FANT-03: the standings are read a page of 100 at a time, from the position
+  // the last row gave, so the 101st member is one tap away.
+  const standingsQ = useInfiniteQuery({
+    // Not `key("standings", id)`: that key holds a plain list for the Curva and join screens.
+    queryKey: key("standings-pages", leagueId),
+    queryFn: ({ pageParam }) => fantasyService.getLeagueStandingsPage(leagueId, pageParam),
+    initialPageParam: null as LeagueStandingCursor | null,
+    getNextPageParam: (_last, pages) => mergeLeagueStandingsPages(pages).nextCursor ?? undefined,
+    // A refresh re-reads every page loaded, one after the other: the more pages
+    // are shown, the less often (see `leagueStandingsRefetchInterval`).
+    refetchInterval: (query) => leagueStandingsRefetchInterval(query.state.data?.pages.length ?? 0),
     enabled: screen.phase === "ready",
   });
+  const merged = useMemo(
+    () => (standingsQ.data ? mergeLeagueStandingsPages(standingsQ.data.pages) : null),
+    [standingsQ.data],
+  );
   const gw = screen.gameweek?.number ?? null;
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
@@ -188,7 +212,7 @@ function LeagueDetailBody() {
     same: t("fantasy.rank.same"),
     unknown: t("fantasy.rank.unknown"),
   };
-  const rows = standingsQ.data ?? [];
+  const rows = merged?.rows ?? [];
   // The card's surfaces (plan M5): a private league's members, while the section is live. The
   // batch read behind them is for signed-in managers and leaves the rows as they are if it fails.
   const cardsOn = cardLive && leagueQ.data?.type === "private" && rows.length > 0;
@@ -256,10 +280,7 @@ function LeagueDetailBody() {
           ) : tab === "league" ? (
             <>
               {/* Dated by the standings themselves, never by this render. */}
-              <LeagueUpdatedLine
-                standings={standingsQ.data ?? []}
-                retrievedAt={standingsQ.dataUpdatedAt}
-              />
+              <LeagueUpdatedLine standings={rows} retrievedAt={standingsQ.dataUpdatedAt} />
               {cardsOn ? (
                 // The newly rated friends, hung on a rail, and the way to « Les vôtres ».
                 <Suspense fallback={null}>
@@ -276,7 +297,7 @@ function LeagueDetailBody() {
                     <UiSkeleton className="h-12" />
                     <UiSkeleton className="h-12" />
                   </div>
-                ) : standingsQ.isError ? (
+                ) : standingsQ.isError && !standingsQ.data ? (
                   <UiErrorState onRetry={() => void standingsQ.refetch()} />
                 ) : rows.length === 0 ? (
                   <UiEmptyState
@@ -387,6 +408,40 @@ function LeagueDetailBody() {
                   </UiCard>
                 )}
               </div>
+
+              {/* UX-003: a refresh that failed keeps the rows already read and says so. */}
+              {standingsQ.isRefetchError && merged ? (
+                <LeagueReadNotice
+                  className="mt-3"
+                  message={t("fantasy.leagues.stale")}
+                  onRetry={() => void standingsQ.refetch()}
+                />
+              ) : null}
+              {/* FANT-03: members beyond the pages read are one tap away, never missing. */}
+              {merged &&
+              ((merged.nextCursor && rows.length < merged.memberCount) ||
+                standingsQ.isFetchNextPageError) ? (
+                <div className="mt-3 space-y-2 text-center">
+                  <p className={cn(ui.text.meta, ui.tone.muted)}>
+                    <bdi>{nf.format(rows.length)}</bdi> / <bdi>{nf.format(merged.memberCount)}</bdi>{" "}
+                    {t("fantasy.leagues.members")}
+                  </p>
+                  {standingsQ.isFetchNextPageError ? (
+                    <UiAlert tone="negative">{t("fantasy.leagues.more_failed")}</UiAlert>
+                  ) : null}
+                  <UiButton
+                    variant="soft"
+                    disabled={standingsQ.isFetchingNextPage}
+                    onClick={() => void standingsQ.fetchNextPage()}
+                  >
+                    {standingsQ.isFetchingNextPage
+                      ? t("state.loading")
+                      : standingsQ.isFetchNextPageError
+                        ? t("state.retry")
+                        : t("fantasy.leagues.show_more")}
+                  </UiButton>
+                </div>
+              ) : null}
 
               {leagueQ.data?.type === "private" ? (
                 <>

@@ -1,6 +1,8 @@
 import { useMemo, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Club, Match, MatchStatus } from "@/types/domain";
+import { matchOffStatus } from "@/lib/match-off-status";
+import { offStatusA11y, offStatusLabel } from "@/components/matches/off-status-copy";
 import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
 import { FlipScore } from "@/components/matches/FlipScore";
@@ -135,6 +137,9 @@ export function MatchCard({
   const isFinished = status === "finished" || status === "penalties";
   const isScheduled = status === "scheduled" || status === "delayed";
   const isPostponed = status === "postponed" || status === "cancelled";
+  // Which of postponed, suspended, cancelled and abandoned this is. A caller
+  // that passes the extended "cancelled" status is read the same way.
+  const offStatus = matchOffStatus(match) ?? (status === "cancelled" ? "cancelled" : null);
   const unconfirmedDate = isKickoffDateUnconfirmed(match) || status === "cancelled";
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   const isHero = variant === "hero";
@@ -210,7 +215,7 @@ export function MatchCard({
     if (isScheduled) {
       return `${homeName} ${t("matches.vs")} ${awayName} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
     }
-    return `${homeName} ${t("matches.vs")} ${awayName} — ${t(`matches.a11y.status_${match.status}` as never) || t("matches.status.postponed")}`;
+    return `${homeName} ${t("matches.vs")} ${awayName} — ${offStatusA11y(offStatus, t)}`;
   })();
 
   /** Three flex children in a container that follows the page direction. */
@@ -273,11 +278,7 @@ export function MatchCard({
       );
     }
     if (isPostponed) {
-      return (
-        <UiBadge tone="caution">
-          {status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed")}
-        </UiBadge>
-      );
+      return <UiBadge tone="caution">{offStatusLabel(offStatus, t)}</UiBadge>;
     }
     if (status === "delayed")
       return <UiBadge tone="caution">{t("matches.status.delayed")}</UiBadge>;
