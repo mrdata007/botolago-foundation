@@ -95,12 +95,16 @@ function byCodeUnit(a: string, b: string): number {
  * postponed opener) still has its row, on zero. `canonicalKeyOf` gives the
  * key that lists clubs level on everything else, in one fixed order: a slug
  * or an id, never a translated name. The id is the last resort.
+ *
+ * `pointsAdjustment` maps a club to points the provider added or removed that
+ * its results do not earn (an official deduction), applied to `overall` only.
  */
 export function computeLeagueTable(
   clubIds: readonly string[],
   results: readonly TableResult[],
   scope: TableScope,
   canonicalKeyOf: (clubId: string) => string = (clubId) => clubId,
+  pointsAdjustment: ReadonlyMap<string, number> = new Map(),
 ): LeagueTableRow[] {
   const tallies = new Map<string, Tally>();
   const tallyOf = (clubId: string) => {
@@ -130,7 +134,13 @@ export function computeLeagueTable(
     if (scope !== "home") record(away, result.awayScore, result.homeScore);
   }
 
-  const points = (tally: Tally) => tally.won * 3 + tally.drawn;
+  // The provider's own per-club adjustment (a deduction is negative), which no
+  // result can show. It belongs to the overall table only: home and away
+  // tables are the results' alone.
+  const points = (tally: Tally) =>
+    tally.won * 3 +
+    tally.drawn +
+    (scope === "overall" ? (pointsAdjustment.get(tally.clubId) ?? 0) : 0);
   const difference = (tally: Tally) => tally.goalsFor - tally.goalsAgainst;
   /** The table's order; 0 for two clubs level on every figure it counts. */
   const rank = (a: Tally, b: Tally) =>

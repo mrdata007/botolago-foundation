@@ -223,13 +223,11 @@ Environment (all optional): `SOFASCORE_DETAILS_PER_TICK`,
 `SOFASCORE_DETAILS_BACKFILL_LIMIT`.
 
 What the match page says about it: a match in play is read for its incidents
-only, so its Stats tab has nothing to wait for. On this feed the empty live Stats
-panel says the statistics are looked for after the match, depending on their
-availability (`matches.detail.no_stats_after_match`), not that they are arriving.
-The page cannot read the switch above, so it assumes SofaScore; a build that runs
-the SportsMonks feed, which fills statistics during play, sets
-`VITE_FOOTBALL_LIVE_SOURCE=sportsmonks` to get the "updates itself" wording back
-(`liveStatsSource` in `src/components/matches/match-empty-states.ts`).
+only, so on this feed the Stats tab has nothing to wait for. The page cannot read
+the switch above, and the switch defaults to `sportsmonks`, so the empty Stats
+panel uses wording that is true on both feeds: no statistics yet, shown here as
+soon as they exist, most often after the match (`matches.detail.no_stats_updating`).
+It does not say the page updates itself for them.
 
 Known limit: events are keyed `sofascore:event:<incident id>`, the SportsMonks
 ones `sportsmonks:event:<id>`. A match whose details were stored by SportsMonks

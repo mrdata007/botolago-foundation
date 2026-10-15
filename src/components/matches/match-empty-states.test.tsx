@@ -21,7 +21,6 @@ import {
   matchDataPhase,
   noEventsMessage,
   noLineupsMessage,
-  liveStatsSource,
   noStatsMessage,
   type MatchDataPhase,
 } from "./match-empty-states";
@@ -188,11 +187,8 @@ describe("empty-panel copy", () => {
         // Upcoming, live and finished never share a line.
         const [upcoming, , live, finished] = lines;
         expect(new Set([upcoming, live, finished]).size).toBe(3);
-        // Awaiting a late start says what live says on a feed that fills the
-        // panel during play; unreported, what finished says.
-        const liveOnFullFeed =
-          message === noStatsMessage ? noStatsMessage("live", t, "sportsmonks") : live!;
-        expect(message("awaiting", t)).toBe(liveOnFullFeed);
+        // Awaiting a late start says what live says; unreported, what finished says.
+        expect(message("awaiting", t)).toBe(live!);
         expect(message("unreported", t)).toBe(finished!);
         if (lang === "ar") for (const line of lines) expect(line).toMatch(/[؀-ۿ]/);
       }
@@ -317,40 +313,27 @@ describe("a finished match with no detail data", () => {
 });
 
 describe("the other phases on screen", () => {
-  test("a live match's empty Stats tab says when the statistics are looked for, not that they are arriving", () => {
-    // SofaScore, the documented live feed, reads a match in play for its
-    // incidents only and asks for team statistics after full time. The page
-    // refreshes itself, but nothing it fetches in play carries them (audit
-    // DATA-06), so the panel must not wait on them.
+  test("a live match's empty Stats tab promises neither an automatic update nor an arrival", () => {
+    // SofaScore reads a match in play for its incidents only and asks for team
+    // statistics after full time, and the page cannot tell which feed is on
+    // (audit DATA-06): the copy is true on both. It says there are none yet,
+    // that they show here once they exist, and that this is most often after
+    // the match.
     const html = inFrench(
       <StatComparison stats={[]} home={home} away={away} palettes={palettes} isLive phase="live" />,
     );
     expect(html).toContain(
-      "Les statistiques sont recherchées après le match, selon leur disponibilité.",
+      "Pas encore de statistiques. Elles s&#x27;affichent ici dès qu&#x27;elles sont disponibles, le plus souvent après le match.",
     );
-    expect(html).not.toContain("Aucune statistique reçue");
     expect(html).not.toContain("se met à jour automatiquement");
-  });
-
-  test("the live Stats copy follows the live feed: SofaScore defers statistics, a fuller feed fills them in", () => {
-    for (const lang of ["fr", "ar"] as const) {
-      const t = inLanguage(lang);
-      const deferred = noStatsMessage("live", t, "sofascore");
-      const filling = noStatsMessage("live", t, "sportsmonks");
-      expect(deferred).toBe(t("matches.detail.no_stats_after_match"));
-      expect(filling).toBe(t("matches.detail.no_stats_updating"));
-      expect(deferred).not.toBe(filling);
-      // Unspecified is the documented feed.
-      expect(noStatsMessage("live", t)).toBe(deferred);
-    }
-    expect(noStatsMessage("live", inLanguage("ar"))).toBe(
-      "تُجلب الإحصائيات بعد نهاية المباراة، حسب توفرها.",
-    );
-    // Only "sportsmonks" turns the claim back on; anything else is SofaScore.
-    expect(liveStatsSource("sportsmonks")).toBe("sportsmonks");
-    expect(liveStatsSource(" SportsMonks ")).toBe("sportsmonks");
-    for (const other of [undefined, "", "sofascore", "other"]) {
-      expect(liveStatsSource(other)).toBe("sofascore");
+    expect(html).not.toContain("Aucune statistique reçue");
+    for (const phase of ["live", "awaiting"] as const) {
+      expect(noStatsMessage(phase, inLanguage("ar"))).toBe(
+        "لا توجد إحصائيات بعد. ستظهر هنا فور توفرها، وغالبًا بعد نهاية المباراة.",
+      );
+      for (const lang of ["fr", "ar"] as const) {
+        expect(noStatsMessage(phase, inLanguage(lang))).not.toMatch(/تلقائي|automatiquement/);
+      }
     }
   });
 

@@ -498,7 +498,8 @@ const totalPlayed = (rows: readonly { readonly played: number }[]) =>
  * or rank, which an official deduction or tie-break rule legitimately sets
  * apart from the results. A table that agrees on the record stays the
  * provider's, deductions included. A difference the table is newer than every
- * result stays too: it is the provider's later word. A club whose stored table
+ * result (a coarse test: the table's clock is the provider's, the results' is
+ * ours) stays too: it is the provider's later word. A club whose stored table
  * covers more matches than the results are skipped, as the coverage rule above
  * already treats that as the provider knowing more.
  */
@@ -544,8 +545,9 @@ export interface FootballStandings {
   readonly rounds: number;
   /**
    * `overall` is worked out from the results, not the provider's table: it
-   * cannot know a points deduction, and clubs level on every figure share a
-   * rank instead of being separated by the league's rule. Say so with it —
+   * carries each club's points deduction only if a stored table gave one
+   * (`buildStandings`), and clubs level on every figure share a rank instead
+   * of being separated by the league's rule. Say so with it —
    * provisional while the season is played, unofficial once it is over
    * (`StandingsNotes`) — and never call it final.
    */
@@ -560,7 +562,11 @@ export interface FootballStandings {
  * The stored table still wins when there is one covering at least as many
  * matches and not overtaken by a result (`contradictedByNewerResults`) — it
  * is the provider's, so a points deduction the results cannot know about is
- * in it. For both completed seasons the two agree row for row;
+ * in it. When a result has overtaken it, the table is worked out from the
+ * results instead, but each club keeps the points the provider gave it beyond
+ * its record (a deduction); the order of clubs level on points still comes
+ * from the results, not the league's rule, so the table is labelled computed
+ * (provisional, `StandingsNotes`). For both completed seasons the two agree row for row;
  * the stored rows only lack the form guide, which the results add. Home and
  * away are always the results'. Before the first result there is no table
  * at all, rather than sixteen rows of zeros.
@@ -584,7 +590,15 @@ export function buildStandings(
     return result ? [result] : [];
   });
 
-  const computed = computeLeagueTable(clubIds, results, "overall", slugOf);
+  // What the provider's table gives each club beyond what its record earns --
+  // an official deduction is negative. The results cannot show it, so it rides
+  // along when the table is worked out from them.
+  const adjustments = new Map(
+    stored
+      .map((row) => [row.team.id, row.points - (3 * row.won + row.drawn)] as const)
+      .filter(([, delta]) => delta !== 0),
+  );
+  const computed = computeLeagueTable(clubIds, results, "overall", slugOf, adjustments);
   const useStored =
     stored.length > 0 &&
     totalPlayed(stored) >= totalPlayed(computed) &&

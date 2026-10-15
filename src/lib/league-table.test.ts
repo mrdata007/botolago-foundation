@@ -334,3 +334,22 @@ describe("clubStanding", () => {
     });
   });
 });
+
+describe("computeLeagueTable — a provider points adjustment", () => {
+  const two = [result("a", "b", 1, 0)];
+
+  test("is added to the overall table's points and reorders it", () => {
+    const table = computeLeagueTable(["a", "b"], two, "overall", undefined, new Map([["a", -6]]));
+    expect(table.map((row) => [row.clubId, row.points])).toEqual([
+      ["b", 0],
+      ["a", -3],
+    ]);
+  });
+
+  test("never touches the home or away table, which are the results' alone", () => {
+    for (const scope of ["home", "away"] as const) {
+      const table = computeLeagueTable(["a", "b"], two, scope, undefined, new Map([["a", -6]]));
+      expect(table.find((row) => row.clubId === "a")!.points).toBe(scope === "home" ? 3 : 0);
+    }
+  });
+});

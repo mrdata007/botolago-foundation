@@ -336,8 +336,8 @@ export const ar = {
   "matches.detail.no_events_updating": "لم تصل أي أحداث حتى الآن. يتم تحديث هذه الصفحة تلقائيًا.",
   "matches.detail.no_events_unavailable": "أبرز أحداث هذه المباراة غير متوفرة.",
   "matches.detail.no_stats": "لم تنطلق المباراة بعد: لا توجد إحصائيات لعرضها.",
-  "matches.detail.no_stats_updating": "لم تصل أي إحصائيات حتى الآن. يتم تحديث هذه الصفحة تلقائيًا.",
-  "matches.detail.no_stats_after_match": "تُجلب الإحصائيات بعد نهاية المباراة، حسب توفرها.",
+  "matches.detail.no_stats_updating":
+    "لا توجد إحصائيات بعد. ستظهر هنا فور توفرها، وغالبًا بعد نهاية المباراة.",
   "matches.detail.no_stats_unavailable": "إحصائيات هذه المباراة غير متوفرة.",
   "matches.detail.no_data_postponed": "المباراة مؤجلة: لا توجد بيانات لعرضها.",
   "matches.detail.no_data_suspended": "المباراة متوقفة مؤقتًا: لا توجد بيانات لعرضها.",
@@ -421,7 +421,6 @@ export const ar = {
   "matches.a11y.status_filters": "تصفية المباريات حسب الحالة",
   "matches.a11y.kickoff_at": "انطلاق المباراة على الساعة {time}",
   "matches.a11y.live_minute": "مباشر، الدقيقة {minute}",
-  "matches.a11y.status_scheduled": "مباراة مبرمجة",
   "matches.a11y.status_finished": "مباراة منتهية",
   "matches.a11y.status_postponed": "مباراة مؤجلة",
   "matches.a11y.status_cancelled": "مباراة ملغاة",

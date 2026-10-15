@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   FIXTURE_STATUSES,
+  matchCardSchema,
   type MatchCardDto,
   type StandingRowDto,
   type TeamSummaryDto,
@@ -349,23 +350,31 @@ describe("a fixture called off", () => {
     ]);
   });
 
-  test("a status this build does not know is a fixture still to come, never finished and never scored", async () => {
+  test("an unknown status never reaches the page: the schema refuses it, and the presenter's fallback is still to come", async () => {
     const repository = new MockFootballRepository();
     const [club] = await repository.getTeams("fr", 1, context);
     const [fixture] = await repository.getTeamFixtures(
       { teamId: club!.id, language: "fr", limit: 1 },
       context,
     );
-    const unknown = toMatch({
-      ...fixture!,
-      status: "interrupted_by_provider" as MatchCardDto["status"],
-      homeScore: null,
-      awayScore: null,
-    });
-    expect(unknown.status).toBe("scheduled");
-    expect(unknown.offStatus).toBeUndefined();
-    expect(unknown.homeScore).toBeUndefined();
-    expect(unknown.awayScore).toBeUndefined();
+    const unknown = { ...fixture!, status: "interrupted_by_provider" };
+    // The first line of defence: a repository read validates every card
+    // against the strict list of statuses, so a new provider status is an
+    // error there, not a guess.
+    expect(matchCardSchema.safeParse(unknown).success).toBe(false);
+    // The second, for a card that got past (a stale build against a newer
+    // backend): it is a fixture still to come. Not finished, not live, not
+    // one of the four off states -- and it states no result of its own: what
+    // score it shows is the one the card carried, as for any scheduled match.
+    const shown = toMatch(unknown as unknown as MatchCardDto);
+    expect([shown.status, shown.offStatus, shown.calledOff]).toEqual([
+      "scheduled",
+      undefined,
+      false,
+    ]);
+    expect(shown.status).not.toBe("finished");
+    expect(shown.homeScore).toBe(fixture!.homeScore ?? undefined);
+    expect(shown.awayScore).toBe(fixture!.awayScore ?? undefined);
   });
 });
 
@@ -564,6 +573,48 @@ describe("the season table", () => {
       expect(standings.computed).toBe(false);
       expect(standings.overall[0]!.points).toBe(stored.find((row) => row.rank === 2)!.points);
       expect(standings.overall[1]!.points).toBe(stored.find((row) => row.rank === 1)!.points - 3);
+    });
+
+    test("a deduction on one club survives a correction to a match between two others", async () => {
+      const { fixtures, stored } = await correctedSeason();
+      const leader = stored.find((row) => row.rank === 1)!;
+      const deducted = stored.map((row) =>
+        row === leader ? { ...row, points: row.points - 6 } : row,
+      );
+      const index = fixtures.findIndex(
+        (fixture) =>
+          fixture.status === "finished" &&
+          fixture.homeScore !== null &&
+          fixture.awayScore !== null &&
+          fixture.homeScore !== fixture.awayScore &&
+          fixture.homeTeam.id !== leader.team.id &&
+          fixture.awayTeam.id !== leader.team.id,
+      );
+      const corrected = fixtures.map((fixture, at) =>
+        at === index
+          ? {
+              ...fixture,
+              homeScore: fixture.awayScore,
+              awayScore: fixture.homeScore,
+              updatedAt: "2026-07-20T10:00:05+00:00",
+            }
+          : fixture,
+      );
+      const standings = buildStandings(corrected, deducted);
+      // The correction moved the table to the results...
+      expect(standings.computed).toBe(true);
+      // ...and the leader still carries the provider's six lost points.
+      const shown = standings.overall.find((row) => row.clubId === leader.team.id)!;
+      expect(shown.points).toBe(leader.points - 6);
+      expect(shown.points).toBe(3 * shown.won + shown.drawn - 6);
+      // Everybody else's points are what their record earns.
+      for (const row of standings.overall.filter((row) => row.clubId !== leader.team.id)) {
+        expect(row.points).toBe(3 * row.won + row.drawn);
+      }
+      // Home and away are the results' alone: no deduction in either.
+      for (const row of [...standings.home, ...standings.away]) {
+        expect(row.points).toBe(3 * row.won + row.drawn);
+      }
     });
   });
 

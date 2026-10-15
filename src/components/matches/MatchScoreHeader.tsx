@@ -113,15 +113,21 @@ export function MatchScoreHeader({
   const unconfirmedDate = isKickoffDateUnconfirmed(match);
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   // A postponed match has no day either, so the meta line drops the date
-  // rather than pairing a real weekday with "Date à confirmer".
+  // rather than pairing a real weekday with "Date à confirmer". A cancelled
+  // match is not waiting for a new date at all: "to be confirmed" beside
+  // "Annulé" would promise one, so it keeps the day it was scheduled for and
+  // no hour (that is no longer a plan, and may be the provider's placeholder).
   // The time isolated in a `<bdi>`, as every time in the product is.
-  const displayedKickoff = unconfirmedDate ? (
-    t("matches.kickoff_date_unconfirmed")
-  ) : (
-    <>
-      {dateFmt} · {unconfirmedTime ? t("matches.kickoff_unconfirmed") : <bdi>{timeFmt}</bdi>}
-    </>
-  );
+  const displayedKickoff =
+    offStatus === "cancelled" ? (
+      dateFmt
+    ) : unconfirmedDate ? (
+      t("matches.kickoff_date_unconfirmed")
+    ) : (
+      <>
+        {dateFmt} · {unconfirmedTime ? t("matches.kickoff_unconfirmed") : <bdi>{timeFmt}</bdi>}
+      </>
+    );
   const venue = tr(match.venue).trim();
 
   // An unknown score is a dash and is announced as unavailable, never as 0–0.

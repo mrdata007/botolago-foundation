@@ -102,41 +102,19 @@ type Translate = (key: TranslationKey) => string;
 // suspended, cancelled, abandoned).
 
 /**
- * Where the live match feed comes from, as far as the Stats tab cares.
- *
- * The SofaScore feed (`docs/backend/SOFASCORE_LIVE_EDGE.md`) reads a match in
- * play for its incidents only and requests team statistics after full time;
- * the SportsMonks feed fills them in during play. The page cannot ask the
- * database which one is switched on, so it reads the documented one --
- * SofaScore -- unless the build says otherwise
- * (`VITE_FOOTBALL_LIVE_SOURCE=sportsmonks`). Anything else is SofaScore, the
- * reading that promises less.
+ * The Stats tab with no statistics. While the match is on (or awaited), the
+ * copy promises only what is true on every live feed: statistics show here as
+ * soon as they exist, most often after the match. It does not say the page
+ * "updates itself" for them -- on the SofaScore feed a match in play is read
+ * for its incidents only, and team statistics are requested after full time --
+ * and it does not say they are about to arrive.
  */
-export type LiveStatsSource = "sofascore" | "sportsmonks";
-
-export function liveStatsSource(configured: string | undefined): LiveStatsSource {
-  return configured?.trim().toLowerCase() === "sportsmonks" ? "sportsmonks" : "sofascore";
-}
-
-/**
- * The Stats tab with no statistics. During play on the SofaScore feed it says
- * when the statistics are looked for (after the match), not that they are
- * about to arrive: the page does refresh itself, but nothing it fetches in
- * play carries them.
- */
-export function noStatsMessage(
-  phase: MatchDataPhase,
-  t: Translate,
-  source: LiveStatsSource = "sofascore",
-): string {
+export function noStatsMessage(phase: MatchDataPhase, t: Translate): string {
   switch (phase) {
     case "upcoming":
       return t("matches.detail.no_stats");
-    case "live":
-      return source === "sofascore"
-        ? t("matches.detail.no_stats_after_match")
-        : t("matches.detail.no_stats_updating");
     case "awaiting":
+    case "live":
       return t("matches.detail.no_stats_updating");
     case "finished":
     case "unreported":

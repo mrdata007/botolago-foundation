@@ -354,9 +354,7 @@ export const fr = {
     "Les faits marquants de ce match ne sont pas disponibles.",
   "matches.detail.no_stats": "Le match n'a pas encore commencé : pas de statistiques à afficher.",
   "matches.detail.no_stats_updating":
-    "Aucune statistique reçue pour l'instant. Cette page se met à jour automatiquement.",
-  "matches.detail.no_stats_after_match":
-    "Les statistiques sont recherchées après le match, selon leur disponibilité.",
+    "Pas encore de statistiques. Elles s'affichent ici dès qu'elles sont disponibles, le plus souvent après le match.",
   "matches.detail.no_stats_unavailable": "Les statistiques de ce match ne sont pas disponibles.",
   "matches.detail.no_data_postponed": "Match reporté : pas de données à afficher.",
   "matches.detail.no_data_suspended": "Match interrompu : pas de données à afficher.",
@@ -442,7 +440,6 @@ export const fr = {
   "matches.a11y.status_filters": "Filtrer les matchs par statut",
   "matches.a11y.kickoff_at": "Coup d'envoi à {time}",
   "matches.a11y.live_minute": "En direct, {minute}e minute",
-  "matches.a11y.status_scheduled": "Match programmé",
   "matches.a11y.status_finished": "Match terminé",
   "matches.a11y.status_postponed": "Match reporté",
   "matches.a11y.status_cancelled": "Match annulé",

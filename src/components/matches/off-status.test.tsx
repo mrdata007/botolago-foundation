@@ -161,12 +161,20 @@ describe("on screen", () => {
     }
   });
 
-  test("a suspended or abandoned match keeps its date: it kicked off", async () => {
+  test("only a postponed match is waiting for a date; the others keep the day they were scheduled for", async () => {
+    const tbc = dictionaries.fr["matches.kickoff_date_unconfirmed"];
+    expect(await header("postponed")).toContain(tbc);
+    // A cancelled match is not waiting for a new date: the day it was set for,
+    // no hour, and never "Date à confirmer" beside "Annulé".
+    const cancelled = await header("cancelled");
+    expect(cancelled).not.toContain(tbc);
+    expect(cancelled).toContain("mardi 13 octobre");
+    expect(cancelled).not.toContain("20:00");
+    // Suspended and abandoned matches kicked off: their date and hour are history.
     for (const off of ["suspended", "abandoned"] as const) {
-      expect(await header(off)).not.toContain(dictionaries.fr["matches.kickoff_date_unconfirmed"]);
-    }
-    for (const off of ["postponed", "cancelled"] as const) {
-      expect(await header(off)).toContain(dictionaries.fr["matches.kickoff_date_unconfirmed"]);
+      const html = await header(off);
+      expect(html).not.toContain(tbc);
+      expect(html).toContain("mardi 13 octobre");
     }
   });
 

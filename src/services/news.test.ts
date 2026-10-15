@@ -145,9 +145,62 @@ describe("third-party attribution is stripped at the data layer", () => {
         source: { name: "Atlas Daily", url: "https://x.test/a" },
       });
       expect(sourced).not.toContain("Atlas");
-      // The site the link points at, named by its address.
-      const bySite = body('<p>Fin. <a href="https://www.sportnews.test/a">SportNews</a></p>');
+      // The licensed source's own site, named by its address, even when the
+      // name on the story differs.
+      const bySite = body('<p>Fin. <a href="https://www.sportnews.test/a">SportNews</a></p>', {
+        source: { name: "Atlas Daily", url: "https://sportnews.test/original" },
+      });
       expect(bySite).not.toContain("SportNews");
+    });
+
+    test("a link to a body the sentence names is reporting, not a credit", () => {
+      // Naming the site a link points at is not enough: these are sentences.
+      expect(
+        body(
+          '<p>Le club a été sanctionné par <a href="https://www.fifa.com/legal/x">la FIFA</a>.</p>',
+        ),
+      ).toBe("<p>Le club a été sanctionné par la FIFA.</p>");
+      expect(body('<p>Le <a href="https://www.wydad.ma/actu">Wydad</a> a annoncé.</p>')).toBe(
+        "<p>Le Wydad a annoncé.</p>",
+      );
+      expect(body('<p>Fin. <a href="https://www.sportnews.test/a">SportNews</a></p>')).toBe(
+        "<p>Fin. SportNews</p>",
+      );
+    });
+
+    test("only a whole-anchor credit phrase counts, not words that happen to appear in a sentence", () => {
+      for (const sentence of [
+        "will see more investment",
+        "see more of the player",
+        "read more about the transfer rules than before",
+        "قال المصدر",
+        "المصدر المطلع أكد الخبر",
+        "اقرأ أيضا عن الصفقة",
+        "la source du problème",
+        "voir la suite du calendrier de la saison prochaine",
+      ]) {
+        const html = body(`<p>A <a href="https://x.test/a">${sentence}</a> B</p>`);
+        expect([sentence, html]).toEqual([sentence, `<p>A ${sentence} B</p>`]);
+      }
+    });
+
+    test("a web address as the text is a credit, with or without its scheme", () => {
+      for (const address of ["https://x.test/a", "www.x.test", "x.test/a", "Hespress.com"]) {
+        expect([address, body(`<p>Fin. <a href="https://x.test/a">${address}</a></p>`)]).toEqual([
+          address,
+          "<p>Fin. </p>",
+        ]);
+      }
+      // A number is not an address.
+      expect(body('<p>Score <a href="https://x.test/a">3.5</a></p>')).toBe("<p>Score 3.5</p>");
+    });
+
+    test("anchors nested in one another are settled innermost first: the credit goes, the words stay", () => {
+      expect(
+        body(
+          '<p><a href="https://x.test/a">Le joueur <a href="https://y.test/b">Source</a> part</a></p>',
+        ),
+      ).toBe("<p>Le joueur  part</p>");
     });
 
     test("the licensed source field is untouched by it", () => {
@@ -332,9 +385,9 @@ describe("third-party attribution is stripped at the data layer", () => {
       expect(safe.bodyHtml).toBe("<p>a b c d</p>");
     });
 
-    test("a third-party story still loses its outbound links with their text", () => {
+    test("a third-party story loses its outbound links but keeps the words they wrapped", () => {
       const safe = sanitizeArticleAttribution(detailFixture({ bodyHtml: body }));
-      expect(safe.bodyHtml).toBe("<p>Voir les matchs et .</p>");
+      expect(safe.bodyHtml).toBe("<p>Voir les matchs et la FRMF.</p>");
     });
   });
 

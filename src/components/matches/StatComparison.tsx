@@ -9,12 +9,9 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
-import { liveStatsSource, noStatsMessage, type MatchDataPhase } from "./match-empty-states";
+import { noStatsMessage, type MatchDataPhase } from "./match-empty-states";
 import type { PressurePoint } from "./pressure-bins";
 import { PressureChart } from "./PressureChart";
-
-/** Read once: a build's feed does not change under a mounted page. */
-const LIVE_STATS_SOURCE = liveStatsSource(import.meta.env.VITE_FOOTBALL_LIVE_SOURCE);
 
 type Stat = MatchStatisticComparisonDto;
 
@@ -130,9 +127,7 @@ export function StatComparison({
       <section>
         {heading}
         {chart}
-        {unavailable?.stats ?? (
-          <MatchDataState phase={phase} message={noStatsMessage(phase, t, LIVE_STATS_SOURCE)} />
-        )}
+        {unavailable?.stats ?? <MatchDataState phase={phase} message={noStatsMessage(phase, t)} />}
       </section>
     );
   }
