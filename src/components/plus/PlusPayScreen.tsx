@@ -34,12 +34,12 @@ export function PlusPayScreen({
   const price = seasonPriceOf(prices);
   const { details, code } = pay;
 
-  const link = details.available
-    ? whatsappLink(
-        details.whatsapp,
-        code ? text("plus.pay.wa_message", { code }) : t("plus.pay.wa_message_nocode"),
-      )
-    : null;
+  // Without the reader's code staff cannot tell whose payment a receipt is, so no code means no
+  // button: the screen reads as « coming soon » until the code loads.
+  const link =
+    details.available && code
+      ? whatsappLink(details.whatsapp, text("plus.pay.wa_message", { code }))
+      : null;
   const ready = pay.ready;
   const showDetails = ready && details.available && link !== null;
   const hasBank = Boolean(details.bankHolder || details.bankName || details.rib);

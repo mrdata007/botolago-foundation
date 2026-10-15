@@ -3320,7 +3320,6 @@ export const fr = {
   "plus.pay.wa_hint": "Votre reçu et votre code partent ensemble : nous retrouvons votre compte.",
   "plus.pay.wa_message":
     "Bonjour, voici mon reçu de paiement pour la Saison 2026/27. Mon code : {code}",
-  "plus.pay.wa_message_nocode": "Bonjour, voici mon reçu de paiement pour la Saison 2026/27.",
   "plus.pay.soon": "Les coordonnées de paiement arrivent bientôt.",
   "plus.pay.soon_d": "Revenez dans quelques jours : le paiement n'est pas encore ouvert.",
   "plus.pay.loading": "Chargement des coordonnées de paiement",
