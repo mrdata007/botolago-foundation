@@ -1,5 +1,14 @@
 # Morocco's clock in the database: owner runbook
 
+> **Status, 2026-10-15:** all five scripts were run on Staging V2 and then on
+> Production V2 by approved executors (rehearsal first, one script at a time, each
+> step read back and checked by an independent reviewer). Do not run them again:
+> each would stop at "already recorded". Remaining: deploy the
+> `account-deletion-worker` Edge Function, and watch the first daily Pépites
+> sweep (after 00:00 UTC) and the Monday 2026-10-19 12:00Z draft gate. The
+> in-app notification template `pepites_weekly` still says "Pépites"
+> (database text, needs its own guarded change).
+
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Written 2026-10-15. **Nothing in this document has been run against any shared or production
 database**; see "What was and was not run" at the end. Staging V2 (`srdrflfrfpwixsllveid`) has the

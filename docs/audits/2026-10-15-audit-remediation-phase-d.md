@@ -90,17 +90,23 @@ pgTAP were not available there.
    ask and one can be written.
 4. **Refresh the demo page** `public/demo/app.html` (build script
    `demo/scripts/build.ts`) to drop the old wording.
-5. **Morocco time in the database.** The owner confirmed on 2026-10-15 that
-   Morocco is UTC+0 all year from 2026-09-20. The check
-   `select timestamptz '2026-10-15 12:00+00' at time zone 'Africa/Casablanca'`
-   returned 13:00 on both Production V2 and Staging V2: their time-zone data is
-   older than the app's rule, so database-side Morocco times are an hour off
-   (deadline text in push/in-app/inbox notifications, e-mail planner windows,
-   Pépites scheduling, a few cosmetic dates). The fix (helpers that apply the
-   app's rule inside the database, five migrations and guarded owner scripts) is
-   prepared in a separate change; see
-   `docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md` and
-   `docs/production/MOROCCO_TIME_FIX_OWNER_RUNBOOK.md` once merged.
+5. **Morocco time in the database: applied (2026-10-15).** The owner confirmed
+   that Morocco is UTC+0 all year from 2026-09-20. Both databases carried older
+   time-zone data (`select timestamptz '2026-10-15 12:00+00' at time zone
+'Africa/Casablanca'` returned 13:00), so database-side Moroccan times were an
+   hour off. The fix (helpers that apply the app's rule inside the database,
+   five migrations `20261016090000` to `20261016090400`) was applied with the
+   owner-approved guarded scripts, one at a time, rehearsal first, each step
+   read back and independently checked, on Staging V2 and then on Production V2
+   (all five migrations recorded on both; no leftover zone conversion; every
+   scheduled job succeeded afterwards). The fix does not depend on Supabase's
+   time-zone data; after any Postgres upgrade, the raw check returning 12:00
+   only means the platform data was updated. Still to do: deploy the
+   `account-deletion-worker` Edge Function (its confirmation e-mail dates used
+   the runtime's zone), and watch the first daily Pépites sweep on the new text
+   (just after 00:00 UTC) and the first Monday draft gate on 2026-10-19 at
+   12:00Z (publication time 20:00Z). See
+   `docs/production/MOROCCO_TIME_FIX_OWNER_RUNBOOK.md`.
 6. **Run the measurement queries** in `ACTIVE_MANAGEMENT_MEASUREMENT.md`
    (query 0 first) and keep the first results as a dated baseline.
 7. **Answer the capacity-plan questions** (Q1 to Q8 in the plan) and name the one
@@ -204,7 +210,6 @@ Still blocking:
 - **SEC-01 outside the lease:** the orchestrator's calendar syncs, ingestion and
   prize call run outside any lease; their overlap with an Edge pass is unchecked
   against the SQL.
-- **Morocco time in the database** (owner action 5): prepared, not applied.
 - **Real-state checks** on staging or a real signed-in account, French and
   Arabic, for states mock mode cannot show.
 - **Native Arabic review** of the Phase A to D wording.
