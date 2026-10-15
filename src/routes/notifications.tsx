@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { authOutlineClass } from "@/components/auth/auth-classes";
@@ -34,6 +35,7 @@ import { notificationDestination } from "@/lib/notification-link";
 import { prefersReducedMotion, staggerStyle, tokenMs, useArrivals } from "@/lib/motion";
 import { ExitCollapse, ExitPresence } from "@/lib/motion-exit";
 import { motionLoaded } from "@/lib/motion-loader";
+import { dismissOptimistically, restoreHidden, withHidden } from "@/lib/notification-dismissal";
 import { moveFocusAfterDismiss } from "@/lib/notification-focus";
 import { cn } from "@/lib/utils";
 import {
@@ -60,12 +62,14 @@ const CATEGORY_ICON: Record<NotificationCategory, LucideIcon> = {
 
 function NotificationsPage() {
   const { t } = useI18n();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const signedIn = status === "authenticated";
 
   return (
     <AppShell pageHeader={<UiPageTitle title={t("notifications.title")} />}>
-      {signedIn ? <Inbox /> : status === "loading" ? null : <SignInPrompt />}
+      {/* Keyed by account: the locally hidden cards are one account's, and a
+          different account signing in on this page starts with none. */}
+      {signedIn ? <Inbox key={user?.id ?? "me"} /> : status === "loading" ? null : <SignInPrompt />}
     </AppShell>
   );
 }
@@ -140,8 +144,14 @@ function Inbox() {
         card.id,
       );
     }
-    setHidden((current) => new Set(current).add(card.id));
-    dismiss.mutate(card.id);
+    // The card leaves at once; if the server refuses it comes back, with a
+    // message (audit UX-002) — its own dismiss button is the retry.
+    void dismissOptimistically(card.id, {
+      hide: (id) => setHidden((current) => withHidden(current, id)),
+      commit: (id) => dismiss.mutateAsync(id),
+      restore: (id) => setHidden((current) => restoreHidden(current, id)),
+      onFailure: () => toast.error(t("notifications.dismiss_failed")),
+    });
   };
 
   return (

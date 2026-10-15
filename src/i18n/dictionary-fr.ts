@@ -48,6 +48,8 @@ export const fr = {
   "nav.search.placeholder": "Club, joueur…",
   "nav.search.empty": "Aucun résultat",
   "nav.search.loading": "Recherche…",
+  "nav.search.unavailable": "La recherche est indisponible pour le moment.",
+  "nav.search.partial": "Certains résultats sont indisponibles pour le moment.",
   "nav.search.club": "Club",
   "nav.search.player": "Joueur",
   "notifications.title": "Notifications",
@@ -60,6 +62,7 @@ export const fr = {
   "notifications.empty_body":
     "Vos rappels de match, alertes Fantasy et actualités de vos clubs apparaîtront ici.",
   "notifications.dismiss": "Supprimer la notification",
+  "notifications.dismiss_failed": "La notification n'a pas pu être supprimée. Réessayez.",
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
