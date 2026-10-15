@@ -81,6 +81,20 @@ export interface Match {
   kickoff: string; // ISO
   status: MatchStatus;
   minute?: number;
+  /**
+   * The provider's period and the stoppage minutes it gave, when it gave them.
+   * With the minute they decide how the live clock is written ("45+", "90+",
+   * `liveMinuteLabel`); the added minutes are never worked out here.
+   */
+  period?:
+    | "pre_match"
+    | "first_half"
+    | "half_time"
+    | "second_half"
+    | "extra_time"
+    | "penalties"
+    | "post_match";
+  addedTime?: number;
   homeScore?: number;
   awayScore?: number;
   /** The score at half-time, once the provider has recorded it. */
@@ -105,6 +119,14 @@ export interface Match {
    * to come leaves it out.
    */
   calledOff?: boolean;
+  /**
+   * ISO. When the stored fixture last changed: the later of the provider's own
+   * change time and the moment our row was last written. It is how old the
+   * DATA is, which is not how old the page's last READ is (a read of an old
+   * row is brand new). Absent where the source gives none (`liveFreshness`
+   * then falls back on the kickoff). Never a made-up "now".
+   */
+  dataUpdatedAt?: string;
 }
 
 export interface TableRow {

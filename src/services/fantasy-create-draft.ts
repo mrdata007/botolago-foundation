@@ -37,6 +37,20 @@ export function isCreateDraft(v: unknown): v is CreateTeamDraft {
 }
 
 /**
+ * A visitor's squad that this device could not keep: it lives on the page
+ * only, so the builder says so and the browser asks before it is left. A
+ * signed-in manager's draft is not at risk this way (the server has the squad
+ * once saved), and an empty squad has nothing to lose.
+ */
+export function guestDraftAtRisk(input: {
+  source: string;
+  deviceKeepsDraft: boolean;
+  filled: number;
+}): boolean {
+  return input.source === "guest" && !input.deviceKeepsDraft && input.filled > 0;
+}
+
+/**
  * Players already picked in the draft the builder would open, and the squad
  * size; `null` when there is no draft or it holds nobody. Reads browser
  * storage, so call it after mount, never during a server render.

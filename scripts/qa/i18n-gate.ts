@@ -445,7 +445,16 @@ export const BASELINES: Baselines = {
   // `fantasy.create.cta_primary`, and `fpl.enter_squad`, which it replaces,
   // is deleted. Main's rules page is kept, so #376's own rules keys are not
   // added. 251 -> 250 (measured).
-  W3: 250,
+  //
+  // BotolaGO+ screens (lane D): the offer's back button is the first call site of
+  // `common.back`, which was unreferenced. Every `plus.*` key is referenced, so
+  // the new keys add nothing. 250 -> 249 (measured).
+  //
+  // Audit remediation A3 (FANT-02, 2026-10-14): the transfers screen's preview
+  // notice gives `fantasy.error.retry` and `fantasy.error.reload_latest` their
+  // first call sites (-2); its seven new keys are all referenced. 249 -> 247
+  // (measured with `bun scripts/qa/i18n-gate.ts`).
+  W3: 247,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -469,7 +478,18 @@ export const BASELINES: Baselines = {
   // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
   // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
   // With Lanes 1, 2 and 5: 65 - 1 = 64.
-  W4: 64,
+  //
+  // BotolaGO+ screens (lane D): `usePlusCopy` (src/components/plus/plus-copy.ts) has four
+  // helpers that translate the key their caller passes (`f`, `text`, `count`, `countPlain`),
+  // the same shape as the Manager Card's `Translate` helpers. Every caller passes a literal
+  // key, and the screens' own lookups (style names, statuses, entries) are literal
+  // `switch` branches, not templates. 64 -> 68 (measured).
+  //
+  // Section loading (docs/engineering/SECTION_LOADING.md): the loading screen
+  // titles itself with the tapped section's `t(section.labelKey)`, read from
+  // the bar's item table exactly as BottomNav reads it, so the key is a real
+  // `TranslationKey` the compiler checks. +1; with the BotolaGO+ screens above, 68 -> 69 (measured).
+  W4: 69,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

@@ -1,0 +1,153 @@
+{
+  "statistics": [
+    {
+      "period": "ALL",
+      "groups": [
+        {
+          "groupName": "Match overview",
+          "statisticsItems": [
+            {
+              "key": "ballPossession",
+              "name": "Ball possession",
+              "home": "77%",
+              "away": "23%",
+              "homeValue": 77,
+              "awayValue": 23
+            },
+            {
+              "key": "expectedGoals",
+              "name": "Expected goals",
+              "home": "2.06",
+              "away": "1.49",
+              "homeValue": 2.06,
+              "awayValue": 1.49
+            },
+            {
+              "key": "totalShotsOnGoal",
+              "name": "Total shots",
+              "home": "20",
+              "away": "8",
+              "homeValue": 20,
+              "awayValue": 8
+            },
+            {
+              "key": "goalkeeperSaves",
+              "name": "Goalkeeper saves",
+              "home": "1",
+              "away": "3",
+              "homeValue": 1,
+              "awayValue": 3
+            },
+            {
+              "key": "cornerKicks",
+              "name": "Corner kicks",
+              "home": "12",
+              "away": "1",
+              "homeValue": 12,
+              "awayValue": 1
+            },
+            {
+              "key": "fouls",
+              "name": "Fouls",
+              "home": "11",
+              "away": "13",
+              "homeValue": 11,
+              "awayValue": 13
+            },
+            {
+              "key": "passes",
+              "name": "Passes",
+              "home": "663",
+              "away": "187",
+              "homeValue": 663,
+              "awayValue": 187
+            },
+            {
+              "key": "yellowCards",
+              "name": "Yellow cards",
+              "home": "0",
+              "away": "2",
+              "homeValue": 0,
+              "awayValue": 2
+            },
+            {
+              "key": "redCards",
+              "name": "Red cards",
+              "home": "0",
+              "away": "0",
+              "homeValue": 0,
+              "awayValue": 0
+            }
+          ]
+        },
+        {
+          "groupName": "Shots",
+          "statisticsItems": [
+            {
+              "key": "totalShotsOnGoal",
+              "name": "Total shots",
+              "home": "20",
+              "away": "8",
+              "homeValue": 20,
+              "awayValue": 8
+            },
+            {
+              "key": "shotsOnGoal",
+              "name": "Shots on target",
+              "home": "5",
+              "away": "2",
+              "homeValue": 5,
+              "awayValue": 2
+            },
+            {
+              "key": "expectedGoals",
+              "name": "Expected goals",
+              "home": "2.06",
+              "away": "1.49",
+              "homeValue": 2.06,
+              "awayValue": 1.49
+            }
+          ]
+        },
+        {
+          "groupName": "Attack",
+          "statisticsItems": [
+            {
+              "key": "offsides",
+              "name": "Offsides",
+              "home": "3",
+              "away": "1",
+              "homeValue": 3,
+              "awayValue": 1
+            }
+          ]
+        },
+        {
+          "groupName": "Passes",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Duels",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Defending",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Goalkeeping",
+          "statisticsItems": [
+            {
+              "key": "goalkeeperSaves",
+              "name": "Total saves",
+              "home": "1",
+              "away": "3",
+              "homeValue": 1,
+              "awayValue": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

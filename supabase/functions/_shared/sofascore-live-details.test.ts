@@ -234,9 +234,32 @@ describe("sofascore details on the live tick", () => {
     const dbRecent = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
     const recentRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [recent] } });
     await tick("sofascore", "fixtures", dbRecent, recentRun.fetch);
-    expect(detailPaths(recentRun.paths)).toHaveLength(3);
+    // in play: the incidents only (1 request); lineups and statistics wait for full time
+    expect(detailPaths(recentRun.paths)).toEqual(["matches/get-incidents?matchId=1"]);
     expect(named(dbRecent, "ingest_football_fixture")).toHaveLength(0);
-    expect(named(dbRecent, "ingest_football_match_details")).toHaveLength(1);
+    const sent = named(dbRecent, "ingest_football_match_details");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args.p_details).toMatchObject({ lineups: [], statistics: [] });
+
+    // changed 120 seconds ago: older than one polling interval, so not fetched again
+    const stale = event(1, LIVE, START + 3480);
+    const dbStale = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const staleRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [stale] } });
+    await tick("sofascore", "fixtures", dbStale, staleRun.fetch);
+    expect(detailPaths(staleRun.paths)).toEqual([]);
+  });
+
+  test("a fixture that just finished reads all three replies", async () => {
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [state(1)] });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, FINISHED)] },
+    });
+    await tick("sofascore", "fixtures", db, fetch);
+    expect(detailPaths(paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+      "matches/get-statistics?matchId=1",
+    ]);
   });
 
   test("an unmapped fixture is never fetched", async () => {
@@ -486,5 +509,205 @@ describe("sofascore details backfill", () => {
     expect(outcome.status).toBe(429);
     expect(paths).toHaveLength(1);
     expect(named(db, "ingest_football_match_details")).toHaveLength(0);
+  });
+});
+
+describe("the live minute on the live tick", () => {
+  const timed = (periodStart: number | undefined) => ({
+    ...event(1, LIVE, START + 3000),
+    ...(periodStart === undefined ? {} : { time: { currentPeriodStartTimestamp: periodStart } }),
+  });
+  const run = async (periodStart: number | undefined) => {
+    const quiet = state(1, { homeScore: 1 });
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const { fetch } = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [timed(periodStart)] } });
+    const { lines } = await tick("sofascore", "fixtures", db, fetch, {
+      SOFASCORE_DETAILS_PER_TICK: "0",
+    });
+    return { db, summary: JSON.parse(lines[0]) };
+  };
+
+  test("an unchanged score is still written while the clock runs, with the minute", async () => {
+    const { db, summary } = await run(START + 3000);
+    const calls = named(db, "ingest_football_fixture");
+    expect(calls).toHaveLength(1);
+    expect((calls[0].args.p_fixture as { minute: number }).minute).toBe(11);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: true, minute: 11 },
+    ]);
+  });
+
+  test("without the half start nothing is written and the log says it was absent", async () => {
+    const { db, summary } = await run(undefined);
+    expect(named(db, "ingest_football_fixture")).toHaveLength(0);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: false, minute: null },
+    ]);
+  });
+
+  // A tick that only moves the clock: the provider's changeTimestamp is an hour
+  // old, so nothing but the minute differs from what is stored.
+  const clockTick = async (
+    stored: Record<string, unknown>,
+    periodStart: number | undefined,
+    over: Partial<ReturnType<typeof event>> = {},
+  ) => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 1, ...stored })],
+    });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: {
+        events: [
+          {
+            ...event(1, LIVE, START + 100),
+            ...(periodStart === undefined
+              ? {}
+              : { time: { currentPeriodStartTimestamp: periodStart } }),
+            ...over,
+          },
+        ],
+      },
+    });
+    await tick("sofascore", "fixtures", db, fetch); // details on, default cap
+    const writes = named(db, "ingest_football_fixture");
+    return {
+      writes,
+      minutes: writes.map((c) => (c.args.p_fixture as { minute: number | null }).minute),
+      details: detailPaths(paths),
+    };
+  };
+
+  test("a clock-only write costs no details request (stored minute unknown or known)", async () => {
+    const unknown = await clockTick({}, START + 3000);
+    expect(unknown.minutes).toEqual([11]);
+    expect(unknown.details).toEqual([]);
+    const known = await clockTick({ minute: 10 }, START + 3000);
+    expect(known.minutes).toEqual([11]);
+    expect(known.details).toEqual([]);
+  });
+
+  test("a goal or a status change with the clock still reads the incidents", async () => {
+    const goal = await clockTick({ minute: 10 }, START + 3000, { homeScore: { current: 2 } });
+    expect(goal.writes).toHaveLength(1);
+    expect(goal.details).toEqual(["matches/get-incidents?matchId=1"]);
+    const status = await clockTick({ minute: 10, status: "half_time" }, START + 3000);
+    expect(status.writes).toHaveLength(1);
+    expect(status.details).toEqual(["matches/get-incidents?matchId=1"]);
+  });
+
+  test("the clock disappearing clears a stored minute instead of freezing it", async () => {
+    const cleared = await clockTick({ minute: 44 }, undefined);
+    expect(cleared.minutes).toEqual([null]);
+    expect(cleared.details).toEqual([]); // clearing the clock is not worth a request either
+  });
+
+  test("the stored minute unchanged is not a write, nor is a null that is already null", async () => {
+    expect((await clockTick({ minute: 11 }, START + 3000)).writes).toHaveLength(0);
+    expect((await clockTick({ minute: null }, undefined)).writes).toHaveLength(0);
+  });
+});
+
+describe("lineups in play and statistics after the post-match window", () => {
+  const liveEvent = (score: number) => event(1, LIVE, START + 100, score);
+
+  test("a match in play without a stored lineup reads it with the incidents on a written tick", async () => {
+    // Snapshot (migration 20261014120000) says no lineup is stored; the score moved.
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 0, hasLineups: false })],
+    });
+    const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
+    await tick("sofascore", "fixtures", db, run.fetch);
+    expect(detailPaths(run.paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+    ]);
+  });
+
+  test("once a lineup is stored, or on a database without the flag, the incidents alone", async () => {
+    for (const over of [{ hasLineups: true }, {}]) {
+      const db = fakeDb({
+        mappings: mappings([1]),
+        fixtures: [state(1, { homeScore: 0, ...over })],
+      });
+      const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
+      await tick("sofascore", "fixtures", db, run.fetch);
+      expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+    }
+  });
+
+  test("a provider change alone (nothing written) does not re-read missing lineups", async () => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 1, hasLineups: false })],
+    });
+    const run = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, LIVE, START + 3540, 1)] },
+    });
+    await tick("sofascore", "fixtures", db, run.fetch);
+    expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+  });
+
+  test("a staged statistics pull also stores the match details, with no request of its own", async () => {
+    const finalized = new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const base = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { status: "finished", finalizedAt: finalized })],
+    });
+    const client = {
+      schema() {
+        const inner = base.client.schema("api");
+        return {
+          rpc(name: string, args: Record<string, unknown>) {
+            if (name === "service_sofascore_staged_due") {
+              base.calls.push({ name, args });
+              return Promise.resolve({
+                data: {
+                  due: [
+                    { fixtureId: uuid("f", 1), eventId: "1", coverage: "core", finalPull: false },
+                  ],
+                  budgetStopped: false,
+                },
+                error: null,
+              });
+            }
+            return inner.rpc(name, args);
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+    const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [] } });
+    const outcome = await runSofascoreRefresh({
+      mode: "sofascore",
+      job: "fixtures",
+      client,
+      rapid: rapid(run.fetch),
+      environment: {
+        SOFASCORE_FANTASY_CATCHUP_PER_TICK: "0",
+        SOFASCORE_FANTASY_RETRIES_PER_TICK: "0",
+      },
+      now: NOW,
+      log: () => {},
+    });
+    // The pull's three replies, read once.
+    expect(detailPaths(run.paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+      "matches/get-statistics?matchId=1",
+    ]);
+    const stored = named(base, "ingest_football_match_details");
+    expect(stored).toHaveLength(1);
+    expect(stored[0].args.p_fixture_external_id).toBe("1");
+    expect(
+      (stored[0].args.p_details as { statistics: unknown[] }).statistics.length,
+    ).toBeGreaterThan(0);
+    const begun = named(base, "begin_football_ingestion").find(
+      (c) => (c.args.p_target_scope as { scope?: string }).scope === "staged",
+    );
+    expect(begun).toBeDefined();
+    expect(
+      (outcome.body.fantasy as { stagedDetails?: { stored: number } }).stagedDetails,
+    ).toMatchObject({ stored: 1 });
   });
 });

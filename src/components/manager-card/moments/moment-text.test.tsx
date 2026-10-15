@@ -50,11 +50,11 @@ function heroOf(id: FixtureId, minutes: number | null = 1000) {
 describe("the heroes' sentences (French)", () => {
   const fr = words("fr");
 
-  it("fresh: « Première note · J7 » and « Provisoire jusqu'à 5 journées terminées. »", () => {
+  it("fresh: « Première note · J7 » and no sentence about the number being provisional", () => {
     const { c, hero } = heroOf("rated");
     const out = heroText(hero!, c, fr);
     expect(text(out.label)).toBe("Première note · J7");
-    expect(out.lines.map(text)).toEqual(["Provisoire jusqu’à 5 journées terminées."]);
+    expect(out.lines.map(text)).toEqual([]);
     expect(out.primary).toBe("Voir le détail");
   });
 
@@ -112,7 +112,7 @@ describe("the heroes' sentences (Arabic)", () => {
     const { c, hero } = heroOf("rated");
     const out = heroText(hero!, c, ar);
     expect(html(out.label)).toContain('<bdi dir="ltr">7</bdi>');
-    expect(html(out.lines[0])).toContain("5");
+    expect(out.lines).toEqual([]);
     const tier = heroText(heroOf("tierUp").hero!, card("tierUp"), ar);
     expect(html(tier.lines[0])).toContain('<bdi dir="ltr">88</bdi>');
     expect(html(tier.lines[0])).toContain('<bdi dir="ltr">12</bdi>');
@@ -251,10 +251,8 @@ describe("the born panel's sentences", () => {
 });
 
 describe("the one-line states", () => {
-  it("the cleared label says the number and the journées that cleared it", () => {
-    expect(text(lineText("provisional_cleared", card("cleared"), words("fr")))).toBe(
-      "Votre note n’est plus provisoire : 85 après 5 journées terminées.",
-    );
+  it("the cleared label is not shown", () => {
+    expect(lineText("provisional_cleared", card("cleared"), words("fr"))).toBeNull();
   });
 
   it("the new season keeps last season's number", () => {

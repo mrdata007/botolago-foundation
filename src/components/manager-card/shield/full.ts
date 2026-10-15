@@ -24,7 +24,15 @@ import type { BeatRoot, RenderOptions } from "../renderer";
 import type { BeatName, CardProfile, CardStrings } from "../types";
 import { STAT_CODES } from "../types";
 import { BEAT_MS } from "./beats";
-import { EMBLEM_DIAMOND, EMBLEM_GLYPH, SHIELD, inset } from "./geometry";
+import {
+  EMBLEM_DIAMOND,
+  EMBLEM_GLYPH,
+  FACE_SCALE,
+  FACE_SCALE_THICK,
+  SHIELD,
+  inset,
+} from "./geometry";
+import { editionFx } from "./editions";
 import { cssVars } from "./metal";
 import {
   fitSignature,
@@ -45,8 +53,11 @@ import {
   type ShieldView,
 } from "./view";
 
-/** Whether the face prints « BOT #… · season » (owner's layout, 2026-10-13; see the README). */
-export const SERIAL_ON_FACE = true;
+/**
+ * Whether the face prints « BOT #… » before the season. Off since 2026-10-14: the owner wants the
+ * season alone on every card (see the README).
+ */
+export const SERIAL_ON_FACE = false;
 
 /** The beats a card has something to light for. */
 export function appliedBeat(v: ShieldView, beat: BeatName | undefined): BeatName | "" {
@@ -199,11 +210,9 @@ function textBlock(v: ShieldView): string {
     : "";
   const crest = crestBlock(v);
   if (crest || founder) out += span("mc-shield__foot", crest + founder);
-  if (SERIAL_ON_FACE) {
-    const serial = s.serial(p.serial ?? "—");
-    const line = p.season ? `${serial} · ${p.season}` : serial;
-    out += span("mc-shield__serial", esc(line), ' dir="ltr"');
-  }
+  const serial = SERIAL_ON_FACE ? s.serial(p.serial ?? "—") : null;
+  const line = [serial, p.season || null].filter(Boolean).join(" · ");
+  if (line) out += span("mc-shield__serial", esc(line), ' dir="ltr"');
   return out;
 }
 
@@ -212,12 +221,16 @@ const EMBLEM = (v: ShieldView): string =>
   `<path class="mc-shield__diamond" d="${EMBLEM_DIAMOND}"/>` +
   `<g class="mc-shield__glyph">${EMBLEM_GLYPH[v.key]}</g></svg>`;
 
-const LINES =
-  `<svg class="mc-sl mc-sl--lines" viewBox="0 0 100 136.6" preserveAspectRatio="none" aria-hidden="true" focusable="false">` +
-  `<path class="mc-shield__rim" d="${SHIELD}"/>` +
-  `<path class="mc-shield__hi" d="${SHIELD}" transform="${inset(0.993, 0.996)}"/>` +
-  `<path class="mc-shield__in" d="${SHIELD}" transform="${inset(0.958, 0.97)}"/>` +
-  `</svg>`;
+const lines = (thick: boolean): string => {
+  const [sx, sy] = thick ? FACE_SCALE_THICK : FACE_SCALE;
+  return (
+    `<svg class="mc-sl mc-sl--lines" viewBox="0 0 100 136.6" preserveAspectRatio="none" aria-hidden="true" focusable="false">` +
+    `<path class="mc-shield__rim" d="${SHIELD}"/>` +
+    `<path class="mc-shield__hi" d="${SHIELD}" transform="${inset(0.993, 0.996)}"/>` +
+    `<path class="mc-shield__in" d="${SHIELD}" transform="${inset(sx, sy)}"/>` +
+    `</svg>`
+  );
+};
 
 export interface BodyOptions {
   compact?: boolean;
@@ -227,16 +240,19 @@ export interface BodyOptions {
 /** The card's layers, without the root. */
 export function body(v: ShieldView, o: BodyOptions = {}): string {
   const measure = o.measure ?? measureEm;
+  const fx = editionFx(v.edition);
   return (
     `<span class="mc-shield__shadow" aria-hidden="true"></span>` +
     `<div class="mc-shield__persp"><div class="mc-shield__tilt">` +
     `<span class="mc-shield__edge" aria-hidden="true"></span>` +
     `<span class="mc-sl mc-sl--frame" aria-hidden="true"></span>` +
     `<span class="mc-sl mc-sl--face" aria-hidden="true"><span class="mc-shield__ground"><span class="mc-shield__rib"></span><span class="mc-shield__wedge"></span></span><span class="mc-shield__band"></span></span>` +
+    fx.under +
     span("mc-sl mc-sl--art", artBlock(v, measure)) +
     span("mc-sl mc-sl--text", textBlock(v)) +
     span("mc-sl mc-sl--num", rateBlock(v)) +
-    LINES +
+    lines(Boolean(v.m.thick)) +
+    fx.over +
     `<span class="mc-sl mc-sl--foil" aria-hidden="true"></span>` +
     EMBLEM(v) +
     `</div></div>`
@@ -253,6 +269,7 @@ export function rootClasses(
     `mc-shield--${v.key}`,
     `mc-shield--${o.theme === "dark" ? "dark" : "light"}`,
     v.m.holo ? "mc-shield--holo" : "",
+    v.edition ? `mc-shield--ed mc-shield--ed-${v.edition}` : "",
     v.m.dark ? "mc-shield--on-dark" : "mc-shield--on-metal",
     o.compact ? "mc-shield--compact" : "",
     o.beat ? `mc-shield--beat-${o.beat}` : "",

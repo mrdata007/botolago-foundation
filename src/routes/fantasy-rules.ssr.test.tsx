@@ -171,6 +171,138 @@ describe("the rules page without a scoring scale", () => {
   });
 });
 
+describe("the rules page under the rating rule (docs/backend/FANTASY_RATING_POINTS.md)", () => {
+  test("states the rating rule from its first gameweek and keeps the earlier scale below it", async () => {
+    const rules = await fantasyService.getRules();
+    const html = await render({ ...rules, ratingScoring: { fromGameweek: 5, noRatingPoints: 5 } });
+    const page = text(html);
+    expect(page).toContain(
+      "À partir de la journée 5, les points d’un joueur pour un match sont sa note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Un joueur entré en jeu sans note SofaScore marque 5 points, un joueur qui n’a pas joué 0. Le capitaine double ses points.",
+    );
+    expect(page).toContain("Jusqu’à la journée 4, les points suivaient le barème ci-dessous.");
+    expect(page).not.toContain(fr["fantasy.rules.scoring_desc"]);
+    // The earlier scale, unchanged, after the rating line.
+    expect(html.match(/<th scope="row"/g)).toHaveLength(13);
+    expect(page.indexOf("À partir de la journée 5")).toBeLessThan(
+      page.indexOf("Moins de 60 min jouées"),
+    );
+  });
+
+  test("shows no earlier scale when the rule applies from the first gameweek", async () => {
+    const rules = await fantasyService.getRules();
+    const html = await render({ ...rules, ratingScoring: { fromGameweek: 1, noRatingPoints: 5 } });
+    expect(text(html)).toContain("À partir de la journée 1, les points");
+    expect(text(html)).not.toContain("Jusqu’à la journée");
+    expect(html).not.toContain("<table");
+  });
+
+  test("says the same in Arabic, with the same slots", () => {
+    expect(ar["fantasy.rules.rating_rule"]).toContain("SofaScore");
+    expect(ar["fantasy.rules.rating_rule"]).toContain("{n}");
+    expect(ar["fantasy.rules.rating_rule"]).toContain("5 نقاط");
+    expect(ar["fantasy.rules.rating_rule"]).toContain("القائد يضاعف نقاطه");
+    expect(ar["fantasy.rules.rating_previous"]).toContain("{n}");
+    expect(ar["fantasy.points.event.rating"]).toBe("تقييم SofaScore");
+    expect(fr["fantasy.points.event.rating"]).toBe("Note SofaScore");
+  });
+
+  test("the rule is off by default: the category scale alone", async () => {
+    const page = text(await render(await fantasyService.getRules()));
+    expect(page).not.toContain("note SofaScore arrondie");
+    expect(page).toContain(fr["fantasy.rules.scoring_desc"]);
+  });
+});
+
+describe("the policy card names the rounds each explanation governs (audit LOC-01)", () => {
+  const adaptiveScoring = {
+    fromGameweek: 1,
+    selectionDelayHours: 12 as const,
+    scope: "fixture" as const,
+    lateModeUpgrade: false as const,
+  };
+  const policyCard = (html: string) =>
+    text(/<section[^>]*id="scoring-policy"[\s\S]*?<\/section>/.exec(html)?.[0] ?? "");
+
+  test("rating off: the action-based paragraph shows alone, with no round named", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(await render({ ...rules, adaptiveScoring }));
+    expect(card).toContain(fr["fantasy.scoring.policy"]);
+    expect(card).not.toContain("Jusqu’à la journée");
+    expect(card).not.toContain("À partir de la journée");
+    expect(card).not.toContain(fr["fantasy.scoring.ratingSafeguards"]);
+    expect(card).toContain(fr["fantasy.rules.provisional_desc"]);
+  });
+
+  test("both policies, rating from round 5: rounds 1 to 4 and round 5 onward are each named", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(
+      await render({
+        ...rules,
+        adaptiveScoring,
+        ratingScoring: { fromGameweek: 5, noRatingPoints: 5 },
+      }),
+    );
+    const from = "À partir de la journée 5 : points selon la note SofaScore.";
+    const until = "Jusqu’à la journée 4 : barème par actions.";
+    expect(card).toContain(from);
+    expect(card).toContain(`${until}${fr["fantasy.scoring.policy"]}`);
+    // The provisional and correction safeguards stay visible, ahead of both.
+    expect(card.indexOf(fr["fantasy.rules.provisional_desc"])).toBeLessThan(card.indexOf(from));
+    expect(card.indexOf(from)).toBeLessThan(card.indexOf(until));
+    // Missing participation data and late ratings still delay or move points.
+    expect(card).toContain(`${from}${fr["fantasy.scoring.ratingSafeguards"]}`);
+  });
+
+  test("adaptive and rating both from round 5: the rounds before are named, the 12-hour paragraph is not", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(
+      await render({
+        ...rules,
+        adaptiveScoring: { ...adaptiveScoring, fromGameweek: 5 },
+        ratingScoring: { fromGameweek: 5, noRatingPoints: 5 },
+      }),
+    );
+    expect(card).toContain("Jusqu’à la journée 4 : barème par actions.");
+    expect(card).not.toContain(fr["fantasy.scoring.policy"]);
+    expect(card).toContain(fr["fantasy.scoring.ratingSafeguards"]);
+  });
+
+  test("rating from round 1: no earlier round, so no action-based paragraph", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(
+      await render({
+        ...rules,
+        adaptiveScoring,
+        ratingScoring: { fromGameweek: 1, noRatingPoints: 5 },
+      }),
+    );
+    expect(card).toContain("À partir de la journée 1 : points selon la note SofaScore.");
+    expect(card).not.toContain("Jusqu’à la journée");
+    expect(card).not.toContain(fr["fantasy.scoring.policy"]);
+    expect(card).toContain(fr["fantasy.scoring.ratingSafeguards"]);
+    expect(card).toContain(fr["fantasy.rules.provisional_desc"]);
+  });
+
+  test("the reviewed-estimates safeguard stays visible under both policies", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(
+      await render({
+        ...rules,
+        adaptiveScoring: { ...adaptiveScoring, estimatesFinalForRankings: true },
+        ratingScoring: { fromGameweek: 5, noRatingPoints: 5 },
+      }),
+    );
+    expect(card).toContain(fr["fantasy.scoring.estimatesPolicy"]);
+  });
+
+  test("Arabic carries the same two lines with the round slot", () => {
+    expect(ar["fantasy.scoring.eventUntil"]).toContain("{n}");
+    expect(ar["fantasy.scoring.ratingFrom"]).toContain("{n}");
+    expect(ar["fantasy.scoring.ratingFrom"]).toContain("SofaScore");
+    expect(ar["fantasy.scoring.ratingSafeguards"]).toBeDefined();
+  });
+});
+
 describe("the rules copy", () => {
   test("no longer gives a goalkeeper's goal 6 points, in either language", () => {
     for (const dictionary of [fr, ar]) {

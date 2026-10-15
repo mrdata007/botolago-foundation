@@ -10,8 +10,11 @@ import { useEffect, useId, useMemo, useState, type ComponentProps } from "react"
 import {
   footballService,
   hasLeagueTable,
+  keepLastGoodSections,
+  type FootballMatchDetailPage,
   type FootballSeason,
   type FootballStandings,
+  type MatchSectionKey,
   type MatchSeason,
 } from "@/services/football";
 import { newsService } from "@/services/news";
@@ -25,6 +28,7 @@ import { EventTimeline } from "@/components/matches/EventTimeline";
 import { GoalMoment } from "@/components/matches/GoalMoment";
 import { HeadToHead } from "@/components/matches/HeadToHead";
 import { LineupsView } from "@/components/matches/LineupsView";
+import { LiveFreshnessNote } from "@/components/matches/LiveFreshnessNote";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import {
   MATCH_PANEL_ID,
@@ -41,9 +45,11 @@ import {
   useGoalMoment,
 } from "@/components/matches/goal-moment";
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
+import { useLiveFreshness } from "@/components/matches/use-live-freshness";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
+import { presentScore } from "@/lib/match-score";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -184,9 +190,21 @@ function MatchDetailPage() {
 
   const serverDetail =
     lang === "fr" && loaderData?.detail.match.id === matchId ? loaderData.detail : undefined;
+  const queryClient = useQueryClient();
   const detailQ = useQuery({
     queryKey: ["football", "match-detail", matchId, lang],
-    queryFn: () => footballService.getMatchDetailPage(matchId, lang),
+    // A refresh in which one optional section fails keeps the earlier good
+    // copy of that section instead of replacing it with an error card.
+    queryFn: async () =>
+      keepLastGoodSections(
+        await footballService.getMatchDetailPage(matchId, lang),
+        queryClient.getQueryData<FootballMatchDetailPage>([
+          "football",
+          "match-detail",
+          matchId,
+          lang,
+        ]),
+      ),
     // Identical on the server and in the browser's first render — see the
     // loader. Without it the two trees disagree. With its real age, so a seed
     // the router kept from an earlier visit is refetched, not trusted as new.
@@ -211,6 +229,16 @@ function MatchDetailPage() {
   const match = detailQ.data?.match;
   const season = detailQ.data?.season;
 
+  // How old the read of a live match is, and the reads that heal a page left
+  // open: back to the tab, restored from the back/forward cache, focus, the
+  // network back. A failed refetch keeps the last read on screen (said to be
+  // stale after two minutes) instead of replacing the page with an error.
+  const { freshness, shownAt } = useLiveFreshness({
+    match,
+    updatedAt: detailQ.dataUpdatedAt,
+    refetch: () => void detailQ.refetch({ cancelRefetch: false }),
+  });
+
   // Articles and matches are the pages most often opened from a shared link,
   // where there is no in-app entry to go back to. There, Retour goes to the
   // calendar on this match's own day and season, not to today. From inside
@@ -226,7 +254,6 @@ function MatchDetailPage() {
   // The final whistle moves the "Face à face" tab's table. This page shows no
   // live strip, so it hears the whistle from its own reads of the match, in
   // either language (`rereadTableOnFinish`).
-  const queryClient = useQueryClient();
   useEffect(
     () => rereadTableOnFinish(queryClient, ["football", "match-detail", matchId]),
     [queryClient, matchId],
@@ -240,12 +267,25 @@ function MatchDetailPage() {
   const lineups = detailQ.data?.lineups ?? [];
   const pressure = detailQ.data?.pressure ?? [];
   const absences = detailQ.data?.absences ?? [];
+  // A section whose read failed is not an empty one: its list above is empty
+  // only because nothing was read. It says so, with a retry, in its place; the
+  // score and the other sections stay (audit 2026-10-14, DATA-02).
+  const failed = (section: MatchSectionKey) =>
+    detailQ.data?.sections?.[section].status === "failed";
+  const sectionError = (message: string) => (
+    <ErrorState message={message} onRetry={() => void detailQ.refetch()} />
+  );
 
   // Above the early returns (Rules of Hooks), and fed the events whether or
   // not they are loaded yet: it seeds from the first FRESH list it sees, so a
   // goal already on the sheet — or scored while the reader was elsewhere,
-  // still missing from the cached copy they come back to — never plays.
-  const { goal, dismiss } = useGoalMoment(matchId, eventsWhenFresh(detailQ, live?.events), match);
+  // still missing from the cached copy they come back to — never plays. A
+  // timeline that failed to load is no list at all, not an empty one.
+  const { goal, dismiss } = useGoalMoment(
+    matchId,
+    eventsWhenFresh(detailQ, failed("timeline") ? undefined : live?.events),
+    match,
+  );
 
   // Both sides together, with the clash rule: a split header, a stat bar or
   // an H2H bar must never paint two independent (and possibly equal) reds.
@@ -273,7 +313,9 @@ function MatchDetailPage() {
     );
   }
 
-  if (detailQ.isError) {
+  // Only when there is nothing to show: a refetch that fails keeps the last
+  // read, and the freshness note says how old it is.
+  if (detailQ.isError && !detailQ.data) {
     return (
       <AppShell hideBottomNav backgroundVariant="matches" topBar={plainBar}>
         <div className="mt-8">
@@ -356,6 +398,15 @@ function MatchDetailPage() {
     />
   );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
+  const presented = presentScore(match);
+  const lineupsUnavailable = {
+    lineups: failed("lineups")
+      ? sectionError(t("matches.detail.section_failed.lineups"))
+      : undefined,
+    absences: failed("absences")
+      ? sectionError(t("matches.detail.section_failed.absences"))
+      : undefined,
+  };
 
   return (
     <AppShell
@@ -368,7 +419,14 @@ function MatchDetailPage() {
           onBack={goBack}
           onShare={share}
           compact={scrolledPast}
-          fixture={{ match, home, away, palettes, elapsed: live.elapsed }}
+          fixture={{
+            match,
+            home,
+            away,
+            palettes,
+            elapsed: live.elapsed,
+            liveUnconfirmed: freshness === "expired",
+          }}
         />
       }
     >
@@ -403,6 +461,14 @@ function MatchDetailPage() {
         elapsed={live.elapsed}
         events={live.events}
         lineups={lineups}
+        liveUnconfirmed={freshness === "expired"}
+      />
+
+      <LiveFreshnessNote
+        freshness={freshness}
+        updatedAt={shownAt}
+        refreshing={detailQ.isFetching}
+        onRefresh={() => void detailQ.refetch()}
       />
 
       {/* Tabs straight after the match's identity, on every width. Desktop
@@ -450,20 +516,25 @@ function MatchDetailPage() {
                   <div className="mb-4">{prediction}</div>
                 ) : null}
                 <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-                  <EventTimeline
-                    events={live.events}
-                    home={home}
-                    away={away}
-                    palettes={palettes}
-                    lineups={lineups}
-                    isLive={isLive}
-                    phase={phase}
-                    halfTime={
-                      match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
-                        ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
-                        : undefined
-                    }
-                  />
+                  {failed("timeline") ? (
+                    sectionError(t("matches.detail.section_failed.timeline"))
+                  ) : (
+                    <EventTimeline
+                      events={live.events}
+                      home={home}
+                      away={away}
+                      palettes={palettes}
+                      lineups={lineups}
+                      isLive={isLive}
+                      phase={phase}
+                      halfTime={
+                        match.halfTimeHomeScore !== undefined &&
+                        match.halfTimeAwayScore !== undefined
+                          ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
+                          : undefined
+                      }
+                    />
+                  )}
                   {wideLayout ? (
                     <LineupsView
                       lineups={lineups}
@@ -472,6 +543,7 @@ function MatchDetailPage() {
                       palettes={palettes}
                       phase={phase}
                       absences={absences}
+                      unavailable={lineupsUnavailable}
                     />
                   ) : null}
                 </div>
@@ -490,6 +562,14 @@ function MatchDetailPage() {
                 isLive={isLive}
                 phase={phase}
                 pressure={pressure}
+                unavailable={{
+                  stats: failed("statistics")
+                    ? sectionError(t("matches.detail.section_failed.stats"))
+                    : undefined,
+                  pressure: failed("pressure")
+                    ? sectionError(t("matches.detail.section_failed.pressure"))
+                    : undefined,
+                }}
               />
             )}
 
@@ -501,6 +581,7 @@ function MatchDetailPage() {
                 palettes={palettes}
                 phase={phase}
                 absences={absences}
+                unavailable={lineupsUnavailable}
               />
             )}
 
@@ -511,6 +592,11 @@ function MatchDetailPage() {
                 away={away}
                 palettes={palettes}
                 meetings={h2h}
+                meetingsUnavailable={
+                  failed("headToHead")
+                    ? sectionError(t("matches.detail.section_failed.h2h"))
+                    : undefined
+                }
               />
             )}
           </div>
@@ -550,8 +636,11 @@ function MatchDetailPage() {
           scorer={goal.playerId ? names.get(goal.playerId) : undefined}
           assist={goal.relatedPlayerId ? names.get(goal.relatedPlayerId) : undefined}
           score={
+            // Only a score the provider gave: an unknown one is no score.
+            presented.home !== null &&
+            presented.away !== null &&
             scoreCountsEveryGoal(match, live.events)
-              ? { home: match.homeScore ?? 0, away: match.awayScore ?? 0 }
+              ? { home: presented.home, away: presented.away }
               : undefined
           }
           onDone={dismiss}
@@ -563,7 +652,7 @@ function MatchDetailPage() {
 
 type HeadToHeadTabProps = { season: MatchSeason } & Pick<
   ComponentProps<typeof HeadToHead>,
-  "home" | "away" | "palettes" | "meetings"
+  "home" | "away" | "palettes" | "meetings" | "meetingsUnavailable"
 >;
 
 /**
@@ -588,7 +677,14 @@ function HeadToHeadTab({ season, ...rest }: HeadToHeadTabProps) {
  * Nothing reads it on the server either, so the server and the browser's
  * first render both hold its place (`standingsPending`), and agree.
  */
-function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToHeadTabProps) {
+function LeagueHeadToHeadTab({
+  season,
+  home,
+  away,
+  palettes,
+  meetings,
+  meetingsUnavailable,
+}: HeadToHeadTabProps) {
   const { lang } = useI18n();
   const queryClient = useQueryClient();
   // A switch of language puts the whole page back to loading (the detail is
@@ -633,6 +729,7 @@ function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToH
         if (seasonsQ.isError) void seasonsQ.refetch();
       }}
       meetings={meetings}
+      meetingsUnavailable={meetingsUnavailable}
     />
   );
 }

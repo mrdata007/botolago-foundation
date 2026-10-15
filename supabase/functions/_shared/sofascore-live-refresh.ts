@@ -24,8 +24,10 @@
 // sofascore-match-details.ts: 3 requests per fixture, at most
 // SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
 // more requests. Chosen fixtures: a mapped fixture written as finished this
-// tick, then mapped fixtures in play whose score or status was written or whose
-// changeTimestamp moved in the last 150 seconds, then fixtures finalized in the
+// tick, then mapped fixtures in play whose score or status was written (a write
+// that only moves the live minute does not count) or whose
+// changeTimestamp moved in the last 90 seconds (incidents only: 1 request, plus the
+// lineups on the tick that sees the match start; statistics are read at full time), then fixtures finalized in the
 // last two hours so post-match corrections are refreshed. The
 // season job fetches none. `runSofascoreDetailsBackfill` serves the
 // `match_details_backfill` job. Details never hold a score back: they run after
@@ -45,6 +47,7 @@ import {
   SOFASCORE_PROVIDER_NAME,
   buildFixtureIngestPlan,
   collapseReplacedEvents,
+  computeLiveMinute,
   parseSofascoreEvents,
   type SofascoreFixtureEvent,
   type SofascoreIngestCall,
@@ -65,12 +68,23 @@ import {
   type SofascoreDetailsTarget,
 } from "./sofascore-match-details.ts";
 import { SofascoreFantasyRun, type SofascoreFantasySummary } from "./sofascore-fantasy-auto.ts";
+import { SofascoreStagedStats, type StagedSummary } from "./sofascore-staged-stats.ts";
+import {
+  finishedWrittenThisTick,
+  isDailyStandingsHour,
+  runStandingsRefresh,
+  type StandingsSummary,
+  type StandingsTrigger,
+} from "./sofascore-standings.ts";
 import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 
 export type SofascoreRefreshMode = "sofascore" | "shadow";
 export type SofascoreRefreshJob = "fixtures" | "season_fixtures";
 
 export const DEFAULT_SOFASCORE_SEASON_ID = "102220";
+/** Pages per direction the daily full-season pull may read (30 or so events each). */
+export const SOFASCORE_SEASON_FULL_MAX_PAGES_DEFAULT = 12;
+export const SOFASCORE_SEASON_FULL_MAX_PAGES_MAX = 20;
 export const SOFASCORE_SEASON_REFRESH_DAYS_AHEAD = 42;
 /** A not-yet-started fixture this recent is expected to be in play. */
 const RECENT_KICKOFF_MS = 3 * 60 * 60 * 1000;
@@ -94,8 +108,12 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
   "extra_time",
   "penalties",
 ]);
-/** A provider change newer than this counts as "moved since the last tick". */
-const DETAILS_CHANGE_WINDOW_MS = 150_000;
+/**
+ * A provider change newer than this counts as "moved since the last tick". The
+ * live tick runs every 60 s, so 90 s covers one late tick and no more: a change
+ * is fetched once or twice, not for as long as 150 s.
+ */
+const DETAILS_CHANGE_WINDOW_MS = 90_000;
 /** Keep refreshing details while post-match incidents and statistics settle. */
 const DETAILS_FINAL_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -129,6 +147,17 @@ interface MappedFixtureState {
   /** Internal club ids; absent until migration 20261011110000 is applied. */
   readonly homeTeamId?: string;
   readonly awayTeamId?: string;
+  /**
+   * The stored live minute (null when none is stored); absent until migration
+   * 20261013190000 is applied, and then the stored minute is unknown.
+   */
+  readonly minute?: number | null;
+  /**
+   * Whether a lineup is stored for the fixture; absent until migration
+   * 20261014120000 is applied (then the lineups are read on the kickoff tick
+   * only, as before).
+   */
+  readonly hasLineups?: boolean;
 }
 
 interface Snapshot {
@@ -162,8 +191,9 @@ function eventListPath(
   endpoint: "get-last-matches" | "get-next-matches",
   tournamentId: string,
   seasonId: string,
+  page = 0,
 ): string {
-  return `tournaments/${endpoint}?tournamentId=${tournamentId}&seasonId=${seasonId}&pageIndex=0`;
+  return `tournaments/${endpoint}?tournamentId=${tournamentId}&seasonId=${seasonId}&pageIndex=${page}`;
 }
 
 function parseSnapshot(data: unknown): Snapshot | null {
@@ -258,11 +288,12 @@ function detailsTeams(
 /**
  * Fixtures whose details are worth fetching this tick, in priority order:
  * written as finished first, then in play and changed (written, or the
- * provider's changeTimestamp moved within the last 150 s), newest change first,
+ * provider's changeTimestamp moved within the last 90 s; incidents only), newest change first,
  * then fixtures finalized within two hours, even if absent from the live feed.
  */
 export function selectLiveDetailTargets(
   events: readonly SofascoreFixtureEvent[],
+  /** Calls written this tick for more than the clock (score, status, period, kickoff, finalization). */
   toWrite: readonly SofascoreIngestCall[],
   snapshot: Snapshot,
   now: Date,
@@ -284,16 +315,29 @@ export function selectLiveDetailTargets(
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
-    // A finished match also feeds the Fantasy step with the same replies; a match
-    // in play feeds the player matching, so unknown names surface before full time.
+    // A finished match reads all three replies and feeds the Fantasy step with
+    // them. A match in play reads the incidents only (1 request): goals, cards and
+    // substitutions; statistics wait for full time. The one exception is the tick
+    // that sees the match start (stored status not yet in play): it also reads the
+    // lineups (2 requests), once, so unknown players reach the staff's matching
+    // list before full time, as they did when every tick read all three.
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
-    const liveFixtureId = DETAILS_LIVE_STATUSES.has(event.status) ? state.id : undefined;
+    const starting = rank === 1 && !DETAILS_LIVE_STATUSES.has(state.status);
+    // Lineups the provider had not published on the kickoff tick are read
+    // again with the incidents, on a tick that wrote the score or status (not
+    // on a changeTimestamp move alone), until one is stored: at most a few
+    // more requests per match, none once a lineup is stored.
+    const lineupsMissing = rank === 1 && isWritten && state.hasLineups === false;
+    const withLineups = starting || lineupsMissing;
+    const liveFixtureId = withLineups ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
         teams,
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
         ...(liveFixtureId ? { liveFixtureId } : {}),
+        ...(rank === 1 ? { incidentsOnly: true } : {}),
+        ...(withLineups ? { withLineups: true } : {}),
       },
       rank,
       changed,
@@ -326,11 +370,22 @@ export function selectLiveDetailTargets(
   return ranked.slice(0, limit).map((item) => item.target);
 }
 
-/** Why a call must not be sent, or null when it should be. */
-export function skipReason(
+/** The stored minute when the snapshot carries it (null included), else undefined. */
+function storedMinute(fixture: MappedFixtureState): number | null | undefined {
+  if (!Object.prototype.hasOwnProperty.call(fixture, "minute")) return undefined;
+  const value = fixture.minute;
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
+}
+
+/**
+ * How a call compares with the stored fixture: a reason not to send it, or
+ * `clock` when the only change is the live minute (written, but not a reason
+ * to fetch match details), or `content` for any other change.
+ */
+export function classifyCall(
   call: SofascoreIngestCall,
   fixture: MappedFixtureState | undefined,
-): SkipReason | null {
+): SkipReason | "clock" | "content" {
   if (!fixture) return "no_fixture_state";
   const next = call.p_fixture;
   const dbUpdated = Date.parse(fixture.providerUpdatedAt);
@@ -348,19 +403,34 @@ export function skipReason(
   if (FINAL_STATUSES.has(fixture.status) && next.status !== fixture.status) {
     return "protected_final_state";
   }
+  // A running clock is a change in itself: the minute moves while nothing else
+  // does. When the snapshot carries the stored minute (20261013190000), any
+  // difference counts, null included: a clock the provider stopped sending is
+  // cleared rather than left frozen on the page. Without it (an older
+  // database), a computed minute is always written and a null one never is.
+  const stored = storedMinute(fixture);
+  const nextMinute = next.minute ?? null;
+  const minuteMoves = stored === undefined ? nextMinute !== null : nextMinute !== stored;
   const sameKickoff = Date.parse(fixture.kickoffAt) === Date.parse(next.kickoffAt);
   const gainsFinalization = next.finalizedAt !== null && fixture.finalizedAt === null;
-  if (
+  const restUnchanged =
     sameKickoff &&
     fixture.status === next.status &&
     fixture.period === next.period &&
     fixture.homeScore === next.homeScore &&
     fixture.awayScore === next.awayScore &&
-    !gainsFinalization
-  ) {
-    return "unchanged";
-  }
-  return null;
+    !gainsFinalization;
+  if (!restUnchanged) return "content";
+  return minuteMoves ? "clock" : "unchanged";
+}
+
+/** Why a call must not be sent, or null when it should be. */
+export function skipReason(
+  call: SofascoreIngestCall,
+  fixture: MappedFixtureState | undefined,
+): SkipReason | null {
+  const kind = classifyCall(call, fixture);
+  return kind === "clock" || kind === "content" ? null : kind;
 }
 
 export async function runSofascoreRefresh(
@@ -393,10 +463,18 @@ export async function runSofascoreRefresh(
   const parseOptions = { uniqueTournamentId: Number(tournamentId) };
 
   // 2. Provider reads. Any failure stops here, before anything is written.
+  const dailyPass = job === "season_fixtures" && isDailyStandingsHour(now, environment);
+  /** `hasNextPage` of the last page read per endpoint (the daily full pull). */
+  const seasonHasNextPage = new Map<string, boolean>();
   const fetchList = async (path: string): Promise<SofascoreParsedEvents> => {
     const result = await rapid.getJson(path);
     const quota: RapidApiQuota = result.quota;
     requests.push({ path, quotaRemaining: quota.remaining, quotaLimit: quota.limit });
+    const endpoint = /^tournaments\/(get-next-matches|get-last-matches)\?/.exec(path)?.[1];
+    if (endpoint) {
+      const next = (result.data as { hasNextPage?: unknown } | null)?.hasNextPage;
+      seasonHasNextPage.set(endpoint, next === true);
+    }
     return parseSofascoreEvents(result.data, parseOptions);
   };
   const parsedLists: SofascoreParsedEvents[] = [];
@@ -414,6 +492,27 @@ export async function runSofascoreRefresh(
     } else {
       parsedLists.push(await fetchList(eventListPath("get-next-matches", tournamentId, seasonId)));
       parsedLists.push(await fetchList(eventListPath("get-last-matches", tournamentId, seasonId)));
+      if (dailyPass) {
+        // Once a day (the hour SOFASCORE_DAILY_HOUR_UTC, default 03 UTC) the
+        // whole season schedule: the hourly pass above reads page 0 of each
+        // direction only (about 30 events each way), so a kickoff moved or a
+        // postponement far from today is caught here. Pages 1.. until the
+        // provider says there is no next page, bounded.
+        const maxPages = boundedInt(
+          environment.SOFASCORE_SEASON_FULL_MAX_PAGES,
+          SOFASCORE_SEASON_FULL_MAX_PAGES_DEFAULT,
+          SOFASCORE_SEASON_FULL_MAX_PAGES_MAX,
+        );
+        for (const endpoint of ["get-next-matches", "get-last-matches"] as const) {
+          let more = seasonHasNextPage.get(endpoint) === true;
+          for (let page = 1; more && page < maxPages; page += 1) {
+            parsedLists.push(
+              await fetchList(eventListPath(endpoint, tournamentId, seasonId, page)),
+            );
+            more = seasonHasNextPage.get(endpoint) === true;
+          }
+        }
+      }
     }
   } catch (error) {
     const code = error instanceof RapidApiError ? error.code : "invalid_provider_payload";
@@ -426,8 +525,21 @@ export async function runSofascoreRefresh(
   const events = dedupeEvents(parsedLists.map((list) => list.events));
   const collapsed = collapseReplacedEvents(events);
   const plan = buildFixtureIngestPlan(collapsed.events, mapping.lookup, now);
+  // One entry per fixture in a running period, per tick, no payload: does the feed
+  // send time.currentPeriodStartTimestamp, and so is a minute written? Reported in
+  // the tick's summary line (`periodStart`), and only when something is in play.
+  const periodStart = collapsed.events
+    .filter((event) => ["first_half", "second_half", "extra_time"].includes(event.period))
+    .map((event) => ({
+      eventId: event.sofascoreEventId,
+      period: event.period,
+      present: event.periodStartTimestamp !== null,
+      minute: computeLiveMinute(event, now.getTime()),
+    }));
   const stateByExternalId = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
   const toWrite: SofascoreIngestCall[] = [];
+  /** Written for the minute alone: no reason to spend a details request. */
+  const clockOnly = new Set<string>();
   const skipped: Record<SkipReason, string[]> = {
     unchanged: [],
     stale: [],
@@ -438,16 +550,19 @@ export async function runSofascoreRefresh(
   for (const call of plan.calls) {
     // Ingestion replaces round_id: never detach a fixture from its gameweek
     // when the provider omitted the round. Leave it for a complete payload.
-    const reason =
+    const kind =
       call.p_fixture.roundId === null
         ? "unresolved_round"
-        : skipReason(call, stateByExternalId.get(call.p_external_id));
-    if (reason) skipped[reason].push(call.p_external_id);
-    else toWrite.push(call);
+        : classifyCall(call, stateByExternalId.get(call.p_external_id));
+    if (kind === "clock" || kind === "content") {
+      toWrite.push(call);
+      if (kind === "clock") clockOnly.add(call.p_external_id);
+    } else skipped[kind].push(call.p_external_id);
   }
   const unknownStatus = parsedLists.flatMap((list) => list.unknownStatus);
   const summary = {
     requests,
+    ...(periodStart.length > 0 ? { periodStart } : {}),
     polledEvents: parsedLists.reduce((total, list) => total + list.polledCount, 0),
     botolaEvents: collapsed.events.length,
     supersededEventIds: collapsed.supersededIds,
@@ -477,13 +592,61 @@ export async function runSofascoreRefresh(
     now,
     log: (line) => log(line),
   });
-  const runFantasy = async (): Promise<SofascoreFantasySummary> => {
+  const runFantasy = async (): Promise<
+    SofascoreFantasySummary & { staged?: StagedSummary; stagedDetails?: SofascoreDetailsSummary }
+  > => {
     try {
       await fantasy.sweep();
     } catch {
       // Reported through the summary; nothing else depends on it.
     }
-    return fantasy.summary();
+    // The later pulls of finished matches (staged statistics), after the first
+    // pulls above. Its own requests go through the same counted client.
+    let staged: StagedSummary | undefined;
+    const pulled: SofascoreDetailsTarget[] = [];
+    const stagedTeams = teamExternalIds(liveSnapshot.mappings);
+    const stagedStates = new Map(liveSnapshot.fixtures.map((f) => [f.externalId, f]));
+    try {
+      // SOFASCORE_FANTASY_ENABLED=false switches the whole Fantasy step off, this too.
+      if (fantasy.config.enabled)
+        staged = await new SofascoreStagedStats({
+          mode,
+          client,
+          rapid,
+          environment,
+          now,
+          log: (line) => log(line),
+          onPulled: ({ eventId }, replies) => {
+            const teams = detailsTeams(stagedStates.get(eventId), stagedTeams, undefined);
+            if (teams) pulled.push({ eventId, teams, replies });
+          },
+        }).sweep();
+    } catch {
+      // Reported through the summary; nothing else depends on it.
+    }
+    // The same replies refresh the match details: SofaScore publishes some
+    // team statistics only after the 2-hour post-match refresh has ended, and
+    // nothing else reads them again. No request: the replies are the pull's.
+    let stagedDetails: SofascoreDetailsSummary | undefined;
+    if (pulled.length > 0) {
+      try {
+        stagedDetails = await runSofascoreMatchDetails(pulled, {
+          mode,
+          scope: "staged",
+          client,
+          rapid,
+          now,
+          log: emit,
+        });
+      } catch {
+        // runSofascoreMatchDetails never throws; belt and braces.
+      }
+    }
+    return {
+      ...fantasy.summary(),
+      ...(staged ? { staged } : {}),
+      ...(stagedDetails ? { stagedDetails } : {}),
+    };
   };
   const runDetails = async (): Promise<SofascoreDetailsSummary | { status: "skipped" }> => {
     if (job !== "fixtures") return { status: "skipped" };
@@ -492,7 +655,11 @@ export async function runSofascoreRefresh(
       SOFASCORE_DETAILS_PER_TICK_DEFAULT,
       SOFASCORE_DETAILS_PER_TICK_MAX,
     );
-    const targets = selectLiveDetailTargets(collapsed.events, toWrite, liveSnapshot, now, cap);
+    // A write that only moves the clock does not make a fixture worth a details
+    // request (that would be one request per match in play per minute); its
+    // provider changeTimestamp moving still does, inside selectLiveDetailTargets.
+    const changed = toWrite.filter((call) => !clockOnly.has(call.p_external_id));
+    const targets = selectLiveDetailTargets(collapsed.events, changed, liveSnapshot, now, cap);
     return runSofascoreMatchDetails(targets, {
       mode,
       scope: "live",
@@ -511,8 +678,38 @@ export async function runSofascoreRefresh(
     });
   };
 
+  // The Botola table: one request after a tick that wrote a match as finished
+  // (however many finished together), and once a day in the season job.
+  const runStandings = async (): Promise<StandingsSummary | { status: "skipped" }> => {
+    const trigger: StandingsTrigger | null =
+      job === "fixtures"
+        ? finishedWrittenThisTick(toWrite)
+          ? "after_match"
+          : null
+        : dailyPass
+          ? "daily"
+          : null;
+    if (
+      trigger === null ||
+      environment.SOFASCORE_STANDINGS_ENABLED?.trim().toLowerCase() === "false"
+    ) {
+      return { status: "skipped" };
+    }
+    return runStandingsRefresh({
+      mode,
+      trigger,
+      client,
+      rapid,
+      tournamentId,
+      seasonId,
+      now,
+      log: emit,
+    });
+  };
+
   if (mode === "shadow") {
     emit({ result: "shadow", ...summary, wouldIngest: toWrite, written: 0 });
+    const standings = await runStandings();
     const matchDetails = await runDetails();
     const fantasySummary = await runFantasy();
     return {
@@ -523,6 +720,7 @@ export async function runSofascoreRefresh(
         job,
         wouldIngest: toWrite.length,
         written: 0,
+        standings,
         matchDetails,
         fantasy: fantasySummary,
       },
@@ -608,6 +806,7 @@ export async function runSofascoreRefresh(
     failures.push({ externalId: "run", code: "complete_run_failed" });
   }
 
+  const standings = await runStandings();
   const matchDetails = await runDetails();
   const fantasySummary = await runFantasy();
   emit({
@@ -621,6 +820,7 @@ export async function runSofascoreRefresh(
     ...summary,
     written: counts.updated,
     failures,
+    standings,
     matchDetails,
     fantasy: fantasySummary,
   });
@@ -663,6 +863,7 @@ export async function runSofascoreRefresh(
       unchanged: skipped.unchanged.length,
       unmapped: plan.unmapped.length,
       unknownStatus: unknownStatus.length,
+      standings,
       matchDetails,
       fantasy: fantasySummary,
     },

@@ -159,12 +159,6 @@ export function LandingPage({
   }, []);
   const showSticky = heroOut && !finalIn && cta.kind !== "pending";
 
-  const scoring: Array<{ label: string; points: number }> = [
-    { label: t("landing.scoring_goal_mid"), points: 5 },
-    { label: t("landing.scoring_assist"), points: 3 },
-    { label: t("landing.scoring_clean_sheet"), points: 4 },
-  ];
-
   return (
     <div className={cn("min-h-[100dvh]", ui.surface.page)} data-testid="landing-page">
       {/* STATUS BAR (BG-0154) — nothing at the top of this page sticks, so in
@@ -372,20 +366,22 @@ export function LandingPage({
             title={t("landing.step3_title")}
             body={t("landing.step3_body")}
           >
-            <p className={cn(ui.text.meta, ui.tone.muted)}>{t("landing.scoring_label")}</p>
-            <ul className="mt-1.5 grid gap-1.5">
-              {scoring.map((row) => (
-                <li
-                  key={row.label}
-                  className={cn("flex items-baseline justify-between gap-3", ui.text.secondary)}
-                >
-                  <span className="min-w-0">{row.label}</span>
-                  <span className={cn("shrink-0", ui.text.bodyStrong, ui.tone.ink)}>
-                    {t("landing.points_value").replace("{n}", nf.format(row.points))}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {/* No scale is quoted here (audit FANT-06): which scoring rule is in
+                force is the rules page's to say. */}
+            <Link
+              to="/fantasy/rules"
+              onClick={onLeave}
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                ui.space.tap,
+                ui.text.bodyStrong,
+                ui.tone.ink,
+                ui.focus,
+              )}
+            >
+              {t("landing.scoring_link")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </Step>
         </ol>
       </section>

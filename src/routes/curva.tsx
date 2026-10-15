@@ -1,7 +1,12 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { useAuth } from "@/auth/AuthProvider";
+import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { CurvaLoading } from "@/components/curva/StateBlocks";
+import { CurvaLockScreen } from "@/components/curva/CurvaLockScreen";
 import { preloadCardRenderer } from "@/components/manager-card/use-card-renderer";
+import { curvaAccess } from "@/services/curva-access";
 import { shouldRedirectFromCurva } from "@/services/manager-card-status";
 
 /**
@@ -47,8 +52,21 @@ export const Route = createFileRoute("/curva")({
 const cardRendererStarted: true = (preloadCardRenderer(), true);
 
 function CurvaLayout() {
+  const { status } = useAuth();
   useEffect(() => {
     preloadCardRenderer(); // idempotent; covers a layout whose module was evaluated on the server
   }, []);
-  return cardRendererStarted ? <Outlet /> : null;
+  if (!cardRendererStarted) return null;
+  // Curva is for accounts. A signed-out visitor gets the lock screen for every address under it,
+  // before any page component or read runs; until the session is known nothing of Curva is drawn.
+  const access = curvaAccess(status);
+  if (access === "locked") return <CurvaLockScreen />;
+  if (access === "pending") {
+    return (
+      <FantasyFrame bottomNav>
+        <CurvaLoading />
+      </FantasyFrame>
+    );
+  }
+  return <Outlet />;
 }

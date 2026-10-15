@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
+import { attachLeaveWarning } from "@/lib/leave-warning";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -41,7 +42,7 @@ import {
   type CreateTeamDraft,
   type DraftValidationCode,
 } from "@/services/fantasy-create-service";
-import { GUEST_DRAFT_KEY, isCreateDraft } from "@/services/fantasy-create-draft";
+import { GUEST_DRAFT_KEY, guestDraftAtRisk, isCreateDraft } from "@/services/fantasy-create-draft";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
@@ -178,9 +179,12 @@ function CreateTeamBody() {
       );
     inited.current = true;
   }, [draftKey, user?.displayName, live]);
+  // Whether the browser kept the draft. It says so only after a write failed:
+  // the first render, and the server's, promise nothing they cannot know.
+  const [deviceKeepsDraft, setDeviceKeepsDraft] = useState(true);
   useEffect(() => {
     if (!inited.current || !draftKey) return;
-    fantasyDraftsStore.save<CreateTeamDraft>(draftKey, draft);
+    setDeviceKeepsDraft(fantasyDraftsStore.save<CreateTeamDraft>(draftKey, draft));
   }, [draft, draftKey]);
 
   const [view, setView] = useState<"squad" | "list">("squad");
@@ -195,6 +199,14 @@ function CreateTeamBody() {
   const clubs = screen.clubs;
   const gameweek = screen.gameweek;
   const summary = useMemo(() => computeSummary(draft, players), [draft, players]);
+  // A visitor's squad that this device could not keep: it exists only on this
+  // page. Said on screen, and the browser asks before the page is left.
+  const draftAtRisk = guestDraftAtRisk({
+    source: owned.source,
+    deviceKeepsDraft,
+    filled: summary.filled,
+  });
+  useEffect(() => attachLeaveWarning(window, draftAtRisk), [draftAtRisk]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
   const formRef = useRef<HTMLFormElement>(null);
   const resumedOnName = useRef(false);
@@ -333,7 +345,9 @@ function CreateTeamBody() {
       // Someone saving a first squad most likely has no account: creating one
       // (free) is the prompt's main action here, signing in the second.
       requireAuth(() => undefined, {
-        reason: t("fantasy.create.sign_in_reason"),
+        reason: draftAtRisk
+          ? t("fantasy.create.sign_in_reason_unsaved")
+          : t("fantasy.create.sign_in_reason"),
         primary: "register",
       });
       return;
@@ -512,7 +526,11 @@ function CreateTeamBody() {
                 {t(saveError)}
               </UiAlert>
             ) : null}
-            {owned.source === "guest" ? (
+            {draftAtRisk ? (
+              <UiAlert tone="caution" className="mt-3" testId="guest-draft-unsaved">
+                {t("fantasy.create.guest_unsaved")}
+              </UiAlert>
+            ) : owned.source === "guest" ? (
               <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="guest-draft-note">
                 {t("fantasy.create.guest_note")}
               </p>
@@ -545,7 +563,18 @@ function CreateTeamBody() {
         backTo="/fantasy"
         gameweek={enrolment.number}
         deadlineIso={enrolment.deadline}
-        banner={enrolmentNotice}
+        banner={
+          draftAtRisk ? (
+            <>
+              {enrolmentNotice ? <span className="block">{enrolmentNotice}</span> : null}
+              <span className="block" role="alert" data-testid="guest-draft-unsaved">
+                {t("fantasy.create.guest_unsaved")}
+              </span>
+            </>
+          ) : (
+            enrolmentNotice
+          )
+        }
         stats={[
           // What a first selection is about: how many of the fifteen are in,
           // and the money left — the same two figures as the name step. The

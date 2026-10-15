@@ -5,6 +5,7 @@ import { matchDayQuery } from "@/components/matches/match-day-query";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
+import { presentScore, scoreSentence } from "@/lib/match-score";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import type { Match } from "@/types/domain";
@@ -16,7 +17,7 @@ import type { Match } from "@/types/domain";
  * A postponed match has no day to show, so it is left out.
  */
 export function MatchdayStrip() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const today = matchDayKey(new Date());
   const dayQ = useQuery(matchDayQuery(today, lang, undefined));
 
@@ -34,7 +35,24 @@ export function MatchdayStrip() {
   const middle = (match: Match) =>
     match.status === "scheduled"
       ? timeFmt.format(new Date(match.kickoff))
-      : `${match.homeScore ?? 0} – ${match.awayScore ?? 0}`;
+      : presentScore(match).text;
+
+  // The link's name for a match that has started: the score as the other
+  // surfaces announce it (an unknown one is "unavailable", not dashes read
+  // out). A match still to play keeps its visible kick-off time.
+  const nameOf = (id: string) => {
+    const club = clubs.find((candidate) => candidate.id === id);
+    return club ? tr(club.shortName) : "";
+  };
+  const linkLabel = (match: Match) =>
+    match.status === "scheduled"
+      ? undefined
+      : scoreSentence(
+          presentScore(match),
+          { home: nameOf(match.homeClubId), away: nameOf(match.awayClubId) },
+          t("matches.a11y.score"),
+          t("matches.a11y.score_unavailable"),
+        );
 
   return (
     <section
@@ -53,6 +71,7 @@ export function MatchdayStrip() {
             <Link
               to="/matches/$matchId"
               params={{ matchId: match.id }}
+              aria-label={linkLabel(match)}
               className={cn(
                 "inline-flex min-h-[var(--ui-tap-min)] items-center gap-2 px-4",
                 ui.radius.full,

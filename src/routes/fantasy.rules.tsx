@@ -45,6 +45,7 @@ import {
   type ScoringTable as ScoringTableModel,
   type ScoringTableRow,
 } from "@/lib/fantasy-rules-table";
+import { scoringPolicyView } from "@/lib/fantasy-scoring-policy";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -106,6 +107,7 @@ function RulesPage() {
   // Read from the server's own lists; nothing here computes a point.
   const scoringTable = useMemo(() => (rules ? buildScoringTable(rules) : null), [rules]);
   const chips = useMemo(() => (rules ? buildChipList(rules.chips) : []), [rules]);
+  const policy = scoringPolicyView(rules);
 
   const sections: {
     icon: ComponentType<{ className?: string }>;
@@ -154,9 +156,17 @@ function RulesPage() {
     {
       icon: Trophy,
       titleKey: "fantasy.rules.scoring",
-      descKey: "fantasy.rules.scoring_desc",
+      // "Points by position" is the category scale's line; under the rating rule
+      // the rating line below says it instead.
+      descKey: rules?.ratingScoring ? undefined : "fantasy.rules.scoring_desc",
       body: rules ? (
-        scoringTable ? (
+        rules.ratingScoring ? (
+          <RatingScoring
+            fromGameweek={rules.ratingScoring.fromGameweek}
+            table={scoringTable}
+            nf={nf}
+          />
+        ) : scoringTable ? (
           <ScoringTable table={scoringTable} nf={nf} />
         ) : (
           // Never a partial or invented scale: one plain line instead.
@@ -234,8 +244,29 @@ function RulesPage() {
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
           {t("fantasy.rules.provisional_desc")}
         </p>
-        {rulesQ.data?.adaptiveScoring && (
-          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+        {/* With the rating rule on, each explanation names the rounds it governs
+            (audit LOC-01): the rating from its first round, the action-based
+            paragraph only for the rounds before it. */}
+        {policy.ratingFromGameweek !== null && (
+          <>
+            <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
+              {t("fantasy.scoring.ratingFrom").replace("{n}", nf.format(policy.ratingFromGameweek))}
+            </p>
+            <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+              {t("fantasy.scoring.ratingSafeguards")}
+            </p>
+          </>
+        )}
+        {policy.eventPolicyUntilGameweek !== null && (
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
+            {t("fantasy.scoring.eventUntil").replace(
+              "{n}",
+              nf.format(policy.eventPolicyUntilGameweek),
+            )}
+          </p>
+        )}
+        {policy.showEventPolicy && (
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
             {t("fantasy.scoring.policy")}
           </p>
         )}
@@ -372,6 +403,37 @@ function ScoringTable({ table, nf }: { table: ScoringTableModel; nf: Intl.Number
             values={{ n: nf.format(table.fullAppearanceMinutes) }}
           />
         </RuleText>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The rating rule (docs/backend/FANTASY_RATING_POINTS.md): from its first
+ * gameweek, the SofaScore rating rounded, 5 without one, 0 without an
+ * appearance, the captain doubled. The category scale stays below it for the
+ * gameweeks before, labelled as such.
+ */
+function RatingScoring({
+  fromGameweek,
+  table,
+  nf,
+}: {
+  fromGameweek: number;
+  table: ScoringTableModel | null;
+  nf: Intl.NumberFormat;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <RuleText>{t("fantasy.rules.rating_rule").replace("{n}", nf.format(fromGameweek))}</RuleText>
+      {fromGameweek > 1 && table ? (
+        <>
+          <RuleText>
+            {t("fantasy.rules.rating_previous").replace("{n}", nf.format(fromGameweek - 1))}
+          </RuleText>
+          <ScoringTable table={table} nf={nf} />
+        </>
       ) : null}
     </>
   );

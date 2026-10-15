@@ -18,6 +18,7 @@ import {
   UiLinkButton,
   UiSkeleton,
 } from "@/components/ui-kit";
+import { takeDuelReturn } from "@/components/plus/plus-return";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,19 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
   };
 
   const { league, rows } = people;
+
+  // Back from the offer's « Découvrir » in a duel: the sheet that was open opens again.
+  const duelReturn = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (duelReturn.current === undefined) duelReturn.current = takeDuelReturn();
+    const teamId = duelReturn.current;
+    if (!teamId) return;
+    const row = rows.find((candidate) => candidate.standing.managerId === teamId);
+    // The cards arrive after the standings: wait for the rival's.
+    if (!row?.card || row.own) return;
+    duelReturn.current = null;
+    setOpen(row);
+  }, [rows]);
   const band = useMemo(
     () => newlyRated(rows, card.throughGameweekSeq),
     [rows, card.throughGameweekSeq],
@@ -252,6 +266,9 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
         }}
         mine={card}
         row={open}
+        mineRow={rows.find((candidate) => candidate.own) ?? null}
+        leagueSize={rows.length}
+        leagueId={people.league?.id ?? null}
       />
     </div>
   );

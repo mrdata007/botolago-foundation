@@ -86,10 +86,8 @@ export interface HeroText {
 /** The label, the lines and the primary button of a hero (plan 5.3's table). */
 export function heroText(spec: HeroSpec, card: MyCardDto, words: MomentWords): HeroText {
   const { moment, card: copy } = words;
-  const provisionalLine =
-    card.provisional || card.ratingState === "provisional"
-      ? [fill(moment.m4.heroFreshLine, { final: copy.finalRounds(card.minConfirmed) })]
-      : [];
+  // No sentence about the number being provisional is shown under the card.
+  const provisionalLine: ReactNode[] = [];
   switch (spec.kind) {
     case "first_fresh":
       return {
@@ -182,12 +180,8 @@ export function lineText(kind: LineSpec["kind"], card: MyCardDto, words: MomentW
   const { moment, card: copy } = words;
   switch (kind) {
     case "provisional_cleared":
-      return card.ovr === null
-        ? null
-        : fill(moment.m7.line, {
-            ovr: card.ovr,
-            final: copy.finalRounds(card.minConfirmed),
-          });
+      // « Votre note n'est plus provisoire » is not shown: the label it clears is gone too.
+      return null;
     case "season_started":
       return card.previousSeason?.ovr == null
         ? null

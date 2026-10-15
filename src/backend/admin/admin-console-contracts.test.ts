@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
+  ADMIN_CONSOLE_NAV_GROUPS,
   ADMIN_CONSOLE_NAV_ITEMS,
+  groupAdminNavItems,
   ADMIN_CONSOLE_SCREENS,
   ADMIN_STATE_TEST_IDS,
   type AdminConsoleRoute,
@@ -17,6 +19,7 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/news",
   "/admin/stories",
   "/admin/prizes",
+  "/admin/plus",
   "/admin/users",
   "/admin/users/$userId",
   "/admin/pepites",
@@ -44,6 +47,7 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/news": "../../routes/admin.news.tsx",
   "/admin/stories": "../../routes/admin.stories.tsx",
   "/admin/prizes": "../../routes/admin.prizes.tsx",
+  "/admin/plus": "../../routes/admin.plus.tsx",
   "/admin/users": "../../routes/admin.users.tsx",
   "/admin/users/$userId": "../../routes/admin.users.$userId.tsx",
   "/admin/pepites": "../../routes/admin.pepites.index.tsx",
@@ -65,7 +69,12 @@ async function readRouteSources(): Promise<Record<AdminConsoleRoute, string>> {
         ] as const,
     ),
   );
-  return Object.fromEntries(entries) as Record<AdminConsoleRoute, string>;
+  const sources = Object.fromEntries(entries) as Record<AdminConsoleRoute, string>;
+  // The shell's markup (nav chips, home cards) lives in a component shared with the dev sample.
+  sources["/admin"] += await Bun.file(
+    new URL("../../components/admin/AdminShell.tsx", import.meta.url),
+  ).text();
+  return sources;
 }
 
 /**
@@ -206,6 +215,22 @@ describe("Frozen Admin Console contracts", () => {
     expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/prizes")).toBe(false);
   });
 
+  it("links the BotolaGO+ console from the nav, gated on premium.read", () => {
+    const plus = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/plus");
+    expect(plus?.permission).toBe("premium.read");
+    expect(plus?.testId).toBe("admin-nav-plus");
+    expect(plus?.labels.fr).toBe("Abonnements");
+    expect(plus?.labels.ar).toBe("الاشتراكات");
+    const visibleTo = (permissions: readonly string[]) =>
+      ADMIN_CONSOLE_NAV_ITEMS.filter((item) => permissions.includes(item.permission)).map(
+        (item) => item.testId,
+      );
+    expect(visibleTo(["premium.read"])).toEqual(["admin-nav-plus"]);
+    // Granting alone does not open the page: the grant is made from the member read.
+    expect(visibleTo(["premium.grant"])).toEqual([]);
+    expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/plus")).toBe(false);
+  });
+
   it("points every nav entry at an implemented route file", async () => {
     const sources = await readRouteSources();
     for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
@@ -298,7 +323,8 @@ describe("Frozen Admin Console contracts", () => {
     // Driven by the list, not by five hand-written links, so a contract entry
     // cannot exist without a link.
     expect(shell).toContain("data-testid={item.testId}");
-    expect(shell).toMatch(/ADMIN_CONSOLE_NAV_ITEMS[\s\S]{0,400}\.map\(\(item\)/);
+    expect(shell).toContain("groupAdminNavItems(access.context.permissions)");
+    expect(shell).toMatch(/items\.map\(\(item\)/);
     expect(ADMIN_CONSOLE_NAV_ITEMS.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -329,5 +355,37 @@ describe("the prizes item's Arabic label", () => {
     const { ar } = await import("@/i18n/dictionary-ar");
     const item = ADMIN_CONSOLE_NAV_ITEMS.find((entry) => entry.route === "/admin/prizes");
     expect(item?.labels.ar).toBe(ar["prizes.admin.nav"]);
+  });
+});
+
+describe("the grouped nav", () => {
+  it("gives every entry a known group, an icon and a one-line hint in both languages", () => {
+    const groups = new Set<string>(ADMIN_CONSOLE_NAV_GROUPS.map((group) => group.id));
+    for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
+      expect(groups.has(item.group)).toBe(true);
+      expect(item.icon.length).toBeGreaterThan(0);
+      expect(item.hint.fr.trim().length).toBeGreaterThan(0);
+      expect(item.hint.ar.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("lists Abonnements right after Utilisateurs", () => {
+    const routes = ADMIN_CONSOLE_NAV_ITEMS.map((item) => item.route as string);
+    expect(routes.indexOf("/admin/plus")).toBe(routes.indexOf("/admin/users") + 1);
+  });
+
+  it("keeps every entry of a group together, in group order", () => {
+    const order = ADMIN_CONSOLE_NAV_GROUPS.map((group) => group.id as string);
+    const seen = ADMIN_CONSOLE_NAV_ITEMS.map((item) => order.indexOf(item.group));
+    expect(seen).toEqual([...seen].sort((a, b) => a - b));
+  });
+
+  it("filters on the caller's permissions and drops an empty group", () => {
+    expect(groupAdminNavItems([])).toEqual([]);
+    const only = groupAdminNavItems(["premium.read"]);
+    expect(only.map((entry) => entry.group.id)).toEqual(["plus"]);
+    expect(only[0]?.items.map((item) => item.route)).toEqual(["/admin/plus"]);
+    const staff = groupAdminNavItems(["security.manage_staff", "users.read_support"]);
+    expect(staff.map((entry) => entry.group.id)).toEqual(["team", "community"]);
   });
 });

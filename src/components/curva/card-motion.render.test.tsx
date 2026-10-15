@@ -140,7 +140,6 @@ describe("the rating change chip", () => {
       <RatingLine
         ovr={84}
         tier="pro"
-        provisional={false}
         counted={9}
         min={3}
         formingLabel="forming"
@@ -177,9 +176,7 @@ describe("the rating change chip", () => {
   it("is absent with no change: no previous rating, or nothing moved", () => {
     expect(line(null)).not.toContain("curva-rating-change");
     expect(
-      render(
-        <RatingLine ovr={84} tier="pro" provisional={false} counted={9} min={3} formingLabel="f" />,
-      ),
+      render(<RatingLine ovr={84} tier="pro" counted={9} min={3} formingLabel="f" />),
     ).not.toContain("curva-rating-change");
   });
 

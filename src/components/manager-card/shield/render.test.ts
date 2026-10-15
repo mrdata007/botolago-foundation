@@ -4,7 +4,7 @@ import { findUnsafeMarkup, HOSTILE_NAMES } from "../markup-safety";
 import { TIER_CODES, type CardProfile } from "../types";
 import { founderDetail, fullCard, SERIAL_ON_FACE } from "./full";
 import { shieldRenderer } from "./index";
-import { METAL } from "./metal";
+import { EDITION_METAL, METAL } from "./metal";
 import { tableEm } from "./name";
 import {
   STRINGS,
@@ -119,11 +119,11 @@ describe("the shield's full card", () => {
     const unnamed = draw({ ...rated, name: "" });
     expect(unnamed).not.toContain("mc-shield__sig");
     expect(unnamed).not.toContain("mc-shield__mono");
-    if (SERIAL_ON_FACE) {
-      expect(textOf(draw({ ...rated, serial: null }), "mc-shield__serial")).toBe(
-        "BOT #— · 2026/27",
-      );
-    }
+    expect(textOf(draw({ ...rated, serial: null }), "mc-shield__serial")).toBe(
+      SERIAL_ON_FACE ? "BOT #— · 2026/27" : "2026/27",
+    );
+    // The face shows the season, never the card's number.
+    if (!SERIAL_ON_FACE) expect(draw(rated)).not.toContain("BOT #");
     expect(draw(rated)).not.toContain("mc-shield__founder");
   });
 
@@ -172,5 +172,80 @@ describe("the shield's full card", () => {
   it("is the renderer's full()", () => {
     const viaRenderer = shieldRenderer.full(rated, { strings: STRINGS.fr, theme: "dark" });
     expect(viaRenderer).toContain("mc-shield--dark");
+  });
+});
+
+describe("the paid editions on the full card", () => {
+  const editions = ["holo", "electric", "pixel", "chrome"] as const;
+
+  it("draws a card with no edition, standard or an unknown one exactly as the free card", () => {
+    const free = draw(rated);
+    const bare = (html: string) => html.replace(/mc-(?:t-)?(?:zap-|px-)?\d+/g, "ID");
+    expect(bare(draw({ ...rated, edition: "standard" }))).toBe(bare(free));
+    expect(bare(draw({ ...rated, edition: "gold" as never }))).toBe(bare(free));
+    expect(free).not.toContain("mc-shield--ed");
+    expect(free).not.toContain("mc-sl--fx");
+    expect(free).not.toContain("mc-sl--zap");
+  });
+
+  it("changes the finish and nothing that is said: same words, same label, same tier", () => {
+    for (const lang of ["fr", "ar"] as const) {
+      const free = draw(rated, lang);
+      for (const edition of editions) {
+        const html = draw({ ...rated, edition }, lang);
+        expect(html).toContain(`mc-shield--ed mc-shield--ed-${edition}`);
+        expect(html).toContain('data-mc-tier="pro"');
+        for (const cls of ["ovr", "ovrl", "tier", "club", "crest", "serial", "sig-line", "mono"]) {
+          expect(textOf(html, `mc-shield__${cls}`), `${edition} ${cls}`).toBe(
+            textOf(free, `mc-shield__${cls}`),
+          );
+        }
+        expect(html).toContain(`aria-label="${/aria-label="([^"]*)"/.exec(free)![1]}"`);
+        expect(html).toContain(`--sh-ink:${EDITION_METAL[edition].ink}`);
+        expect(html).not.toContain(`--sh-ink:${METAL.pro.ink}`);
+        expect(html).not.toMatch(/BotolaGO\+|BotolaGO\s?plus/i);
+      }
+    }
+  });
+
+  it("holds the live layers each edition has, and none an edition does not", () => {
+    const has = (html: string, cls: string) => html.includes(cls);
+    const h = draw({ ...rated, edition: "holo" });
+    expect(has(h, "mc-fx--prism") && has(h, "mc-fx--spark")).toBe(true);
+    const e = draw({ ...rated, edition: "electric" });
+    expect(e.match(/<feTurbulence/g)).toHaveLength(6);
+    expect(e).not.toContain("<animate");
+    expect(e).not.toContain("<script");
+    expect(e.match(/class="mc-zap mc-zap--\d"/g)).toHaveLength(3);
+    const p = draw({ ...rated, edition: "pixel" });
+    expect(p.match(/<pattern/g)).toHaveLength(3);
+    expect(p).toContain("mc-fx--pixels");
+    const c = draw({ ...rated, edition: "chrome" });
+    expect(c).not.toContain("mc-fx");
+    expect(c).toContain("--sh-frame:linear-gradient(105deg");
+    // the thick bezel cuts the face smaller
+    expect(c).toContain("scale(0.944 0.962)");
+    expect(draw({ ...rated, edition: "pixel" })).toContain("scale(0.958 0.97)");
+  });
+
+  it("keeps the tier's rating, tier word and the empty states on every edition", () => {
+    for (const edition of editions) {
+      const none = draw({ ...forming, edition });
+      expect(textOf(none, "mc-shield__ovr")).toBe("—");
+      expect(none).not.toContain("mc-shield__tier");
+      expect(none).toContain("mc-shield__marks");
+      expect(draw({ ...noClub, edition })).not.toContain("mc-shield__club");
+      expect(draw({ ...founder, edition })).toContain("mc-shield__founder");
+    }
+  });
+
+  it("is safe for hostile names on every edition", () => {
+    for (const edition of editions) {
+      for (const name of HOSTILE_NAMES) {
+        expect(findUnsafeMarkup(draw({ ...rated, name, edition })), `${edition} ${name}`).toEqual(
+          [],
+        );
+      }
+    }
   });
 });

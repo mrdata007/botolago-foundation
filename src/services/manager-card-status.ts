@@ -45,7 +45,7 @@ export function isStatus(value: unknown): value is ManagerCardStatus {
 }
 
 /**
- * Server: one read per 60 s per server instance, 800 ms at most, never throws, never logs. In a
+ * Server: one read per 60 s per server instance, 2 s at most (a failure keeps the last good answer), never throws, never logs. In a
  * development server with mock data it answers from the request's `?mc=` fixture and skips the
  * memo, so switching fixtures between page loads is never masked. The database read itself is
  * `manager-card-status-server.ts`, loaded here on first use.

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import type { Club } from "@/types/domain";
 import { responsiveMedia } from "@/lib/media";
+import { showImagePlaceholder, usableImageUrl } from "@/lib/image-fallback";
 import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { crestStyle } from "./club-crest-style";
@@ -80,8 +81,8 @@ export function PlayerPhoto({
   // `FailureAwareImage` retries when the URL changes, so a stale `true` would
   // cover a photo that is in fact loading.
   const [failedSrc, setFailedSrc] = useState<string>();
-  const src = photoUrl || undefined;
-  const showSilhouette = !src || failedSrc === src;
+  const src = usableImageUrl(photoUrl);
+  const showSilhouette = showImagePlaceholder(src, failedSrc);
   const photo = responsiveMedia(src, { kind: "photo", sizes: PHOTO_SIZES[size], ratio: 1 });
   const { style, "data-club": dataClub } = club ? crestStyle(club) : { style: undefined };
 

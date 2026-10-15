@@ -391,6 +391,11 @@ function PointsBody() {
           }}
         />
       ) : null}
+      {resultQ.data?.authoritative?.closedProvisional && (
+        <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
+          {t("fantasy.scoring.closedProvisional")}
+        </p>
+      )}
       {resultQ.data?.authoritative?.incremental && (
         <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
           {t("fantasy.scoring.incrementalPolicy")}

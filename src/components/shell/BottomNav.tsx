@@ -27,13 +27,16 @@
 //
 // RTL-safe (no physical utilities in the markup; the pill's offsets are
 // measured, so they are right in both directions) and reduced-motion-safe (the
-// global media query in styles.css neutralises the transitions).
+// pill's stretch checks the setting and does not run; the global media query
+// in styles.css neutralises the remaining transitions).
 
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { prefersReducedMotion } from "@/lib/motion";
+import { STRETCH_MS, stretchKeyframes } from "@/lib/pill-stretch";
 import { cn } from "@/lib/utils";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
@@ -49,6 +52,13 @@ let lastPlacement: { to: string; x: number; y: number } | null = null;
 
 /** When the last pop began, so a bar drawn again part-way through carries on. */
 let lastPop: { to: string; at: number } | null = null;
+
+/** The pill's last stretch, so a bar drawn again part-way through it carries on. */
+let lastStretch: {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  at: number;
+} | null = null;
 const POP_MS = 320;
 
 export function BottomNav() {
@@ -105,6 +115,42 @@ export function BottomNav() {
     return () => observer.disconnect();
   }, [measure]);
 
+  // Stretch (docs/engineering/TAB_SLIDE_STRETCH.md, after React Bits' Rubber
+  // Segment): the pill reaches from its tab toward the new one, flattening a
+  // little, then gathers on the new tab with a small squash and settles. Run
+  // with the Web Animations API from the last spot to the new one; the pill's
+  // resting place is its `transform` style, so a cancelled or skipped run
+  // leaves it in the right place. Reduced motion: it just moves.
+  // `undefined` until this bar's first look, so that look can pick up a
+  // stretch the previous bar began (each page draws its own bar, and the old
+  // one starts the move a moment before the new page replaces it).
+  const shownSlide = useRef<{ x: number; y: number } | null | undefined>(undefined);
+  useLayoutEffect(() => {
+    const from = shownSlide.current;
+    shownSlide.current = slide;
+    const pill = pillRef.current;
+    if (!pill || !slide || prefersReducedMotion() || typeof pill.animate !== "function") return;
+    const run = (start: { x: number; y: number }, end: { x: number; y: number }, at: number) => {
+      pill.getAnimations().forEach((running) => running.cancel());
+      const animation = pill.animate(stretchKeyframes(start, end), {
+        duration: STRETCH_MS,
+        easing: "cubic-bezier(0.3, 0.7, 0.2, 1)",
+      });
+      animation.currentTime = at;
+    };
+    if (from === undefined) {
+      const carried = lastStretch;
+      const elapsed = carried ? performance.now() - carried.at : Infinity;
+      if (carried && elapsed < STRETCH_MS && carried.to.x === slide.x && carried.to.y === slide.y) {
+        run(carried.from, carried.to, elapsed);
+      }
+      return;
+    }
+    if (!from || !settled || (from.x === slide.x && from.y === slide.y)) return;
+    lastStretch = { from, to: slide, at: performance.now() };
+    run(from, slide, 0);
+  }, [slide, settled]);
+
   useEffect(() => {
     if (!slide || settled) return;
     const frame = requestAnimationFrame(() => setSettled(true));
@@ -154,9 +200,6 @@ export function BottomNav() {
               top: 0,
               transform: `translate(${slide.x}px, ${slide.y}px)`,
               backgroundImage: "var(--ui-grad-action)",
-              transition: settled
-                ? "transform var(--duration-sheet) var(--ease-emphasized)"
-                : "none",
             }}
           />
         ) : null}

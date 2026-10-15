@@ -106,3 +106,50 @@ describe("the shield's share art", () => {
     expect(cardImage(founder, STRINGS.fr, tableEm).texts.map((run) => run.text)).toContain("2026");
   });
 });
+
+describe("the paid editions on tokens and the share art", () => {
+  const editions = ["holo", "electric", "pixel", "chrome"] as const;
+
+  it("draw the edition's frame and face on a token: still, with the rating, no animation", () => {
+    for (const edition of editions) {
+      for (const size of SIZES) {
+        const html = tokenMarkup({ ...rated, edition }, STRINGS.fr, size, "light");
+        expect(html).toContain(`mc-tok--ed-${edition}`);
+        expect(html).not.toMatch(/<animate|<style|class="mc-fx|mc-zap|filter=/);
+        expect(findUnsafeMarkup(html)).toEqual([]);
+      }
+      expect(new Set(numbers(tokenMarkup({ ...rated, edition }, STRINGS.fr, 44, "light")))).toEqual(
+        new Set(["84"]),
+      );
+    }
+    expect(tokenMarkup({ ...rated, edition: "pixel" }, STRINGS.fr, 44, "light")).toContain("-chk");
+    const plain = tokenMarkup(rated, STRINGS.fr, 44, "light");
+    expect(plain).not.toContain("mc-tok--ed-");
+    const norm = (html: string) => html.replace(/mc-t-\d+/g, "T");
+    expect(norm(tokenMarkup({ ...rated, edition: "standard" }, STRINGS.fr, 44, "light"))).toBe(
+      norm(plain),
+    );
+  });
+
+  it("differ from one another and from the tier's own token", () => {
+    const norm = (html: string) => html.replace(/mc-t-\d+/g, "T");
+    const all = [undefined, ...editions].map((edition) =>
+      norm(tokenMarkup({ ...rated, ...(edition ? { edition } : {}) }, STRINGS.fr, 56, "light")),
+    );
+    expect(new Set(all).size).toBe(5);
+  });
+
+  it("draw the edition's frame and ink on the share picture, at the same size", () => {
+    for (const edition of editions) {
+      const art = cardImage({ ...rated, edition }, STRINGS.fr, tableEm);
+      const free = cardImage(rated, STRINGS.fr, tableEm);
+      expect(art.width).toBe(IMAGE_WIDTH);
+      expect(art.height).toBe(IMAGE_HEIGHT);
+      expect(art.svg).not.toBe(free.svg);
+      expect(art.svg).not.toMatch(/<animate|<script|<style/);
+      expect(art.texts.map((t) => t.text)).toEqual(free.texts.map((t) => t.text));
+      expect(findUnsafeMarkup(art.svg)).toEqual([]);
+    }
+    expect(cardImage({ ...rated, edition: "pixel" }, STRINGS.fr, tableEm).svg).toContain("-chk");
+  });
+});

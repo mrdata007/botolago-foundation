@@ -62,6 +62,20 @@ export function categorize(evidence: unknown): AlertCategory {
         )
         .map((w) => `GW${Number(w.sequence) || "?"}: ${w.code as string}`)
     : [];
+  // A lifecycle write that timed out or got no reply from the database
+  // (fantasy-season-orchestrator.ts, `ambiguousWrite`): the pass stopped and kept
+  // its lease. The RPC name and two booleans only.
+  const doubt = record.ambiguousWrite as
+    | { rpc?: unknown; leaseReleased?: unknown; leaseExtended?: unknown }
+    | undefined;
+  const writeInDoubt =
+    doubt && typeof doubt.rpc === "string" && SAFE_CODE.test(doubt.rpc)
+      ? `write in doubt ${doubt.rpc} (${
+          doubt.leaseReleased === true
+            ? "lease released"
+            : "lease kept, do not start another worker until it expires, about 7 minutes"
+        })`
+      : null;
   const escalations = (() => {
     const watch = record.deadlineWatch as { escalations?: unknown[] } | undefined;
     return Array.isArray(watch?.escalations) ? watch.escalations.length : 0;
@@ -114,6 +128,7 @@ export function categorize(evidence: unknown): AlertCategory {
   const parts = [
     verdict ? `verdict ${verdict}` : null,
     code ? `code ${code}` : null,
+    writeInDoubt,
     workers.length ? `lifecycle ${workers.join(", ")}` : null,
     escalations ? `${escalations} deadline escalation(s)` : null,
     performanceError ? `performance listing ${performanceError}` : null,
@@ -129,14 +144,16 @@ export function categorize(evidence: unknown): AlertCategory {
   return {
     category:
       code ??
-      (workers.length
-        ? "fantasy_lifecycle_refused"
-        : (performanceError ??
-          (overdue.length
-            ? "performance_coverage_overdue"
-            : pointsOverdue.length
-              ? "fantasy_points_overdue"
-              : (scoringError ?? verdict ?? "workflow_failed")))),
+      (writeInDoubt
+        ? "fantasy_write_in_doubt"
+        : workers.length
+          ? "fantasy_lifecycle_refused"
+          : (performanceError ??
+            (overdue.length
+              ? "performance_coverage_overdue"
+              : pointsOverdue.length
+                ? "fantasy_points_overdue"
+                : (scoringError ?? verdict ?? "workflow_failed")))),
     detail: parts.length ? parts.join("; ") : "see the run log",
   };
 }

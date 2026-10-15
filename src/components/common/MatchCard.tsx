@@ -6,6 +6,9 @@ import { ClubCrest } from "./ClubCrest";
 import { FlipScore } from "@/components/matches/FlipScore";
 import { LiveProgress } from "@/components/matches/LiveProgress";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
+import { liveClock } from "@/lib/live-minute";
+import { presentScore, scoreSentence } from "@/lib/match-score";
+import { useLiveStageLabels } from "@/components/matches/live-stage";
 import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
@@ -137,6 +140,14 @@ export function MatchCard({
   const isHero = variant === "hero";
   // The minute keeps ticking between data refreshes (at most one ahead).
   const liveMinute = useTickingMinute(match.minute, status === "live");
+  // "45+" / "90+" once the clock reaches the end of a period; never a made-up minute.
+  const stages = useLiveStageLabels();
+  const clock = liveClock({
+    stages,
+    minute: liveMinute,
+    period: match.period,
+    addedTime: match.addedTime,
+  });
   // A match that ends while the list is open: its "FT" pops once.
   const justFinished = useJustTurnedOn(status === "finished");
 
@@ -159,13 +170,17 @@ export function MatchCard({
   };
   const homeName = isHero ? tr(home.name) : rowName(home);
   const awayName = isHero ? tr(away.name) : rowName(away);
-  const hs = match.homeScore ?? 0;
-  const as = match.awayScore ?? 0;
+  // An unknown score is a dash, announced as unavailable -- never a 0–0.
+  const result = presentScore(match);
 
   // Who lost, for a finished row: that name steps back. A shoot-out decides a
-  // level score when its result is known.
+  // level score when its result is known. Nobody lost a score we do not have.
   const shootout = status === "penalties" ? extras?.penaltiesScore : undefined;
-  const homeMargin = shootout && hs === as ? shootout.home - shootout.away : hs - as;
+  const homeMargin = result.known
+    ? shootout && result.home === result.away
+      ? shootout.home - shootout.away
+      : result.home! - result.away!
+    : 0;
   const homeLost = isFinished && homeMargin < 0;
   const awayLost = isFinished && homeMargin > 0;
 
@@ -175,16 +190,17 @@ export function MatchCard({
   // A row whose day is not printed is not dated: nothing to name or to say.
   const dated = showDate && !isHero && !unconfirmedDate;
   const a11yLabel = (() => {
-    const score = t("matches.a11y.score")
-      .replace("{home}", tr(home.name))
-      .replace("{hs}", String(hs))
-      .replace("{away}", tr(away.name))
-      .replace("{as}", String(as));
+    const score = scoreSentence(
+      result,
+      { home: tr(home.name), away: tr(away.name) },
+      t("matches.a11y.score"),
+      t("matches.a11y.score_unavailable"),
+    );
     if (isLive) {
       const state =
-        match.minute === undefined
+        clock.minute === undefined
           ? t("matches.status.live")
-          : t("matches.a11y.live_minute").replace("{minute}", String(match.minute));
+          : t("matches.a11y.live_minute").replace("{minute}", clock.minute);
       return `${score} — ${state}`;
     }
     if (isFinished) {
@@ -200,9 +216,9 @@ export function MatchCard({
   /** Three flex children in a container that follows the page direction. */
   const score = (className: string) => (
     <div className={cn("flex items-center gap-1.5", className)}>
-      <FlipScore value={hs} />
+      <FlipScore value={result.home} />
       <span>–</span>
-      <FlipScore value={as} />
+      <FlipScore value={result.away} />
     </div>
   );
 
@@ -212,10 +228,12 @@ export function MatchCard({
     if (isLive) {
       return (
         <UiLivePill
-          minute={liveMinute}
+          minute={clock.minute}
           size={isHero ? "md" : "sm"}
           // Extra time names itself on the pill; the rest of play is "live".
-          label={status === "extra_time" ? t("matches.status.extra_time") : undefined}
+          label={
+            clock.stage ?? (status === "extra_time" ? t("matches.status.extra_time") : undefined)
+          }
         />
       );
     }
@@ -375,12 +393,12 @@ export function MatchCard({
           <ClubCrest club={home} palette={pair.home} size="xs" className="h-6 w-6" />
           <span className={cn("min-w-0", nameClass(homeLost))}>{homeName}</span>
         </div>
-        {hasScore ? <FlipScore value={hs} className={scoreClass(homeLost)} /> : null}
+        {hasScore ? <FlipScore value={result.home} className={scoreClass(homeLost)} /> : null}
         <div className="flex min-w-0 items-center gap-2">
           <ClubCrest club={away} palette={pair.away} size="xs" className="h-6 w-6" />
           <span className={cn("min-w-0", nameClass(awayLost))}>{awayName}</span>
         </div>
-        {hasScore ? <FlipScore value={as} className={scoreClass(awayLost)} /> : null}
+        {hasScore ? <FlipScore value={result.away} className={scoreClass(awayLost)} /> : null}
       </div>
       <span {...clubStyle(pair.away)} className={ui.club.edgeFill} />
     </div>

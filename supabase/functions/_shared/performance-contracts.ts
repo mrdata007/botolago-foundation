@@ -25,6 +25,12 @@ export interface PerformancePlayerRef {
 export const PERFORMANCE_INCIDENT_KINDS = [
   "goal",
   "penalty_goal",
+  /**
+   * An own goal. `side` is the side it COUNTS FOR (SofaScore's `isHome` on a
+   * `goal/ownGoal` incident, confirmed by the score after it on event 17256978);
+   * `player` is the player who scored it, of the other side.
+   */
+  "own_goal",
   "penalty_missed",
   "yellow_card",
   "second_yellow",
@@ -73,7 +79,11 @@ export interface PerformancePlayerStats {
   readonly ownGoals: number | null;
   /** Present only on a full-coverage match. Missing means unknown, never zero. */
   readonly saves: number | null;
-  /** Display only (decision D3). Never points. */
+  /**
+   * SofaScore's match rating. Display only under decision D3, until the owner's
+   * rating rule (2026-10-13): from the gameweek it is switched on, Fantasy points
+   * are this rating rounded (docs/backend/FANTASY_RATING_POINTS.md).
+   */
   readonly rating: number | null;
   readonly penaltyMissed: number | null;
 }
@@ -82,8 +92,8 @@ export interface PerformanceLineups {
   readonly provider: PerformanceProvider;
   readonly players: readonly PerformanceLineupPlayer[];
   /**
-   * Sofascore: true when the statistics carry the full-coverage marker
-   * (`totalPass`). On a limited match assists are 0 for everyone, which means
+   * Sofascore: true when every player with minutes played carries both
+   * `rating` and `totalPass` (full coverage). On a limited match assists are 0 for everyone, which means
    * unknown. Flashscore has no per-player statistics, so this is false.
    */
   readonly fullCoverage: boolean;

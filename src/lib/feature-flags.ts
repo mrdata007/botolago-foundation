@@ -328,3 +328,48 @@ export const HOME_DEADLINE_FIRST = false;
  * Gated surfaces: `src/components/admin/player-mappings/PlayerMappingsScreen.tsx`.
  */
 export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = true;
+
+/**
+ * BotolaGO+ (the paid membership screens) — in the build, for a staff-only preview.
+ *
+ * Owner decision, 2026-10-14: the BotolaGO+ code ships in the build, and the DATABASE MODE decides
+ * who sees it (`app_private.premium_settings`, runbook docs/backend/PREMIUM_OPERATIONS_RUNBOOK.md,
+ * "The switch"):
+ *   - `off` (the default) and `preview`: the public sees nothing. No teaser, no lock, no route.
+ *     In `preview` only a member (a complimentary grant from /admin/plus, or a test purchase) is
+ *     shown BotolaGO+: `api.get_my_premium()` answers `{ available: true }` for members alone, and
+ *     `derivePremium` (`src/services/use-premium.ts`) counts exactly that reader as enabled and
+ *     member. This is the staff-only preview.
+ *   - `on`: the feature shows to everyone: members see the sections, other signed-in readers see
+ *     the locks and the offer.
+ * A database that does not have the functions yet (`PGRST202`) answers like `off`, so this can ship
+ * before the migrations are applied. Earlier decision, 2026-10-13: built behind this switch, off,
+ * so that merging changed nothing anyone saw. Plan: docs/plans/BOTOLAGO_PLUS_PLAN.md and
+ * BOTOLAGO_PLUS_DELIVERY_PLAN.md; screen brief: docs/product/botolago-plus-screens-brief.md;
+ * staff-preview brief: docs/product/botolago-plus-staff-preview-brief.md.
+ *
+ * To take it out of the build again, set this to `false` and republish: nothing is requested.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/curva.plus.tsx` and `src/routes/plus.tsx` — the offer routes (the page draws
+ *     nothing and leaves unless the database shows BotolaGO+ to this reader)
+ *   - `src/routes/profile.tsx` — the Profil › BotolaGO+ section and member mark
+ *   - `src/components/shell/TopBar.tsx` — the member logo in the header
+ *   - Curva's card page (`CurvaCardPage.tsx`) — the lock chips on the extras
+ *   - Curva's face-à-face sheet (`HeadToHeadSheet.tsx`) — the lock chip on the detailed duel
+ *   - Curva's home (`CurvaHome.tsx`) — the J-3 renewal reminder and the member preview
+ */
+export const PREMIUM_BUILD = true;
+
+/**
+ * Development preview of BotolaGO+: `VITE_PREMIUM_PREVIEW=1` on a development server only.
+ * `import.meta.env.DEV` is replaced by `false` in a production build, so this is `false` there and
+ * every branch it guards is removed (same construction as `MANAGER_CARD_PREVIEW`).
+ */
+export const PREMIUM_PREVIEW: boolean =
+  typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_PREMIUM_PREVIEW === "1";
+
+/** The build lets BotolaGO+ exist; the (mocked, for now) status decides whether it shows. */
+export const PREMIUM_SURFACES: boolean = PREMIUM_BUILD || PREMIUM_PREVIEW;

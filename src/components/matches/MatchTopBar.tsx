@@ -3,6 +3,9 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBackButton, UiHeader, UiIconButton, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
+import { liveClock } from "@/lib/live-minute";
+import { presentScore } from "@/lib/match-score";
+import { useLiveStageLabels } from "./live-stage";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
 
@@ -42,6 +45,11 @@ export function MatchTopBar({
     palettes: { home: ClubPalette; away: ClubPalette };
     /** Minutes played, for the elapsed-time bar along the compact bar's foot. */
     elapsed: number;
+    /**
+     * The read says live but is too old to trust (`liveFreshness` "expired"):
+     * the neutral "Score à confirmer" pill instead of the live one, no bar.
+     */
+    liveUnconfirmed?: boolean;
   };
 }) {
   const { t } = useI18n();
@@ -76,6 +84,7 @@ function CompactBar({
   away,
   palettes,
   elapsed,
+  liveUnconfirmed,
   shown,
   onBack,
   onShare,
@@ -85,13 +94,23 @@ function CompactBar({
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   elapsed: number;
+  liveUnconfirmed?: boolean;
   shown: boolean;
   onBack: () => void;
   onShare?: () => void;
 }) {
   const { t } = useI18n();
-  const isLive = match.status === "live";
-  const showScore = isLive || match.status === "finished";
+  const stages = useLiveStageLabels();
+  const showScore = match.status === "live" || match.status === "finished";
+  const score = presentScore(match);
+  const isLive = match.status === "live" && !liveUnconfirmed;
+  const unconfirmed = match.status === "live" && liveUnconfirmed === true;
+  const clock = liveClock({
+    stages,
+    minute: match.minute,
+    period: match.period,
+    addedTime: match.addedTime,
+  });
   return (
     <div
       inert={!shown}
@@ -142,12 +161,25 @@ function CompactBar({
                   ui.score.sm,
                 )}
               >
-                <bdi>{match.homeScore ?? 0}</bdi>
+                <bdi>{score.homeText}</bdi>
                 <span>–</span>
-                <bdi>{match.awayScore ?? 0}</bdi>
+                <bdi>{score.awayText}</bdi>
               </span>
             ) : null}
-            {isLive ? <UiLivePill minute={match.minute} /> : null}
+            {isLive ? <UiLivePill minute={clock.minute} label={clock.stage} /> : null}
+            {unconfirmed ? (
+              <span
+                className={cn(
+                  "inline-flex items-center whitespace-nowrap px-2 py-0.5",
+                  ui.radius.full,
+                  ui.surface.inkPlain,
+                  ui.text.micro,
+                  "[font-weight:var(--ui-weight-heavy)] uppercase ltr:tracking-wide",
+                )}
+              >
+                {t("matches.status.unconfirmed")}
+              </span>
+            ) : null}
           </div>
           <ClubCrest
             club={away}

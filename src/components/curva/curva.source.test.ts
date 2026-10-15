@@ -69,18 +69,24 @@ describe("the Curva screens' imports", () => {
 
 describe("the stage's room", () => {
   it("gives the card's column 352 px from 768 px: the 336 px card and 8 px of the stage's padding each side", () => {
-    for (const name of ["CurvaHome.tsx", "CurvaCardPage.tsx"]) {
-      const text = code(readFileSync(join(HERE, name), "utf8"));
-      expect(text, name).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
-      expect(text, name).not.toContain("264px");
-    }
+    const home = code(readFileSync(join(HERE, "CurvaHome.tsx"), "utf8"));
+    expect(home).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
+    expect(home).not.toContain("264px");
+  });
+
+  it("gives a subscriber's card page one column (the card 352 px wide) and keeps everyone else's card beside the sections", () => {
+    const text = code(readFileSync(join(HERE, "CurvaCardPage.tsx"), "utf8"));
+    expect(text).toContain('usePlusAccess() === "member"');
+    expect(text).toContain("md:max-w-[352px]");
+    expect(text).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
+    expect(text).not.toContain("264px");
   });
 });
 
 describe("the stage on a phone", () => {
   const read = (name: string) => code(readFileSync(join(HERE, name), "utf8"));
 
-  it("is sized from the window's height on G1 alone: the card page and the guest's hero keep the plan's 296 px", () => {
+  it("is sized from the window's height on G1 alone: the card page and the no-team hero keep the plan's 296 px", () => {
     expect(read("CurvaHome.tsx")).toMatch(/<CardStage[^>]*\bfitHeight\b/);
     for (const name of ["CurvaCardPage.tsx", "GuestHero.tsx"]) {
       expect(read(name), name).not.toContain("fitHeight");

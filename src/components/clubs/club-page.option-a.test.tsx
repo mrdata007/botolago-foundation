@@ -324,7 +324,7 @@ describe("club page — the figures", () => {
     expect(html).not.toContain(escapeHtml(dictionaries.fr["standings.shared_rank_note"]));
   });
 
-  it("says under the table around the club that it is provisional and its shared rank decides nothing", async () => {
+  it("says under the table around the club that its shared rank decides nothing, and nothing about it being provisional", async () => {
     // A season's first day: FAR won, Raja and Wydad have yet to play.
     const firstDay = [
       { ...TABLE[0]!, played: 1, points: 3 },
@@ -349,7 +349,7 @@ describe("club page — the figures", () => {
         standingsLink={{ to: "/", params: {}, search: {} }}
       />,
     );
-    expect(html).toContain(escapeHtml(dictionaries.fr["standings.provisional"]));
+    expect(html).not.toContain(escapeHtml(dictionaries.fr["standings.provisional"]));
     expect(html).toContain(escapeHtml(dictionaries.fr["standings.shared_rank_note"]));
   });
 });

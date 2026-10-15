@@ -41,8 +41,7 @@ const bind = (template: string) =>
  * While the card forms: the 64 px token with its dash, the counter « 1/3 » as the biggest thing in
  * the block, « Carte en formation », and one line with the next round and its deadline (or the
  * sub-state the server's data proves: the eve, a round over but not final, a minimum reached with
- * no number, a late signer). Once there is a number: « 84 OVR », its tier, « Provisoire » while
- * it is, and the next round. Every figure is what the card read says; a count that is not known
+ * no number, a late signer). Once there is a number: « 84 OVR », its tier, and the next round. Every figure is what the card read says; a count that is not known
  * is not shown, and nothing is 0 that is not.
  *
  * The whole block is one link to `/curva`. It has no button of its own, because the useful
@@ -199,15 +198,14 @@ function Head({
           <TierWord tier={head.tier} />
         </span>
       ) : null}
-      {head.provisional ? <Pill tone="quiet">{cardCopy.provisional}</Pill> : null}
     </>
   );
 }
 
 /**
  * A small pill in the sentence's own case (the kit's badge is the uppercase, letter-spaced label
- * step, which this block does not want): « Nouveau » on the action gradient, « Provisoire » as a
- * hairline outline. Both are words, never a colour alone.
+ * step, which this block does not want): « Nouveau » on the action gradient, or a hairline
+ * outline. Both are words, never a colour alone.
  */
 function Pill({ tone, children }: { tone: "new" | "quiet"; children: ReactNode }) {
   return (

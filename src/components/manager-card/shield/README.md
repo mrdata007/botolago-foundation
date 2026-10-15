@@ -67,9 +67,10 @@ screen. The seven beats are root classes and CSS keyframes (`beats.ts` and `shie
 
 ## The serial
 
-The face prints « BOT #… · season » under the crest because the owner's layout of 2026-10-13 asks for
-it (`SERIAL_ON_FACE` in `full.ts`). The card's label, the share picture and the rest of the app still
-do not show it (decision of 2026-10-12); `SERIAL_ON_FACE = false` takes it off the face alone.
+The face prints the season alone under the crest. The owner's layout of 2026-10-13 put « BOT #… »
+before it; on 2026-10-14 the owner asked for the number off every card, so `SERIAL_ON_FACE` in
+`full.ts` is `false`. The card's label, the share picture and the rest of the app do not show it
+either (decision of 2026-10-12). The serial stays in the data.
 
 ## Fonts
 

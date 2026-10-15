@@ -97,9 +97,16 @@ export interface LeagueStanding {
   /** Optional club affiliation used for the crest badge in league tables. */
   clubId?: string;
   rank: number;
-  previousRank: number;
+  /** The rank this board held before; null when the server has none to give. */
+  previousRank: number | null;
   gameweekScore: number;
   totalScore: number;
+  /**
+   * ISO. When the ranking service calculated this row (the API's
+   * `calculatedAt`); absent from the mock board. It is what dates a league's
+   * standings (`leagueFreshness`).
+   */
+  calculatedAt?: string;
 }
 
 /**
@@ -129,6 +136,9 @@ export const POINTS_EVENT_CATEGORIES = [
   "own_goal",
   "bonus",
   "player_of_match",
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md): the only line of a
+  // rating gameweek, the SofaScore rating rounded (5 without one).
+  "rating",
 ] as const;
 
 export type PointsEventCategory = (typeof POINTS_EVENT_CATEGORIES)[number];
@@ -171,6 +181,11 @@ export interface GameweekResult {
     chipType: "wildcard" | "free_hit" | "bench_boost" | "triple_captain" | null;
     incremental: boolean;
     finalized: boolean;
+    /**
+     * The gameweek closed on provisional points (the next one is open) and is not
+     * locked yet: SofaScore's detailed statistics may still change these points.
+     */
+    closedProvisional?: boolean;
     /** Starters' points as the server counted them (substitutions applied, no captain bonus). */
     startingPoints: number;
     /** The final score once finalized, else null; `totalPoints` falls back to the provisional one. */

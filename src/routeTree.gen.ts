@@ -20,6 +20,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PepitesRouteImport } from './routes/pepites'
+import { Route as PlusRouteImport } from './routes/plus'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
@@ -33,6 +34,7 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
+import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
@@ -52,11 +54,15 @@ import { Route as CurvaIndexRouteImport } from './routes/curva.index'
 import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
 import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
+import { Route as CurvaPlusRouteImport } from './routes/curva.plus'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
+import { Route as DevAdminShellSampleRouteImport } from './routes/dev.admin-shell-sample'
 import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
+import { Route as DevManagerCardEditionsRouteImport } from './routes/dev.manager-card-editions'
 import { Route as DevManagerCardOvrChangeSampleRouteImport } from './routes/dev.manager-card-ovr-change-sample'
 import { Route as DevManagerCardSampleRouteImport } from './routes/dev.manager-card-sample'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
+import { Route as DevPlusAdminSampleRouteImport } from './routes/dev.plus-admin-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
@@ -159,6 +165,11 @@ const PepitesRoute = PepitesRouteImport.update({
   path: '/pepites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlusRoute = PlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -224,6 +235,11 @@ const AdminNewsRoute = AdminNewsRouteImport.update({
 const AdminPepitesRoute = AdminPepitesRouteImport.update({
   id: '/pepites',
   path: '/pepites',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlusRoute = AdminPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPrizesRoute = AdminPrizesRouteImport.update({
@@ -321,14 +337,29 @@ const CurvaLesVotresRoute = CurvaLesVotresRouteImport.update({
   path: '/les-votres',
   getParentRoute: () => CurvaRoute,
 } as any)
+const CurvaPlusRoute = CurvaPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
+  getParentRoute: () => CurvaRoute,
+} as any)
 const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
   id: '/saisons',
   path: '/saisons',
   getParentRoute: () => CurvaRoute,
 } as any)
+const DevAdminShellSampleRoute = DevAdminShellSampleRouteImport.update({
+  id: '/dev/admin-shell-sample',
+  path: '/dev/admin-shell-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevCurvaRankingSampleRoute = DevCurvaRankingSampleRouteImport.update({
   id: '/dev/curva-ranking-sample',
   path: '/dev/curva-ranking-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevManagerCardEditionsRoute = DevManagerCardEditionsRouteImport.update({
+  id: '/dev/manager-card-editions',
+  path: '/dev/manager-card-editions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevManagerCardOvrChangeSampleRoute =
@@ -345,6 +376,11 @@ const DevManagerCardSampleRoute = DevManagerCardSampleRouteImport.update({
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   id: '/dev/player-mappings-sample',
   path: '/dev/player-mappings-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevPlusAdminSampleRoute = DevPlusAdminSampleRouteImport.update({
+  id: '/dev/plus-admin-sample',
+  path: '/dev/plus-admin-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevSofascorePlayersSampleRoute =
@@ -597,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -610,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/pepites': typeof AdminPepitesRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -627,11 +665,15 @@ export interface FileRoutesByFullPath {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -690,6 +732,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -701,6 +744,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -718,11 +762,15 @@ export interface FileRoutesByTo {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -785,6 +833,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -798,6 +847,7 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/pepites': typeof AdminPepitesRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -815,11 +865,15 @@ export interface FileRoutesById {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -883,6 +937,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/notifications'
     | '/pepites'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -896,6 +951,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/news'
     | '/admin/pepites'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -913,11 +969,15 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -976,6 +1036,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/news'
     | '/notifications'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
@@ -987,6 +1048,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -1004,11 +1066,15 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -1070,6 +1136,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/notifications'
     | '/pepites'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -1083,6 +1150,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/news'
     | '/admin/pepites'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -1100,11 +1168,15 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -1167,6 +1239,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRouteWithChildren
   NotificationsRoute: typeof NotificationsRoute
   PepitesRoute: typeof PepitesRouteWithChildren
+  PlusRoute: typeof PlusRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -1177,10 +1250,13 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
+  DevAdminShellSampleRoute: typeof DevAdminShellSampleRoute
   DevCurvaRankingSampleRoute: typeof DevCurvaRankingSampleRoute
+  DevManagerCardEditionsRoute: typeof DevManagerCardEditionsRoute
   DevManagerCardOvrChangeSampleRoute: typeof DevManagerCardOvrChangeSampleRoute
   DevManagerCardSampleRoute: typeof DevManagerCardSampleRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
+  DevPlusAdminSampleRoute: typeof DevPlusAdminSampleRoute
   DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
   JourneePublicIdRoute: typeof JourneePublicIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
@@ -1272,6 +1348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PepitesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plus': {
+      id: '/plus'
+      path: '/plus'
+      fullPath: '/plus'
+      preLoaderRoute: typeof PlusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -1361,6 +1444,13 @@ declare module '@tanstack/react-router' {
       path: '/pepites'
       fullPath: '/admin/pepites'
       preLoaderRoute: typeof AdminPepitesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plus': {
+      id: '/admin/plus'
+      path: '/plus'
+      fullPath: '/admin/plus'
+      preLoaderRoute: typeof AdminPlusRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/prizes': {
@@ -1496,6 +1586,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CurvaLesVotresRouteImport
       parentRoute: typeof CurvaRoute
     }
+    '/curva/plus': {
+      id: '/curva/plus'
+      path: '/plus'
+      fullPath: '/curva/plus'
+      preLoaderRoute: typeof CurvaPlusRouteImport
+      parentRoute: typeof CurvaRoute
+    }
     '/curva/saisons': {
       id: '/curva/saisons'
       path: '/saisons'
@@ -1503,11 +1600,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CurvaSaisonsRouteImport
       parentRoute: typeof CurvaRoute
     }
+    '/dev/admin-shell-sample': {
+      id: '/dev/admin-shell-sample'
+      path: '/dev/admin-shell-sample'
+      fullPath: '/dev/admin-shell-sample'
+      preLoaderRoute: typeof DevAdminShellSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev/curva-ranking-sample': {
       id: '/dev/curva-ranking-sample'
       path: '/dev/curva-ranking-sample'
       fullPath: '/dev/curva-ranking-sample'
       preLoaderRoute: typeof DevCurvaRankingSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/manager-card-editions': {
+      id: '/dev/manager-card-editions'
+      path: '/dev/manager-card-editions'
+      fullPath: '/dev/manager-card-editions'
+      preLoaderRoute: typeof DevManagerCardEditionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/manager-card-ovr-change-sample': {
@@ -1529,6 +1640,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/player-mappings-sample'
       fullPath: '/dev/player-mappings-sample'
       preLoaderRoute: typeof DevPlayerMappingsSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/plus-admin-sample': {
+      id: '/dev/plus-admin-sample'
+      path: '/dev/plus-admin-sample'
+      fullPath: '/dev/plus-admin-sample'
+      preLoaderRoute: typeof DevPlusAdminSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/sofascore-players-sample': {
@@ -1913,6 +2031,7 @@ interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminNewsRoute: typeof AdminNewsRouteWithChildren
   AdminPepitesRoute: typeof AdminPepitesRouteWithChildren
+  AdminPlusRoute: typeof AdminPlusRoute
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
@@ -1927,6 +2046,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminNewsRoute: AdminNewsRouteWithChildren,
   AdminPepitesRoute: AdminPepitesRouteWithChildren,
+  AdminPlusRoute: AdminPlusRoute,
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
@@ -1966,6 +2086,7 @@ interface CurvaRouteChildren {
   CurvaCarteRoute: typeof CurvaCarteRoute
   CurvaClassementRoute: typeof CurvaClassementRoute
   CurvaLesVotresRoute: typeof CurvaLesVotresRoute
+  CurvaPlusRoute: typeof CurvaPlusRoute
   CurvaSaisonsRoute: typeof CurvaSaisonsRoute
   CurvaIndexRoute: typeof CurvaIndexRoute
 }
@@ -1974,6 +2095,7 @@ const CurvaRouteChildren: CurvaRouteChildren = {
   CurvaCarteRoute: CurvaCarteRoute,
   CurvaClassementRoute: CurvaClassementRoute,
   CurvaLesVotresRoute: CurvaLesVotresRoute,
+  CurvaPlusRoute: CurvaPlusRoute,
   CurvaSaisonsRoute: CurvaSaisonsRoute,
   CurvaIndexRoute: CurvaIndexRoute,
 }
@@ -2115,6 +2237,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRouteWithChildren,
   NotificationsRoute: NotificationsRoute,
   PepitesRoute: PepitesRouteWithChildren,
+  PlusRoute: PlusRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,
@@ -2126,10 +2249,13 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
+  DevAdminShellSampleRoute: DevAdminShellSampleRoute,
   DevCurvaRankingSampleRoute: DevCurvaRankingSampleRoute,
+  DevManagerCardEditionsRoute: DevManagerCardEditionsRoute,
   DevManagerCardOvrChangeSampleRoute: DevManagerCardOvrChangeSampleRoute,
   DevManagerCardSampleRoute: DevManagerCardSampleRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
+  DevPlusAdminSampleRoute: DevPlusAdminSampleRoute,
   DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,
   JourneePublicIdRoute: JourneePublicIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,

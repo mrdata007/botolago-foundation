@@ -127,3 +127,26 @@ export function rowReportTargets(row: PeopleRow): ReportTarget[] {
   if (team && team !== row.name) targets.push({ kind: "team", name: team, id });
   return targets;
 }
+
+/**
+ * The league mate the reader is closest to in points (a tie goes to the better placed), from the
+ * standings alone: the duel's rival on Curva's home. A card is not needed (cards are read for the
+ * first rows of a large league only, and a failed card read must not hide the duel). Null when the
+ * reader's own row is missing, or the reader is alone.
+ */
+export function closestRival(
+  rows: readonly PeopleRow[],
+): { mine: PeopleRow; rival: PeopleRow } | null {
+  const mine = rows.find((row) => row.own);
+  if (!mine) return null;
+  let best: PeopleRow | null = null;
+  for (const row of rows) {
+    if (row.own) continue;
+    const gap = Math.abs(row.standing.totalScore - mine.standing.totalScore);
+    const bestGap = best ? Math.abs(best.standing.totalScore - mine.standing.totalScore) : Infinity;
+    if (gap < bestGap || (gap === bestGap && best && row.standing.rank < best.standing.rank)) {
+      best = row;
+    }
+  }
+  return best ? { mine, rival: best } : null;
+}

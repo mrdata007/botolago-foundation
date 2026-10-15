@@ -14,12 +14,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import { Search, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
 import { ui, UiIconButton, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { PEPITES_PROMOTED } from "@/lib/feature-flags";
+import { usePlusAccess } from "@/components/plus/plus-access";
+import { PEPITES_PROMOTED, PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { recallSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
@@ -27,6 +28,19 @@ import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
+
+/**
+ * For a BotolaGO+ member the wordmark is the BotolaGO+ logo (the same wordmark, with the "+").
+ * Declared only when the build lets BotolaGO+ exist: with the switch off nothing is requested and
+ * the bar is exactly as it was.
+ */
+const PlusHeaderLogo = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("@/components/plus/PlusMemberMark").then((module) => ({
+        default: module.PlusHeaderLogo,
+      })),
+    )
+  : null;
 
 export function TopBar({
   trailing,
@@ -41,6 +55,7 @@ export function TopBar({
   wide?: boolean;
 }) {
   const { t } = useI18n();
+  const plusMember = usePlusAccess() === "member";
   // Curva takes the fifth slot while it is live, and Profil is in this bar either way.
   const curvaLive = useManagerCardLive();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -74,7 +89,13 @@ export function TopBar({
             320px phone, or a large text size on a narrow one — the "GO" of the
             same wordmark, which keeps the buttons on screen and the brand in
             the bar. */}
-        <Logo size="sm" className="hidden @min-[20rem]:flex" />
+        {plusMember && PlusHeaderLogo ? (
+          <Suspense fallback={<Logo size="sm" className="hidden @min-[20rem]:flex" />}>
+            <PlusHeaderLogo className="hidden @min-[20rem]:flex" />
+          </Suspense>
+        ) : (
+          <Logo size="sm" className="hidden @min-[20rem]:flex" />
+        )}
         <Logo variant="icon" className="shrink @min-[20rem]:hidden" />
 
         <PrimaryNavLinks />

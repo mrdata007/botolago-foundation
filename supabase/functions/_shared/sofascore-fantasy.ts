@@ -36,13 +36,18 @@
  *   `firstHalfStoppage`).
  * - Assists, saves, penalties saved, penalties missed (decision M8, switched by
  *   SOFASCORE_DETAIL_FIELDS_ENABLED): count only on a FULL-coverage match
- *   (player statistics carry `totalPass`). On a limited-coverage match they are
+ *   (every player with minutes carries `rating` and `totalPass`). On a limited-coverage match they are
  *   unknown, never zero; an assist is known there only when an incident names
  *   the assister. A value two SofaScore sources disagree about is unknown.
  *
+ * - Own goals (`goal/ownGoal`, first seen 2026-10-13 on 17256978): count for the
+ *   side SofaScore puts them on, against the scorer's side (goals conceded,
+ *   clean sheet), and as the scorer's `ownGoals`, never as a goal.
+ *
  * Anything it cannot establish holds the match back instead of being guessed:
- * an own goal (no incident label for it has been seen), a second yellow card, a
- * goal it cannot attribute, a player whose times do not fit.
+ * an own goal whose scorer is not on the other side or that SofaScore's own
+ * figures disagree with, a second yellow card, a goal it cannot attribute, a
+ * player whose times do not fit.
  */
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
 import {
@@ -68,6 +73,7 @@ import {
   type StatisticEvidence,
   type FantasyPosition,
 } from "./fantasy-adaptive-core.ts";
+import { storedRating } from "./fantasy-rating-scoring.ts";
 import { indexReviewedIdentities, type ReviewedIdentitySnapshot } from "./reviewed-identities.ts";
 
 /**
@@ -95,6 +101,8 @@ const MAX_EXCLUDED_STARTERS_PER_SIDE = 2;
 const MAX_EXCLUDED_PER_MATCH = 6;
 const SCORE_RELEVANT = SCORE_RELEVANT_LABEL;
 const GOAL_KINDS = new Set(["goal", "penalty_goal"]);
+/** Every incident that adds to a side's score: an own goal counts for `side`. */
+const SCORE_KINDS = new Set(["goal", "penalty_goal", "own_goal"]);
 const APP_POSITION: Record<LineupPosition, FantasyPosition> = {
   G: "GK",
   D: "DEF",
@@ -181,6 +189,14 @@ export interface ObservationRow {
   readonly identity: { readonly sofascoreId: string };
   readonly stats: Readonly<Record<string, number | boolean>>;
   readonly evidence: Readonly<Record<string, StatisticEvidence>>;
+  /**
+   * His SofaScore match rating from the same lineup reply, two decimals at most,
+   * or null when SofaScore gave none (yet). Outside `stats` on purpose: every
+   * statistic there is a whole number the adaptive checks certify. Fantasy
+   * scores it only in a rating gameweek (docs/backend/FANTASY_RATING_POINTS.md);
+   * it is part of the request, so a corrected rating is a new observation.
+   */
+  readonly rating: number | null;
 }
 
 export interface SofascoreObservationRequest {
@@ -344,13 +360,36 @@ export async function prepareSofascoreObservation(
         side: i.side,
       });
   }
+  // Own goals: each one names its scorer, who plays for the side it does not count
+  // for, and SofaScore's own lineup figure (when it gives one) agrees with the
+  // incidents for every player. Anything else is held back, not guessed.
+  const ownGoalSides = new Map<string, MatchSide>();
+  for (const p of match.lineups.players) ownGoalSides.set(p.externalId, p.side);
+  for (const i of match.incidents) {
+    if (i.kind !== "own_goal") continue;
+    const scorer = i.player?.externalId ?? null;
+    const scorerSide = scorer === null ? undefined : ownGoalSides.get(scorer);
+    if (scorerSide === undefined || scorerSide === i.side)
+      block({
+        code: "own_goal_unexplained",
+        message: "An own goal whose scorer is not a player of the other side.",
+        side: i.side,
+      });
+  }
   if (
-    match.lineups.players.some((p) => (p.stats?.ownGoals ?? 0) > 0) &&
-    !blockers.some((b) => b.code === "unknown_incident")
+    !blockers.some((b) => b.code === "unknown_incident") &&
+    match.lineups.players.some((p) => {
+      const stat = p.stats?.ownGoals;
+      if (stat === null || stat === undefined) return false;
+      const counted = match.incidents.filter(
+        (i) => i.kind === "own_goal" && i.player?.externalId === p.externalId,
+      ).length;
+      return stat !== counted;
+    })
   )
     block({
       code: "own_goal_unexplained",
-      message: "SofaScore credits an own goal that no incident explains.",
+      message: "SofaScore's own-goal figure for a player disagrees with the incidents.",
     });
   if (match.incidents.some((i) => i.kind === "second_yellow"))
     block({
@@ -358,7 +397,9 @@ export async function prepareSofascoreObservation(
       message:
         "A second yellow card: whether the first yellow is also listed is not established, so it is held for review.",
     });
-  const goals = match.incidents.filter((i) => GOAL_KINDS.has(i.kind));
+  // Every goal that counted, own goals on the side they count for: what each
+  // side's score must add up to, and what a player's side concedes.
+  const goals = match.incidents.filter((i) => SCORE_KINDS.has(i.kind));
   if (homeScore !== null && awayScore !== null) {
     for (const side of ["home", "away"] as const) {
       const expected = side === "home" ? homeScore : awayScore;
@@ -581,7 +622,9 @@ export async function prepareSofascoreObservation(
     fact("goalsConceded", part.goalsConceded);
     fact("cleanSheet", cleanSheet);
     fact("goals", mine("goal").length + mine("penalty_goal").length);
-    fact("ownGoals", 0); // any label that could hide an own goal already held the match back
+    // An own goal is his (it counts for the other side, and against his own side's
+    // clean sheet through `concededAt` above); it is never one of his goals.
+    fact("ownGoals", mine("own_goal").length);
     fact("yellowCards", mine("yellow_card").length);
     fact("redCards", mine("red_card").length);
     fact("secondYellowDismissals", 0); // a second yellow holds the match back above
@@ -640,6 +683,7 @@ export async function prepareSofascoreObservation(
       evidence: Object.fromEntries(
         Object.entries(evidence).map(([k, v]) => [k, v as StatisticEvidence]),
       ),
+      rating: storedRating(p.stats?.rating ?? null),
     });
   }
 

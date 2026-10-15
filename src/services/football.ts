@@ -151,6 +151,8 @@ export function toMatch(match: MatchCardDto): Match {
     kickoff: match.kickoffAt,
     status: presentationStatus(match.status),
     minute: match.minute ?? undefined,
+    period: match.period,
+    addedTime: match.addedTime ?? undefined,
     homeScore: match.homeScore ?? undefined,
     awayScore: match.awayScore ?? undefined,
     halfTimeHomeScore: match.halfTimeHomeScore ?? undefined,
@@ -158,7 +160,25 @@ export function toMatch(match: MatchCardDto): Match {
     venue: { fr: venueName, ar: venueName },
     dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
     calledOff: CALLED_OFF_STATUSES.includes(match.status),
+    dataUpdatedAt: latestDataTime(match),
   };
+}
+
+/**
+ * When the fixture's data last changed (`Match.dataUpdatedAt`): the later of
+ * the provider's change time and our row's last write. Both are stored
+ * timestamps, neither is the time of this read. An unreadable one is ignored;
+ * none readable gives `undefined`, never a guess.
+ */
+function latestDataTime(
+  match: Pick<MatchCardDto, "providerUpdatedAt" | "updatedAt">,
+): string | undefined {
+  let latest: number | null = null;
+  for (const value of [match.providerUpdatedAt, match.updatedAt]) {
+    const time = Date.parse(value);
+    if (Number.isFinite(time) && (latest === null || time > latest)) latest = time;
+  }
+  return latest === null ? undefined : new Date(latest).toISOString();
 }
 
 function toTableRow(row: StandingRowDto): TableRow {
@@ -175,6 +195,131 @@ function toTableRow(row: StandingRowDto): TableRow {
       row.form
         ?.split("")
         .filter((item): item is "W" | "D" | "L" => ["W", "D", "L"].includes(item)) ?? [],
+  };
+}
+
+/** The optional sections of the match page, each read on its own. */
+export const MATCH_SECTIONS = [
+  "headToHead",
+  "timeline",
+  "statistics",
+  "lineups",
+  "pressure",
+  "absences",
+] as const;
+export type MatchSectionKey = (typeof MATCH_SECTIONS)[number];
+
+/**
+ * How one section's read went. `error` is a short code (a `FootballError` code,
+ * else "unknown"), never the message of the failure: the page is rendered to
+ * the browser and must not carry internals.
+ */
+export type MatchSectionOutcome =
+  | {
+      readonly status: "ok";
+      readonly error: null;
+      /**
+       * How many refreshes in a row reused the earlier copy of this section
+       * because their own read failed (absent when the copy is fresh).
+       */
+      readonly carried?: number;
+    }
+  | { readonly status: "failed"; readonly error: string };
+
+/**
+ * How many refreshes in a row may reuse an earlier copy of a section whose read
+ * keeps failing. At the page's 30-second refresh that is about a minute and a
+ * half: one hiccup is hidden, a lasting outage ends in the error card instead
+ * of a copy that looks fresh.
+ */
+export const MAX_CARRIED_REFRESHES = 3;
+export type MatchSections = Readonly<Record<MatchSectionKey, MatchSectionOutcome>>;
+
+/**
+ * A settled section read: its list and how it went. A failed read gives an
+ * empty list only because nothing was read; `outcome` is what says so.
+ */
+function settledSection<T>(result: PromiseSettledResult<readonly T[]>): {
+  data: readonly T[];
+  outcome: MatchSectionOutcome;
+} {
+  if (result.status === "fulfilled") {
+    return { data: result.value, outcome: { status: "ok", error: null } };
+  }
+  const code = (result.reason as { code?: unknown } | null)?.code;
+  return {
+    data: [],
+    outcome: { status: "failed", error: typeof code === "string" && code ? code : "unknown" },
+  };
+}
+
+/** What `footballService.getMatchDetailPage` answers. */
+export type FootballMatchDetailPage = Awaited<
+  ReturnType<typeof footballService.getMatchDetailPage>
+>;
+
+/**
+ * A refresh of the match page in which a section failed keeps the copy of that
+ * section the page already held, if it held a good one: the page is refetched
+ * every 30 seconds through a live match, and one hiccup of the pressure read
+ * must not replace good lineups or a good timeline with an error card (before
+ * sections were separate, a failed refresh rejected and the page kept all of
+ * its last read). The error card is for a section with no earlier good copy.
+ * The restored section reports `ok` (the copy it holds was a good read) and
+ * counts how many refreshes in a row it has been reused, up to
+ * `MAX_CARRIED_REFRESHES`: past that the failure shows, so an outage that lasts
+ * is never hidden behind an old copy.
+ *
+ * `previous` must be the page of the same match and language (the query key's
+ * own). The header, the one thing that is always read, is never carried over.
+ */
+export function keepLastGoodSections(
+  next: FootballMatchDetailPage,
+  previous: FootballMatchDetailPage | undefined,
+): FootballMatchDetailPage {
+  if (!previous || previous.match.id !== next.match.id) return next;
+  const restore = (section: MatchSectionKey) => {
+    const earlier = previous.sections[section];
+    return (
+      next.sections[section].status === "failed" &&
+      earlier.status === "ok" &&
+      (earlier.carried ?? 0) < MAX_CARRIED_REFRESHES
+    );
+  };
+  if (!MATCH_SECTIONS.some(restore)) return next;
+
+  const headToHead = restore("headToHead") ? previous.headToHead : next.headToHead;
+  const outcome = (section: MatchSectionKey): MatchSectionOutcome => {
+    if (!restore(section)) return next.sections[section];
+    const earlier = previous.sections[section];
+    return {
+      status: "ok",
+      error: null,
+      carried: (earlier.status === "ok" ? (earlier.carried ?? 0) : 0) + 1,
+    };
+  };
+  return {
+    ...next,
+    headToHead,
+    // The meetings are part of "the matches on the page"; the clubs come from
+    // the header and the meetings of those same two clubs, so they stay.
+    matches: restore("headToHead") ? [next.match, ...previous.headToHead] : next.matches,
+    live: {
+      ...next.live,
+      events: restore("timeline") ? previous.live.events : next.live.events,
+      stats: restore("statistics") ? previous.live.stats : next.live.stats,
+    },
+    lineups: restore("lineups") ? previous.lineups : next.lineups,
+    pressure: restore("pressure") ? previous.pressure : next.pressure,
+    absences: restore("absences") ? previous.absences : next.absences,
+    sections: {
+      headToHead: outcome("headToHead"),
+      timeline: outcome("timeline"),
+      statistics: outcome("statistics"),
+      lineups: outcome("lineups"),
+      pressure: outcome("pressure"),
+      absences: outcome("absences"),
+    },
   };
 }
 
@@ -592,20 +737,41 @@ export const footballService = {
       pressure: readonly MatchPressurePointDto[];
       /** Players the provider lists as injured or suspended for the match. */
       absences: readonly MatchAbsenceDto[];
+      /**
+       * Whether each optional section could be read. The match itself (score,
+       * teams, kickoff) is the page and is always here, or the read fails; a
+       * section whose read failed is `failed` and its list above is empty
+       * because nothing was read, which is not the same as `ok` and empty (the
+       * provider answered and had nothing). A page tells the two apart by
+       * this, never by the list being empty.
+       */
+      sections: MatchSections;
     }
   > {
     const repository = getFootballRepository();
+    // The header is the page: if it cannot be read there is nothing to show,
+    // and the read fails as it always has (404 / 503 in the loader).
     const detail = await repository.getMatchDetail(id, language, requestContext());
     const match = toMatch(detail);
-    const [headToHead, timeline, statistics, lineups, pressure, absences] = await Promise.all([
-      repository.getHeadToHead(id, language, 5, requestContext()),
-      repository.getTimeline(id, language, requestContext()),
-      repository.getStatistics(id, language, requestContext()),
-      repository.getLineups(id, language, requestContext()),
-      repository.getPressure(id, language, requestContext()),
-      repository.getAbsences(id, language, requestContext()),
-    ]);
-    const allMatches = [detail, ...headToHead];
+    // Everything else is optional, and independent of the rest: one section
+    // failing must not take the score or the healthy sections with it
+    // (audit 2026-10-14, DATA-02). Still six reads in one go, as before.
+    const [h2hRead, timelineRead, statisticsRead, lineupsRead, pressureRead, absencesRead] =
+      await Promise.allSettled([
+        repository.getHeadToHead(id, language, 5, requestContext()),
+        repository.getTimeline(id, language, requestContext()),
+        repository.getStatistics(id, language, requestContext()),
+        repository.getLineups(id, language, requestContext()),
+        repository.getPressure(id, language, requestContext()),
+        repository.getAbsences(id, language, requestContext()),
+      ]);
+    const headToHead = settledSection(h2hRead);
+    const timeline = settledSection(timelineRead);
+    const statistics = settledSection(statisticsRead);
+    const lineups = settledSection(lineupsRead);
+    const pressure = settledSection(pressureRead);
+    const absences = settledSection(absencesRead);
+    const allMatches = [detail, ...headToHead.data];
     return {
       match,
       season: {
@@ -613,11 +779,19 @@ export const footballService = {
         competitionId: detail.competition.id,
         competitionType: detail.competition.type,
       },
-      headToHead: headToHead.map(toMatch),
-      live: presentMatchLiveDetail(match, timeline, statistics),
-      lineups,
-      pressure,
-      absences,
+      headToHead: headToHead.data.map(toMatch),
+      live: presentMatchLiveDetail(match, timeline.data, statistics.data),
+      lineups: lineups.data,
+      pressure: pressure.data,
+      absences: absences.data,
+      sections: {
+        headToHead: headToHead.outcome,
+        timeline: timeline.outcome,
+        statistics: statistics.outcome,
+        lineups: lineups.outcome,
+        pressure: pressure.outcome,
+        absences: absences.outcome,
+      },
       matches: allMatches.map(toMatch),
       clubs: uniqueClubs(allMatches),
     };

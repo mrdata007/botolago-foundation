@@ -809,10 +809,11 @@ select extensions.is(
     || '; insert into app_private.manager_card_job_log (outcome) values (''more_pending'')'),
   'warn 4 finished gameweek(s) waiting for their cards for more than 2 hours', 'health: a tick still catching up (more_pending) warns and does not fail');
 
+-- Checks added after it (fantasy_worker, 20261013170100) come later in the list.
 select extensions.is(
-  (select c ->> 'name' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') with ordinality t(c, o)
-   order by o desc limit 1),
-  'manager_card', 'ops_health_checks lists manager_card last');
+  (select count(*)::int from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
+   where c ->> 'name' = 'manager_card'),
+  1, 'ops_health_checks lists manager_card once');
 create function pg_temp.overall(p_setup text) returns text language plpgsql as $$
 begin
   begin

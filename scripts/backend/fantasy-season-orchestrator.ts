@@ -11,10 +11,40 @@ import {
 import { requestSportsMonksJson } from "./sportsmonks-production-probe";
 import {
   evaluateFantasyPrizes,
+  lifecycleRpcGateway,
   rpcFailure,
   runFantasyLifecycle,
+  SCRIPT_RPC_TIMEOUT_MS,
   type FantasyWorkerGateway,
+  type PrizeEvaluationSummary,
+  type RpcApiClient,
 } from "./fantasy-lifecycle-runner";
+import {
+  AMBIGUOUS_GRACE_MS,
+  acquireWorkerLease,
+  calendarSyncSchema,
+  databaseWorkerStatus,
+  holdLeaseForAmbiguousWrite,
+  isAmbiguousRpcTimeout,
+  leasedGateway,
+  releaseWorkerLease,
+  selectWorkerTargets,
+  type AmbiguousRpcTimeout,
+  type AmbiguousWrite,
+  type CalendarSync,
+  type SkippedTarget,
+  type WorkerRun,
+} from "../../supabase/functions/_shared/fantasy-lifecycle-worker.ts";
+
+// The work list moved to the shared worker module with the Edge Function that
+// also uses it; these names are still imported from here.
+export {
+  calendarSyncSchema,
+  selectWorkerTargets,
+  type CalendarSync,
+  type SkippedTarget,
+  type WorkerRun,
+};
 
 /**
  * Scheduled Fantasy season orchestrator.
@@ -39,7 +69,10 @@ import {
  *      statistics are really missing.
  *   3. the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek
  *      that has work: an open gameweek past its deadline, a gameweek that is
- *      locked / live / provisional / finalizing, or a finalized gameweek whose
+ *      locked / live / provisional / finalizing (a gameweek that closed on
+ *      provisional points is still `provisional`: it is re-scored when a later
+ *      SofaScore pull changed its inputs and locked once every match is FINAL or
+ *      FINAL_LIMITED, docs/backend/SOFASCORE_STAGED_STATS.md), or a finalized gameweek whose
  *      staged successor has not been opened yet.
  *   4. `api.service_evaluate_fantasy_prizes` — a catch-up for prize winners.
  *      The worker already evaluates what it has just finalized; this pass picks
@@ -55,6 +88,12 @@ import {
  *      and is still not finalized escalates, whatever the worker said. A
  *      gameweek can wait on `football_not_final` forever with every match
  *      certified; the worker alone would call that `waiting` on every pass.
+ *      One exception (two-stage statistics, migration 20261013140000): when
+ *      the worker published provisional core points this pass
+ *      (`points_published`), the gameweek is waiting for full statistics,
+ *      which never block it, so it is not late for that until
+ *      `FULL_STATS_WINDOW_DAYS`. A match with no core data is the database's
+ *      `fantasy_fixture_coverage` failure, 12 h after full time.
  *      Windows that cannot be read leave the pass `waiting`; the watchdog's
  *      `fantasy_points` row reads them on its own.
  *   6. `api.service_fantasy_deadline_watch` — a read-only guard that reports
@@ -81,41 +120,6 @@ const status = z.enum([
   "corrected",
   "cancelled",
 ]);
-
-export const calendarSyncSchema = z.object({
-  schemaVersion: z.literal(1),
-  seasonId: uuid,
-  seasonStatus: z.string(),
-  expectedClubs: z.number().int(),
-  gameweeksCreated: z.number().int().min(0),
-  assignmentsAdded: z.number().int().min(0),
-  assignmentsSuperseded: z.number().int().min(0),
-  kickoffsRealigned: z.number().int().min(0),
-  deadlineChanges: z.number().int().min(0),
-  blockedRounds: z.number().int().min(0),
-  rounds: z.array(
-    z.object({
-      round: z.number().int().nullable(),
-      gameweekId: uuid.nullable(),
-      status: status.nullable(),
-      fixtures: z.number().int(),
-      confirmedKickoffs: z.number().int(),
-      notes: z.array(z.unknown()),
-    }),
-  ),
-  gameweeks: z.array(
-    z.object({
-      id: uuid,
-      sequence: z.number().int(),
-      status,
-      deadlineAt: z.string(),
-      scoringInputVersion: z.number().int().min(0),
-      nextGameweekId: uuid.nullable(),
-      advancedToGameweekId: uuid.nullable(),
-    }),
-  ),
-});
-export type CalendarSync = z.infer<typeof calendarSyncSchema>;
 
 /**
  * Read-only deadline watch (`api.service_fantasy_deadline_watch`): scheduled /
@@ -231,14 +235,28 @@ export function skipsSportsMonks(source: FootballDataSource | undefined): boolea
 }
 
 /**
- * Hours an adaptive gameweek may wait past its normal allowance. Adaptive
- * scoring selects each fixture's mode 12 h after the final whistle
- * (api.service_select_fantasy_scoring_modes), so final points cannot arrive
- * sooner; escalating at the SportsMonks-era 6 h would page for a wait that is
- * by design. Applied only when the worker names an adaptive wait and the
- * source is not SportsMonks.
+ * The two stages SofaScore publishes Botola statistics in (migration
+ * 20261013140000). CORE data (minutes, goals, cards) is what scoring needs and
+ * is expected within `CORE_DATA_WINDOW_HOURS` of full time; FULL statistics
+ * (rating, passes, saves, assists...) arrive 5 to 16 days later and never
+ * block points or progression. These mirror the database constants
+ * app_private.fantasy_core_data_window() (12 h) and
+ * app_private.fantasy_full_stats_window() (21 days): change them together.
  */
-export const ADAPTIVE_SELECTION_GRACE_HOURS = 12;
+export const CORE_DATA_WINDOW_HOURS = 12;
+export const FULL_STATS_WINDOW_DAYS = 21;
+/** The worker outcome that means provisional core points are published. */
+export const PROVISIONAL_POINTS_OUTCOME = "points_published";
+
+/**
+ * Hours an adaptive gameweek may wait past its normal allowance. Adaptive
+ * scoring selects each fixture's mode `CORE_DATA_WINDOW_HOURS` after the final
+ * whistle (api.service_select_fantasy_scoring_modes), so final points cannot
+ * arrive sooner; escalating at the SportsMonks-era 6 h would page for a wait
+ * that is by design. Applied only when the worker names an adaptive wait and
+ * the source is not SportsMonks.
+ */
+export const ADAPTIVE_SELECTION_GRACE_HOURS = CORE_DATA_WINDOW_HOURS;
 const ADAPTIVE_WAIT_CODES: readonly string[] = [
   "adaptive_scoring_pending",
   "remaining_fixtures_pending",
@@ -318,6 +336,14 @@ export type ScoringGap = {
   overdue: boolean;
   /** Why the worker waited on it in this pass, when it ran for it. */
   workerCode?: string;
+  /**
+   * The worker published provisional core points for it in this pass
+   * (`points_published`): provisional points count as points, so the gameweek
+   * is not late for being provisional, until `FULL_STATS_WINDOW_DAYS` after its
+   * window ended (the database's `fantasy_fixture_coverage` fails a match still
+   * without full statistics at the same age).
+   */
+  provisional?: true;
 };
 
 /**
@@ -346,7 +372,17 @@ export function assessScoring(
       const hours = Number.isNaN(end)
         ? null
         : Math.round(((now.getTime() - end) / 3_600_000) * 10) / 10;
-      const workerCode = workers.find((run) => run.gameweekId === gw.id)?.code;
+      const run = workers.find((candidate) => candidate.gameweekId === gw.id);
+      const workerCode = run?.code;
+      // Provisional points count as points. A gameweek the worker has just
+      // published core points for is waiting for full statistics, which never
+      // block it: not late, until the full statistics window is over. A match
+      // with no core data at all is the database's `fantasy_fixture_coverage`
+      // failure (12 h after full time), which pages on its own.
+      const provisional =
+        run?.outcome === PROVISIONAL_POINTS_OUTCOME &&
+        hours !== null &&
+        hours < FULL_STATS_WINDOW_DAYS * 24;
       return {
         gameweekId: gw.id,
         sequence: gw.sequence,
@@ -354,11 +390,13 @@ export function assessScoring(
         windowEndsAt: gw.endsAt,
         hoursSinceWindowEnd: hours,
         overdue:
-          hours === null ||
-          hours >=
-            escalateHours +
-              (workerCode && ADAPTIVE_WAIT_CODES.includes(workerCode) ? adaptiveGraceHours : 0),
+          !provisional &&
+          (hours === null ||
+            hours >=
+              escalateHours +
+                (workerCode && ADAPTIVE_WAIT_CODES.includes(workerCode) ? adaptiveGraceHours : 0)),
         ...(workerCode ? { workerCode } : {}),
+        ...(provisional ? { provisional: true as const } : {}),
       };
     })
     .filter((gap) => gap.hoursSinceWindowEnd === null || gap.hoursSinceWindowEnd >= 0)
@@ -366,6 +404,13 @@ export function assessScoring(
 }
 
 export interface OrchestratorGateway extends FantasyWorkerGateway {
+  /**
+   * The gateway the lifecycle runs on (and the lease extensions with it), where a
+   * write that timed out or failed with no reply from the database is ambiguous
+   * (lifecycleRpcGateway, SEC-01). Absent: the lifecycle runs on `rpc`, as before.
+   * Every other call (calendar sync, prizes, reads) goes through `rpc`.
+   */
+  lifecycle?: FantasyWorkerGateway;
   /**
    * One bounded finished-fixture performance batch; `null` cursor starts from
    * the beginning. `providerOutage` is an outage an earlier page of this pass
@@ -402,99 +447,19 @@ export interface OrchestratorOptions {
   /** Coverage age after which a finished fixture escalates; see COVERAGE_ESCALATE_HOURS. */
   coverage?: { escalateHours?: number };
   /**
+   * Run the lifecycle under the shared worker lease (docs/backend/FANTASY_WORKER_SCHEDULE.md).
+   * `holder` names this run; `deferToDatabase` lets the pass leave the lifecycle to
+   * the database job while that is switched on and keeping up (a scheduled run).
+   * Absent: the lifecycle runs unmanaged, as it always did.
+   */
+  workerLease?: { holder: string; deferToDatabase: boolean };
+  /** How long to wait for a write that timed out to answer before leaving the lease to expire. */
+  ambiguousGraceMs?: number;
+  /**
    * Repository variables set to a value the pass could not use; it ran on
    * their defaults instead. Reported, and the verdict is at least `waiting`.
    */
   invalidSettings?: readonly string[];
-}
-
-export type WorkerRun = {
-  gameweekId: string;
-  sequence: number;
-  reason: "deadline_passed" | "in_progress" | "progression_pending";
-  calculationVersion: number;
-  outcome: string;
-  code?: string;
-};
-
-export type SkippedTarget = {
-  gameweekId: string;
-  sequence: number;
-  reason: "deadline_unconfirmed";
-};
-
-/**
- * Gameweek ids whose round note reports an unconfirmed deadline: at least one
- * active, counting fixture of that round still carries a placeholder kickoff,
- * so the stored deadline is not authoritative. The calendar sync is the single
- * source of that predicate; nothing is recomputed here.
- */
-function gameweeksWithUnconfirmedDeadline(calendar: CalendarSync) {
-  const ids = new Set<string>();
-  for (const round of calendar.rounds) {
-    if (!round.gameweekId) continue;
-    const unconfirmed = round.notes.some(
-      (note) =>
-        note === "deadline_unconfirmed" ||
-        (typeof note === "object" &&
-          note !== null &&
-          (note as Record<string, unknown>).deadlineUnconfirmed === true),
-    );
-    if (unconfirmed) ids.add(round.gameweekId);
-  }
-  return ids;
-}
-
-/**
- * Gameweeks that need the worker, in sequence order, plus the gameweeks that
- * were deliberately left alone. An `open` gameweek whose deadline is derived
- * from a placeholder kickoff is never locked by this pass: locking it would
- * freeze lineups on a deadline the provider never published, and no path can
- * undo that afterwards.
- */
-export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
-  const targets: Array<{
-    gameweekId: string;
-    sequence: number;
-    reason: WorkerRun["reason"];
-    calculationVersion: number;
-  }> = [];
-  const skipped: SkippedTarget[] = [];
-  const unconfirmed = gameweeksWithUnconfirmedDeadline(calendar);
-  for (const gw of [...calendar.gameweeks].sort((a, b) => a.sequence - b.sequence)) {
-    const calculationVersion = gw.scoringInputVersion > 0 ? gw.scoringInputVersion : 1;
-    if (["locked", "live", "provisional", "finalizing"].includes(gw.status)) {
-      targets.push({
-        gameweekId: gw.id,
-        sequence: gw.sequence,
-        reason: "in_progress",
-        calculationVersion,
-      });
-    } else if (gw.status === "open" && Date.parse(gw.deadlineAt) <= now.getTime()) {
-      if (unconfirmed.has(gw.id)) {
-        skipped.push({
-          gameweekId: gw.id,
-          sequence: gw.sequence,
-          reason: "deadline_unconfirmed",
-        });
-        continue;
-      }
-      targets.push({
-        gameweekId: gw.id,
-        sequence: gw.sequence,
-        reason: "deadline_passed",
-        calculationVersion,
-      });
-    } else if (gw.status === "finalized" && gw.nextGameweekId && !gw.advancedToGameweekId) {
-      targets.push({
-        gameweekId: gw.id,
-        sequence: gw.sequence,
-        reason: "progression_pending",
-        calculationVersion,
-      });
-    }
-  }
-  return { targets, skipped };
 }
 
 class SportsMonksSkip extends Error {}
@@ -565,15 +530,53 @@ export async function orchestrateFantasySeason(
   const skipped = selection.skipped;
   // A refusal is not a success: the round is waiting for a real kickoff.
   if (skipped.length > 0) verdict = mergeVerdict(verdict, "waiting");
-  const targets = selection.targets.slice(0, maxWorkerRuns);
-  const deferredGameweeks = selection.targets
-    .slice(maxWorkerRuns)
-    .map((target) => target.gameweekId);
+  // Who runs the lifecycle this pass: this run (`github`, under the shared lease
+  // when the database has one), the database job (`database_worker`: switched on and
+  // keeping up, so this scheduled run only watches), or nobody (`lease_held`: another
+  // holder is mid-pass, so this run waits for the next one).
+  let lifecycleOwner: "github" | "database_worker" | "lease_held" = "github";
+  let lease: { token: string } | null = null;
+  let leaseHeldBy: string | null = null;
+  if (options.workerLease && selection.targets.length > 0) {
+    const call = (name: string, args: Record<string, unknown>) => gateway.rpc(name, args);
+    const status = options.workerLease.deferToDatabase
+      ? await databaseWorkerStatus(call)
+      : { installed: false as const };
+    if (status.installed && status.databaseWorkerActive) {
+      lifecycleOwner = "database_worker";
+    } else {
+      try {
+        const acquired = await acquireWorkerLease(call, options.workerLease.holder);
+        if (acquired.kind === "acquired") lease = { token: acquired.token };
+        else if (acquired.kind === "held") {
+          lifecycleOwner = "lease_held";
+          leaseHeldBy = acquired.holder;
+        }
+      } catch {
+        // The lease could not be read: do not risk two writers.
+        lifecycleOwner = "lease_held";
+      }
+    }
+  }
+  const runsLifecycle = lifecycleOwner === "github";
+  const targets = runsLifecycle ? selection.targets.slice(0, maxWorkerRuns) : [];
+  const deferredGameweeks = runsLifecycle
+    ? selection.targets.slice(maxWorkerRuns).map((target) => target.gameweekId)
+    : [];
   // Never silently starve later rounds behind old missing-data incidents.
   if (deferredGameweeks.length > 0) verdict = mergeVerdict(verdict, "escalate");
-  for (const target of targets) {
+  if (lifecycleOwner === "lease_held") verdict = mergeVerdict(verdict, "waiting");
+  const lifecycleGateway = gateway.lifecycle ?? gateway;
+  const worker: FantasyWorkerGateway = lease
+    ? leasedGateway(lifecycleGateway, { token: lease.token })
+    : lifecycleGateway;
+  // A write that timed out (or failed with no reply from the database) may still
+  // commit: not a settled failure. The pass stops here, runs no other gameweek and
+  // no further write, and keeps the lease (below). docs/backend/FANTASY_WORKER_SCHEDULE.md.
+  let ambiguousTimeout: AmbiguousRpcTimeout | null = null;
+  for (const [index, target] of targets.entries()) {
     try {
-      const result = (await runFantasyLifecycle(gateway, {
+      const result = (await runFantasyLifecycle(worker, {
         gameweekId: target.gameweekId,
         calculationVersion: target.calculationVersion,
       })) as { outcome?: string; reason?: string };
@@ -590,18 +593,47 @@ export async function orchestrateFantasySeason(
         code: safeCode(error, "fantasy_worker_failed"),
       });
       verdict = mergeVerdict(verdict, "failed");
+      if (isAmbiguousRpcTimeout(error)) {
+        ambiguousTimeout = error;
+        deferredGameweeks.push(...targets.slice(index + 1).map((later) => later.gameweekId));
+        break;
+      }
       // RPC mutations are transactional and scoped to this gameweek. Keep
       // processing independent rounds; the failed round is retried next pass.
     }
   }
 
-  const prizes = await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
+  let ambiguousWrite: AmbiguousWrite | undefined;
+  const leaseCall = (name: string, args: Record<string, unknown>) => gateway.rpc(name, args);
+  if (ambiguousTimeout)
+    ambiguousWrite = await holdLeaseForAmbiguousWrite(
+      leaseCall,
+      lease?.token ?? null,
+      ambiguousTimeout,
+      options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+    );
+  else if (lease) await releaseWorkerLease(leaseCall, lease.token);
+
+  // With a write in doubt the pass makes no further write: no prize catch-up and no
+  // second calendar sync (the reads below still run, so the verdict and the alert hold).
+  const prizes: PrizeEvaluationSummary | { skipped: "write_in_doubt" } = ambiguousWrite
+    ? { skipped: "write_in_doubt" }
+    : await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
   if ("error" in prizes || ("blocked" in prizes && prizes.blocked.length > 0))
     verdict = mergeVerdict(verdict, "waiting");
 
-  const after = calendarSyncSchema.parse(
-    await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
-  );
+  const after = ambiguousWrite
+    ? {
+        ...before,
+        gameweeksCreated: 0,
+        assignmentsAdded: 0,
+        assignmentsSuperseded: 0,
+        kickoffsRealigned: 0,
+        deadlineChanges: 0,
+      }
+    : calendarSyncSchema.parse(
+        await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
+      );
   // A pass that could not list the finished fixtures knows nothing about their
   // statistics, and one failed read is not an incident: it waits, named by
   // `performances.error`. Until 2026-09-25 one bad payload failed the whole
@@ -729,7 +761,11 @@ export async function orchestrateFantasySeason(
         ? { escalateHours: coverageEscalateHours, gameweeks: scoring.gameweeks }
         : undefined) as ScoringSummary | undefined,
     workers,
+    ...(options.workerLease
+      ? { lifecycle: { owner: lifecycleOwner, ...(leaseHeldBy ? { heldBy: leaseHeldBy } : {}) } }
+      : {}),
     deferredGameweeks,
+    ...(ambiguousWrite ? { ambiguousWrite } : {}),
     skipped,
     prizes,
     deadlineWatch,
@@ -762,7 +798,7 @@ function renderScoring(scoring: OrchestratorSummary["scoring"]): string {
         gap.hoursSinceWindowEnd === null
           ? "window end unreadable"
           : `window ended ${gap.hoursSinceWindowEnd} h ago`
-      }`,
+      }${gap.provisional ? ", provisional core points published (not late)" : ""}`,
   );
   return `${scoring.gameweeks.length} gameweek(s), ${overdue} past ${scoring.escalateHours} h: ${listed.join("; ")}`;
 }
@@ -845,6 +881,20 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
         : `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
     ],
     ["Deferred gameweeks", String(summary.deferredGameweeks.length)],
+    ...(summary.ambiguousWrite
+      ? ([
+          [
+            "Write in doubt",
+            `\`${summary.ambiguousWrite.rpc}\` timed out or got no reply from the database; the pass stopped. Lease ${
+              summary.ambiguousWrite.leaseReleased
+                ? "released (the request answered)"
+                : summary.ambiguousWrite.leaseExtended
+                  ? "kept, left to expire"
+                  : "NOT extended, left to expire"
+            }${summary.ambiguousWrite.leaseReleased ? "" : ". Do not start another worker until it expires"}`,
+          ],
+        ] as Array<[string, string]>)
+      : []),
     ["Finished without statistics", renderCoverage(summary.performances)],
     ["Ended without final points", renderScoring(summary.scoring)],
     [
@@ -1069,6 +1119,32 @@ async function readRecoveryEvidence(directory: string | undefined): Promise<unkn
   }
 }
 
+/**
+ * The two RPC paths of the orchestrator, built from a client so a test can hand
+ * it a fake. `rpc` is every call outside the lifecycle (calendar sync, prizes,
+ * reads): it gives up at the timeout and reports an ordinary failure, as it
+ * always did. `lifecycle` is what the lifecycle loop and its lease extensions run
+ * on: there a write that timed out or got no reply from the database is
+ * ambiguous (SEC-01; lifecycleRpcGateway).
+ */
+export function orchestratorRpcGateways(
+  api: RpcApiClient,
+  timeoutMs = SCRIPT_RPC_TIMEOUT_MS,
+): { rpc: OrchestratorGateway["rpc"]; lifecycle: FantasyWorkerGateway } {
+  return {
+    async rpc(name, args) {
+      const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(timeoutMs));
+      if (error)
+        throw rpcFailure(
+          safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
+          error.code,
+        );
+      return data;
+    },
+    lifecycle: lifecycleRpcGateway(api, "fantasy_orchestrator_rpc_failed", timeoutMs),
+  };
+}
+
 if (import.meta.main) {
   let evidenceDir: string | undefined;
   let commit = "";
@@ -1085,15 +1161,7 @@ if (import.meta.main) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const gateway: OrchestratorGateway = {
-      async rpc(name, args) {
-        const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
-        if (error)
-          throw rpcFailure(
-            safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
-            error.code,
-          );
-        return data;
-      },
+      ...orchestratorRpcGateways(api),
       async ingestPerformances(afterFixtureExternalId, options) {
         if (!config.token) throw new Error("fantasy_orchestrator_credential_missing");
         const result = await runCurrentPerformanceBatch(
@@ -1134,6 +1202,12 @@ if (import.meta.main) {
         deadlineWatch: config.deadlineWatch,
         coverage: config.coverage,
         invalidSettings: config.invalidSettings,
+        workerLease: {
+          holder: `github:${process.env.GITHUB_RUN_ID ?? "local"}`,
+          // A scheduled run leaves the lifecycle to the database job while that is
+          // keeping up; a manual dispatch is the owner asking for it and always runs.
+          deferToDatabase: process.env.GITHUB_EVENT_NAME === "schedule",
+        },
       })),
     };
     const serialized = `${JSON.stringify(summary, null, 2)}\n`;

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
@@ -10,11 +10,24 @@ import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
-import { CODE_CLASS, DASH, Figure, PersonName, ProvisionalBadge } from "./figures";
+import { CODE_CLASS, DASH, Figure, PersonName } from "./figures";
 import { barWidth, compareValues } from "./h2h";
 import { rowReportTargets, type PeopleRow } from "./people";
+
+/**
+ * « Détail du duel » (BotolaGO+): blurred for non-members, clear for members. Loaded only when the
+ * build lets BotolaGO+ exist, so with it off nothing renders and nothing is requested.
+ */
+const PlusDuelSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusDuelSlot").then((module) => ({
+        default: module.PlusDuelSlot,
+      })),
+    )
+  : null;
 
 /**
  * Face-à-face (G4, plan 4.4): two cards side by side, yours at the inline start, with the four
@@ -28,11 +41,20 @@ export function HeadToHeadSheet({
   onOpenChange,
   mine,
   row,
+  mineRow = null,
+  leagueSize = 0,
+  leagueId = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mine: MyCardDto | null;
   row: PeopleRow | null;
+  /** The reader's own row in the league and the league's size: the real points and positions the
+   *  detailed duel shows clear above its lock. */
+  mineRow?: PeopleRow | null;
+  leagueSize?: number;
+  /** The league the rows belong to, for the detailed duel's league figures. */
+  leagueId?: string | null;
 }) {
   const { t } = useI18n();
   const copy = useCurvaCopy();
@@ -52,14 +74,9 @@ export function HeadToHeadSheet({
       {mine && myProfile && row && theirs && theirProfile ? (
         <div className="flex flex-col gap-5 px-4 pb-4 pt-5" data-testid="curva-h2h">
           <div className="grid grid-cols-2 gap-3">
-            <Side
-              name={mine.name}
-              provisional={mine.provisional && myOvr !== null}
-              profile={myProfile}
-            />
+            <Side name={mine.name} profile={myProfile} />
             <Side
               name={row.name}
-              provisional={theirs.provisional && theirs.ovr !== null}
               profile={theirProfile}
               report={
                 row.own ? null : (
@@ -83,6 +100,12 @@ export function HeadToHeadSheet({
               <StatRow key={code} code={code} a={mine.stats[code].value} b={theirs.stats[code]} />
             ))}
           </ul>
+          {/* The detailed duel is a BotolaGO+ extra (behind PREMIUM_BUILD). */}
+          {PlusDuelSlot ? (
+            <Suspense fallback={null}>
+              <PlusDuelSlot mineRow={mineRow} row={row} size={leagueSize} leagueId={leagueId} />
+            </Suspense>
+          ) : null}
           <UiButton variant="ghost" onClick={() => onOpenChange(false)}>
             {t("fpl.close")}
           </UiButton>
@@ -95,12 +118,10 @@ export function HeadToHeadSheet({
 function Side({
   name,
   profile,
-  provisional,
   report,
 }: {
   name: string;
   profile: Parameters<typeof ManagerCard>[0]["profile"];
-  provisional: boolean;
   report?: ReactNode;
 }) {
   return (
@@ -114,7 +135,6 @@ function Side({
         </p>
         {report}
       </div>
-      <div className="min-h-6">{provisional ? <ProvisionalBadge /> : null}</div>
     </div>
   );
 }

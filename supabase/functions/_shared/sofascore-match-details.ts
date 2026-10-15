@@ -7,9 +7,19 @@
 //   matches/get-incidents   -> events (goals, cards, substitutions)
 //   matches/get-lineups     -> lineups (starters, bench, shirt, position, formation)
 //   matches/get-statistics  -> team statistics (period ALL only)
-// A quota refusal (`provider_rate_limited`) or any other provider failure on
-// one of them leaves that fixture entirely unwritten; a refusal also stops the
-// run, so the remaining fixtures keep their quota.
+// A quota refusal (`provider_rate_limited`) stops the run with that fixture
+// unwritten, so the remaining fixtures keep their quota. Otherwise the three
+// sections are independent (2026-10-14, FUS Rabat - Raja: a statistics reply
+// the provider did not have yet threw away every goal, card and lineup of the
+// match until full time):
+//   * a reply the provider does not have (HTTP 404, or HTTP 200 with an
+//     `{"error": {...}}` body, which is how RapidAPI answers for SofaScore) is
+//     "no data": lineups and statistics are sent empty (the RPC keeps what is
+//     stored), incidents leave the fixture `unavailable` (not a rejection);
+//   * a lineups or statistics reply that fails or cannot be read is reported
+//     in `sections` and sent empty; the events are still stored;
+//   * the database stores each section on its own and names a section it
+//     could not store in `rejectedSections` (migration 20261014120000).
 //
 // Rules this module keeps (they come from what the real responses showed, see
 // tests/fixtures/providers/sofascore and
@@ -38,7 +48,7 @@ import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 type JsonRecord = Record<string, unknown>;
 type Side = "home" | "away";
 
-export type SofascoreDetailsScope = "live" | "backfill";
+export type SofascoreDetailsScope = "live" | "backfill" | "staged";
 
 export type SofascoreMatchEventType =
   | "goal"
@@ -101,7 +111,8 @@ export interface SofascoreDetailsLineup {
 export interface SofascoreMatchDetailsPayload {
   readonly providerUpdatedAt: string;
   readonly sourceSequence: number;
-  readonly events: readonly SofascoreDetailsEvent[];
+  /** Null when the incidents could not be read: the RPC keeps the stored timeline. */
+  readonly events: readonly SofascoreDetailsEvent[] | null;
   readonly statistics: readonly SofascoreDetailsStatistic[];
   readonly lineups: readonly SofascoreDetailsLineup[];
   readonly pressure: readonly [];
@@ -114,9 +125,14 @@ export interface SofascoreDetailsSkipped {
   lineupPlayers: number;
 }
 
+/** A reply section that could not be read and was sent empty (or null). */
+export type SofascoreDetailsSection = "incidents" | "lineups" | "statistics";
+
 export interface SofascoreMatchDetails {
   readonly payload: SofascoreMatchDetailsPayload;
   readonly skipped: SofascoreDetailsSkipped;
+  /** Sections whose reply was there but unreadable: left out, the rest kept. */
+  readonly unreadable: readonly SofascoreDetailsSection[];
 }
 
 /** The fixture's two clubs as SofaScore team ids. */
@@ -457,9 +473,23 @@ export function normalizeStatistics(
 }
 
 /**
+ * True for a reply that says the provider has no data: RapidAPI answers HTTP
+ * 200 with `{"error": {"code": 404, ...}}` for SofaScore data that does not
+ * exist (yet), where SofaScore itself answers 404 (see
+ * docs/audits/2026-10-01-sofascore-rapidapi-coverage-test.md). `expected` is
+ * the key a real reply carries (`incidents`, `statistics`, `home`).
+ */
+export function isProviderNoData(value: unknown, expected: string): boolean {
+  return isRecord(value) && value.error !== undefined && !(expected in value);
+}
+
+/**
  * The three replies as the payload for api.ingest_football_match_details.
- * `lineups` and `statistics` may be null (the provider has none for this
- * match); `incidents` may not: without it there is no timeline to store.
+ * Any of them may be null (the provider has none). Each section is read on its
+ * own: one that cannot be read is left out and named in `unreadable` (events
+ * null, so the stored timeline is kept; lineups or statistics empty, which the
+ * RPC also reads as "keep"), and the others are still sent. Throws only when
+ * nothing at all could be read, or when the two clubs are the same.
  */
 export function normalizeSofascoreMatchDetails(
   replies: { readonly incidents: unknown; readonly lineups: unknown; readonly statistics: unknown },
@@ -468,9 +498,34 @@ export function normalizeSofascoreMatchDetails(
 ): SofascoreMatchDetails {
   if (teams.home === teams.away) throw new SofascoreDetailsPayloadError();
   const skipped: SofascoreDetailsSkipped = { events: 0, statistics: 0, lineupPlayers: 0 };
-  const events = normalizeIncidents(replies.incidents, teams, skipped);
-  const lineups = normalizeLineups(replies.lineups, teams, skipped);
-  const statistics = normalizeStatistics(replies.statistics, teams, skipped);
+  const unreadable: SofascoreDetailsSection[] = [];
+  const section = <T>(name: SofascoreDetailsSection, read: () => T, empty: T): T => {
+    try {
+      return read();
+    } catch (error) {
+      if (!(error instanceof SofascoreDetailsPayloadError)) throw error;
+      unreadable.push(name);
+      return empty;
+    }
+  };
+  const events =
+    replies.incidents === null || isProviderNoData(replies.incidents, "incidents")
+      ? null
+      : section<SofascoreDetailsEvent[] | null>(
+          "incidents",
+          () => normalizeIncidents(replies.incidents, teams, skipped),
+          null,
+        );
+  const lineups = isProviderNoData(replies.lineups, "home")
+    ? []
+    : section("lineups", () => normalizeLineups(replies.lineups, teams, skipped), []);
+  const statistics = isProviderNoData(replies.statistics, "statistics")
+    ? []
+    : section("statistics", () => normalizeStatistics(replies.statistics, teams, skipped), []);
+  if (events === null && lineups.length === 0 && statistics.length === 0 && unreadable.length > 0) {
+    // Nothing readable at all: the reply is not what this module knows.
+    throw new SofascoreDetailsPayloadError();
+  }
   return {
     payload: {
       providerUpdatedAt: observedAt,
@@ -483,6 +538,7 @@ export function normalizeSofascoreMatchDetails(
       absences: null,
     },
     skipped,
+    unreadable,
   };
 }
 
@@ -511,6 +567,39 @@ export interface SofascoreDetailsTarget {
    * the match is on, from these same replies.
    */
   readonly liveFixtureId?: string;
+  /**
+   * A match in play: read `matches/get-incidents` only (1 request instead of 3).
+   * Lineups and statistics are read at full time, where the Fantasy step needs
+   * them. The payload then carries empty lineups and statistics, which the RPC
+   * does not treat as a deletion (it keeps what is stored).
+   */
+  readonly incidentsOnly?: boolean;
+  /**
+   * With `incidentsOnly`: also read `matches/get-lineups` (2 requests, no
+   * statistics). Set once per match, on the tick that sees it start, so the
+   * player matching can offer unknown names to the staff before full time.
+   */
+  readonly withLineups?: boolean;
+  /**
+   * Replies already read by the caller (the staged statistics pulls of a
+   * finished match): stored as they are, with no request.
+   */
+  readonly replies?: {
+    readonly incidents: unknown;
+    readonly lineups: unknown;
+    readonly statistics: unknown;
+  };
+}
+
+/** A fixture whose details were stored without one or more sections. */
+export interface SofascoreDetailsPartial {
+  readonly eventId: string;
+  /** Read from the provider but failed or unreadable: sent empty. */
+  readonly leftOut: readonly SofascoreDetailsSection[];
+  /** Refused by the database (`rejectedSections`), the rest stored. */
+  readonly rejected: readonly string[];
+  /** Rows the database left out (`eventsRejected` + `statisticsRejected` + `lineupPlayersRejected`). */
+  readonly rowsRejected: number;
 }
 
 export interface SofascoreDetailsSummary {
@@ -523,6 +612,13 @@ export interface SofascoreDetailsSummary {
   readonly stored: number;
   readonly stale: number;
   readonly rejected: number;
+  /**
+   * Matches in play whose incidents the provider does not have yet: nothing
+   * to store, not a rejection.
+   */
+  readonly unavailable: number;
+  /** Fixtures stored (or, in shadow, normalized) without every section. */
+  readonly partial: readonly SofascoreDetailsPartial[];
   /** Shadow only: fixtures read and normalized, nothing written. */
   readonly wouldStore: number;
   readonly events: number;
@@ -595,35 +691,64 @@ async function fingerprint(value: unknown): Promise<string> {
 }
 
 /**
- * Reads the three replies for one event. Lineups and statistics the provider
- * does not have (`data_unavailable`, a 404) come back null; the incidents are
- * required. Any other failure, a quota refusal included, throws with nothing
- * returned, so the caller never stores half a fixture.
+ * Reads the three replies for one event. A reply the provider does not have
+ * (`data_unavailable`, a 404, or HTTP 200 with an `{"error": ...}` body) comes
+ * back null for the lineups and statistics, and throws `data_unavailable` for
+ * the incidents. Any other failure, a quota refusal included, throws with
+ * nothing returned, unless `failures` is given: then a lineups or statistics
+ * failure other than a quota refusal comes back null and is named there, so
+ * the incidents are still stored.
  */
 export async function fetchSofascoreMatchReplies(
   rapid: SofascoreShadowClient,
   eventId: string,
   requests: SofascoreDetailsRequestLog[],
+  incidentsOnly = false,
+  withLineups = false,
+  failures?: SofascoreDetailsSection[],
 ): Promise<{ incidents: unknown; lineups: unknown; statistics: unknown }> {
   if (!/^[1-9][0-9]{0,11}$/.test(eventId)) throw new SofascoreDetailsPayloadError();
-  const read = async (endpoint: string, optional: boolean): Promise<unknown> => {
+  const read = async (
+    endpoint: string,
+    section: SofascoreDetailsSection,
+    expected: string,
+  ): Promise<unknown> => {
+    const optional = section !== "incidents";
     const path = eventPath(endpoint, eventId);
     try {
       const result = await rapid.getJson(path);
       const quota: RapidApiQuota = result.quota;
       requests.push({ path, quotaRemaining: quota.remaining, quotaLimit: quota.limit });
+      if (isProviderNoData(result.data, expected)) {
+        if (optional) return null;
+        throw new RapidApiError("data_unavailable", `The provider has no data for ${path}.`);
+      }
       return result.data;
     } catch (error) {
-      if (optional && error instanceof RapidApiError && error.code === "data_unavailable") {
-        requests.push({ path, quotaRemaining: null, quotaLimit: null });
+      if (!(error instanceof RapidApiError) || !optional) throw error;
+      if (error.code === "data_unavailable") {
+        if (!requests.some((logged) => logged.path === path)) {
+          requests.push({ path, quotaRemaining: null, quotaLimit: null });
+        }
+        return null;
+      }
+      if (failures && error.code !== "provider_rate_limited") {
+        failures.push(section);
         return null;
       }
       throw error;
     }
   };
-  const incidents = await read("get-incidents", false);
-  const lineups = await read("get-lineups", true);
-  const statistics = await read("get-statistics", true);
+  const incidents = await read("get-incidents", "incidents", "incidents");
+  if (incidentsOnly) {
+    return {
+      incidents,
+      lineups: withLineups ? await read("get-lineups", "lineups", "home") : null,
+      statistics: null,
+    };
+  }
+  const lineups = await read("get-lineups", "lineups", "home");
+  const statistics = await read("get-statistics", "statistics", "statistics");
   return { incidents, lineups, statistics };
 }
 
@@ -647,6 +772,7 @@ export async function runSofascoreMatchDetails(
     stored: 0,
     stale: 0,
     rejected: 0,
+    unavailable: 0,
     wouldStore: 0,
     events: 0,
     statistics: 0,
@@ -654,12 +780,14 @@ export async function runSofascoreMatchDetails(
     unmappedPlayers: 0,
   };
   let rateLimited = false;
+  const partial: SofascoreDetailsPartial[] = [];
   const rpc = (name: string, args: Record<string, unknown>) => client.schema("api").rpc(name, args);
   const build = (): SofascoreDetailsSummary => ({
     scope,
     mode,
     offered: targets.length + unresolved.length,
     ...totals,
+    partial,
     skipped,
     requests,
     rateLimited,
@@ -697,25 +825,52 @@ export async function runSofascoreMatchDetails(
     totals.attempted += 1;
     let normalized: SofascoreMatchDetails;
     let replies: { incidents: unknown; lineups: unknown; statistics: unknown };
+    const failures: SofascoreDetailsSection[] = [];
     try {
-      replies = await fetchSofascoreMatchReplies(rapid, target.eventId, requests);
+      replies =
+        target.replies ??
+        (await fetchSofascoreMatchReplies(
+          rapid,
+          target.eventId,
+          requests,
+          target.incidentsOnly === true,
+          target.withLineups === true,
+          failures,
+        ));
       normalized = normalizeSofascoreMatchDetails(replies, target.teams, now.toISOString());
     } catch (error) {
       const code = failureCode(error);
-      errors.add(code);
       // A quota refusal says nothing about the fixture: it is not a rejection
       // (the backfill leaves out a fixture refused twice), it ends the run.
       if (code === "provider_rate_limited") {
+        errors.add(code);
         rateLimited = true;
         break;
       }
+      // A match in play with no incidents yet: nothing to store, and nothing
+      // wrong with the fixture. A finished one without them stays a rejection
+      // (the backfill stops asking after two).
+      if (code === "data_unavailable" && target.incidentsOnly === true) {
+        totals.unavailable += 1;
+        continue;
+      }
+      errors.add(code);
       totals.rejected += 1;
       failed.push({ eventId: target.eventId, code });
       continue;
     }
     const { payload } = normalized;
+    const leftOut = [...failures, ...normalized.unreadable];
+    const notePartial = (rejected: readonly string[], rowsRejected: number) => {
+      if (leftOut.length + rejected.length + rowsRejected === 0) return;
+      partial.push({ eventId: target.eventId, leftOut, rejected, rowsRejected });
+      errors.add(rejected.length > 0 ? "details_section_rejected" : "details_section_left_out");
+    };
     // The Fantasy step reads these same replies; it never affects the details.
     const afterwards = async () => {
+      // A reply that failed is not handed on as empty: Fantasy waits for a
+      // whole set (its own retries and catch-up read it again).
+      if (failures.length > 0) return;
       try {
         if (target.fantasyFixtureId && dependencies.onReplies)
           await dependencies.onReplies(target, replies);
@@ -729,8 +884,9 @@ export async function runSofascoreMatchDetails(
       skipped[section] += normalized.skipped[section];
     }
     if (mode === "shadow") {
+      notePartial([], 0);
       totals.wouldStore += 1;
-      totals.events += payload.events.length;
+      totals.events += payload.events?.length ?? 0;
       totals.statistics += payload.statistics.length;
       totals.lineupPlayers += payload.lineups.reduce((n, l) => n + l.players.length, 0);
       log({
@@ -738,7 +894,7 @@ export async function runSofascoreMatchDetails(
         scope,
         eventId: target.eventId,
         wouldStore: {
-          events: payload.events.length,
+          events: payload.events?.length ?? null,
           statistics: payload.statistics.length,
           lineups: payload.lineups.map((l) => ({
             team: l.teamExternalId,
@@ -776,6 +932,18 @@ export async function runSofascoreMatchDetails(
         totals.statistics += count(stored.statistics);
         totals.lineupPlayers += count(stored.lineupPlayers);
         totals.unmappedPlayers += count(stored.unmappedPlayers);
+        const rejectedSections = Array.isArray(stored.rejectedSections)
+          ? stored.rejectedSections
+              .filter((name): name is string => typeof name === "string")
+              .map((name) => name.slice(0, 80))
+              .slice(0, 10)
+          : [];
+        notePartial(
+          rejectedSections,
+          count(stored.eventsRejected) +
+            count(stored.statisticsRejected) +
+            count(stored.lineupPlayersRejected),
+        );
       } else {
         throw new Error("database_unavailable");
       }
@@ -808,11 +976,40 @@ export async function runSofascoreMatchDetails(
         errors.add("record_rejection_failed");
       }
     }
+    // A fixture stored without a section is not a rejection of the fixture,
+    // but the part left out is recorded, so it can be found afterwards.
+    for (const item of partial) {
+      const code =
+        item.rejected.length > 0 ? "details_section_rejected" : "details_section_left_out";
+      try {
+        const rejection = await rpc("record_football_ingestion_rejection", {
+          p_run_id: runId,
+          p_entity_type: "fixture",
+          p_external_id: item.eventId,
+          p_payload_fingerprint: await fingerprint(item),
+          p_error_code: code,
+          p_validation_issues: [
+            ...item.leftOut.map((section) => ({ code: "section_left_out", section })),
+            ...item.rejected.map((section) => ({ code: "section_rejected", section })),
+            ...(item.rowsRejected > 0 ? [{ code: "rows_rejected", rows: item.rowsRejected }] : []),
+          ],
+        });
+        if (rejection.error) errors.add("record_rejection_failed");
+      } catch {
+        errors.add("record_rejection_failed");
+      }
+    }
+    const errorCode =
+      totals.rejected > 0
+        ? "match_details_item_rejected"
+        : partial.length > 0
+          ? "match_details_section_rejected"
+          : null;
     try {
       const completion = await rpc("complete_football_ingestion", {
         p_run_id: runId,
         p_status:
-          totals.rejected === 0
+          totals.rejected === 0 && partial.length === 0
             ? "succeeded"
             : totals.stored + totals.stale > 0
               ? "partial"
@@ -824,20 +1021,24 @@ export async function runSofascoreMatchDetails(
           statistics: totals.statistics,
           lineupPlayers: totals.lineupPlayers,
           unmappedPlayers: totals.unmappedPlayers,
+          unavailable: totals.unavailable,
+          partial: partial.length,
           skipped,
         },
         p_records_fetched: totals.attempted,
         p_records_validated: totals.stored + totals.stale,
         p_records_inserted: 0,
         p_records_updated: totals.stored,
-        p_records_skipped: totals.stale,
+        p_records_skipped: totals.stale + totals.unavailable,
         p_records_rejected: totals.rejected,
         p_retry_count: 0,
-        p_error_code: totals.rejected > 0 ? "match_details_item_rejected" : null,
+        p_error_code: errorCode,
         p_error_summary:
           totals.rejected > 0
             ? "The SofaScore match details refresh did not complete for every fixture."
-            : null,
+            : partial.length > 0
+              ? "A SofaScore match details section could not be stored; the rest of the fixture was."
+              : null,
       });
       if (completion.error) errors.add("complete_run_failed");
     } catch {

@@ -21,7 +21,7 @@ export interface RankingsQuery {
 export interface RankingsPage {
   rows: LeagueStanding[];
   total: number;
-  /** Top 3 of the *overall* board, independent of paging/search. */
+  /** Top 3 of the board as ordered, independent of paging/search. */
   podium: LeagueStanding[];
   myRank?: LeagueStanding;
 }
@@ -121,11 +121,20 @@ export function buildGlobalRankings(size = GLOBAL_RANKINGS_SIZE): LeagueStanding
   return rows;
 }
 
+/**
+ * Mock board only. The round order is the round score, and rows that tie keep
+ * the order they already had on the board (`Array.prototype.sort` is stable);
+ * no other key is invented. A round board has no rank history of its own, so
+ * `previousRank` is unknown (null) rather than the overall rank, which would
+ * show the move between two different boards as if it were a round movement.
+ * The cloud path never gets here: it reads the server's round board in the
+ * server's order (see `selectBoardPage`).
+ */
 function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] {
   if (sort === "overall") return rows;
   return [...rows]
-    .sort((a, b) => b.gameweekScore - a.gameweekScore || a.totalScore - b.totalScore)
-    .map((row, index) => ({ ...row, rank: index + 1, previousRank: row.rank }));
+    .sort((a, b) => b.gameweekScore - a.gameweekScore)
+    .map((row, index) => ({ ...row, rank: index + 1, previousRank: null }));
 }
 
 export function matchesQuery(row: LeagueStanding, query: string): boolean {
@@ -146,25 +155,44 @@ export function mergeMe(all: LeagueStanding[], me?: LeagueStanding): LeagueStand
     .map((row, index) => ({ ...row, rank: index + 1 }));
 }
 
-/** Applies sort, search and pagination to a full board. Pure. */
-export function selectRankingsPage(
-  all: LeagueStanding[],
-  { page, pageSize, sort, query, meId, me }: RankingsQuery,
+function pageOfBoard(
+  sorted: LeagueStanding[],
+  { page, pageSize, query }: Pick<RankingsQuery, "page" | "pageSize" | "query">,
+  id: string | undefined,
 ): RankingsPage {
-  const board = mergeMe(all, me);
-  const sorted = sortRows(board, sort);
   const filtered = query.trim() ? sorted.filter((row) => matchesQuery(row, query)) : sorted;
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.max(1, Math.min(pageCount, Math.floor(page) || 1));
   const start = (safePage - 1) * pageSize;
-  const id = me?.managerId ?? meId;
   return {
     rows: filtered.slice(start, start + pageSize),
     total,
     podium: sorted.slice(0, 3),
     myRank: id ? sorted.find((row) => row.managerId === id) : undefined,
   };
+}
+
+/** Applies sort, search and pagination to a full board. Pure. Mock data only. */
+export function selectRankingsPage(
+  all: LeagueStanding[],
+  { page, pageSize, sort, query, meId, me }: RankingsQuery,
+): RankingsPage {
+  const sorted = sortRows(mergeMe(all, me), sort);
+  return pageOfBoard(sorted, { page, pageSize, query }, me?.managerId ?? meId);
+}
+
+/**
+ * Search and pagination over a board the server has already ordered and
+ * ranked. Nothing is merged, sorted, re-ranked or rewritten: the order, the
+ * ranks and the previous ranks are the server's, so the browser computes no
+ * standing of its own. Pure.
+ */
+export function selectBoardPage(
+  board: LeagueStanding[],
+  { page, pageSize, query, meId }: Pick<RankingsQuery, "page" | "pageSize" | "query" | "meId">,
+): RankingsPage {
+  return pageOfBoard(board, { page, pageSize, query }, meId);
 }
 
 /** Page number (1-based) that contains a given rank. */
