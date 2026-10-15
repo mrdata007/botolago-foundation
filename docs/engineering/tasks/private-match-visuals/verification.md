@@ -35,3 +35,22 @@ feed connected, no production storage or cron changes made, and no deployment
 performed. Collection defaults off in the migration. These limits must remain
 visible in the review; supplementary PostgreSQL and fixture browser checks do
 not establish a live provider/Storage end-to-end result.
+
+## CI integration follow-up (2026-10-15)
+
+The first full CI found missing release-runbook accounting and missing named
+staff-RPC registrations in the MFA audit. Both are corrected, with the audit
+and owner-run postflight kept identical. Added five negative audit probes (one
+per endpoint) and four further real staff-denial assertions. No migration or
+runtime permission guard was weakened or changed.
+
+After synchronizing current main, the full local Bun suite passed: 9,561 tests,
+23 skips, no failures. The 98 targeted workflow/release/security tests passed.
+App TypeScript and repository ESLint passed (37 existing warnings, no errors),
+and 229 migrations validated. Full Supabase CI is the authority for the new
+58-case MFA suite, 16-case private-visual suite and generated type parity.
+
+The independent smoke-test checker was exercised on synthetic PNGs: an edit
+inside the rectangle passed with zero changed protected pixels; a deliberately
+changed outside pixel exited nonzero. The real-photo test is prepared in
+`private-smoke-test.md`; it has not been run or deployed. Collection remains off.

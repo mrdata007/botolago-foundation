@@ -1,5 +1,5 @@
 begin;
-select extensions.plan(12);
+select extensions.plan(16);
 select extensions.ok((select not public from storage.buckets where id='match-visual-drafts'),'originals and results use a private bucket');
 select extensions.ok((select relrowsecurity and relforcerowsecurity from pg_class where oid='app_private.match_visual_drafts'::regclass),'draft table has forced RLS');
 select extensions.ok(not has_table_privilege('authenticated','app_private.match_visual_drafts','select,insert,update,delete'),'browser has no direct private-table access');
@@ -9,6 +9,10 @@ select extensions.ok(has_function_privilege('service_role','api.service_finish_m
 select extensions.ok(not has_function_privilege('anon','api.admin_get_match_visual_draft(uuid)','execute'),'anonymous cannot obtain private preview paths');
 select set_config('request.jwt.claims','{}',true);
 select extensions.throws_ok('select api.admin_match_visual_drafts()','PT401','staff_access_denied','private list requires MFA staff context');
+select extensions.throws_ok('select api.admin_get_match_visual_draft(gen_random_uuid())','PT401','staff_access_denied','private preview requires MFA staff context');
+select extensions.throws_ok('select api.admin_import_match_visual_draft(''{}''::jsonb)','PT401','staff_access_denied','private import requires MFA staff context before validating metadata');
+select extensions.throws_ok('select api.admin_begin_match_visual_edit(gen_random_uuid(),1,gen_random_uuid(),''{}''::jsonb)','PT401','staff_access_denied','private edits require MFA staff context before claiming an attempt');
+select extensions.throws_ok('select api.admin_discard_match_visual_draft(gen_random_uuid(),1)','PT401','staff_access_denied','private discard requires MFA staff context');
 select extensions.throws_ok('select api.service_finish_match_visual_edit(gen_random_uuid(),gen_random_uuid(),null)','42501','service_only','completion refuses non-service JWT');
 select extensions.lives_ok($scenario$
 DO $$
