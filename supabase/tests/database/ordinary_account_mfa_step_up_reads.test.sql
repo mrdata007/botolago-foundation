@@ -386,6 +386,9 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          -- BotolaGO+ memberships (20261013100200).
          'admin_premium_overview', 'admin_get_premium_member', 'admin_grant_premium',
          'admin_revoke_premium',
+         -- The Saison: payment details, finding a member by code, activating (20261016150100).
+         'admin_get_premium_payment_details', 'admin_set_premium_payment_details',
+         'admin_find_premium_member_by_code', 'admin_activate_premium_season',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
          'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
          'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
@@ -423,8 +426,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  96,
-  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000), the match-reminders read (20261002110000) and revoking a public gameweek recap (20261005130000), the three Manager Card reads and the acknowledgement (20261010120200), and the two BotolaGO+ functions that read or write the caller''s own membership state, api.get_my_premium and api.choose_card_design (20261013100100, 20261013100200), the four BotolaGO+ card read functions of 20261013100400 (career, duel and the two privacy switch functions), and the BotolaGO+ league context read of 20261014150000, and the round recap read of 20261015120000, and the two deadline briefing reads of 20261015140000, and the five trophies functions of 20261015150200 (the trophies read, choosing a frame, the frames read, the trophies visibility switch and the league mates'' trophies read), run it'
+  98,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000), the match-reminders read (20261002110000) and revoking a public gameweek recap (20261005130000), the three Manager Card reads and the acknowledgement (20261010120200), and the two BotolaGO+ functions that read or write the caller''s own membership state, api.get_my_premium and api.choose_card_design (20261013100100, 20261013100200), the four BotolaGO+ card read functions of 20261013100400 (career, duel and the two privacy switch functions), and the BotolaGO+ league context read of 20261014150000, and the round recap read of 20261015120000, and the two deadline briefing reads of 20261015140000, and the five trophies functions of 20261015150200 (the trophies read, choosing a frame, the frames read, the trophies visibility switch and the league mates'' trophies read), and the two Saison reads of 20261016150100 (where to pay and the caller''s payment code), run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');

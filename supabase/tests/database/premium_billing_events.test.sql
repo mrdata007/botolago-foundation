@@ -65,6 +65,9 @@ select pg_temp.u(n), '00000000-0000-0000-0000-000000000000', 'authenticated', 'a
   statement_timestamp(), statement_timestamp()
 from generate_series(1, 5) n;
 update app.profiles set deleted_at = statement_timestamp() where id = pg_temp.u(4);
+-- 20261016150000 made the monthly and yearly products inactive (only the Saison is sold). This test
+-- exercises the state machine through them, so it makes them sellable again, inside its transaction.
+update app_private.premium_products set active = true where code in ('plus_monthly', 'plus_yearly');
 
 -- ---------------------------------------------------------------------------
 -- Who may call it, and bad input
@@ -239,7 +242,7 @@ select extensions.is(pg_temp.ent(3),
 -- ---------------------------------------------------------------------------
 select extensions.is(pg_temp.out(pg_temp.ev('b:1', 'purchase', 2, 0, '{"productCode":"plus_monthly","signatureVerified":false}')),
   'rejected_signature/none/none/false', 'an unverified signature is stored and moves nothing');
-select extensions.is(pg_temp.out(pg_temp.ev('b:2', 'purchase', 2, 0, '{"productCode":"plus_season"}')),
+select extensions.is(pg_temp.out(pg_temp.ev('b:2', 'purchase', 2, 0, '{"productCode":"plus_ghost"}')),
   'ignored_product/none/none/false', 'an unknown product is ignored');
 select extensions.is(pg_temp.out(pg_temp.ev('b:3', 'renewal', 2, 0, '{"productCode":"plus_monthly"}')),
   'applied/none/active/false', 'a renewal that arrives before its purchase still opens the membership');

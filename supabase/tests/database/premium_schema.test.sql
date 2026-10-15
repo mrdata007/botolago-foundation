@@ -1,21 +1,22 @@
--- BotolaGO+ (membership), tables and switches (20261013100000 .. 20261013100100).
+-- BotolaGO+ (membership), tables and switches (20261013100000 .. 20261013100100, 20261016150000).
 --
 -- Covered: every table exists with row security enabled AND forced and no
 -- policy; no right on any table for anon, authenticated, service_role or
 -- PUBLIC (not even a column right); every foreign key has an index; the switch
 -- ships off (mode off, checkout off, billing not paused) and only postgres can
 -- change it; checkout cannot be on while mode is off; the two products carry
--- the owner's prices (20 MAD a month, 200 MAD a year, the yearly one does not
--- renew); the editions catalogue is standard (free, the tier's metal) plus
+-- the owner's prices (the Saison, 200 MAD until the season end, active; the
+-- monthly and yearly products still there but inactive, 20261016150000); the editions catalogue is standard (free, the tier's metal) plus
 -- holo, electric, pixel and chrome (paid); a provider event id can be stored
 -- once; the helpers are not callable by any API role.
 begin;
-select extensions.plan(32);
+select extensions.plan(33);
 
--- The eight tables.
+-- The ten tables.
 create function pg_temp.tables() returns text[] language sql immutable as $$
   select array['app.card_edition_choices', 'app.card_editions', 'app.premium_entitlements',
     'app_private.billing_customers', 'app_private.billing_events', 'app_private.premium_grants',
+    'app_private.premium_pay_codes', 'app_private.premium_payment_details',
     'app_private.premium_products', 'app_private.premium_settings']
 $$;
 
@@ -24,7 +25,7 @@ select extensions.is(
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname || '.' || c.relname = any (pg_temp.tables()) and c.relkind = 'r'),
   (select array_agg(t order by t collate "C") from unnest(pg_temp.tables()) t),
-  'the eight BotolaGO+ tables exist');
+  'the ten BotolaGO+ tables exist');
 select extensions.is(
   (select array_agg(n.nspname || '.' || c.relname order by n.nspname || '.' || c.relname collate "C")
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -61,7 +62,7 @@ select extensions.is(
        where i.indrelid = c.conrelid
          and (i.indkey::text = array_to_string(c.conkey, ' ')
            or i.indkey::text like array_to_string(c.conkey, ' ') || ' %'))),
-  '', 'every foreign key of the eight tables has an index that starts with its columns');
+  '', 'every foreign key of the ten tables has an index that starts with its columns');
 
 -- The switch ships off.
 select extensions.is(
@@ -110,16 +111,20 @@ select extensions.is(
   (select mode || ':' || checkout_enabled from app_private.premium_settings),
   'off:false', 'and the refused calls changed nothing');
 
--- The owner's prices.
+-- The owner's prices (20261016150000: one Saison, 200 MAD, until the end of the season).
 select extensions.is(
-  (select string_agg(code || '/' || period_months || '/' || renews || '/' || price_minor || '/' || currency || '/' || active,
+  (select string_agg(concat_ws('/', code, coalesce(period_months::text, '-'), renews, price_minor, currency, active),
      ',' order by sort_order) from app_private.premium_products),
-  'plus_monthly/1/true/2000/MAD/true,plus_yearly/12/false/20000/MAD/true',
-  '20 MAD a month (renews) and 200 MAD a year (12 months, does not renew), centimes, tax included');
+  'plus_season/-/f/20000/MAD/t,plus_monthly/1/t/2000/MAD/f,plus_yearly/12/f/20000/MAD/f',
+  'the Saison is 200 MAD, centimes, tax included, no number of months, does not renew; the monthly and yearly products stay but are inactive');
 select extensions.throws_ok(
-  $$insert into app_private.premium_products (code, period_months, renews, price_minor) values ('plus_season', 10, false, 19900)$$,
+  $$insert into app_private.premium_products (code, period_months, renews, price_minor) values ('plus_ten', 10, false, 19900)$$,
   '23514', 'new row for relation "premium_products" violates check constraint "premium_products_period_check"',
-  'a product lasts 1 or 12 months');
+  'a product with months lasts 1 or 12 months');
+select extensions.throws_ok(
+  $$insert into app_private.premium_products (code, period_months, renews, price_minor) values ('plus_loop', null, true, 19900)$$,
+  '23514', 'new row for relation "premium_products" violates check constraint "premium_products_period_check"',
+  'and a product without months (until the season end) cannot renew');
 
 -- The editions.
 select extensions.is(

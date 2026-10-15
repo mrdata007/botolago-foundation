@@ -2,7 +2,7 @@
 -- api.get_my_premium and the four staff functions (the overview also by product, 20261013100500).
 --
 -- Covered: grants and shape; "off is an answer" and the order (off answer, step-up,
--- caller); the public status (prices 20 / 200 MAD, saving 40 MAD, the five editions);
+-- caller); the public status (the Saison at 200 MAD, no saving, the five editions);
 -- preview shows only grant holders; every state of get_my_premium with the exact key set;
 -- the staff gate (staff only, second factor, recent authentication), reasons, period
 -- limits, idempotency, audit, revoke, the audited member read, counts only in the overview.
@@ -128,17 +128,17 @@ select app_private.premium_configure('on');
 select extensions.is(api.premium_status(),
   jsonb_build_object('enabled', true, 'checkoutEnabled', false,
     'prices', jsonb_build_array(
-      jsonb_build_object('code', 'plus_monthly', 'periodMonths', 1, 'renews', true, 'priceMinor', 2000, 'currency', 'MAD'),
-      jsonb_build_object('code', 'plus_yearly', 'periodMonths', 12, 'renews', false, 'priceMinor', 20000, 'currency', 'MAD')),
-    'savingMinor', 4000,
+      jsonb_build_object('code', 'plus_season', 'periodMonths', null, 'renews', false, 'priceMinor', 20000,
+        'currency', 'MAD', 'validUntil', app_private.premium_season_end())),
+    'savingMinor', null,
     'editions', (select jsonb_agg(jsonb_build_object('code', e.code, 'premium', e.premium, 'finish', e.finish,
         'labels', jsonb_build_object('fr', e.label_fr, 'ar', e.label_ar)) order by e.sort_order) from app.card_editions e)),
-  'on: 20 MAD a month, 200 MAD a year (does not renew), 40 MAD saved against 12 months, the five editions; checkout still off');
+  'on: the Saison at 200 MAD (does not renew, no months, valid until the season end), the old monthly and yearly products are not listed, no saving, the five editions; checkout still off');
 select app_private.premium_configure(null, true);
 select extensions.is(api.premium_status() ->> 'checkoutEnabled', 'true', 'checkout enabled shows in the status');
 select app_private.premium_configure(null, false);
 select extensions.is(
-  pg_temp.run(null, null, 'api.premium_status() -> ''prices'' -> 1 -> ''priceMinor''', 'anon'),
+  pg_temp.run(null, null, 'api.premium_status() -> ''prices'' -> 0 -> ''priceMinor''', 'anon'),
   '20000'::jsonb, 'anon reads the price too');
 
 -- get_my_premium
@@ -218,7 +218,7 @@ select extensions.is(
   (select concat_ws('/', o #>> '{settings,mode}', o ->> 'liveGrants', o -> 'membersByState' ->> 'active',
       o -> 'membersByState' ->> 'refunded', jsonb_array_length(o -> 'products'))
    from (select pg_temp.adm('aal2', 'api.admin_premium_overview()') as o) x),
-  'on/1/1/1/2', 'counted by effective state: one active, one refunded, one live grant');
+  'on/1/1/1/3', 'counted by effective state: one active, one refunded, one live grant; three products listed');
 select extensions.is(jsonb_typeof(pg_temp.adm('aal2', 'api.admin_premium_overview()') -> 'membersByState'), 'object',
   'and no member is listed');
 -- 20261013100500: the same effective states, split by product; counts only.

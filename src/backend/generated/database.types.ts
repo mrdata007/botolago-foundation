@@ -172,6 +172,16 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_activate_premium_season: {
+        Args: {
+          p_idempotency_key: string
+          p_payment_method: string
+          p_payment_reference: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_add_fantasy_prize_winner_note: {
         Args: { p_idempotency_key: string; p_note: string; p_winner_id: string }
         Returns: Json
@@ -292,6 +302,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_find_premium_member_by_code: {
+        Args: { p_code: string; p_reason: string; p_request_id: string }
+        Returns: Json
+      }
       admin_finish_session_revocation_worker: {
         Args: {
           p_error_code?: string
@@ -390,6 +404,7 @@ export type Database = {
         Args: { p_reason: string; p_request_id: string; p_user_id: string }
         Returns: Json
       }
+      admin_get_premium_payment_details: { Args: never; Returns: Json }
       admin_get_revocation_worker_health: { Args: never; Returns: Json }
       admin_get_revocation_worker_runtime_status: { Args: never; Returns: Json }
       admin_get_session_revocation_status: {
@@ -711,6 +726,10 @@ export type Database = {
           p_status: string
           p_winner_id: string
         }
+        Returns: Json
+      }
+      admin_set_premium_payment_details: {
+        Args: { p_details: Json; p_idempotency_key: string; p_reason: string }
         Returns: Json
       }
       admin_set_public_ranking_exclusion: {
@@ -1307,9 +1326,11 @@ export type Database = {
       }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_premium: { Args: never; Returns: Json }
+      get_my_premium_pay_code: { Args: never; Returns: Json }
       get_my_rivals: { Args: { p_season?: string }; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       get_my_trophies: { Args: { p_season?: string }; Returns: Json }
+      get_premium_payment_details: { Args: never; Returns: Json }
       get_rival_candidates: { Args: { p_season?: string }; Returns: Json }
       get_round_recap: {
         Args: { p_gameweek?: string; p_league?: string }
