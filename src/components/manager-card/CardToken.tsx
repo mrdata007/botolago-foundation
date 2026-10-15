@@ -7,7 +7,7 @@ import { cardLabel, useCardStrings } from "./copy";
 import { useInnerHtml } from "./inner-html";
 import { cachedRender } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
-import { useCardRenderer, useCardTheme } from "./use-card-renderer";
+import { useCardRenderer, useCardRendererFailed, useCardTheme } from "./use-card-renderer";
 import type { CardProfile, TokenSize } from "./types";
 
 /**
@@ -27,6 +27,7 @@ export function CardToken({
 }) {
   const strings = useCardStrings();
   const renderer = useCardRenderer();
+  const rendererFailed = useCardRendererFailed();
   const theme = useCardTheme();
   const [scope] = useState(newIdScope);
 
@@ -59,7 +60,12 @@ export function CardToken({
           {/* The kit's skeleton is a block element; a token sits in a button or a cell. */}
           <span
             aria-hidden
-            className={cn("shimmer block h-full w-full", ui.radius.control)}
+            className={cn(
+              // A renderer that failed to load stops the shimmer: a token sits inside a button or
+              // a cell and has no room for a retry, the full card on the page offers it.
+              rendererFailed ? "block h-full w-full" : "shimmer block h-full w-full",
+              ui.radius.control,
+            )}
             style={{ backgroundColor: "var(--ui-surface-sunken)" }}
           />
           <span className="sr-only">{cardLabel(profile, strings)}</span>

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import { createSupabaseFetch, REST_REQUEST_TIMEOUT_MS } from "./client";
 
@@ -63,5 +63,54 @@ describe("the Supabase fetch wrapper", () => {
       method: "POST",
     });
     expect(calls[0].init?.signal).toBeUndefined();
+  });
+});
+
+// SEC-05: the deadline and the caller's cancel survive a runtime without AbortSignal.any / timeout.
+describe("the Supabase fetch wrapper in a runtime missing AbortSignal.any or AbortSignal.timeout", () => {
+  const realAny = AbortSignal.any;
+  const realTimeout = AbortSignal.timeout;
+  const mutable = AbortSignal as unknown as { any?: unknown; timeout?: unknown };
+  afterEach(() => {
+    mutable.any = realAny;
+    mutable.timeout = realTimeout;
+  });
+
+  const hanging = ((_input: RequestInfo | URL, init?: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+    })) as typeof fetch;
+  const url = "https://x.supabase.co/rest/v1/rpc/news_feed";
+
+  for (const missing of [["any"], ["timeout"], ["any", "timeout"]] as const) {
+    test(`without ${missing.join(" and ")}, a hanging request is still abandoned at the deadline`, async () => {
+      for (const name of missing) delete mutable[name];
+      const caller = new AbortController();
+      const outcome = await createSupabaseFetch(key, { fetchImpl: hanging, timeoutMs: 30 })(url, {
+        method: "POST",
+        signal: caller.signal,
+      }).catch((error: unknown) => error);
+      expect((outcome as Error).name).toBe("TimeoutError");
+      expect(caller.signal.aborted).toBe(false);
+    });
+
+    test(`without ${missing.join(" and ")}, the caller's cancel still reaches the request`, async () => {
+      for (const name of missing) delete mutable[name];
+      const caller = new AbortController();
+      const pending = createSupabaseFetch(key, { fetchImpl: hanging, timeoutMs: 5_000 })(url, {
+        method: "POST",
+        signal: caller.signal,
+      }).catch((error: unknown) => error);
+      caller.abort();
+      expect(((await pending) as Error).name).toBe("AbortError");
+    });
+  }
+
+  test("without AbortSignal.any, a request with no caller signal is bounded too", async () => {
+    delete mutable.any;
+    const outcome = await createSupabaseFetch(key, { fetchImpl: hanging, timeoutMs: 30 })(url, {
+      method: "POST",
+    }).catch((error: unknown) => error);
+    expect((outcome as Error).name).toBe("TimeoutError");
   });
 });

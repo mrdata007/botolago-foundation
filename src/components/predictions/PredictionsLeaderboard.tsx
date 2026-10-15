@@ -27,6 +27,7 @@ import { useFlip } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { predictionsService } from "@/services/predictions";
 import { formatNumber, matchesLeftLabel, roundsPlayedLabel } from "./predictions-copy";
+import { predictionsKeys } from "./use-predictions-round";
 
 /**
  * The journée and season rankings: 50 rows a page from the saved ranks,
@@ -50,7 +51,7 @@ export function PredictionsLeaderboard({
   const [scope, setScope] = useState<LeaderboardScope>("round");
 
   const board = useInfiniteQuery<OpenLeaderboardDto | null, PredictionsError>({
-    queryKey: ["predictions", "board", scope, scope === "round" ? roundNumber : "season", uid],
+    queryKey: predictionsKeys.board(scope, roundNumber, uid),
     initialPageParam: null as OpenLeaderboardDto["nextCursor"],
     queryFn: async ({ pageParam, signal }) => {
       const page = await predictionsService.leaderboard(

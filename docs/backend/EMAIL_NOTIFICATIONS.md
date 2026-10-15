@@ -39,6 +39,21 @@ pauses an account whose spam-complaint rate goes above 0.08 % (about one
 "Report spam" per 1,250 emails), and a reader who can unsubscribe in one tap
 does not report spam.
 
+## Known gap: the app cannot see the global send mode
+
+The screens know only the account's own settings (notifications, the E-mails
+switch, the topic, a confirmed address). They cannot see
+`app_private.notification_email_settings.mode` (`off`, `test` or `live`), whether
+the sending job runs, or whether the provider accepted a message, because none of
+it is readable by the client. So the copy that appears when the account's route is
+open (the reminder toast, the Fantasy notifications paragraph) says the reminder
+e-mails are **on for the account**, never that one **will arrive**; when the route
+is not open or unknown it says only that the reminder was saved, and the official
+deadline stays on screen (audit 2026-10-14, PRO-04). Accepted residual until a
+public, read-only flag (for example "reminder e-mails are being sent") exists; that
+needs a migration and is not part of the audit remediation lane. Until then, do not
+add copy that promises delivery.
+
 ## Free plan (owner decision, 2026-09-24)
 
 Resend's free plan allows **100 emails per UTC day** (the day resets at 00:00
