@@ -733,3 +733,93 @@ describe("own goals (17256978)", () => {
     expect((await prepare(disagree)).blockers.map((b) => b.code)).toContain("own_goal_unexplained");
   });
 });
+
+describe("a goal in the minute of a substitution (owner option A, 2026-10-15)", () => {
+  // 17256978: move one away substitution onto the minute of a home goal, and put
+  // it just before or just after that goal in SofaScore's newest-first list.
+  type Incident = SofascoreMatchData["incidents"][number];
+  function sameMinute(goalFirst: boolean) {
+    const match = load("17256978");
+    const goal = match.incidents.find((i) => i.kind === "goal" && i.side === "home")!;
+    const sub = match.incidents.find((i) => i.kind === "substitution" && i.side === "away")!;
+    const moved: Incident = { ...sub, minute: goal.minute, addedMinutes: goal.addedMinutes };
+    const rest = match.incidents.filter((i) => i !== sub);
+    const at = rest.indexOf(goal);
+    // Newest first: the later of the two comes first in the list.
+    const incidents = goalFirst
+      ? [...rest.slice(0, at + 1), moved, ...rest.slice(at + 1)]
+      : [...rest.slice(0, at), moved, ...rest.slice(at)];
+    return {
+      match: { ...match, incidents },
+      playerIn: moved.playerIn!.externalId!,
+      playerOut: moved.playerOut!.externalId!,
+    };
+  }
+  const conceded = async (match: SofascoreMatchData, id: string) => {
+    const p = await prepare(match);
+    expect(p.blockers.map((b) => b.code)).not.toContain("timeline_unresolved");
+    return p.request!.payload.players.find((r) => r.identity.sofascoreId === id)!.stats
+      .goalsConceded as number;
+  };
+
+  test("the goal came first: it is against the player who went off, not the one who came on", async () => {
+    const { match, playerIn, playerOut } = sameMinute(false);
+    // The goal is listed after the substitution, so it happened before it.
+    expect(await conceded(match, playerOut)).toBeGreaterThanOrEqual(1);
+    const inRow = (await prepare(match)).request!.payload.players.find(
+      (r) => r.identity.sofascoreId === playerIn,
+    )!;
+    const goalMinute = match.incidents.find(
+      (i) => i.kind === "substitution" && i.playerIn?.externalId === playerIn,
+    )!.minute;
+    const laterHomeGoals = match.incidents.filter(
+      (i) =>
+        i.side === "home" &&
+        (i.kind === "goal" || i.kind === "penalty_goal" || i.kind === "own_goal") &&
+        i.minute > goalMinute,
+    ).length;
+    expect(inRow.stats.goalsConceded).toBe(laterHomeGoals);
+  });
+
+  test("the substitution came first: the goal is against the player who came on, not the one who went off", async () => {
+    const goalAfter = sameMinute(true);
+    const goalBefore = sameMinute(false);
+    const inAfter = await conceded(goalAfter.match, goalAfter.playerIn);
+    const inBefore = await conceded(goalBefore.match, goalBefore.playerIn);
+    const outAfter = await conceded(goalAfter.match, goalAfter.playerOut);
+    const outBefore = await conceded(goalBefore.match, goalBefore.playerOut);
+    expect(inAfter).toBe(inBefore + 1);
+    expect(outAfter).toBe(outBefore - 1);
+  });
+
+  test("when SofaScore's list is not in time order, the tie is still held", async () => {
+    const { match } = sameMinute(true);
+    const shuffled = { ...match, incidents: [...match.incidents].reverse() };
+    const p = await prepare(shuffled);
+    expect(p.blockers.map((b) => b.code)).toContain("timeline_unresolved");
+  });
+
+  test("every recorded SofaScore reply in the repository lists its incidents newest first", () => {
+    for (const id of [
+      "16354496",
+      "16408824",
+      "16438990",
+      "16958236",
+      "16958238",
+      "16958239",
+      "17132472",
+      "17132480",
+      "17132481",
+      "17132482",
+      "17256975",
+      "17256978",
+    ]) {
+      const incidents = load(id).incidents;
+      const at = (i: Incident) => i.minute * 1000 + (i.addedMinutes ?? 0);
+      expect({
+        id,
+        ordered: incidents.every((i, n) => n === 0 || at(i) <= at(incidents[n - 1]!)),
+      }).toEqual({ id, ordered: true });
+    }
+  });
+});
