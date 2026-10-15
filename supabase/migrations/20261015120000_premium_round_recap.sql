@@ -104,7 +104,7 @@ as $$
   select a.pid, a.final_points,
     a.final_points + res.captain_points,
     a.vice_captain and not a.captain,
-    case when a.final_points > 0 then round((a.final_points + res.captain_points)::numeric / a.final_points)::integer end
+    case when a.final_points <> 0 then round((a.final_points + res.captain_points)::numeric / a.final_points)::integer end
   from eff
   join lp a on a.pid = eff.pid
   cross join res;
@@ -366,7 +366,7 @@ begin
   select coalesce(jsonb_agg(x.item order by x.sequence_number), '[]'::jsonb),
     coalesce(bool_or((x.item ->> 'pending')::boolean), false),
     case when bool_or((x.item ->> 'pending')::boolean) then null
-         else coalesce(sum((x.item ->> 'net')::numeric), 0) end
+         else round(coalesce(sum(x.net_exact), 0), 1) end
   into v_transfers, v_tr_pending, v_tr_net
   from (
     select tr.sequence_number,
@@ -387,7 +387,10 @@ begin
                     then null
                     else coalesce(pi.final_points, 0) - coalesce(po.final_points, 0)
                       - round(b.point_hit::numeric / b.transfers_count, 1) end
-      ) as item
+      ) as item,
+      -- The exact share: summed unrounded, so the shares of a batch add up to its hit.
+      coalesce(pi.final_points, 0) - coalesce(po.final_points, 0)
+        - b.point_hit::numeric / b.transfers_count as net_exact
     from app.fantasy_transfer_batches b
     join app.fantasy_transfers tr on tr.transfer_batch_id = b.id
     join app.fantasy_players fpo on fpo.id = tr.player_out_id
