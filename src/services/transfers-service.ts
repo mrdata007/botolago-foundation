@@ -10,7 +10,161 @@ import {
   type ChipsState,
   type DeadlineState,
 } from "@/lib/fantasy-engine";
-import type { FantasyTeam, SquadPlayer } from "@/types/fantasy";
+import type { FantasyPlayer, FantasyTeam, SquadPlayer } from "@/types/fantasy";
+
+// ---------- The saved transfer draft (SOL-01) ----------
+
+/**
+ * A pencilled-in transfer as it is kept on the device: who leaves and, if
+ * chosen, who comes in for him. Pairs are saved whole, so a leaver whose
+ * replacement is not chosen yet stays a placeholder, in its own place, and the
+ * second replacement can never slide up against the first leaver.
+ */
+export interface TransfersDraftPayload {
+  v: 2;
+  pairs: Array<{ outId: string; inId: string | null }>;
+}
+
+export interface ParsedTransfersDraft {
+  outIds: string[];
+  inIds: (string | null)[];
+}
+
+/** The draft as the screen holds it (two lists, `inIds[i]` is `outIds[i]`'s replacement) to its saved form. */
+export function serializeTransfersDraft(
+  outIds: readonly string[],
+  inIds: ReadonlyArray<string | null | undefined>,
+): TransfersDraftPayload {
+  return { v: 2, pairs: outIds.map((outId, index) => ({ outId, inId: inIds[index] || null })) };
+}
+
+const isId = (value: unknown): value is string => typeof value === "string" && value.length > 0;
+
+/**
+ * Reads a saved draft back, or `null` when there is nothing safe to restore.
+ * Never trusts the payload: it is only ever a convenience, and the server
+ * re-checks every transfer when it is previewed and confirmed.
+ *
+ * Old format (`{ outIds, inIds }`): its incoming list was saved with the
+ * unfilled places removed. With both lists the same length nothing was
+ * removed and the pairing by place is exact. With fewer incoming ids than
+ * leavers the pairing is unknowable (`out[A,B] in[null,X]` was saved as
+ * `in[X]`), so the leavers are kept as unfilled placeholders and the incoming
+ * ids are dropped: the manager picks them again, and nothing is paired wrongly.
+ */
+export function parseTransfersDraft(
+  payload: unknown,
+  options: { squadIds?: ReadonlySet<string> } = {},
+): ParsedTransfersDraft | null {
+  if (!payload || typeof payload !== "object") return null;
+  const raw = payload as {
+    v?: unknown;
+    pairs?: unknown;
+    outIds?: unknown;
+    inIds?: unknown;
+  };
+  let pairs: Array<{ outId: string; inId: string | null }>;
+  if (raw.v === 2) {
+    if (!Array.isArray(raw.pairs)) return null;
+    pairs = [];
+    for (const item of raw.pairs as unknown[]) {
+      if (!item || typeof item !== "object") return null;
+      const { outId, inId } = item as { outId?: unknown; inId?: unknown };
+      if (!isId(outId) || !(inId === null || isId(inId))) return null;
+      pairs.push({ outId, inId });
+    }
+  } else if (raw.v === undefined && Array.isArray(raw.outIds) && Array.isArray(raw.inIds)) {
+    const outs = raw.outIds as unknown[];
+    const ins = raw.inIds as unknown[];
+    if (!outs.every(isId) || !ins.every(isId)) return null;
+    const aligned = ins.length === outs.length;
+    pairs = outs.map((outId, index) => ({
+      outId: outId as string,
+      inId: aligned ? (ins[index] as string) : null,
+    }));
+  } else {
+    return null;
+  }
+
+  const outIds: string[] = [];
+  const inIds: (string | null)[] = [];
+  const usedIn = new Set<string>();
+  for (const pair of pairs) {
+    if (outIds.includes(pair.outId)) continue;
+    if (options.squadIds && !options.squadIds.has(pair.outId)) continue;
+    const inId = pair.inId && pair.inId !== pair.outId && !usedIn.has(pair.inId) ? pair.inId : null;
+    if (inId) usedIn.add(inId);
+    outIds.push(pair.outId);
+    inIds.push(inId);
+  }
+  return outIds.length === 0 ? null : { outIds, inIds };
+}
+
+// ---------- An owned player the buying pool does not list (SOL-02) ----------
+
+/**
+ * What the server's team record says about a player the manager owns:
+ * identity, position, club and market price. The buying pool lists only active,
+ * eligible players, so an owned player who has since become inactive or
+ * ineligible is in the squad and NOT in the pool; the squad is the authority on
+ * who is owned, the pool only on who may be bought.
+ */
+export interface OwnedPlayerRecord {
+  id: string;
+  clubId: string;
+  position: FantasyPlayer["position"];
+  price: number;
+  status: string;
+}
+
+/** The pool's own mapping of a server status to the screens' four. */
+function ownedStatus(status: string): FantasyPlayer["status"] {
+  return status === "available" || status === "doubtful" || status === "suspended"
+    ? status
+    : "injured";
+}
+
+/**
+ * An owned player as the screen can draw and sell him. The server's team record
+ * carries no name, so the caller passes the wording to show in its place. His
+ * sale value stays the server's `salePrices` figure (`ownedSalePrice`).
+ */
+export function ownedPlayerFallback(
+  record: OwnedPlayerRecord,
+  name: FantasyPlayer["name"],
+): FantasyPlayer {
+  return {
+    id: record.id,
+    name,
+    clubId: record.clubId,
+    position: record.position,
+    price: record.price,
+    totalPoints: 0,
+    form: null,
+    ownership: 0,
+    status: ownedStatus(record.status),
+    photoUrl: null,
+  };
+}
+
+/**
+ * Every player the transfers screen must be able to look up: the buying pool
+ * plus the owned players it does not list. Use it to RESOLVE players (squad
+ * slots, sale values, the preview); hand the picker the pool alone, so an
+ * owned player who left the pool can be sold but never bought.
+ */
+export function resolveKnownPlayers(
+  pool: FantasyPlayer[],
+  owned: Readonly<Record<string, OwnedPlayerRecord>> | undefined,
+  name: FantasyPlayer["name"],
+): FantasyPlayer[] {
+  if (!owned) return pool;
+  const inPool = new Set(pool.map((player) => player.id));
+  const extra = Object.values(owned)
+    .filter((record) => !inPool.has(record.id))
+    .map((record) => ownedPlayerFallback(record, name));
+  return extra.length === 0 ? pool : [...pool, ...extra];
+}
 
 // ---------- Sale value of an owned player ----------
 

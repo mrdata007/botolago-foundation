@@ -41,8 +41,11 @@ import {
   draftBank,
   exceedsBudget,
   ownedSalePrice,
+  parseTransfersDraft,
   previewTransfers,
   replacementBudget,
+  resolveKnownPlayers,
+  serializeTransfersDraft,
   transferNetCost,
   transferPreviewPanel,
 } from "@/services/transfers-service";
@@ -70,16 +73,6 @@ export const Route = createFileRoute("/fantasy/transfers")({
     typeof search.player === "string" && search.player ? { player: search.player } : {},
   component: TransfersPage,
 });
-
-interface TransfersDraftPayload {
-  outIds: string[];
-  inIds: string[];
-}
-function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
-  if (!v || typeof v !== "object") return false;
-  const p = v as Partial<TransfersDraftPayload>;
-  return Array.isArray(p.outIds) && Array.isArray(p.inIds);
-}
 
 /**
  * FPL-002/004/005/006/007 "Transfers" reconstructed on the shared squad
@@ -119,6 +112,7 @@ function TransfersBody() {
   });
 
   const team = screen.team;
+  // The buying pool: only what may be bought. Pickers get this and nothing else.
   const players = screen.players;
   const clubs = screen.clubs;
   const gameweek = screen.gameweek;
@@ -127,6 +121,19 @@ function TransfersBody() {
   const chipsState: ChipsState = isCloud
     ? (owned.snapshot?.lifecycle.chips ?? { active: null, used: [] })
     : fantasyStateStore.read().chips;
+
+  // Everyone the screen must be able to look up: the pool plus the owned players it no longer
+  // lists (inactive or ineligible). They keep their identity, position and sale value and can be
+  // sold, but they are not in `players`, so they can never be bought (SOL-02).
+  const ownedUnavailableLabel = t("fantasy.transfers.owned_unavailable");
+  const knownPlayers = useMemo(
+    () =>
+      resolveKnownPlayers(players, owned.snapshot?.ownedPlayers, {
+        fr: ownedUnavailableLabel,
+        ar: ownedUnavailableLabel,
+      }),
+    [players, owned.snapshot?.ownedPlayers, ownedUnavailableLabel],
+  );
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<(string | null)[]>([]);
@@ -164,21 +171,25 @@ function TransfersBody() {
   }, [draftKey?.uid, draftKey?.teamId, draftKey?.baseVersion]);
   useEffect(() => {
     if (!draftKey || !team || draftInit.current) return;
-    const entry = fantasyDraftsStore.read<TransfersDraftPayload>(draftKey);
-    if (entry && isTransfersDraftPayload(entry.payload)) {
-      setOutIds(entry.payload.outIds);
-      setInIds(entry.payload.inIds);
+    const entry = fantasyDraftsStore.read<unknown>(draftKey);
+    if (entry) {
+      // Old or damaged drafts are read safely (never paired by guesswork) or dropped.
+      const restored = parseTransfersDraft(entry.payload, {
+        squadIds: new Set(team.squad.map((s) => s.playerId)),
+      });
+      if (restored) {
+        setOutIds(restored.outIds);
+        setInIds(restored.inIds);
+      } else {
+        fantasyDraftsStore.remove(draftKey);
+      }
     }
     draftInit.current = true;
   }, [draftKey, team]);
   const persistDraft = (nextOut: string[], nextIn: (string | null)[]) => {
     if (!draftKey) return;
     if (nextOut.length === 0) fantasyDraftsStore.remove(draftKey);
-    else
-      fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
-        outIds: nextOut,
-        inIds: nextIn.filter(Boolean) as string[],
-      });
+    else fantasyDraftsStore.save(draftKey, serializeTransfersDraft(nextOut, nextIn));
   };
 
   const completePairs = outIds
@@ -212,8 +223,8 @@ function TransfersBody() {
         expectedVersion: owned.snapshot!.version,
         currentGameweekId: owned.snapshot!.currentGameweekId!,
         transfers: completePairs.map((pair) => {
-          const outP = players.find((p) => p.id === pair.outId)!;
-          const inP = players.find((p) => p.id === pair.inId)!;
+          const outP = knownPlayers.find((p) => p.id === pair.outId)!;
+          const inP = knownPlayers.find((p) => p.id === pair.inId)!;
           return {
             outSourceId: pair.outId,
             inSourceId: pair.inId,
@@ -270,7 +281,7 @@ function TransfersBody() {
     );
   }
 
-  const playerOf = (id: string) => players.find((p) => p.id === id);
+  const playerOf = (id: string) => knownPlayers.find((p) => p.id === id);
   const locked = evaluateDeadline(gameweek.deadline).isLocked;
 
   // Squad after pending transfers.
@@ -381,14 +392,14 @@ function TransfersBody() {
     const fresh = qc.getQueryData<FantasySnapshot>(scopedFantasyKey(owned.scope, SNAPSHOT_KIND));
     const { outIds: draftOut, inIds: draftIn } = latestDraft.current;
     if (!fresh || !owned.userId || draftOut.length === 0) return;
-    fantasyDraftsStore.save<TransfersDraftPayload>(
+    fantasyDraftsStore.save(
       {
         uid: owned.userId,
         teamId: fresh.teamId ?? "new",
         baseVersion: fresh.version,
         kind: "transfers",
       },
-      { outIds: draftOut, inIds: draftIn.filter(Boolean) as string[] },
+      serializeTransfersDraft(draftOut, draftIn),
     );
   };
   const retryPreview = () => {
@@ -656,11 +667,7 @@ function TransfersBody() {
           setConfirming(false);
           return;
         }
-        if (draftKey)
-          fantasyDraftsStore.save<TransfersDraftPayload>(draftKey, {
-            outIds,
-            inIds: inIds.filter(Boolean) as string[],
-          });
+        if (draftKey) fantasyDraftsStore.save(draftKey, serializeTransfersDraft(outIds, inIds));
         const c = classifyRepoError(res.error);
         // Refused until the one-time code is in: say that, once (the auth
         // layer says it too, under the same toast id), not "Accès refusé.
@@ -858,7 +865,7 @@ function TransfersBody() {
         ]}
         slots={slots}
         clubs={clubs}
-        players={players}
+        players={knownPlayers}
         view={view}
         onViewChange={setView}
         incoming={incoming}
