@@ -975,6 +975,7 @@ begin
     return jsonb_build_object('outcome', 'no_gameweek');
   end if;
   published := coalesce(gw.corrected_at, gw.finalized_at);
+  -- The opt-in cutoff is the journée's first publication: a correction does not reopen it.
 
   for pin in
     select p.user_id, p.rival_user_id, profile.preferred_language,
@@ -984,11 +985,11 @@ begin
       preference.quiet_hours_start, preference.quiet_hours_end
     from app.pinned_rivals p
     join app.rival_preferences rp on rp.user_id = p.user_id
-      and rp.notify_lead_change and rp.notify_changed_at <= published
+      and rp.notify_lead_change and rp.notify_changed_at <= gw.finalized_at
     join app.profiles profile on profile.id = p.user_id and profile.deleted_at is null
     join app.profiles rival_profile on rival_profile.id = p.rival_user_id and rival_profile.deleted_at is null
     left join app.user_preferences preference on preference.user_id = p.user_id
-    where p.fantasy_season_id = v_season and p.created_at <= published
+    where p.fantasy_season_id = v_season and p.created_at <= gw.finalized_at
     order by p.user_id, p.rival_user_id
   loop
     if not coalesce(pin.notifications_enabled and pin.in_app_notifications_enabled, false)
@@ -1151,7 +1152,7 @@ begin
   execute part_20261015130100;
 
   if encode(sha256(convert_to(part_20261015130200, 'UTF8')), 'hex')
-    is distinct from 'c2cc9b9d80e0e81c0f4e29659ee3ba61f1f61b813d7f709088f28140075b945e' then
+    is distinct from '9ba05d6a992590ff61ff7dd7f9bb668ea94804173e336ecfbf1261c93a21ad31' then
     raise exception 'stop: 20261015130200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

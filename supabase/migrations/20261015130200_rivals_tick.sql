@@ -139,6 +139,7 @@ begin
     return jsonb_build_object('outcome', 'no_gameweek');
   end if;
   published := coalesce(gw.corrected_at, gw.finalized_at);
+  -- The opt-in cutoff is the journée's first publication: a correction does not reopen it.
 
   for pin in
     select p.user_id, p.rival_user_id, profile.preferred_language,
@@ -148,11 +149,11 @@ begin
       preference.quiet_hours_start, preference.quiet_hours_end
     from app.pinned_rivals p
     join app.rival_preferences rp on rp.user_id = p.user_id
-      and rp.notify_lead_change and rp.notify_changed_at <= published
+      and rp.notify_lead_change and rp.notify_changed_at <= gw.finalized_at
     join app.profiles profile on profile.id = p.user_id and profile.deleted_at is null
     join app.profiles rival_profile on rival_profile.id = p.rival_user_id and rival_profile.deleted_at is null
     left join app.user_preferences preference on preference.user_id = p.user_id
-    where p.fantasy_season_id = v_season and p.created_at <= published
+    where p.fantasy_season_id = v_season and p.created_at <= gw.finalized_at
     order by p.user_id, p.rival_user_id
   loop
     if not coalesce(pin.notifications_enabled and pin.in_app_notifications_enabled, false)
