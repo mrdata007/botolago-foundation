@@ -63,3 +63,56 @@ evidence, SEC-01 outside the lease, owner-run database scripts).
   supporters, a native Arabic read, a deployed backend) is reported as not run,
   never as passed, and no conversion or retention gain is claimed without a
   measurement.
+
+## Lane D1 notes: first-visit match path (UX-011, PRO-02)
+
+Written before any interface change, after inspecting the landing on fresh
+storage (no `botolago.welcomed`), signed out, in French and Arabic at 320, 390
+and 1440 px wide, in a local development server (sample data, not production).
+
+**What the first visit shows today.** The hero holds the kicker, the promise,
+the gradient game button ("Créer mon équipe" / "إنشاء فريقي"), a ringed
+"Comment ça marche" / "كيف تلعب؟" button that scrolls to the page's own
+explanation, and the demonstration pitch. The real matches ("En ce moment")
+start below the hero: at 390 px the section starts about 1,224 px down (a
+viewport of 800 px), the first match card about 1,470 px down; at 320 px about
+1,367 and 1,655 px; at 1440 px about 800 px and 1,017 px. The only links to
+`/matches` are inside that section ("Tout le calendrier") and at the very
+bottom of the page ("Voir les matchs", about 4,200 to 4,800 px down on phones).
+So a visitor who came for today's football meets the game's call to action
+first, and reaches a match after scrolling about two screens on a phone.
+
+**What must be preserved.** The route logic for `/` (the landing shows only to
+an anonymous first visit; the server renders Home); the game button as the
+page's one primary action, with its states, tracking and placements; `/jouer`
+as the explicit Fantasy destination; the "how it works" anchor; the matches and
+table block, the bottom "Voir les matchs" invitation; name-only, production-only
+analytics; no claim of any effect on sign-ups; the French and Arabic layouts.
+
+**The change.** One explicit secondary action in the hero, directly under the
+game button: "Voir les matchs du jour" / "شاهد مباريات اليوم", a link to
+`/matches` (which opens on the current match day). It takes the ringed
+secondary style; "Comment ça marche" becomes a quieter text link so the hero
+keeps three levels (game, matches, explanation) and the game button stays the
+only filled one. Leaving the landing by it counts as the welcome, like every
+other link on the page (`onLeave`). Logical styles only, a 44 px target, an
+accessible name that is its visible text.
+
+**Analytics.** The funnel counts only the game button (`landing_cta_*` fire for
+the "create" action). A matches click is not a funnel step, no existing event
+covers it, and none is added in this lane: adding one is a measurement
+decision for the owner, and nothing here claims a conversion gain.
+
+**Acceptance criteria.**
+
+- A rendered test finds the new link with `href="/matches"` in the hero in
+  French and Arabic and fails on the old code; French and Arabic keys match.
+- Steps from a first visit to the day's match list: before, scroll about two
+  screens then a tap (on a match card or on "Tout le calendrier"); after, one
+  tap, no scroll, from the first screen at 320, 390 and 1440 px.
+- The game button is still first in the hero and the only gradient button; the
+  new link and the anchor keep 44 px or more in height; no hero element leaves
+  the viewport sideways at 320, 390 or 1440 px in French or Arabic (measured by
+  element bounds); the hero's reserved height does not shift when the session
+  arrives.
+- `landing-cta-*` tracking tests and the landing and i18n tests still pass.
