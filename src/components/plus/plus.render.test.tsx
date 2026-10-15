@@ -44,7 +44,6 @@ describe("the paywall (screen 3)", () => {
       plan="plus_yearly"
       onPlan={noop}
       profile={SAMPLE_CARD_PROFILE}
-      onViewEditions={noop}
       onBuy={noop}
       onRestore={noop}
       titleRef={null}
@@ -81,7 +80,7 @@ describe("the paywall (screen 3)", () => {
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(visible).toContain("Sans publicité");
-    expect(visible).toContain("Les membres ne verront jamais de publicité dans l'application.");
+    expect(visible).toContain("Vous ne verrez jamais de publicité dans l'application.");
   });
   it("has ONE subscribe button, and the terms and restore links under it", () => {
     expect(html.match(/plus-btn plus-btn--primary/g)).toHaveLength(1);
@@ -99,6 +98,70 @@ describe("the paywall (screen 3)", () => {
   it("never types the product name as text on screen", () => {
     expect(visible).not.toContain("BotolaGO+");
     expect(visible.toLowerCase()).not.toContain("just for fun");
+  });
+});
+
+describe("the paywall, the short door every entry opens", () => {
+  const paywall = (props: {
+    context?: "season" | "duel" | "career" | "editions";
+    open?: boolean;
+  }) =>
+    render(
+      <PlusPaywallScreen
+        now={NOW}
+        prices={LAUNCH_PRICES}
+        plan="plus_yearly"
+        onPlan={noop}
+        profile={SAMPLE_CARD_PROFILE}
+        context={props.context}
+        checkoutOpen={props.open}
+        onBuy={noop}
+        onRestore={noop}
+        titleRef={null}
+      />,
+    );
+
+  it("shows one visible headline, general by default, and one that carries each context", () => {
+    const general = paywall({});
+    expect(text(general)).toContain(fr["plus.s3.title"]);
+    expect(general).toMatch(/<h1 class="plus-h plus-s3-h"/);
+    for (const context of ["season", "duel", "career", "editions"] as const) {
+      const html = paywall({ context });
+      expect(text(html)).toContain(fr[`plus.ctx.${context}`]);
+      expect(text(html)).not.toContain(fr["plus.s3.title"]);
+      expect(html.match(/<h1/g)).toHaveLength(1);
+    }
+  });
+  it("says « Bientôt disponible », disabled, with one line, while checkout is not open", () => {
+    const html = paywall({ open: false });
+    const visible = text(html);
+    expect(html).toMatch(/<button[^>]*class="plus-btn plus-btn--primary"[^>]*disabled/);
+    expect(visible).toContain("Bientôt disponible");
+    expect(visible).toContain(fr["plus.s3.soon_line"]);
+    expect(visible).not.toContain("S'abonner");
+    expect(visible).not.toContain("Restaurer un achat");
+  });
+  it("is « S'abonner » and enabled when checkout is open", () => {
+    const html = paywall({ open: true });
+    expect(html).not.toMatch(/class="plus-btn plus-btn--primary"[^>]*disabled/);
+    expect(text(html)).toContain("S'abonner");
+  });
+  it("has no refund line to confirm and no dead chevron on a benefit row", () => {
+    const html = paywall({});
+    expect(text(html)).not.toContain("à confirmer");
+    expect(html).not.toContain("plus-chev");
+    expect(html).not.toMatch(/<button[^>]*class="plus-feat"/);
+    expect("plus.terms.refund" in fr).toBe(false);
+    expect("plus.terms.refund" in ar).toBe(false);
+  });
+  it("uses one vocabulary: no « pass », no « offres » for plans, no « membre »", () => {
+    const keys = Object.keys(fr).filter((k) =>
+      /^plus\.(s[123]|ctx|page|terms|note|prices|meta)/.test(k),
+    );
+    for (const key of keys) {
+      const word = fr[key as keyof typeof fr];
+      expect(word, key).not.toMatch(/\bpass\b|offres|débloquer|premium|\bmembres?\b/i);
+    }
   });
 });
 
@@ -144,7 +207,7 @@ describe("the other screens", () => {
     expect(visible).toContain("Vous menez Sami de 14 points");
     expect(visible).toContain("Voir le duel");
     expect(visible).toContain("Exemple");
-    expect(visible).toContain("Choisir mon pass");
+    expect(visible).toContain("Choisir ma formule");
     // no sub-text paragraphs: the removed explanations are gone
     expect(visible).not.toContain("Ce que ça dit");
   });
@@ -294,7 +357,7 @@ describe("the plus.* dictionary", () => {
     expect(ar["plus.s3.f1.d"]).not.toMatch(/كهربائي(?!ة)/);
   });
   it("says « Sans publicité » as a promise about the future, not as a claim about today", () => {
-    expect(fr["plus.s3.f0.d"]).toContain("ne verront jamais");
+    expect(fr["plus.s3.f0.d"]).toContain("ne verrez jamais");
     expect(ar["plus.s3.f0.d"]).toContain("أبدًا");
   });
 });

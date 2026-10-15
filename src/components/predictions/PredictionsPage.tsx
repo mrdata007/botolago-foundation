@@ -256,6 +256,7 @@ export function PredictionsPage({
                   saved={model.uid ? (model.mine.get(fixture.id) ?? null) : undefined}
                   savedReady={!model.uid || model.mineQuery.isSuccess}
                   personal={model.personalFor(fixture.id)}
+                  stepsDisabled={!model.picksOpen}
                   onStep={(side, delta) => {
                     const next = stepPick(
                       model.personalFor(fixture.id),

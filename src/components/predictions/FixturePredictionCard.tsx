@@ -53,6 +53,7 @@ export function FixturePredictionCard({
   personal = "not_needed",
   onRetryPersonal,
   retryingPersonal = false,
+  stepsDisabled = false,
   className,
   onStep,
 }: {
@@ -85,6 +86,8 @@ export function FixturePredictionCard({
   onRetryPersonal?: () => void;
   /** The retry is running: its button waits for the answer. */
   retryingPersonal?: boolean;
+  /** True until the session is known: a tap could not be kept yet. */
+  stepsDisabled?: boolean;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -209,7 +212,7 @@ export function FixturePredictionCard({
               team={homeName}
               value={pick?.home ?? null}
               onStep={(delta) => onStep("home", delta)}
-              disabled={!editable}
+              disabled={stepsDisabled || !editable}
               testId={`prediction-${fixture.id}-home`}
             />
           </div>
@@ -221,7 +224,7 @@ export function FixturePredictionCard({
               team={awayName}
               value={pick?.away ?? null}
               onStep={(delta) => onStep("away", delta)}
-              disabled={!editable}
+              disabled={stepsDisabled || !editable}
               testId={`prediction-${fixture.id}-away`}
             />
           </div>

@@ -110,6 +110,7 @@ export function MatchPredictionCard({
           personal={personal}
           onRetryPersonal={model.personal.retry}
           retryingPersonal={model.personal.fetching}
+          stepsDisabled={!model.picksOpen}
           className="justify-center"
           onStep={(side, delta) => {
             const next = stepPick(personal, pick, side, delta);

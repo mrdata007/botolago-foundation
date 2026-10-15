@@ -3,18 +3,22 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PremiumPrice, PremiumProductCode } from "@/backend/premium/contracts";
 import { CardToken } from "@/components/manager-card/CardToken";
 import type { CardProfile } from "@/components/manager-card/types";
+import type { TranslationKey } from "@/i18n/dictionaries";
 import { scrollBehavior } from "@/lib/motion";
 
 import { PlusLogo } from "./PlusLogo";
+import type { PlusContext } from "./plus-steps";
 import { billingCalendar, priceOf, yearlyPerMonth, yearlySaving } from "./plus-pricing";
 import { PLUS_NAME, usePlusCopy } from "./plus-copy";
 import { DateText, Money } from "./plus-text";
 
 /**
- * Screen 3, the paywall (sketch `#screen-3`, the plan-card layout): the big logo, the selected
- * plan card with the « Le plus avantageux » chip and a check, « Voir toutes les offres » revealing
- * the other plan, « Avantages de l'abonnement » as four cards, ONE « S'abonner » button, and the
- * terms and restore links. It stands alone for people who tapped « Voir les prix ».
+ * Screen 3, the paywall (sketch `#screen-3`, the plan-card layout) that every entry point opens: the
+ * big logo, a headline that says what the reader was looking at, the selected plan card with the
+ * « Le plus avantageux » chip and a check, a link revealing the other plan, « Avantages de
+ * l'abonnement » as four cards, ONE « S'abonner » button (« Bientôt disponible » and disabled while
+ * checkout is not open), and the terms and restore links. From 1024 px the plans and the benefits
+ * sit side by side.
  *
  * Prices, dates and the saving are computed (`plus-pricing.ts`), never typed: 20 MAD a month, 200
  * MAD a year (12 months from purchase, no automatic renewal), saving 40 MAD against 12 monthly
@@ -26,7 +30,8 @@ export function PlusPaywallScreen({
   plan,
   onPlan,
   profile,
-  onViewEditions,
+  context,
+  checkoutOpen = true,
   onBuy,
   onRestore,
   titleRef,
@@ -36,7 +41,10 @@ export function PlusPaywallScreen({
   plan: PremiumProductCode;
   onPlan: (plan: PremiumProductCode) => void;
   profile: CardProfile;
-  onViewEditions: () => void;
+  /** What the reader was looking at; the headline says so. Absent: the general headline. */
+  context?: PlusContext;
+  /** false (before launch): the button is disabled and says « Bientôt disponible ». */
+  checkoutOpen?: boolean;
   onBuy: () => void;
   onRestore: () => void;
   titleRef: React.Ref<HTMLHeadingElement>;
@@ -85,7 +93,6 @@ export function PlusPaywallScreen({
           : []),
         t("plus.terms.after_yearly"),
         t("plus.terms.keep"),
-        t("plus.terms.refund"),
       ]
     : [
         f("plus.terms.monthly1", { date: <DateText date={cal.nextMonthly} /> }),
@@ -93,7 +100,6 @@ export function PlusPaywallScreen({
         t("plus.terms.reminder"),
         t("plus.terms.after_monthly"),
         t("plus.terms.keep"),
-        t("plus.terms.refund"),
       ];
 
   // The chosen plan is announced in words, once, when it changes (not on first render).
@@ -114,6 +120,19 @@ export function PlusPaywallScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
 
+  // Escape closes the terms before it closes the offer: this listener runs first and stops the
+  // event, so the offer's own never sees it.
+  useEffect(() => {
+    if (!termsOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setTermsOpen(false);
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [termsOpen]);
+
   const toggleTerms = () => {
     const next = !termsOpen;
     setTermsOpen(next);
@@ -127,12 +146,12 @@ export function PlusPaywallScreen({
   return (
     <>
       <div className="plus-body">
-        <h1 className="plus-sr-only" id="plus-s3-title" tabIndex={-1} ref={titleRef}>
-          {t("plus.s3.title")}
-        </h1>
         <div className="plus-s3-logo">
           <PlusLogo label={PLUS_NAME} />
         </div>
+        <h1 className="plus-h plus-s3-h" id="plus-s3-title" tabIndex={-1} ref={titleRef}>
+          {headline(t, context)}
+        </h1>
 
         <fieldset className="plus-plans" data-open={open}>
           <legend className="plus-sr-only">{t("plus.s3.plans_legend")}</legend>
@@ -204,7 +223,7 @@ export function PlusPaywallScreen({
               <span>{t("plus.s3.f0.d")}</span>
             </span>
           </div>
-          <button type="button" className="plus-feat" onClick={onViewEditions}>
+          <div className="plus-feat">
             <span className="plus-ic plus-ic--card" aria-hidden>
               <CardToken profile={profile} size={44} />
             </span>
@@ -212,17 +231,7 @@ export function PlusPaywallScreen({
               <b>{t("plus.s3.f1.t")}</b>
               <span>{t("plus.s3.f1.d")}</span>
             </span>
-            <svg className="plus-chev" viewBox="0 0 24 24" aria-hidden>
-              <path
-                d="M10 6l6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          </div>
           <div className="plus-feat">
             <span className="plus-ic" aria-hidden>
               <svg viewBox="0 0 24 24">
@@ -278,9 +287,20 @@ export function PlusPaywallScreen({
         </p>
       </div>
       <div className="plus-foot">
-        <button type="button" className="plus-btn plus-btn--primary" onClick={onBuy}>
-          {t("plus.s3.cta")}
+        <button
+          type="button"
+          className="plus-btn plus-btn--primary"
+          disabled={!checkoutOpen}
+          aria-describedby={checkoutOpen ? undefined : "plus-soon-line"}
+          onClick={onBuy}
+        >
+          {checkoutOpen ? t("plus.s3.cta") : t("plus.s3.soon")}
         </button>
+        {checkoutOpen ? null : (
+          <p className="plus-rule-line" id="plus-soon-line">
+            {t("plus.s3.soon_line")}
+          </p>
+        )}
         <p className="plus-links">
           <button
             type="button"
@@ -291,14 +311,34 @@ export function PlusPaywallScreen({
           >
             {t("plus.s3.terms_link")}
           </button>
-          <span aria-hidden>·</span>
-          <button type="button" className="plus-link-btn" onClick={onRestore}>
-            {t("plus.s3.restore")}
-          </button>
+          {checkoutOpen ? (
+            <>
+              <span aria-hidden>·</span>
+              <button type="button" className="plus-link-btn" onClick={onRestore}>
+                {t("plus.s3.restore")}
+              </button>
+            </>
+          ) : null}
         </p>
       </div>
     </>
   );
+}
+
+/** The headline: the general one, or the one that carries what the reader was looking at. */
+function headline(t: (key: TranslationKey) => string, context: PlusContext | undefined): string {
+  switch (context) {
+    case "season":
+      return t("plus.ctx.season");
+    case "duel":
+      return t("plus.ctx.duel");
+    case "career":
+      return t("plus.ctx.career");
+    case "editions":
+      return t("plus.ctx.editions");
+    default:
+      return t("plus.s3.title");
+  }
 }
 
 function PlanCard({

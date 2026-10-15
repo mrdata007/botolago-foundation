@@ -8,8 +8,8 @@ import { PLUS_STYLES, styleLabel, usePlusCopy, type PlusStyle } from "./plus-cop
 
 /**
  * Screen 1, « Ta carte, à ton style » (sketch `#screen-1`): the member's card as the hero, the
- * four-style radio group, the one reassurance above the button. The card does not change with the
- * style yet (lane E; see `PlusCard`), the choice is kept and announced.
+ * four-style radio group, the one reassurance above the button. The card is drawn in the chosen
+ * edition (the shield renderer has the four finishes); the rating and the tier never change.
  */
 export function PlusStyleScreen({
   profile,
@@ -32,7 +32,7 @@ export function PlusStyleScreen({
           {t("plus.s1.title")}
         </h1>
         <div className="plus-hero">
-          <PlusCard profile={profile} width={312} edition={style} />
+          <PlusCard profile={{ ...profile, edition: style }} width={312} edition={style} />
         </div>
         <StyleSelector style={style} onStyle={onStyle} />
         <p className="plus-sr-only" role="status" aria-live="polite">

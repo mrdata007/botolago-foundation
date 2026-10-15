@@ -28,6 +28,7 @@ import {
   nextSaveBar,
   personalReadState,
   pickIsUnknown,
+  picksAccepted,
   scoringMoved,
   seedUpdatedAt,
   shownSaveState,
@@ -545,5 +546,17 @@ describe("picksAreKnown: the counts of the round", () => {
   test("not known while the read is loading or failed", () => {
     expect(picksAreKnown("loading", [])).toBe(false);
     expect(picksAreKnown("failed", ["failed"])).toBe(false);
+  });
+});
+
+describe("picksAccepted: no tap is taken before the session is known", () => {
+  test("waits while the session loads, so a tap is not filed as a visitor's and lost", () => {
+    expect(picksAccepted("loading")).toBe(false);
+  });
+
+  test("accepts once the session is settled, for an account or a visitor", () => {
+    for (const status of ["authenticated", "anonymous", "guest"] as const) {
+      expect(picksAccepted(status)).toBe(true);
+    }
   });
 });

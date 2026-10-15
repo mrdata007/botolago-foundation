@@ -34,6 +34,7 @@ import { sessionAccountId } from "@/auth/second-factor";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { authService, type AuthSession } from "@/services/auth";
+import type { AuthStatus } from "@/services/auth-types";
 import { predictionsService } from "@/services/predictions";
 import { guestRoundEvents } from "./guest-analytics";
 import { claimHeldFixtures, claimStatusFor, staleAfterImport, useGuestClaim } from "./guest-claim";
@@ -246,6 +247,17 @@ export function stepPick(
   return canEditPicks(state) ? nextPick(current, side, delta) : null;
 }
 
+/**
+ * Whether a tap can be kept yet. While the auth service has not said who is
+ * looking (`loading`, as after signing in and landing here) there is no
+ * account queue to hold the pick: a tap then would be taken for a visitor's,
+ * filed on the phone, and the account's page would not show it, so the next
+ * tap would start again from nothing and the pick would be lost.
+ */
+export function picksAccepted(status: AuthStatus): boolean {
+  return status !== "loading";
+}
+
 function draftKey(uid: string): string {
   return `botolago.predictions.pending.${uid}`;
 }
@@ -338,6 +350,8 @@ export interface PredictionsRoundModel {
   readonly now: number | null;
   readonly saveState: PredictionsSaveState;
   readonly guestPersistent: boolean;
+  /** False until the session is known: the steppers wait (see `picksAccepted`). */
+  readonly picksOpen: boolean;
   /** What the page shows for a match: a change on its way wins. */
   pickFor(fixtureId: string): Pick | null;
   setPick(fixture: PredictionFixtureDto, pick: Pick): void;
@@ -667,6 +681,7 @@ export function usePredictionsRound(
 
   const setPick = useCallback(
     (fixture: PredictionFixtureDto, pick: Pick) => {
+      if (!picksAccepted(status)) return;
       // The reader's saved picks are not known: whatever is typed would be
       // written over a value never seen. The controls are disabled as well.
       if (!canEditPicks(personalFor(fixture.id))) return;
@@ -702,7 +717,7 @@ export function usePredictionsRound(
         .map((candidate) => candidate.id);
       for (const event of guestRoundEvents(guest.store, seasonId, roundNo, open)) track(event);
     },
-    [uid, round, guest.store, t, personalFor],
+    [uid, round, guest.store, t, personalFor, status],
   );
 
   const retrySave = useCallback(() => {
@@ -721,6 +736,7 @@ export function usePredictionsRound(
     now,
     saveState: uid ? barFor(save, uid) : "guest",
     guestPersistent: guest.persistent,
+    picksOpen: picksAccepted(status),
     pickFor,
     setPick,
     retrySave,

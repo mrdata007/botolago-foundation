@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/provider";
 import { shouldRedirectFromPlus } from "@/lib/premium-gate";
 
 /**
- * `/plus`: the BotolaGO+ paywall on its own (screen 3 of the offer). Behind `PREMIUM_BUILD`
+ * `/plus`: the BotolaGO+ paywall on its own (the same screen as `/curva/plus`). Behind `PREMIUM_BUILD`
  * (`src/lib/feature-flags.ts`): while the build switch is off the address goes Home before any
  * component runs. Never indexed.
  */

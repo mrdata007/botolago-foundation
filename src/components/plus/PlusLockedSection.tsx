@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { PlusLockChip } from "./PlusLockChip";
 import { PLUS_SHAPE } from "./PlusLogo";
 import { SeasonProvider, EXAMPLE_VIEW } from "./plus-season-context";
+import type { PlusContext } from "./plus-steps";
 import { usePlusCopy } from "./plus-copy";
 
 import "./plus-embed.css";
@@ -97,8 +98,9 @@ export function PlusEmbed({
 /**
  * A section for members, shown to everyone else locked: a clear head (the reader's real figures,
  * from screens that already load them), then the example analysis blurred, a lock, one headline
- * that carries the context, and a mint « Découvrir » that opens the paywall (step 3 of the offer).
- * The offer closes back to this page, where the section is then open.
+ * that carries the context, and a mint « Découvrir » that opens the short paywall (`/curva/plus`,
+ * with `via` saying which section the reader came from). The offer closes back to this page, where
+ * the section is then open.
  */
 export function PlusLockedSection({
   headline,
@@ -106,6 +108,8 @@ export function PlusLockedSection({
   children,
   id,
   testId,
+  via = "season",
+  onOpen,
 }: {
   headline: string;
   /** Real figures the free screens already have: clear, above the blur. */
@@ -114,6 +118,10 @@ export function PlusLockedSection({
   children: ReactNode;
   id?: string;
   testId: string;
+  /** Which section this is: the paywall's headline carries it. */
+  via?: PlusContext;
+  /** Runs when the reader leaves for the offer (the duel sheet notes itself here). */
+  onOpen?: () => void;
 }) {
   const { t } = usePlusCopy();
   const titleId = `${testId}-title`;
@@ -129,7 +137,8 @@ export function PlusLockedSection({
             </h2>
             <Link
               to="/curva/plus"
-              search={{ step: 3 }}
+              search={{ step: 3, via }}
+              onClick={onOpen}
               className="plus-btn plus-btn--primary pl-cta"
               data-testid={`${testId}-unlock`}
             >
