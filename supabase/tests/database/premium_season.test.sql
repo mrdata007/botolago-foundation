@@ -162,7 +162,7 @@ select extensions.is(
   (select concat_ws('/', bank_holder is null, bank_name is null, rib is null, cashplus_name is null,
       whatsapp_number is null, note_fr is null, note_ar is null, updated_by_principal_id is null)
    from app_private.premium_payment_details),
-  'true/true/true/true/true/true/true/true', 'the payment details ship empty: nothing typed in a migration');
+  't/t/t/t/t/t/t/t', 'the payment details ship empty: nothing typed in a migration');
 select extensions.is((select count(*)::integer from app_private.premium_payment_details), 1, 'in one row');
 select extensions.throws_ok(
   $$insert into app_private.premium_payment_details (id) values (false)$$,
@@ -216,7 +216,7 @@ select extensions.is(pg_temp.adm('aal2', format('api.admin_set_premium_payment_d
   'PT400 validation_failed', 'details that are not an object are refused');
 select extensions.is(
   (select concat_ws('/', whatsapp_number is null, rib is null) from app_private.premium_payment_details),
-  'true/true', 'and the refused calls saved nothing');
+  't/t', 'and the refused calls saved nothing');
 
 select set_config('test.saved', pg_temp.setd(pg_temp.details(), 'Typing the payment details.', pg_temp.u(701))::text, true);
 select extensions.is(pg_temp.keys(current_setting('test.saved')::jsonb),
@@ -381,7 +381,7 @@ select extensions.is(
   (select concat_ws('/', g.product_code, g.payment_method, g.payment_reference, g.amount_minor, g.currency, g.reason,
       g.granted_by_principal_id = (select id from app_private.staff_principals where auth_user_id = pg_temp.u(6)))
    from app_private.premium_grants g where g.user_id = pg_temp.u(1)),
-  'plus_season/bank_transfer/VIR-2026-1042/20000/MAD/Receipt checked on WhatsApp./true', 'the grant row holds all of it');
+  'plus_season/bank_transfer/VIR-2026-1042/20000/MAD/Receipt checked on WhatsApp./t', 'the grant row holds all of it');
 select extensions.is(app_private.has_premium(pg_temp.u(1)), true, 'the account is a member');
 select extensions.is(
   (select concat_ws('/', m ->> 'isMember', m ->> 'state', m ->> 'productCode', m ->> 'source', m ->> 'cancelAtPeriodEnd')

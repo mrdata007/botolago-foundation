@@ -115,7 +115,7 @@ select extensions.is(
 select extensions.is(
   (select string_agg(concat_ws('/', code, coalesce(period_months::text, '-'), renews, price_minor, currency, active),
      ',' order by sort_order) from app_private.premium_products),
-  'plus_season/-/false/20000/MAD/true,plus_monthly/1/true/2000/MAD/false,plus_yearly/12/false/20000/MAD/false',
+  'plus_season/-/f/20000/MAD/t,plus_monthly/1/t/2000/MAD/f,plus_yearly/12/f/20000/MAD/f',
   'the Saison is 200 MAD, centimes, tax included, no number of months, does not renew; the monthly and yearly products stay but are inactive');
 select extensions.throws_ok(
   $$insert into app_private.premium_products (code, period_months, renews, price_minor) values ('plus_ten', 10, false, 19900)$$,
