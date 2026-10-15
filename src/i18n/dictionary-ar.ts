@@ -1293,6 +1293,7 @@ export const ar = {
   "fpl.invite_code": "رمز الدعوة",
   "fpl.copy": "نسخ",
   "fpl.copied": "تم النسخ",
+  "fpl.copy_failed": "تعذّر النسخ. حدّد الرمز لنسخه.",
   "fpl.leave_league": "مغادرة الدوري",
   "fpl.members": "أعضاء",
   "fpl.overall": "العام",
@@ -2607,6 +2608,9 @@ export const ar = {
   "pepites.share.whatsapp": "إرسال عبر واتساب",
   "pepites.share.copy": "نسخ الرابط",
   "pepites.share.copy_failed": "تعذّر نسخ الرابط.",
+  // Shown with the text itself when the clipboard refuses (ManualCopyField).
+  "pepites.share.copy_manual": "تعذّر النسخ تلقائيًا. انسخ النص أدناه.",
+  "pepites.share.copy_manual_label": "النص المراد نسخه",
   // Inside the phone app only, when the app has the plugins (ShareImageSheet).
   "pepites.share.save": "حفظ في معرض الصور",
   "pepites.share.saved": "تم حفظ الصورة في معرض الصور.",

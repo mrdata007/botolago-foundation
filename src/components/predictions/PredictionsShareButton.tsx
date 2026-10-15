@@ -2,10 +2,12 @@ import { Copy, MessageCircle, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { ui, UiButton, UiIconButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { copyText } from "@/lib/copy-text";
 import { cn } from "@/lib/utils";
 import { whatsappUrl } from "./leagues/invite-link";
 import { shareAfterTemplate } from "./predictions-copy";
@@ -37,6 +39,8 @@ export function PredictionsShareButton({
 }) {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
+  // What to copy by hand when the clipboard refused.
+  const [manual, setManual] = useState<string | null>(null);
   // "6/8" is isolated whole: two separate isolates would read "8/6" in Arabic.
   const isolate = (value: number | string) => `⁨${value}⁩`;
   const link = (channel: Channel) => {
@@ -62,6 +66,7 @@ export function PredictionsShareButton({
   const done = (channel: Channel) => {
     track("pronostics_share");
     onShare?.(channel);
+    setManual(null);
     setOpen(false);
   };
 
@@ -70,7 +75,14 @@ export function PredictionsShareButton({
       <UiIconButton aria-label={t("predictions.share.title")} onClick={() => setOpen(true)}>
         <Share2 aria-hidden />
       </UiIconButton>
-      <UiSheet open={open} onOpenChange={setOpen} title={t("predictions.share.title")}>
+      <UiSheet
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setManual(null);
+        }}
+        title={t("predictions.share.title")}
+      >
         <div className={cn("flex flex-col gap-2 p-4")}>
           <p className={cn(ui.text.meta, ui.tone.muted)}>{message}</p>
           {canNativeShare ? (
@@ -80,8 +92,12 @@ export function PredictionsShareButton({
                 try {
                   await navigator.share({ text: message, url: link("native") });
                   done("native");
-                } catch {
-                  // Declined, not failed.
+                } catch (error) {
+                  // Closing the share sheet is the person's answer. Any other
+                  // failure is shown, with the text to copy by hand.
+                  if ((error as { name?: unknown } | null)?.name !== "AbortError") {
+                    setManual(`${message} ${link("copy")}`);
+                  }
                 }
               }}
             >
@@ -110,18 +126,21 @@ export function PredictionsShareButton({
           <UiButton
             variant="soft"
             onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(`${message} ${link("copy")}`);
+              // Not "Hors connexion · nouvel essai automatique": a refused
+              // clipboard is not a connection problem and nothing retries it.
+              const text = `${message} ${link("copy")}`;
+              if (await copyText(text)) {
                 toast.success(t("article.share_copied"));
                 done("copy");
-              } catch {
-                toast.error(t("predictions.save.offline"));
+              } else {
+                setManual(text);
               }
             }}
           >
             <Copy className="h-4 w-4" aria-hidden />
             {t("predictions.leagues.copy_link")}
           </UiButton>
+          {manual ? <ManualCopyField value={manual} /> : null}
         </div>
       </UiSheet>
     </>

@@ -5,9 +5,12 @@ import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { ui, UiButton, UiCard, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { inviteMessage, leagueInviteLink, whatsappUrl } from "@/lib/league-invite";
+import { copyText } from "@/lib/copy-text";
+import { fillInvite, inviteMessage, leagueInviteLink, whatsappUrl } from "@/lib/league-invite";
+import { shareLink } from "@/lib/share-link";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -29,6 +32,9 @@ export function CreateLeagueInvite() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<{ name: string; code: string } | null>(null);
+  // The link, shown to copy by hand when neither the share sheet nor the
+  // clipboard took it.
+  const [manual, setManual] = useState<string | null>(null);
 
   const create = async () => {
     const trimmed = name.trim();
@@ -50,25 +56,20 @@ export function CreateLeagueInvite() {
 
   const link = created ? leagueInviteLink(created.code, undefined, "fantasy") : "";
   const message = created ? inviteMessage(t("fantasy.hub.invite_message"), created.name, link) : "";
+  const ready = created ? fillInvite(t("fantasy.hub.invite_ready"), { name: created.name }) : "";
 
   const share = async () => {
-    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
-    if (typeof nav.share === "function") {
-      try {
-        await nav.share({ text: message });
-      } catch {
-        // Declined, not failed.
-      }
-      return;
-    }
-    await copy();
+    const result = await shareLink({ text: message }, link);
+    if (result === "copied") toast.success(t("fantasy.hub.invite_copied"));
+    else if (result === "failed") setManual(link);
+    else setManual(null);
   };
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(link);
+    if (await copyText(link)) {
+      setManual(null);
       toast.success(t("fantasy.hub.invite_copied"));
-    } catch {
-      toast.error(t("state.error"));
+    } else {
+      setManual(link);
     }
   };
 
@@ -85,9 +86,7 @@ export function CreateLeagueInvite() {
     <UiCard padding="md" className="mt-3">
       {created ? (
         <div className="grid gap-3" data-testid="league-invite-ready">
-          <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
-            {t("fantasy.hub.invite_ready").replace("{name}", created.name)}
-          </p>
+          <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{ready}</p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <UiButton size="sm" onClick={() => void share()}>
               <Share2 className="h-4 w-4" aria-hidden />
@@ -113,6 +112,7 @@ export function CreateLeagueInvite() {
               {t("fantasy.hub.invite_copy")}
             </UiButton>
           </div>
+          {manual ? <ManualCopyField value={manual} /> : null}
         </div>
       ) : (
         <form

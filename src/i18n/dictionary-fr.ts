@@ -1367,6 +1367,7 @@ export const fr = {
   "fpl.invite_code": "Code d’invitation",
   "fpl.copy": "Copier",
   "fpl.copied": "Copié",
+  "fpl.copy_failed": "La copie a échoué. Sélectionnez le code pour le copier.",
   "fpl.leave_league": "Quitter la ligue",
   "fpl.members": "membres",
   "fpl.overall": "Général",
@@ -2764,6 +2765,9 @@ export const fr = {
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // Shown with the text itself when the clipboard refuses (ManualCopyField).
+  "pepites.share.copy_manual": "La copie automatique a échoué. Copiez le texte ci-dessous.",
+  "pepites.share.copy_manual_label": "Texte à copier",
   // Inside the phone app only, when the app has the plugins (ShareImageSheet).
   "pepites.share.save": "Enregistrer dans la galerie",
   "pepites.share.saved": "Image enregistrée dans la galerie.",

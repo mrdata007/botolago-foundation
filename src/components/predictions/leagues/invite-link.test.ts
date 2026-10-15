@@ -131,6 +131,58 @@ describe("the invite a device holds", () => {
     expect(pendingInvite(NOW)).toBeNull();
   });
 
+  it("survives the sign-up round trip even when this browser refuses to store it", () => {
+    // Private mode, blocked site data and some in-app browsers throw on
+    // `setItem`. The address bar is cleaned either way, so the code used to be
+    // lost and the recipient who signed in found "no invite".
+    const blocked = (hash: string) => ({
+      ...fakeWindow(hash),
+      localStorage: {
+        getItem: () => null,
+        setItem: () => {
+          throw new DOMException("full", "QuotaExceededError");
+        },
+        removeItem: () => {},
+      },
+    });
+    globals.window = blocked(`#code=${CODE}&game=fantasy`);
+    expect(takeInviteFromLocation(NOW)).toEqual({ code: CODE, game: "fantasy" });
+    expect(replaced).toBe(INVITE_PATH);
+    // Back on the page after the sign-in prompt (a client-side navigation).
+    globals.window = blocked("");
+    expect(takeInviteFromLocation(NOW + 60_000)).toEqual({ code: CODE, game: "fantasy" });
+    expect(pendingInviteCode(NOW + 60_000)).toBe(CODE);
+    // Expires like the stored one, and is cleared by a join.
+    expect(pendingInvite(NOW + INVITE_RECOVERY_MS)).toBeNull();
+    globals.window = blocked(`#code=${CODE}`);
+    takeInviteFromLocation(NOW);
+    clearPendingInvite();
+    expect(pendingInvite(NOW)).toBeNull();
+  });
+
+  it("keeps a fresh link in front of an older stored one when storing the new one failed", () => {
+    const OLD = "0A1B2C3D4E5F60718293A4B5C6D7E8F9";
+    globals.window = fakeWindow(`#code=${OLD}`);
+    expect(takeInviteFromLocation(NOW)).toEqual({ code: OLD, game: null });
+    // The same browser now refuses the write for link B: A is still in storage.
+    const refusing = (hash: string) => ({
+      ...fakeWindow(hash),
+      localStorage: {
+        ...store(local),
+        setItem: () => {
+          throw new DOMException("full", "QuotaExceededError");
+        },
+      },
+    });
+    globals.window = refusing(`#code=${CODE}&game=fantasy`);
+    expect(takeInviteFromLocation(NOW + 1000)).toEqual({ code: CODE, game: "fantasy" });
+    globals.window = refusing("");
+    expect(pendingInvite(NOW + 2000)).toEqual({ code: CODE, game: "fantasy" });
+    expect(pendingInviteCode(NOW + 2000)).toBe(CODE);
+    clearPendingInvite();
+    expect(pendingInvite(NOW + 3000)).toBeNull();
+  });
+
   it("ignores anything that is not a code, a malformed record, and a server render", () => {
     globals.window = fakeWindow();
     local.set("botolago.league-invite.v1", JSON.stringify({ v: 1, code: "nope", savedAt: NOW }));
