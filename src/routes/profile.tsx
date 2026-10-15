@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   Bell,
   Bookmark,
@@ -399,7 +399,7 @@ function AuthenticatedProfile({
       ) : null}
 
       <Group title={t("profile.section.preferences")}>
-        <LanguageRow />
+        <LanguageRow signedIn />
         {/* One row for the three switches, with how many are on. They are
             edited on the wizard's notifications step — there is no other
             settings screen — and the wizard comes back here when done. */}
@@ -620,24 +620,44 @@ function IdentityCard({
  * The language, as a row whose value is the current language and which opens
  * the choice as a menu. Device-scoped (it lives in this browser's storage), so
  * every visitor has it, signed in or not — BG-0081.
+ *
+ * It says so (audit 2026-10-14, LOC-06): the row is named for the device, and
+ * the line under it says what it does not change. A signed-in reader is told
+ * that notifications follow the language saved on the account (the
+ * `preferred_language` the e-mail and push fanouts read), which this row never
+ * writes; it is set at sign-up and whenever the profile editor is saved (its
+ * language step, reached from the Notifications row below, starts from the
+ * language this device shows and says what saving does). The line describes the
+ * stored setting; it does not claim any screen displays it. A visitor with no
+ * account has no such language to mention.
  */
-function LanguageRow({ ruled = false }: { ruled?: boolean }) {
+function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: boolean }) {
   const { t, lang } = useI18n();
+  const helpId = useId();
   return (
-    <UiMenu
-      label={t("language.switch")}
-      trigger={
-        <button type="button" className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
-          <RowInner
-            icon={<Globe />}
-            label={t("language.switch")}
-            value={lang === "fr" ? t("language.french") : t("language.arabic")}
-          />
-        </button>
-      }
-    >
-      <LanguageMenuChoices />
-    </UiMenu>
+    <>
+      <UiMenu
+        label={t("profile.language.device")}
+        trigger={
+          <button
+            type="button"
+            aria-describedby={helpId}
+            className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}
+          >
+            <RowInner
+              icon={<Globe />}
+              label={t("profile.language.device")}
+              value={lang === "fr" ? t("language.french") : t("language.arabic")}
+            />
+          </button>
+        }
+      >
+        <LanguageMenuChoices />
+      </UiMenu>
+      <p id={helpId} className={cn("px-4 pb-3 text-pretty", ui.text.meta, ui.tone.muted)}>
+        {signedIn ? t("profile.language.help") : t("profile.language.help_guest")}
+      </p>
+    </>
   );
 }
 
@@ -693,7 +713,7 @@ function DevicePreferences() {
   const { t } = useI18n();
   return (
     <Group title={t("profile.section.preferences")}>
-      <LanguageRow />
+      <LanguageRow signedIn={false} />
       <ThemeRow ruled />
     </Group>
   );

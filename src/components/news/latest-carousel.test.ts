@@ -47,8 +47,13 @@ describe("the carousel follows the house rules", () => {
     expect(CAROUSEL).toContain("snap-x");
   });
 
-  it("gives every dot a touch target, not just an 8 px dot", () => {
-    expect(CAROUSEL).toContain("grid h-8 min-w-6 place-items-center");
+  // MOB-03: a 24 x 32 box was under the product's 44px floor.
+  it("gives every dot the kit's 44px touch target, not just an 8 px dot", () => {
+    expect(CAROUSEL).toContain('cn("grid place-items-center", ui.space.tap, ui.focus)');
+    expect(CAROUSEL).not.toContain("min-w-6");
+    // On the narrowest phones the five dots drop to their own row, under the arrows.
+    expect(CAROUSEL).toContain("order-last flex basis-full");
+    expect(CAROUSEL).toContain("min-[360px]:order-none min-[360px]:basis-auto");
   });
 
   it("does not move on its own", () => {

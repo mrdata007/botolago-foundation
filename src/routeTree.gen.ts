@@ -40,6 +40,7 @@ import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -268,6 +269,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/callback',
@@ -711,6 +717,7 @@ export interface FileRoutesByFullPath {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
@@ -740,7 +747,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/auth': typeof AuthRouteWithChildren
   '/demo': typeof DemoRoute
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
@@ -810,6 +816,7 @@ export interface FileRoutesByTo {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/auth': typeof AuthIndexRoute
   '/clubs': typeof ClubsIndexRoute
   '/curva': typeof CurvaIndexRoute
   '/fantasy': typeof FantasyIndexRoute
@@ -915,6 +922,7 @@ export interface FileRoutesById {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
@@ -1021,6 +1029,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/auth/'
     | '/clubs/'
     | '/curva/'
     | '/fantasy/'
@@ -1050,7 +1059,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/auth'
     | '/demo'
     | '/jouer'
     | '/mcp'
@@ -1120,6 +1128,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/auth'
     | '/clubs'
     | '/curva'
     | '/fantasy'
@@ -1224,6 +1233,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/auth/'
     | '/clubs/'
     | '/curva/'
     | '/fantasy/'
@@ -1511,6 +1521,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -2105,6 +2122,7 @@ interface AuthRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthUpdatePasswordRoute: typeof AuthUpdatePasswordRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
+  AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -2116,6 +2134,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthRegisterRoute: AuthRegisterRoute,
   AuthUpdatePasswordRoute: AuthUpdatePasswordRoute,
   AuthVerifyRoute: AuthVerifyRoute,
+  AuthIndexRoute: AuthIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

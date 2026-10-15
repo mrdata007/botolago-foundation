@@ -57,6 +57,7 @@ export function MatchdayStrip() {
   return (
     <section
       aria-label={t("matches.matchday_strip")}
+      data-app-strip
       className={cn("hidden lg:block", ui.surface.bar, ui.rule.block)}
     >
       <ul
