@@ -220,7 +220,7 @@ function PointsBody() {
       return null;
     }
   }, [team, gw, resultQ.data, players, lifecycle, currentGw, isCloud]);
-  // FANT-07: the players of THIS round, as the server read them for it. Today's
+  // FANT-07: the players of THIS round, as the server describes them. Today's
   // buying pool only fills in what the result does not carry (photo, price).
   const round = useMemo(() => resolveRoundPlayers(players, vm?.breakdown ?? []), [players, vm]);
 
@@ -266,7 +266,10 @@ function PointsBody() {
         .map((s) => s.playerId);
   // FANT-08 / ASTRA-01: a round with a result shows its own roles; an effective
   // captain of null stays null. Only a round with no result reads the squad.
-  const { captainId, viceId } = roundRoles(vm, team);
+  // The armband is drawn on the effective captain, and on the captain the
+  // manager chose while nobody carries it yet (a pending round). Points and
+  // the "effective captain" line keep the server's answer, null included.
+  const { captainId, badgeCaptainId, viceId } = roundRoles(vm, team);
   const count = (pos: string) => startingIds.filter((id) => posOf(id) === pos).length;
   const formationKey = `${count("DEF")}-${count("MID")}-${count("FWD")}` as FormationKey;
   const cfg = FORMATIONS[formationKey] ?? FORMATIONS[team.formation];
@@ -291,8 +294,8 @@ function PointsBody() {
         player={p}
         club={clubOf(p.clubId)}
         sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
-        captain={id === captainId}
-        vice={id === viceId && id !== captainId}
+        captain={id === badgeCaptainId}
+        vice={id === viceId && id !== badgeCaptainId}
         size={size}
       />
     );
@@ -309,7 +312,7 @@ function PointsBody() {
     ...startingIds.map((id, i) => ({
       playerId: id,
       slot: i + 1,
-      isCaptain: id === captainId,
+      isCaptain: id === badgeCaptainId,
       isViceCaptain: id === viceId,
     })),
     ...benchIds.map((id, i) => ({ playerId: id, slot: 12 + i })),

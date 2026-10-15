@@ -120,8 +120,8 @@ const teamWith = (captain: number, vice: number): FantasyTeam => ({
   pendingTransfers: 0,
 });
 
-describe("FANT-07 — the player, position and club of that round", () => {
-  it("carries the server's frozen identity into the result", () => {
+describe("FANT-07 (part) — a player who has left today's pool is still named", () => {
+  it("carries the server's description of each player into the result", () => {
     const result = resultOf([
       { id: 1, identity: { name: "Retired Keeper", position: "GK" } },
       { id: 2, identity: null },
@@ -155,7 +155,7 @@ describe("FANT-07 — the player, position and club of that round", () => {
     expect(missingFromCatalogIds.has(uuid(2))).toBe(false);
   });
 
-  it("does not let today's club or position overwrite the round's", () => {
+  it("shows the player as the server describes him, over the pool's copy", () => {
     const result = resultOf([{ id: 1, identity: { name: "Mid then", position: "MID" } }]);
     const { players } = resolveRoundPlayers([pool(1, "FWD", CLUB_NEW)], result.breakdown);
     const shown = players.find((p) => p.id === uuid(1));
@@ -252,9 +252,27 @@ describe("ASTRA-01 — an authoritative null effective captain stays null", () =
     expect(roles.viceId).toBe(uuid(2));
   });
 
+  it("a pending round still shows the armband on the captain the manager chose", () => {
+    const roles = roundRoles(pending(), teamWith(3, 3));
+    expect(roles.badgeCaptainId).toBe(uuid(1));
+    // ... while the effective captain, and so the multiplier line, stay unset.
+    expect(roles.captainId).toBeNull();
+  });
+
+  it("the armband follows the effective captain once the vice has taken over", () => {
+    const vm = buildServerPointsViewModel(
+      resultOf([
+        { id: 1, captain: true, minutes: 0 },
+        { id: 2, vice: true, multiplier: 2 },
+      ]),
+    );
+    expect(roundRoles(vm, teamWith(3, 3)).badgeCaptainId).toBe(uuid(2));
+  });
+
   it("falls back to the squad only when there is no result at all", () => {
     const roles = roundRoles(null, teamWith(3, 2));
     expect(roles.captainId).toBe(uuid(3));
+    expect(roles.badgeCaptainId).toBe(uuid(3));
     expect(roles.viceId).toBe(uuid(2));
   });
 
@@ -287,6 +305,8 @@ describe("the migration that serves the identity (20261015120300)", () => {
   it("only reads, and wraps the existing function so its guards stay in force", () => {
     expect(code).not.toMatch(/\b(insert|update|delete|truncate|drop)\b/i);
     expect(code).toContain("rename to get_my_fantasy_points_before_identity");
+    // The pgTAP step-up count reads each api function's own code for this call.
+    expect(code).toContain("perform app_private.assert_mfa_step_up();");
     expect(code).toContain("api.get_my_fantasy_points_before_identity(p_team_id, p_gameweek_id)");
     expect(code).toMatch(
       /grant execute on function api\.get_my_fantasy_points\(uuid, uuid\)\s+to authenticated, service_role/,
@@ -313,6 +333,11 @@ describe("the points screen reads these through the round's own model", () => {
     expect(source).not.toMatch(/vm\?\.effectiveCaptainId \?\?/);
     expect(source).not.toMatch(/const viceId = team\.squad/);
     expect(source).toContain("roundRoles(vm, team)");
+    // The armband and the list's captain flag use the badge id; points use the effective one.
+    expect(source).toContain("captain={id === badgeCaptainId}");
+    expect(source).toContain("isCaptain: id === badgeCaptainId");
+    expect(source).toContain("vice={id === viceId && id !== badgeCaptainId}");
+    expect(source).toContain("const captainName = captainId ?");
     expect(source).toContain("resolveRoundPlayers(");
   });
 

@@ -152,10 +152,12 @@ export interface PointsEvent {
 }
 
 /**
- * Who a player was in the round a result belongs to, as the server read it
- * for that result (`api.get_my_fantasy_points`, migration 20261015120300).
- * It is what lets an old round name a player who has since left today's
- * buying pool. Absent when the server does not send it yet.
+ * Who a player is, as the server describes him in a round's result
+ * (`api.get_my_fantasy_points`, migration 20261015120300). It lets an old round
+ * name a player who has since left today's buying pool. It is the player's
+ * current catalogue row, not a copy taken in that round: a player who
+ * transferred since shows his current club. Absent when the server does not
+ * send it yet.
  */
 export interface PlayerRoundIdentity {
   name: string;

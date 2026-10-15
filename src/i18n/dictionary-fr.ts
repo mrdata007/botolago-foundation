@@ -632,9 +632,9 @@ export const fr = {
   "fantasy.points.captain_bonus": "Bonus capitaine",
   "fantasy.points.effective_captain": "Capitaine effectif",
   "fantasy.points.vice_takeover": "Vice a pris le relais",
-  "fantasy.points.unknown_player": "Joueur hors catalogue",
+  "fantasy.points.unknown_player": "Joueur indisponible",
   "fantasy.points.unresolved_players":
-    "Certains joueurs de cette journée ne sont plus dans le catalogue et ne peuvent pas être nommés. Leurs points restent comptés dans le total.",
+    "Certains joueurs de cette journée ne figurent plus dans la liste des joueurs : leur nom ne peut pas être affiché, mais leurs points comptent bien dans le total.",
   "fantasy.points.bench_boost_contrib": "Apport Bench Boost",
   "fantasy.points.triple_captain_contrib": "Apport Triple Capitaine",
   "fantasy.points.hit": "Pénalité transferts",

@@ -15,6 +15,12 @@ export interface RoundRoles {
   captainId: string | null;
   /** The captain the manager chose for the round, whether or not he carried it. */
   originalCaptainId: string | null;
+  /**
+   * Who wears the armband on the pitch: the effective captain, else (nobody
+   * carries the multiplier yet, as in a pending round) the captain the manager
+   * chose. Display only: points and the "effective captain" line use `captainId`.
+   */
+  badgeCaptainId: string | null;
   /** The vice-captain the manager chose for the round. */
   viceId: string | null;
 }
@@ -32,6 +38,7 @@ export function roundRoles(vm: PointsViewModel | null, team: FantasyTeam): Round
     return {
       captainId: vm.effectiveCaptainId,
       originalCaptainId: vm.originalCaptainId ?? null,
+      badgeCaptainId: vm.effectiveCaptainId ?? vm.originalCaptainId ?? null,
       viceId: vm.viceCaptainId ?? null,
     };
   }
@@ -39,12 +46,13 @@ export function roundRoles(vm: PointsViewModel | null, team: FantasyTeam): Round
   return {
     captainId: captain,
     originalCaptainId: captain,
+    badgeCaptainId: captain,
     viceId: team.squad.find((s) => s.isViceCaptain)?.playerId ?? null,
   };
 }
 
 export interface RoundPlayers {
-  /** Today's pool, with each player of the round shown as the server read him for it. */
+  /** Today's pool, with each player the result describes shown as the server describes him. */
   players: FantasyPlayer[];
   /** Players of the round whom today's pool no longer offers (his figures are not today's). */
   missingFromCatalogIds: ReadonlySet<string>;
@@ -55,9 +63,11 @@ export interface RoundPlayers {
 /**
  * The roster a round is drawn from.
  *
- * - A player the server describes is shown as described (name, position, club
- *   of that round), over whatever today's pool says; the pool still supplies
- *   what only it knows (photo, price, form, ownership).
+ * - A player the server describes is shown as described (name, position,
+ *   club), over whatever today's pool says; the pool still supplies what only
+ *   it knows (photo, price, form, ownership). This is the player's catalogue
+ *   row, readable when he is no longer in the pool; it is NOT a copy taken in
+ *   that round, so a club or position changed since shows its current value.
  * - A described player the pool no longer has is added, with no price, form or
  *   ownership of his own: callers show a dash for those, not zeros.
  * - A player neither side describes is reported in `unresolvedIds`, so the
