@@ -53,6 +53,7 @@ default, for when a published result changes who leads.
 ## Acceptance criteria
 
 Functional
+
 - Off: no node, no request. Locked: the reader's real free row (their total against the closest league mate)
   clear, the example blurred and inert, « Découvrir » to the paywall; the paid read is never called.
 - Member: up to three posters; a fourth pin is refused with a clear message; a rival who leaves the league
@@ -67,6 +68,7 @@ Functional
   No database is touched by this work.
 
 Visual
+
 - Match design v3: posters paged with snap, diagonal mint / sky split (mirrored in Arabic), glass panel,
   crowd band, dots that follow the scroll. Motion is transform and opacity only and off under reduced motion.
 - French and Arabic (right to left) at 390 px, French at 1280 px; no horizontal overflow measured per
