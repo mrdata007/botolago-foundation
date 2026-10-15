@@ -42,7 +42,6 @@ import type {
 } from "react";
 import { isValidElement, useId, useRef } from "react";
 import { useJustChanged } from "@/lib/motion";
-import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -83,9 +82,16 @@ export function UiScreen({
   className,
   bottomNav = false,
   raised = false,
+  as: Tag = "main",
 }: {
   children: ReactNode;
   width?: "column" | "content" | "wide" | "desktop";
+  /**
+   * The element drawn. `main` is the page's one landmark; a shell that draws
+   * its own `<main>` around more than the column (`AppShell`, whose page
+   * header sits above it) passes `div`.
+   */
+  as?: "main" | "div";
   className?: string;
   /** Reserve clearance for the fixed bottom navigation. */
   bottomNav?: boolean;
@@ -93,12 +99,9 @@ export function UiScreen({
   raised?: boolean;
 }) {
   return (
-    <main
-      // The skip link's target (`SkipLink`): focusable by script, not by Tab.
-      id={MAIN_CONTENT_ID}
-      tabIndex={-1}
+    <Tag
       className={cn(
-        "relative mx-auto w-full scroll-mt-[var(--topbar-h)] outline-none",
+        "relative mx-auto w-full",
         ui.space.gutter,
         width === "column" && "max-w-[var(--ui-column-max)]",
         width === "content" && "max-w-2xl",
@@ -114,7 +117,7 @@ export function UiScreen({
       )}
     >
       {children}
-    </main>
+    </Tag>
   );
 }
 

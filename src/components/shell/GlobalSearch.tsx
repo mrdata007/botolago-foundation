@@ -14,6 +14,8 @@ import {
   activeDescendantId,
   clampActiveIndex,
   committableEntry,
+  isComposingKey,
+  listboxExpanded,
   moveActiveIndex,
   searchAnnouncement,
   searchEntries,
@@ -118,9 +120,10 @@ export function GlobalSearch({
       failed: query.isLoadingError,
     })),
   });
-  // The field points at the listbox, and at one of its options, only while
-  // they are on screen: an id that names nothing is worse than none.
-  const listShown = showPanel && panel.kind === "results";
+  // The field says it is expanded, and points at the listbox and at one of its
+  // options, only while they are on screen: an id that names nothing is worse
+  // than none, and a panel that shows only "searching" has nothing to choose.
+  const listShown = listboxExpanded({ panelVisible: showPanel, resultCount: results.length });
   const activeId = activeDescendantId({
     listId,
     results,
@@ -180,7 +183,7 @@ export function GlobalSearch({
         ref={inputRef}
         type="search"
         role="combobox"
-        aria-expanded={showPanel}
+        aria-expanded={listShown}
         aria-controls={listShown ? listId : undefined}
         aria-activedescendant={activeId}
         aria-autocomplete="list"
@@ -199,10 +202,15 @@ export function GlobalSearch({
           setOpen(true);
         }}
         onKeyDown={(event) => {
+          // A key that belongs to an input method (a candidate being picked
+          // with Enter or the arrows) is not ours.
+          if (isComposingKey(event.nativeEvent)) return;
           if (event.key === "ArrowDown") {
             event.preventDefault();
-            // After Escape (or a click away that came back) the list is shut:
-            // the first ArrowDown opens it where it was, the next one moves.
+            // With the list shut but text in the field, the first ArrowDown
+            // opens it and the next one moves. Chromium and WebKit empty a
+            // search field on Escape, so there the list is shut with nothing
+            // typed and there is nothing to reopen; Firefox keeps the text.
             if (!showPanel) {
               if (text.trim() !== "") setOpen(true);
               return;

@@ -35,6 +35,19 @@ export function searchAnnouncementText(
   t: Translate,
 ): string {
   if (!announcement) return "";
-  if (announcement.kind === "results") return searchResultsLabel(announcement.count, lang, t);
-  return announcement.kind === "loading" ? t("nav.search.loading") : t("nav.search.empty");
+  switch (announcement.kind) {
+    case "results": {
+      const count = searchResultsLabel(announcement.count, lang, t);
+      // Some results are there, and some could not be read: both are said.
+      return announcement.partial ? `${count}. ${t("nav.search.partial")}` : count;
+    }
+    case "loading":
+      return t("nav.search.loading");
+    case "empty":
+      return t("nav.search.empty");
+    case "unavailable":
+      return announcement.coverage === "none"
+        ? t("nav.search.unavailable")
+        : t("nav.search.partial");
+  }
 }

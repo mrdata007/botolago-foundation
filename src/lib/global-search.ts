@@ -97,15 +97,29 @@ export function activeDescendantId(input: {
 }
 
 /**
+ * Whether a key event belongs to an input method (a Japanese, Chinese or
+ * Korean candidate list): its Enter and arrows pick a candidate and must not
+ * also pick a search result. Only the standard `isComposing` flag is read: a
+ * soft keyboard that reports every key as keyCode 229 would otherwise lose
+ * its Enter.
+ */
+export function isComposingKey(event: { isComposing?: boolean }): boolean {
+  return event.isComposing === true;
+}
+
+/**
  * What a screen reader is told as the list changes (a polite live region that
- * stays in the page): the number of results, that it is loading, or that
- * there is none. Nothing while the panel is closed, and nothing when a
- * catalog failed with nothing to show, because that note announces itself.
+ * stays in the page): the number of results (and that some could not be
+ * read), that it is loading, that there is none, or that the search is
+ * unavailable. Nothing while the panel is closed. It is the live region that
+ * speaks, not the visible note: a note that appears already filled is often
+ * not read.
  */
 export type SearchAnnouncement =
-  | { kind: "results"; count: number }
+  | { kind: "results"; count: number; partial: boolean }
   | { kind: "loading" }
   | { kind: "empty" }
+  | { kind: "unavailable"; coverage: "none" | "partial" }
   | null;
 
 export function searchAnnouncement(input: {
@@ -114,10 +128,21 @@ export function searchAnnouncement(input: {
   resultCount: number;
 }): SearchAnnouncement {
   if (!input.panelVisible) return null;
-  if (input.panel.kind === "results") return { kind: "results", count: input.resultCount };
-  if (input.panel.kind === "loading") return { kind: "loading" };
-  if (input.panel.kind === "empty") return { kind: "empty" };
-  return null;
+  const { panel } = input;
+  if (panel.kind === "results")
+    return { kind: "results", count: input.resultCount, partial: panel.partial };
+  if (panel.kind === "loading") return { kind: "loading" };
+  if (panel.kind === "empty") return { kind: "empty" };
+  return { kind: "unavailable", coverage: panel.coverage };
+}
+
+/**
+ * Whether the field may claim the list is open: only while the listbox is
+ * really drawn (there are options). "Searching" and "no result" are lines
+ * beside it, and an expanded field with nothing to choose is a lie.
+ */
+export function listboxExpanded(input: { panelVisible: boolean; resultCount: number }): boolean {
+  return input.panelVisible && input.resultCount > 0;
 }
 
 /** How one catalog (clubs, players) is doing, as the search panel needs it. */

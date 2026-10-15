@@ -76,13 +76,29 @@ describe("focusing the target", () => {
 });
 
 describe("every shell has the link and the target", () => {
-  it("the content column's <main> is focusable by script and not by Tab", () => {
-    const markup = html(<UiScreen>page</UiScreen>);
-    expect(markup).toMatch(new RegExp(`<main[^>]*id="${MAIN_CONTENT_ID}"[^>]*tabindex="-1"`));
+  it("the column carries no target of its own and can be drawn as a div", () => {
+    expect(html(<UiScreen>page</UiScreen>)).not.toContain(MAIN_CONTENT_ID);
+    const asDiv = html(<UiScreen as="div">page</UiScreen>);
+    expect(asDiv).not.toContain("<main");
+    expect(asDiv).toContain("<div");
   });
 
-  it("does not draw a focus ring round the whole page when it is focused", () => {
-    expect(html(<UiScreen>page</UiScreen>)).toContain("outline-none");
+  it("AppShell's one <main> is the target and holds the page header before the column", () => {
+    const source = read("src/components/shell/AppShell.tsx")
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(source.match(/<main\b/g)).toHaveLength(1);
+    expect(source.match(/id=\{MAIN_CONTENT_ID\}/g)).toHaveLength(1);
+    const main = source.indexOf("<main");
+    // The hub's title band and chips are inside it, so a skip does not jump past them.
+    expect(main).toBeGreaterThan(source.indexOf("{topBar ??"));
+    expect(source.indexOf("{pageHeader}")).toBeGreaterThan(main);
+    expect(source.indexOf("<UiScreen")).toBeGreaterThan(source.indexOf("{pageHeader}"));
+    expect(source).toContain('as="div"');
+    expect(source).toContain("tabIndex={-1}");
+    // No focus ring round the whole page when it is focused by script.
+    expect(source).toContain("outline-none");
   });
 
   for (const [shell, file] of [

@@ -155,19 +155,78 @@ for (const lang of ["fr", "ar"] as const satisfies readonly Language[]) {
     expect(second.optionText).not.toBe(first.optionText);
     expect(second.selected).toBe(1);
 
-    // Nothing to point at once the list is shut.
-    await input.evaluate((element) =>
-      element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
-    );
+    // A real Escape: the list is shut and nothing is pointed at. Chromium and
+    // WebKit also empty a search field on Escape, so there is no text left to
+    // reopen the list with (Firefox keeps it).
+    await input.press("Escape");
     await expect.poll(async () => (await read()).activeId).toBeNull();
     expect((await read()).expanded).toBe("false");
-    // ArrowDown opens it again, where it was.
+    expect((await read()).controls).toBeNull();
+    await expect(input).toHaveValue("");
+    // ArrowDown with nothing typed opens nothing.
     await input.press("ArrowDown");
+    expect((await read()).expanded).toBe("false");
+    expect((await read()).activeId).toBeNull();
+
+    // Typing again opens it again.
+    await input.fill(lang === "fr" ? "a" : "ا");
     await expect.poll(async () => (await read()).expanded).toBe("true");
     expect((await read()).activeId).not.toBeNull();
 
+    // No result: the line says so and the field does not claim to be expanded.
     await input.fill("zzzzqq");
     await expect.poll(async () => (await read()).live).toBe(dictionaries[lang]["nav.search.empty"]);
     expect((await read()).activeId).toBeNull();
+    expect((await read()).expanded).toBe("false");
+  });
+}
+
+// The hub pages draw their title, chips and tabs in a band above the content
+// column; a skip must land before them, not after.
+const HUBS = [
+  "/news",
+  "/matches",
+  "/matches/standings",
+  "/pronostics",
+  "/pepites",
+  "/clubs",
+  "/profile",
+  "/notifications",
+] as const;
+
+for (const lang of ["fr", "ar"] as const satisfies readonly Language[]) {
+  test(`${lang}: on every hub the skip target holds the page title (MOB-05)`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await initializeLanguage(page, lang);
+    for (const path of HUBS) {
+      await gotoHydrated(page, path, lang);
+      const structure = await page.evaluate(() => {
+        const main = document.getElementById("main-content");
+        const h1 = document.querySelector("h1");
+        return {
+          mains: document.querySelectorAll("main").length,
+          targets: document.querySelectorAll("#main-content").length,
+          mainIsMain: main?.tagName === "MAIN",
+          h1InMain: !!(main && h1 && main.contains(h1)),
+          h1: h1?.textContent?.trim() ?? null,
+        };
+      });
+      expect(structure, path).toMatchObject({ mains: 1, targets: 1, mainIsMain: true });
+      expect(structure.h1, path).not.toBeNull();
+      expect(structure.h1InMain, path).toBe(true);
+
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Enter");
+      const landed = await page.evaluate(() => {
+        const main = document.getElementById("main-content")!;
+        const h1 = document.querySelector("h1")!;
+        return {
+          onMain: document.activeElement === main,
+          // Nothing of the page's own content is above the place focus landed.
+          h1Below: h1.getBoundingClientRect().top >= main.getBoundingClientRect().top - 1,
+        };
+      });
+      expect(landed, path).toEqual({ onMain: true, h1Below: true });
+    }
   });
 }

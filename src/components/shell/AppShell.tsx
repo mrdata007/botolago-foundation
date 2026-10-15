@@ -20,6 +20,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { UiScreen } from "@/components/ui-kit";
 import { MatchdayStrip } from "@/components/matches/MatchdayStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
+import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 import { playTabSlide } from "@/lib/tab-slide";
 import { cn } from "@/lib/utils";
 import { SkipLink } from "./SkipLink";
@@ -72,7 +73,7 @@ export function AppShell({
 }) {
   // Everything under the top bar, as one block, so a tab move can slide it in
   // while the top and bottom bars stay still (src/lib/tab-slide.ts).
-  const pageRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => playTabSlide(pageRef.current), []);
 
   return (
@@ -80,11 +81,22 @@ export function AppShell({
       <SkipLink />
       <PageBackground variant={backgroundVariant} />
       {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
-      <div ref={pageRef} className="relative">
+      {/* The page's one <main>, and the skip link's target: it holds the page
+          header (the hub's title, its chips and tabs) as well as the column, so
+          a skip lands on the start of the page's own content, and the sticky
+          bands stay inside the same tall parent. Focusable by script, not by
+          Tab. */}
+      <main
+        ref={pageRef}
+        id={MAIN_CONTENT_ID}
+        tabIndex={-1}
+        className="relative scroll-mt-[var(--topbar-h)] outline-none"
+      >
         {pageHeader}
         {matchdayStrip ? <MatchdayStrip /> : null}
         {liveStrip && <LiveStrip />}
         <UiScreen
+          as="div"
           width={
             contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
           }
@@ -92,7 +104,7 @@ export function AppShell({
         >
           {children}
         </UiScreen>
-      </div>
+      </main>
       {hideBottomNav ? null : (bottomNav ?? <BottomNav />)}
     </div>
   );

@@ -107,12 +107,14 @@ export function GlobalSearchPanelBody({
         </ul>
       ) : null}
       {/* A failed catalog and the way to ask again: beside the list, not
-          in it (a listbox holds options). mousedown is held back, like
+          in it (a listbox holds options). It is not a live region: the
+          search's own one says it (an element that appears already filled is
+          often not read, and it would be read twice). mousedown is held back, like
           the options': the field's blur would otherwise close the panel
           first. */}
       {note ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-          <p role="status" className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
+          <p className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
             {note === "none" ? t("nav.search.unavailable") : t("nav.search.partial")}
           </p>
           <UiButton

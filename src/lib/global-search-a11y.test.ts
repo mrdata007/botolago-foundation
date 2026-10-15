@@ -5,6 +5,8 @@ import { describe, expect, test } from "bun:test";
 
 import {
   activeDescendantId,
+  isComposingKey,
+  listboxExpanded,
   searchAnnouncement,
   searchEntries,
   searchOptionId,
@@ -66,6 +68,7 @@ describe("what the live region announces", () => {
     expect(searchAnnouncement({ panelVisible: true, panel: panelFor(3), resultCount: 3 })).toEqual({
       kind: "results",
       count: 3,
+      partial: false,
     });
   });
   test("searching, and no result, are told too", () => {
@@ -85,7 +88,7 @@ describe("what the live region announces", () => {
       searchAnnouncement({ panelVisible: false, panel: panelFor(3), resultCount: 3 }),
     ).toBeNull();
   });
-  test("nothing for a failed catalog: its own note is the status", () => {
+  test("a failed catalog is announced here, since its visible note is not live", () => {
     const failed = { pending: false, failed: true };
     expect(
       searchAnnouncement({
@@ -93,6 +96,50 @@ describe("what the live region announces", () => {
         panel: panelFor(0, [failed, failed]),
         resultCount: 0,
       }),
+    ).toEqual({ kind: "unavailable", coverage: "none" });
+    expect(
+      searchAnnouncement({
+        panelVisible: true,
+        panel: panelFor(0, [failed, ok]),
+        resultCount: 0,
+      }),
+    ).toEqual({ kind: "unavailable", coverage: "partial" });
+  });
+  test("results from one catalog are flagged partial when the other failed", () => {
+    const failed = { pending: false, failed: true };
+    expect(
+      searchAnnouncement({
+        panelVisible: true,
+        panel: panelFor(2, [failed, ok]),
+        resultCount: 2,
+      }),
+    ).toEqual({ kind: "results", count: 2, partial: true });
+  });
+  test("nothing for a failed catalog while the panel is shut", () => {
+    const failed = { pending: false, failed: true };
+    expect(
+      searchAnnouncement({
+        panelVisible: false,
+        panel: panelFor(0, [failed, failed]),
+        resultCount: 0,
+      }),
     ).toBeNull();
+  });
+});
+
+describe("aria-expanded", () => {
+  test("is true only while the listbox is drawn", () => {
+    expect(listboxExpanded({ panelVisible: true, resultCount: 3 })).toBe(true);
+    // Only "searching" or "no result" is showing: nothing to choose.
+    expect(listboxExpanded({ panelVisible: true, resultCount: 0 })).toBe(false);
+    expect(listboxExpanded({ panelVisible: false, resultCount: 3 })).toBe(false);
+  });
+});
+
+describe("input-method keys", () => {
+  test("a key during composition is not ours", () => {
+    expect(isComposingKey({ isComposing: true })).toBe(true);
+    expect(isComposingKey({ isComposing: false })).toBe(false);
+    expect(isComposingKey({})).toBe(false);
   });
 });

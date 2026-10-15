@@ -85,6 +85,29 @@ describe("the open panel is a listbox of identified options", () => {
   });
 });
 
+describe("the failure note is read once, by the search's own live region", () => {
+  it("has no status role of its own", () => {
+    const html = renderToString(
+      <I18nProvider>
+        <GlobalSearchPanelBody
+          panel={{ kind: "unavailable", coverage: "none" }}
+          results={[]}
+          active={-1}
+          listId="list-1"
+          query="ra"
+          note="none"
+          onPick={() => undefined}
+          onHover={() => undefined}
+          onRetry={() => undefined}
+        />
+      </I18nProvider>,
+    );
+    expect(html).toContain(dictionaries.fr["nav.search.unavailable"]);
+    expect(html).not.toContain('role="status"');
+    expect(html).not.toContain("aria-live");
+  });
+});
+
 describe("with nothing to choose there is no listbox", () => {
   it("shows the empty line outside any list", () => {
     const html = render({ query: "zzz", active: -1 });
@@ -105,13 +128,30 @@ describe("the field is wired as a combobox", () => {
     expect(SOURCE).toContain('role="combobox"');
     expect(SOURCE).toContain("aria-activedescendant={activeId}");
     expect(SOURCE).toContain("aria-controls={listShown ? listId : undefined}");
-    expect(SOURCE).toContain("aria-expanded={showPanel}");
     expect(SOURCE).toMatch(/role="status" aria-live="polite" aria-atomic="true"/);
   });
 
   it("ArrowDown on a shut list opens it instead of moving the hidden selection", () => {
     expect(SOURCE).toMatch(
       /if \(!showPanel\) \{\s*if \(text\.trim\(\) !== ""\) setOpen\(true\);\s*return;/,
+    );
+  });
+
+  it("says it is expanded only while the listbox is drawn", () => {
+    expect(SOURCE).toContain("aria-expanded={listShown}");
+    expect(SOURCE).toContain(
+      "listboxExpanded({ panelVisible: showPanel, resultCount: results.length })",
+    );
+  });
+
+  it("leaves a key that belongs to an input method alone", () => {
+    expect(SOURCE).toContain("if (isComposingKey(event.nativeEvent)) return;");
+  });
+
+  it("does not claim the Escape reopen is for every browser", () => {
+    expect(SOURCE).not.toContain("after Escape the first ArrowDown opens it where it was");
+    expect(SOURCE.replace(/\s*\n\s*\/\/\s*/g, " ")).toContain(
+      "Chromium and WebKit empty a search field on Escape",
     );
   });
 
@@ -136,6 +176,24 @@ describe("the announcement, in both languages", () => {
     expect(searchResultsLabel(3, "ar", arT)).toBe("3 نتائج");
     expect(searchResultsLabel(8, "ar", arT)).toBe("8 نتائج");
     expect(searchResultsLabel(11, "ar", arT)).toBe("11 نتيجة");
+  });
+
+  it("says a failed catalog with the existing copy", () => {
+    expect(searchAnnouncementText({ kind: "unavailable", coverage: "none" }, "fr", frT)).toBe(
+      dictionaries.fr["nav.search.unavailable"],
+    );
+    expect(searchAnnouncementText({ kind: "unavailable", coverage: "partial" }, "ar", arT)).toBe(
+      dictionaries.ar["nav.search.partial"],
+    );
+  });
+
+  it("adds that some results are missing when only part could be read", () => {
+    expect(searchAnnouncementText({ kind: "results", count: 2, partial: true }, "fr", frT)).toBe(
+      `2 résultats. ${dictionaries.fr["nav.search.partial"]}`,
+    );
+    expect(searchAnnouncementText({ kind: "results", count: 2, partial: false }, "fr", frT)).toBe(
+      "2 résultats",
+    );
   });
 
   it("says searching, and no result, with the panel's own words", () => {
