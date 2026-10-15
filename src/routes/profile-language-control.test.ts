@@ -8,8 +8,8 @@ import { dictionaries } from "@/i18n/dictionaries";
  * Audit 2026-10-14, LOC-06: the Profile "Langue" row changes the language of
  * the app on this device only (browser storage). Notifications use the
  * language saved on the ACCOUNT (`profiles.preferred_language`, which the
- * e-mail and push fanouts read), set at sign-up and by the language choice in
- * the profile editor. Nothing on the row said so, so a reader who switched to
+ * e-mail and push fanouts read), set at sign-up and whenever the profile
+ * editor is saved (its language step starts from the device's language). Nothing on the row said so, so a reader who switched to
  * Arabic could expect Arabic notifications.
  *
  * The screens need a router and a session to render, so these pin the
@@ -50,11 +50,19 @@ describe("profile language control: wording", () => {
     expect(ar["profile.language.help_guest"]).not.toContain("حساب");
   });
 
-  it("names the account's language control for notifications", () => {
-    expect(fr["auth.setup.language_confirm"]).toBe("Langue des notifications");
-    expect(ar["auth.setup.language_confirm"]).toBe("لغة الإشعارات");
-    expect(fr["auth.setup.language_hint"]).toMatch(/notifications/);
-    expect(ar["auth.setup.language_hint"]).toContain("إشعارات");
+  it("the editor's language step does not claim to show the account's current language", () => {
+    // It starts from the device's language, so its label is neutral and its
+    // hint states what SAVING does, not what is currently stored.
+    expect(fr["auth.setup.language_confirm"]).toBe("Langue");
+    expect(ar["auth.setup.language_confirm"]).toBe("اللغة");
+    expect(fr["auth.setup.language_hint"]).toBe(
+      "En enregistrant, cette langue devient celle de vos notifications et de l’application sur cet appareil.",
+    );
+    expect(ar["auth.setup.language_hint"]).toBe(
+      "عند الحفظ تصبح هذه اللغة لغة إشعاراتك ولغة التطبيق على هذا الجهاز.",
+    );
+    expect(fr["auth.setup.language_confirm"]).not.toMatch(/notification/i);
+    expect(ar["auth.setup.language_confirm"]).not.toContain("إشعار");
   });
 });
 
@@ -94,6 +102,10 @@ describe("profile language control: the wording is true", () => {
     expect(setup).toContain('t("auth.setup.language_confirm")');
     expect(setup).toMatch(/language: chosenLang/);
     expect(setup).toContain('t("auth.setup.language_hint")');
+    // The coupling the hint describes: the step starts from the DEVICE's
+    // language, and saving sets the device's language to the chosen one.
+    expect(setup).toMatch(/setChosenLang\(lang\)/);
+    expect(setup).toMatch(/if \(chosenLang !== lang\) setLanguage\(chosenLang\)/);
   });
 
   it("the profile reaches that editor from its Notifications row", () => {

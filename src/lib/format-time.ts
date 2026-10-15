@@ -38,8 +38,9 @@ export function formatFullDate(iso: string, lang: Language): string {
  * A calendar date in the language the reader chose, never the browser's:
  * « 14 octobre 2026 » / « 14 أكتوبر 2026 ».
  *
- * The locale is explicit (`fr-FR`, or `ar-MA` with Latin digits forced, like
- * every other date in the product) and the day is the one on Morocco's
+ * The locale is explicit (`fr-FR`, or `ar-MA` with Latin digits forced, as in
+ * the product's other explicit-locale dates; the two older formatters above
+ * still use the browser's time zone) and the day is the one on Morocco's
  * calendar (`moroccoDateTimeFormat`, the app's own Casablanca clock, the same
  * on the server and in every browser), so an English browser or a reader in
  * another time zone sees the same date as everyone else. A bare

@@ -512,10 +512,13 @@ function ProfileSetupPage() {
                 </UiChip>
               ))}
             </div>
-            {/* What this choice does (audit 2026-10-14, LOC-06): it is the
-                account's language, which notifications use, and saving it also
-                sets the app's language on this device. The profile page's
-                language row, by contrast, changes the app only. */}
+            {/* What SAVING does (audit 2026-10-14, LOC-06): the choice, which
+                starts from the language the app is showing on this device and
+                not from the account's stored one, becomes the account's
+                notification language and the app's language here. The label is
+                therefore neutral: it does not claim to show the account's
+                current language. The profile page's language row, by
+                contrast, changes the app only. */}
             <p id="setupLanguageHint" className={cn("mt-1.5", ui.text.meta, ui.tone.muted)}>
               {t("auth.setup.language_hint")}
             </p>

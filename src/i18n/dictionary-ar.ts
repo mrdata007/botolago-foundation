@@ -1591,9 +1591,8 @@ export const ar = {
     "الإشعارات محظورة. اسمح بها لتطبيق BotolaGO من إعدادات الهاتف ثم حاول مرة أخرى.",
   "auth.setup.notif_push_unavailable":
     "تعذّر تفعيل التنبيهات حاليًا. تحقّق من اتصالك وحاول مرة أخرى.",
-  "auth.setup.language_confirm": "لغة الإشعارات",
-  "auth.setup.language_hint":
-    "تتبع إشعارات حسابك هذا الاختيار. ويصبح أيضًا لغة التطبيق على هذا الجهاز.",
+  "auth.setup.language_confirm": "اللغة",
+  "auth.setup.language_hint": "عند الحفظ تصبح هذه اللغة لغة إشعاراتك ولغة التطبيق على هذا الجهاز.",
   "auth.setup.skip": "تخطّي",
   "auth.setup.next": "التالي",
   "auth.setup.previous": "السابق",

@@ -4,15 +4,13 @@ import { join } from "node:path";
 
 /**
  * Audit 2026-10-14, LOC-08: an Arabic edition read from the French shell took
- * its body face from the shell (Manrope, which has no Arabic: a real render
- * drew the Arabic letters in DejaVu Sans, the machine's fallback, not Noto
- * Sans Arabic), and its emphasis was slanted although the Arabic face ships
- * upright only (the browser shears the letters).
+ * its body face from the shell (Manrope, which has no Arabic, so the device's
+ * own fallback face drew the letters), and its emphasis was slanted although
+ * the Arabic face ships upright only (the browser shears the letters).
  *
- * The real rendering was measured in a browser when the rules were written
- * (computed style and the font the engine actually used, French shell, Arabic
- * edition). This is the source-level guard: it pins the rules, so they cannot
- * be dropped or widened to every italic unnoticed.
+ * This is a source-level guard, not a rendering test: it reads the stylesheet
+ * and the two pages that carry the article, and pins the rules so they cannot
+ * be dropped or widened to every italic unnoticed. It does not render.
  */
 const root = join(import.meta.dir, "..", "..");
 const css = readFileSync(join(root, "src/styles.css"), "utf8");
@@ -65,5 +63,14 @@ describe("editorial body, content language", () => {
   it("is keyed on the language the article page puts on its subtree", () => {
     const page = readFileSync(join(root, "src/routes/news.$articleId.tsx"), "utf8");
     expect(page).toMatch(/<article[^>]*lang=\{contentLanguage\}/);
+  });
+
+  it("the CMS preview carries the edition's lang too, so it shows what the reader gets", () => {
+    const preview = readFileSync(join(root, "src/routes/admin.news.$articleEditionId.tsx"), "utf8");
+    expect(preview).toContain('const articleLang = article?.language === "ar" ? "ar" : "fr";');
+    // On the element that wraps the `editorial-body` blob, beside its `dir`.
+    const holder = /<div\s+dir=\{articleDir\}\s+lang=\{articleLang\}/.exec(preview);
+    expect(holder).not.toBeNull();
+    expect(holder!.index).toBeLessThan(preview.indexOf('className={cn("editorial-body'));
   });
 });
