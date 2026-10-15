@@ -9,6 +9,7 @@ import {
   type PremiumPrice,
   type PremiumProductCode,
   type PremiumReceipt,
+  type PremiumSource,
   type PremiumState,
   type PremiumStatus,
 } from "@/backend/premium/contracts";
@@ -41,6 +42,8 @@ export interface PremiumView {
   /** Carries the member features: active, cancelling or grace. */
   isMember: boolean;
   productCode: PremiumProductCode | null;
+  /** Where the membership comes from; `grant` is a complimentary one (no product, no payment). */
+  source: PremiumSource | null;
   /** End of the paid period (the renewal date for the monthly pass). */
   periodEnd: Date | null;
   /** Cancelled, the period is not over: no renewal. */
@@ -73,6 +76,7 @@ export function derivePremium(
     state,
     isMember: isMemberState(state),
     productCode: member?.productCode ?? null,
+    source: member?.source ?? null,
     periodEnd: member?.currentPeriodEnd ? new Date(member.currentPeriodEnd) : null,
     cancelling: member ? member.cancelAtPeriodEnd || state === "cancelling" : false,
   };

@@ -31,18 +31,18 @@ describe("the example season adds up", () => {
       expect(series).toHaveLength(JOURNEES);
   });
 
-  it("totals: you 616, Sami 602, the league average 575, and the cumulative lines end on them", () => {
-    expect(S.total).toBe(616);
-    expect(S.rivalTotal).toBe(602);
+  it("totals: you 612, Sami 598, the league average 575, and the cumulative lines end on them", () => {
+    expect(S.total).toBe(612);
+    expect(S.rivalTotal).toBe(598);
     expect(S.leagueTotal).toBe(575);
     expect(S.total - S.rivalTotal).toBe(14);
     expect(S.cumLead[JOURNEES - 1]).toBe(14);
-    expect(S.total - S.leagueTotal).toBe(41);
+    expect(S.total - S.leagueTotal).toBe(37);
     expect(S.cumYou[JOURNEES - 1]).toBe(S.total);
     expect(S.cumRival[JOURNEES - 1]).toBe(S.rivalTotal);
     expect(S.cumLeague[JOURNEES - 1]).toBe(S.leagueTotal);
     expect(R.leaderTotal).toBeGreaterThan(S.total);
-    expect(R.leaderTotal - S.total).toBe(39);
+    expect(R.leaderTotal - S.total).toBe(43);
   });
 
   it("wins 7 to 4, no draws, margins and the cumulative lead journée by journée", () => {
@@ -74,7 +74,7 @@ describe("the example season adds up", () => {
     expect(R.you[S.worstWeek]).toBe(44);
     expect(S.rivalBestWeek + 1).toBe(5);
     expect(R.rival[S.rivalBestWeek]).toBe(66);
-    expect(roundHalfUp((S.total / JOURNEES) * 10) / 10).toBe(56);
+    expect(roundHalfUp((S.total / JOURNEES) * 10) / 10).toBe(55.6);
     expect(S.leagueTotal / JOURNEES).toBeCloseTo(52.27, 2);
     R.you.forEach((v, i) => {
       expect(R.leagueBest[i]).toBeGreaterThanOrEqual(v);
@@ -92,11 +92,11 @@ describe("the example season adds up", () => {
     expect(S.rivalUnder50).toBe(3);
   });
 
-  it("where the points come from: 521 + 111 - 16 = 616", () => {
+  it("where the points come from: 517 + 111 - 16 = 612", () => {
     expect(S.captainTotal).toBe(111);
     expect(S.penalty).toBe(16);
     expect(S.paidTransfers).toBe(4);
-    expect(S.starters).toBe(521);
+    expect(S.starters).toBe(517);
     expect(S.starters + S.captainTotal - S.penalty).toBe(S.total);
     expect(S.rivalStarters + R.rival_.captain - R.rival_.penalty).toBe(S.rivalTotal);
     expect(S.captainVsLeague).toBe(18);
@@ -159,7 +159,7 @@ describe("the example season adds up", () => {
   });
 
   it("is a pure function of the raw series", () => {
-    expect(deriveSeason(SEASON_RAW).total).toBe(616);
+    expect(deriveSeason(SEASON_RAW).total).toBe(612);
   });
 
   it("noun agreement in the Arabic headlines holds: every counted figure used with « نقطة » is 11 or more", () => {

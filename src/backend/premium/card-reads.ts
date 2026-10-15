@@ -2,7 +2,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { memberCardSchema } from "@/backend/manager-card/contracts";
+import { CARD_EDITIONS, memberCardSchema } from "@/backend/manager-card/contracts";
 import { ManagerCardError, mapManagerCardError } from "@/backend/manager-card/errors";
 import { TIER_CODES } from "@/components/manager-card/types";
 import { getManagerCardApi } from "@/integrations/supabase/v2-client";
@@ -14,6 +14,7 @@ import { getManagerCardApi } from "@/integrations/supabase/v2-client";
  *   api.get_card_duel(p_other_team, p_season)   « Face-à-face+ »
  *   api.set_card_history_visibility(p_visible)  show or hide my history to league mates
  *   api.get_my_card_history_visibility()        the current value
+ *   api.choose_card_design(p_code)              the member's card edition (migration 20261013100100)
  *
  * Every answer is one of three shapes, checked in this order by the database:
  *   - `{ available: false }`            switched off (BotolaGO+ off, the Manager Card reads off, or
@@ -241,6 +242,21 @@ export const historyVisibilityResponseSchema = z.union([
   z.object({ available: z.literal(true), visible: z.boolean() }),
 ]);
 
+/**
+ * `api.choose_card_design`: `chosenEdition` is what the member picked, `edition` what their card
+ * shows now (a paid edition shows only while they hold BotolaGO+). `{ available: false }` while
+ * BotolaGO+ is off. A paid edition without BotolaGO+ is refused (`PT403 premium_required`).
+ */
+export const chooseDesignResponseSchema = z.union([
+  off,
+  z.object({
+    available: z.literal(true),
+    chosenEdition: z.enum(CARD_EDITIONS),
+    edition: z.enum(CARD_EDITIONS),
+  }),
+]);
+export type ChooseDesignResponse = z.infer<typeof chooseDesignResponseSchema>;
+
 export type CareerResponse = z.infer<typeof careerResponseSchema>;
 export type CareerMember = z.infer<typeof careerMemberSchema>;
 export type CareerWeek = z.infer<typeof careerWeekSchema>;
@@ -272,6 +288,8 @@ export interface PremiumCardReadsRepository {
     context: RepositoryContext,
   ): Promise<HistoryVisibilityResponse>;
   historyVisibility(context: RepositoryContext): Promise<HistoryVisibilityResponse>;
+  /** A member picks the edition their card is drawn in; `standard` is always allowed. */
+  chooseCardDesign(code: string, context: RepositoryContext): Promise<ChooseDesignResponse>;
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +390,14 @@ export class SupabasePremiumCardReadsRepository implements PremiumCardReadsRepos
     return read(
       this.client().rpc("get_my_card_history_visibility"),
       historyVisibilityResponseSchema,
+      context,
+    );
+  }
+
+  chooseCardDesign(code: string, context: RepositoryContext): Promise<ChooseDesignResponse> {
+    return read(
+      this.client().rpc("choose_card_design", { p_code: code }),
+      chooseDesignResponseSchema,
       context,
     );
   }
