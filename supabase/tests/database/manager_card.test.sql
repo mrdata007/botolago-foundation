@@ -1673,10 +1673,16 @@ select extensions.ok(
       -- (premium_card_reads.test.sql checks that), and nothing computes from them.
       -- The league context read (20261014150000) sets the same figures against a
       -- league: display only, it writes nothing and nothing computes from it.
+      -- The BotolaGO+ trophies (20261015150100, 20261015150200) read the card's
+      -- rating and tier to award and show the « Paliers » trophies: they only read
+      -- the card, write only their own trophy tables, and no prize, ranking or
+      -- Fantasy rule reads a trophy.
       and p.proname <> all (array[
         'get_my_card_career', 'get_card_duel', 'card_week_rows', 'card_captain_rows',
         'card_transfer_rows', 'card_reads_mode', 'card_resolve_season',
-        'get_card_league_context', 'card_league_context'])
+        'get_card_league_context', 'card_league_context',
+        'trophies_evaluate_season', 'trophies_evaluate_user', 'trophies_tick',
+        'get_my_trophies'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(
