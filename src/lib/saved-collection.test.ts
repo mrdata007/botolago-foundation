@@ -4,13 +4,19 @@ import { QueryClient } from "@tanstack/react-query";
 import { forgetAccountQueries, queryKeyNamesAccount } from "@/auth/account-queries";
 import {
   focusTargetAfterRemoval,
+  mergeSavedSnapshot,
   removedSavedIds,
+  resolveAskedToggle,
   savedCollectionEnabled,
   savedCollectionPhase,
   savedCollectionQueryKey,
   savedEntryId,
+  planSavedToggle,
+  savedStateOf,
   visibleSavedEntries,
+  withSavedState,
   type SavedEntry,
+  type SavedIdsSnapshot,
 } from "./saved-collection";
 import type { Article } from "@/types/domain";
 
@@ -197,5 +203,127 @@ describe("a row removed under the reader's focus", () => {
   test("with no row left, there is no target (the container takes focus)", () => {
     expect(focusTargetAfterRemoval(["a"], [], "a")).toBeNull();
     expect(focusTargetAfterRemoval(before, ["a"], "z")).toBeNull();
+  });
+});
+
+/**
+ * An account with more than 2,000 saves: the app holds only the newest 2,000
+ * ids (`complete: false`). Nothing may read a missing id as "not saved".
+ */
+describe("a reader with more than 2,000 saves", () => {
+  const partial = (overrides: Partial<SavedIdsSnapshot> = {}): SavedIdsSnapshot => ({
+    ids: ["new-1", "new-2"],
+    complete: false,
+    removed: [],
+    ...overrides,
+  });
+
+  test("a loaded page is never filtered by the partial id set", () => {
+    // "old-1" is saved (the server listed it) but lies beyond the 2,000 ids.
+    const entries = [row("new-1"), row("old-1"), row("old-2")];
+    const snapshot = partial();
+    const shown = visibleSavedEntries(entries, snapshot.ids, true, snapshot);
+    expect(shown.map(savedEntryId)).toEqual(["new-1", "old-1", "old-2"]);
+  });
+
+  test("only what the reader unsaved this session leaves the page", () => {
+    const entries = [row("new-1"), row("old-1"), row("old-2")];
+    const snapshot = partial({ removed: ["old-1"] });
+    const shown = visibleSavedEntries(entries, snapshot.ids, true, snapshot);
+    expect(shown.map(savedEntryId)).toEqual(["new-1", "old-2"]);
+  });
+
+  test("a complete set still filters, as before", () => {
+    const entries = [row("a"), row("b")];
+    const shown = visibleSavedEntries(entries, ["a"], true, {
+      complete: true,
+      removed: [],
+    });
+    expect(shown.map(savedEntryId)).toEqual(["a"]);
+  });
+
+  test("a story outside the partial set is not called unsaved", () => {
+    expect(savedStateOf(partial(), "old-1")).toBeNull();
+    expect(savedStateOf(partial(), "old-1", true)).toBe(true);
+    expect(savedStateOf(partial(), "old-1", false)).toBe(false);
+    expect(savedStateOf(partial(), "new-1", false)).toBe(true);
+  });
+
+  test("a complete set answers for every story", () => {
+    const whole: SavedIdsSnapshot = { ids: ["a"], complete: true, removed: [] };
+    expect(savedStateOf(whole, "a")).toBe(true);
+    expect(savedStateOf(whole, "b")).toBe(false);
+    expect(savedStateOf(whole, "b", true)).toBe(false);
+  });
+
+  test("a story unsaved this session stays unsaved even if its card says saved", () => {
+    expect(savedStateOf(partial({ removed: ["old-1"] }), "old-1", true)).toBe(false);
+  });
+
+  test("a tap on a saved story beyond the set asks the server instead of saving again", () => {
+    expect(planSavedToggle(partial(), "old-1")).toBe("ask");
+    expect(planSavedToggle(partial(), "new-1")).toBe("unsave");
+    // Unsaved this session, the next tap saves it.
+    expect(planSavedToggle(partial({ removed: ["old-1"] }), "old-1")).toBe("save");
+  });
+
+  test("with the whole list, the ids decide; before they are read, the server does", () => {
+    const whole: SavedIdsSnapshot = { ids: ["a"], complete: true, removed: [] };
+    expect(planSavedToggle(whole, "a")).toBe("unsave");
+    expect(planSavedToggle(whole, "b")).toBe("save");
+    expect(planSavedToggle(undefined, "a")).toBe("ask");
+  });
+
+  test("unsaving a story beyond the set remembers it; saving it again forgets that", () => {
+    const unsaved = withSavedState(partial(), "old-1", false);
+    expect(unsaved.removed).toEqual(["old-1"]);
+    expect(unsaved.ids).toEqual(["new-1", "new-2"]);
+    const saved = withSavedState(unsaved, "old-1", true);
+    expect(saved.removed).toEqual([]);
+    expect(saved.ids).toContain("old-1");
+  });
+
+  test("a complete set keeps no removal list", () => {
+    const whole: SavedIdsSnapshot = { ids: ["a", "b"], complete: true, removed: [] };
+    expect(withSavedState(whole, "a", false)).toEqual({ ids: ["b"], complete: true, removed: [] });
+  });
+
+  test("a fresh read keeps this session's removals while the set is partial", () => {
+    const merged = mergeSavedSnapshot(
+      { ids: ["new-1", "old-9"], complete: false },
+      partial({ removed: ["old-1", "old-9"] }),
+    );
+    // old-9 is listed again by the server (saved elsewhere since), old-1 is not.
+    expect(merged.removed).toEqual(["old-1"]);
+    expect(
+      mergeSavedSnapshot({ ids: [], complete: true }, partial({ removed: ["x"] })).removed,
+    ).toEqual([]);
+  });
+});
+
+describe("a tap that had to ask the server", () => {
+  test("a bookmark drawn unsaved on a story the server holds as saved writes nothing", () => {
+    // shown = false ("Enregistrer"), server = true: the reader wants it saved
+    // and it is. An unsave here would be the reverse of the tap.
+    expect(resolveAskedToggle(false, true)).toEqual({ write: false });
+  });
+
+  test("a bookmark drawn saved on a story the server holds as unsaved writes nothing", () => {
+    expect(resolveAskedToggle(true, false)).toEqual({ write: false });
+  });
+
+  test("when the display and the server agree, the tap flips it", () => {
+    expect(resolveAskedToggle(true, true)).toEqual({ write: true, saved: true });
+    expect(resolveAskedToggle(false, false)).toEqual({ write: true, saved: false });
+  });
+
+  test("a failed write puts back that one story and leaves the others as they are", () => {
+    // Two unsaves of stories beyond the set; the first one fails.
+    let snapshot: SavedIdsSnapshot = { ids: ["n"], complete: false, removed: [] };
+    snapshot = withSavedState(snapshot, "old-1", false);
+    snapshot = withSavedState(snapshot, "old-2", false);
+    const rolledBack = withSavedState(snapshot, "old-1", true);
+    expect(rolledBack.removed).toEqual(["old-2"]);
+    expect(rolledBack.ids).toContain("old-1");
   });
 });

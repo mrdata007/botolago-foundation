@@ -59,6 +59,116 @@ export function savedCollectionEnabled(
 }
 
 /**
+ * The reader's saved story ids, as the app holds them.
+ *
+ * The server pages the list at 50 and the app reads at most 2,000 ids
+ * (`collectSavedIds`). `complete` says whether `ids` is the whole list. When it
+ * is not (the account has more than 2,000 saves), `ids` is only the newest
+ * 2,000, and the absence of an id from it proves nothing: the story may well be
+ * saved. Everything that reads the set must ask `savedStateOf` rather than
+ * `ids.includes`.
+ *
+ * `removed` (partial sets only) holds the stories the reader has unsaved in
+ * this session that the partial set never listed, so they stay unsaved on
+ * screen instead of falling back to what the page was loaded with.
+ */
+export interface SavedIdsSnapshot {
+  ids: string[];
+  complete: boolean;
+  removed: string[];
+}
+
+/**
+ * Whether one story is saved: `true`, `false`, or `null` when this snapshot
+ * cannot tell (the set is partial, the story is not in it, and the caller has
+ * no server answer for it). `serverSaved` is the answer that came with the
+ * story itself (`isSaved` on a card or the article page), read by the server.
+ */
+export function savedStateOf(
+  snapshot: SavedIdsSnapshot | undefined,
+  id: string,
+  serverSaved?: boolean,
+): boolean | null {
+  if (!snapshot) return serverSaved ?? null;
+  if (snapshot.ids.includes(id)) return true;
+  if (snapshot.complete) return false;
+  if (snapshot.removed.includes(id)) return false;
+  return serverSaved ?? null;
+}
+
+/**
+ * What a tap on a story's bookmark does, from what the app knows:
+ *
+ *   - `unsave` / `save`: the app knows the story's state (the ids are the whole
+ *     list, or name the story, or the reader unsaved it this session), so the
+ *     tap flips it;
+ *   - `ask`: it does not (the reader has more than 2,000 saves and the story is
+ *     outside the newest 2,000, or the ids are not read yet). The caller must
+ *     ask the server about that story first; guessing "not saved" would send a
+ *     save for a story the reader meant to remove.
+ */
+export function planSavedToggle(
+  snapshot: SavedIdsSnapshot | undefined,
+  id: string,
+): "save" | "unsave" | "ask" {
+  if (snapshot?.ids.includes(id)) return "unsave";
+  if (snapshot?.complete || snapshot?.removed.includes(id)) return "save";
+  return "ask";
+}
+
+/**
+ * What to do once the server has answered for a story the app could not decide.
+ * The reader tapped the bookmark as it was drawn (`shown`), meaning "the
+ * opposite of that". If the server already holds the opposite, there is
+ * nothing to write: sending the flip of the server's answer would do the
+ * reverse of the tap (an "Enregistrer" button on a saved story, tapped, would
+ * unsave it). The caller records `serverSaved` so the button shows the truth.
+ * Otherwise the write is the flip of the server's answer.
+ */
+export function resolveAskedToggle(
+  shown: boolean,
+  serverSaved: boolean,
+): { write: false } | { write: true; saved: boolean } {
+  if (serverSaved === !shown) return { write: false };
+  return { write: true, saved: serverSaved };
+}
+
+/** The snapshot after `id` is saved (`nowSaved`) or unsaved. */
+export function withSavedState(
+  snapshot: SavedIdsSnapshot,
+  id: string,
+  nowSaved: boolean,
+): SavedIdsSnapshot {
+  if (nowSaved) {
+    return {
+      ...snapshot,
+      ids: [...new Set([...snapshot.ids, id])],
+      removed: snapshot.removed.filter((value) => value !== id),
+    };
+  }
+  return {
+    ...snapshot,
+    ids: snapshot.ids.filter((value) => value !== id),
+    removed: snapshot.complete ? [] : [...new Set([...snapshot.removed, id])],
+  };
+}
+
+/**
+ * A fresh read of the ids, keeping what the reader unsaved this session while
+ * the set is still partial (the server agrees by now, but the stories that came
+ * with the page still say "saved"). Ids the fresh read lists are dropped from
+ * `removed`.
+ */
+export function mergeSavedSnapshot(
+  fresh: { ids: string[]; complete: boolean },
+  previous: SavedIdsSnapshot | undefined,
+): SavedIdsSnapshot {
+  if (fresh.complete) return { ...fresh, removed: [] };
+  const listed = new Set(fresh.ids);
+  return { ...fresh, removed: (previous?.removed ?? []).filter((id) => !listed.has(id)) };
+}
+
+/**
  * The rows to draw: the fetched entries minus the stories the reader has
  * unsaved since. The collection is fetched in pages and the saved-ids set is
  * updated the instant a toggle is made (optimistically, and rolled back if the
@@ -67,13 +177,23 @@ export function savedCollectionEnabled(
  *
  * Until the ids are known (`idsKnown` false) nothing is hidden: a list that
  * flashed empty while its own count loaded would read as "you saved nothing".
+ *
+ * A partial id set (`partial`, the account has more than 2,000 saves) never
+ * filters a loaded page: a story missing from it may be saved, and the server
+ * list this page came from is the truth. Only the stories unsaved here are
+ * hidden.
  */
 export function visibleSavedEntries(
   entries: readonly SavedEntry[],
   savedIds: readonly string[],
   idsKnown: boolean,
+  partial?: { complete: boolean; removed: readonly string[] },
 ): SavedEntry[] {
   if (!idsKnown) return [...entries];
+  if (partial && !partial.complete) {
+    const removed = new Set(partial.removed);
+    return entries.filter((entry) => !removed.has(savedEntryId(entry)));
+  }
   const saved = new Set(savedIds);
   return entries.filter((entry) => saved.has(savedEntryId(entry)));
 }

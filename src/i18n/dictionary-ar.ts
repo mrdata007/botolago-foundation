@@ -164,6 +164,8 @@ export const ar = {
   "news.saved.save_error": "تعذّر حفظ هذا المقال حاليًا. حاول مجددًا.",
   "news.saved.removed_announce": "تمت إزالة المقال من مقالاتك المحفوظة.",
   "news.saved.count_unknown": "العدد غير معروف",
+  "news.saved.count_over": "أكثر من {count}",
+  "news.saved.over_limit": "لديك أكثر من {count} مقال محفوظ. تظهر المقالات الأحدث أولًا.",
   "news.empty_category": "لا توجد مقالات في هذا القسم حاليًا.",
   "news.view_all": "عرض الكل",
   "news.breaking": "عاجل",

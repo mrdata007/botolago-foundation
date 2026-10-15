@@ -277,7 +277,12 @@ function ArticlePage() {
           onBack={goBack}
           actions={
             <>
-              <SavedButton articleId={article.id} variant="soft" />
+              <SavedButton
+                articleId={article.id}
+                serverSaved={article.isSaved}
+                language={article.language}
+                variant="soft"
+              />
               <UiIconButton aria-label={t("article.share")} onClick={share}>
                 <Share2 aria-hidden />
               </UiIconButton>
