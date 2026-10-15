@@ -32,6 +32,7 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildGameweekRecap } from "@/services/gameweek-recap";
+import { resolveRoundPlayers, roundRoles } from "@/services/points-round";
 import {
   buildPointsViewModel,
   buildServerPointsViewModel,
@@ -219,6 +220,9 @@ function PointsBody() {
       return null;
     }
   }, [team, gw, resultQ.data, players, lifecycle, currentGw, isCloud]);
+  // FANT-07: the players of THIS round, as the server describes them. Today's
+  // buying pool only fills in what the result does not carry (photo, price).
+  const round = useMemo(() => resolveRoundPlayers(players, vm?.breakdown ?? []), [players, vm]);
 
   if (screen.phase !== "ready" || !team || gw === null) {
     return (
@@ -242,7 +246,8 @@ function PointsBody() {
     gameweeksQ.data && gameweeksQ.data.length > 0 ? gameweeksQ.data : [currentGw ?? 1];
   const min = Math.min(...available);
   const max = Math.max(...available);
-  const playerOf = (id: string) => players.find((p) => p.id === id);
+  const roster = round.players;
+  const playerOf = (id: string) => roster.find((p) => p.id === id);
   const clubOf = (id: string) => findClub(clubs, id);
   const posOf = (id: string) => playerOf(id)?.position;
   const breakdown = new Map((vm?.breakdown ?? []).map((b) => [b.playerId, b]));
@@ -259,8 +264,12 @@ function PointsBody() {
         .filter((s) => s.slot >= 12)
         .sort((a, b) => a.slot - b.slot)
         .map((s) => s.playerId);
-  const captainId = vm?.effectiveCaptainId ?? team.squad.find((s) => s.isCaptain)?.playerId ?? null;
-  const viceId = team.squad.find((s) => s.isViceCaptain)?.playerId ?? null;
+  // FANT-08 / ASTRA-01: a round with a result shows its own roles; an effective
+  // captain of null stays null. Only a round with no result reads the squad.
+  // The armband is drawn on the effective captain, and on the captain the
+  // manager chose while nobody carries it yet (a pending round). Points and
+  // the "effective captain" line keep the server's answer, null included.
+  const { captainId, badgeCaptainId, viceId } = roundRoles(vm, team);
   const count = (pos: string) => startingIds.filter((id) => posOf(id) === pos).length;
   const formationKey = `${count("DEF")}-${count("MID")}-${count("FWD")}` as FormationKey;
   const cfg = FORMATIONS[formationKey] ?? FORMATIONS[team.formation];
@@ -285,8 +294,8 @@ function PointsBody() {
         player={p}
         club={clubOf(p.clubId)}
         sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
-        captain={id === captainId}
-        vice={id === viceId && id !== captainId}
+        captain={id === badgeCaptainId}
+        vice={id === viceId && id !== badgeCaptainId}
         size={size}
       />
     );
@@ -303,7 +312,7 @@ function PointsBody() {
     ...startingIds.map((id, i) => ({
       playerId: id,
       slot: i + 1,
-      isCaptain: id === captainId,
+      isCaptain: id === badgeCaptainId,
       isViceCaptain: id === viceId,
     })),
     ...benchIds.map((id, i) => ({ playerId: id, slot: 12 + i })),
@@ -356,7 +365,7 @@ function PointsBody() {
   const autoSubs = resultQ.data ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
   const nameOf = (id: string) => {
     const player = playerOf(id);
-    return player ? tr(player.name) : id;
+    return player ? tr(player.name) : t("fantasy.points.unknown_player");
   };
   const captainName = captainId ? nameOf(captainId) : none;
   // "Ma journée": finalized server results only (never mock, never provisional).
@@ -401,6 +410,11 @@ function PointsBody() {
           {t("fantasy.scoring.incrementalPolicy")}
         </p>
       )}
+      {vm && round.unresolvedIds.length > 0 ? (
+        <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
+          {t("fantasy.points.unresolved_players")}
+        </p>
+      ) : null}
       <FplStatBar
         hero
         items={[
@@ -456,7 +470,7 @@ function PointsBody() {
         <SquadListTable
           className="mx-[var(--ui-gutter)] mt-3"
           squad={squadForList}
-          players={players}
+          players={roster}
           clubs={clubs}
           renderDetail={(player) => {
             const events = breakdown.get(player.id)?.events ?? [];
@@ -527,10 +541,21 @@ function PointsBody() {
               // BG-0071: a dash, not 0.0, while no gameweek has scored. The
               // key is named inline, not through `none`, because the guard in
               // fantasy-runtime.test.ts reads the source line.
+              // (A player today's pool no longer offers arrives with form null.)
               render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
             },
-            { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
-            { key: "sel", label: t("fpl.selected"), render: (p) => `${nf.format(p.ownership)}%` },
+            {
+              key: "price",
+              label: t("fpl.current_price"),
+              // A player today's pool no longer offers has no current price.
+              render: (p) => (round.missingFromCatalogIds.has(p.id) ? none : nf.format(p.price)),
+            },
+            {
+              key: "sel",
+              label: t("fpl.selected"),
+              render: (p) =>
+                round.missingFromCatalogIds.has(p.id) ? none : `${nf.format(p.ownership)}%`,
+            },
             {
               key: "pts",
               label: `GW${gw}`,

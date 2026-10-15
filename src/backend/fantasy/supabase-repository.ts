@@ -281,10 +281,14 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     leagueId: string,
     gameweekId: string | null,
     _context: RepositoryContext,
+    cursor?: { readonly rank: number; readonly teamId: string } | null,
   ) {
     const { data, error } = await getFantasyApi().rpc("fantasy_league_standings", {
       p_league_id: leagueId,
       p_gameweek_id: gameweekId ?? undefined,
+      // FANT-03: the RPC pages by keyset (rank, team id); both or neither.
+      p_after_rank: cursor?.rank,
+      p_after_team_id: cursor?.teamId,
       p_limit: 100,
     });
     check(error);

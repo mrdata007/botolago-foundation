@@ -1,4 +1,5 @@
 import type { FantasyHubDto } from "@/backend/fantasy/contracts";
+import { forgetBoardReaders } from "./fantasy-board-reader";
 
 /**
  * A Fantasy screen asks for its availability, gameweek and players at the
@@ -25,6 +26,8 @@ let shared: { at: number; identity: string; read: Promise<FantasyHubDto> } | nul
 
 export function forgetSharedFantasyHub(): void {
   shared = null;
+  // The board reads held for the account that just left (or wrote) go with it.
+  forgetBoardReaders();
 }
 
 export function shareFantasyHub(

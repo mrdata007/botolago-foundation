@@ -73,6 +73,14 @@ export interface Article {
 
 export type MatchStatus = "scheduled" | "live" | "finished" | "postponed";
 
+/**
+ * Why a fixture in the domain `postponed` group is not being played as
+ * scheduled. The group keeps these four together for filtering (none is live,
+ * scheduled or finished); this is the provider's own word, which the label,
+ * the notice and the structured data each need.
+ */
+export type MatchOffStatus = "postponed" | "suspended" | "cancelled" | "abandoned";
+
 export interface Match {
   id: string;
   gameweek: number;
@@ -119,6 +127,13 @@ export interface Match {
    * to come leaves it out.
    */
   calledOff?: boolean;
+  /**
+   * Which of the four provider statuses behind a domain `postponed` this is.
+   * Set by the presenter that holds the provider status; absent where the
+   * source gives none (the mock fixtures), when `matchOffStatus` reads a
+   * domain `postponed` as plainly postponed. Never set on any other status.
+   */
+  offStatus?: MatchOffStatus;
   /**
    * ISO. When the stored fixture last changed: the later of the provider's own
    * change time and the moment our row was last written. It is how old the

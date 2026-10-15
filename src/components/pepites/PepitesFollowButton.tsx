@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { requireAuthStep } from "@/auth/second-factor";
 import { showStepUpNotice } from "@/auth/step-up-notice";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { PepitesError } from "@/backend/pepites/errors";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
@@ -171,12 +172,12 @@ function FollowGuestSheet({
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const returnSearch = useAuthReturnSearch();
   const navigating = useRef(false);
   const go = (to: "/auth/login" | "/auth/register") => {
     navigating.current = true;
     onOpenChange(false);
-    void navigate({ to, search: { next: pathname } });
+    void navigate({ to, search: returnSearch });
   };
   return (
     <UiSheet

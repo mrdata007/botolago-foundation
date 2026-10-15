@@ -33,6 +33,7 @@ import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { matchBucket } from "@/lib/match-bucket";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
@@ -127,14 +128,6 @@ const filterTabs: { key: StatusFilter; label: TranslationKey }[] = [
 ];
 
 const EMPTY_SEASONS: readonly FootballSeason[] = [];
-
-/** Groups a match into a display bucket driven purely by domain status. */
-function bucketOf(m: Match): "live" | "upcoming" | "finished" | "other" {
-  if (m.status === "live") return "live";
-  if (m.status === "scheduled") return "upcoming";
-  if (m.status === "finished") return "finished";
-  return "other"; // postponed etc. — rendered under upcoming for the selected date
-}
 
 /**
  * Day identity on this page is the competition's, not the viewer's
@@ -329,17 +322,18 @@ function MatchesPage() {
   const dayCounts = useMemo(() => {
     return dayMatches.reduce(
       (acc, m) => {
-        const b = bucketOf(m);
+        const b = matchBucket(m);
         if (b === "live") acc.live++;
         else if (b === "upcoming" || b === "other") acc.upcoming++;
         else if (b === "finished") acc.finished++;
+        else acc.calledOff++;
         return acc;
       },
-      { live: 0, upcoming: 0, finished: 0 },
+      { live: 0, upcoming: 0, finished: 0, calledOff: 0 },
     );
   }, [dayMatches]);
 
-  const totalDay = dayCounts.live + dayCounts.upcoming + dayCounts.finished;
+  const totalDay = dayCounts.live + dayCounts.upcoming + dayCounts.finished + dayCounts.calledOff;
 
   // `isPending`, not `isLoading`: the day's query waits for the seasons, and
   // a query that is waiting has no data but is not loading either.
@@ -371,20 +365,23 @@ function MatchesPage() {
   const resultsDayLabel = resultsDay ? dayLabel(resultsDay) : null;
 
   const visibleByBucket = useMemo(() => {
-    const buckets: Record<"live" | "upcoming" | "finished", Match[]> = {
+    const buckets: Record<"live" | "upcoming" | "finished" | "calledOff", Match[]> = {
       live: [],
       upcoming: [],
       finished: [],
+      calledOff: [],
     };
     for (const m of dayMatches) {
-      const b = bucketOf(m);
+      const b = matchBucket(m);
       if (b === "live") buckets.live.push(m);
       else if (b === "finished") buckets.finished.push(m);
+      else if (b === "called_off") buckets.calledOff.push(m);
       else buckets.upcoming.push(m);
     }
     // Sort each bucket for deterministic, editorial order.
     buckets.live.sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
     buckets.upcoming.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+    buckets.calledOff.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
     buckets.finished.sort((a, b) => b.kickoff.localeCompare(a.kickoff));
     return buckets;
   }, [dayMatches]);
@@ -399,6 +396,7 @@ function MatchesPage() {
   const fixtures = [
     ...(filter === "all" || filter === "live" ? visibleByBucket.live : []),
     ...(filter === "all" || filter === "upcoming" ? visibleByBucket.upcoming : []),
+    ...(filter === "all" ? visibleByBucket.calledOff : []),
   ];
   const results = filter === "all" || filter === "finished" ? visibleByBucket.finished : [];
 
