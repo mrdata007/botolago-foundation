@@ -60,7 +60,7 @@ export function PlayerRow({
       {club && <ClubCrest club={club} size="sm" />}
       <div className="min-w-0 flex-1">
         <div className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>{tr(player.name)}</div>
-        <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
+        <div className={cn("[overflow-wrap:anywhere]", ui.text.micro, ui.tone.muted)}>
           {t(`player.pos.${player.position}` as TranslationKey)} • {t("fantasy.form")}{" "}
           {player.form === null ? t("fantasy.stat.none") : nf.format(player.form)}
         </div>

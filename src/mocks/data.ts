@@ -372,7 +372,7 @@ export const gameweek: Gameweek = {
   isCurrent: true,
   averagePoints: 46,
   highestPoints: 92,
-  chipActive: { fr: "Aucun jeton", ar: "بدون رقاقة" },
+  chipActive: { fr: "Aucun jeton", ar: "بدون جوكر" },
 };
 
 export const fantasySummary: FantasySummary = {
