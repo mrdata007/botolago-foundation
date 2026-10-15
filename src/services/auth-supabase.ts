@@ -418,7 +418,9 @@ export class SupabaseAuthService implements AuthService {
         data: {
           display_name: input.fullName.trim(),
           username: input.username.trim(),
-          preferred_language: input.language,
+          // Only an explicit choice is sent; without one the database starts
+          // the account in French (the column default and the sign-up trigger).
+          ...(input.language ? { preferred_language: input.language } : {}),
         },
       },
     });

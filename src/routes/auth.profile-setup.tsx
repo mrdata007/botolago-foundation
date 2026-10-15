@@ -16,7 +16,11 @@ import {
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
 import { authFieldClass, authFieldIconClass } from "@/components/auth/auth-classes";
-import { setupStepFromSearch } from "@/components/auth/account-model";
+import {
+  notificationLanguageToSave,
+  setupStepFromSearch,
+  shownNotificationLanguage,
+} from "@/components/auth/account-model";
 import { isFantasyCreateNext } from "@/components/auth/fantasy-create-path";
 import { ui, UiButton, UiCheckbox, UiChip, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -63,7 +67,7 @@ const CardSetupSlot = lazy(() =>
 );
 
 function ProfileSetupPage() {
-  const { t, tr, lang, setLanguage } = useI18n();
+  const { t, tr, lang } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
   const { next = "/", step: initialStep } = Route.useSearch();
@@ -91,7 +95,12 @@ function ProfileSetupPage() {
   // turning the switch on is when the phone asks permission, so the choice is
   // not held back until "Terminer".
   const push = useNativePushSwitch();
-  const [chosenLang, setChosenLang] = useState<Language>(lang);
+  // The notification language: what the ACCOUNT has stored (French for a new
+  // account), until the person presses the other one. It is never seeded from,
+  // and never follows, the language this device shows, and the step never
+  // changes the device's language (Profile's language row does that).
+  const [pickedLang, setPickedLang] = useState<Language | null>(null);
+  const chosenLang = shownNotificationLanguage(user?.language, pickedLang);
   const [submitting, setSubmitting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -109,14 +118,6 @@ function ProfileSetupPage() {
       setPrefs(user.notifications);
     }
   }, [user]);
-
-  // The language step starts from — and follows — the language the app is
-  // showing, not the one last saved on the account. Profile's language row
-  // changes the app only, so seeding from the account made "Terminer" or
-  // "Passer" (both save) flip an Arabic reader back to French.
-  useEffect(() => {
-    setChosenLang(lang);
-  }, [lang]);
 
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -156,14 +157,15 @@ function ProfileSetupPage() {
     // "onboarding complete"; read before the save makes it complete.
     const firstSetup = user?.profileComplete === false;
     setSubmitting(true);
-    if (chosenLang !== lang) setLanguage(chosenLang);
     const res = await authService.completeProfile({
       displayName,
       username,
       avatarDataUrl: avatar,
       favoriteClubId,
       notifications: prefs,
-      language: chosenLang,
+      // Only a language the person pressed, and only when it differs from the
+      // stored one: any other save leaves the account's language untouched.
+      language: notificationLanguageToSave(user?.language, pickedLang),
     });
     if (!res.ok) {
       setSubmitting(false);
@@ -505,20 +507,18 @@ function ProfileSetupPage() {
                   key={l}
                   lang={l}
                   selected={chosenLang === l}
-                  onClick={() => setChosenLang(l)}
+                  onClick={() => setPickedLang(l)}
                   className={cn("w-full justify-center", ui.text.bodyStrong)}
                 >
                   {l === "fr" ? "Français" : "العربية"}
                 </UiChip>
               ))}
             </div>
-            {/* What SAVING does (audit 2026-10-14, LOC-06): the choice, which
-                starts from the language the app is showing on this device and
-                not from the account's stored one, becomes the account's
-                notification language and the app's language here. The label is
-                therefore neutral: it does not claim to show the account's
-                current language. The profile page's language row, by
-                contrast, changes the app only. */}
+            {/* What this choice is (owner decision 2026-10-15, French by
+                default): the language of the account's notifications. It
+                shows the stored value, French for a new account, and changes
+                it only when pressed. It does not touch the app's language on
+                this device; Profile's language row does that, and only that. */}
             <p id="setupLanguageHint" className={cn("mt-1.5", ui.text.meta, ui.tone.muted)}>
               {t("auth.setup.language_hint")}
             </p>

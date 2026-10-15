@@ -147,10 +147,14 @@ describe("Profile (A-Profile)", () => {
 describe("the setup wizard, reached again from Profile → Notifications", () => {
   const wizard = code("src/routes/auth.profile-setup.tsx");
 
-  it("starts its language step from the app's language, so finishing never flips it", () => {
-    // Profile's language row changes the app only; seeding from the account
-    // made "Terminer"/"Passer" (both save and apply) revert an Arabic reader.
-    expect(wizard).not.toContain("setChosenLang(user.language)");
-    expect(wizard).toMatch(/useEffect\(\(\) => \{\s*setChosenLang\(lang\);\s*\}, \[lang\]\);/);
+  it("starts its language step from the stored account language, so finishing flips neither", () => {
+    // Owner decision 2026-10-15 (replaces the audit 2026-10-14 rule that seeded
+    // it from the device): the step shows the account's stored notification
+    // language (French for a new one). Profile's language row changes the app
+    // only, and this step never changes the app: seeding from the device made
+    // "Terminer"/"Passer" write an Arabic device's language to the account.
+    expect(wizard).toMatch(/shownNotificationLanguage\(user\?\.language, pickedLang\)/);
+    expect(wizard).not.toMatch(/setChosenLang/);
+    expect(wizard).not.toMatch(/setLanguage/);
   });
 });

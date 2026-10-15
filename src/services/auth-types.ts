@@ -104,7 +104,13 @@ export interface RegisterInput {
   username: string;
   email: string;
   password: string;
-  language: Language;
+  /**
+   * The notification language the person CHOSE for the new account. Leave it
+   * out when they did not: the account then starts in French (owner decision,
+   * 2026-10-15), whatever language the device shows. The sign-up form has no
+   * language question, so nothing sends it today.
+   */
+  language?: Language;
   next?: string;
 }
 
