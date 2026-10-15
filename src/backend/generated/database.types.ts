@@ -814,6 +814,7 @@ export type Database = {
         Returns: Json
       }
       choose_card_design: { Args: { p_code: string }; Returns: Json }
+      choose_card_frame: { Args: { p_code: string }; Returns: Json }
       claim_guest_predictions: { Args: { p_items: Json }; Returns: Json }
       complete_football_ingestion: {
         Args: {
@@ -1294,6 +1295,8 @@ export type Database = {
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_premium: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      get_my_trophies: { Args: { p_season?: string }; Returns: Json }
+      get_trophy_card_frames: { Args: { p_team_ids: string[] }; Returns: Json }
       home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
         Args: {
@@ -2857,6 +2860,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      card_frame_choices: {
+        Row: {
+          chosen_at: string
+          frame_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chosen_at?: string
+          frame_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chosen_at?: string
+          frame_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_frame_choices_frame_code_fkey"
+            columns: ["frame_code"]
+            isOneToOne: false
+            referencedRelation: "card_frames"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "card_frame_choices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_frames: {
+        Row: {
+          code: string
+          created_at: string
+          label_ar: string
+          label_fr: string
+          sort_order: number
+          status: string
+          trophy_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          label_ar: string
+          label_fr: string
+          sort_order?: number
+          status?: string
+          trophy_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          label_ar?: string
+          label_fr?: string
+          sort_order?: number
+          status?: string
+          trophy_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_frames_trophy_code_fkey"
+            columns: ["trophy_code"]
+            isOneToOne: true
+            referencedRelation: "trophy_catalog"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       card_history_visibility: {
         Row: {
@@ -8702,6 +8782,106 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trophies_earned: {
+        Row: {
+          earned_at: string
+          facts: Json
+          fantasy_season_id: string | null
+          gameweek_seq: number | null
+          id: string
+          rules_version: number
+          source_published_at: string
+          trophy_code: string
+          user_id: string
+        }
+        Insert: {
+          earned_at?: string
+          facts?: Json
+          fantasy_season_id?: string | null
+          gameweek_seq?: number | null
+          id?: string
+          rules_version: number
+          source_published_at: string
+          trophy_code: string
+          user_id: string
+        }
+        Update: {
+          earned_at?: string
+          facts?: Json
+          fantasy_season_id?: string | null
+          gameweek_seq?: number | null
+          id?: string
+          rules_version?: number
+          source_published_at?: string
+          trophy_code?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trophies_earned_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trophies_earned_trophy_code_fkey"
+            columns: ["trophy_code"]
+            isOneToOne: false
+            referencedRelation: "trophy_catalog"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "trophies_earned_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trophy_catalog: {
+        Row: {
+          code: string
+          created_at: string
+          family: string
+          label_ar: string
+          label_fr: string
+          need: number | null
+          rules_version: number
+          scope: string
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          family: string
+          label_ar: string
+          label_fr: string
+          need?: number | null
+          rules_version?: number
+          scope?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          family?: string
+          label_ar?: string
+          label_fr?: string
+          need?: number | null
+          rules_version?: number
+          scope?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_preferences: {
         Row: {
