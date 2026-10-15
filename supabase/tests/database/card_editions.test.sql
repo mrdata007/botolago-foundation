@@ -203,8 +203,8 @@ select extensions.is(
   || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,'
   || 'api.premium_status,api.service_apply_billing_event,api.set_card_history_visibility,'
   || 'app_private.account_deletion_erase,app_private.card_edition_effective,app_private.card_premium_mode,'
-  || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user',
-  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
+  || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user,app_private.trophy_access',
+  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same), the Trophées access check (20261015150200, which only says off, free or member) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('api', 'app', 'app_private')
