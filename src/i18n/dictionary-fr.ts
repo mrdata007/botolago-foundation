@@ -560,6 +560,8 @@ export const fr = {
   "fantasy.rankings.empty": "Aucun manager ne correspond à votre recherche.",
   "fantasy.rankings.empty_yet": "Aucun classement pour le moment.",
   "fantasy.rankings.count": "managers classés",
+  "fantasy.rankings.search_limited":
+    "La recherche porte sur les {scanned} premiers managers (sur {total}). Les autres restent accessibles page par page.",
   "fantasy.rankings.prev": "Page précédente",
   "fantasy.rankings.next": "Page suivante",
   "fantasy.rankings.page": "Page",
@@ -720,6 +722,22 @@ export const fr = {
   "fantasy.leagues.empty_title": "Aucune ligue",
   "fantasy.leagues.no_members_title": "Aucun manager",
   "fantasy.leagues.of_members": "sur {n}",
+  "fantasy.leagues.show_more": "Afficher la suite du classement",
+  "fantasy.leagues.more_failed":
+    "La suite du classement n'a pas pu être chargée. Les rangs déjà affichés restent valables.",
+  "fantasy.leagues.stale":
+    "Mise à jour impossible pour le moment : ces données sont celles de la dernière lecture réussie.",
+  "fantasy.leagues.read_failed":
+    "Vos ligues n'ont pas pu être chargées. Elles n'ont pas disparu : réessayez.",
+  "fantasy.leagues.public_read_failed": "Les ligues publiques n'ont pas pu être chargées.",
+  "fantasy.leagues.members_read_failed":
+    "La liste des managers n'a pas pu être chargée. Elle n'est pas vide : réessayez.",
+  "fantasy.leagues.joined_refresh_failed":
+    "Vous avez bien rejoint la ligue, mais ses informations n'ont pas pu être actualisées. Votre code est valide : réessayez.",
+  "fantasy.leagues.join_network":
+    "Connexion impossible : le code n'est pas en cause. Vérifiez votre connexion et réessayez ; vous avez peut-être déjà rejoint la ligue, consultez vos ligues.",
+  "fantasy.leagues.join_unavailable":
+    "Service momentanément indisponible : le code n'est pas en cause. Réessayez dans un instant ; vous avez peut-être déjà rejoint la ligue, consultez vos ligues.",
   "fantasy.players.title": "Joueurs",
   "fantasy.players.watchlist": "Liste de suivi",
   "fantasy.players.add_watch": "Ajouter à ma liste",

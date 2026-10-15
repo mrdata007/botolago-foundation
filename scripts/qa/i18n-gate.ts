@@ -467,7 +467,10 @@ export const BASELINES: Baselines = {
   // the template reached (the card says a scheduled match's kick-off, never
   // that word), is deleted with it, so W3 stays 247; `no_data_called_off` is
   // replaced by three referenced keys.
-  W3: 245,
+  // Audit remediation B3 (FANT-03/05, UX-003/004, 2026-10-15): the league page's
+  // "100 / 250 membres" line gives `fantasy.leagues.members` its first call site
+  // (-1); the ten new keys are all referenced. 247 -> 246 (measured).
+  W3: 244,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

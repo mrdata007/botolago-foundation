@@ -1,7 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { selectFantasyDataMode } from "./fantasy-v2";
+import { hubIdentity } from "./fantasy-identity";
 import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
 import { shareRead } from "./shared-read";
 import {
@@ -16,6 +16,12 @@ import {
   type RankingsPage,
   type RankingsQuery,
 } from "./fantasy-rankings";
+import { BoardReader, boardReaders, SEARCH_SCAN_ROWS } from "./fantasy-board-reader";
+import {
+  nextLeagueCursor,
+  type LeagueStandingCursor,
+  type LeagueStandingsPage,
+} from "./fantasy-league-pages";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyGameweekSummaryDto,
@@ -234,19 +240,6 @@ export function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStandi
   };
 }
 
-/**
- * Whose hub a read returns: the account whose session the request will carry.
- * An unreadable session never shares (a fresh identity per call).
- */
-async function hubIdentity(): Promise<string> {
-  try {
-    const { data } = await supabaseV2.auth.getSession();
-    return data.session?.user.id ?? "anonymous";
-  } catch {
-    return `unknown:${crypto.randomUUID()}`;
-  }
-}
-
 /** One hub read per screen and account: see `fantasy-hub-share.ts`. */
 async function hub(): Promise<FantasyHubDto> {
   const identity = await hubIdentity();
@@ -312,36 +305,76 @@ async function readAllPlayers(current: FantasyHubDto): Promise<FantasyPlayer[]> 
 }
 
 /**
- * BG-0073 — the season-wide board as `LeagueStanding[]`, so the existing pure
- * `selectRankingsPage` keeps owning sort, search and paging and the rankings
- * route needs no change.
+ * BG-0073 / FANT-05 — a reader over the season board, or over one round's
+ * board when a `gameweekId` is given.
  *
- * The board is read through the RPC's keyset cursor and bounded the same way
- * the player pool is: 20 pages of 100. A season larger than that is a product
- * decision (server-side paging on the route) rather than an unbounded read.
+ * The RPC pages by keyset cursor, returns the board's real total and the
+ * caller's own standing. The reader (see `fantasy-board-reader.ts`) reads only
+ * the blocks of 100 a page needs, keeps them for a short while, and finds a far
+ * block with one read; it no longer walks the board from the top for every page
+ * turn, search keystroke and refresh, and it no longer stops at 2,000 managers.
  *
  * With a `gameweekId` it reads that round's own board: the server ranks the
  * round by round points with the official tie-breaks, and the rows keep the
  * server's order, ranks and previous ranks.
+ *
+ * Readers are kept per account (the rows carry the caller's `myRank` and, for a
+ * signed-in caller, display names), season and board, a few at a time.
  */
-async function overallBoard(
-  seasonId: string,
-  gameweekId: string | null = null,
-): Promise<{ rows: LeagueStanding[]; myRank?: LeagueStanding }> {
-  const rows: LeagueStanding[] = [];
-  let cursor: { rank: number; teamId: string } | null = null;
-  let myRank: LeagueStanding | undefined;
-  for (let page = 0; page < 20; page += 1) {
+const KEEP_BOARD_READERS = 8;
+
+// Also cleared with the shared hub read (`forgetSharedFantasyHub`): on a write, an
+// account switch and a sign-out. Re-exported for the tests.
+export { forgetBoardReaders } from "./fantasy-board-reader";
+
+function boardReader(identity: string, seasonId: string, gameweekId: string | null): BoardReader {
+  const key = `${identity}|${seasonId}|${gameweekId ?? "season"}`;
+  const held = boardReaders.get(key);
+  if (held) return held;
+  const reader = new BoardReader(async (cursor, limit) => {
     const result = await cloud.getOverallStandings(
-      { seasonId, gameweekId, cursor, limit: 100 },
+      { seasonId, gameweekId, cursor, limit },
       context(),
     );
-    rows.push(...result.items.map(overallStandingDto));
-    if (result.myRank) myRank = overallStandingDto(result.myRank);
-    if (!result.nextCursor) return { rows, myRank };
-    cursor = result.nextCursor;
+    return {
+      rows: result.items.map(overallStandingDto),
+      nextCursor: result.nextCursor,
+      total: result.total,
+      myRank: result.myRank ? overallStandingDto(result.myRank) : null,
+    };
+  });
+  boardReaders.set(key, reader);
+  while (boardReaders.size > KEEP_BOARD_READERS) {
+    const oldest = boardReaders.keys().next().value;
+    if (oldest === undefined) break;
+    boardReaders.delete(oldest);
   }
-  return { rows, myRank };
+  return reader;
+}
+
+/**
+ * One page of a board the server has ordered and ranked. Without a search it is
+ * read from the server a page at a time. The server cannot search, so a search
+ * looks through the first `SEARCH_SCAN_ROWS` rows (read once and held) and
+ * reports `searchLimit` when the board is larger than that, never silently.
+ */
+async function boardPage(reader: BoardReader, query: RankingsQuery): Promise<RankingsPage> {
+  if (!query.query.trim()) {
+    const read = await reader.page(query.page, query.pageSize);
+    return {
+      rows: read.rows,
+      total: read.total,
+      podium: reader.top(3),
+      myRank: read.myRank ?? undefined,
+    };
+  }
+  const scan = await reader.scan(SEARCH_SCAN_ROWS);
+  const page = selectBoardPage(scan.rows, { ...query, meId: scan.myRank?.managerId ?? query.meId });
+  return {
+    ...page,
+    myRank: page.myRank ?? scan.myRank ?? undefined,
+    searchLimit: scan.complete ? undefined : { scanned: scan.rows.length, total: scan.total },
+  };
 }
 
 /** Gameweeks that can already have a round board: scoring has begun on them. */
@@ -537,23 +570,44 @@ export const fantasyService = {
     if (mode() === "mock") return mockFantasyService.getLeague(id);
     return (await this.getLeagues()).find((league) => league.id === id);
   },
+  /**
+   * The first page (at most 100) of a league's standings. The league screen
+   * reads the rest through `getLeagueStandingsPage`; the screens that only need
+   * the top of a league (the Curva rankings, the list after joining) stay on this.
+   */
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
-    if (mode() === "mock") return mockFantasyService.getLeagueStandings(leagueId);
-    const page = await cloud.getLeagueStandings(leagueId, null, context());
-    return page.items.map((standing) => ({
-      managerId: standing.teamId,
-      // BG-0074: was the empty string, so every league row rendered a blank
-      // manager line. Resolved server-side: the profile display name for
-      // signed-in callers, the team name for anonymous ones.
-      managerName: standing.managerName,
-      teamName: standing.teamName,
-      rank: standing.rank,
-      // An unknown earlier rank stays unknown (null): the table draws a dash, not "unchanged".
-      previousRank: standing.previousRank,
-      gameweekScore: standing.gameweekPoints ?? 0,
-      totalScore: standing.totalPoints,
-      calculatedAt: standing.calculatedAt,
-    }));
+    return (await this.getLeagueStandingsPage(leagueId, null)).rows;
+  },
+  /**
+   * FANT-03 — one page of a league's standings, from `cursor` (the first page
+   * when null), with the member count and where the next page starts.
+   */
+  async getLeagueStandingsPage(
+    leagueId: string,
+    cursor: LeagueStandingCursor | null = null,
+  ): Promise<LeagueStandingsPage> {
+    if (mode() === "mock") {
+      const rows = await mockFantasyService.getLeagueStandings(leagueId);
+      return { rows, memberCount: rows.length, nextCursor: null };
+    }
+    const page = await cloud.getLeagueStandings(leagueId, null, context(), cursor);
+    const rows = page.items.map(
+      (standing): LeagueStanding => ({
+        managerId: standing.teamId,
+        // BG-0074: was the empty string, so every league row rendered a blank
+        // manager line. Resolved server-side: the profile display name for
+        // signed-in callers, the team name for anonymous ones.
+        managerName: standing.managerName,
+        teamName: standing.teamName,
+        rank: standing.rank,
+        // An unknown earlier rank stays unknown (null): the table draws a dash, not "unchanged".
+        previousRank: standing.previousRank,
+        gameweekScore: standing.gameweekPoints ?? 0,
+        totalScore: standing.totalPoints,
+        calculatedAt: standing.calculatedAt,
+      }),
+    );
+    return { rows, memberCount: page.league.memberCount, nextCursor: nextLeagueCursor(rows) };
   },
   /**
    * Season-wide leaderboard across every fantasy team.
@@ -576,6 +630,7 @@ export const fantasyService = {
       return selectRankingsPage(buildGlobalRankings(), query);
     }
     const current = await hub();
+    const identity = await hubIdentity();
     if (query.sort === "gameweek") {
       // FANT-04: the round board is the server's, read for one gameweek, in the
       // server's order. The browser neither re-sorts ties nor renumbers ranks,
@@ -583,30 +638,22 @@ export const fantasyService = {
       // when it holds none), never the overall rank.
       const gameweeks = await gameweeksOf(current.season.id);
       for (const gameweekId of roundBoardGameweekIds(gameweeks.items)) {
-        const { rows, myRank } = await overallBoard(current.season.id, gameweekId);
-        if (rows.length === 0) continue;
-        const page = selectBoardPage(rows, {
-          ...query,
-          meId: myRank?.managerId ?? query.meId,
-        });
-        return { ...page, myRank: page.myRank ?? myRank };
+        const reader = boardReader(identity, current.season.id, gameweekId);
+        if ((await reader.block(0)).rows.length === 0) continue;
+        return boardPage(reader, query);
       }
       // No round has been ranked yet: the same empty answer as the season board.
       return { rows: [], total: 0, podium: [] };
     }
-    const { rows, myRank } = await overallBoard(current.season.id);
     // `me` is deliberately dropped: the authoritative board already contains
-    // the signed-in manager's row once they are ranked.
-    const page = selectBoardPage(rows, { ...query, meId: myRank?.managerId ?? query.meId });
-    // Prefer the board's own copy of the row: `jumpToMe` pages by myRank.rank,
-    // so the two must agree. Fall back to the server answer when the row is not
-    // on the fetched board at all.
-    return { ...page, myRank: page.myRank ?? myRank };
+    // the signed-in manager's row once they are ranked, and `myRank` is the
+    // server's, so `jumpToMe` pages by a rank the board itself agrees with.
+    return boardPage(boardReader(identity, current.season.id, null), query);
   },
   /**
    * The first `limit` (at most 100) managers of the overall board, from ONE read of its first page.
-   * `getGlobalRankings` loads every page (up to 20) to page and search; a screen that only needs the
-   * top of the board (the Curva ranking) must not pay for that.
+   * `getGlobalRankings` reads a block of 100 and more as the pages need them; a screen that only needs the
+   * top of the board (the Curva ranking) reads just this.
    */
   async getTopOverallStandings(limit = 100): Promise<LeagueStanding[]> {
     const size = Math.max(1, Math.min(100, Math.floor(limit)));
