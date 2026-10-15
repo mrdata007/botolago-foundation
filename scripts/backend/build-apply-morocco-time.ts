@@ -260,11 +260,11 @@ ${NOTIFICATION_CALLERS}
     watched: [
       {
         label: "notification_email_settings",
-        sql: "select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_email_settings s limit 1), '')",
+        sql: "select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url, s.football_live_refresh_enabled)::text) from app_private.notification_email_settings s limit 1), '')",
       },
       {
         label: "notification_push_settings",
-        sql: "select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_push_settings s limit 1), '')",
+        sql: "select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url)::text) from app_private.notification_push_settings s limit 1), '')",
       },
     ],
     resultNote: `' For a reader whose zone is Africa/Casablanca a deadline of 18:30Z on 2026-10-12 reads '
@@ -341,11 +341,11 @@ ${NOTIFICATION_CALLERS}
     watched: [
       {
         label: "notification_email_settings",
-        sql: "select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_email_settings s limit 1), '')",
+        sql: "select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url, s.football_live_refresh_enabled)::text) from app_private.notification_email_settings s limit 1), '')",
       },
       {
         label: "notification_push_settings",
-        sql: "select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_push_settings s limit 1), '')",
+        sql: "select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url)::text) from app_private.notification_push_settings s limit 1), '')",
       },
     ],
     resultNote: `' A 22:00-07:00 quiet window in Africa/Casablanca, asked at 22:30Z on 2026-10-15, ends at '
@@ -371,8 +371,9 @@ ${NOTIFICATION_CALLERS}
     when: `   After 20261016090000 (the helpers) is committed. Pépites runs on this database (mode public),
 --   so choose a moment that is NOT within an hour of the Monday draft (12:00 Moroccan time) or the
 --   Monday publication (20:00) of a week that has an edition drafted or scheduled; the rehearsal's
---   NOTICE lists those. An edition that is already scheduled keeps the scheduled_for it was given;
---   see the runbook. Any other time of day is fine; well under a second.`,
+--   NOTICE lists those. Also avoid 23:00-24:00 UTC: the daily sweep runs once more if this is
+--   committed in that hour (harmless but noisy). An edition that is already scheduled keeps the
+--   scheduled_for it was given; see the runbook. Any other time of day is fine; well under a second.`,
     pause: `   Nothing needs pausing: the script only replaces the definition of five functions (pg_proc) and
 --   records itself in supabase_migrations.schema_migrations. It writes no Pépites table, no
 --   fixture, player or membership row, no setting. The job that CALLS the functions is
@@ -380,8 +381,9 @@ ${NOTIFICATION_CALLERS}
 --   already running finishes on the old text, the next one uses the new. If you prefer, pause it
 --   for the minutes the script runs with \`select app_private.pepites_configure('off', null);\` and
 --   restore the previous mode afterwards (AGENTS.md); it is not required. Still make sure no other
---   schema change is running right now. The script compares the Pépites switches, the editions
---   and the cron job list before and after and stops if they moved.`,
+--   schema change is running right now. The script compares the Pépites switches (mode, auto-publish,
+--   the two hours, the competition) and the cron job list before and after and stops if they
+--   moved. It does not compare the editions: the tick may legitimately write one meanwhile.`,
     whatItDoes: `   * refuses to run twice, before the helpers are recorded and working, and where any of the
 --     five functions is not byte for byte the text the repository's latest migration defines
 --     (md5 of its source), changed attributes, or is callable by anyone but the owner;
@@ -390,7 +392,7 @@ ${NOTIFICATION_CALLERS}
 --   * checks the result without writing anything: each source is the new one with no
 --     Africa/Casablanca left; attributes, privileges and comments are unchanged;
 --     pepites_local_at('2026-10-19', '20:00') = 2026-10-19 20:00Z and ('12:00') = 12:00Z; the
---     Pépites switches, the editions and the cron job list are where they were. It never calls
+--     Pépites switches and the cron job list are where they were. It never calls
 --     the tick functions (they write).`,
     functions: [
       fn(
@@ -444,11 +446,7 @@ ${NOTIFICATION_CALLERS}
     watched: [
       {
         label: "pepites_settings",
-        sql: "select coalesce((select md5(to_jsonb(s)::text) from app_private.pepites_settings s limit 1), '')",
-      },
-      {
-        label: "pepites_editions",
-        sql: "select coalesce((select md5(string_agg(e::text, ',' order by e.id)) from app.pepites_editions e), '')",
+        sql: "select coalesce((select md5(jsonb_build_array(s.mode, s.auto_publish, s.publish_local_time, s.draft_local_time, s.competition_id)::text) from app_private.pepites_settings s limit 1), '')",
       },
     ],
     resultNote: `' The weekly Top 10 for Monday 2026-10-19 at 20:00 Moroccan time is scheduled for '

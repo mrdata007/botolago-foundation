@@ -191,9 +191,9 @@ begin
   from pg_catalog.pg_proc p
   where p.oid in (to_regprocedure('app_private.notification_email_plan(timestamp with time zone)'), to_regprocedure('app_private.defer_for_quiet_hours(timestamp with time zone,text,boolean,time without time zone,time without time zone,boolean)'));
   perform set_config('bg.morocco_acl_comment_before', baseline, true);
-  baseline := (select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_email_settings s limit 1), ''));
+  baseline := (select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url, s.football_live_refresh_enabled)::text) from app_private.notification_email_settings s limit 1), ''));
   perform set_config('bg.morocco_watched_0_before', baseline, true);
-  baseline := (select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_push_settings s limit 1), ''));
+  baseline := (select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url)::text) from app_private.notification_push_settings s limit 1), ''));
   perform set_config('bg.morocco_watched_1_before', baseline, true);
   -- Who is affected: readers with quiet hours on (counts only).
   raise notice 'readers with quiet hours on: %',
@@ -611,10 +611,10 @@ begin
     raise exception 'stop: quiet hours do not follow Morocco''s clock';
   end if;
 
-  if (select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_email_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_0_before', true) then
+  if (select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url, s.football_live_refresh_enabled)::text) from app_private.notification_email_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_0_before', true) then
     problems := problems || 'notification_email_settings moved'::text;
   end if;
-  if (select coalesce((select md5(to_jsonb(s)::text) from app_private.notification_push_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_1_before', true) then
+  if (select coalesce((select md5(jsonb_build_array(s.mode, s.test_user_ids, s.functions_base_url)::text) from app_private.notification_push_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_1_before', true) then
     problems := problems || 'notification_push_settings moved'::text;
   end if;
   if (select md5(coalesce(string_agg(j.jobname || ':' || j.schedule || ':' || j.active::text, ',' order by j.jobname), ''))

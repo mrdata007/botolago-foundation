@@ -19,8 +19,9 @@
 --   After 20261016090000 (the helpers) is committed. Pépites runs on this database (mode public),
 --   so choose a moment that is NOT within an hour of the Monday draft (12:00 Moroccan time) or the
 --   Monday publication (20:00) of a week that has an edition drafted or scheduled; the rehearsal's
---   NOTICE lists those. An edition that is already scheduled keeps the scheduled_for it was given;
---   see the runbook. Any other time of day is fine; well under a second.
+--   NOTICE lists those. Also avoid 23:00-24:00 UTC: the daily sweep runs once more if this is
+--   committed in that hour (harmless but noisy). An edition that is already scheduled keeps the
+--   scheduled_for it was given; see the runbook. Any other time of day is fine; well under a second.
 --
 -- WHAT TO PAUSE (AGENTS.md, "One writer at a time, per database")
 --   Nothing needs pausing: the script only replaces the definition of five functions (pg_proc) and
@@ -30,8 +31,9 @@
 --   already running finishes on the old text, the next one uses the new. If you prefer, pause it
 --   for the minutes the script runs with `select app_private.pepites_configure('off', null);` and
 --   restore the previous mode afterwards (AGENTS.md); it is not required. Still make sure no other
---   schema change is running right now. The script compares the Pépites switches, the editions
---   and the cron job list before and after and stops if they moved.
+--   schema change is running right now. The script compares the Pépites switches (mode, auto-publish,
+--   the two hours, the competition) and the cron job list before and after and stops if they
+--   moved. It does not compare the editions: the tick may legitimately write one meanwhile.
 --
 -- HOW TO RUN
 --   0. Supabase dashboard -> project "BotolaGO Production V2" (the address contains
@@ -56,7 +58,7 @@
 --   * checks the result without writing anything: each source is the new one with no
 --     Africa/Casablanca left; attributes, privileges and comments are unchanged;
 --     pepites_local_at('2026-10-19', '20:00') = 2026-10-19 20:00Z and ('12:00') = 12:00Z; the
---     Pépites switches, the editions and the cron job list are where they were. It never calls
+--     Pépites switches and the cron job list are where they were. It never calls
 --     the tick functions (they write).
 -- ============================================================================
 
@@ -202,10 +204,8 @@ begin
   from pg_catalog.pg_proc p
   where p.oid in (to_regprocedure('app_private.pepites_local_at(date,time without time zone)'), to_regprocedure('app_private.pepites_create_draft(uuid,date,uuid)'), to_regprocedure('app_private.pepites_tick_draft(uuid,timestamp with time zone)'), to_regprocedure('app_private.pepites_tick_daily(uuid,timestamp with time zone)'), to_regprocedure('app_private.pepites_tick(timestamp with time zone)'));
   perform set_config('bg.morocco_acl_comment_before', baseline, true);
-  baseline := (select coalesce((select md5(to_jsonb(s)::text) from app_private.pepites_settings s limit 1), ''));
+  baseline := (select coalesce((select md5(jsonb_build_array(s.mode, s.auto_publish, s.publish_local_time, s.draft_local_time, s.competition_id)::text) from app_private.pepites_settings s limit 1), ''));
   perform set_config('bg.morocco_watched_0_before', baseline, true);
-  baseline := (select coalesce((select md5(string_agg(e::text, ',' order by e.id)) from app.pepites_editions e), ''));
-  perform set_config('bg.morocco_watched_1_before', baseline, true);
   -- Editions that carry a time already (counts and the nearest one; no ids, no names).
   raise notice 'pepites editions in draft or scheduled: %, next scheduled_for: %',
     (select count(*) from app.pepites_editions where status in ('draft', 'scheduled')),
@@ -625,11 +625,8 @@ begin
     raise exception 'stop: pepites_local_at does not follow Morocco''s clock';
   end if;
 
-  if (select coalesce((select md5(to_jsonb(s)::text) from app_private.pepites_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_0_before', true) then
+  if (select coalesce((select md5(jsonb_build_array(s.mode, s.auto_publish, s.publish_local_time, s.draft_local_time, s.competition_id)::text) from app_private.pepites_settings s limit 1), '')) is distinct from current_setting('bg.morocco_watched_0_before', true) then
     problems := problems || 'pepites_settings moved'::text;
-  end if;
-  if (select coalesce((select md5(string_agg(e::text, ',' order by e.id)) from app.pepites_editions e), '')) is distinct from current_setting('bg.morocco_watched_1_before', true) then
-    problems := problems || 'pepites_editions moved'::text;
   end if;
   if (select md5(coalesce(string_agg(j.jobname || ':' || j.schedule || ':' || j.active::text, ',' order by j.jobname), ''))
       from cron.job j) is distinct from current_setting('bg.morocco_cron_before', true) then

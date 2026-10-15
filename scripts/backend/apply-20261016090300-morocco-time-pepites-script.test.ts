@@ -10,7 +10,7 @@ moroccoScriptTests(
   [
     "is not the version this update replaces",
     "the database is missing functions this update calls",
-    "perform set_config('bg.morocco_watched_1_before'",
+    "perform set_config('bg.morocco_watched_0_before'",
   ],
   ["pepites-tick", "pepites_configure('off', null)"],
   ["pepites_local_at does not follow Morocco''s clock"],

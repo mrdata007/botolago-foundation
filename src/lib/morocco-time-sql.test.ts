@@ -104,18 +104,25 @@ describe("the pgTAP expectations are the application's rule", () => {
   });
 });
 
+/**
+ * Lines of `sql` (comments already removed) that name the Moroccan zone other than as a default
+ * value: a default is only a name that is stored or passed (`create or replace` must repeat a
+ * parameter default it cannot remove; a column default is a name the reader may change), never a
+ * conversion. Every computation use is reported.
+ */
+function moroccanZoneUses(sql: string): string[] {
+  const withoutDefaults = sql.replace(/\bdefault\s+'Africa\/Casablanca'(::text)?/gi, "default ''");
+  return withoutDefaults
+    .split("\n")
+    .map((line, index) => ({ line, number: index + 1 }))
+    .filter(({ line }) => /africa\/(casablanca|el_aaiun)/i.test(line))
+    .map(({ line, number }) => `${number}: ${line.trim()}`);
+}
+
 describe("no migration after the helpers asks the database for the Moroccan zone", () => {
   const newer = readdirSync(join(root, "supabase/migrations"))
     .filter((file) => file.endsWith(".sql") && file.split("_")[0]! > HELPER_VERSION)
     .sort();
-
-  /**
-   * The literal is allowed only as the default value of a function parameter: `create or replace`
-   * must repeat a default it cannot remove (api.football_matches_by_date's p_timezone), and it is
-   * a name the caller may pass, never a conversion.
-   */
-  const ALLOWED_LINE = /^\s*p_timezone\s+text\s+default\s+'Africa\/Casablanca',?\s*$/;
-  const ZONE = /africa\/(casablanca|el_aaiun)/i;
 
   test("lists the migrations it checks (and is not empty once the next ones land)", () => {
     expect(newer.length).toBeGreaterThanOrEqual(4);
@@ -125,22 +132,44 @@ describe("no migration after the helpers asks the database for the Moroccan zone
   for (const file of newer) {
     test(`${file}`, () => {
       const sql = withoutComments(read(`supabase/migrations/${file}`));
-      const offending = sql
-        .split("\n")
-        .map((line, index) => ({ line, number: index + 1 }))
-        .filter(({ line }) => ZONE.test(line) && !ALLOWED_LINE.test(line))
-        .map(({ line, number }) => `${number}: ${line.trim()}`);
-      expect(offending).toEqual([]);
-      // Nor the old local_zone variable, nor a conversion by a zone read from a variable that is
-      // the Moroccan one: those are the shapes the old code took.
+      expect(moroccanZoneUses(sql)).toEqual([]);
+      // Nor the old local_zone variable, the shape the old code took.
       expect(sql).not.toMatch(/\blocal_zone\b/);
     });
   }
 
+  test("a default value passes; every computation fails", () => {
+    // A column or parameter default is only a zone NAME that is stored or passed.
+    expect(
+      moroccanZoneUses("alter table t add column z text not null default 'Africa/Casablanca';"),
+    ).toEqual([]);
+    expect(
+      moroccanZoneUses("create function f(p_timezone text default 'Africa/Casablanca')"),
+    ).toEqual([]);
+    expect(
+      moroccanZoneUses("  timezone text not null\n    default 'Africa/Casablanca'::text,"),
+    ).toEqual([]);
+    for (const computation of [
+      "select now() at time zone 'Africa/Casablanca';",
+      "select timezone('Africa/Casablanca', now());",
+      "select timestamptz '2026-11-01 00:00:00 Africa/Casablanca';",
+      "select x at time zone 'africa/casablanca';",
+      "select x at time zone 'Africa/El_Aaiun';",
+      "select coalesce(zone, 'Africa/Casablanca');",
+    ]) {
+      expect({ computation, found: moroccanZoneUses(computation).length > 0 }).toEqual({
+        computation,
+        found: true,
+      });
+    }
+  });
+
   test("the guard works: the pre-helpers migrations are exactly where the literal lives", () => {
     const older = readdirSync(join(root, "supabase/migrations"))
       .filter((file) => file.endsWith(".sql") && file.split("_")[0]! < HELPER_VERSION)
-      .filter((file) => ZONE.test(withoutComments(read(`supabase/migrations/${file}`))));
+      .filter((file) =>
+        /africa\/(casablanca|el_aaiun)/i.test(withoutComments(read(`supabase/migrations/${file}`))),
+      );
     expect(older.length).toBeGreaterThan(5);
   });
 });

@@ -46,16 +46,18 @@ message; do not edit a check.
 The jobs that **call** the replaced functions simply see the new text on their next call, and a
 call already running finishes on the old text:
 
-| Script | Jobs that call what it replaces                                                                                                                                              |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1      | none (nothing calls the new helpers yet)                                                                                                                                     |
-| 2      | `notification-push-tick` (every minute), `notification-email-tick` (every 5 minutes)                                                                                         |
-| 3      | the same two, plus `manager-card-tick` (every 15 minutes) and `rivals-tick` where applied (quiet hours)                                                                      |
-| 4      | `pepites-tick` (every 15 minutes). Optional: `select app_private.pepites_configure('off', null);` for the minutes the script runs, then restore the previous mode (`public`) |
-| 5      | none (website and admin screen)                                                                                                                                              |
+| Script | Jobs that call what it replaces                                                                                                                                                                                                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1      | none (nothing calls the new helpers yet)                                                                                                                                                                                              |
+| 2      | `notification-push-tick` (every minute), `notification-email-tick` (every 5 minutes)                                                                                                                                                  |
+| 3      | the same two, plus `manager-card-tick` (every 15 minutes) and `rivals-tick` where applied (quiet hours), and `api.service_create_user_notification` (the service-role call that creates a notification and defers it for quiet hours) |
+| 4      | `pepites-tick` (every 15 minutes). Optional: `select app_private.pepites_configure('off', null);` for the minutes the script runs, then restore the previous mode (`public`)                                                          |
+| 5      | none (website and admin screen)                                                                                                                                                                                                       |
 
 Each script compares the cron job list before and after and stops if it moved; scripts 2 to 4
-also compare the e-mail and push switches (or the Pépites switches and editions). Still make sure
+also compare the switches that matter (e-mail and push: mode, test users, functions URL; Pépites:
+mode, auto-publish, the two hours, the competition), never a timestamp such as `last_tick_at`
+that a running job rewrites every minute. Still make sure
 nothing else is changing the database right now: no GitHub Actions run, no other apply script, no
 deploy. A rehearsal that ends in rollback takes locks for a moment (5 second lock timeout, 60
 second statement timeout; it gives up rather than waits).
@@ -123,7 +125,8 @@ How to read query 7. The scripts do not touch an edition. A draft or scheduled e
 or have the editor schedule it again for 20:00 Moroccan time from the editorial screen (a normal
 editor action, no database edit). Query 7 saying "no rows" means there is nothing to decide.
 Choose a moment for script 4 that is not within an hour of a Monday 12:00 draft or 20:00
-publication of a week that has an edition.
+publication of a week that has an edition, and **avoid 23:00-24:00 UTC**: the daily sweep runs
+once more if the script is committed in that hour (harmless but noisy).
 
 If query 2 or 3 shows anything different from what is expected, stop and send the result: the
 script will refuse for the same reason, and that refusal is the point.
@@ -182,7 +185,8 @@ After script 2:
 select version from supabase_migrations.schema_migrations where version = '20261016090100';
 select p.oid::regprocedure::text, md5(p.prosrc), position('at time zone audience.timezone' in p.prosrc) = 0 as no_raw_zone_left
 from pg_proc p where p.proname in ('notification_push_fanout', 'notification_email_fanout')
-  and p.pronamespace = 'app_private'::regnamespace;
+  and p.pronamespace = 'app_private'::regnamespace
+order by 1;
 -- expect, in this order: notification_email_fanout 93eafdf20ad7fde193a4f4745a201342 and
 -- notification_push_fanout 550d18a328ac8d1234df396cf5dd9b05, both true
 -- The text a Casablanca reader gets for the 2026-10-12 deadline (18:30Z). Wanted: 12/10 18:30.
@@ -194,7 +198,8 @@ After script 3:
 ```sql
 select version from supabase_migrations.schema_migrations where version = '20261016090200';
 select p.oid::regprocedure::text, md5(p.prosrc) from pg_proc p
-where p.proname in ('notification_email_plan', 'defer_for_quiet_hours') and p.pronamespace = 'app_private'::regnamespace;
+where p.proname in ('notification_email_plan', 'defer_for_quiet_hours') and p.pronamespace = 'app_private'::regnamespace
+order by 1;
 -- expect, in this order: defer_for_quiet_hours 691fac43285139e7a650a92bb60adcb5 and
 -- notification_email_plan b686fb3d2000279349c4d1afbb9f7edf
 select app_private.defer_for_quiet_hours(timestamptz '2026-10-15 22:30+00', 'Africa/Casablanca', true, time '22:00', time '07:00', false);
@@ -259,11 +264,14 @@ updated. Until a new migration is written with the helpers, **do not** write `at
 
 ## Staging
 
-Staging V2 has the same older data, but lacks the rating release and the three Phase A/B
-migrations (see the separate reviewer's report). These scripts check only the objects they replace
-and the helpers, so they can run on staging once the functions they replace are there at the
-reviewed text; they will refuse if not (that is the point). The headers name production; for
-staging, look at the address for `srdrflfrfpwixsllveid` instead and say so in your report.
+Staging V2 (`srdrflfrfpwixsllveid`) has the same older data (the raw zone answers 13:00). A
+read-only check on 2026-10-15 found there: every function the five scripts replace has the same
+md5 as the pin in the script (the same as production); every function the new bodies call exists;
+and no `202610160900xx` row is in the migration history. So all five scripts should run there, in
+the same order, with the same checks. (It lacks the rating release and the three Phase A/B
+migrations, but none of the pinned functions depends on them; this is what was measured, not a
+promise: a script still refuses if the database is not as reviewed.) The headers name production;
+for staging, look at the address for `srdrflfrfpwixsllveid` instead and say so in your report.
 
 ## Also needed outside the database
 

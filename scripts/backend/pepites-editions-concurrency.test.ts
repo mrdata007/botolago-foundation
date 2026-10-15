@@ -387,7 +387,7 @@ describeDb("Pépites editions with two writers", () => {
     await db(c).unsafe(roundSql(6));
     const draft = await tick(db(b), "2026-10-12 12:15:00+00");
     const week16 = draft.editionId as string;
-    await scheduleFor(week16, "2026-10-12 19:00:00+00");
+    await scheduleFor(week16, "2026-10-12 20:00:00+00");
     const before = await editionState(week16);
     await db(c).unsafe(correctionSql(6, 66));
 
