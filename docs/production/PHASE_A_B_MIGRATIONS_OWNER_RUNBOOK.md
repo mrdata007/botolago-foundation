@@ -1,5 +1,12 @@
 # Phase A and B migrations: owner runbook
 
+> **Status, 2026-10-15:** a read-only check of Production V2 found all three
+> migrations already applied (history rows present, recorded text identical to
+> the repository files, live functions on the new text). Do not run these
+> scripts on production: each would stop at "already recorded". They remain for
+> other environments. Staging lacks the SofaScore rating release, so only the
+> error-intake script applies there until it is installed.
+
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Written 2026-10-15. Nothing in this document has been run against any shared or
 production database; see "What was and was not run" at the end.
