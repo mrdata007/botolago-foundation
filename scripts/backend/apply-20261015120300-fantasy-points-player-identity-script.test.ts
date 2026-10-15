@@ -146,6 +146,12 @@ describe(`apply-${VERSION}-fantasy-points-player-identity.sql`, () => {
     const header = script.slice(0, script.indexOf("\nbegin;\n"));
     expect(header).toContain("Nothing needs pausing, because this script writes no table at all");
     expect(header).toContain("Run it ONCE");
+    // The new function and the one it wraps belong to the same owner.
+    expect(postflight).toContain("inner_fn.proowner is distinct from fn.proowner");
+    expect(postflight).toContain("the new function and the wrapped one have different owners");
+    expect(read("docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md")).toContain(
+      "as same_owner",
+    );
     expect(header).toContain("CURRENT club");
     expect(header).toContain("apply-20261014-sofascore-rating-release.sql");
     // It never calls the function (a signed-in manager is needed, and it is not a check of data).

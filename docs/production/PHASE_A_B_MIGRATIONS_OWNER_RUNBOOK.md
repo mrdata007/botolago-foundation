@@ -58,7 +58,9 @@ union all select 'get_my_fantasy_points', md5(prosrc) from pg_proc
 select to_regclass('app_private.client_error_intake') is null as intake_table_absent,
        to_regprocedure('api.get_my_fantasy_points_before_identity(uuid,uuid)') is null as rename_not_done;
 
--- 4. Is anything else writing? Expect only your own session.
+-- 4. Is anything else writing? Expect no migration, apply script or deploy
+--    (create, alter, drop) from another session; short app queries from
+--    authenticator and pg_cron jobs are normal.
 select pid, usename, state, left(query, 80) as query from pg_stat_activity
 where datname = current_database() and pid <> pg_backend_pid() and state <> 'idle'
   and backend_type = 'client backend';
@@ -66,13 +68,35 @@ where datname = current_database() and pid <> pg_backend_pid() and state <> 'idl
 -- 5. The jobs (nothing to pause, but know what is there).
 select jobname, schedule, active from cron.job order by jobname;
 
--- 6. Script 1 only. When the database worker is off the check answers ok whatever
---    the gameweeks do, before and after. When it is on, read the current answer.
-select app_private.fantasy_worker_enabled() as worker_on, app_private.fantasy_worker_health() as answer;
+-- 6. Script 1 only. Would the new health check warn or fail right now?
+select app_private.fantasy_worker_enabled() as worker_on,
+       app_private.fantasy_worker_work_pending() as work_pending,
+       round(extract(epoch from now() - greatest(
+         (select max(finished_at) from app_private.fantasy_worker_runs where outcome = 'ok'),
+         d.counting_from, d.pending_since)) / 60) as minutes_without_ok_pass,
+       greatest(30, 2 * s.lifecycle_worker_interval_minutes) as warn_after,
+       greatest(90, 4 * s.lifecycle_worker_interval_minutes) as fail_after
+from app_private.fantasy_worker_dispatch d, app_private.fantasy_automation_settings s
+where d.id and s.id;
 ```
 
-If query 1 or 2 shows anything different, stop and send the result; the scripts
-will refuse for the same reason, and that refusal is the point.
+How to read query 6 (read-only; it asks the same questions the new check asks,
+but it is a predictor, not the check). The new check says `ok` when `worker_on` is
+false. When `worker_on` is true and `work_pending` is true, it says `warn` once
+`minutes_without_ok_pass` reaches `warn_after`, and `fail` once it reaches
+`fail_after` (a null number means "no clock yet", which is `ok`). When
+`work_pending` is false it says `ok`. The query can warn a little too much: it
+ignores one exception the real check makes, an `open` round past its deadline
+whose deadline is unconfirmed (a counting match still has a placeholder kickoff),
+which the worker leaves alone and the check does not hold against it. So if the
+query says the check would warn or fail only because of such a round, it will not.
+It is never too quiet.
+
+Before script 1 only: if query 1 or 2 shows anything different from what is
+expected, stop and send the result; the script will refuse for the same reason,
+and that refusal is the point. Between scripts the values change for the
+script already applied (its row appears in query 1, its function text changes in
+query 2); only compare the scripts still to come.
 
 ## For each script
 
@@ -82,7 +106,9 @@ will refuse for the same reason, and that refusal is the point.
 2. Paste the whole file and press Run. As shipped it is a **rehearsal**: it
    applies the migration inside one transaction, checks the result, and rolls
    back. The result row must say `Rehearsal passed`. Any `stop:` message means
-   nothing was saved; send it, do not edit a check.
+   nothing was saved; send it, do not edit a check. If your next query then
+   says `current transaction is aborted`, run `rollback;` on its own first
+   (nothing was saved).
 3. Change the single line `rollback;` near the bottom to `commit;` and press Run
    once. The result row says `Applied`.
 4. Run the post-checks below, then go to the next script.
@@ -93,12 +119,14 @@ wait). It saves nothing.
 
 ### Script 1: `fantasy_worker` health check
 
-Expect in the rehearsal: the NOTICE lines `before:` and `after:` (if your editor
-shows notices) and, in the result row, the answer of the current check. If the
-database worker is switched on and a round is locked, overdue-open or
-finalized-with-work-owed with no `ok` worker pass for 30 minutes (warn) or 90
-minutes (fail), the new check says so, and alerts page on `fail`. That is the
-check doing its job. Decide before you commit.
+Expect in the rehearsal: in the result row, the answer of the current check and
+a sentence saying either that the database worker is switched off (so the new
+check will also say `ok`) or that it is ON (run query 6 above before you commit).
+The new answer is also printed as the NOTICE lines `before:` and `after:`, but
+the editor may not show notices. If the worker is on and a round is locked,
+overdue-open or finalized-with-work-owed with no `ok` worker pass for 30 minutes
+(warn) or 90 minutes (fail), the new check says so, and alerts page on `fail`.
+That is the check doing its job. Decide before you commit.
 
 Post-checks:
 
@@ -154,6 +182,10 @@ where oid = 'api.get_my_fantasy_points_before_identity(uuid,uuid)'::regprocedure
 select has_function_privilege('anon', 'api.get_my_fantasy_points(uuid,uuid)', 'execute') as anon,
        has_function_privilege('authenticated', 'api.get_my_fantasy_points(uuid,uuid)', 'execute') as authenticated;
 -- expect false, true
+select (select proowner from pg_proc where oid = 'api.get_my_fantasy_points(uuid,uuid)'::regprocedure)
+     = (select proowner from pg_proc
+        where oid = 'api.get_my_fantasy_points_before_identity(uuid,uuid)'::regprocedure) as same_owner;
+-- expect true (the script checks this too)
 ```
 
 Then, signed in with a real manager account (and its sign-in step-up), open a
@@ -168,9 +200,16 @@ not a fault of the script.
 The repository is forward-only: never edit a migration that has been applied
 anywhere, and do not delete a history row by hand. The rehearsal is the
 rollback you have; it saves nothing. After a commit, a problem is fixed with a
-new migration (for example one that restores the previous function text, which is
-in `20261013170100`, `20260924200200` and `20261013160200` respectively), reviewed
-and applied the same way. Script 2's new table can stay empty and unused.
+new migration, reviewed and applied the same way:
+
+- Script 1 and script 2: a migration that restores the previous function text
+  (in `20261013170100` and `20260924200200` respectively). Script 2's new table
+  can stay empty and unused.
+- Script 3 is a rename, so restoring text is not enough: the fix-forward
+  migration drops the new `api.get_my_fantasy_points(uuid, uuid)`, renames
+  `api.get_my_fantasy_points_before_identity` back to `get_my_fantasy_points`, and
+  gives it back its grants (revoke from `public` and `anon`; execute for
+  `authenticated` and `service_role`), as `20261013160200` left them.
 
 ## How this relates to the batch promoter
 
@@ -206,7 +245,8 @@ already lists the three migrations in its follow-up sections and says each is
   script edited by one character is refused by its sha256 check. The new health
   check was exercised on every backlog state (it agrees with the scheduler's
   `fantasy_worker_work_pending()` except for an open round past an unconfirmed
-  deadline, which the worker leaves alone). Under 40 concurrent clients the old
+  deadline, which the worker leaves alone), and query 6 of this runbook was run
+  beside it on the same states and agreed with it. Under 40 concurrent clients the old
   error endpoint stored 630 kinds in an hour and the new one exactly 300, with
   11,700 refused kinds counted and no failed calls. The new points function
   returned `identity` for a retired player.

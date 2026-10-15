@@ -34,9 +34,11 @@
 --   states it used to ignore, if no ok worker pass has happened for that long
 --   while a round has work for the worker. Alerts page on `fail`, hourly
 --   while it lasts (docs/operations/ALERTS.md). That is the check doing its
---   job, not a fault of this update. The rehearsal prints what the new check
---   says right now as a NOTICE (and the answer of the current one in the
---   result row): read it before you commit.
+--   job, not a fault of this update. The rehearsal result row gives the answer
+--   of the current check and says whether the worker is on. It also prints
+--   what the new check says right now as a NOTICE, but the editor may not
+--   show notices: when the worker is ON, run query 6 of
+--   docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md before you commit.
 --
 -- WHAT TO PAUSE (AGENTS.md, "One writer at a time, per database")
 --   Nothing needs pausing, because this script writes no table at all: its
@@ -452,5 +454,9 @@ select case
       || (app_private.fantasy_worker_health() ->> 'status') || ': ' || (app_private.fantasy_worker_health() ->> 'detail')
   else 'Rehearsal passed. Nothing was saved. The check as it stands now (old definition) says: '
       || (app_private.fantasy_worker_health() ->> 'status') || ': ' || (app_private.fantasy_worker_health() ->> 'detail')
-      || ' -- the new answer was printed as a NOTICE (after:). Change rollback; to commit; and run again.'
+      || case when app_private.fantasy_worker_enabled()
+           then ' -- The database worker is ON: run query 6 of docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md before you commit, to see whether the new check would warn or fail right now (the new answer was also printed as a NOTICE, "after:", if your editor shows notices).'
+           else ' -- The database worker is switched off, so the new check will also say ok.'
+         end
+      || ' Change rollback; to commit; and run again.'
 end as result;

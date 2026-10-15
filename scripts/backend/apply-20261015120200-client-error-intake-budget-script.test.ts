@@ -159,6 +159,19 @@ describe(`apply-${VERSION}-client-error-intake-budget.sql`, () => {
       "Nothing needs pausing, and nothing could stop the real writers anyway",
     );
     expect(header).toContain("ordinary visitors' browsers");
+    // client_error_counts is only read, through ops_health_checks() (which the
+    // later migrations redefine), not by ops-alert-tick or the sitemap itself.
+    expect(header).toContain("redefined by");
+    expect(header).toContain("app_private.ops_health_checks()");
+    for (const later of [
+      "20260926003050_news_sitemap_snapshot.sql",
+      "20260926003400_ops_health_fantasy_coverage_and_scoring.sql",
+      "20260926113100_football_season_refresh.sql",
+    ]) {
+      const text = read(`supabase/migrations/${later}`);
+      expect(text).toContain("app_private.ops_health_checks()");
+      expect(text).toMatch(/from app_private\.client_error_counts/);
+    }
     // The preflight proves the same on the live database.
     expect(preflight).toContain(
       "(insert\\s+into|update|delete\\s+from)\\s+app_private\\.client_error_(counts|intake)",

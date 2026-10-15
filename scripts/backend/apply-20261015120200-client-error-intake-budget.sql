@@ -34,8 +34,11 @@
 -- WHAT TO PAUSE (AGENTS.md, "One writer at a time, per database")
 --   Nothing needs pausing, and nothing could stop the real writers anyway.
 --   No pg_cron job and no Edge Function writes app_private.client_error_counts
---   or the new table: ops-alert-tick, the news sitemap refresh and the season
---   refresh only READ client_error_counts, and the watchdog reads it through
+--   or the new table. client_error_counts is only READ, through
+--   app_private.ops_health_checks() (the `browser_errors` check, redefined by
+--   the news sitemap, ops health coverage and season refresh migrations, which
+--   carry it forward):
+--   ops-alert-tick calls it, and the watchdog reads it through
 --   api.service_ops_health(). The only writer is the public endpoint, called by
 --   ordinary visitors' browsers, which no pause stops: replacing the function
 --   is safe under that traffic (a call already running finishes on the old

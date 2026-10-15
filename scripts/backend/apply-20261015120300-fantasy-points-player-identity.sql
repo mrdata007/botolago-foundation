@@ -362,6 +362,9 @@ begin
       into inner_fn
     from pg_catalog.pg_proc p
     where p.oid = 'api.get_my_fantasy_points_before_identity(uuid,uuid)'::regprocedure;
+    if inner_fn.proowner is distinct from fn.proowner then
+      problems := problems || 'the new function and the wrapped one have different owners'::text;
+    end if;
     if md5(inner_fn.prosrc) <> previous_points_md5
       or not inner_fn.prosecdef or inner_fn.provolatile <> 's'
       or inner_fn.proconfig is distinct from array['search_path=""'] then

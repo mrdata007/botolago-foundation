@@ -5,6 +5,7 @@ import {
   commonApplyScriptTests,
   lastDefinerBefore,
   md5,
+  migrationFiles,
   read,
   statementsOf,
 } from "./apply-script-kit";
@@ -131,6 +132,104 @@ describe(`apply-${VERSION}-fantasy-worker-health-backlog.sql`, () => {
     expect(postflight).toContain("the cron job list moved");
     // It never calls the alert tick: applying must send nothing.
     expect(statementsOf(script)).not.toMatch(/ops_alert_tick|ops_alert_configure/);
+  });
+
+  test("the rehearsal result row says whether the worker is on and what to do about it", () => {
+    const result = script.slice(script.lastIndexOf("select case"));
+    expect(result).toContain("app_private.fantasy_worker_enabled()");
+    expect(result).toContain(
+      "The database worker is switched off, so the new check will also say ok.",
+    );
+    expect(result).toContain("The database worker is ON: run query 6 of");
+    expect(result).toContain("docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md");
+  });
+
+  test("the runbook's predictor query (query 6) references only objects of the worker migrations", () => {
+    const runbook = read("docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md");
+    const query = runbook.match(
+      /-- 6\. [^\n]*\n(select app_private\.fantasy_worker_enabled\(\)[\s\S]*?where d\.id and s\.id;)/,
+    )?.[1];
+    expect(query).toBeDefined();
+    const sources = migrationFiles().map((file) =>
+      statementsOf(read(`supabase/migrations/${file}`)),
+    );
+    const all = sources.join("\n");
+    const columnsOf = (table: string) => {
+      const columns = new Set<string>();
+      const create = new RegExp(
+        `create table ${table.replace(".", "\\.")} \\(([\\s\\S]*?)\\n\\);`,
+      ).exec(all);
+      expect({ table, created: create !== null }).toEqual({ table, created: true });
+      for (const line of create![1]!.split("\n")) {
+        const name = /^\s+([a-z_]+)\s/.exec(line)?.[1];
+        if (name && !["constraint", "primary", "check", "unique"].includes(name)) columns.add(name);
+      }
+      for (const added of all.matchAll(
+        new RegExp(`alter table ${table.replace(".", "\\.")}([\\s\\S]*?);`, "g"),
+      )) {
+        for (const column of added[1]!.matchAll(/add column ([a-z_]+)/g)) columns.add(column[1]!);
+      }
+      return columns;
+    };
+    const runs = columnsOf("app_private.fantasy_worker_runs");
+    const dispatch = columnsOf("app_private.fantasy_worker_dispatch");
+    const settings = columnsOf("app_private.fantasy_automation_settings");
+    // Every relation and function it names exists.
+    for (const relation of query!.matchAll(
+      /\b(?:from|,)\s+(app_private\.[a-z_]+)\s+(?:d|s|where)?/g,
+    )) {
+      expect({
+        relation: relation[1],
+        exists: [...all.matchAll(/create table (app_private\.[a-z_]+)/g)].some(
+          (m) => m[1] === relation[1],
+        ),
+      }).toEqual({
+        relation: relation[1],
+        exists: true,
+      });
+    }
+    for (const call of query!.matchAll(/\b(app_private\.[a-z_]+)\(/g)) {
+      expect({
+        call: call[1],
+        exists: new RegExp(`create (or replace )?function ${call[1]!.replace(".", "\\.")}\\(`).test(
+          all,
+        ),
+      }).toEqual({
+        call: call[1],
+        exists: true,
+      });
+    }
+    // Every column it reads exists on the table it is read from.
+    for (const [alias, columns] of [
+      ["d", dispatch],
+      ["s", settings],
+    ] as const) {
+      const used = [...query!.matchAll(new RegExp(`\\b${alias}\\.([a-z_]+)`, "g"))].map(
+        (m) => m[1]!,
+      );
+      expect(used.length).toBeGreaterThan(0);
+      for (const column of used) {
+        expect({ alias, column, exists: columns.has(column) }).toEqual({
+          alias,
+          column,
+          exists: true,
+        });
+      }
+    }
+    for (const column of ["finished_at", "outcome"]) {
+      expect({ column, exists: runs.has(column) }).toEqual({ column, exists: true });
+    }
+    // The three relations are the ones the check itself reads.
+    for (const name of [
+      "fantasy_worker_runs",
+      "fantasy_worker_dispatch",
+      "fantasy_automation_settings",
+    ]) {
+      expect(query).toContain(`app_private.${name}`);
+      expect(migration).toContain(`app_private.${name}`);
+    }
+    // It is read-only.
+    expect(query).not.toMatch(/\b(insert|update|delete|create|alter|drop|grant|revoke)\b/i);
   });
 
   test("says plainly what to pause: nothing, because it writes no table", () => {
