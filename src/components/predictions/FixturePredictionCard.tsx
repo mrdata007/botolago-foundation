@@ -45,6 +45,7 @@ export function FixturePredictionCard({
   notCounted = false,
   saved,
   savedReady = true,
+  stepsDisabled = false,
   className,
   onStep,
 }: {
@@ -67,6 +68,8 @@ export function FixturePredictionCard({
    * arrives after the page opens is not taken for one the reader just made.
    */
   savedReady?: boolean;
+  /** True until the session is known: a tap could not be kept yet. */
+  stepsDisabled?: boolean;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -188,6 +191,7 @@ export function FixturePredictionCard({
             <ScoreStepper
               team={homeName}
               value={pick?.home ?? null}
+              disabled={stepsDisabled}
               onStep={(delta) => onStep("home", delta)}
               testId={`prediction-${fixture.id}-home`}
             />
@@ -199,6 +203,7 @@ export function FixturePredictionCard({
             <ScoreStepper
               team={awayName}
               value={pick?.away ?? null}
+              disabled={stepsDisabled}
               onStep={(delta) => onStep("away", delta)}
               testId={`prediction-${fixture.id}-away`}
             />
