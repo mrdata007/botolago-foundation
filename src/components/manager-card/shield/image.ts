@@ -48,6 +48,19 @@ const S = (size: number): number => Math.round(size * SCALE * 10) / 10;
 
 const ARABIC = /\p{Script=Arabic}/u;
 
+/**
+ * The rating column in card units, as `shield.css` has it: `.mc-shield__rate` (4.5 from the inline
+ * start, 22 wide at least), `.mc-shield__ovr` (tracking -0.03em), `.mc-shield__ovrl` (0.6 off the
+ * number) and `.mc-shield__tier` (tracking 0.02em on a Latin word).
+ */
+const RATE = {
+  edge: 4.5,
+  minWidth: 22,
+  numberTracking: -0.03,
+  tierTracking: 0.02,
+  labelGap: 0.6,
+} as const;
+
 /** The crest slot's centre and radius, in card units. */
 const CREST = { cx: 50, cy: 117.6, r: 5.2 } as const;
 
@@ -98,17 +111,41 @@ export function cardImage(
   const ex = ar ? 100 + 2.3 - 12 : -2.3;
   art += `<g transform="translate(${ex} 71) scale(0.3)" color="${m.embLine}" fill="${m.embLine}"><path d="${EMBLEM_DIAMOND}" fill="${m.emb}" stroke="${m.embLine}" stroke-width="3" stroke-linejoin="round"/>${EMBLEM_GLYPH[v.key].replace(/stroke-width="([\d.]+)"/, 'stroke="currentColor" stroke-width="$1"')}</g>`;
 
-  // the rating column
-  const rateX = mx(15);
+  // the rating column: the card lays it out as a block that starts 4.5 in from the card's inline
+  // start, at least 22 wide and as wide as its widest line (the tier word, when it is wider than the
+  // number), with the number and the tier word each centred in it (`.mc-shield__rate`). Only the
+  // drawer knows the faces' widths, so it finds the column's width (`TextRun.column`); `x` here is
+  // the centre at the minimum width.
+  const rateX = mx(RATE.edge + RATE.minWidth / 2);
+  const column = (role: "item" | "tag", gap?: number): TextRun["column"] => ({
+    edge: X(mx(RATE.edge)),
+    from: ar ? "right" : "left",
+    minWidth: S(RATE.minWidth),
+    role,
+    ...(gap === undefined ? {} : { gap: S(gap) }),
+  });
   const number = ovrText(v);
-  runs.push(
-    run(number, rateX, 23.4, 15.5, 800, "display", "middle", "ltr", m.num ? m.num[1] : m.ink),
-  );
+  runs.push({
+    ...run(
+      number,
+      rateX,
+      23.4,
+      15.5,
+      800,
+      "display",
+      "middle",
+      "ltr",
+      m.num ? m.num[1] : m.ink,
+      RATE.numberTracking,
+    ),
+    column: column("item"),
+  });
   if (p.ovr != null) {
-    runs.push(
-      run(
+    // « OVR » sits against the number's end, on the side the column grows toward
+    runs.push({
+      ...run(
         s.ovr,
-        mx(ar ? 15 - 9.4 : 15 + 9.4),
+        mx(RATE.edge + RATE.minWidth / 2 + (ar ? -9.4 : 9.4)),
         13.6,
         3.7,
         800,
@@ -118,7 +155,8 @@ export function cardImage(
         m.ink2,
         0.15,
       ),
-    );
+      column: column("tag", RATE.labelGap),
+    });
   }
   if (p.tier && (p.ovr != null || p.ladder)) {
     const word = tierWord(p.tier, s);
@@ -126,8 +164,8 @@ export function cardImage(
     const size = arabicWord
       ? Math.min(7.6, 34 / Math.max(1, [...word].length * 0.5))
       : Math.min(7.2, 33 / Math.max(1, [...word].length * 0.64));
-    runs.push(
-      run(
+    runs.push({
+      ...run(
         word,
         rateX,
         32.2,
@@ -137,8 +175,10 @@ export function cardImage(
         "middle",
         arabicWord ? "rtl" : "ltr",
         m.ink,
+        arabicWord ? undefined : RATE.tierTracking,
       ),
-    );
+      column: column("item"),
+    });
   }
 
   // the monogram (one flat colour, faint) and the autograph
@@ -202,9 +242,10 @@ export function cardImage(
         "middle",
         arabic ? "rtl" : "ltr",
         m.ink,
-        arabic ? undefined : 0.43,
+        arabic ? undefined : 0.08,
       ),
-      fitWidth: 82,
+      // in the picture's pixels, as `TextRun.fitWidth` is: the card's 82 units
+      fitWidth: S(82),
     });
   }
   STAT_CODES.forEach((code, i) => {

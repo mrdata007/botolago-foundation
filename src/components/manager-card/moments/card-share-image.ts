@@ -221,6 +221,50 @@ async function loadArtFonts(sample: string) {
   );
 }
 
+const columnKey = (run: TextRun): string | null =>
+  run.column ? `${run.column.from}:${run.column.edge}` : null;
+
+/**
+ * Lays out the runs that sit in a column (`TextRun.column`): the column is as wide as its widest
+ * item in the loaded face, at least its minimum, and its items are centred on it, as the card's
+ * rating column is. Returns each such run's x (in drawn pixels, from the art's left), or undefined
+ * for a run that is not in a column.
+ */
+function columnsOf(
+  ctx: CanvasRenderingContext2D,
+  texts: readonly TextRun[],
+  scale: number,
+  spaced: boolean,
+): { x: (run: TextRun) => number | undefined } {
+  const width = new Map<string, number>();
+  const first = new Map<string, number>();
+  for (const run of texts) {
+    const key = columnKey(run);
+    if (!key || run.column!.role !== "item") continue;
+    ctx.font = artFont(run, run.size * scale);
+    ctx.direction = run.dir;
+    if (spaced) {
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+        `${run.tracking ? run.tracking * scale : 0}px`;
+    }
+    const w = ctx.measureText(run.text).width;
+    width.set(key, Math.max(width.get(key) ?? 0, w, run.column!.minWidth * scale));
+    if (!first.has(key)) first.set(key, w);
+  }
+  return {
+    x(run) {
+      const key = columnKey(run);
+      const col = run.column;
+      const wide = key ? width.get(key) : undefined;
+      if (!key || !col || wide === undefined) return undefined;
+      const sign = col.from === "left" ? 1 : -1;
+      const centre = col.edge * scale + (sign * wide) / 2;
+      if (col.role === "item") return centre;
+      return centre + sign * ((first.get(key) ?? 0) / 2 + (col.gap ?? 0) * scale);
+    },
+  };
+}
+
 /** The card's own text runs, drawn on the art at its drawn size. */
 function drawArtText(
   ctx: CanvasRenderingContext2D,
@@ -231,13 +275,14 @@ function drawArtText(
 ) {
   ctx.save();
   ctx.textBaseline = "alphabetic";
+  const spaced = "letterSpacing" in ctx;
+  const columns = columnsOf(ctx, texts, scale, spaced);
   for (const run of texts) {
     ctx.font = artFont(run, run.size * scale);
     ctx.fillStyle = run.colour;
     ctx.direction = run.dir;
     ctx.textAlign = run.anchor === "middle" ? "center" : run.anchor === "end" ? "end" : "start";
     // a tracked Latin run (the tier word, the labels) where the canvas can space letters
-    const spaced = "letterSpacing" in ctx;
     const tracking = run.tracking ? run.tracking * scale : 0;
     if (spaced) {
       (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${tracking}px`;
@@ -264,7 +309,7 @@ function drawArtText(
         } else squeeze = target;
       }
     }
-    const x = left + run.x * scale;
+    const x = left + (columns.x(run) ?? run.x * scale);
     const y = top + run.y * scale;
     if (run.rotate) {
       // a run set along the cut corner: turned about its own point

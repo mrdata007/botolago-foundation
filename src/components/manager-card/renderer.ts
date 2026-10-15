@@ -58,6 +58,22 @@ export interface TextRun {
    * closes the run's letter spacing to this width, and never opens it.
    */
   fitWidth?: number;
+  /**
+   * A run set in a column that is as wide as its widest item (never narrower than `minWidth`), the
+   * way the shield's rating column is laid out on the card: a block that starts at `edge` and grows
+   * away from it, its items centred on it. Only the drawer knows how wide a run is in the loaded
+   * face, so it finds the column's width, and `x` is only the centre the run would have at the
+   * minimum width. An `item` is centred on the column; a `tag` (the « OVR » beside the number) sits
+   * `gap` beside the column's first item, on the side the column grows toward. Runs share a column
+   * when `edge` and `from` are equal. All lengths are in the image's units.
+   */
+  column?: {
+    edge: number;
+    from: "left" | "right";
+    minWidth: number;
+    role: "item" | "tag";
+    gap?: number;
+  };
   /** `clubInitials`: the initials on the club disc, which a drawer leaves out when it draws the crest. */
   part?: "clubInitials";
 }
