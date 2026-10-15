@@ -59,6 +59,7 @@ export function LiveStrip() {
     <RevealOnArrive show={present} transparent>
       <section
         aria-label={t("matches.live_strip")}
+        data-app-strip
         inert={hidden}
         className={cn(
           "sticky top-[var(--topbar-h)] z-[25] h-[var(--livestrip-h-open)]",

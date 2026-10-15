@@ -1,9 +1,11 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { BottomNav } from "@/components/shell/BottomNav";
+import { SkipLink } from "@/components/shell/SkipLink";
 import { StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { TopBar } from "@/components/shell/TopBar";
 import { ui } from "@/components/ui-kit";
+import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 import { playTabSlide } from "@/lib/tab-slide";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +108,7 @@ export function FantasyFrame({
 
   return (
     <div className={cn("fpl-root relative min-h-dvh", surface)}>
+      <SkipLink />
       {topBar === "always" ? (
         <TopBar />
       ) : (
@@ -124,7 +127,11 @@ export function FantasyFrame({
       )}
       <main
         ref={pageRef}
+        // The skip link's target (`SkipLink`): focusable by script, not by Tab.
+        id={MAIN_CONTENT_ID}
+        tabIndex={-1}
         className={cn(
+          "scroll-mt-[var(--topbar-h)] outline-none",
           // Same column as `UiScreen width="content"`, which is what every
           // migrated public route renders through `AppShell`. `fpl-column` is
           // kept: the viewport-containment tooling selects `main.fpl-column`.

@@ -43,10 +43,12 @@ import stadiumPhoto from "@/assets/photos/stadium-night-800.webp";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
+import { SkipLink } from "@/components/shell/SkipLink";
 import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { ui, UiBackButton, UiButton, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 import { useDarkStatusBand } from "@/lib/system-bars";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
@@ -114,6 +116,7 @@ export function AuthShell({
     <div className="relative min-h-[100dvh] w-full md:flex md:items-center md:justify-center md:px-6 md:py-10">
       {/* The flat page, as behind every product screen. On a phone the band
           and the sheet cover it; on desktop it frames the raised column. */}
+      <SkipLink />
       <PageBackground variant="neutral" />
       {/* STATUS BAR from `md` (BG-0154): the column is a raised card here and
           the flat page is under the clock, so a strip of the page itself
@@ -191,8 +194,11 @@ export function AuthShell({
         </header>
 
         <main
+          // The skip link's target (`SkipLink`): focusable by script, not by Tab.
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
           className={cn(
-            "relative z-10 -mt-6 flex flex-1 flex-col pt-6",
+            "relative z-10 -mt-6 flex flex-1 flex-col pt-6 outline-none",
             "rounded-t-[var(--ui-radius-sheet)]",
             ui.surface.bar,
             ui.space.gutter,
