@@ -418,7 +418,14 @@ test.describe("match votes, Sofascore style", () => {
       const winner = page.getByTestId("match-vote-winner");
       await expect(winner).toBeInViewport({ ratio: 0.9 });
       await expect(dot(page, lang, 2)).toHaveAttribute("aria-current", "true");
-      await expect(winner).toContainText(copy(lang, "predictions.votes.cta"));
+      // The answers in words (never 1 / X / 2), under the votes' own heading,
+      // one heading for the three of them.
+      await expect(pill(page, "winner", "draw")).toHaveText(copy(lang, "predictions.votes.draw"));
+      await expect(
+        page
+          .getByTestId("match-prediction-deck")
+          .locator("h2", { hasText: copy(lang, "predictions.votes.heading") }),
+      ).toHaveCount(1);
       await expect(winner).not.toContainText(/[%٪]/);
 
       await pill(page, "winner", "away").click();
@@ -436,7 +443,7 @@ test.describe("match votes, Sofascore style", () => {
       // Changed with the pencil, as on Sofascore: the choice comes back,
       // the current answer marked, and the new one is kept.
       await edit(page, lang, "winner").click();
-      await expect(winner).toContainText(copy(lang, "predictions.votes.cta"));
+      await expect(winner).not.toContainText(/[%٪]/);
       await expect(pill(page, "winner", "away")).toHaveAttribute("aria-pressed", "true");
       await pill(page, "winner", "home").click();
       await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "true");

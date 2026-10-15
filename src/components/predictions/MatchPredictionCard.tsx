@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
 
 import type { OpenMatchVotesDto } from "@/backend/predictions/contracts";
 import { guestPickScore } from "@/backend/predictions/scoring";
@@ -15,14 +16,34 @@ import { SwipeDeck, type SwipeSlide } from "./SwipeDeck";
 import { useMatchVotes } from "./use-match-votes";
 import { isFixtureOpen, nextPick, usePredictionsRound } from "./use-predictions-round";
 
+/** A group's heading over a card of the deck: the section label's step. */
+const DECK_HEADING = cn(ui.text.label, ui.tone.muted);
+
+/**
+ * One slide of the deck: its group's heading, then its card filling the rest
+ * of the slide (every slide is as tall as the tallest). The heading is inside
+ * the slide, so it moves with its card: "Votre pronostic" leaves with the
+ * score card and "L'avis des supporters" arrives with the first vote.
+ */
+function DeckSlide({ heading, children }: { heading: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      {heading}
+      {children}
+    </div>
+  );
+}
+
 /**
  * "Votre pronostic" on a match page (plan §9, entry point 2), then the fan
  * votes (owner decision 2026-09-25): one card at a time, swiped like
  * Sofascore's, with dots. The first card is the same record as /pronostics —
  * same save, same cache, same card; the next three are the votes (who wins,
- * both teams score, who scores first), for fun. Draws nothing for a match
- * Pronostics does not cover (another season, another competition) or while
- * the game is off; the prediction alone when the votes cannot be read.
+ * both teams score, who scores first), for fun, under their own heading,
+ * "L'avis des supporters", so they never read as part of the prediction (or
+ * as a bet: critique of 2026-10-06). Draws nothing for a match Pronostics does
+ * not cover (another season, another competition) or while the game is off;
+ * the prediction alone when the votes cannot be read.
  */
 export function MatchPredictionCard({
   fixtureId,
@@ -91,19 +112,21 @@ export function MatchPredictionCard({
     {
       key: "score",
       node: (
-        <FixturePredictionCard
-          fixture={fixture}
-          pick={pick}
-          open={open}
-          scored={scored}
-          saved={model.uid ? (saved ?? null) : undefined}
-          savedReady={!model.uid || model.mineQuery.isSuccess}
-          className="justify-center"
-          onStep={(side, delta) => {
-            const next = nextPick(pick, side, delta);
-            if (next) model.setPick(fixture, next);
-          }}
-        />
+        <DeckSlide heading={<h2 className={DECK_HEADING}>{t("predictions.match.title")}</h2>}>
+          <FixturePredictionCard
+            fixture={fixture}
+            pick={pick}
+            open={open}
+            scored={scored}
+            saved={model.uid ? (saved ?? null) : undefined}
+            savedReady={!model.uid || model.mineQuery.isSuccess}
+            className="flex-1 justify-center"
+            onStep={(side, delta) => {
+              const next = nextPick(pick, side, delta);
+              if (next) model.setPick(fixture, next);
+            }}
+          />
+        </DeckSlide>
       ),
     },
   ];
@@ -114,15 +137,32 @@ export function MatchPredictionCard({
     for (const entry of matchVotes.questions) {
       const view = questionView(entry, votes.uid ? null : (votes.phone[entry.question] ?? null));
       if (!voteCardWorthShowing(view, open)) continue;
+      // The votes' heading is a heading once, before the first of them; on
+      // the next cards it is the same words for the eye only, so a screen
+      // reader meets one heading per group.
+      const firstVote = slides.length === 1;
       slides.push({
         key: entry.question,
         node: (
-          <MatchVoteCard
-            fixture={fixture}
-            view={view}
-            open={votesOpen}
-            onVote={(choice) => void votes.cast(entry.question, choice)}
-          />
+          <DeckSlide
+            heading={
+              firstVote ? (
+                <h2 className={DECK_HEADING}>{t("predictions.votes.heading")}</h2>
+              ) : (
+                <p aria-hidden className={DECK_HEADING}>
+                  {t("predictions.votes.heading")}
+                </p>
+              )
+            }
+          >
+            <MatchVoteCard
+              fixture={fixture}
+              view={view}
+              open={votesOpen}
+              className="flex-1"
+              onVote={(choice) => void votes.cast(entry.question, choice)}
+            />
+          </DeckSlide>
         ),
       });
     }
@@ -132,12 +172,8 @@ export function MatchPredictionCard({
   return (
     <section
       className={cn("flex flex-col gap-2", placement === "column" && cn("py-3", ui.space.gutter))}
-      aria-labelledby="match-prediction-title"
       data-testid="match-prediction"
     >
-      <h2 id="match-prediction-title" className={cn(ui.text.label, ui.tone.muted)}>
-        {t("predictions.match.title")}
-      </h2>
       <SwipeDeck
         label={t("predictions.votes.deck")}
         slides={slides}
