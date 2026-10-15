@@ -86,7 +86,7 @@ describe("the stage's room", () => {
 describe("the stage on a phone", () => {
   const read = (name: string) => code(readFileSync(join(HERE, name), "utf8"));
 
-  it("is sized from the window's height on G1 alone: the card page and the guest's hero keep the plan's 296 px", () => {
+  it("is sized from the window's height on G1 alone: the card page and the no-team hero keep the plan's 296 px", () => {
     expect(read("CurvaHome.tsx")).toMatch(/<CardStage[^>]*\bfitHeight\b/);
     for (const name of ["CurvaCardPage.tsx", "GuestHero.tsx"]) {
       expect(read(name), name).not.toContain("fitHeight");

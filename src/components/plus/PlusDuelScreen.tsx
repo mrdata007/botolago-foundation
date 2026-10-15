@@ -29,6 +29,77 @@ export function PlusDuelScreen({ titleRef }: { titleRef: React.Ref<HTMLHeadingEl
   );
 }
 
+/** The duel's head: both sides, the days won by each, and the finding with its number. */
+export function DuelHead({ finding = true }: { finding?: boolean }) {
+  const { t, f } = usePlusCopy();
+  const fill = useFill();
+  const { S } = useSeason();
+  const people = useDuelPeople({ you: t("plus.s2.me_name"), rival: t("plus.s2.rival_name") });
+  const rivalName = people.rival.name;
+  return (
+    <section className="ps-duel-head" aria-labelledby={finding ? "ps-duel-hl" : undefined}>
+      <div className="ps-vs">
+        <div className="ps-side">
+          <span className="ps-av" aria-hidden>
+            {people.you.initials}
+          </span>
+          <b>
+            <bdi>{people.you.name}</bdi>
+          </b>
+          {people.you.club ? (
+            <small>
+              <bdi dir="ltr">{people.you.club}</bdi>
+            </small>
+          ) : null}
+        </div>
+        <div className="ps-head-label">
+          <p
+            className="ps-score"
+            dir="ltr"
+            aria-label={fill("plus.s2.a_split", { a: S.wins, b: S.rivalWins, name: rivalName })}
+          >
+            <span className="a">
+              <Num value={S.wins} />
+            </span>
+            <span className="dash" aria-hidden>
+              –
+            </span>
+            <span className="b">
+              <Num value={S.rivalWins} />
+            </span>
+          </p>
+          <span className="ps-label">{t("plus.s2.won_label")}</span>
+        </div>
+        <div className="ps-side r">
+          <span className="ps-av s" aria-hidden>
+            {people.rival.initials}
+          </span>
+          <b>
+            <bdi>{rivalName}</bdi>
+          </b>
+          {people.rival.club ? (
+            <small>
+              <bdi dir="ltr">{people.rival.club}</bdi>
+            </small>
+          ) : null}
+        </div>
+      </div>
+      <div className="ps-split" aria-hidden>
+        <i className="a ps-fx" style={{ flex: S.wins }} />
+        <i className="b ps-fx end" style={{ flex: S.rivalWins }} />
+      </div>
+      {finding ? (
+        <h2 className="ps-hl ps-head-label" id="ps-duel-hl">
+          {f("plus.s2.lead_h", {
+            name: <bdi>{rivalName}</bdi>,
+            n: <Fig>{S.total - S.rivalTotal}</Fig>,
+          })}
+        </h2>
+      ) : null}
+    </section>
+  );
+}
+
 /**
  * The duel's header (the two managers, journées won, the proportion bar, the lead) and its four
  * tabs: the part the offer's step 2 and the in-app section share. It draws the season
@@ -50,64 +121,7 @@ export function PlusDuelBody() {
   ];
   return (
     <>
-      <section className="ps-duel-head" aria-labelledby="ps-duel-hl">
-        <div className="ps-vs">
-          <div className="ps-side">
-            <span className="ps-av" aria-hidden>
-              {people.you.initials}
-            </span>
-            <b>
-              <bdi>{people.you.name}</bdi>
-            </b>
-            {people.you.club ? (
-              <small>
-                <bdi dir="ltr">{people.you.club}</bdi>
-              </small>
-            ) : null}
-          </div>
-          <div className="ps-head-label">
-            <p
-              className="ps-score"
-              dir="ltr"
-              aria-label={fill("plus.s2.a_split", { a: S.wins, b: S.rivalWins, name: rivalName })}
-            >
-              <span className="a">
-                <Num value={S.wins} />
-              </span>
-              <span className="dash" aria-hidden>
-                –
-              </span>
-              <span className="b">
-                <Num value={S.rivalWins} />
-              </span>
-            </p>
-            <span className="ps-label">{t("plus.s2.won_label")}</span>
-          </div>
-          <div className="ps-side r">
-            <span className="ps-av s" aria-hidden>
-              {people.rival.initials}
-            </span>
-            <b>
-              <bdi>{rivalName}</bdi>
-            </b>
-            {people.rival.club ? (
-              <small>
-                <bdi dir="ltr">{people.rival.club}</bdi>
-              </small>
-            ) : null}
-          </div>
-        </div>
-        <div className="ps-split" aria-hidden>
-          <i className="a ps-fx" style={{ flex: S.wins }} />
-          <i className="b ps-fx end" style={{ flex: S.rivalWins }} />
-        </div>
-        <h2 className="ps-hl ps-head-label" id="ps-duel-hl">
-          {f("plus.s2.lead_h", {
-            name: <bdi>{rivalName}</bdi>,
-            n: <Fig>{S.total - S.rivalTotal}</Fig>,
-          })}
-        </h2>
-      </section>
+      <DuelHead />
       <PlusTabs
         id={ID}
         tabs={tabs}

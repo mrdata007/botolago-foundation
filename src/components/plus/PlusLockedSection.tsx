@@ -110,6 +110,7 @@ export function PlusLockedSection({
   testId,
   via = "season",
   onOpen,
+  compact = false,
 }: {
   headline: string;
   /** Real figures the free screens already have: clear, above the blur. */
@@ -122,13 +123,21 @@ export function PlusLockedSection({
   via?: PlusContext;
   /** Runs when the reader leaves for the offer (the duel sheet notes itself here). */
   onOpen?: () => void;
+  /** The short stage (Curva's home): the paid analysis shows as a strip, not a full panel. */
+  compact?: boolean;
 }) {
   const { t } = usePlusCopy();
   const titleId = `${testId}-title`;
   return (
-    <PlusEmbed id={id} className="plus-embed--night" data-testid={testId} aria-labelledby={titleId}>
+    <PlusEmbed
+      id={id}
+      className={cn("plus-embed--night", compact && "plus-embed--home")}
+      data-testid={testId}
+      aria-labelledby={titleId}
+    >
       {head ? <div className="pl-head">{head}</div> : null}
       <LockedStage
+        compact={compact}
         lock={
           <>
             <PlusLockChip />

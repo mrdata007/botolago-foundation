@@ -1,6 +1,7 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { CARD_EDITIONS } from "@/backend/manager-card/contracts";
 
+import { rivalSeries } from "./mock-rival";
 import type {
   CareerMember,
   CareerResponse,
@@ -23,7 +24,6 @@ import type {
  */
 
 const SCORES = [52, 58, 44, 56, 63, 44, 60, 55, 71, 47, 62];
-const RIVAL = [49, 61, 40, 50, 66, 41, 57, 59, 64, 53, 58];
 const CAPTAIN = [8, 10, 6, 12, 14, 5, 11, 9, 20, 4, 12];
 const BEST_STARTER = [12, 10, 13, 12, 14, 9, 15, 9, 20, 11, 12];
 const CAP = [62, 66, 64, 69, 71, 70, 73, 74, 76, 77, 78];
@@ -104,7 +104,20 @@ export function mockCareer(): CareerMember {
   };
 }
 
+/** The journée with the widest margin for one side (`1` for the reader, `-1` for the rival), or null. */
+function biggest(weeks: readonly DuelWeek[], sign: 1 | -1) {
+  let best: { gameweekSeq: number; margin: number } | null = null;
+  for (const w of weeks) {
+    const margin = (w.me.score - w.opponent.score) * sign;
+    if (margin > 0 && (!best || margin > best.margin)) {
+      best = { gameweekSeq: w.gameweekSeq, margin };
+    }
+  }
+  return best;
+}
+
 export function mockDuel(otherTeamId: string): DuelMember {
+  const RIVAL = rivalSeries(otherTeamId);
   const side = (score: number, i: number, rival: boolean) => ({
     score,
     ovr: rival ? 70 : OVR[i]!,
@@ -152,8 +165,8 @@ export function mockDuel(otherTeamId: string): DuelMember {
       meWins: wins,
       opponentWins: duelWeeks.length - wins,
       ties: 0,
-      biggestWin: { gameweekSeq: 9, margin: 7 },
-      biggestLoss: { gameweekSeq: 5, margin: 3 },
+      biggestWin: biggest(duelWeeks, 1),
+      biggestLoss: biggest(duelWeeks, -1),
       opponentBestCaptain: null,
     },
   };

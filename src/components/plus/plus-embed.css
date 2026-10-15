@@ -707,3 +707,71 @@
     transform: translateX(-100%);
   }
 }
+
+/* ---------- Curva's home: the locked strips (compact), a smaller scoreboard and a stacked lock ---------- */
+.plus-embed--home {
+  padding-block-start: var(--po-space-6);
+}
+.plus-embed--home .pl-head .pl-fig,
+.plus-embed--home .pl-duel-head .pl-fig {
+  padding: var(--po-space-2) var(--po-space-6);
+}
+.plus-embed--home .pl-head .pl-fig b {
+  font-size: 72px;
+  line-height: 72px;
+}
+.plus-embed--home .pl-stage--compact {
+  block-size: 240px;
+}
+.plus-embed--home .pl-stage--compact .pl-under {
+  max-block-size: 240px;
+}
+.plus-embed--home .pl-stage--compact .pl-lock {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--po-space-3);
+  text-align: center;
+}
+.plus-embed--home .pl-headline {
+  font-size: 24px;
+  line-height: 28px;
+  max-inline-size: none;
+}
+.plus-embed--home .pl-title + .plus-body,
+.plus-embed--home .pl-skeleton {
+  margin-block-end: 0;
+}
+.plus-embed > .ps-linkbtn {
+  margin-block-start: var(--po-space-4);
+}
+/* the duel's score must fit the home's narrow column (a desktop's side column is about 350px) */
+.plus-embed--home .pl-duel-head .pl-fig {
+  padding-inline: var(--po-space-4);
+}
+.plus-embed--home .pl-duel-head .pl-fig b {
+  font-size: 44px;
+  line-height: 48px;
+}
+/* the member's compact blocks in the home's narrow column */
+.plus-embed--home .ps-trio li {
+  padding-inline: var(--po-space-1);
+}
+.plus-embed--home .ps-trio .ps-mid {
+  font-size: 24px;
+}
+.plus-embed--home .ps-trio li.me .ps-mid {
+  font-size: 36px;
+}
+.plus-embed--home .ps-score {
+  font-size: 40px;
+}
+.plus-embed--home .ps-vs {
+  gap: var(--po-space-1);
+}
+.plus-embed--home .ps-vs .ps-label {
+  font-size: 12px;
+  line-height: 16px;
+  max-inline-size: 80px;
+  text-align: center;
+}

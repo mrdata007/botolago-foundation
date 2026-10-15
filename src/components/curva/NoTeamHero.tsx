@@ -21,7 +21,6 @@ export function NoTeamHero(props: {
   return (
     <GuestHero
       {...rest}
-      audience="no_team"
       profileName={displayName}
       favouriteClub={findClub(props.clubs, favouriteClubId) ?? null}
     />
