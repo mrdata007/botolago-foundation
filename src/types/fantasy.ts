@@ -151,9 +151,24 @@ export interface PointsEvent {
   fixtureId?: string;
 }
 
+/**
+ * Who a player was in the round a result belongs to, as the server read it
+ * for that result (`api.get_my_fantasy_points`, migration 20261015120300).
+ * It is what lets an old round name a player who has since left today's
+ * buying pool. Absent when the server does not send it yet.
+ */
+export interface PlayerRoundIdentity {
+  name: string;
+  position: Position;
+  clubId: string;
+  teamName: string;
+  teamShortName: string;
+}
+
 export interface PlayerPointsBreakdown {
   multiplier?: number;
   playerId: string;
+  identity?: PlayerRoundIdentity;
   totalPoints: number;
   minutesPlayed: number;
   isCaptain?: boolean;

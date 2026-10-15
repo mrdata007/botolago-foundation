@@ -1273,6 +1273,10 @@ export type Database = {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
+      get_my_fantasy_points_before_identity: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       get_my_fantasy_points_before_live: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
