@@ -62,13 +62,13 @@ export const fr = {
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
-  "notifications.signin_body": "Connectez-vous pour consulter vos notifications.",
+  "notifications.signin_body": "Elles sont rattachées à votre compte BotolaGO.",
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
-  "reminders.sign_in_reason": "Connectez-vous pour enregistrer un rappel pour ce match.",
+  "reminders.sign_in_reason": "Connectez-vous pour ajouter ce match à vos rappels.",
   "reminders.toast.saved": "Rappel enregistré pour ce match.",
   "reminders.toast.on":
-    "Rappel activé. Vous serez prévenu(e) environ une heure avant le coup d'envoi.",
+    "Rappel activé pour ce match. Les rappels par e-mail sont activés sur votre compte.",
   "reminders.toast.needs_email":
     "Rappel enregistré. Pour le recevoir, activez les notifications par e-mail.",
   "reminders.toast.enable_email": "Activer",
@@ -1136,7 +1136,7 @@ export const fr = {
   "fpl.league": "Ligue",
   "fpl.notifications": "Notifications",
   "fpl.notifications_body":
-    "Recevez par e-mail un rappel avant chaque date limite et le bilan de chaque journée de votre équipe BotolaGO Fantasy.",
+    "Vos e-mails Fantasy sont activés sur votre compte : rappel avant chaque date limite et bilan de chaque journée. La date limite officielle reste toujours affichée dans l’application.",
   "fpl.notifications_body_neutral":
     "Choisissez les rappels et les e-mails Fantasy que vous souhaitez. La date limite officielle reste toujours affichée dans l’application.",
   "fpl.emails": "E-mails",
@@ -2482,7 +2482,7 @@ export const fr = {
     "Un e-mail par semaine avec le nouveau Top 10. Désactivé tant que vous ne l'activez pas.",
   "pepites.email.sign_in": "Se connecter pour l'activer",
   "pepites.email.sign_in_reason": "Connectez-vous pour recevoir le Top 10 Pépites par e-mail.",
-  "pepites.email.on_toast": "Vous recevrez le Top 10 chaque semaine.",
+  "pepites.email.on_toast": "Inscription enregistrée.",
   "pepites.email.off_toast": "Vous ne recevrez plus le Top 10 par e-mail.",
   "pepites.email.error": "Le réglage n'a pas pu être enregistré. Réessayez.",
   "pepites.email.blocker_unconfirmed": "Confirmez votre adresse e-mail pour recevoir le Top 10.",
@@ -2923,6 +2923,7 @@ export const fr = {
   "card.provisional": "Provisoire",
   "card.sample": "Exemple",
   "card.load_failed": "La carte n’a pas pu s’afficher. Vérifiez votre connexion, puis réessayez.",
+  "card.reload": "Recharger la page",
   "card.founder_line": "Fondateur 2026",
   "card.stat.cap": "CAP",
   "card.stat.sel": "SEL",

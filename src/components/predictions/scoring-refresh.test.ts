@@ -2,14 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 
-import type { AuthSession, AuthUser } from "@/services/auth-types";
-import type { PredictionInput } from "@/backend/predictions/contracts";
-import {
-  accountSaveQueue,
-  predictionsKeys,
-  refreshAfterScoring,
-  type SaveQueueServices,
-} from "./use-predictions-round";
+import { predictionsKeys, refreshAfterScoring } from "./use-predictions-round";
 
 const A = "10000000-0000-4000-8000-00000000000a";
 
@@ -30,8 +23,8 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 describe("QA-08: a mounted ranking is read again when the journée is scored again", () => {
   test("the round board, the season board and the player's own picks are read again", async () => {
     const client = new QueryClient();
-    const roundBoard = watch(client, ["predictions", "board", "round", 14, A]);
-    const seasonBoard = watch(client, ["predictions", "board", "season", "season", A]);
+    const roundBoard = watch(client, predictionsKeys.board("round", 14, A));
+    const seasonBoard = watch(client, predictionsKeys.board("season", 14, A));
     const mine = watch(client, predictionsKeys.mine(A, 14));
     await settle();
     expect([roundBoard.state.reads, seasonBoard.state.reads, mine.state.reads]).toEqual([1, 1, 1]);
@@ -44,68 +37,59 @@ describe("QA-08: a mounted ranking is read again when the journée is scored aga
     expect(roundBoard.state.reads).toBe(2);
     expect(seasonBoard.state.reads).toBe(2);
     expect(mine.state.reads).toBe(2);
-    roundBoard.unsubscribe();
-    seasonBoard.unsubscribe();
-    mine.unsubscribe();
+    for (const one of [roundBoard, seasonBoard, mine]) one.unsubscribe();
   });
 
-  test("a visitor's board is read again too, and nothing else is touched", async () => {
+  test("a visitor's board and a private league's standings are read again too", async () => {
     const client = new QueryClient();
-    const board = watch(client, ["predictions", "board", "round", 14, null]);
-    const round = watch(client, predictionsKeys.round(14, "fr"));
-    const other = watch(client, ["predictions", "league", "l1", "standings"]);
+    const board = watch(client, predictionsKeys.board("round", 14, null));
+    const league = watch(client, [...predictionsKeys.leagues, "l1", "standings", A]);
     await settle();
 
     refreshAfterScoring(client, null, 14);
     await settle();
 
     expect(board.state.reads).toBe(2);
-    // The journée itself is what told us; the leagues have their own refresh.
-    expect(round.state.reads).toBe(1);
-    expect(other.state.reads).toBe(1);
+    expect(league.state.reads).toBe(2);
     board.unsubscribe();
-    round.unsubscribe();
-    other.unsubscribe();
+    league.unsubscribe();
   });
 
-  test("the refresh leaves the reader's unsent picks where they were", async () => {
-    const pick: PredictionInput = { fixtureId: "f1", home: 2, away: 1 };
-    const drafts = new Map<string, readonly PredictionInput[]>();
-    const services: SaveQueueServices = {
-      session: () => ({ user: { id: A } as AuthUser, status: "authenticated" }) as AuthSession,
-      save: async () => {
-        throw new Error("nothing may be sent by a refresh");
-      },
-      drafts: (uid) => ({
-        load: () => drafts.get(uid) ?? [],
-        save: (items) => void drafts.set(uid, items),
-      }),
-    };
-    const queue = accountSaveQueue(
-      A,
-      { timers: { setTimeout: () => 1, clearTimeout: () => {} } },
-      services,
-    );
-    queue.set(pick);
-
+  test("it marks only the queries that depend on the points, and leaves every other one fresh", async () => {
     const client = new QueryClient();
-    const board = watch(client, ["predictions", "board", "round", 14, A]);
-    await settle();
-    refreshAfterScoring(client, A, 14);
-    await settle();
+    const keys = {
+      board: predictionsKeys.board("round", 14, A),
+      mine: predictionsKeys.mine(A, 14),
+      // Another journée's picks, another player's picks, the journée itself, one fixture's read.
+      mineOtherRound: predictionsKeys.mine(A, 13),
+      mineOtherPlayer: predictionsKeys.mine("someone-else", 14),
+      round: predictionsKeys.round(14, "fr"),
+      fixture: predictionsKeys.fixture(A, "f1"),
+    };
+    for (const key of Object.values(keys)) client.setQueryData(key, { cached: true });
 
-    expect(board.state.reads).toBe(2);
-    expect(queue.pendingValue("f1")).toEqual({ home: 2, away: 1 });
-    queue.dispose();
-    board.unsubscribe();
+    refreshAfterScoring(client, A, 14);
+
+    const stale = Object.fromEntries(
+      Object.entries(keys).map(([name, key]) => [
+        name,
+        client.getQueryState(key)?.isInvalidated ?? false,
+      ]),
+    );
+    expect(stale).toEqual({
+      board: true,
+      mine: true,
+      mineOtherRound: false,
+      mineOtherPlayer: false,
+      round: false,
+      fixture: false,
+    });
   });
 
   test("the page asks for the refresh whenever the journée's scoring version rises, signed in or not", () => {
-    const hook = readFileSync("src/components/predictions/use-predictions-round.ts", "utf8")
-      .replace(/\s+/g, " ")
-      .trim();
-    expect(hook).toContain("refreshAfterScoring(queryClient, uid, resolvedNumber)");
+    const hook = readFileSync("src/components/predictions/use-predictions-round.ts", "utf8");
+    expect(hook).toMatch(/refreshAfterScoring\(\s*queryClient,\s*uid,\s*resolvedNumber\s*\)/);
     // The old guard `if (!uid || ...)` kept visitors' boards out of it.
-    expect(hook).toContain("if (resolvedNumber === null || scoringVersion === null) return;");
+    expect(hook).toMatch(/if \(resolvedNumber === null \|\| scoringVersion === null\) return;/);
   });
 });

@@ -13,6 +13,7 @@ import {
   acknowledgeMoments,
   fetchMyCard,
   invalidateMyManagerCard,
+  invalidateViewerCards,
   managerCardKeys,
 } from "./use-manager-card";
 
@@ -92,6 +93,27 @@ describe("SEC-03: league cards are cached per viewer", () => {
     forgetAccountQueries(queryClient, A);
     const left = queryClient.getQueryCache().findAll({ queryKey: ["manager-card"] });
     expect(left).toHaveLength(0);
+  });
+
+  it("choosing a design re-reads the viewer's own batches, and nobody else's", async () => {
+    const queryClient = new QueryClient();
+    const reads = { a: 0, b: 0 };
+    const watch = (viewer: string, name: "a" | "b") =>
+      new QueryObserver(queryClient, {
+        queryKey: managerCardKeys.cards(viewer, teams),
+        staleTime: 5 * 60_000,
+        queryFn: async () => ++reads[name],
+      }).subscribe(() => {});
+    const stopA = watch(A, "a");
+    const stopB = watch(B, "b");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(reads).toEqual({ a: 1, b: 1 });
+
+    invalidateViewerCards(queryClient, A);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(reads).toEqual({ a: 2, b: 1 });
+    stopA();
+    stopB();
   });
 
   it("an answer for A that lands after sign-out is not written back", async () => {

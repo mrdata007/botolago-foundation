@@ -5,7 +5,7 @@ import { CARD_EDITIONS, type MyCardDto } from "@/backend/manager-card/contracts"
 
 import { isManagerCardSampleData } from "./manager-card-mode";
 import { premiumCardReadsService } from "./premium-card-reads";
-import { managerCardKeys } from "./use-manager-card";
+import { invalidateViewerCards, managerCardKeys } from "./use-manager-card";
 
 export type CardEditionCode = (typeof CARD_EDITIONS)[number];
 
@@ -39,7 +39,10 @@ export function useChooseCardDesign() {
       queryClient.setQueryData<MyCardDto | null>(key, (card) =>
         card ? { ...card, edition: result.edition } : card,
       );
-      if (!isManagerCardSampleData()) void queryClient.invalidateQueries({ queryKey: key });
+      if (!isManagerCardSampleData()) {
+        void queryClient.invalidateQueries({ queryKey: key });
+        if (userId) invalidateViewerCards(queryClient, userId);
+      }
     },
   });
 }

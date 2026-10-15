@@ -80,19 +80,52 @@ describe("signalWithDeadline", () => {
     expect((signal?.reason as Error).name).toBe("AbortError");
   });
 
-  test("a cancelled or finished request leaves no timer behind to fire", async () => {
+  /** Runs `body` while counting the timers it starts and has not cleared. */
+  function countingTimers<T>(body: () => T): { result: T; live: () => number } {
+    const live = new Set<unknown>();
+    const realSet = globalThis.setTimeout;
+    const realClear = globalThis.clearTimeout;
+    globalThis.setTimeout = ((handler: () => void, ms?: number) => {
+      const handle = realSet(handler, ms);
+      live.add(handle);
+      return handle;
+    }) as unknown as typeof setTimeout;
+    globalThis.clearTimeout = ((handle: Parameters<typeof clearTimeout>[0]) => {
+      live.delete(handle);
+      realClear(handle);
+    }) as typeof clearTimeout;
+    try {
+      const result = body();
+      return { result, live: () => live.size };
+    } finally {
+      globalThis.setTimeout = realSet;
+      globalThis.clearTimeout = realClear;
+    }
+  }
+
+  test("a cancelled request clears its timer, and a released one clears its timer and listener", () => {
     without("any", "timeout");
     const caller = new AbortController();
-    const cancelled = signalWithDeadline(caller.signal, 30);
-    caller.abort();
-    const released = signalWithDeadline(undefined, 30);
-    released.release();
-    let fired = 0;
-    cancelled.signal?.addEventListener("abort", () => (fired += 1));
-    released.signal?.addEventListener("abort", () => (fired += 1));
-    await wait(70);
-    // Neither was aborted a second time by a late deadline, and the released one never was.
-    expect(fired).toBe(0);
-    expect(released.signal?.aborted).toBe(false);
+    const pending = countingTimers(() => signalWithDeadline(caller.signal, 1_000));
+    // The deadline timer is running until something settles the request.
+    expect(pending.live()).toBe(1);
+    const cancelled = countingTimers(() => {
+      const one = signalWithDeadline(caller.signal, 1_000);
+      caller.abort();
+      return one;
+    });
+    expect(cancelled.live()).toBe(0);
+
+    const other = new AbortController();
+    const released = countingTimers(() => {
+      const one = signalWithDeadline(other.signal, 1_000);
+      one.release();
+      return one;
+    });
+    expect(released.live()).toBe(0);
+    // The caller's listener is gone too: a later cancel does not reach the released signal.
+    other.abort();
+    expect(released.result.signal?.aborted).toBe(false);
+    pending.result.release();
   });
 });

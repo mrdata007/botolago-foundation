@@ -96,6 +96,49 @@ describe("the renderer's load state", () => {
     expect(rendererStateForTests.failed()).toBe(true);
   });
 
+  it("first failure offers a retry; a failed retry offers a page reload instead", async () => {
+    activeRenderer.load = () => Promise.reject(new Error("offline"));
+    preloadCardRenderer();
+    await settle();
+    expect([rendererStateForTests.failed(), rendererStateForTests.needsReload()]).toEqual([
+      true,
+      false,
+    ]);
+
+    retryCardRenderer();
+    await settle();
+    expect([rendererStateForTests.failed(), rendererStateForTests.needsReload()]).toEqual([
+      true,
+      true,
+    ]);
+  });
+
+  it("a retry that works never asks for a reload", async () => {
+    let calls = 0;
+    activeRenderer.load = () => {
+      calls += 1;
+      return calls === 1 ? Promise.reject(new Error("offline")) : Promise.resolve(plainRenderer);
+    };
+    preloadCardRenderer();
+    await settle();
+    retryCardRenderer();
+    await settle();
+    expect(rendererStateForTests.needsReload()).toBe(false);
+  });
+
+  it("a load that stalls past the limit and only then errors is one failure, not two", async () => {
+    rendererStateForTests.setTimeoutMs(10);
+    let fail: (error: Error) => void = () => {};
+    activeRenderer.load = () => new Promise<never>((_resolve, reject) => (fail = reject));
+    preloadCardRenderer();
+    await settle(40);
+    fail(new Error("offline"));
+    await settle();
+    expect(events.map((event) => event.detail.reason)).toEqual(["timeout"]);
+    // One failure so far: the card still offers a retry, not a reload.
+    expect(rendererStateForTests.needsReload()).toBe(false);
+  });
+
   it("a chunk that arrives after the limit still recovers the cards", async () => {
     rendererStateForTests.setTimeoutMs(10);
     let arrive: (value: typeof plainRenderer) => void = () => {};
@@ -111,10 +154,15 @@ describe("the renderer's load state", () => {
 });
 
 describe("the failed card", () => {
-  const render = () =>
+  const render = (needsReload = false) =>
     renderToString(
       <I18nProvider>
-        <CardLoadFailed aspect={1.366} label="Carte de manager, Ali" onRetry={() => {}} />
+        <CardLoadFailed
+          aspect={1.366}
+          label="Carte de manager, Ali"
+          needsReload={needsReload}
+          onRetry={() => {}}
+        />
       </I18nProvider>,
     ).replace(/<!-- -->/g, "");
 
@@ -126,10 +174,22 @@ describe("the failed card", () => {
     expect(html).toContain("<button");
     expect(html).toContain("Carte de manager, Ali");
     expect(html).not.toContain("shimmer");
+    expect(html).not.toContain(dictionaries.fr["card.reload"]);
+    // Announced when it appears, as the card is inserted already filled.
+    expect(html).toContain('role="alert"');
+  });
+
+  it("after a failed retry the button reloads the page instead of retrying", () => {
+    const html = render(true);
+    expect(html).toContain(dictionaries.fr["card.reload"]);
+    expect(html).not.toContain(dictionaries.fr["state.retry"]);
+    expect(html).toContain("<button");
   });
 
   it("exists in Arabic too", () => {
-    expect(dictionaries.ar["card.load_failed"]).toBeTruthy();
-    expect(dictionaries.ar["card.load_failed"]).not.toBe(dictionaries.fr["card.load_failed"]);
+    for (const key of ["card.load_failed", "card.reload"] as const) {
+      expect(dictionaries.ar[key]).toBeTruthy();
+      expect(dictionaries.ar[key]).not.toBe(dictionaries.fr[key]);
+    }
   });
 });

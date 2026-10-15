@@ -269,6 +269,15 @@ export function useAckMoments(): (keys: readonly string[]) => Promise<void> {
   return useCallback((keys) => acknowledgeMoments(queryClient, scope, keys), [queryClient, scope]);
 }
 
+/**
+ * Read `viewerId`'s league batches again: the edition a card shows depends on who looks, and a
+ * member who changes their own design sees their own row in those batches (fresh for 5 minutes
+ * otherwise). Only mounted batches are fetched; the others just become stale.
+ */
+export function invalidateViewerCards(queryClient: QueryClient, viewerId: string): void {
+  void queryClient.invalidateQueries({ queryKey: ["manager-card", "cards", viewerId] });
+}
+
 /** After a first save or an import: refresh the card (never awaited, never on the critical path). */
 export function invalidateMyManagerCard(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: ["manager-card", "me"] });

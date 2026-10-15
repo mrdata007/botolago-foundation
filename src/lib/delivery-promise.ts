@@ -1,14 +1,16 @@
 import type { NotificationPreferencesDto } from "@/backend/notifications/contracts";
 
 /**
- * Whether a reminder can reach this account by e-mail, from what the app can see of it (audit
- * 2026-10-14, PRO-04). A saved preference is not a delivery: the account's notifications, the
- * e-mail channel, the topic and a confirmed address must all be on before copy may say "you will
- * be notified". What the app cannot see (whether the sending job is switched on, whether the
- * provider accepted a message) is never claimed; the copy for a route that is not open says only
- * what was saved, and the official deadline stays on screen.
+ * Whether this account's own settings let a reminder reach it by e-mail (audit 2026-10-14,
+ * PRO-04). A saved preference is not a delivery: the account's notifications, the e-mail channel,
+ * the topic and a confirmed address must all be on before copy may say the reminder e-mails are
+ * on. Even then the copy states the account's SETTING, never that a message will arrive: the app
+ * cannot see the global send mode (`notification_email_settings.mode`: off, test or live), the
+ * sending job, or whether the provider accepted a message. That gap is recorded in
+ * `docs/backend/EMAIL_NOTIFICATIONS.md` ("Known gap"). For a route that is not open the copy says
+ * only what was saved, and the official deadline stays on screen.
  *
- * - `available`: every setting the account controls is on.
+ * - `available`: every setting the account controls is on (not proof that sending is live).
  * - `email_off`: only the e-mail channel is off, which the reader can switch on from the reminder.
  * - `closed`: another setting stops it (notifications, the topic, an unconfirmed address).
  * - `unknown`: the preferences are not loaded, or could not be read.

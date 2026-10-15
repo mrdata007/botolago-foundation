@@ -18,6 +18,7 @@ import type { CardTheme } from "./types";
 let loaded: CardRenderer | null = null;
 let pending: Promise<void> | null = null;
 let failed = false;
+let failures = 0;
 let attempt = 0;
 const listeners = new Set<() => void>();
 
@@ -39,13 +40,19 @@ function ensureLoaded(): void {
   const wasFailed = failed;
   failed = false;
   const timer = setTimeout(() => giveUp("timeout"), loadTimeoutMs);
-  // A failure ends this attempt only if no newer one has started since; a chunk that arrives
-  // late still counts (below), so a slow phone recovers by itself.
+  // Each attempt settles once: a load that stalled past the limit and only then errors is one
+  // failure, not two. A chunk that arrives late still counts (below), so a slow phone recovers
+  // by itself.
+  let settled = false;
   const giveUp = (reason: string) => {
+    if (settled) return;
+    settled = true;
     clearTimeout(timer);
+    // A newer attempt has started since: this one no longer speaks for the card.
     if (loaded || mine !== attempt) return;
     pending = null;
     failed = true;
+    failures += 1;
     notify();
     reportOperationalError("manager_card.renderer", "renderer_load_failed", { reason });
   };
@@ -61,6 +68,19 @@ function ensureLoaded(): void {
     () => giveUp("error"),
   );
   if (wasFailed) notify();
+}
+
+/**
+ * True once a retry has failed too in this page's lifetime. Some engines remember a failed dynamic
+ * import for as long as the page lives, so asking again could never succeed: the card then offers
+ * to reload the page instead of another retry.
+ */
+export function useCardRendererNeedsReload(): boolean {
+  return useSyncExternalStore(
+    subscribeRenderer,
+    () => failed && failures >= 2,
+    () => false,
+  );
 }
 
 /**
@@ -118,6 +138,7 @@ export function setLoadedRendererForTests(renderer: CardRenderer | null): void {
   loaded = renderer;
   pending = null;
   failed = false;
+  failures = 0;
   attempt += 1;
   loadTimeoutMs = RENDERER_LOAD_TIMEOUT_MS;
   notify();
@@ -126,6 +147,7 @@ export function setLoadedRendererForTests(renderer: CardRenderer | null): void {
 /** For tests: the load state, and a shorter limit than the real one. */
 export const rendererStateForTests = {
   failed: () => failed,
+  needsReload: () => failed && failures >= 2,
   loaded: () => loaded,
   setTimeoutMs: (ms: number) => void (loadTimeoutMs = ms),
 };

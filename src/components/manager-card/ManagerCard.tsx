@@ -15,6 +15,7 @@ import {
   retryCardRenderer,
   useCardRenderer,
   useCardRendererFailed,
+  useCardRendererNeedsReload,
   useCardTheme,
 } from "./use-card-renderer";
 import type { BeatRoot } from "./renderer";
@@ -81,6 +82,7 @@ export function ManagerCard({
   const profile = useMemo(() => withCrest(given, crest), [given, crest]);
   const renderer = useCardRenderer();
   const rendererFailed = useCardRendererFailed();
+  const needsReload = useCardRendererNeedsReload();
   const theme = useCardTheme();
   const [scope] = useState(newIdScope);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -176,6 +178,7 @@ export function ManagerCard({
         <CardLoadFailed
           aspect={activeRenderer.estimateAspect(profile, strings.lang)}
           label={label}
+          needsReload={needsReload}
           onRetry={retryCardRenderer}
         />
       ) : (

@@ -57,6 +57,11 @@ export const predictionsKeys = {
   all: ["predictions"] as const,
   /** Every ranking: scope, journée or season, and viewer all follow. */
   boards: ["predictions", "board"] as const,
+  /** One ranking: the journée's (`roundNumber`) or the season's, as `uid` (a visitor: null) reads it. */
+  board: (scope: "round" | "season", roundNumber: number, uid: string | null) =>
+    ["predictions", "board", scope, scope === "round" ? roundNumber : "season", uid] as const,
+  /** Every private league's answers (standings, members). */
+  leagues: ["predictions", "league"] as const,
   round: (roundNumber: number | null, lang: string) =>
     ["predictions", "round", roundNumber ?? "current", lang] as const,
   mine: (uid: string, roundNumber: number) => ["predictions", "mine", uid, roundNumber] as const,
@@ -403,11 +408,12 @@ export function scoringMoved(
 
 /**
  * A match was scored (or scored again) while the page was open: what depends
- * on the points is read again. The player's own picks (when signed in) and
- * every ranking -- the journée's and the season's, a visitor's included --
- * share the scoring, and a ranking is fresh for five minutes, so only this
- * makes a mounted one catch up. The reader's unsent picks are not a query;
- * they stay in the save queue and its draft, untouched.
+ * on the points is read again. The player's own picks (when signed in), every
+ * ranking -- the journée's and the season's, a visitor's included -- and the
+ * private leagues' standings share the scoring, and each is fresh for five
+ * minutes, so only this makes a mounted one catch up (a screen that is not
+ * mounted just becomes stale). The reader's unsent picks are not a query; they
+ * stay in the save queue and its draft, untouched.
  */
 export function refreshAfterScoring(
   queryClient: QueryClient,
@@ -416,6 +422,7 @@ export function refreshAfterScoring(
 ): void {
   if (uid) void queryClient.invalidateQueries({ queryKey: predictionsKeys.mine(uid, roundNumber) });
   void queryClient.invalidateQueries({ queryKey: predictionsKeys.boards });
+  void queryClient.invalidateQueries({ queryKey: predictionsKeys.leagues });
 }
 
 /**
