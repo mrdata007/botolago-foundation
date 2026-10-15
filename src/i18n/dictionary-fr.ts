@@ -3459,6 +3459,8 @@ export const fr = {
   "plus.recap.pending_one": "{name} : note en attente",
   "plus.recap.pending_many": "{n} joueurs : notes en attente",
   "plus.recap.bench_note": "Banc : {pts} pts non comptés",
+  "plus.recap.bench_note_boost": "Banc : {pts} pts comptés (Bench Boost)",
+  "plus.recap.part_bench": "Banc {n}",
   "plus.recap.league_note":
     "Moyenne de votre ligue privée ({n} managers). Les notes arrivent 5 à 16 jours après le match.",
   "plus.recap.no_league":

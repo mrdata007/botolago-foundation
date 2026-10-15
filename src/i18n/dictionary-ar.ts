@@ -3263,6 +3263,8 @@ export const ar = {
   "plus.recap.pending_one": "{name}: التقييم بانتظار النشر",
   "plus.recap.pending_many": "{n} لاعبين: تقييمات بانتظار النشر",
   "plus.recap.bench_note": "الاحتياط: {pts} نقطة غير محتسبة",
+  "plus.recap.bench_note_boost": "الاحتياط: {pts} نقطة محتسبة (تعزيز الاحتياط)",
+  "plus.recap.part_bench": "الاحتياط {n}",
   "plus.recap.league_note":
     "معدل دوريك الخاص ({n} مدربين). تصل التقييمات بعد 5 إلى 16 يوماً من المباراة.",
   "plus.recap.no_league": "بلا دوري خاص لا توجد مقارنة: انضم إلى دوري لترى الفارق.",

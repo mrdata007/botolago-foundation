@@ -514,6 +514,9 @@ function RecapBody({
           {view.reconciled ? (
             <p className="pr__calc" data-testid="plus-recap-parts">
               <span>{text("plus.recap.part_starters", { n: n(view.startingPoints) })}</span>
+              {view.chip === "bench_boost" && view.benchPoints > 0 ? (
+                <span>{text("plus.recap.part_bench", { n: n(view.benchPoints, true) })}</span>
+              ) : null}
               <span>{text("plus.recap.part_captain", { n: n(view.captainBonus, true) })}</span>
               {view.transferHit > 0 ? (
                 <span>{text("plus.recap.part_hit", { n: n(-view.transferHit) })}</span>
@@ -533,7 +536,14 @@ function RecapBody({
             {view.benchPoints > 0 ? (
               <li>
                 <Info aria-hidden />
-                {text("plus.recap.bench_note", { pts: n(view.benchPoints) })}
+                {text(
+                  view.chip === "bench_boost"
+                    ? "plus.recap.bench_note_boost"
+                    : "plus.recap.bench_note",
+                  {
+                    pts: n(view.benchPoints),
+                  },
+                )}
               </li>
             ) : null}
             <li>
