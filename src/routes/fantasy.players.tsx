@@ -66,7 +66,7 @@ export const Route = createFileRoute("/fantasy/players")({
  * Player stats (A-Players).
  *
  * Option A: a round search field, the five position chips, the club chips,
- * then "N joueurs sur M" beside the sort control, and the players as one card
+ * then "Joueurs affichés : N sur M" beside the sort control, and the players as one card
  * of rows — each with the club's edge bar, the shirt in a soft disc, the name
  * over "position · club" and "form · selection", the price and points on the
  * tabular stat ramp, and one round control at the end.
@@ -688,7 +688,7 @@ function PlayerListRow({
           {t(`player.pos.${player.position}` as TranslationKey)}
           {club ? ` · ${clubLabel(club, tr)}` : ""}
         </span>
-        <span className={cn("truncate", ui.text.micro, ui.tone.muted)}>
+        <span className={cn("[overflow-wrap:anywhere]", ui.text.micro, ui.tone.muted)}>
           {t("fantasy.form")} <bdi>{form}</bdi> · {t("fantasy.players.ownership_short")}{" "}
           <bdi>{pctNf.format(player.ownership / 100)}</bdi>
         </span>

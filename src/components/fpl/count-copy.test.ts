@@ -23,8 +23,8 @@ describe("countForm", () => {
       "two",
       "few",
       "few",
-      "other",
-      "other",
+      "many",
+      "many",
       "other",
       "other",
       "other",
@@ -32,8 +32,15 @@ describe("countForm", () => {
     ]);
   });
 
+  test("the categories are the ones Intl.PluralRules gives Arabic", () => {
+    const rules = new Intl.PluralRules("ar");
+    for (const value of [0, 1, 2, 3, 10, 11, 99, 100, 101, 102, 103, 111, 200, 1000]) {
+      expect(countForm(value, "ar")).toBe(rules.select(value));
+    }
+  });
+
   test("French: none, one, then the plural", () => {
-    expect([0, 1, 2].map((value) => countForm(value, "fr"))).toEqual(["zero", "one", "other"]);
+    expect([0, 1, 2].map((value) => countForm(value, "fr"))).toEqual(["zero", "one", "many"]);
   });
 });
 
@@ -45,18 +52,22 @@ describe("the picker's apply button", () => {
     expect(label(2)).toBe("عرض لاعبين");
     expect(label(3)).toBe("عرض 3 لاعبين");
     expect(label(10)).toBe("عرض 10 لاعبين");
+    // 11 to 99: the accusative singular; 100, 101, 102, 200: the genitive singular.
     expect(label(11)).toBe("عرض 11 لاعبًا");
     expect(label(99)).toBe("عرض 99 لاعبًا");
-    expect(label(100)).toBe("عرض 100 لاعبًا");
-    expect(label(101)).toBe("عرض 101 لاعبًا");
-    expect(label(102)).toBe("عرض 102 لاعبًا");
+    expect(label(100)).toBe("عرض 100 لاعب");
+    expect(label(101)).toBe("عرض 101 لاعب");
+    expect(label(102)).toBe("عرض 102 لاعب");
     expect(label(103)).toBe("عرض 103 لاعبين");
+    expect(label(111)).toBe("عرض 111 لاعبًا");
+    expect(label(200)).toBe("عرض 200 لاعب");
   });
 
   test("French says one player for one", () => {
     expect(pickerApplyLabel(1, "fr", fr, n)).toBe("Voir 1 joueur");
     expect(pickerApplyLabel(2, "fr", fr, n)).toBe("Voir 2 joueurs");
     expect(pickerApplyLabel(12, "fr", fr, n)).toBe("Voir 12 joueurs");
+    expect(pickerApplyLabel(100, "fr", fr, n)).toBe("Voir 100 joueurs");
     expect(pickerApplyLabel(0, "fr", fr, n)).toBe("Aucun joueur correspondant");
   });
 
@@ -75,6 +86,9 @@ describe("the transfer review's headline", () => {
     expect(label(10)).toBe("ستُجري 10 انتقالات.");
     expect(label(11)).toBe("ستُجري 11 انتقالًا.");
     expect(label(15)).toBe("ستُجري 15 انتقالًا.");
+    expect(label(99)).toBe("ستُجري 99 انتقالًا.");
+    expect(label(100)).toBe("ستُجري 100 انتقال.");
+    expect(label(103)).toBe("ستُجري 103 انتقالات.");
   });
 
   test("Arabic never prints a bare count next to the wrong noun", () => {

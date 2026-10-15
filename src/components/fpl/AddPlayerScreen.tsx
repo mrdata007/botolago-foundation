@@ -74,7 +74,7 @@ const compareForm = (a: number | null, b: number | null) =>
  *
  * Option A (A-Players): a white sheet header — title, the bank on a navy
  * pill, a round close — then a round search field, the positions as a row of
- * pill chips, the club / price / sort filters, and "N joueurs sur M". Each row
+ * pill chips, the club / price / sort filters, and "Joueurs affichés : N sur M". Each row
  * is ONE button (the e2e picker reads `li button`, and a control nested in a
  * control is invalid HTML): the club's edge bar, the club's shirt in a soft
  * disc, name, "ATT · Club", "Forme · Sélection", the price over the season's
@@ -423,7 +423,7 @@ export function AddPlayerScreen({
           label={t("fantasy.picker.sort")}
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
-          className="w-28 shrink-0"
+          className="w-36 shrink-0"
           fieldClassName={FILTER_FIELD}
           options={[
             { value: "price", label: t("fantasy.picker.sort.price") },
@@ -605,7 +605,13 @@ export function AddPlayerScreen({
                           </UiBadge>
                         </span>
                       ) : (
-                        <span className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
+                        <span
+                          className={cn(
+                            "block [overflow-wrap:anywhere]",
+                            ui.text.meta,
+                            ui.tone.muted,
+                          )}
+                        >
                           {t("fpl.form")} {form} · {t("fantasy.picker.sort.ownership")}{" "}
                           {nf.format(player.ownership)}&nbsp;%
                         </span>

@@ -84,6 +84,13 @@ describe("Arabic Fantasy glossary", () => {
     const formKeys = Object.keys(fr).filter((key) => isFantasyKey(key) && fr[key] === "Forme");
     expect(formKeys.length).toBeGreaterThanOrEqual(4);
     for (const key of formKeys) expect([key, ar[key]]).toEqual([key, "المستوى الأخير"]);
+    // A label built on it ("Forme minimale") carries the same term.
+    const builtOnForm = Object.keys(fr).filter(
+      (key) => isFantasyKey(key) && fr[key]!.includes("Forme") && fr[key] !== "Forme",
+    );
+    expect(builtOnForm).toContain("fpl.pick.filter_form");
+    for (const key of builtOnForm) expect(`${key}: ${ar[key]}`).toMatch(/مستوى الأخير/);
+    expect(ar["fpl.pick.filter_form"]).toBe("الحد الأدنى للمستوى الأخير");
     // "الحالة" means status. It is not a Fantasy form label.
     for (const [key, value] of fantasyEntries) {
       if (/(^|[^ء-ي])الحالة([^ء-ي]|$)/u.test(value) && key.includes("form")) {
