@@ -60,10 +60,13 @@ type Language = "fr" | "ar";
 type Copy = (typeof dictionaries)[Language];
 
 /**
- * A match card: a link to one match. Not the static "Classement" tab or
+ * A match card: a link to one match in the page itself (not the live and
+ * matchday strips, which sit inside `main` so the skip link lands above them).
+ * Not the static "Classement" tab or
  * "view all" link, which also start with `/matches/` and render with no data.
  */
-const MATCH_CARD = 'main a[href^="/matches/"]:not([href^="/matches/standings"])';
+const MATCH_CARD =
+  'main a[href^="/matches/"]:not([data-app-strip] *):not([href^="/matches/standings"])';
 
 /**
  * Each page, and what on it only renders once its data has: never a static

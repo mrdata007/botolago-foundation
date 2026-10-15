@@ -19,8 +19,8 @@ describe("transferCostLabel", () => {
   });
 
   test("Arabic has its own words for 1, 2 and 3 to 10", () => {
-    expect(transferCostLabel(1, 4, "ar", ar, n)).toContain("تحويل واحد");
-    expect(transferCostLabel(2, 4, "ar", ar, n)).toContain("تحويلان");
-    expect(transferCostLabel(5, 4, "ar", ar, n)).toContain("5 تحويلات");
+    expect(transferCostLabel(1, 4, "ar", ar, n)).toContain("انتقال واحد");
+    expect(transferCostLabel(2, 4, "ar", ar, n)).toContain("انتقالان");
+    expect(transferCostLabel(5, 4, "ar", ar, n)).toContain("5 انتقالات");
   });
 });

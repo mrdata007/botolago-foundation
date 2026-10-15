@@ -494,7 +494,12 @@ function ProfileSetupPage() {
                 would announce a two-way choice as a `role="tablist"`. The
                 pair is a group named by the label above, so the two toggles
                 are heard as the answer to it, each name in its own language. */}
-            <div role="group" aria-labelledby="setupLanguage" className="grid grid-cols-2 gap-2">
+            <div
+              role="group"
+              aria-labelledby="setupLanguage"
+              aria-describedby="setupLanguageHint"
+              className="grid grid-cols-2 gap-2"
+            >
               {(["fr", "ar"] as const).map((l) => (
                 <UiChip
                   key={l}
@@ -507,6 +512,16 @@ function ProfileSetupPage() {
                 </UiChip>
               ))}
             </div>
+            {/* What SAVING does (audit 2026-10-14, LOC-06): the choice, which
+                starts from the language the app is showing on this device and
+                not from the account's stored one, becomes the account's
+                notification language and the app's language here. The label is
+                therefore neutral: it does not claim to show the account's
+                current language. The profile page's language row, by
+                contrast, changes the app only. */}
+            <p id="setupLanguageHint" className={cn("mt-1.5", ui.text.meta, ui.tone.muted)}>
+              {t("auth.setup.language_hint")}
+            </p>
           </div>
         </div>
       )}

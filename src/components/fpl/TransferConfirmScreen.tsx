@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
+import { transferCountLabel } from "./count-copy";
 import { formatDeadline } from "./deadline";
 import { FplChipsRow } from "./FplChipsRow";
 import { pointsUnit } from "@/lib/points-unit";
@@ -142,9 +143,7 @@ export function TransferConfirmScreen({
         style={{ "--stripe-alpha": "4%" } as CSSProperties}
       >
         <p className={cn("text-balance", ui.display.team)}>
-          {pairs.length === 1
-            ? t("fpl.about_to_transfer_one")
-            : t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}
+          {transferCountLabel(pairs.length, lang, t, String)}
         </p>
         <p className={cn("mt-1", ui.text.meta, ui.tone.onInkMuted)}>
           {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}

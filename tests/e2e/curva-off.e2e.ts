@@ -24,7 +24,7 @@ type Language = "fr" | "ar";
 const ROUTES = ["/curva", "/curva/carte", "/curva/les-votres", "/curva/saisons"] as const;
 /** Today's bar, in order: the fifth slot is Pépites. */
 const TODAY: Record<Language, string[]> = {
-  fr: ["Accueil", "Actualités", "Fantasy", "Matches", "Pépites"],
+  fr: ["Accueil", "Actualités", "Fantasy", "Matchs", "Pépites"],
   ar: ["الرئيسية", "الأخبار", "فانتازي", "المباريات", "جواهر"],
 };
 const primary = (lang: Language) => dictionaries[lang]["nav.primary"];

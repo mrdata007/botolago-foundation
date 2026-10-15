@@ -11,10 +11,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import {
+  activeDescendantId,
   clampActiveIndex,
   committableEntry,
-  highlightParts,
+  isComposingKey,
+  listboxExpanded,
   moveActiveIndex,
+  searchAnnouncement,
   searchEntries,
   searchPanelState,
   type SearchEntry,
@@ -24,7 +27,10 @@ import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
-import { ui, UiButton } from "@/components/ui-kit";
+import { ui } from "@/components/ui-kit";
+
+import { GlobalSearchPanelBody } from "./GlobalSearchPanel";
+import { searchAnnouncementText } from "./search-copy";
 
 export function GlobalSearch({
   className,
@@ -114,7 +120,26 @@ export function GlobalSearch({
       failed: query.isLoadingError,
     })),
   });
-  const hasList = panel.kind === "results" || panel.kind === "loading" || panel.kind === "empty";
+  // The field says it is expanded, and points at the listbox and at one of its
+  // options, only while they are on screen: an id that names nothing is worse
+  // than none, and a panel that shows only "searching" has nothing to choose.
+  const listShown = listboxExpanded({ panelVisible: showPanel, resultCount: results.length });
+  const activeId = activeDescendantId({
+    listId,
+    results,
+    active,
+    panelVisible: showPanel,
+  });
+  const announcement = searchAnnouncementText(
+    searchAnnouncement({ panelVisible: showPanel, panel, resultCount: results.length }),
+    lang,
+    t,
+  );
+  // Arrowing past the edge of the scrolled list brings the option into view.
+  useEffect(() => {
+    if (!activeId) return;
+    document.getElementById(activeId)?.scrollIntoView?.({ block: "nearest" });
+  }, [activeId]);
   // "none": no catalog could be read; "partial": at least one could not.
   const note =
     panel.kind === "unavailable"
@@ -158,8 +183,9 @@ export function GlobalSearch({
         ref={inputRef}
         type="search"
         role="combobox"
-        aria-expanded={showPanel}
-        aria-controls={hasList ? listId : undefined}
+        aria-expanded={listShown}
+        aria-controls={listShown ? listId : undefined}
+        aria-activedescendant={activeId}
         aria-autocomplete="list"
         aria-label={t("nav.search.label")}
         placeholder={t("nav.search.placeholder")}
@@ -176,11 +202,23 @@ export function GlobalSearch({
           setOpen(true);
         }}
         onKeyDown={(event) => {
+          // A key that belongs to an input method (a candidate being picked
+          // with Enter or the arrows) is not ours.
+          if (isComposingKey(event.nativeEvent)) return;
           if (event.key === "ArrowDown") {
             event.preventDefault();
+            // With the list shut but text in the field, the first ArrowDown
+            // opens it and the next one moves. Chromium and WebKit empty a
+            // search field on Escape, so there the list is shut with nothing
+            // typed and there is nothing to reopen; Firefox keeps the text.
+            if (!showPanel) {
+              if (text.trim() !== "") setOpen(true);
+              return;
+            }
             setActive(moveActiveIndex(active, "down", results.length));
           } else if (event.key === "ArrowUp") {
             event.preventDefault();
+            if (!showPanel) return;
             setActive(moveActiveIndex(active, "up", results.length));
           } else if (event.key === "Enter") {
             // Only an option that is on screen: after Escape the list is shut.
@@ -200,6 +238,12 @@ export function GlobalSearch({
           ui.focus,
         )}
       />
+      {/* Always in the page, so a change of its words is announced: how many
+          results, that it is searching, or that there are none. The visible
+          lines are not live, so nothing is read twice. */}
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </p>
       <ExitPresence idleOnly>
         {showPanel ? (
           <ExitFade
@@ -211,88 +255,17 @@ export function GlobalSearch({
               ui.radius.card,
             )}
           >
-            {hasList ? (
-              <ul id={listId} role="listbox">
-                {/* Rows that drop out while typing fade where they stand (out of
-                the flow), so the ones that stay do not jump. */}
-                <ExitPresence mode="popLayout" idleOnly>
-                  {panel.kind === "loading" || panel.kind === "empty" ? (
-                    <ExitFade
-                      as="li"
-                      key="empty"
-                      className={cn("px-3 py-3", ui.text.meta, ui.tone.muted)}
-                    >
-                      {panel.kind === "loading" ? t("nav.search.loading") : t("nav.search.empty")}
-                    </ExitFade>
-                  ) : null}
-                  {results.map((entry, index) => (
-                    <ExitFade
-                      as="li"
-                      key={`${entry.kind}:${entry.id}`}
-                      role="option"
-                      aria-selected={index === active}
-                      // mousedown, not click: the field's blur would close the
-                      // list before a click lands.
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        go(entry);
-                      }}
-                      onMouseEnter={() => setActive(index)}
-                    >
-                      <div
-                        className={cn(
-                          // The name first, on its own lines, and what it is under it:
-                          // beside the name, the metadata took the width and the
-                          // player's name was the part that got cut.
-                          "flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
-                          ui.radius.control,
-                          ui.text.meta,
-                          index === active && "bg-[color:var(--ui-surface-sunken)]",
-                        )}
-                      >
-                        <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
-                          {highlightParts(entry.label, text).map((part, position) =>
-                            part.match ? (
-                              <mark
-                                key={position}
-                                className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
-                              >
-                                {part.text}
-                              </mark>
-                            ) : (
-                              <span key={position}>{part.text}</span>
-                            ),
-                          )}
-                        </span>
-                        <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
-                          {entry.hint ? `${entry.hint} · ` : ""}
-                          {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
-                        </span>
-                      </div>
-                    </ExitFade>
-                  ))}
-                </ExitPresence>
-              </ul>
-            ) : null}
-            {/* A failed catalog and the way to ask again: beside the list, not
-                in it (a listbox holds options). mousedown is held back, like
-                the options': the field's blur would otherwise close the panel
-                first. */}
-            {note ? (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-                <p role="status" className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
-                  {note === "none" ? t("nav.search.unavailable") : t("nav.search.partial")}
-                </p>
-                <UiButton
-                  variant="ghost"
-                  size="sm"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={retryFailed}
-                >
-                  {t("state.retry")}
-                </UiButton>
-              </div>
-            ) : null}
+            <GlobalSearchPanelBody
+              panel={panel}
+              results={results}
+              active={active}
+              listId={listId}
+              query={text}
+              note={note}
+              onPick={go}
+              onHover={setActive}
+              onRetry={retryFailed}
+            />
           </ExitFade>
         ) : null}
       </ExitPresence>

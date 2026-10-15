@@ -163,7 +163,7 @@ describe("SofascorePlayerQueueView, French", () => {
       withPanel,
       "Rattacher le joueur SofaScore « Joueur Exemple Alpha » au joueur BotolaGO « Alpha P. » ?",
     );
-    has(withPanel, "ré-essayé automatiquement");
+    has(withPanel, "réessayé automatiquement");
     has(withPanel, "Oui, rattacher");
     has(withPanel, "Annuler");
     expect(count(withPanel, /data-testid="sofascore-confirm-panel"/g)).toBe(1);
@@ -204,7 +204,7 @@ describe("SofascorePlayerQueueView, French", () => {
       },
     });
     has(out, "sofascore-queue-notice");
-    has(out, "ré-essayé automatiquement d’ici environ 15 minutes");
+    has(out, "réessayé automatiquement d’ici environ 15 minutes");
     has(out, "sofascore-queue-entry-error");
   });
 
