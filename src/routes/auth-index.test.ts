@@ -58,12 +58,6 @@ describe("the bare /auth address", () => {
     });
   }
 
-  test("replaces the history entry instead of adding one", async () => {
-    const { history } = await landing("/auth?next=%2Fpronostics");
-    // Back from the sign-in screen must not return to the empty address.
-    expect(history.length).toBe(1);
-  });
-
   test("is the index route only, so the child routes are not touched", async () => {
     for (const child of ["/auth/login", "/auth/register", "/auth/forgot-password"]) {
       const { pathname } = await landing(child);
@@ -71,10 +65,11 @@ describe("the bare /auth address", () => {
     }
   });
 
-  test("runs the shared next sanitiser, with no check of its own", () => {
+  test("runs the shared next sanitiser, with no check of its own, and redirects with replace: true (source-level guard)", () => {
     const source = readFileSync(new URL("./auth.index.tsx", import.meta.url), "utf8");
     expect(source).toContain("authNextSearch(s.next)");
     expect(source).toContain('to: "/auth/login"');
+    // A source-level guard only: a memory history cannot show the difference.
     expect(source).toContain("replace: true");
     // Whatever the route is given goes through the validator; nothing reads the raw address.
     expect(source).not.toMatch(/location\.|window\./);

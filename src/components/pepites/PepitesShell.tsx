@@ -123,17 +123,22 @@ export function PepitesChipRow({
 }
 
 /**
- * A Pépites title fills its row (`flex-1`), so its box spans the band
- * whatever the title's length, and it WRAPS instead of truncating:
- * `UiPageTitle` sizes its heading to the title and wraps the control onto a
- * second line when they do not fit (the app's hub titles are one word,
- * "Matches"), while Pépites titles carry data ("Top 10 · Semaine 15",
- * "Classement final 2025-26") and are better kept beside the trailing
- * buttons on a 390px phone, wrapping inside the row. The display leading
+ * A Pépites title fills its row and WRAPS instead of truncating, because its
+ * titles carry data ("Top 10 · Semaine 15", "Classement final 2025-26") that
+ * an ellipsis would cut.
+ *
+ * Its flex basis is `5em`, not `0`. `UiPageTitle`'s row wraps, so the trailing
+ * buttons (play, share) move to their own line when the heading has less than
+ * `5em` left beside them. With a basis of `0` (plain `flex-1`) the heading
+ * always "fits" however little room it has: measured at 200% text size, the
+ * heading was squeezed to 40px at 320px and 110px at 390px and broke into 8 to
+ * 16 lines, and the band grew from about 870px to 1,700px (French) and 2,700px
+ * (Arabic). At normal text size the heading still takes all the room the
+ * buttons leave, so the layout is the same as before. The display leading
  * holds two lines.
  */
 const TITLE_FILLS_AND_WRAPS =
-  "[&_:is(h1,h2)]:flex-1 [&_:is(h1,h2)]:whitespace-normal [&_:is(h1,h2)]:text-balance";
+  "[&_:is(h1,h2)]:flex-[1_1_5em] [&_:is(h1,h2)]:whitespace-normal [&_:is(h1,h2)]:text-balance";
 
 /**
  * A hub's title band: the kit's `UiPageTitle` (Changa h1, an inline-end
