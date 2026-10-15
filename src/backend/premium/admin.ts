@@ -342,7 +342,9 @@ export const PREMIUM_ADMIN_ERROR_CODES = [
   "premium_season_unavailable",
   "premium_season_ended",
   "premium_payment_reference_required",
+  "premium_payment_reference_invalid",
   "premium_payment_method_invalid",
+  "premium_product_unavailable",
   // The payment details form.
   "premium_payment_details_invalid",
   // Looking an account up by payment code.

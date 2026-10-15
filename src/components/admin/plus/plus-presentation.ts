@@ -321,9 +321,13 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
     fr: "La saison Fantasy est déjà terminée : la Saison ne peut plus être activée.",
     ar: "انتهى الموسم الفانتازي: لا يمكن تفعيل الموسم.",
   },
-  premium_season_too_far: {
-    fr: "La fin de la saison est trop lointaine (plus de 400 jours) : vérifiez le calendrier.",
-    ar: "نهاية الموسم بعيدة جدًا (أكثر من 400 يوم): راجع التقويم.",
+  premium_payment_reference_invalid: {
+    fr: "La référence du paiement doit faire entre 1 et 80 caractères.",
+    ar: "يجب أن يتراوح مرجع الدفع بين 1 و80 حرفًا.",
+  },
+  premium_product_unavailable: {
+    fr: "La Saison n'est pas en vente sur ce serveur : vérifiez que la mise à jour de la base est appliquée.",
+    ar: "الموسم غير متاح للبيع على هذا الخادم: تحقق من تطبيق تحديث قاعدة البيانات.",
   },
   premium_payment_reference_required: {
     fr: "Indiquez la référence du paiement (numéro du virement ou du reçu).",
