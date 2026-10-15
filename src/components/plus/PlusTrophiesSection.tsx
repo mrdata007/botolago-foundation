@@ -8,6 +8,7 @@ import type { PlusAccess } from "./plus-access";
 import { TrophyCabinet } from "./TrophyCabinet";
 import { TrophyDetail } from "./TrophyDetail";
 import { TrophyFrames } from "./TrophyFrames";
+import { TrophyVisibilitySwitch } from "./TrophyVisibilitySwitch";
 import { useTrophyCopy } from "./trophy-copy";
 import type { TrophyIdentity } from "./trophy-identity";
 import { buildShelves, earnedCount, newestWithin, type Shelf } from "./trophy-model";
@@ -143,6 +144,7 @@ function Rule() {
       <ul>
         <li>{c.t("plus.tr.rule_tier")}</li>
         <li>{c.t("plus.tr.rule_kept")}</li>
+        <li>{c.t("plus.tr.rule_season_end")}</li>
         <li>{c.t("plus.tr.rule_founder")}</li>
         <li>{c.t("plus.tr.rule_nomoney")}</li>
       </ul>
@@ -204,6 +206,7 @@ function MemberTrophies({
         onOpen={(code) => setView({ kind: "detail", code })}
       />
       <Rule />
+      <TrophyVisibilitySwitch cabinet={cabinet} />
       <div className="tr-actions">
         <button
           type="button"
@@ -273,6 +276,7 @@ function LockedTrophies({ cabinet }: { cabinet: TrophiesCabinet }) {
           {frames > 0 ? (
             <p className="tr-free">{c.text("plus.tr.frames_locked", { n: frames })}</p>
           ) : null}
+          <TrophyVisibilitySwitch cabinet={cabinet} />
         </div>
       }
     >

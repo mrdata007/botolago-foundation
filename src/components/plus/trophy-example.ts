@@ -11,7 +11,6 @@ const EXAMPLE_FACTS: Record<string, { gw: number; facts: Record<string, unknown>
   gw_80: { gw: 8, facts: { score: 81 } },
   ten_gameweeks: { gw: 10, facts: { played: 10 } },
   winning_transfer: { gw: 8, facts: { gain: 11 } },
-  league_podium: { gw: 9, facts: { rank: 3, of: 5 } },
 };
 
 export function exampleCabinet(catalog: readonly CatalogTrophy[]): TrophiesCabinet {
@@ -40,5 +39,6 @@ export function exampleCabinet(catalog: readonly CatalogTrophy[]): TrophiesCabin
     frames: [],
     chosenFrame: "standard",
     frame: "standard",
+    showToLeagues: true,
   };
 }

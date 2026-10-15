@@ -57,14 +57,24 @@ describe("« Trophées » on the card page", () => {
     );
     const t = text(html);
     expect(html).toContain('data-testid="plus-trophies-member"');
-    expect(t).toContain("Karim B. : 6 trophées cette saison, 1 en attente de publication");
+    expect(t).toContain("Karim B. : 6 trophées cette saison");
+    expect(t).not.toContain("en attente de publication");
     expect(t).toContain("Saison 2026/27 · après la journée 11");
     for (const shelf of ["Paliers", "Journées", "Décisions", "Ligue", "Carte"])
       expect(t).toContain(shelf);
     expect(t).toContain("Publié le 3 oct.");
-    expect(t).toContain("en attente");
     expect(t).toContain("Note 84 requise, la vôtre 72");
     expect(t).toContain("Un résultat corrigé ne retire jamais un trophée.");
+    // league trophies are given at the end of the season: in progress, never earned
+    expect(t).toContain("en cours");
+    expect(t).toContain("3e pour l’instant. Attribué à la fin de la saison.");
+    expect(t).toContain("Podium et champion de ligue : attribués à la fin de la saison");
+    expect(html).not.toMatch(/<button[^>]*data-testid="trophy-league_(podium|leader)"/);
+    // « Montrer mes trophées », on by default
+    expect(t).toContain("Montrer mes trophées");
+    expect(html).toMatch(
+      /role="switch"[^>]*aria-checked="true"|aria-checked="true"[^>]*role="switch"/,
+    );
     expect(html).toContain('data-testid="trophies-share"');
     expect(html).toContain('data-testid="trophies-frames"');
     // the owner's rules: no « provisoire », no card serial
@@ -80,6 +90,7 @@ describe("« Trophées » on the card page", () => {
     const t = text(html);
     expect(html).toContain('data-testid="plus-trophies-locked"');
     expect(html).toContain('data-testid="trophies-list"');
+    expect(html).toContain('data-testid="trophies-visibility"');
     expect(t).toContain("Fondateur 2026");
     expect(t).toContain("Votre vitrine de trophées");
     expect(t).toContain("Découvrir");
@@ -92,9 +103,26 @@ describe("« Trophées » on the card page", () => {
   });
 });
 
+describe("« Montrer mes trophées »", () => {
+  it("shows the switch off when the reader hid their trophies", async () => {
+    const client = new QueryClient();
+    client.setQueryData(trophyKeys.mine(null), mockTrophies("founder_2026", true, false));
+    const html = await render(<PlusTrophiesSection access="member" identity={identity} />, client);
+    expect(html).toMatch(/aria-checked="false"/);
+    expect(html).toContain('data-testid="trophies-visibility-switch"');
+  });
+});
+
 describe("the cabinet, drawn on its own", () => {
   it("lights earned plaques as buttons, dims the waiting one, flattens the rest", async () => {
-    const shelves = buildShelves(mockTrophies("standard", true), "fr");
+    // the end of the season, the last journée not yet published: the podium waits
+    const shelves = buildShelves(
+      {
+        ...mockTrophies("standard", true),
+        pending: [{ code: "league_podium", gameweekSeq: 34, reason: "ratings_not_published" }],
+      },
+      "fr",
+    );
     const html = await render(
       <TrophyCabinet shelves={shelves} newest="ten_gameweeks" onOpen={noop} />,
     );

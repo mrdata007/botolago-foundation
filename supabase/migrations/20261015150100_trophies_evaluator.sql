@@ -21,10 +21,22 @@
 --                     season is reached
 --   winning_transfer  the first counted transfer (the card's TRF definition, gain after its share
 --                     of the points hit) worth at least +10 points
---   league_podium     the first journée after which the manager is in the first 3 of a private
---                     league that ranks at least 3 managers
---   league_leader     the same, first place
+--   league_podium     END OF SEASON ONLY: the manager finishes in the first 3 of the final
+--                     standing of a private league that ranks at least 3 managers
+--   league_leader     the same, first place (the league champion)
 --   founder_2026      the manager holds the founding-cohort mark (no season)
+--
+-- END OF SEASON (owner decision, 2026-10-15). The two league trophies are placement awards: they
+-- are never earned mid-season, however well the manager stands. They are granted only once the
+-- season is over (the Fantasy season is completed, or its end date has passed) AND every one of
+-- its gameweeks that was not cancelled is final and published for the card, the last one
+-- included (app_private.trophy_season_end). The standing is then the final cumulative standing of
+-- each private league the manager plays in, through the last gameweek. Until then the cabinet
+-- shows them as in progress (20261015150200).
+--
+-- CURRENT SEASON ONLY (owner decision, 2026-10-15). Nothing is backfilled for a past season: the
+-- evaluator refuses any season other than the current one (app_private.manager_card_fantasy_season),
+-- whoever calls it, and the guarded apply script never calls it for another.
 --
 -- PUBLICATION STAMP. source_published_at is the finalized_at of the gameweek that completed the
 -- rule (for a transfer: the last gameweek of the window that counted it). A rule whose source has
@@ -134,6 +146,38 @@ comment on function app_private.trophy_league_ranks(uuid, uuid) is
   'The manager''s rank in each private league they play in, after each evaluable week, with the number of managers ranked. Competition ranks on the cumulative final score. Read only. No grant.';
 
 -- ---------------------------------------------------------------------------
+-- The end of a season
+-- ---------------------------------------------------------------------------
+-- One row (the last gameweek's number and the time it was published) when the season is over and
+-- final, no row otherwise. Over: the Fantasy season is completed, or it is active and its end date
+-- has passed. Final: every gameweek of the season that was not cancelled is evaluable for the
+-- card (finalized or corrected, points final, post-work complete), which includes the last one.
+create function app_private.trophy_season_end(p_season uuid)
+returns table (seq integer, published timestamptz)
+language sql
+stable
+set search_path = ''
+as $$
+  select g.sequence_number, g.finalized_at
+  from app.fantasy_seasons fs
+  join app.fantasy_gameweeks g
+    on g.fantasy_season_id = fs.id and g.status <> 'cancelled' and g.finalized_at is not null
+  where fs.id = p_season
+    and (fs.status = 'completed' or (fs.status = 'active' and fs.ends_at <= statement_timestamp()))
+    and g.sequence_number = (
+      select max(lastgw.sequence_number) from app.fantasy_gameweeks lastgw
+      where lastgw.fantasy_season_id = fs.id and lastgw.status <> 'cancelled')
+    and not exists (
+      select 1 from app.fantasy_gameweeks anygw
+      where anygw.fantasy_season_id = fs.id and anygw.status <> 'cancelled'
+        and anygw.id not in (select e.gameweek_id from app_private.card_evaluable_gameweeks(p_season) e));
+$$;
+revoke all on function app_private.trophy_season_end(uuid)
+  from public, anon, authenticated, service_role;
+comment on function app_private.trophy_season_end(uuid) is
+  'The last gameweek (number and publication time) of a Fantasy season that is over and final: completed, or active past its end date, with every non-cancelled gameweek evaluable for the card. No row before that. The league trophies are granted only from this. Read only. No grant.';
+
+-- ---------------------------------------------------------------------------
 -- The rules, for one manager and one season
 -- ---------------------------------------------------------------------------
 create function app_private.trophies_evaluate_season(p_user uuid, p_season uuid)
@@ -146,6 +190,10 @@ declare
   granted integer := 0;
   r record;
 begin
+  -- Current season only: no backfill of a past season, whoever asks.
+  if p_season is null or p_season is distinct from app_private.manager_card_fantasy_season() then
+    return 0;
+  end if;
   for r in
     with need as (
       select c.code, c.need from app.trophy_catalog c where c.status = 'active'
@@ -158,11 +206,19 @@ begin
     ), tiers(code, tier) as (
       values ('first_stade', 'stade'), ('first_pro', 'pro'),
         ('first_champion', 'champion'), ('first_legend', 'legend')
+    ), se as (
+      select e.seq, e.published from app_private.trophy_season_end(p_season) e
     ), lr as (
-      select l.seq, l.rk, l.n, gw.finalized_at as published
-      from app_private.trophy_league_ranks(p_user, p_season) l
-      join app.fantasy_gameweeks gw on gw.id = l.gameweek_id
-      where l.n >= 3 and gw.finalized_at is not null
+      -- the FINAL standing of each private league, through the season's last gameweek, and only
+      -- when the season is over and final (se has no row before that)
+      select f.rk, f.n, f.seq, f.published
+      from (
+        select distinct on (l.league_id) l.rk, l.n, se.seq, se.published
+        from se
+        cross join lateral app_private.trophy_league_ranks(p_user, p_season) l
+        where l.seq <= se.seq
+        order by l.league_id, l.seq desc) f
+      where f.n >= 3
     ), cands as (
       select 'first_rating'::text as code, x.seq, jsonb_build_object('ovr', x.ovr, 'tier', x.tier) as facts,
         x.published
@@ -206,12 +262,12 @@ begin
       select 'league_podium', x.seq, jsonb_build_object('rank', x.rk, 'of', x.n), x.published
       from (select * from lr
         where rk <= (select n.need from need n where n.code = 'league_podium')
-        order by seq, rk limit 1) x
+        order by rk limit 1) x
       union all
       select 'league_leader', x.seq, jsonb_build_object('rank', x.rk, 'of', x.n), x.published
       from (select * from lr
         where rk <= (select n.need from need n where n.code = 'league_leader')
-        order by seq, rk limit 1) x
+        order by rk limit 1) x
     )
     select c.code, c.seq, c.facts, c.published from cands c
   loop
@@ -223,10 +279,10 @@ $$;
 revoke all on function app_private.trophies_evaluate_season(uuid, uuid)
   from public, anon, authenticated, service_role;
 comment on function app_private.trophies_evaluate_season(uuid, uuid) is
-  'Evaluates the version 1 trophy rules for one manager over one Fantasy season''s final results and grants what is true (once; a granted trophy is never asked again). Returns the number of trophies added. Reads Fantasy and card data, writes only app.trophies_earned through trophy_grant. No grant.';
+  'Evaluates the version 1 trophy rules for one manager over the CURRENT Fantasy season''s final results (any other season returns 0: no backfill) and grants what is true (once; a granted trophy is never asked again). The league podium and champion are granted only from the final standing, once the season is over and final. Returns the number of trophies added. Reads Fantasy and card data, writes only app.trophies_earned through trophy_grant. No grant.';
 
 -- ---------------------------------------------------------------------------
--- One manager: the season and the card-scope trophy
+-- One manager: the (current) season and the card-scope trophy
 -- ---------------------------------------------------------------------------
 create function app_private.trophies_evaluate_user(p_user uuid, p_season uuid)
 returns integer

@@ -27,13 +27,27 @@ describe("the shelves", () => {
     expect(paliers.earned).toBe(2);
     expect(paliers.total).toBe(5);
   });
-  it("show the podium as waiting, never as earned, and the leader as still to earn", () => {
+  it("show the league podium and champion as in progress mid-season, never as earned", () => {
     const ligue = shelves.find((s) => s.family === "ligue")!;
+    expect(ligue.plaques.map((p) => `${p.state}:${p.code}`)).toEqual([
+      "todo:league_podium",
+      "todo:league_leader",
+    ]);
+    expect(ligue.earned).toBe(0);
+    expect(ligue.plaques[0]).toMatchObject({ progress: { have: 3, need: 3, unit: "rank" } });
+  });
+  it("show the podium as waiting when the season is over and the last journée is not published", () => {
+    const waiting = {
+      ...cabinet,
+      pending: [
+        { code: "league_podium", gameweekSeq: 34, reason: "ratings_not_published" as const },
+      ],
+    };
+    const ligue = buildShelves(waiting, "fr").find((s) => s.family === "ligue")!;
     expect(ligue.plaques.map((p) => `${p.state}:${p.code}`)).toEqual([
       "pending:league_podium",
       "todo:league_leader",
     ]);
-    expect(ligue.earned).toBe(0);
   });
   it("leave the founding trophy off the card shelf for anyone who does not hold it", () => {
     const without = { ...cabinet, earned: cabinet.earned.filter((e) => e.code !== "founder_2026") };

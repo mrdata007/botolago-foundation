@@ -74,9 +74,16 @@ function PlaqueBody({ plaque, isNew }: { plaque: Plaque; isNew: boolean }): Reac
     );
   }
   const share = c.progressShare(plaque.progress);
+  // a league trophy the reader is standing towards: « en cours », never earned before the season ends
+  const inProgress = plaque.progress?.unit === "rank" && plaque.progress.have !== null;
   return (
     <>
       <span className="tr-plaque__label">{plaque.label}</span>
+      {inProgress ? (
+        <span className="tr-plaque__meta">
+          <span className="tr-pill">{c.t("plus.tr.in_progress")}</span>
+        </span>
+      ) : null}
       <span className="tr-plaque__meta">{c.progressLine(plaque.progress)}</span>
       {share !== null ? (
         <span className="tr-bar-progress" aria-hidden>
@@ -90,7 +97,9 @@ function PlaqueBody({ plaque, isNew }: { plaque: Plaque; isNew: boolean }): Reac
 /**
  * The lit glass cabinet: one shelf per family, an earned trophy a mint-lit plaque (a button that
  * opens its detail when `onOpen` is given), the one waiting for a publication dashed and dimmed, the
- * ones still to earn flat silhouettes with a progress bar. Pure: it draws the shelves it is given.
+ * ones still to earn flat silhouettes with a progress bar (the league podium and champion, given at
+ * the end of the season, show « en cours » and today's rank instead). Pure: it draws the shelves it
+ * is given.
  */
 export function TrophyCabinet({
   shelves,

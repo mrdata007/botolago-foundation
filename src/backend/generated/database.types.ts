@@ -1258,6 +1258,7 @@ export type Database = {
         Args: { p_league?: string; p_rival_team?: string; p_season?: string }
         Returns: Json
       }
+      get_league_member_trophies: { Args: { p_league: string }; Returns: Json }
       get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_card_career: { Args: { p_season?: string }; Returns: Json }
@@ -2436,6 +2437,7 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: Json
       }
+      set_trophies_visibility: { Args: { p_visible: boolean }; Returns: Json }
       unfollow_competition: {
         Args: { p_competition_id: string }
         Returns: boolean
@@ -8882,6 +8884,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      trophy_visibility: {
+        Row: {
+          show_to_league_mates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          show_to_league_mates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          show_to_league_mates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trophy_visibility_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {

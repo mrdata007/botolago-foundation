@@ -16,6 +16,16 @@
 --     published (source_published_at), and the screens say « Publié le … ».
 --   * The word in French is « trophée », in Arabic « كأس / كؤوس ». The admin prize system
 --     (app.fantasy_prizes) is a different thing and is not touched, read or imitated.
+--   * The league podium and the league champion are placement awards: they are given only at the
+--     END of the season, from the final standing of a private league of at least three managers,
+--     once the season's last gameweek is final and published (20261015150100). Before that the
+--     cabinet shows them as « en cours », never as earned.
+--   * Trophies are evaluated for the current season only, going forward. Nothing is backfilled for
+--     a past season.
+--   * Visibility (2026-10-15): the trophies a manager has earned (never points, ratings or
+--     tiers) are visible by default to the managers who share a private Fantasy league with them
+--     this season. They are never visible to strangers, nor in public or overall leagues. A
+--     manager can hide them with one switch (app.trophy_visibility, on by default).
 --
 -- SHIPS OFF. app_private.trophy_settings has one row, switched off. Until the owner switches the
 -- evaluator on nothing is written; and while BotolaGO+ is off every read answers
@@ -29,6 +39,7 @@
 --   trophies_earned       app_private.trophy_grant only, called by the evaluator (20261015150100)
 --   card_frames           the owner's script
 --   card_frame_choices    api.choose_card_frame only (20261015150200)
+--   trophy_visibility     api.set_trophies_visibility only (20261015150200)
 --
 -- Every table: row security enabled and forced, all rights revoked from public, anon,
 -- authenticated and service_role, no policy, an index on every foreign-key column. Reads go
@@ -128,8 +139,9 @@ values
   ('ten_gameweeks', 'journees', 'season', 10, '10 journées jouées', '10 جولات لُعبت', 21),
   ('thirty_gameweeks', 'journees', 'season', 30, '30 journées jouées', '30 جولة لُعبت', 22),
   ('winning_transfer', 'decisions', 'season', 10, 'Transfert gagnant', 'انتقال رابح', 30),
+  -- league_podium and league_leader are awarded at the end of the season only (20261015150100)
   ('league_podium', 'ligue', 'season', 3, 'Podium de la ligue', 'منصة الدوري', 40),
-  ('league_leader', 'ligue', 'season', 1, 'En tête de votre ligue', 'صدارة دوريك', 41),
+  ('league_leader', 'ligue', 'season', 1, 'Champion de votre ligue', 'بطل دوريك', 41),
   ('founder_2026', 'carte', 'card', null, 'Fondateur 2026', 'مؤسس 2026', 50);
 
 -- ---------------------------------------------------------------------------
@@ -263,5 +275,30 @@ alter table app.card_frame_choices force row level security;
 revoke all on app.card_frame_choices from public, anon, authenticated, service_role;
 comment on table app.card_frame_choices is
   'The frame a manager chose for their card (display only). Written only by api.choose_card_frame, which checks the trophy and the membership. Kept when membership lapses (the card shows standard until it is renewed). Row security forced, no policy, no grant. Cascades from the profile.';
+
+-- ---------------------------------------------------------------------------
+-- Who may see a manager's trophies
+-- ---------------------------------------------------------------------------
+-- One row per manager who has touched the switch; no row means the default, which is ON: the
+-- managers who share a private Fantasy league with the manager this season see the trophies they
+-- earned (the codes and the count, nothing else). Strangers never do, and public or overall
+-- leagues never show them. Written only by api.set_trophies_visibility (20261015150200), which
+-- carries the same second-factor step-up as the frame choice.
+create table app.trophy_visibility (
+  user_id uuid primary key references app.profiles(id) on delete cascade,
+  show_to_league_mates boolean not null default true,
+  updated_at timestamptz not null default statement_timestamp()
+);
+create trigger trophy_visibility_set_updated_at
+before update on app.trophy_visibility
+for each row execute function app_private.set_updated_at();
+create trigger trophy_visibility_refuse_unverified_mfa_actor
+before insert or update or delete on app.trophy_visibility
+for each statement execute function app_private.refuse_unverified_mfa_actor();
+alter table app.trophy_visibility enable row level security;
+alter table app.trophy_visibility force row level security;
+revoke all on app.trophy_visibility from public, anon, authenticated, service_role;
+comment on table app.trophy_visibility is
+  'Whether a manager shows the trophies they earned to the managers who share a private Fantasy league with them (default on when there is no row). Written only by api.set_trophies_visibility. Row security forced, no policy, no grant. Cascades from the profile.';
 
 notify pgrst, 'reload schema';

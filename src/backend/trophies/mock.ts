@@ -3,8 +3,11 @@ import { isMemberState } from "@/backend/premium/contracts";
 import { mockMine, scenarioFromSearch } from "@/backend/premium/mock-repository";
 
 import {
+  leagueMemberTrophiesSchema,
   trophiesCabinetSchema,
   type ChooseFrameResponse,
+  type LeagueMemberTrophiesResponse,
+  type SetVisibilityResponse,
   type TrophiesCabinet,
   type TrophiesRepository,
   type TrophiesResponse,
@@ -15,10 +18,12 @@ import {
  * Reached only through the dynamic import in `src/services/trophies.ts` behind
  * `import.meta.env.DEV`, so a production build carries none of it.
  *
- * It is Karim B. (KACM) after journée 11 of 2026/27: six trophies earned, the league podium waiting
- * for ratings that are not all published, the rest still to earn with the server's own counts. Whether
- * he is a member follows `?plus=<scenario>` like the membership mock (`none` is the default: a
- * non-member). A frame chosen here lives in memory until the page reloads.
+ * It is Karim B. (KACM) after journée 11 of 2026/27: six trophies earned, the league podium and the
+ * league champion still in progress (they are given at the end of the season only), the rest still to
+ * earn with the server's own counts. Whether he is a member follows `?plus=<scenario>` like the
+ * membership mock (`none` is the default: a non-member). A frame chosen here, and the switch « Montrer
+ * mes trophées », live in memory until the page reloads. The league mates are the Fantasy mock's
+ * `m1` and `m2` (Youssef A. and Salma B., league « lg1 »).
  */
 
 const SEASON = { id: "00000000-0000-4000-8000-000000000001", label: "2026/27" };
@@ -110,8 +115,8 @@ const CATALOG: TrophiesCabinet["catalog"] = [
     family: "ligue",
     scope: "season",
     need: 1,
-    labelFr: "En tête de votre ligue",
-    labelAr: "صدارة دوريك",
+    labelFr: "Champion de votre ligue",
+    labelAr: "بطل دوريك",
   },
   {
     code: "founder_2026",
@@ -202,7 +207,11 @@ function isMember(): boolean {
   return mine.available && isMemberState(mine.state);
 }
 
-export function mockTrophies(chosen: string, member: boolean): TrophiesCabinet {
+export function mockTrophies(
+  chosen: string,
+  member: boolean,
+  showToLeagues = true,
+): TrophiesCabinet {
   return trophiesCabinetSchema.parse({
     available: true,
     member,
@@ -222,26 +231,76 @@ export function mockTrophies(chosen: string, member: boolean): TrophiesCabinet {
       earn("ten_gameweeks", 10, { played: 10 }, "10-09"),
       earn("founder_2026", null, { cohort: 1 }, "09-10", null),
     ],
-    pending: [{ code: "league_podium", gameweekSeq: 11, reason: "ratings_not_published" }],
+    pending: [],
     progress: [
       { code: "first_pro", have: 72, need: 84, unit: "rating" },
       { code: "first_champion", have: 72, need: 90, unit: "rating" },
       { code: "first_legend", have: 72, need: 95, unit: "rating" },
       { code: "thirty_gameweeks", have: 11, need: 30, unit: "gameweeks" },
-      { code: "league_leader", have: null, need: 1, unit: "rank" },
+      { code: "league_podium", have: 3, need: 3, unit: "rank" },
+      { code: "league_leader", have: 3, need: 1, unit: "rank" },
     ],
     frames: FRAMES,
     chosenFrame: chosen,
     frame: member ? chosen : "standard",
+    showToLeagues,
+  });
+}
+
+const mateTrophy = (code: string, gameweekSeq: number | null, publishedDay: string) => {
+  const item = label(code);
+  return {
+    code,
+    family: item.family,
+    labelFr: item.labelFr,
+    labelAr: item.labelAr,
+    gameweekSeq,
+    publishedAt: stamp(publishedDay),
+  };
+};
+
+/** The mates who show trophies in the development league: only what they earned, nothing else. */
+export function mockMateTrophies(leagueId: string): LeagueMemberTrophiesResponse {
+  const mates = [
+    {
+      teamId: "m1",
+      trophies: [
+        mateTrophy("first_rating", 3, "09-21"),
+        mateTrophy("gw_80", 8, "10-03"),
+        mateTrophy("ten_gameweeks", 10, "10-09"),
+      ],
+    },
+    { teamId: "m2", trophies: [mateTrophy("first_stade", 7, "09-28")] },
+  ];
+  return leagueMemberTrophiesSchema.parse({
+    available: true,
+    leagueId,
+    members: mates.map((m) => ({ ...m, count: m.trophies.length })),
   });
 }
 
 /** An in-memory repository: Karim B.'s cabinet, and the frame he picks until the page reloads. */
 export class MockTrophiesRepository implements TrophiesRepository {
   private chosen = "founder_2026";
+  private shown = true;
 
   async myTrophies(_season: string | null, _context: RepositoryContext): Promise<TrophiesResponse> {
-    return mockTrophies(this.chosen, isMember());
+    return mockTrophies(this.chosen, isMember(), this.shown);
+  }
+
+  async setVisibility(
+    visible: boolean,
+    _context: RepositoryContext,
+  ): Promise<SetVisibilityResponse> {
+    this.shown = visible;
+    return { available: true, showToLeagues: visible };
+  }
+
+  async leagueMemberTrophies(
+    leagueId: string,
+    _context: RepositoryContext,
+  ): Promise<LeagueMemberTrophiesResponse> {
+    return mockMateTrophies(leagueId);
   }
 
   async chooseFrame(code: string, _context: RepositoryContext): Promise<ChooseFrameResponse> {

@@ -2,15 +2,26 @@
 -- BotolaGO (STAGING srdrflfrfpwixsllveid first, then PRODUCTION tkewgajrljbwgwedqsxn)
 -- Apply the BotolaGO+ Trophées backend, migrations 20261015150000 to 20261015150200
 -- (docs/product/botolago-plus-trophies-brief.md, owner decisions of 2026-10-15): the trophies a
--- manager earns by playing, the card frames, the evaluator and the three reads.
+-- manager earns by playing, the card frames, the evaluator and the five reads.
 --
--- It adds five tables (app.trophy_catalog, app.trophies_earned, app.card_frames,
--- app.card_frame_choices, app_private.trophy_settings), twelve trophies and nine frames of
--- configuration, the switch app_private.trophy_configure, the evaluator
--- (app_private.trophies_tick and its helpers), three api functions (get_my_trophies,
--- choose_card_frame, get_trophy_card_frames) and TWO SCHEDULED JOBS: trophies-tick (minutes 10
+-- It adds six tables (app.trophy_catalog, app.trophies_earned, app.card_frames,
+-- app.card_frame_choices, app.trophy_visibility, app_private.trophy_settings), twelve trophies and
+-- nine frames of configuration, the switch app_private.trophy_configure, the evaluator
+-- (app_private.trophies_tick and its helpers), five api functions (get_my_trophies,
+-- choose_card_frame, get_trophy_card_frames, set_trophies_visibility, get_league_member_trophies)
+-- and TWO SCHEDULED JOBS: trophies-tick (minutes 10
 -- and 40 of every hour) and trophies-history-prune (daily 03:31 UTC). It REPLACES NOTHING: no
 -- existing function, table or row changes -- the script checks that.
+--
+-- LEAGUE TROPHIES AT THE END OF THE SEASON ONLY. The league podium and the league champion are
+-- granted only once the season is over and its last journée is final and published, from the final
+-- standing of a private league of at least three managers; before that the cabinet shows them as in
+-- progress. Trophies are shown to the managers who share a private league with you, unless you
+-- switch them off (on by default); never to strangers or in public leagues.
+--
+-- NO BACKFILL. The evaluator works on the CURRENT Fantasy season only and refuses any other, and
+-- this script grants nothing: it runs no evaluation at all. The script checks that no trophy exists
+-- afterwards and that the evaluator carries its current-season guard.
 --
 -- IT SHIPS OFF. app_private.trophy_settings.enabled is false, so trophies-tick answers
 -- {"status": "off"} and writes nothing; and while BotolaGO+ is off every read answers
@@ -55,9 +66,11 @@
 --   * records the three migration files in supabase_migrations.schema_migrations, each whole as
 --     statements[1], and runs each from that record once its sha256 matches the repository file;
 --   * checks the result without saving anything: row security forced and no client privilege on
---     the five tables; twelve trophies, nine frames; the switch off; the never-taken-back
---     triggers; the three api functions' grants and security settings; the helpers callable by
---     no API role; the reads answering "off" while BotolaGO+ is off; the pass answering "off";
+--     the six tables; twelve trophies, nine frames; the switch off; the never-taken-back
+--     triggers and the step-up trigger on the two tables a signed-in account writes; the five api
+--     functions' grants and security settings; the helpers callable by no API role; the evaluator
+--     refusing every season but the current one and granting league trophies only from the end of
+--     the season; the reads answering "off" while BotolaGO+ is off; the pass answering "off";
 --     exactly two jobs added; the definitions of the card reads, the editions and the membership
 --     check unchanged; no trophy and no frame choice exist.
 -- ============================================================================
@@ -121,11 +134,13 @@ begin
   end if;
   if to_regclass('app.trophy_catalog') is not null or to_regclass('app.trophies_earned') is not null
     or to_regclass('app.card_frames') is not null or to_regclass('app.card_frame_choices') is not null
+    or to_regclass('app.trophy_visibility') is not null
     or to_regclass('app_private.trophy_settings') is not null then
     raise exception 'stop: one of the Trophées tables already exists';
   end if;
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where (n.nspname = 'api' and p.proname in ('get_my_trophies', 'choose_card_frame', 'get_trophy_card_frames'))
+    where (n.nspname = 'api' and p.proname in ('get_my_trophies', 'choose_card_frame', 'get_trophy_card_frames',
+        'set_trophies_visibility', 'get_league_member_trophies'))
       or (n.nspname = 'app_private' and (p.proname like 'trophy\_%' or p.proname like 'trophies\_%'
         or p.proname = 'card_frame_effective'))) then
     raise exception 'stop: one of the Trophées functions already exists';
@@ -135,6 +150,8 @@ begin
   end if;
   -- This replaces nothing: remember what is there and compare afterwards.
   perform set_config('bg.trophies_jobs', (select count(*) from cron.job)::text, true);
+  perform set_config('bg.trophies_stepup', (select count(*) from pg_trigger
+    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure)::text, true);
   perform set_config('bg.trophies_defs', (select string_agg(
       p.oid::regprocedure::text || '=' || md5(pg_get_functiondef(p.oid)), ';' order by p.oid::regprocedure::text)
     from pg_proc p where p.oid in (
@@ -173,6 +190,16 @@ values (
 --     published (source_published_at), and the screens say « Publié le … ».
 --   * The word in French is « trophée », in Arabic « كأس / كؤوس ». The admin prize system
 --     (app.fantasy_prizes) is a different thing and is not touched, read or imitated.
+--   * The league podium and the league champion are placement awards: they are given only at the
+--     END of the season, from the final standing of a private league of at least three managers,
+--     once the season's last gameweek is final and published (20261015150100). Before that the
+--     cabinet shows them as « en cours », never as earned.
+--   * Trophies are evaluated for the current season only, going forward. Nothing is backfilled for
+--     a past season.
+--   * Visibility (2026-10-15): the trophies a manager has earned (never points, ratings or
+--     tiers) are visible by default to the managers who share a private Fantasy league with them
+--     this season. They are never visible to strangers, nor in public or overall leagues. A
+--     manager can hide them with one switch (app.trophy_visibility, on by default).
 --
 -- SHIPS OFF. app_private.trophy_settings has one row, switched off. Until the owner switches the
 -- evaluator on nothing is written; and while BotolaGO+ is off every read answers
@@ -186,6 +213,7 @@ values (
 --   trophies_earned       app_private.trophy_grant only, called by the evaluator (20261015150100)
 --   card_frames           the owner's script
 --   card_frame_choices    api.choose_card_frame only (20261015150200)
+--   trophy_visibility     api.set_trophies_visibility only (20261015150200)
 --
 -- Every table: row security enabled and forced, all rights revoked from public, anon,
 -- authenticated and service_role, no policy, an index on every foreign-key column. Reads go
@@ -285,8 +313,9 @@ values
   ('ten_gameweeks', 'journees', 'season', 10, '10 journées jouées', '10 جولات لُعبت', 21),
   ('thirty_gameweeks', 'journees', 'season', 30, '30 journées jouées', '30 جولة لُعبت', 22),
   ('winning_transfer', 'decisions', 'season', 10, 'Transfert gagnant', 'انتقال رابح', 30),
+  -- league_podium and league_leader are awarded at the end of the season only (20261015150100)
   ('league_podium', 'ligue', 'season', 3, 'Podium de la ligue', 'منصة الدوري', 40),
-  ('league_leader', 'ligue', 'season', 1, 'En tête de votre ligue', 'صدارة دوريك', 41),
+  ('league_leader', 'ligue', 'season', 1, 'Champion de votre ligue', 'بطل دوريك', 41),
   ('founder_2026', 'carte', 'card', null, 'Fondateur 2026', 'مؤسس 2026', 50);
 
 -- ---------------------------------------------------------------------------
@@ -421,6 +450,31 @@ revoke all on app.card_frame_choices from public, anon, authenticated, service_r
 comment on table app.card_frame_choices is
   'The frame a manager chose for their card (display only). Written only by api.choose_card_frame, which checks the trophy and the membership. Kept when membership lapses (the card shows standard until it is renewed). Row security forced, no policy, no grant. Cascades from the profile.';
 
+-- ---------------------------------------------------------------------------
+-- Who may see a manager's trophies
+-- ---------------------------------------------------------------------------
+-- One row per manager who has touched the switch; no row means the default, which is ON: the
+-- managers who share a private Fantasy league with the manager this season see the trophies they
+-- earned (the codes and the count, nothing else). Strangers never do, and public or overall
+-- leagues never show them. Written only by api.set_trophies_visibility (20261015150200), which
+-- carries the same second-factor step-up as the frame choice.
+create table app.trophy_visibility (
+  user_id uuid primary key references app.profiles(id) on delete cascade,
+  show_to_league_mates boolean not null default true,
+  updated_at timestamptz not null default statement_timestamp()
+);
+create trigger trophy_visibility_set_updated_at
+before update on app.trophy_visibility
+for each row execute function app_private.set_updated_at();
+create trigger trophy_visibility_refuse_unverified_mfa_actor
+before insert or update or delete on app.trophy_visibility
+for each statement execute function app_private.refuse_unverified_mfa_actor();
+alter table app.trophy_visibility enable row level security;
+alter table app.trophy_visibility force row level security;
+revoke all on app.trophy_visibility from public, anon, authenticated, service_role;
+comment on table app.trophy_visibility is
+  'Whether a manager shows the trophies they earned to the managers who share a private Fantasy league with them (default on when there is no row). Written only by api.set_trophies_visibility. Row security forced, no policy, no grant. Cascades from the profile.';
+
 notify pgrst, 'reload schema';
 $bg_20261015150000_file$]
 );
@@ -452,10 +506,22 @@ values (
 --                     season is reached
 --   winning_transfer  the first counted transfer (the card's TRF definition, gain after its share
 --                     of the points hit) worth at least +10 points
---   league_podium     the first journée after which the manager is in the first 3 of a private
---                     league that ranks at least 3 managers
---   league_leader     the same, first place
+--   league_podium     END OF SEASON ONLY: the manager finishes in the first 3 of the final
+--                     standing of a private league that ranks at least 3 managers
+--   league_leader     the same, first place (the league champion)
 --   founder_2026      the manager holds the founding-cohort mark (no season)
+--
+-- END OF SEASON (owner decision, 2026-10-15). The two league trophies are placement awards: they
+-- are never earned mid-season, however well the manager stands. They are granted only once the
+-- season is over (the Fantasy season is completed, or its end date has passed) AND every one of
+-- its gameweeks that was not cancelled is final and published for the card, the last one
+-- included (app_private.trophy_season_end). The standing is then the final cumulative standing of
+-- each private league the manager plays in, through the last gameweek. Until then the cabinet
+-- shows them as in progress (20261015150200).
+--
+-- CURRENT SEASON ONLY (owner decision, 2026-10-15). Nothing is backfilled for a past season: the
+-- evaluator refuses any season other than the current one (app_private.manager_card_fantasy_season),
+-- whoever calls it, and the guarded apply script never calls it for another.
 --
 -- PUBLICATION STAMP. source_published_at is the finalized_at of the gameweek that completed the
 -- rule (for a transfer: the last gameweek of the window that counted it). A rule whose source has
@@ -565,6 +631,38 @@ comment on function app_private.trophy_league_ranks(uuid, uuid) is
   'The manager''s rank in each private league they play in, after each evaluable week, with the number of managers ranked. Competition ranks on the cumulative final score. Read only. No grant.';
 
 -- ---------------------------------------------------------------------------
+-- The end of a season
+-- ---------------------------------------------------------------------------
+-- One row (the last gameweek's number and the time it was published) when the season is over and
+-- final, no row otherwise. Over: the Fantasy season is completed, or it is active and its end date
+-- has passed. Final: every gameweek of the season that was not cancelled is evaluable for the
+-- card (finalized or corrected, points final, post-work complete), which includes the last one.
+create function app_private.trophy_season_end(p_season uuid)
+returns table (seq integer, published timestamptz)
+language sql
+stable
+set search_path = ''
+as $$
+  select g.sequence_number, g.finalized_at
+  from app.fantasy_seasons fs
+  join app.fantasy_gameweeks g
+    on g.fantasy_season_id = fs.id and g.status <> 'cancelled' and g.finalized_at is not null
+  where fs.id = p_season
+    and (fs.status = 'completed' or (fs.status = 'active' and fs.ends_at <= statement_timestamp()))
+    and g.sequence_number = (
+      select max(lastgw.sequence_number) from app.fantasy_gameweeks lastgw
+      where lastgw.fantasy_season_id = fs.id and lastgw.status <> 'cancelled')
+    and not exists (
+      select 1 from app.fantasy_gameweeks anygw
+      where anygw.fantasy_season_id = fs.id and anygw.status <> 'cancelled'
+        and anygw.id not in (select e.gameweek_id from app_private.card_evaluable_gameweeks(p_season) e));
+$$;
+revoke all on function app_private.trophy_season_end(uuid)
+  from public, anon, authenticated, service_role;
+comment on function app_private.trophy_season_end(uuid) is
+  'The last gameweek (number and publication time) of a Fantasy season that is over and final: completed, or active past its end date, with every non-cancelled gameweek evaluable for the card. No row before that. The league trophies are granted only from this. Read only. No grant.';
+
+-- ---------------------------------------------------------------------------
 -- The rules, for one manager and one season
 -- ---------------------------------------------------------------------------
 create function app_private.trophies_evaluate_season(p_user uuid, p_season uuid)
@@ -577,6 +675,10 @@ declare
   granted integer := 0;
   r record;
 begin
+  -- Current season only: no backfill of a past season, whoever asks.
+  if p_season is null or p_season is distinct from app_private.manager_card_fantasy_season() then
+    return 0;
+  end if;
   for r in
     with need as (
       select c.code, c.need from app.trophy_catalog c where c.status = 'active'
@@ -589,11 +691,19 @@ begin
     ), tiers(code, tier) as (
       values ('first_stade', 'stade'), ('first_pro', 'pro'),
         ('first_champion', 'champion'), ('first_legend', 'legend')
+    ), se as (
+      select e.seq, e.published from app_private.trophy_season_end(p_season) e
     ), lr as (
-      select l.seq, l.rk, l.n, gw.finalized_at as published
-      from app_private.trophy_league_ranks(p_user, p_season) l
-      join app.fantasy_gameweeks gw on gw.id = l.gameweek_id
-      where l.n >= 3 and gw.finalized_at is not null
+      -- the FINAL standing of each private league, through the season's last gameweek, and only
+      -- when the season is over and final (se has no row before that)
+      select f.rk, f.n, f.seq, f.published
+      from (
+        select distinct on (l.league_id) l.rk, l.n, se.seq, se.published
+        from se
+        cross join lateral app_private.trophy_league_ranks(p_user, p_season) l
+        where l.seq <= se.seq
+        order by l.league_id, l.seq desc) f
+      where f.n >= 3
     ), cands as (
       select 'first_rating'::text as code, x.seq, jsonb_build_object('ovr', x.ovr, 'tier', x.tier) as facts,
         x.published
@@ -637,12 +747,12 @@ begin
       select 'league_podium', x.seq, jsonb_build_object('rank', x.rk, 'of', x.n), x.published
       from (select * from lr
         where rk <= (select n.need from need n where n.code = 'league_podium')
-        order by seq, rk limit 1) x
+        order by rk limit 1) x
       union all
       select 'league_leader', x.seq, jsonb_build_object('rank', x.rk, 'of', x.n), x.published
       from (select * from lr
         where rk <= (select n.need from need n where n.code = 'league_leader')
-        order by seq, rk limit 1) x
+        order by rk limit 1) x
     )
     select c.code, c.seq, c.facts, c.published from cands c
   loop
@@ -654,10 +764,10 @@ $$;
 revoke all on function app_private.trophies_evaluate_season(uuid, uuid)
   from public, anon, authenticated, service_role;
 comment on function app_private.trophies_evaluate_season(uuid, uuid) is
-  'Evaluates the version 1 trophy rules for one manager over one Fantasy season''s final results and grants what is true (once; a granted trophy is never asked again). Returns the number of trophies added. Reads Fantasy and card data, writes only app.trophies_earned through trophy_grant. No grant.';
+  'Evaluates the version 1 trophy rules for one manager over the CURRENT Fantasy season''s final results (any other season returns 0: no backfill) and grants what is true (once; a granted trophy is never asked again). The league podium and champion are granted only from the final standing, once the season is over and final. Returns the number of trophies added. Reads Fantasy and card data, writes only app.trophies_earned through trophy_grant. No grant.';
 
 -- ---------------------------------------------------------------------------
--- One manager: the season and the card-scope trophy
+-- One manager: the (current) season and the card-scope trophy
 -- ---------------------------------------------------------------------------
 create function app_private.trophies_evaluate_user(p_user uuid, p_season uuid)
 returns integer
@@ -778,14 +888,20 @@ values (
   'trophies_reads',
   array[$bg_20261015150200_file$-- BotolaGO+ Trophées, part 3: the reads and the frame choice.
 --
--- THREE api functions and three helpers, all display only:
+-- FIVE api functions and five helpers, all display only:
 --
 --   api.get_my_trophies(p_season)       the caller's cabinet: what they earned (each with the time
 --                                       its result was published), what is waiting for a
 --                                       publication, how far they are from the rest (figures the
---                                       server counts), and the frames they hold
+--                                       server counts), the frames they hold, and whether they
+--                                       show their trophies to their league mates
 --   api.choose_card_frame(p_code)       the frame drawn around the caller's Manager Card
 --   api.get_trophy_card_frames(p_teams) the frame other people see on up to 100 cards
+--   api.set_trophies_visibility(p_visible)
+--                                       the switch « Montrer mes trophées » (on by default)
+--   api.get_league_member_trophies(p_league)
+--                                       the trophies the caller's mates in one private league
+--                                       have earned this season, for those who show them
 --
 -- WHO SEES WHAT (owner decisions, 2026-10-15). Trophées are earned by everyone, so the cabinet's
 -- LIST is readable by every signed-in manager once BotolaGO+ is on; what BotolaGO+ adds is the
@@ -800,6 +916,17 @@ values (
 -- app_private.trophy_access(user) answers off / free / member in one place, so the three
 -- functions cannot disagree. It is the one new function that names the membership functions; the
 -- test card_editions.test.sql lists it.
+--
+-- WHO SEES A MANAGER'S TROPHIES (owner decision, 2026-10-15). Only the trophies earned: never
+-- points, ratings or tiers. By default the managers who share a private Fantasy league with them
+-- in the current season. Never strangers, never a public or overall league. A manager hides them
+-- with api.set_trophies_visibility(false). Looking at mates' trophies is free (basic social
+-- sharing stays free) and follows the cabinet's own gate: the viewer needs the same
+-- app_private.trophy_access as for their own cabinet, so BotolaGO+ off (or preview and not a
+-- member) shows nothing.
+--
+-- LEAGUE TROPHIES are placement awards given at the end of the season (20261015150100). Before
+-- that the cabinet lists them as in progress, with the manager's rank today, never as earned.
 --
 -- FRAMES copy the card editions (20261013100100): cosmetic, public where the card is drawn,
 -- standard when the membership ends (the choice is remembered), and in preview a member's frame
@@ -855,11 +982,13 @@ revoke all on function app_private.card_frame_effective(uuid, uuid)
 comment on function app_private.card_frame_effective(uuid, uuid) is
   'The frame code a manager''s card shows to a viewer: the chosen frame when active, earned, and the manager is a member now (in preview, only to the manager); else standard. Cosmetic: nothing computes from it. No grant.';
 
--- The journée a podium may be waiting on. The manager plays in a private league of at least three
--- managers, has not earned the podium this season, and there is a journée with a result that is
--- not yet final for the card (ratings not all published): when the manager would stand in the
--- first three on the scores that exist today, that journée's number; otherwise null. Shown as
--- "en attente", never as a trophy.
+-- The journée a podium may be waiting on. The podium is given at the end of the season, so this
+-- is null all season; it speaks only once the season is over (completed, or active past its end
+-- date) and not yet final: the manager plays in a private league of at least three managers, has
+-- not earned the podium this season, and there is a journée with a result that is not yet final
+-- for the card (ratings not all published). When the manager would stand in the first three on the
+-- scores that exist today, that journée's number; otherwise null. Shown as "en attente", never as
+-- a trophy.
 create function app_private.trophy_pending_podium(p_user uuid, p_season uuid)
 returns integer
 language sql
@@ -901,6 +1030,11 @@ as $$
       select 1 from ranked r
       where r.user_id = p_user and r.n >= 3
         and r.rk <= (select c.need from app.trophy_catalog c where c.code = 'league_podium'))
+    and exists (
+      select 1 from app.fantasy_seasons fs
+      where fs.id = p_season
+        and (fs.status = 'completed' or (fs.status = 'active' and fs.ends_at <= statement_timestamp())))
+    and not exists (select 1 from app_private.trophy_season_end(p_season))
     and not exists (
       select 1 from app.trophies_earned e
       where e.user_id = p_user and e.trophy_code = 'league_podium' and e.fantasy_season_id = p_season)
@@ -910,6 +1044,30 @@ revoke all on function app_private.trophy_pending_podium(uuid, uuid)
   from public, anon, authenticated, service_role;
 comment on function app_private.trophy_pending_podium(uuid, uuid) is
   'The journée whose unpublished ratings keep the league podium waiting for this manager, or null. Read only. No grant.';
+
+-- Where the manager stands today in their best private league of at least three managers: the
+-- rank and the number of managers ranked, on the cumulative final score. One row, or none. The
+-- cabinet shows it as « en cours » for the league trophies, which are given at the end of the
+-- season only.
+create function app_private.trophy_league_now(p_user uuid, p_season uuid)
+returns table (rk integer, n integer)
+language sql
+stable
+set search_path = ''
+as $$
+  select f.rk, f.n
+  from (
+    select distinct on (l.league_id) l.rk, l.n
+    from app_private.trophy_league_ranks(p_user, p_season) l
+    order by l.league_id, l.seq desc) f
+  where f.n >= 3
+  order by f.rk, f.n desc
+  limit 1;
+$$;
+revoke all on function app_private.trophy_league_now(uuid, uuid)
+  from public, anon, authenticated, service_role;
+comment on function app_private.trophy_league_now(uuid, uuid) is
+  'The manager''s rank today (and how many are ranked) in their best private league of at least three managers, or no row. Shown as in progress for the end-of-season league trophies. Read only. No grant.';
 
 -- ---------------------------------------------------------------------------
 -- api.get_my_trophies
@@ -934,6 +1092,7 @@ declare
   v_min_rated integer;
   v_tiers jsonb;
   v_pending integer;
+  v_rank integer;
   v_earned jsonb;
   v_catalog jsonb;
   v_progress jsonb;
@@ -1005,6 +1164,8 @@ begin
   select max(t.gain) into v_gain
   from app_private.card_transfer_rows(actor, v_season) t where t.ready;
   select r.min_rated, r.tiers into v_min_rated, v_tiers from app_private.manager_card_active_rules() r;
+  -- league trophies are given at the end of the season: today's rank is progress, never a trophy
+  select n.rk into v_rank from app_private.trophy_league_now(actor, v_season) n;
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'code', c.code,
@@ -1018,6 +1179,8 @@ begin
         when 'first_pro' then v_ovr
         when 'first_champion' then v_ovr
         when 'first_legend' then v_ovr
+        when 'league_podium' then v_rank
+        when 'league_leader' then v_rank
       end,
       'need', case
         when c.code = 'first_rating' then v_min_rated
@@ -1069,14 +1232,16 @@ begin
     'progress', v_progress,
     'frames', v_frames,
     'chosenFrame', coalesce((select c.frame_code from app.card_frame_choices c where c.user_id = actor), 'standard'),
-    'frame', app_private.card_frame_effective(actor, actor)
+    'frame', app_private.card_frame_effective(actor, actor),
+    'showToLeagues', coalesce((
+      select v.show_to_league_mates from app.trophy_visibility v where v.user_id = actor), true)
   );
 end;
 $$;
 revoke all on function api.get_my_trophies(text) from public, anon, authenticated, service_role;
 grant execute on function api.get_my_trophies(text) to authenticated, service_role;
 comment on function api.get_my_trophies(text) is
-  'The caller''s Trophées for a Fantasy season (default the current one): {available, member, season, journeesPlayed, catalog, earned, pending, progress, frames, chosenFrame, frame}. earned carries each trophy''s facts and the time its result was published; a trophy is never removed. progress counts the rest on the server. Readable by every signed-in manager once BotolaGO+ is on (member says whether they hold the subscription); {available:false} while BotolaGO+ or the card reads are off, or in preview for a non-member. Nothing is written. Signed-in, step-up.';
+  'The caller''s Trophées for a Fantasy season (default the current one): {available, member, season, journeesPlayed, catalog, earned, pending, progress, frames, chosenFrame, frame, showToLeagues}. earned carries each trophy''s facts and the time its result was published; a trophy is never removed. progress counts the rest on the server (for the league podium and champion, given only at the end of the season, it is today''s rank in the best private league of three or more). showToLeagues says whether league mates see the caller''s trophies (default true). Readable by every signed-in manager once BotolaGO+ is on (member says whether they hold the subscription); {available:false} while BotolaGO+ or the card reads are off, or in preview for a non-member. Nothing is written. Signed-in, step-up.';
 
 -- ---------------------------------------------------------------------------
 -- api.choose_card_frame
@@ -1198,6 +1363,140 @@ grant execute on function api.get_trophy_card_frames(uuid[]) to authenticated, s
 comment on function api.get_trophy_card_frames(uuid[]) is
   'The frames up to 100 Fantasy teams'' cards are drawn in: {available, frames:[{teamId, frame}]}, only the cards that wear a frame (public where the card is drawn; in preview a member''s frame is shown to its owner only). {available:false} while BotolaGO+ or the card reads are off. Nothing is written. Signed-in, step-up.';
 
+-- ---------------------------------------------------------------------------
+-- api.set_trophies_visibility
+-- ---------------------------------------------------------------------------
+create function api.set_trophies_visibility(p_visible boolean)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  mode text;
+  actor uuid;
+begin
+  if p_visible is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+  mode := app_private.card_reads_mode();
+  if mode is distinct from 'on' and mode is distinct from 'preview' then
+    return jsonb_build_object('available', false);
+  end if;
+  perform app_private.assert_mfa_step_up();
+  actor := (select auth.uid());
+  if actor is null then
+    raise exception using errcode = 'PT401', message = 'authentication_required';
+  end if;
+  if app_private.trophy_access(actor) = 'off' then
+    return jsonb_build_object('available', false);
+  end if;
+  if not exists (
+    select 1 from app.profiles profile where profile.id = actor and profile.deleted_at is null
+  ) then
+    raise exception using errcode = 'PT404', message = 'profile_not_found';
+  end if;
+
+  insert into app.trophy_visibility (user_id, show_to_league_mates)
+  values (actor, p_visible)
+  on conflict (user_id) do update set show_to_league_mates = excluded.show_to_league_mates;
+
+  return jsonb_build_object('available', true, 'showToLeagues', p_visible);
+end;
+$$;
+revoke all on function api.set_trophies_visibility(boolean) from public, anon, authenticated, service_role;
+grant execute on function api.set_trophies_visibility(boolean) to authenticated, service_role;
+comment on function api.set_trophies_visibility(boolean) is
+  'The switch « Montrer mes trophées »: whether the managers who share a private Fantasy league with the caller see the trophies they earned (never points, ratings or tiers). On by default. {available, showToLeagues}; {available:false} while BotolaGO+ or the card reads are off. Changes nothing else. Signed-in, step-up.';
+
+-- ---------------------------------------------------------------------------
+-- api.get_league_member_trophies
+-- ---------------------------------------------------------------------------
+-- The trophies the caller's mates in one private league have earned this season (and the card
+-- trophy), for the mates who show them. Only the caller's own active private leagues of the
+-- current season answer; for anything else (a stranger, a public league, a past season) the answer
+-- is PT404 league_not_found and nothing about the league is said. The caller's own trophies are
+-- not listed (they have the cabinet), nor are mates who switched them off or have none.
+create function api.get_league_member_trophies(p_league uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  mode text;
+  actor uuid;
+  v_season uuid;
+  v_league uuid;
+  result jsonb;
+begin
+  if p_league is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+  mode := app_private.card_reads_mode();
+  if mode is distinct from 'on' and mode is distinct from 'preview' then
+    return jsonb_build_object('available', false);
+  end if;
+  perform app_private.assert_mfa_step_up();
+  actor := (select auth.uid());
+  if actor is null then
+    raise exception using errcode = 'PT401', message = 'authentication_required';
+  end if;
+  if app_private.trophy_access(actor) = 'off' then
+    return jsonb_build_object('available', false);
+  end if;
+  if not exists (
+    select 1 from app.profiles profile where profile.id = actor and profile.deleted_at is null
+  ) then
+    raise exception using errcode = 'PT404', message = 'profile_not_found';
+  end if;
+
+  v_season := app_private.manager_card_fantasy_season();
+  select l.id into v_league
+  from app.fantasy_leagues l
+  join app.fantasy_league_memberships me
+    on me.league_id = l.id and me.user_id = actor and me.status = 'active'
+  where l.id = p_league and l.visibility = 'private' and l.active
+    and l.fantasy_season_id = v_season;
+  if v_league is null then
+    raise exception using errcode = 'PT404', message = 'league_not_found';
+  end if;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', m.team_id, 'count', t.n, 'trophies', t.list
+    ) order by m.team_id), '[]'::jsonb)
+  into result
+  from app_private.card_league_members(v_league) m
+  cross join lateral (
+    select count(*)::integer as n,
+      jsonb_agg(jsonb_build_object(
+        'code', e.trophy_code,
+        'family', c.family,
+        'labelFr', c.label_fr,
+        'labelAr', c.label_ar,
+        'gameweekSeq', e.gameweek_seq,
+        'publishedAt', e.source_published_at
+      ) order by c.sort_order, e.earned_at) as list
+    from app.trophies_earned e
+    join app.trophy_catalog c on c.code = e.trophy_code
+    where e.user_id = m.user_id
+      and (e.fantasy_season_id = v_season or e.fantasy_season_id is null)
+  ) t
+  where m.user_id <> actor
+    and t.n > 0
+    and coalesce((
+      select v.show_to_league_mates from app.trophy_visibility v where v.user_id = m.user_id), true);
+
+  return jsonb_build_object('available', true, 'leagueId', v_league, 'members', result);
+end;
+$$;
+revoke all on function api.get_league_member_trophies(uuid) from public, anon, authenticated, service_role;
+grant execute on function api.get_league_member_trophies(uuid) to authenticated, service_role;
+comment on function api.get_league_member_trophies(uuid) is
+  'The trophies earned this season (and the card trophy) by the caller''s mates in one of their active private leagues of the current season: {available, leagueId, members:[{teamId, count, trophies:[{code, family, labelFr, labelAr, gameweekSeq, publishedAt}]}]}. Only mates who show them (the switch is on by default) and have at least one; never the caller, never points, ratings or tiers. PT404 league_not_found for any league the caller is not an active member of, a public league or a past season. Same gate as the cabinet: {available:false} while BotolaGO+ or the card reads are off, or in preview for a non-member. Nothing is written. Signed-in, step-up.';
+
 notify pgrst, 'reload schema';
 $bg_20261015150200_file$]
 );
@@ -1218,15 +1517,15 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261015150000, 'UTF8')), 'hex')
-    is distinct from '44bd910480f2ce2c42d5772fd7c19d46b572a3b4a48e83416ce2388b2b497b47' then
+    is distinct from 'c01cabcfcf07e6f5ff8ca73a1d7dd1c15acfee95c96c6f79e41c4c108363cdb1' then
     raise exception 'stop: 20261015150000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20261015150100, 'UTF8')), 'hex')
-    is distinct from '4d4ed28f29e7da918bc4ddc5ccd995a33a647d860e561d4652bfde341befa395' then
+    is distinct from '0ed610d014160460aae4512a2602dfb4bad35c01858397a3c0edda19a915517d' then
     raise exception 'stop: 20261015150100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20261015150200, 'UTF8')), 'hex')
-    is distinct from '3a7fcf37a74421c91a7d0612496931d495ed20fa12ffca56995c9451dff0d441' then
+    is distinct from '253306a75e902b7714c05d950bda8b50241aac4d63ef2b067cdb4c042bd15821' then
     raise exception 'stop: 20261015150200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -1252,9 +1551,9 @@ declare
   pass jsonb;
   state jsonb;
 begin
-  -- The five tables: row security enabled and forced, no client privilege.
+  -- The six tables: row security enabled and forced, no client privilege.
   foreach rel in array array['app.trophy_catalog', 'app.trophies_earned', 'app.card_frames',
-    'app.card_frame_choices', 'app_private.trophy_settings'] loop
+    'app.card_frame_choices', 'app.trophy_visibility', 'app_private.trophy_settings'] loop
     if to_regclass(rel) is null then
       problems := problems || (rel || ' is missing');
     else
@@ -1279,8 +1578,35 @@ begin
   if (select s.enabled from app_private.trophy_settings s where s.id) is distinct from false then
     problems := problems || 'the evaluator is not switched off'::text;
   end if;
-  if (select count(*) from app.trophies_earned) <> 0 or (select count(*) from app.card_frame_choices) <> 0 then
-    problems := problems || 'a trophy or a frame choice exists -- this script adds none'::text;
+  if (select count(*) from app.trophies_earned) <> 0 or (select count(*) from app.card_frame_choices) <> 0
+    or (select count(*) from app.trophy_visibility) <> 0 then
+    problems := problems || 'a trophy, a frame choice or a visibility row exists -- this script adds none'::text;
+  end if;
+  if (select c.label_fr from app.trophy_catalog c where c.code = 'league_leader')
+    is distinct from 'Champion de votre ligue' then
+    problems := problems || 'the league leader trophy is not the champion of the league'::text;
+  end if;
+
+  -- The two tables a signed-in account writes carry the statement-level step-up trigger, and
+  -- these are the only two step-up triggers this script adds.
+  foreach rel in array array['app.card_frame_choices', 'app.trophy_visibility'] loop
+    if not exists (select 1 from pg_trigger t
+      where t.tgrelid = to_regclass(rel) and t.tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure
+        and t.tgtype = 30 and t.tgenabled = 'O') then
+      problems := problems || (rel || ' lacks the step-up trigger');
+    end if;
+  end loop;
+  if (select count(*) from pg_trigger where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure)
+    is distinct from current_setting('bg.trophies_stepup', true)::bigint + 2 then
+    problems := problems || 'the step-up trigger was not added to exactly two tables'::text;
+  end if;
+
+  -- CURRENT SEASON ONLY, AND LEAGUE TROPHIES AT THE END OF THE SEASON ONLY: read from the
+  -- definitions (nothing is evaluated here, so nothing can be granted).
+  if (select p.prosrc !~ 'is distinct from app_private\.manager_card_fantasy_season\(\)'
+        or p.prosrc !~ 'trophy_season_end'
+      from pg_proc p where p.oid = to_regprocedure('app_private.trophies_evaluate_season(uuid,uuid)')) then
+    problems := problems || 'the evaluator does not refuse a past season, or does not wait for the end of the season'::text;
   end if;
 
   -- A trophy is never taken back: both triggers are on the table.
@@ -1290,9 +1616,10 @@ begin
     problems := problems || 'the never-taken-back triggers are not both there'::text;
   end if;
 
-  -- The three api functions: who may run them, how they run.
+  -- The five api functions: who may run them, how they run.
   foreach sig in array array['api.get_my_trophies(text)', 'api.choose_card_frame(text)',
-    'api.get_trophy_card_frames(uuid[])'] loop
+    'api.get_trophy_card_frames(uuid[])', 'api.set_trophies_visibility(boolean)',
+    'api.get_league_member_trophies(uuid)'] loop
     if to_regprocedure(sig) is null then
       problems := problems || (sig || ' is missing');
     else
@@ -1312,7 +1639,8 @@ begin
       end if;
     end if;
   end loop;
-  foreach sig in array array['api.get_my_trophies(text)', 'api.get_trophy_card_frames(uuid[])'] loop
+  foreach sig in array array['api.get_my_trophies(text)', 'api.get_trophy_card_frames(uuid[])',
+    'api.get_league_member_trophies(uuid)'] loop
     if to_regprocedure(sig) is not null
       and (select p.provolatile from pg_proc p where p.oid = to_regprocedure(sig)) <> 's' then
       problems := problems || (sig || ' is not STABLE');
@@ -1334,8 +1662,8 @@ begin
   end loop;
   if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'app_private'
-        and (p.proname like 'trophy\_%' or p.proname like 'trophies\_%' or p.proname = 'card_frame_effective')) <> 10 then
-    problems := problems || 'the ten app_private functions are not all there'::text;
+        and (p.proname like 'trophy\_%' or p.proname like 'trophies\_%' or p.proname = 'card_frame_effective')) <> 12 then
+    problems := problems || 'the twelve app_private functions are not all there'::text;
   end if;
 
   -- Replaces nothing: the card reads, the editions, the membership check and the card tick are as they were.
@@ -1367,6 +1695,16 @@ begin
       problems := problems || ('the frame choice does not answer off while BotolaGO+ is off: '
         || coalesce(answer::text, 'nothing'));
     end if;
+    answer := api.set_trophies_visibility(true);
+    if answer is distinct from '{"available": false}'::jsonb then
+      problems := problems || ('the visibility switch does not answer off while BotolaGO+ is off: '
+        || coalesce(answer::text, 'nothing'));
+    end if;
+    answer := api.get_league_member_trophies(gen_random_uuid());
+    if answer is distinct from '{"available": false}'::jsonb then
+      problems := problems || ('the league mates read does not answer off while BotolaGO+ is off: '
+        || coalesce(answer::text, 'nothing'));
+    end if;
   end if;
 
   -- The pass answers off and writes nothing.
@@ -1392,11 +1730,13 @@ begin
 
   state := jsonb_build_object(
     'premiumMode', premium_mode,
-    'tables', 5,
+    'tables', 6,
     'trophies', (select count(*) from app.trophy_catalog),
     'frames', (select count(*) from app.card_frames),
-    'apiFunctions', 3,
-    'helpers', 10,
+    'apiFunctions', 5,
+    'helpers', 12,
+    'currentSeasonOnly', true,
+    'leagueTrophiesAtSeasonEnd', true,
     'jobsAdded', 2,
     'passWhileOff', pass,
     'readWhileOff', case when premium_mode = 'off' then answer end,

@@ -83,15 +83,26 @@ values (
 -- BotolaGO (STAGING srdrflfrfpwixsllveid first, then PRODUCTION tkewgajrljbwgwedqsxn)
 -- Apply the BotolaGO+ Trophées backend, migrations 20261015150000 to 20261015150200
 -- (docs/product/botolago-plus-trophies-brief.md, owner decisions of 2026-10-15): the trophies a
--- manager earns by playing, the card frames, the evaluator and the three reads.
+-- manager earns by playing, the card frames, the evaluator and the five reads.
 --
--- It adds five tables (app.trophy_catalog, app.trophies_earned, app.card_frames,
--- app.card_frame_choices, app_private.trophy_settings), twelve trophies and nine frames of
--- configuration, the switch app_private.trophy_configure, the evaluator
--- (app_private.trophies_tick and its helpers), three api functions (get_my_trophies,
--- choose_card_frame, get_trophy_card_frames) and TWO SCHEDULED JOBS: trophies-tick (minutes 10
+-- It adds six tables (app.trophy_catalog, app.trophies_earned, app.card_frames,
+-- app.card_frame_choices, app.trophy_visibility, app_private.trophy_settings), twelve trophies and
+-- nine frames of configuration, the switch app_private.trophy_configure, the evaluator
+-- (app_private.trophies_tick and its helpers), five api functions (get_my_trophies,
+-- choose_card_frame, get_trophy_card_frames, set_trophies_visibility, get_league_member_trophies)
+-- and TWO SCHEDULED JOBS: trophies-tick (minutes 10
 -- and 40 of every hour) and trophies-history-prune (daily 03:31 UTC). It REPLACES NOTHING: no
 -- existing function, table or row changes -- the script checks that.
+--
+-- LEAGUE TROPHIES AT THE END OF THE SEASON ONLY. The league podium and the league champion are
+-- granted only once the season is over and its last journée is final and published, from the final
+-- standing of a private league of at least three managers; before that the cabinet shows them as in
+-- progress. Trophies are shown to the managers who share a private league with you, unless you
+-- switch them off (on by default); never to strangers or in public leagues.
+--
+-- NO BACKFILL. The evaluator works on the CURRENT Fantasy season only and refuses any other, and
+-- this script grants nothing: it runs no evaluation at all. The script checks that no trophy exists
+-- afterwards and that the evaluator carries its current-season guard.
 --
 -- IT SHIPS OFF. app_private.trophy_settings.enabled is false, so trophies-tick answers
 -- {"status": "off"} and writes nothing; and while BotolaGO+ is off every read answers
@@ -136,9 +147,11 @@ values (
 --   * records the three migration files in supabase_migrations.schema_migrations, each whole as
 --     statements[1], and runs each from that record once its sha256 matches the repository file;
 --   * checks the result without saving anything: row security forced and no client privilege on
---     the five tables; twelve trophies, nine frames; the switch off; the never-taken-back
---     triggers; the three api functions' grants and security settings; the helpers callable by
---     no API role; the reads answering "off" while BotolaGO+ is off; the pass answering "off";
+--     the six tables; twelve trophies, nine frames; the switch off; the never-taken-back
+--     triggers and the step-up trigger on the two tables a signed-in account writes; the five api
+--     functions' grants and security settings; the helpers callable by no API role; the evaluator
+--     refusing every season but the current one and granting league trophies only from the end of
+--     the season; the reads answering "off" while BotolaGO+ is off; the pass answering "off";
 --     exactly two jobs added; the definitions of the card reads, the editions and the membership
 --     check unchanged; no trophy and no frame choice exist.
 -- ============================================================================
@@ -202,11 +215,13 @@ begin
   end if;
   if to_regclass('app.trophy_catalog') is not null or to_regclass('app.trophies_earned') is not null
     or to_regclass('app.card_frames') is not null or to_regclass('app.card_frame_choices') is not null
+    or to_regclass('app.trophy_visibility') is not null
     or to_regclass('app_private.trophy_settings') is not null then
     raise exception 'stop: one of the Trophées tables already exists';
   end if;
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where (n.nspname = 'api' and p.proname in ('get_my_trophies', 'choose_card_frame', 'get_trophy_card_frames'))
+    where (n.nspname = 'api' and p.proname in ('get_my_trophies', 'choose_card_frame', 'get_trophy_card_frames',
+        'set_trophies_visibility', 'get_league_member_trophies'))
       or (n.nspname = 'app_private' and (p.proname like 'trophy\\_%' or p.proname like 'trophies\\_%'
         or p.proname = 'card_frame_effective'))) then
     raise exception 'stop: one of the Trophées functions already exists';
@@ -216,6 +231,8 @@ begin
   end if;
   -- This replaces nothing: remember what is there and compare afterwards.
   perform set_config('bg.trophies_jobs', (select count(*) from cron.job)::text, true);
+  perform set_config('bg.trophies_stepup', (select count(*) from pg_trigger
+    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure)::text, true);
   perform set_config('bg.trophies_defs', (select string_agg(
       p.oid::regprocedure::text || '=' || md5(pg_get_functiondef(p.oid)), ';' order by p.oid::regprocedure::text)
     from pg_proc p where p.oid in (
@@ -263,9 +280,9 @@ declare
   pass jsonb;
   state jsonb;
 begin
-  -- The five tables: row security enabled and forced, no client privilege.
+  -- The six tables: row security enabled and forced, no client privilege.
   foreach rel in array array['app.trophy_catalog', 'app.trophies_earned', 'app.card_frames',
-    'app.card_frame_choices', 'app_private.trophy_settings'] loop
+    'app.card_frame_choices', 'app.trophy_visibility', 'app_private.trophy_settings'] loop
     if to_regclass(rel) is null then
       problems := problems || (rel || ' is missing');
     else
@@ -290,8 +307,35 @@ begin
   if (select s.enabled from app_private.trophy_settings s where s.id) is distinct from false then
     problems := problems || 'the evaluator is not switched off'::text;
   end if;
-  if (select count(*) from app.trophies_earned) <> 0 or (select count(*) from app.card_frame_choices) <> 0 then
-    problems := problems || 'a trophy or a frame choice exists -- this script adds none'::text;
+  if (select count(*) from app.trophies_earned) <> 0 or (select count(*) from app.card_frame_choices) <> 0
+    or (select count(*) from app.trophy_visibility) <> 0 then
+    problems := problems || 'a trophy, a frame choice or a visibility row exists -- this script adds none'::text;
+  end if;
+  if (select c.label_fr from app.trophy_catalog c where c.code = 'league_leader')
+    is distinct from 'Champion de votre ligue' then
+    problems := problems || 'the league leader trophy is not the champion of the league'::text;
+  end if;
+
+  -- The two tables a signed-in account writes carry the statement-level step-up trigger, and
+  -- these are the only two step-up triggers this script adds.
+  foreach rel in array array['app.card_frame_choices', 'app.trophy_visibility'] loop
+    if not exists (select 1 from pg_trigger t
+      where t.tgrelid = to_regclass(rel) and t.tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure
+        and t.tgtype = 30 and t.tgenabled = 'O') then
+      problems := problems || (rel || ' lacks the step-up trigger');
+    end if;
+  end loop;
+  if (select count(*) from pg_trigger where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure)
+    is distinct from current_setting('bg.trophies_stepup', true)::bigint + 2 then
+    problems := problems || 'the step-up trigger was not added to exactly two tables'::text;
+  end if;
+
+  -- CURRENT SEASON ONLY, AND LEAGUE TROPHIES AT THE END OF THE SEASON ONLY: read from the
+  -- definitions (nothing is evaluated here, so nothing can be granted).
+  if (select p.prosrc !~ 'is distinct from app_private\\.manager_card_fantasy_season\\(\\)'
+        or p.prosrc !~ 'trophy_season_end'
+      from pg_proc p where p.oid = to_regprocedure('app_private.trophies_evaluate_season(uuid,uuid)')) then
+    problems := problems || 'the evaluator does not refuse a past season, or does not wait for the end of the season'::text;
   end if;
 
   -- A trophy is never taken back: both triggers are on the table.
@@ -301,9 +345,10 @@ begin
     problems := problems || 'the never-taken-back triggers are not both there'::text;
   end if;
 
-  -- The three api functions: who may run them, how they run.
+  -- The five api functions: who may run them, how they run.
   foreach sig in array array['api.get_my_trophies(text)', 'api.choose_card_frame(text)',
-    'api.get_trophy_card_frames(uuid[])'] loop
+    'api.get_trophy_card_frames(uuid[])', 'api.set_trophies_visibility(boolean)',
+    'api.get_league_member_trophies(uuid)'] loop
     if to_regprocedure(sig) is null then
       problems := problems || (sig || ' is missing');
     else
@@ -323,7 +368,8 @@ begin
       end if;
     end if;
   end loop;
-  foreach sig in array array['api.get_my_trophies(text)', 'api.get_trophy_card_frames(uuid[])'] loop
+  foreach sig in array array['api.get_my_trophies(text)', 'api.get_trophy_card_frames(uuid[])',
+    'api.get_league_member_trophies(uuid)'] loop
     if to_regprocedure(sig) is not null
       and (select p.provolatile from pg_proc p where p.oid = to_regprocedure(sig)) <> 's' then
       problems := problems || (sig || ' is not STABLE');
@@ -345,8 +391,8 @@ begin
   end loop;
   if (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'app_private'
-        and (p.proname like 'trophy\\_%' or p.proname like 'trophies\\_%' or p.proname = 'card_frame_effective')) <> 10 then
-    problems := problems || 'the ten app_private functions are not all there'::text;
+        and (p.proname like 'trophy\\_%' or p.proname like 'trophies\\_%' or p.proname = 'card_frame_effective')) <> 12 then
+    problems := problems || 'the twelve app_private functions are not all there'::text;
   end if;
 
   -- Replaces nothing: the card reads, the editions, the membership check and the card tick are as they were.
@@ -378,6 +424,16 @@ begin
       problems := problems || ('the frame choice does not answer off while BotolaGO+ is off: '
         || coalesce(answer::text, 'nothing'));
     end if;
+    answer := api.set_trophies_visibility(true);
+    if answer is distinct from '{"available": false}'::jsonb then
+      problems := problems || ('the visibility switch does not answer off while BotolaGO+ is off: '
+        || coalesce(answer::text, 'nothing'));
+    end if;
+    answer := api.get_league_member_trophies(gen_random_uuid());
+    if answer is distinct from '{"available": false}'::jsonb then
+      problems := problems || ('the league mates read does not answer off while BotolaGO+ is off: '
+        || coalesce(answer::text, 'nothing'));
+    end if;
   end if;
 
   -- The pass answers off and writes nothing.
@@ -403,11 +459,13 @@ begin
 
   state := jsonb_build_object(
     'premiumMode', premium_mode,
-    'tables', 5,
+    'tables', 6,
     'trophies', (select count(*) from app.trophy_catalog),
     'frames', (select count(*) from app.card_frames),
-    'apiFunctions', 3,
-    'helpers', 10,
+    'apiFunctions', 5,
+    'helpers', 12,
+    'currentSeasonOnly', true,
+    'leagueTrophiesAtSeasonEnd', true,
     'jobsAdded', 2,
     'passWhileOff', pass,
     'readWhileOff', case when premium_mode = 'off' then answer end,

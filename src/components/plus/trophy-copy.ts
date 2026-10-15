@@ -45,12 +45,19 @@ export function useTrophyCopy() {
         return p.have === null
           ? text("plus.tr.prog_rating_none", { need: p.need ?? 0 })
           : text("plus.tr.prog_rating", { have: p.have, need: p.need ?? 0 });
+      case "rank":
+        // the league podium and champion are given at the end of the season: today's rank, no bar
+        return p.have === null
+          ? t("plus.tr.prog_rank_none")
+          : text("plus.tr.prog_rank", { rank: rank(p.have) });
       default:
         return t("plus.tr.not_yet");
     }
   };
   const progressShare = (p: TrophyProgress | null): number | null =>
-    p && p.have !== null && p.need ? Math.max(0, Math.min(1, p.have / p.need)) : null;
+    p && p.unit !== "rank" && p.have !== null && p.need
+      ? Math.max(0, Math.min(1, p.have / p.need))
+      : null;
   const frameName = (frame: CardFrame) => (lang === "ar" ? frame.labelAr : frame.labelFr);
   return {
     t,

@@ -89,9 +89,19 @@ Functional
   (`league_leader` was added with `league_podium`).
 - No change to the Manager Card moment acknowledgements: « Nouveau » is derived from `earnedAt` (the
   newest trophy, within seven days), so the `trophy:*` key regex is not needed.
-- The « Montrer mes trophées dans mes ligues » switch of the mock is not built: nothing in the
-  backend shows trophies to other people yet, so the switch would control nothing. Owner decision
-  needed before trophies appear on league pages.
+- Owner decisions of 2026-10-15, after the first build:
+  - Visibility. The trophies earned (never points, ratings or tiers) are visible by default to the
+    managers who share a private Fantasy league with you this season; never to strangers, nor in
+    public or overall leagues. « Montrer mes trophées » (« إظهار كؤوسي ») hides them: on by default,
+    on the trophies page and in Profil › Mon abonnement. `app.trophy_visibility`,
+    `api.set_trophies_visibility`, `api.get_league_member_trophies`; in Curva's « Les vôtres » a mate
+    who shows trophies has a small trophy count chip that opens them read-only. Looking is free and
+    follows the cabinet's own gate (earning is free for everyone, as above).
+  - The league podium and the league champion (« En tête de votre ligue » became « Champion de votre
+    ligue ») are given only at the end of the season, from the final standing of a private league of
+    at least three managers, once the season's last gameweek is final and published. Before that the
+    cabinet shows « en cours » and the rank today; an earned trophy is still never taken back.
+  - No backfill: trophies are evaluated for the current season going forward only.
 - The frame is drawn around the member's own card on Curva's card page, in the picker and in the
   share image. `api.get_trophy_card_frames` serves it for other people's cards, but the rankings and
   league lists do not call it yet.

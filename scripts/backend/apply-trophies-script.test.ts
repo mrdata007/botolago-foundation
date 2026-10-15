@@ -68,6 +68,35 @@ describe("guarded apply script for the BotolaGO+ Trophées backend", () => {
     expect(script).toContain("the pass does not answer off");
     expect(script).toContain("the evaluator is not switched off");
     expect(script).toContain("the never-taken-back triggers are not both there");
-    expect(script).toContain("a trophy or a frame choice exists -- this script adds none");
+    expect(script).toContain(
+      "a trophy, a frame choice or a visibility row exists -- this script adds none",
+    );
+  });
+
+  test("never evaluates a past season: it grants nothing and checks the evaluator's guard", () => {
+    // Outside the carried migration files, the script runs no evaluation (a trophy granted in
+    // apply mode would be committed).
+    const own = [
+      script.split("$bg_20261015150000_file$")[0],
+      script.split("$bg_20261015150200_file$")[2] ?? "",
+    ].join("\n");
+    expect(own).not.toMatch(
+      /(select|perform)\s+app_private\.(trophies_evaluate_\w+|trophy_grant)\(/,
+    );
+    expect(own).toContain(
+      "the evaluator does not refuse a past season, or does not wait for the end of the season",
+    );
+    expect(own).toContain("'currentSeasonOnly', true");
+    // the migration itself holds the guard and the wait for the end of the season
+    const evaluator = migrationFile("20261015150100", "trophies_evaluator");
+    expect(evaluator).toContain("is distinct from app_private.manager_card_fantasy_season()");
+    expect(evaluator).toContain("app_private.trophy_season_end(p_season)");
+  });
+
+  test("checks the visibility switch and the mates read: step-up trigger, off answers", () => {
+    expect(script).toContain("' lacks the step-up trigger'");
+    expect(script).toContain("the step-up trigger was not added to exactly two tables");
+    expect(script).toContain("the visibility switch does not answer off while BotolaGO+ is off");
+    expect(script).toContain("the league mates read does not answer off while BotolaGO+ is off");
   });
 });

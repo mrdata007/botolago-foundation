@@ -3430,4 +3430,22 @@ export const fr = {
   "plus.tr.frames_locked": "Vos {n} cadres vous attendent",
   "plus.tr.frames_sheet": "Cadre de la carte",
   "plus.tr.card_note": "note",
+  "plus.tr.in_progress": "en cours",
+  "plus.tr.prog_rank": "{rank} pour l’instant. Attribué à la fin de la saison.",
+  "plus.tr.prog_rank_none":
+    "Attribué à la fin de la saison, dans une ligue privée de 3 managers ou plus.",
+  "plus.tr.rule_season_end":
+    "Podium et champion de ligue : attribués à la fin de la saison, d’après le classement final.",
+  "plus.tr.vis_label": "Montrer mes trophées",
+  "plus.tr.vis_hint":
+    "Les managers de vos ligues privées voient les trophées que vous avez gagnés, jamais vos points, vos notes ni vos paliers. Personne d’autre.",
+  "plus.tr.vis_on": "Vos trophées sont visibles dans vos ligues privées.",
+  "plus.tr.vis_off": "Vos trophées sont masqués.",
+  "plus.tr.vis_failed": "Le réglage n’a pas pu être enregistré. Réessayez.",
+  "plus.tr.mate_chip": "{name} : {n} trophées, voir",
+  "plus.tr.mate_chip_one": "{name} : 1 trophée, voir",
+  "plus.tr.mate_title": "Trophées de {name}",
+  "plus.tr.mate_sub": "Cette saison, dans votre ligue privée",
+  "plus.tr.mate_note":
+    "Seuls les trophées gagnés sont montrés, jamais les points, les notes ni les paliers.",
 } as const satisfies Record<string, string>;

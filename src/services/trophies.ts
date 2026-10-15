@@ -4,7 +4,8 @@ import { authService } from "@/services/auth";
 import { managerCardDataMode } from "@/services/manager-card-mode";
 
 /**
- * The reads behind « Trophées » (`api.get_my_trophies`, `api.choose_card_frame`).
+ * The reads behind « Trophées » (`api.get_my_trophies`, `api.choose_card_frame`,
+ * `api.set_trophies_visibility`, `api.get_league_member_trophies`).
  *
  * A development server in the Manager Card's mock mode reads Karim B.'s cabinet through the dynamic
  * import below and nowhere else (Vite replaces `import.meta.env.DEV` with `false` in a production
@@ -41,5 +42,11 @@ export const trophiesService = {
   },
   async chooseFrame(code: string) {
     return (await getTrophiesRepository()).chooseFrame(code, context());
+  },
+  async setVisibility(visible: boolean) {
+    return (await getTrophiesRepository()).setVisibility(visible, context());
+  },
+  async leagueMemberTrophies(leagueId: string, signal?: AbortSignal) {
+    return (await getTrophiesRepository()).leagueMemberTrophies(leagueId, context(signal));
   },
 };
