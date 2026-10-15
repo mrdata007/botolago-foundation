@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-route
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { shareLink } from "@/lib/share-link";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
@@ -244,24 +246,19 @@ function ArticlePage() {
 
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
-    try {
-      if (typeof navigator !== "undefined" && "share" in navigator) {
-        await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({
-          title: article.title,
-          text: article.subtitle ?? article.summary,
-          url: canonicalUrl,
-        });
-        return;
-      }
-    } catch {
-      /* user cancelled or blocked */
-    }
-    try {
-      await navigator.clipboard.writeText(canonicalUrl);
+    // The phone's share sheet when there is one; else the link is copied. A
+    // closed sheet is the reader's answer (nothing is copied behind it), and a
+    // copy that did not happen is said, never shown as "Lien copié".
+    const result = await shareLink({
+      title: article.title,
+      text: article.subtitle ?? article.summary,
+      url: canonicalUrl,
+    });
+    if (result === "copied") {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* ignore */
+    } else if (result === "failed") {
+      toast.error(t("pepites.share.copy_failed"));
     }
   };
 
@@ -277,7 +274,12 @@ function ArticlePage() {
           onBack={goBack}
           actions={
             <>
-              <SavedButton articleId={article.id} variant="soft" />
+              <SavedButton
+                articleId={article.id}
+                serverSaved={article.isSaved}
+                language={article.language}
+                variant="soft"
+              />
               <UiIconButton aria-label={t("article.share")} onClick={share}>
                 <Share2 aria-hidden />
               </UiIconButton>

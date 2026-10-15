@@ -194,7 +194,7 @@ export class LocalMockAuthService implements AuthService {
       email: normalizedEmail,
       displayName: input.fullName.trim(),
       username: normalizedUsername,
-      language: input.language,
+      language: input.language ?? "fr",
       notifications: defaultNotifications(),
       profileComplete: false,
       provider: "email",
@@ -296,7 +296,8 @@ export class LocalMockAuthService implements AuthService {
         email,
         displayName: provider === "google" ? "Google User" : "Apple User",
         username: `${provider}_user`,
-        language: (safeGet<{ lang: Language }>(`${NS}language`)?.lang ?? "fr") as Language,
+        // A new account starts in French, not in the device's language.
+        language: "fr",
         notifications: defaultNotifications(),
         profileComplete: false,
         createdAt: new Date().toISOString(),

@@ -120,4 +120,32 @@ describe("authService (local mock)", () => {
     expect(result.ok).toBe(false);
     expect(result.errorCode).toBe("reserved_username");
   });
+
+  it("a new account starts in French unless a language was chosen", async () => {
+    await authService.registerWithEmail({
+      fullName: "Amine Test",
+      username: "aminetest",
+      email: "amine@example.com",
+      password: "SuperSecret1!",
+    });
+    const verified = await authService.verifyCode("amine@example.com", __testing.DEMO_CODE);
+    expect(verified.ok).toBe(true);
+    expect(authService.getSession().user?.language).toBe("fr");
+  });
+
+  it("a social sign-up starts in French even when the device was left in Arabic", async () => {
+    window.localStorage.setItem("botolago.language", "ar");
+    const result = await authService.signInWithGoogle();
+    expect(result.ok).toBe(true);
+    expect(authService.getSession().user?.language).toBe("fr");
+  });
+
+  it("saving the profile without a language keeps the stored one", async () => {
+    await authService.signInWithEmail(__testing.DEMO_EMAIL, __testing.DEMO_PASSWORD);
+    expect((await authService.completeProfile({ language: "ar" })).data?.language).toBe("ar");
+    const again = await authService.completeProfile({
+      notifications: { matchAlerts: false },
+    });
+    expect(again.data?.language).toBe("ar");
+  });
 });

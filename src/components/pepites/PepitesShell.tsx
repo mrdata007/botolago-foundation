@@ -144,7 +144,7 @@ const TITLE_FILLS_AND_WRAPS =
  * A hub's title band: the kit's `UiPageTitle` (Changa h1, an inline-end
  * control, a chip row as `children`), with four Pépites needs on top:
  *
- * - the section's name, "PÉPITES" / "جواهر", in the kit's label step above
+ * - the section's name, "PROSPECTS" / "المواهب", in the kit's label step above
  *   the title, as `UiHeader`'s kicker names the section on the detail pages
  *   (the compare page) and "FANTASY" sits over Fantasy's boards. The titles
  *   themselves carry data ("Classement final 2025/2026"), not the name.

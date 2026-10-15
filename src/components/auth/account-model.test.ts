@@ -4,8 +4,10 @@ import { clubPalette } from "@/lib/club-palette";
 import {
   AUTH_BAND_CLUBS,
   profileClubs,
+  notificationLanguageToSave,
   profileInitials,
   setupStepFromSearch,
+  shownNotificationLanguage,
 } from "./account-model";
 
 describe("profileInitials", () => {
@@ -104,5 +106,44 @@ describe("AUTH_BAND_CLUBS", () => {
     for (let i = 1; i < fills.length; i += 1) {
       expect(fills[i]).not.toBe(fills[i - 1]);
     }
+  });
+});
+
+// Owner decision 2026-10-15: notifications are in French unless the person
+// chose otherwise, and the language step shows the STORED value, not the one
+// the device displays (audit 2026-10-14, LOC-06 follow-up).
+describe("shownNotificationLanguage", () => {
+  it("shows what the account has stored, whatever the device displays", () => {
+    expect(shownNotificationLanguage("fr", null)).toBe("fr");
+    expect(shownNotificationLanguage("ar", null)).toBe("ar");
+  });
+
+  it("is French while the account is not loaded, and for a new account", () => {
+    expect(shownNotificationLanguage(undefined, null)).toBe("fr");
+  });
+
+  it("shows the person's own press over the stored value", () => {
+    expect(shownNotificationLanguage("fr", "ar")).toBe("ar");
+    expect(shownNotificationLanguage("ar", "fr")).toBe("fr");
+    expect(shownNotificationLanguage(undefined, "ar")).toBe("ar");
+  });
+});
+
+describe("notificationLanguageToSave", () => {
+  it("sends nothing when the person did not press a language: no silent overwrite", () => {
+    expect(notificationLanguageToSave("fr", null)).toBeUndefined();
+    expect(notificationLanguageToSave("ar", null)).toBeUndefined();
+    expect(notificationLanguageToSave(undefined, null)).toBeUndefined();
+  });
+
+  it("sends nothing when the press only repeats the stored language", () => {
+    expect(notificationLanguageToSave("ar", "ar")).toBeUndefined();
+    expect(notificationLanguageToSave(undefined, "fr")).toBeUndefined();
+  });
+
+  it("sends the language the person chose when it differs", () => {
+    expect(notificationLanguageToSave("fr", "ar")).toBe("ar");
+    expect(notificationLanguageToSave("ar", "fr")).toBe("fr");
+    expect(notificationLanguageToSave(undefined, "ar")).toBe("ar");
   });
 });

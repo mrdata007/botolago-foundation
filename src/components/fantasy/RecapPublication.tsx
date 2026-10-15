@@ -10,6 +10,7 @@ import { mapFantasyError } from "@/backend/fantasy/errors";
 import { ui, UiButton, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { copyText } from "@/lib/copy-text";
 import { publicRecapUrl } from "@/lib/public-recap";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -25,8 +26,10 @@ const ALIAS_MAX = 40;
  * public, chooses the alias shown, and taps. Revoking takes a second tap and
  * says what it cannot undo (copies already downloaded elsewhere).
  *
- * `onPublication` hands the live public id up, so the share sheet can share
- * the public page instead of the generic Fantasy link.
+ * `onPublication` hands the live public id and alias up, so the share sheet
+ * can share the public page instead of the generic Fantasy link, and draw the
+ * alias the manager chose (not the team name it was meant to stand in for) on
+ * the picture that goes with that link.
  */
 export function RecapPublication({
   gameweek,
@@ -35,7 +38,7 @@ export function RecapPublication({
 }: {
   gameweek: number;
   defaultAlias: string;
-  onPublication?: (publicId: string | null) => void;
+  onPublication?: (publication: { publicId: string; alias: string } | null) => void;
 }) {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
@@ -51,11 +54,14 @@ export function RecapPublication({
     retry: 1,
   });
   const livePublicId = stateQ.data?.publication?.publicId ?? null;
+  const liveAlias = stateQ.data?.publication?.alias ?? null;
   useEffect(() => {
-    onPublication?.(livePublicId);
-    // `onPublication` is the parent's setter; only the id decides.
+    onPublication?.(
+      livePublicId && liveAlias ? { publicId: livePublicId, alias: liveAlias } : null,
+    );
+    // `onPublication` is the parent's setter; only the id and alias decide.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [livePublicId]);
+  }, [livePublicId, liveAlias]);
 
   const failed = (error: unknown) => {
     if (isMfaStepUpError(error)) return showStepUpNotice(t);
@@ -112,12 +118,10 @@ export function RecapPublication({
             variant="soft"
             size="sm"
             onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(url);
-                toast.success(t("article.share_copied"));
-              } catch {
-                toast.error(t("pepites.share.copy_failed"));
-              }
+              // The address is on screen above, selectable, for when the
+              // clipboard refuses; the toast says so rather than "copied".
+              if (await copyText(url)) toast.success(t("article.share_copied"));
+              else toast.error(t("pepites.share.copy_failed"));
             }}
           >
             <Copy className="h-4 w-4" aria-hidden />

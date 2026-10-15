@@ -1,10 +1,14 @@
 import { Copy, MessageCircle, Share2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { ui, UiButton, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
-import { inviteMessage } from "@/lib/league-invite";
+import { copyText } from "@/lib/copy-text";
+import { fillInvite, inviteMessage } from "@/lib/league-invite";
+import { shareLink } from "@/lib/share-link";
 import { cn } from "@/lib/utils";
 import { inviteLink, whatsappUrl, type InviteGame } from "./invite-link";
 
@@ -32,6 +36,9 @@ export function InviteLinkShare({
   game?: InviteGame;
 }) {
   const { t } = useI18n();
+  // The link, shown to copy by hand when neither the share sheet nor the
+  // clipboard took it.
+  const [manual, setManual] = useState<string | null>(null);
   const fantasy = game === "fantasy";
   const link = inviteLink(code, undefined, game);
   // Direction isolation around the league name, so WhatsApp keeps the order
@@ -39,35 +46,31 @@ export function InviteLinkShare({
   const isolatedLeague = `⁨${league}⁩`;
   const text = fantasy
     ? inviteMessage(t("fantasy.hub.invite_message"), isolatedLeague, link)
-    : t("predictions.leagues.share_text")
-        .replace("{league}", isolatedLeague)
-        .replace("{link}", link);
+    : fillInvite(t("predictions.leagues.share_text"), { league: isolatedLeague, link });
   // A Pronostics share is counted; the Fantasy invite has no event of its own.
   const counted = () => {
     if (!fantasy) track("pronostics_share");
   };
 
+  const copiedMessage = () =>
+    toast.success(fantasy ? t("fantasy.hub.invite_copied") : t("article.share_copied"));
+
   const nativeShare = async () => {
-    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
-    if (typeof nav.share === "function") {
-      try {
-        await nav.share({ text });
-        counted();
-      } catch {
-        // Declined, not failed.
-      }
-      return;
-    }
-    await copy();
+    const result = await shareLink({ text }, link);
+    if (result === "shared" || result === "copied") counted();
+    if (result === "copied") {
+      setManual(null);
+      copiedMessage();
+    } else if (result === "failed") setManual(link);
   };
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(link);
+    if (await copyText(link)) {
       counted();
-      toast.success(fantasy ? t("fantasy.hub.invite_copied") : t("article.share_copied"));
-    } catch {
-      toast.error(fantasy ? t("state.error") : t("predictions.save.offline"));
+      setManual(null);
+      copiedMessage();
+    } else {
+      setManual(link);
     }
   };
 
@@ -119,6 +122,7 @@ export function InviteLinkShare({
           {t("predictions.leagues.copy_link")}
         </UiButton>
       </div>
+      {manual ? <ManualCopyField value={manual} /> : null}
     </UiCard>
   );
 }

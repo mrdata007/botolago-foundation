@@ -381,7 +381,7 @@ are the FDR scale read backwards: rating 5 is FDR 1 (green), rating 1 is FDR
 5 (deep magenta). They are aliases, not new colours, so they inherit the FDR
 scale's dark values and measured foregrounds; the price is that recolouring
 the FDR scale recolours the ratings too. Pair `--ui-rating-N` with
-`--ui-on-rating-N` (Pépites' `RatingChip` does), and always print the figure,
+`--ui-on-rating-N` (Prospects' `RatingChip` does), and always print the figure,
 so the colour is never the only cue.
 
 **The same rule applies to the status fills.** `--ui-positive` and
@@ -844,18 +844,18 @@ These live outside `ui-kit` and are built only from it. They are pinned by
   the 14px card radius, filled panels with no dashed outline, and the glyph
   in a round disc.
 
-### Pépites is built on the kit
+### Prospects is built on the kit
 
-Since 2026-10-05 (owner decision; BG-0152) Pépites has no look of its own: no
+Since 2026-10-05 (owner decision; BG-0152) Prospects has no look of its own: no
 night band or slanted cut, no energy gradient, no mono meta lines, no slant,
 no ghost numbers, no `--pepites-*` palette. Its screens are built like
 Matches, Fantasy and News, from the kit and the shared blocks above, and are
-right in light and dark, French and Arabic. The Pépites-specific pieces in
+right in light and dark, French and Arabic. The Prospects-specific pieces in
 `src/components/pepites/` are thin wrappers over the kit:
 
 - **Frame** (`PepitesShell.tsx`): the default `AppShell` with the global
   `TopBar` at every width. `PepitesPageTitle` wraps `UiPageTitle` for a hub
-  (Top 10, ranking, method): the section's name ("PÉPITES" / "جواهر") in
+  (Top 10, ranking, method): the section's name ("PROSPECTS" / "المواهب") in
   `ui.text.label` muted above the title, as `UiHeader`'s kicker names it on
   the detail pages, an optional back pill above that, and a title that
   wraps instead of truncating; `PepitesDetailHeader` wraps `UiHeader` for a
@@ -916,7 +916,7 @@ right in light and dark, French and Arabic. The Pépites-specific pieces in
   own classes (`ADMIN_LABEL_CLASS`, `AdminSectionHeading`,
   `ADMIN_PANEL_CLASS`) over the kit.
 
-`src/components/pepites/pepites.option-a.test.tsx` checks every Pépites
+`src/components/pepites/pepites.option-a.test.tsx` checks every Prospects
 screen file for the kit's source rules and keeps the old layer deleted. The
 share images (`share-image.ts`, drawn on a canvas, and the Fantasy recap
 image that reuses its helpers) are not screens and are checked by

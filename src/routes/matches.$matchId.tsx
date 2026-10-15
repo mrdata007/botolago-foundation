@@ -7,6 +7,7 @@ import {
 } from "@/lib/page-availability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState, type ComponentProps } from "react";
+import { toast } from "sonner";
 import {
   footballService,
   hasLeagueTable,
@@ -51,6 +52,8 @@ import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
 import { presentScore } from "@/lib/match-score";
 import { useBackTo } from "@/lib/back-navigation";
+import { shareLink } from "@/lib/share-link";
+import { shareablePageUrl } from "@/lib/share-url";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { MatchPredictionCard } from "@/components/predictions/MatchPredictionCard";
@@ -361,25 +364,23 @@ function MatchDetailPage() {
       : t("matches.competition.botola");
 
   const share = async () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    try {
-      if (typeof navigator !== "undefined" && "share" in navigator) {
-        await (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share({
-          title: `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)}`,
-          text: `${t("matches.competition.botola")} · ${dateFmt}`,
-          url,
-        });
-        return;
-      }
-    } catch {
-      /* user cancelled or blocked */
-    }
-    try {
-      await navigator.clipboard.writeText(url);
+    // The page's address without the campaign tags and fragment it was opened
+    // with: they describe how this reader arrived, not what the next one should
+    // be credited to.
+    const url = shareablePageUrl(
+      typeof window !== "undefined" ? window.location.href : "",
+      PUBLIC_SITE_ORIGIN,
+    );
+    const result = await shareLink({
+      title: `${tr(home.shortName)} ${t("matches.vs")} ${tr(away.shortName)}`,
+      text: `${t("matches.competition.botola")} · ${dateFmt}`,
+      url,
+    });
+    if (result === "copied") {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* ignore */
+    } else if (result === "failed") {
+      toast.error(t("pepites.share.copy_failed"));
     }
   };
 

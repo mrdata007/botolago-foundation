@@ -177,6 +177,9 @@ export const fr = {
   "news.saved.save_error": "Impossible d'enregistrer cet article pour le moment. Réessayez.",
   "news.saved.removed_announce": "Article retiré de vos articles enregistrés.",
   "news.saved.count_unknown": "nombre inconnu",
+  "news.saved.count_over": "plus de {count}",
+  "news.saved.over_limit":
+    "Vous avez plus de {count} articles enregistrés. Les plus récents s'affichent en premier.",
   "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
   "news.view_all": "Tout voir",
   "news.breaking": "Dernière minute",
@@ -1364,6 +1367,7 @@ export const fr = {
   "fpl.invite_code": "Code d’invitation",
   "fpl.copy": "Copier",
   "fpl.copied": "Copié",
+  "fpl.copy_failed": "La copie a échoué. Sélectionnez le code pour le copier.",
   "fpl.leave_league": "Quitter la ligue",
   "fpl.members": "membres",
   "fpl.overall": "Général",
@@ -1710,9 +1714,9 @@ export const fr = {
     "Les notifications sont bloquées. Autorisez-les pour BotolaGO dans les réglages du téléphone, puis réessayez.",
   "auth.setup.notif_push_unavailable":
     "Impossible d’activer les alertes pour le moment. Vérifiez votre connexion et réessayez.",
-  "auth.setup.language_confirm": "Langue",
+  "auth.setup.language_confirm": "Langue des notifications",
   "auth.setup.language_hint":
-    "En enregistrant, cette langue devient celle de vos notifications et de l’application sur cet appareil.",
+    "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
   "auth.setup.skip": "Passer",
   "auth.setup.next": "Suivant",
   "auth.setup.previous": "Précédent",
@@ -1786,7 +1790,7 @@ export const fr = {
   "profile.section.preferences": "Préférences",
   "profile.language.device": "Langue sur cet appareil",
   "profile.language.help":
-    "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte.",
+    "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
   "profile.language.help_guest": "Ce choix change l’application sur cet appareil.",
   "profile.section.security": "Sécurité du compte",
   "profile.section.account": "Compte",
@@ -2197,13 +2201,13 @@ export const fr = {
   "unsubscribe.error_title": "Impossible de traiter votre demande",
   "unsubscribe.error_body": "Vérifiez votre connexion, puis réessayez.",
   "unsubscribe.manage": "Gérer mes notifications",
-  "unsubscribe.pepites_confirm_title": "Ne plus recevoir l'e-mail Pépites ?",
+  "unsubscribe.pepites_confirm_title": "Ne plus recevoir l'e-mail Prospects ?",
   "unsubscribe.pepites_confirm_body":
-    "Cela arrête seulement l'e-mail hebdomadaire Pépites. Vos autres e-mails BotolaGO ne changent pas.",
-  "unsubscribe.pepites_done_title": "Vous ne recevrez plus l'e-mail Pépites.",
-  "unsubscribe.pepites_already_title": "L'e-mail Pépites était déjà désactivé.",
+    "Cela arrête seulement l'e-mail hebdomadaire Prospects. Vos autres e-mails BotolaGO ne changent pas.",
+  "unsubscribe.pepites_done_title": "Vous ne recevrez plus l'e-mail Prospects.",
+  "unsubscribe.pepites_already_title": "L'e-mail Prospects était déjà désactivé.",
   "unsubscribe.pepites_reenable_hint":
-    "Vos autres e-mails BotolaGO ne changent pas. Vous pouvez vous réabonner à Pépites à tout moment.",
+    "Vos autres e-mails BotolaGO ne changent pas. Vous pouvez vous réabonner à Prospects à tout moment.",
 
   /* Pronostics (BG-0146): the page, results, rankings, guest import */
   "predictions.title": "Pronostics",
@@ -2438,8 +2442,8 @@ export const fr = {
     "Journée {n} de la Botola : {score} bons pronostics, dont {exact} scores exacts, sur BotolaGO. Tu peux faire mieux ?",
   "predictions.share.title": "Partager mes pronostics",
   /* Pépites (docs/engineering/PEPITES_ARCHITECTURE.md). */
-  "nav.pepites": "Pépites",
-  "pepites.brand": "Pépites",
+  "nav.pepites": "Prospects",
+  "pepites.brand": "Prospects",
   "pepites.hero.kicker": "U23 · BOTOLA PRO · {season}",
   "pepites.hero.kicker_short": "U23 · BOTOLA PRO",
   "pepites.hero.rank_line": "N°{n} · RISING SCORE",
@@ -2489,7 +2493,7 @@ export const fr = {
     "Il faut au moins {round} journées pour classer les joueurs de façon juste. En attendant, voici le classement final {season}.",
   "pepites.state.season_started": "La saison {season} a commencé",
   "pepites.method.title": "Méthode",
-  "pepites.player.back": "Pépites",
+  "pepites.player.back": "Prospects",
   "pepites.player.foot_short": "Pied :",
   "pepites.player.not_set_short": "N.R.",
   "pepites.player.rank_line": "#{n} · U23 BOTOLA",
@@ -2512,20 +2516,20 @@ export const fr = {
   "pepites.matches.sub_short": "R",
   "pepites.matches.goals_short": "{n}B",
   "pepites.matches.assists_short": "{n}PD",
-  "pepites.meta_title": "Pépites — le Top 10 des jeunes de Botola Pro | BotolaGO",
+  "pepites.meta_title": "Prospects — le Top 10 des jeunes de Botola Pro | BotolaGO",
   "pepites.meta_description":
     "Les meilleurs joueurs de moins de 23 ans de Botola Pro : le Top 10 de la semaine, le classement complet et la méthode.",
   "pepites.tab.top": "Top 10",
-  "pepites.state.coming_soon": "Pépites arrive bientôt",
+  "pepites.state.coming_soon": "Bientôt sur BotolaGO : Prospects",
   "pepites.state.coming_soon_body":
     "Le classement des meilleurs jeunes de Botola Pro n'est pas encore ouvert.",
-  "pepites.state.error": "Impossible de charger les pépites",
+  "pepites.state.error": "Impossible de charger Prospects",
   "pepites.state.no_ranking": "Pas encore de classement",
   "pepites.state.no_ranking_body":
     "Le premier classement de la saison sera publié après les premières journées.",
   "pepites.preview_banner": "Aperçu équipe : ces données ne sont pas encore publiques.",
   "pepites.reveal.countdown_title": "Nouveau Top 10 bientôt",
-  "pepites.reveal.meta_title": "La révélation du Top 10 — Pépites | BotolaGO",
+  "pepites.reveal.meta_title": "La révélation du Top 10 — Prospects | BotolaGO",
   "pepites.reveal.play": "Voir la révélation, du N°10 au N°1",
   "pepites.reveal.none": "La révélation arrive avec le premier Top 10 de la saison.",
   "pepites.reveal.progress": "Joueur {n} sur {total}",
@@ -2553,12 +2557,12 @@ export const fr = {
   "pepites.home.full_ranking": "Voir le classement complet",
   "pepites.home.no_match": "Aucun joueur du Top 10 ne correspond à ce filtre.",
   "pepites.home.about":
-    "Pépites classe les joueurs de Botola Pro de moins de 23 ans à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
+    "Prospects, c'est le classement des joueurs de Botola Pro de moins de 23 ans, établi à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
   "pepites.email.title": "Le Top 10 par e-mail",
   "pepites.email.body":
     "Un e-mail par semaine avec le nouveau Top 10. Désactivé tant que vous ne l'activez pas.",
   "pepites.email.sign_in": "Se connecter pour l'activer",
-  "pepites.email.sign_in_reason": "Connectez-vous pour recevoir le Top 10 Pépites par e-mail.",
+  "pepites.email.sign_in_reason": "Connectez-vous pour recevoir le Top 10 Prospects par e-mail.",
   "pepites.email.on_toast": "Inscription enregistrée.",
   "pepites.email.off_toast": "Vous ne recevrez plus le Top 10 par e-mail.",
   "pepites.email.error": "Le réglage n'a pas pu être enregistré. Réessayez.",
@@ -2577,11 +2581,12 @@ export const fr = {
   "pepites.sort.ga90": "Buts + passes / 90 min",
   "pepites.ranking.load_more": "Voir plus",
   "pepites.ranking.no_match": "Aucun joueur classé ne correspond à ces filtres.",
-  "pepites.ranking.meta_title": "Classement Pépites — les moins de 23 ans de Botola Pro | BotolaGO",
+  "pepites.ranking.meta_title":
+    "Classement Prospects — les moins de 23 ans de Botola Pro | BotolaGO",
   "pepites.ranking.meta_description":
     "Le classement complet des joueurs de moins de 23 ans de Botola Pro, par poste et par âge.",
-  "pepites.player.meta_title": "{name} — Pépites | BotolaGO",
-  "pepites.player.not_found": "Ce joueur n'est pas dans Pépites.",
+  "pepites.player.meta_title": "{name} — Prospects | BotolaGO",
+  "pepites.player.not_found": "Ce joueur n'est pas dans Prospects.",
   "pepites.player.tabs": "Sections du joueur",
   "pepites.player.tab_overview": "Aperçu",
   "pepites.player.tab_matches": "Matchs",
@@ -2680,7 +2685,7 @@ export const fr = {
   "pepites.player.editions": "Dans le Top 10",
   "pepites.player.edition_week": "Semaine {n}",
   "pepites.player.no_matches": "Aucun match joué cette saison.",
-  "pepites.edition.meta_title": "Pépites · Top 10 de la semaine {n} | BotolaGO",
+  "pepites.edition.meta_title": "Prospects · Top 10 de la semaine {n} | BotolaGO",
   "pepites.edition.not_found": "Pas de Top 10 publié pour cette semaine.",
   "pepites.edition.withdrawn_title": "Ce Top 10 a été retiré",
   "pepites.edition.withdrawn_body": "La rédaction a retiré cette édition.",
@@ -2689,9 +2694,9 @@ export const fr = {
     "Une erreur a été corrigée après la publication. La version corrigée fait foi.",
   "pepites.edition.see_correction": "Voir la correction",
   "pepites.edition.is_correction": "Version corrigée de ce Top 10.",
-  "pepites.method.meta_title": "Méthode Pépites — comment le classement est calculé | BotolaGO",
+  "pepites.method.meta_title": "Méthode Prospects — comment le classement est calculé | BotolaGO",
   "pepites.method.meta_description":
-    "Comment Pépites classe les joueurs de moins de 23 ans de Botola Pro, et la couverture des données.",
+    "Comment est établi le classement Prospects des moins de 23 ans de Botola Pro, et la couverture des données.",
   "pepites.method.who_title": "Qui est classé",
   "pepites.method.who_body":
     "Les joueurs de Botola Pro de moins de {age} ans dont la date de naissance est connue, qui ont joué au moins {minutes} minutes, ou {share} du temps de jeu de leur équipe si c'est plus.",
@@ -2749,17 +2754,20 @@ export const fr = {
   "pepites.share.player_title": "Partager la fiche",
   "pepites.share.story_alt": "Carte à partager de {name}",
   "pepites.share.player_message":
-    "{name} dans Pépites, le classement des moins de 23 ans de Botola Pro sur BotolaGO.",
+    "{name} dans Prospects, le classement des moins de 23 ans de Botola Pro sur BotolaGO.",
   "pepites.share.story_stats": "{minutes} MIN · NOTE {rating}",
-  "pepites.share.image_alt": "Image du Top 10 Pépites de la semaine {n}",
+  "pepites.share.image_alt": "Image du Top 10 Prospects de la semaine {n}",
   "pepites.share.image_failed": "L'image n'a pas pu être créée. Vous pouvez partager le lien.",
   "pepites.share.message":
-    "Le Top 10 Pépites de la semaine {n} : les meilleurs jeunes de Botola Pro sur BotolaGO.",
+    "Le Top 10 Prospects de la semaine {n} : les meilleurs jeunes de Botola Pro sur BotolaGO.",
   "pepites.share.native": "Partager l'image",
   "pepites.share.download": "Télécharger l'image",
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // Shown with the text itself when the clipboard refuses (ManualCopyField).
+  "pepites.share.copy_manual": "La copie automatique a échoué. Copiez le texte ci-dessous.",
+  "pepites.share.copy_manual_label": "Texte à copier",
   // Inside the phone app only, when the app has the plugins (ShareImageSheet).
   "pepites.share.save": "Enregistrer dans la galerie",
   "pepites.share.saved": "Image enregistrée dans la galerie.",
@@ -2790,6 +2798,7 @@ export const fr = {
     "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.",
   "landing.cta_discover": "Découvrir le jeu",
   "landing.cta_how": "Comment ça marche",
+  "landing.cta_matches": "Voir les matchs et résultats",
   "landing.cta_note":
     "Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
   "landing.join_by": "Pour jouer dès la Journée {n}, enregistrez votre équipe avant le",

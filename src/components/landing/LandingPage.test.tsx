@@ -82,6 +82,45 @@ describe("LandingPage (server render)", () => {
     expect(html).toContain('href="/fantasy/help"');
   });
 
+  /**
+   * Audit UX-011 / PRO-02: the owner's first job is seeing today's football
+   * without an account, so the hero itself carries an explicit way to the
+   * match list, next to the game's call to action and not in place of it.
+   */
+  it("offers the match list in the hero, as a link to /matches, before the explanation anchor", async () => {
+    const html = await render();
+    const link = html.match(/<a\b[^>]*data-testid="landing-cta-matches"[^>]*>[\s\S]*?<\/a>/);
+    expect(link).not.toBeNull();
+    expect(link![0]).toContain('href="/matches"');
+    expect(link![0]).toContain(escapeHtml(fr["landing.cta_matches"]));
+    // In the hero, ahead of "how it works".
+    const at = html.indexOf('data-testid="landing-cta-matches"');
+    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeLessThan(html.indexOf(escapeHtml(fr["landing.cta_how"])));
+  });
+
+  it("words the action in both languages, with no promise beyond the match list", () => {
+    expect(fr["landing.cta_matches"]).toBe("Voir les matchs et résultats");
+    expect(/[؀-ۿ]/.test(ar["landing.cta_matches"])).toBe(true);
+    // The same shape: no placeholder, no figure.
+    expect(ar["landing.cta_matches"]).not.toMatch(/[{}\d]/);
+    expect(fr["landing.cta_matches"]).not.toMatch(/[{}\d]/);
+  });
+
+  it("keeps the game's call to action and /jouer's role: the new link replaces nothing", () => {
+    const source = readFileSync(join(ROOT, "src/components/landing/LandingPage.tsx"), "utf8");
+    expect(source).toContain('event="landing_cta_hero"');
+    expect(source).toContain("href={`#${howId}`}");
+    // The matches link is a plain link: it is not a step of the sign-up funnel.
+    const end = source.indexOf('data-testid="landing-cta-matches"');
+    expect(end).toBeGreaterThan(-1);
+    const block = source.slice(source.lastIndexOf("<Link", end), end);
+    expect(block).toContain('to="/matches"');
+    expect(block).not.toContain("track(");
+    // Leaving by it is the welcome, as for every other link on the page.
+    expect(block).toContain("onClick={onLeave}");
+  });
+
   it("answers the objections in five native disclosures", async () => {
     const html = await render();
     expect(html.match(/<details/g) ?? []).toHaveLength(5);

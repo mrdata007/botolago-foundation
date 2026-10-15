@@ -127,7 +127,7 @@ function isNeverReturnTo(pathname: string): boolean {
 }
 
 /** The query without credential keys, in the form it was written (no re-encoding). */
-function withoutSensitiveQuery(searchStr: string): string {
+export function withoutSensitiveQuery(searchStr: string): string {
   const pairs = searchStr
     .replace(/^\?/, "")
     .split("&")

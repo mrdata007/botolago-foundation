@@ -301,8 +301,8 @@ describeDb("the Pépites weekly email, from publication to the provider", () => 
     expect(summary).toMatchObject({ claimed: 3, sent: 2, retrying: 1, failed: 0 });
 
     const subjects = Object.fromEntries(resend.sent.map((mail) => [mail.to, mail.subject]));
-    expect(subjects[READERS[0].email]).toBe("Pépites · Semaine 16 : le Top 10 des jeunes");
-    expect(subjects[READERS[1].email]).toBe("Pépites · الأسبوع 16: توب 10 للشباب");
+    expect(subjects[READERS[0].email]).toBe("Prospects · Semaine 16 : le Top 10 des jeunes");
+    expect(subjects[READERS[1].email]).toBe("المواهب · الأسبوع 16: توب 10 للشباب");
     const arabic = resend.sent.find((mail) => mail.to === READERS[1].email)!;
     expect(arabic.text).toContain("1. E2E Joueur 1 · نادي الاختبار · 88/100");
     expect(arabic.text).toContain("&topic=pepites_weekly");

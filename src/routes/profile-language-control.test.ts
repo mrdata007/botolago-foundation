@@ -8,8 +8,9 @@ import { dictionaries } from "@/i18n/dictionaries";
  * Audit 2026-10-14, LOC-06: the Profile "Langue" row changes the language of
  * the app on this device only (browser storage). Notifications use the
  * language saved on the ACCOUNT (`profiles.preferred_language`, which the
- * e-mail and push fanouts read), set at sign-up and whenever the profile
- * editor is saved (its language step starts from the device's language). Nothing on the row said so, so a reader who switched to
+ * e-mail and push fanouts read): French for a new account (owner decision,
+ * 2026-10-15) and changed only by the language step of the profile editor,
+ * which shows the stored value. Nothing on the row said so, so a reader who switched to
  * Arabic could expect Arabic notifications.
  *
  * The screens need a router and a session to render, so these pin the
@@ -35,10 +36,10 @@ describe("profile language control: wording", () => {
 
   it("says what the row changes and what notifications follow", () => {
     expect(fr["profile.language.help"]).toBe(
-      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte.",
+      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
     );
     expect(ar["profile.language.help"]).toBe(
-      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك.",
+      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك. يمكن تغييرها من الإشعارات.",
     );
   });
 
@@ -50,19 +51,20 @@ describe("profile language control: wording", () => {
     expect(ar["profile.language.help_guest"]).not.toContain("حساب");
   });
 
-  it("the editor's language step does not claim to show the account's current language", () => {
-    // It starts from the device's language, so its label is neutral and its
-    // hint states what SAVING does, not what is currently stored.
-    expect(fr["auth.setup.language_confirm"]).toBe("Langue");
-    expect(ar["auth.setup.language_confirm"]).toBe("اللغة");
+  it("the editor's language step is named for notifications and says French is the default", () => {
+    // It shows the account's stored value (French for a new account), so the
+    // label may name the notifications, and the hint says what the step does
+    // NOT do: change the app on this device.
+    expect(fr["auth.setup.language_confirm"]).toBe("Langue des notifications");
+    expect(ar["auth.setup.language_confirm"]).toBe("لغة الإشعارات");
     expect(fr["auth.setup.language_hint"]).toBe(
-      "En enregistrant, cette langue devient celle de vos notifications et de l’application sur cet appareil.",
+      "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
     );
     expect(ar["auth.setup.language_hint"]).toBe(
-      "عند الحفظ تصبح هذه اللغة لغة إشعاراتك ولغة التطبيق على هذا الجهاز.",
+      "لغة رسائل البريد الإلكتروني والتنبيهات والإشعارات. الفرنسية هي اللغة الافتراضية. تُضبط لغة التطبيق على هذا الجهاز من الملف الشخصي.",
     );
-    expect(fr["auth.setup.language_confirm"]).not.toMatch(/notification/i);
-    expect(ar["auth.setup.language_confirm"]).not.toContain("إشعار");
+    // The old hint promised the opposite: that saving also switched the app.
+    expect(fr["auth.setup.language_hint"]).not.toMatch(/devient celle/);
   });
 });
 
@@ -100,12 +102,28 @@ describe("profile language control: the wording is true", () => {
     // choice, saved as the account's preferred language when the editor ends.
     expect(setup).toContain('id="setupLanguage"');
     expect(setup).toContain('t("auth.setup.language_confirm")');
-    expect(setup).toMatch(/language: chosenLang/);
+    expect(setup).toMatch(/language: notificationLanguageToSave\(user\?\.language, pickedLang\)/);
     expect(setup).toContain('t("auth.setup.language_hint")');
-    // The coupling the hint describes: the step starts from the DEVICE's
-    // language, and saving sets the device's language to the chosen one.
-    expect(setup).toMatch(/setChosenLang\(lang\)/);
-    expect(setup).toMatch(/if \(chosenLang !== lang\) setLanguage\(chosenLang\)/);
+  });
+
+  it("the step is seeded from the stored account language, never from the device's", () => {
+    // Owner decision 2026-10-15: French by default, the stored value wins. The
+    // device language (`lang`) must not seed, follow or be written by the step.
+    expect(setup).toMatch(/shownNotificationLanguage\(user\?\.language, pickedLang\)/);
+    expect(setup).not.toMatch(/setChosenLang|useState<Language>\(lang\)/);
+    expect(setup).not.toMatch(/setLanguage/);
+    expect(setup).not.toMatch(/language: chosenLang/);
+  });
+
+  it("the chips wait for the account, and a refused save shows the connection message", () => {
+    expect(setup).toContain("disabled={!user}");
+    expect(setup).toMatch(/res\.errorCode === "network"\s*\?\s*"auth\.error\.network"/);
+  });
+
+  it("sign-up does not send the device's language as the notification language", () => {
+    const register = strip(read("src/routes/auth.register.tsx"));
+    expect(register).not.toMatch(/language: lang/);
+    expect(register).not.toMatch(/const \{[^}]*\blang\b[^}]*\} = useI18n/);
   });
 
   it("the profile reaches that editor from its Notifications row", () => {

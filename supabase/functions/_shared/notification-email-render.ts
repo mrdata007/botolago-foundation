@@ -1008,8 +1008,8 @@ function pepitesWeekly(
         plain(
           t(
             ctx,
-            "Les dix meilleurs joueurs de moins de 23 ans de Botola Pro cette semaine, choisis par la rédaction à partir du classement Pépites. Le score va de 0 à 100.",
-            "أفضل عشرة لاعبين دون 23 سنة في البطولة الاحترافية هذا الأسبوع، اختارتهم هيئة التحرير انطلاقًا من ترتيب Pépites. التنقيط من 0 إلى 100.",
+            "Les dix meilleurs joueurs de moins de 23 ans de Botola Pro cette semaine, choisis par la rédaction à partir du classement Prospects. Le score va de 0 à 100.",
+            "أفضل عشرة لاعبين دون 23 سنة في البطولة الاحترافية هذا الأسبوع، اختارتهم هيئة التحرير انطلاقًا من ترتيب المواهب. التنقيط من 0 إلى 100.",
           ),
         ),
       ],
@@ -1022,20 +1022,20 @@ function pepitesWeekly(
     subject: correction
       ? t(
           ctx,
-          `Pépites · ${weekLabel} : le Top 10 corrigé`,
-          `Pépites · ${weekLabel}: توب 10 بعد التصحيح`,
+          `Prospects · ${weekLabel} : le Top 10 corrigé`,
+          `المواهب · ${weekLabel}: توب 10 بعد التصحيح`,
         )
       : t(
           ctx,
-          `Pépites · ${weekLabel} : le Top 10 des jeunes`,
-          `Pépites · ${weekLabel}: توب 10 للشباب`,
+          `Prospects · ${weekLabel} : le Top 10 des jeunes`,
+          `المواهب · ${weekLabel}: توب 10 للشباب`,
         ),
     preheader: t(
       ctx,
       `N° 1 : ${leaderLine} · ${leader.score}/100`,
       `الأول: ${leaderLine} · ${leader.score}/100`,
     ),
-    kicker: "Pépites",
+    kicker: t(ctx, "Prospects", "المواهب"),
     title: t(ctx, `Le Top 10 de la semaine ${week}`, `توب 10 للأسبوع ${week}`),
     dateline: round
       ? `${t(ctx, `Journée ${round}`, `الجولة ${round}`)} · ${copy(ctx, "botolaPro")}`
@@ -1407,8 +1407,8 @@ export function renderNotificationEmail(
     why: pepites
       ? t(
           ctx,
-          "Vous recevez cet e-mail car vous vous êtes abonné à Pépites, le Top 10 hebdomadaire des jeunes de Botola Pro.",
-          "تتلقى هذه الرسالة لأنك اشتركت في Pépites، توب 10 الأسبوعي لشباب البطولة الاحترافية.",
+          "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro.",
+          "تتلقى هذه الرسالة لأنك اشتركت في المواهب، توب 10 الأسبوعي لشباب البطولة الاحترافية.",
         )
       : t(
           ctx,
@@ -1418,11 +1418,11 @@ export function renderNotificationEmail(
     scope: pepites
       ? t(
           ctx,
-          "Vous désabonner de Pépites ne change pas vos autres e-mails BotolaGO.",
-          "إلغاء الاشتراك في Pépites لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+          "Vous désabonner de Prospects ne change pas vos autres e-mails BotolaGO.",
+          "إلغاء الاشتراك في رسالة المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
         )
       : null,
-    home: pepites ? { label: t(ctx, "Pépites", "Pépites"), url: routes.pepites } : null,
+    home: pepites ? { label: t(ctx, "Prospects", "المواهب"), url: routes.pepites } : null,
     manage: {
       label: pepites
         ? t(ctx, "Tous mes réglages de notifications", "كل إعدادات الإشعارات")
@@ -1431,7 +1431,7 @@ export function renderNotificationEmail(
     },
     unsubscribe: {
       label: pepites
-        ? t(ctx, "Se désabonner de Pépites", "إلغاء الاشتراك في Pépites")
+        ? t(ctx, "Se désabonner de Prospects", "إلغاء الاشتراك في رسالة المواهب")
         : t(ctx, "Se désabonner", "إلغاء الاشتراك"),
       url: unsubscribeUrl(delivery, links),
     },
