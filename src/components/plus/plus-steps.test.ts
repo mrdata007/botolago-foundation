@@ -14,6 +14,7 @@ describe("the offer's address", () => {
     expect(clampContext("duel")).toBe("duel");
     expect(clampContext("career")).toBe("career");
     expect(clampContext("editions")).toBe("editions");
+    expect(clampContext("briefing")).toBe("briefing");
     expect(clampContext("profile")).toBeUndefined();
     expect(clampContext(3)).toBeUndefined();
     expect(clampContext(undefined)).toBeUndefined();

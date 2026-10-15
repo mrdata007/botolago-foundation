@@ -65,6 +65,7 @@ import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player
 import { Route as DevPlusAdminSampleRouteImport } from './routes/dev.plus-admin-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
+import { Route as FantasyBriefingRouteImport } from './routes/fantasy.briefing'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
 import { Route as FantasyHelpRouteImport } from './routes/fantasy.help'
@@ -394,6 +395,11 @@ const FantasyIndexRoute = FantasyIndexRouteImport.update({
   path: '/',
   getParentRoute: () => FantasyRoute,
 } as any)
+const FantasyBriefingRoute = FantasyBriefingRouteImport.update({
+  id: '/briefing',
+  path: '/briefing',
+  getParentRoute: () => FantasyRoute,
+} as any)
 const FantasyCreateRoute = FantasyCreateRouteImport.update({
   id: '/create',
   path: '/create',
@@ -675,6 +681,7 @@ export interface FileRoutesByFullPath {
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
+  '/fantasy/briefing': typeof FantasyBriefingRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -772,6 +779,7 @@ export interface FileRoutesByTo {
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
+  '/fantasy/briefing': typeof FantasyBriefingRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -875,6 +883,7 @@ export interface FileRoutesById {
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
+  '/fantasy/briefing': typeof FantasyBriefingRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -979,6 +988,7 @@ export interface FileRouteTypes {
     | '/dev/player-mappings-sample'
     | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
+    | '/fantasy/briefing'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -1076,6 +1086,7 @@ export interface FileRouteTypes {
     | '/dev/player-mappings-sample'
     | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
+    | '/fantasy/briefing'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -1178,6 +1189,7 @@ export interface FileRouteTypes {
     | '/dev/player-mappings-sample'
     | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
+    | '/fantasy/briefing'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -1663,6 +1675,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyIndexRouteImport
       parentRoute: typeof FantasyRoute
     }
+    '/fantasy/briefing': {
+      id: '/fantasy/briefing'
+      path: '/briefing'
+      fullPath: '/fantasy/briefing'
+      preLoaderRoute: typeof FantasyBriefingRouteImport
+      parentRoute: typeof FantasyRoute
+    }
     '/fantasy/create': {
       id: '/fantasy/create'
       path: '/create'
@@ -2129,6 +2148,7 @@ const FantasyPlayersRouteWithChildren = FantasyPlayersRoute._addFileChildren(
 )
 
 interface FantasyRouteChildren {
+  FantasyBriefingRoute: typeof FantasyBriefingRoute
   FantasyCreateRoute: typeof FantasyCreateRoute
   FantasyFixturesRoute: typeof FantasyFixturesRoute
   FantasyHelpRoute: typeof FantasyHelpRoute
@@ -2145,6 +2165,7 @@ interface FantasyRouteChildren {
 }
 
 const FantasyRouteChildren: FantasyRouteChildren = {
+  FantasyBriefingRoute: FantasyBriefingRoute,
   FantasyCreateRoute: FantasyCreateRoute,
   FantasyFixturesRoute: FantasyFixturesRoute,
   FantasyHelpRoute: FantasyHelpRoute,

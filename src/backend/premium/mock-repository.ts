@@ -2,6 +2,8 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 
 import {
   LAUNCH_PRICES,
+  MY_PREMIUM_OFF,
+  PREMIUM_STATUS_OFF,
   type MyPremium,
   type PremiumActionResult,
   type PremiumProductCode,
@@ -17,7 +19,7 @@ import {
  *
  * The scenario comes from `?plus=<scenario>` (development only), so every state of the Profil
  * section and of the offer can be looked at without a database:
- * `none` (the default), `monthly`, `renewing` (renews in 2 days: the J-3 reminder), `yearly`, `cancelling`, `grace`, `expired`.
+ * `none` (the default), `monthly`, `renewing` (renews in 2 days: the J-3 reminder), `yearly`, `cancelling`, `grace`, `expired`, `off` (the database mode is off: nothing shows).
  *
  * Dates are relative to `now`, so the same scenario always reads « renews in 12 days ».
  */
@@ -29,6 +31,7 @@ export const PLUS_SCENARIOS = [
   "cancelling",
   "grace",
   "expired",
+  "off",
 ] as const;
 export type PlusScenario = (typeof PLUS_SCENARIOS)[number];
 
@@ -100,6 +103,7 @@ export function mockMine(scenario: PlusScenario, now: Date): MyPremium {
         currentPeriodEnd: inDays(now, -30),
         cancelAtPeriodEnd: false,
       };
+    case "off":
     case "none":
       return {
         ...base,
@@ -113,7 +117,7 @@ export function mockMine(scenario: PlusScenario, now: Date): MyPremium {
 }
 
 function mockReceipts(scenario: PlusScenario, now: Date): readonly PremiumReceipt[] {
-  if (scenario === "none") return [];
+  if (scenario === "none" || scenario === "off") return [];
   const yearly = scenario === "yearly";
   return [
     {
@@ -133,9 +137,11 @@ export class MockPremiumRepository implements PremiumRepository {
   ) {}
 
   async status(_context: RepositoryContext): Promise<PremiumStatus> {
+    if (this.pick() === "off") return PREMIUM_STATUS_OFF;
     return { enabled: true, checkoutEnabled: false, prices: [...LAUNCH_PRICES] };
   }
   async mine(_context: RepositoryContext): Promise<MyPremium> {
+    if (this.pick() === "off") return MY_PREMIUM_OFF;
     return mockMine(this.pick(), this.clock());
   }
   async receipts(_context: RepositoryContext) {
