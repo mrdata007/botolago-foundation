@@ -82,3 +82,18 @@ Functional
 - Backend: the evaluator and every read are display-only; no ranking, league, Fantasy or Manager
   Card function reads trophies or frames; pgTAP covers grants, RLS, off/locked/member answers, the
   never-withdrawn guarantee and the frame rules. Nothing is applied to any database by this branch.
+
+## Changes made while building (the brief above was written first)
+
+- Three migrations (20261015150000 to 20261015150200), not four, and twelve trophies, not eleven
+  (`league_leader` was added with `league_podium`).
+- No change to the Manager Card moment acknowledgements: « Nouveau » is derived from `earnedAt` (the
+  newest trophy, within seven days), so the `trophy:*` key regex is not needed.
+- The « Montrer mes trophées dans mes ligues » switch of the mock is not built: nothing in the
+  backend shows trophies to other people yet, so the switch would control nothing. Owner decision
+  needed before trophies appear on league pages.
+- The frame is drawn around the member's own card on Curva's card page, in the picker and in the
+  share image. `api.get_trophy_card_frames` serves it for other people's cards, but the rankings and
+  league lists do not call it yet.
+- On a wide screen the cabinet keeps the card page's column width, and the detail replaces the
+  cabinet in place instead of opening a side panel.
