@@ -454,7 +454,13 @@ export const BASELINES: Baselines = {
   // notice gives `fantasy.error.retry` and `fantasy.error.reload_latest` their
   // first call sites (-2); its seven new keys are all referenced. 249 -> 247
   // (measured with `bun scripts/qa/i18n-gate.ts`).
-  W3: 247,
+  //
+  // Audit remediation B5 (UX-001, 2026-10-15): the reading list page
+  // (/profile/saved) and the News screen's link to it give `news.section.saved`
+  // and `news.saved.empty`, dead since the saved rail was dropped, their first
+  // call sites (-2); its nine new keys are all referenced. 247 -> 245
+  // (measured with `bun scripts/qa/i18n-gate.ts`).
+  W3: 245,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

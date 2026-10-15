@@ -153,6 +153,21 @@ export const fr = {
   "news.carousel.slide_role": "diapositive",
   "news.saved.empty":
     "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
+  // The reading list page (/profile/saved).
+  "news.saved.empty_title": "Aucun article enregistré",
+  "news.saved.browse": "Parcourir les actualités",
+  "news.saved.signin_title": "Connectez-vous pour retrouver vos articles",
+  "news.saved.signin_body": "Vos articles enregistrés sont liés à votre compte.",
+  "news.saved.error":
+    "Vos articles enregistrés n'ont pas pu être chargés. Vérifiez votre connexion et réessayez.",
+  "news.saved.unavailable": "Cet article n'est plus disponible.",
+  "news.saved.remove": "Retirer de la liste",
+  "news.saved.more": "Voir plus d'articles",
+  "news.saved.more_error": "La suite n'a pas pu être chargée.",
+  "news.saved.remove_error": "Impossible de retirer cet article pour le moment. Réessayez.",
+  "news.saved.save_error": "Impossible d'enregistrer cet article pour le moment. Réessayez.",
+  "news.saved.removed_announce": "Article retiré de vos articles enregistrés.",
+  "news.saved.count_unknown": "nombre inconnu",
   "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
   "news.view_all": "Tout voir",
   "news.breaking": "Dernière minute",

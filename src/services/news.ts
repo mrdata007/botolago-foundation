@@ -8,7 +8,8 @@ import type {
 } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
 import { MockNewsRepository } from "@/backend/news/mock-repository";
-import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
+import { encodeSavedCursor, SupabaseNewsRepository } from "@/backend/news/supabase-repository";
+import type { SavedEntry } from "@/lib/saved-collection";
 import { authService } from "@/services/auth";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
@@ -400,6 +401,84 @@ export async function getArticleWithLanguageFallback(
   }
 }
 
+/** The server caps a page of the saved list at 50 (`api.news_saved_articles`). */
+export const SAVED_PAGE_SIZE = 50;
+/** A runaway guard for `collectSavedIds`: 40 pages is 2,000 saved stories. */
+const SAVED_IDS_MAX_PAGES = 40;
+
+/**
+ * Every story id the reader has saved, across all pages. The save toggles and
+ * the Profile count read this; it used to ask for one page of "100" that the
+ * server cut to 50, so the 51st saved story looked unsaved (its bookmark
+ * offered "Enregistrer" again) and was missing from the count.
+ */
+export async function collectSavedIds(
+  repository: Pick<NewsRepository, "getSaved">,
+  requestContext: RepositoryContext,
+): Promise<string[]> {
+  const ids = new Set<string>();
+  const seenCursors = new Set<string>();
+  let cursor: string | null = null;
+  for (let page = 0; page < SAVED_IDS_MAX_PAGES; page += 1) {
+    const result = await repository.getSaved(SAVED_PAGE_SIZE, requestContext, cursor);
+    for (const item of result.items) ids.add(item.id);
+    cursor = encodeSavedCursor(result.nextCursor);
+    // A cursor seen before would loop forever on the same page.
+    if (!cursor || seenCursors.has(cursor)) return [...ids];
+    seenCursors.add(cursor);
+  }
+  console.warn(
+    `[news] saved ids stopped at ${SAVED_IDS_MAX_PAGES} pages (${ids.size} ids); the list is longer.`,
+  );
+  return [...ids];
+}
+
+/** One page of the saved collection, as rows, plus the cursor of the next. */
+export async function getSavedEntriesPage(
+  repository: Pick<NewsRepository, "getSaved">,
+  cursor: string | null,
+  requestContext: RepositoryContext,
+): Promise<{ entries: SavedEntry[]; nextCursor: string | null }> {
+  const page = await repository.getSaved(SAVED_PAGE_SIZE, requestContext, cursor);
+  return {
+    entries: page.items.map((item) => ({ kind: "article", article: presentArticle(item) })),
+    nextCursor: encodeSavedCursor(page.nextCursor),
+  };
+}
+
+/**
+ * Rows for a list of saved ids the device holds (preview mode only; in
+ * production the server holds the list and drops what is gone, see
+ * `api.news_saved_articles`). An id whose story no longer exists becomes an
+ * `unavailable` row the reader can remove; any other failure is a failure and
+ * is thrown, so the page shows an error with a retry rather than a shorter list.
+ */
+export async function resolveSavedIds(
+  repository: Pick<NewsRepository, "getArticle">,
+  ids: readonly string[],
+  language: NewsLanguage,
+  requestContext: RepositoryContext,
+): Promise<SavedEntry[]> {
+  return Promise.all(
+    ids.map(async (id): Promise<SavedEntry> => {
+      try {
+        const article = await getArticleWithLanguageFallback(
+          repository,
+          id,
+          language,
+          requestContext,
+        );
+        return { kind: "article", article: presentArticle(article) };
+      } catch (error) {
+        if (error instanceof NewsError && error.code === "article_not_found") {
+          return { kind: "unavailable", id };
+        }
+        throw error;
+      }
+    }),
+  );
+}
+
 export const newsService = {
   async getEdition(language: NewsLanguage, selection: NewsLanguageSelection = "auto") {
     // The home preview renders three stories, not two full 50-story feeds.
@@ -457,8 +536,17 @@ export const newsService = {
   },
 
   async getSavedIds(): Promise<string[]> {
-    const page = await getNewsRepository().getSaved(100, context());
-    return page.items.map((article) => article.id);
+    return collectSavedIds(getNewsRepository(), context());
+  },
+
+  /** A page of the signed-in reader's collection (production). */
+  async getSavedEntries(cursor: string | null) {
+    return getSavedEntriesPage(getNewsRepository(), cursor, context());
+  },
+
+  /** The collection for ids the device holds (preview mode). */
+  async resolveSavedIds(ids: readonly string[], language: NewsLanguage) {
+    return resolveSavedIds(getNewsRepository(), ids, language, context());
   },
 
   async save(articleId: string): Promise<void> {

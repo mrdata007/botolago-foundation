@@ -213,13 +213,16 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-// This route now has a child route (/profile/security). A parent route in a
+// This route has child routes (/profile/security, /profile/saved). A parent route in a
 // nested (dot-separated) file hierarchy must render <Outlet /> itself or the
 // deeper match never appears -- the URL changes but the parent's own UI stays
 // on screen. Same defect already fixed in admin.news.tsx and admin.staff.tsx.
 function ProfileRootRoute() {
   const isChildRoute = useRouterState({
-    select: (state) => state.matches.some((match) => match.routeId === "/profile/security"),
+    select: (state) =>
+      state.matches.some(
+        (match) => match.routeId === "/profile/security" || match.routeId === "/profile/saved",
+      ),
   });
   return isChildRoute ? <Outlet /> : <ProfilePage />;
 }
@@ -416,16 +419,14 @@ function AuthenticatedProfile({
 
       <Group title={t("profile.section.account")}>
         {/* Saved articles — hidden at launch (NEWS_ENABLED); there is no
-            News surface to save from. */}
+            News surface to save from. The count is the way in to the list. */}
         {NEWS_ENABLED && (
-          <div className={ROW}>
-            <RowInner
-              icon={<Bookmark />}
-              label={t("profile.saved_articles")}
-              chevron={false}
-              value={<SavedArticlesCount />}
-            />
-          </div>
+          <RowLink
+            to="/profile/saved"
+            icon={<Bookmark />}
+            label={t("profile.saved_articles")}
+            value={<SavedArticlesCount />}
+          />
         )}
         <RowLink
           to="/auth/update-password"
@@ -670,11 +671,20 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
 
 /**
  * The saved-articles count, while News is on. Its own component so the hook
- * runs only where the row is drawn. A figure, so tabular.
+ * runs only where the row is drawn. A figure, so tabular. While the list is
+ * not known (loading, or the read failed) it says so with a dash rather than
+ * "0", which would tell a reader with saved stories that they have none.
  */
 function SavedArticlesCount() {
+  const { t } = useI18n();
   const saved = useSavedArticles();
-  return <span className={ui.stat.sm}>{saved.hydrated ? saved.ids.length : 0}</span>;
+  if (saved.idsKnown) return <span className={ui.stat.sm}>{saved.ids.length}</span>;
+  return (
+    <span className={ui.stat.sm}>
+      <span aria-hidden>–</span>
+      <span className="sr-only">{t("news.saved.count_unknown")}</span>
+    </span>
+  );
 }
 
 /** The preferences a signed-out visitor still has: language and appearance. */
