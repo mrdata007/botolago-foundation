@@ -13,7 +13,7 @@
 -- saved mark, the match votes' own choices) answer E at aal1 as they answer a
 -- visitor.
 begin;
-select extensions.plan(53);
+select extensions.plan(58);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('a3b30000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -357,6 +357,10 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
          'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
          'admin_home_stories', 'admin_save_home_story', 'admin_publish_home_story',
+         -- Private held match visuals (20261014044713); each keeps its staff check.
+         'admin_match_visual_drafts', 'admin_get_match_visual_draft',
+         'admin_import_match_visual_draft', 'admin_begin_match_visual_edit',
+         'admin_discard_match_visual_draft',
          'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
          'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
          'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',
@@ -501,6 +505,26 @@ select extensions.is(pg_temp.caught($ddl$
   end;
   $body$;
 $ddl$), 'admin_get_user', 'a named staff RPC that no longer calls its staff check');
+select extensions.is(pg_temp.caught(regexp_replace(
+  pg_get_functiondef('api.admin_match_visual_drafts()'::regprocedure),
+  $guard$app_private\.admin_assert_permission\([^;]*\)$guard$, 'auth.uid()'
+)), 'admin_match_visual_drafts', 'admin_match_visual_drafts is caught if its staff check becomes an unguarded caller read');
+select extensions.is(pg_temp.caught(regexp_replace(
+  pg_get_functiondef('api.admin_get_match_visual_draft(uuid)'::regprocedure),
+  $guard$app_private\.admin_assert_permission\([^;]*\)$guard$, 'auth.uid()'
+)), 'admin_get_match_visual_draft', 'admin_get_match_visual_draft is caught if its staff check becomes an unguarded caller read');
+select extensions.is(pg_temp.caught(regexp_replace(
+  pg_get_functiondef('api.admin_import_match_visual_draft(jsonb)'::regprocedure),
+  $guard$app_private\.admin_assert_permission\([^;]*\)$guard$, 'auth.uid()'
+)), 'admin_import_match_visual_draft', 'admin_import_match_visual_draft is caught if its staff check becomes an unguarded caller read');
+select extensions.is(pg_temp.caught(regexp_replace(
+  pg_get_functiondef('api.admin_begin_match_visual_edit(uuid,integer,uuid,jsonb)'::regprocedure),
+  $guard$app_private\.admin_assert_permission\([^;]*\)$guard$, 'auth.uid()'
+)), 'admin_begin_match_visual_edit', 'admin_begin_match_visual_edit is caught if its staff check becomes an unguarded caller read');
+select extensions.is(pg_temp.caught(regexp_replace(
+  pg_get_functiondef('api.admin_discard_match_visual_draft(uuid,integer)'::regprocedure),
+  $guard$app_private\.admin_assert_permission\([^;]*\)$guard$, 'auth.uid()'
+)), 'admin_discard_match_visual_draft', 'admin_discard_match_visual_draft is caught if its staff check becomes an unguarded caller read');
 select extensions.is(pg_temp.caught($ddl$
   create function api.probe_invoker() returns bigint language sql stable security invoker set search_path = ''
   as $body$ select count(*) from app.followed_teams $body$;

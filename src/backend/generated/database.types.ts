@@ -206,6 +206,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_begin_match_visual_edit: {
+        Args: {
+          p_attempt: string
+          p_id: string
+          p_rect: Json
+          p_version: number
+        }
+        Returns: Json
+      }
       admin_bootstrap_first_platform_admin: {
         Args: {
           p_auth_user_id: string
@@ -264,6 +273,10 @@ export type Database = {
         Returns: Json
       }
       admin_data_desk_list: { Args: { p_filters?: Json }; Returns: Json }
+      admin_discard_match_visual_draft: {
+        Args: { p_id: string; p_version: number }
+        Returns: boolean
+      }
       admin_emergency_revoke_staff: {
         Args: {
           p_idempotency_key: string
@@ -382,6 +395,7 @@ export type Database = {
         Args: { p_season_id?: string }
         Returns: Json
       }
+      admin_get_match_visual_draft: { Args: { p_id: string }; Returns: Json }
       admin_get_owner_bootstrap_readiness: {
         Args: { p_auth_user_id: string }
         Returns: Json
@@ -411,6 +425,7 @@ export type Database = {
         Returns: Json
       }
       admin_home_stories: { Args: never; Returns: Json }
+      admin_import_match_visual_draft: { Args: { p_data: Json }; Returns: Json }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
         Returns: Json
@@ -496,6 +511,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_match_visual_drafts: { Args: never; Returns: Json }
       admin_override_fantasy_prize_winner: {
         Args: {
           p_fantasy_team_id: string
@@ -2075,6 +2091,10 @@ export type Database = {
         }
         Returns: Json
       }
+      service_finish_match_visual_edit: {
+        Args: { p_attempt: string; p_error?: string; p_id: string }
+        Returns: boolean
+      }
       service_football_match_details_due: {
         Args: {
           p_limit?: number
@@ -2091,6 +2111,10 @@ export type Database = {
           p_calculation_version: number
           p_gameweek_id: string
         }
+        Returns: Json
+      }
+      service_import_match_visual_draft: {
+        Args: { p_data: Json }
         Returns: Json
       }
       service_ingest_current_football_squads: {
@@ -2125,6 +2149,7 @@ export type Database = {
         Args: { p_after_user_id?: string; p_event_id: string; p_limit?: number }
         Returns: Json
       }
+      service_match_visual_collection_enabled: { Args: never; Returns: boolean }
       service_notification_email_health: { Args: never; Returns: Json }
       service_notification_metrics: {
         Args: { p_since?: string }

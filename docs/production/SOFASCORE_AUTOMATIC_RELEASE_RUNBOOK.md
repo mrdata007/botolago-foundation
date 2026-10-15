@@ -805,3 +805,15 @@ Owner review of 2026-10-14; design in `docs/backend/SOFASCORE_PLAYER_MATCHING.md
 ## Follow-up: the Fantasy worker health check watches the whole backlog (`20261014180100`)
 
 Audit finding ASTRA-02, 2026-10-14. `20261014180100_fantasy_worker_health_backlog` replaces one function, `app_private.fantasy_worker_health()`, so the `fantasy_worker` health check uses the scheduler's own definition of work (locked, live, provisional, finalizing, open past a confirmed deadline, finalized with its successor unopened or its postwork owed) instead of three of those states. It changes no data, no table and no setting, and it needs `20261013170000` and `20261013170100` first (it refuses to run without them). Applied nowhere yet and not part of the bundled release script: install it after the release through the reviewed migration path, with no other writer running. See `docs/backend/FANTASY_WORKER_SCHEDULE.md`.
+
+## Separate feature: private match visual drafts
+
+Migration `20261014044713_precise_match_visuals` belongs to the private Admin
+match-photo workflow ([implementation and deployment notes](../backend/PRECISE_MATCH_VISUALS.md)),
+not the SofaScore football release. It creates a private bucket, held-draft
+records and staff-guarded RPCs, plus a source collector that ships disabled.
+It is not included in this runbook's football apply scripts. Install it only
+through its separately reviewed migration and Edge Function release; keep
+collection off while testing a single held photo. No result is published by
+this workflow. This entry accounts for the migration without adding it to the
+football release or activating it.

@@ -1,3 +1,5 @@
+import { AdminMatchVisualDrafts } from "./AdminMatchVisualDrafts";
+import type { MatchVisualDraftsRepository } from "@/backend/match-visual-drafts/repository";
 import { useState } from "react";
 import { storyErrorNotice, type StoryNotice } from "@/backend/home-stories/errors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,10 +43,15 @@ export function AdminStoriesEditor({
   permissions,
   repository = homeStoriesRepository,
   upload = uploadStoryImage,
+  draftsRepository,
 }: {
   permissions: readonly string[];
   repository?: Pick<HomeStoriesRepository, "list" | "save" | "publish">;
   upload?: typeof uploadStoryImage;
+  draftsRepository?: Pick<
+    MatchVisualDraftsRepository,
+    "list" | "import" | "preview" | "edit" | "discard"
+  >;
 }) {
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -164,6 +171,7 @@ export function AdminStoriesEditor({
   };
   return (
     <div className="grid min-w-0 gap-5" data-testid="admin-stories-editor">
+      <AdminMatchVisualDrafts permissions={permissions} repository={draftsRepository} />
       <p className={cn(ui.text.secondary, ui.tone.muted)}>
         {ar
           ? "تُنشأ صور الأخبار تلقائياً من أحدث المقالات المنشورة باللغتين. يمكنك مراجعتها أو إخفاؤها هنا، أو رفع صورة يدوياً."

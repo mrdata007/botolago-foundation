@@ -22,8 +22,8 @@ function AdminStoriesRoute() {
       title={ar ? "القصص" : "Stories"}
       description={
         ar
-          ? "صور الأخبار المنشأة تلقائياً وعناوينها على الرئيسية."
-          : "Les actualités en images et leurs titres, publiés automatiquement sur l’accueil."
+          ? "القصص الحالية وصور المباريات الخاصة قيد الانتظار."
+          : "Stories existantes et visuels de match privés en attente."
       }
     >
       {access.state === "authorized" && (

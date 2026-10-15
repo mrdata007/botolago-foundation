@@ -502,3 +502,13 @@ enabled = true
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/home-story-generate/index.ts"
+
+[functions.match-visual-drafts]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/match-visual-drafts/index.ts"
+
+[functions.match-visual-collect]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/match-visual-collect/index.ts"

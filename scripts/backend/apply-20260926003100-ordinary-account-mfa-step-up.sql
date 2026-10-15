@@ -4746,6 +4746,10 @@ begin
            'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
            'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
            'admin_home_stories', 'admin_save_home_story', 'admin_publish_home_story',
+           -- Private held match visuals (20261014044713); each keeps its staff check.
+           'admin_match_visual_drafts', 'admin_get_match_visual_draft',
+           'admin_import_match_visual_draft', 'admin_begin_match_visual_edit',
+           'admin_discard_match_visual_draft',
            'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
            'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
            'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',
