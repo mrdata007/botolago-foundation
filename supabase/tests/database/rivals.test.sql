@@ -205,7 +205,7 @@ select extensions.is(
      and p.prosecdef and p.proconfig @> array['search_path=""']),
   5, 'all five are security definer with an empty search_path');
 select extensions.is(
-  (select string_agg(p.proname || ':' || p.provolatile, ',' order by p.proname) from pg_proc p
+  (select string_agg(p.proname::text || ':' || p.provolatile::text, ',' order by p.proname) from pg_proc p
    where p.pronamespace = 'api'::regnamespace
      and p.proname in ('get_my_rivals', 'get_rival_candidates', 'pin_rival', 'unpin_rival', 'set_rivals_notify')),
   'get_my_rivals:s,get_rival_candidates:s,pin_rival:v,set_rivals_notify:v,unpin_rival:v',
