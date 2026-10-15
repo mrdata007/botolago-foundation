@@ -176,8 +176,8 @@ insert into app.notification_subscriptions(user_id, kind, fixture_id)
 values (pg_temp.uid(11), 'match', 'e9500000-0000-4000-8000-000000000001');
 update app.user_preferences set
   quiet_hours_enabled = true,
-  quiet_hours_start = ((statement_timestamp() at time zone 'Africa/Casablanca') - interval '1 hour')::time,
-  quiet_hours_end = ((statement_timestamp() at time zone 'Africa/Casablanca') + interval '2 hours')::time
+  quiet_hours_start = (app_private.morocco_local(statement_timestamp()) - interval '1 hour')::time,
+  quiet_hours_end = (app_private.morocco_local(statement_timestamp()) + interval '2 hours')::time
 where user_id = pg_temp.uid(8);
 
 create function pg_temp.device(

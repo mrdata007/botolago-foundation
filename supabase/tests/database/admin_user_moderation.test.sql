@@ -643,17 +643,15 @@ select extensions.is(
 );
 select extensions.is(
   current_setting('test.analytics')::jsonb -> 'signupsByDay' -> 29 ->> 'date',
-  to_char((statement_timestamp() at time zone 'Africa/Casablanca')::date, 'YYYY-MM-DD'),
+  to_char(app_private.morocco_local_date(statement_timestamp()), 'YYYY-MM-DD'),
   'the series ends today, in Morocco'
 );
 select extensions.is(
   (select sum((day ->> 'count')::integer)::integer
    from jsonb_array_elements(current_setting('test.analytics')::jsonb -> 'signupsByDay') day),
   (select count(*)::integer from auth.users
-   where created_at >= ((((statement_timestamp() at time zone 'Africa/Casablanca')::date) - 29)::timestamp
-       at time zone 'Africa/Casablanca')
-     and created_at < ((((statement_timestamp() at time zone 'Africa/Casablanca')::date) + 1)::timestamp
-       at time zone 'Africa/Casablanca')),
+   where created_at >= app_private.morocco_day_start(app_private.morocco_local_date(statement_timestamp()) - 29)
+     and created_at < app_private.morocco_day_start(app_private.morocco_local_date(statement_timestamp()) + 1)),
   'the series adds up to the accounts created in its window'
 );
 select extensions.is(

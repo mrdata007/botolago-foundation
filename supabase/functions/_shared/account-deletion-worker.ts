@@ -23,6 +23,7 @@
  * in net._http_response.
  */
 import { emailDispatchConfiguration, type EmailRpcClient } from "./notification-email-dispatch.ts";
+import { shiftToMorocco } from "./morocco-time.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -109,13 +110,18 @@ export function readClaims(value: unknown): ClaimedAccountDeletion[] | null {
   return claims;
 }
 
+/**
+ * The day in Morocco, by the application's rule (_shared/morocco-time.ts), not by the runtime's own
+ * Africa/Casablanca data: those say UTC+1 after 2026-09-20 on older runtimes, which dates a request
+ * or an erasure between 23:00 and 24:00 UTC to the next day.
+ */
 function longDate(iso: string, language: "fr" | "ar"): string {
   return new Intl.DateTimeFormat(language === "ar" ? "ar-MA" : "fr-FR", {
-    timeZone: "Africa/Casablanca",
+    timeZone: "UTC",
     day: "numeric",
     month: "long",
     year: "numeric",
-  }).format(new Date(iso));
+  }).format(shiftToMorocco(new Date(iso)));
 }
 
 function escapeHtml(text: string): string {

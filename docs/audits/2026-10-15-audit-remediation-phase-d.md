@@ -27,19 +27,19 @@ Screen brief: [`docs/briefs/2026-10-15-audit-phase-d-remediation.md`](../briefs/
 
 ## Status of each item
 
-| Item                                         | Status             | What changed (short)                                                                                                                                                                                                                                                                                                                                                               |
-| -------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Saved-articles 2,000 cap (Phase B follow-up) | Closed in code     | For accounts with more than 2,000 saves: "plus de 2 000" instead of a wrong number, a note on the Saved page, no list filtering by the partial set, a tap checks the live saved state (the right language edition) before writing, and a failed write undoes only that article. No migration.                                                                                      |
-| UX-011, PRO-02 (D1)                          | Closed (link only) | The landing hero has a "Voir les matchs et résultats" link under the game button. Route logic for `/`, `/jouer` and the Fantasy button are unchanged. No conversion claim is made.                                                                                                                                                                                                 |
-| PRO-05 (D2)                                  | Defined, not run   | `docs/engineering/ACTIVE_MANAGEMENT_MEASUREMENT.md`: definitions, denominators and nine read-only queries for the owner (not run). No tracking event added: the database already answers the question better. Rejected-save rate cannot be answered; three options listed.                                                                                                         |
-| PRO-04, D3 (DR)                              | Protocol written   | `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: how to prove, on staging, that reminders arrive once, at the right Morocco time, through each channel.                                                                                                                                                                                                                           |
-| PRO-06, D4 (DR)                              | Protocol written   | `docs/engineering/CURVA_COMPREHENSION_TEST.md`: a facilitator script for French and Arabic supporters, tested separately.                                                                                                                                                                                                                                                          |
-| D6 (DR)                                      | Backlog written    | `docs/engineering/BOTOLA_DEPTH_BACKLOG.md`: what local fans' questions each page should answer, each item needing observed need first.                                                                                                                                                                                                                                             |
-| D5 sharing                                   | Closed (9 defects) | Truthful copy results (never "copied" when nothing was), a manual-copy field when copying fails, no copy on closing a share sheet, league names with `$` or `{link}` no longer break messages, invites survive blocked browser storage, share links drop tracking and one-time tags, the recap picture shows the chosen alias. Audit: `docs/engineering/SHARING_AUDIT_2026-10.md`. |
-| Notification language default                | Closed             | New accounts store French; the language step shows the stored value and never switches the app; a save from an unread profile is refused (this also stops a pre-existing silent reset of language, club, photo link and alerts after a failed profile load).                                                                                                                       |
-| LOC-09, rename                               | Closed             | Prospects / المواهب. See owner actions for the e-mail deploy and the notification-bell text.                                                                                                                                                                                                                                                                                       |
-| A8 capacity plan                             | Plan written       | `docs/production/CAPACITY_AND_RELEASE_EVIDENCE_PLAN.md`, written for a non-technical owner: questions only the owner can answer, run order, version check, failure drill. Nothing was run.                                                                                                                                                                                         |
-| Guarded database scripts                     | Prepared           | Three owner-run scripts and a runbook (`docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md`). Rehearsed on a throwaway local database only.                                                                                                                                                                                                                                     |
+| Item                                         | Status                   | What changed (short)                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Saved-articles 2,000 cap (Phase B follow-up) | Closed in code           | For accounts with more than 2,000 saves: "plus de 2 000" instead of a wrong number, a note on the Saved page, no list filtering by the partial set, a tap checks the live saved state (the right language edition) before writing, and a failed write undoes only that article. No migration.                                                                                      |
+| UX-011, PRO-02 (D1)                          | Closed (link only)       | The landing hero has a "Voir les matchs et résultats" link under the game button. Route logic for `/`, `/jouer` and the Fantasy button are unchanged. No conversion claim is made.                                                                                                                                                                                                 |
+| PRO-05 (D2)                                  | Defined, not run         | `docs/engineering/ACTIVE_MANAGEMENT_MEASUREMENT.md`: definitions, denominators and nine read-only queries for the owner (not run). No tracking event added: the database already answers the question better. Rejected-save rate cannot be answered; three options listed.                                                                                                         |
+| PRO-04, D3 (DR)                              | Protocol written         | `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: how to prove, on staging, that reminders arrive once, at the right Morocco time, through each channel.                                                                                                                                                                                                                           |
+| PRO-06, D4 (DR)                              | Protocol written         | `docs/engineering/CURVA_COMPREHENSION_TEST.md`: a facilitator script for French and Arabic supporters, tested separately.                                                                                                                                                                                                                                                          |
+| D6 (DR)                                      | Backlog written          | `docs/engineering/BOTOLA_DEPTH_BACKLOG.md`: what local fans' questions each page should answer, each item needing observed need first.                                                                                                                                                                                                                                             |
+| D5 sharing                                   | Closed (9 defects)       | Truthful copy results (never "copied" when nothing was), a manual-copy field when copying fails, no copy on closing a share sheet, league names with `$` or `{link}` no longer break messages, invites survive blocked browser storage, share links drop tracking and one-time tags, the recap picture shows the chosen alias. Audit: `docs/engineering/SHARING_AUDIT_2026-10.md`. |
+| Notification language default                | Closed                   | New accounts store French; the language step shows the stored value and never switches the app; a save from an unread profile is refused (this also stops a pre-existing silent reset of language, club, photo link and alerts after a failed profile load).                                                                                                                       |
+| LOC-09, rename                               | Closed                   | Prospects / المواهب. See owner actions for the e-mail deploy and the notification-bell text.                                                                                                                                                                                                                                                                                       |
+| A8 capacity plan                             | Plan written             | `docs/production/CAPACITY_AND_RELEASE_EVIDENCE_PLAN.md`, written for a non-technical owner: questions only the owner can answer, run order, version check, failure drill. Nothing was run.                                                                                                                                                                                         |
+| Guarded database scripts                     | Not needed on production | The three Phase A/B migrations were found already applied on production (verified read-only, hashes match). The scripts stay for other environments.                                                                                                                                                                                                                               |
 
 ## What was run
 
@@ -70,13 +70,17 @@ pgTAP were not available there.
 
 ## Owner actions (things only you can do)
 
-1. **Run the three database scripts**, in order, rehearsal first, one writer at a
-   time, following `docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md`:
-   `apply-20261014180100-fantasy-worker-health-backlog.sql`, then
-   `apply-20261015120200-client-error-intake-budget.sql`, then
-   `apply-20261015120300-fantasy-points-player-identity.sql`. None needs a job
-   paused. The health script can raise new alerts if the database worker is on:
-   the runbook's query 6 predicts this before you commit.
+1. **The three Phase A/B migrations are already applied on production**
+   (`20261014180100`, `20261015120200`, `20261015120300`). A read-only check on
+   2026-10-15 (about 12:15 UTC), re-checked independently, found their history
+   rows present, the recorded text identical to the repository files (same
+   sha256) and the live functions already on the new text. The guarded scripts
+   are therefore not needed on production (each would stop at "already
+   recorded"). Who applied them and when cannot be told: the history row's
+   `created_by` is empty and the database keeps no commit times. On staging,
+   only the error-intake script is applicable until the SofaScore rating
+   release (`20261013160200`, `20261013170000`, `20261013170100`) is applied
+   there.
 2. **Deploy the e-mail functions** (`supabase functions deploy` for the e-mail
    dispatch functions) so the Prospects / المواهب wording reaches e-mails. Until
    then e-mails keep the old name.
@@ -86,10 +90,17 @@ pgTAP were not available there.
    ask and one can be written.
 4. **Refresh the demo page** `public/demo/app.html` (build script
    `demo/scripts/build.ts`) to drop the old wording.
-5. **Run the Morocco clock check** on staging and production:
-   `select timestamptz '2026-10-15 12:00+00' at time zone 'Africa/Casablanca'`.
-   It must return 12:00. If it returns 13:00 the database holds older time-zone
-   data and deadline texts and the 10:00 match-day reminders could be an hour off.
+5. **Morocco time in the database.** The owner confirmed on 2026-10-15 that
+   Morocco is UTC+0 all year from 2026-09-20. The check
+   `select timestamptz '2026-10-15 12:00+00' at time zone 'Africa/Casablanca'`
+   returned 13:00 on both Production V2 and Staging V2: their time-zone data is
+   older than the app's rule, so database-side Morocco times are an hour off
+   (deadline text in push/in-app/inbox notifications, e-mail planner windows,
+   Pépites scheduling, a few cosmetic dates). The fix (helpers that apply the
+   app's rule inside the database, five migrations and guarded owner scripts) is
+   prepared in a separate change; see
+   `docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md` and
+   `docs/production/MOROCCO_TIME_FIX_OWNER_RUNBOOK.md` once merged.
 6. **Run the measurement queries** in `ACTIVE_MANAGEMENT_MEASUREMENT.md`
    (query 0 first) and keep the first results as a dated baseline.
 7. **Answer the capacity-plan questions** (Q1 to Q8 in the plan) and name the one
@@ -183,8 +194,8 @@ Closed since Phase C:
 - **Statement limit check:** done by the owner (60 s service role, 8 s
   authenticator); the lease extension is safe.
 - **CI `database-quality`** passed on pull request 495.
-- **Guarded scripts** for the three unapplied migrations are ready (the owner
-  applies them).
+- **The three Phase A/B migrations** are applied on production (verified
+  read-only on 2026-10-15).
 
 Still blocking:
 
@@ -193,7 +204,7 @@ Still blocking:
 - **SEC-01 outside the lease:** the orchestrator's calendar syncs, ingestion and
   prize call run outside any lease; their overlap with an Edge pass is unchecked
   against the SQL.
-- **Applying the three migrations** (owner action 1).
+- **Morocco time in the database** (owner action 5): prepared, not applied.
 - **Real-state checks** on staging or a real signed-in account, French and
   Arabic, for states mock mode cannot show.
 - **Native Arabic review** of the Phase A to D wording.
