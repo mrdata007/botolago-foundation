@@ -29,26 +29,26 @@ problems and the owner's invariants.
 
 ## Status of each finding
 
-| ID               | Priority | Status                | What changed (short)                                                                                                                                                                                                                                                                     |
-| ---------------- | -------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-01            | P2       | Closed                | French "non aligné" reasons now read "n'a pas joué" (goalkeeper and outfield). Arabic was already right and is untouched.                                                                                                                                                                |
-| FR-02            | P2       | Closed                | Fantasy "Top 5" and "best player" say "de la journée", not "de la semaine". Genuinely weekly Pépites strings keep "semaine".                                                                                                                                                              |
-| FR-03            | P3       | Closed                | "ré-essayé", "ré-essayée", "re-vérifiée" are now "réessayé", "réessayée", "revérifiée" (admin queue and news edition screens). No other hyphenated spelling remains in the repository.                                                                                                 |
-| LOC-02           | P2       | Closed                | The username error message now describes the real rule (3 to 20 characters, Latin letters, digits, "-" and "_", starting with a letter or digit). The validator itself is NOT widened. Latin fragments inside the Arabic message are isolated.                                          |
-| LOC-10           | P3       | Closed                | The unsubscribe confirmation says it stops notification e-mails and that account-security messages remain available; the "already unsubscribed" line has the same scope.                                                                                                                |
-| LOC-11           | P3       | Closed                | Small French and Arabic inconsistencies from the register: "Matchs" everywhere in French, "Moyenne"/"Forte", "Heureux de vous revoir", the vice-captain takeover line, the prize "no winners" filter line, the delayed-match badge.                                                       |
-| LOC-03           | P2       | Closed                | Arabic counts use the right form (none, one, two, 3 to 10, 11 to 99, 100 and over) on the transfer confirmation headline and the player picker's "view" button; the player counts no longer put a fixed noun after a number. French was already correct.                                 |
-| LOC-04           | P2       | Closed                | One Arabic Fantasy glossary: transfers = الانتقالات, form = المستوى الأخير, chips = الجوكر. The captain's armband and availability words are unchanged. A test scans the Fantasy Arabic keys so the old words cannot come back.                                                          |
-| LOC-06           | P2       | Closed (wording)      | The Profile language row now says it changes the language on this device; a signed-in reader is told notifications use the account's saved language. The profile editor's language step has a neutral label and says exactly what saving does. No behaviour was changed.                 |
-| LOC-07           | P3       | Closed                | The two-factor "activated on" date follows the chosen language (Latin digits in Arabic) and Morocco's calendar day. Other older date formatters still use the browser's time zone (see risks).                                                                                           |
-| LOC-08           | P2       | Closed (code)         | Arabic article text keeps the Arabic font and upright emphasis (also in an Arabic edition shown inside the French shell, and in the admin preview). Latin italics are untouched. Measured in Chromium with a substituted article body; not seen on a real staging article.               |
-| LOC-05           | P3       | Evaluated, no code    | Written evaluation of the Arabic first-paint flash (`docs/engineering/ARABIC_FIRST_PAINT.md`): why it happens, measurements (dev server only), five options, recommendation to keep today's behaviour until the owner decides on `/ar` URLs. No safe small code fix exists.             |
-| MOB-02           | P2       | Closed                | Search results are exposed as a proper list to assistive technology (option ids, active option, live announcements of result count, failure and partial results). Verified in Chromium; not with a real screen reader.                                                                  |
-| MOB-03           | P2       | Closed                | Carousel dots (Pronostics deck, news carousel) are 44 by 44 targets; the painted dot is unchanged. Dot centres are now 44 px apart.                                                                                                                                                     |
-| MOB-04           | P3       | Closed                | The Pronostics deck's role descriptions are French/Arabic ("carrousel", "diapositive" / "عرض دوّار", "شريحة") instead of English.                                                                                                                                                        |
-| MOB-05           | P2       | Closed                | A "skip to content" link is the first Tab stop in the main, Fantasy and sign-in layouts; it lands on the page's own content including the page title and filters. Not added to the Plus pages, landing, welcome, splash, language chooser, OAuth consent page (see risks).               |
-| VIS-001          | P3       | Closed (large text)   | At normal text size nothing was cut off (0 of 160 combinations). With text enlarged to 200% the route name was cut off on six hub pages (39 of 160); the title row now wraps and the control drops to its own line (0 of 160). The Pépites hub heading got the same protection.          |
-| SOL-04           | P3       | Closed                | The bare `/auth` address redirects to `/auth/login`, passing a safe `next` through the existing checks (off-site, `//`, `/\`, `javascript:` and encoded variants all end on a bare sign-in page).                                                                                       |
+| ID      | Priority | Status              | What changed (short)                                                                                                                                                                                                                                                            |
+| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-01   | P2       | Closed              | French "non aligné" reasons now read "n'a pas joué" (goalkeeper and outfield). Arabic was already right and is untouched.                                                                                                                                                       |
+| FR-02   | P2       | Closed              | Fantasy "Top 5" and "best player" say "de la journée", not "de la semaine". Genuinely weekly Pépites strings keep "semaine".                                                                                                                                                    |
+| FR-03   | P3       | Closed              | "ré-essayé", "ré-essayée", "re-vérifiée" are now "réessayé", "réessayée", "revérifiée" (admin queue and news edition screens). No other hyphenated spelling remains in the repository.                                                                                          |
+| LOC-02  | P2       | Closed              | The username error message now describes the real rule (3 to 20 characters, Latin letters, digits, "-" and "\_", starting with a letter or digit). The validator itself is NOT widened. Latin fragments inside the Arabic message are isolated.                                 |
+| LOC-10  | P3       | Closed              | The unsubscribe confirmation says it stops notification e-mails and that account-security messages remain available; the "already unsubscribed" line has the same scope.                                                                                                        |
+| LOC-11  | P3       | Closed              | Small French and Arabic inconsistencies from the register: "Matchs" everywhere in French, "Moyenne"/"Forte", "Heureux de vous revoir", the vice-captain takeover line, the prize "no winners" filter line, the delayed-match badge.                                             |
+| LOC-03  | P2       | Closed              | Arabic counts use the right form (none, one, two, 3 to 10, 11 to 99, 100 and over) on the transfer confirmation headline and the player picker's "view" button; the player counts no longer put a fixed noun after a number. French was already correct.                        |
+| LOC-04  | P2       | Closed              | One Arabic Fantasy glossary: transfers = الانتقالات, form = المستوى الأخير, chips = الجوكر. The captain's armband and availability words are unchanged. A test scans the Fantasy Arabic keys so the old words cannot come back.                                                 |
+| LOC-06  | P2       | Closed (wording)    | The Profile language row now says it changes the language on this device; a signed-in reader is told notifications use the account's saved language. The profile editor's language step has a neutral label and says exactly what saving does. No behaviour was changed.        |
+| LOC-07  | P3       | Closed              | The two-factor "activated on" date follows the chosen language (Latin digits in Arabic) and Morocco's calendar day. Other older date formatters still use the browser's time zone (see risks).                                                                                  |
+| LOC-08  | P2       | Closed (code)       | Arabic article text keeps the Arabic font and upright emphasis (also in an Arabic edition shown inside the French shell, and in the admin preview). Latin italics are untouched. Measured in Chromium with a substituted article body; not seen on a real staging article.      |
+| LOC-05  | P3       | Evaluated, no code  | Written evaluation of the Arabic first-paint flash (`docs/engineering/ARABIC_FIRST_PAINT.md`): why it happens, measurements (dev server only), five options, recommendation to keep today's behaviour until the owner decides on `/ar` URLs. No safe small code fix exists.     |
+| MOB-02  | P2       | Closed              | Search results are exposed as a proper list to assistive technology (option ids, active option, live announcements of result count, failure and partial results). Verified in Chromium; not with a real screen reader.                                                          |
+| MOB-03  | P2       | Closed              | Carousel dots (Pronostics deck, news carousel) are 44 by 44 targets; the painted dot is unchanged. Dot centres are now 44 px apart.                                                                                                                                             |
+| MOB-04  | P3       | Closed              | The Pronostics deck's role descriptions are French/Arabic ("carrousel", "diapositive" / "عرض دوّار", "شريحة") instead of English.                                                                                                                                               |
+| MOB-05  | P2       | Closed              | A "skip to content" link is the first Tab stop in the main, Fantasy and sign-in layouts; it lands on the page's own content including the page title and filters. Not added to the Plus pages, landing, welcome, splash, language chooser, OAuth consent page (see risks).      |
+| VIS-001 | P3       | Closed (large text) | At normal text size nothing was cut off (0 of 160 combinations). With text enlarged to 200% the route name was cut off on six hub pages (39 of 160); the title row now wraps and the control drops to its own line (0 of 160). The Pépites hub heading got the same protection. |
+| SOL-04  | P3       | Closed              | The bare `/auth` address redirects to `/auth/login`, passing a safe `next` through the existing checks (off-site, `//`, `/\`, `javascript:` and encoded variants all end on a bare sign-in page).                                                                               |
 
 Not part of this work (owner decisions or later phases): MOB-01, LOC-09,
 VIS-002 to VIS-005, PRO-05, PRO-06, UX-011 and all Phase D items.
@@ -156,8 +156,34 @@ scripts are in the session scratchpad; they are not committed.
 
 ## Arabic strings that most need a native reader
 
-(Final ranked list from the combined-branch review: see the section appended at
-the end of this file.)
+Ranked by risk, from the final combined-branch review:
+
+1. `fpl.about_to_transfer_*`, the transfer confirmation headline. Watch
+   "ستُجري {n} انتقال." from 100 upwards and "ستُجري انتقالين.".
+2. `fpl.pick.filters_apply_two` "عرض لاعبين" (without vowel marks it reads as
+   "two players" and as "players"), and `_other` "عرض {n} لاعب".
+3. The glossary as a whole: الجوكر / الجوكرات for chips and المستوى الأخير for
+   form, across about 40 keys and the meta titles (clashes with Pépites using
+   الجاهزية for form, LOC-09).
+4. `auth.error.username_invalid`: the direction isolates around a–z, "-" and
+   "\_", and whether the sentence reads naturally.
+5. `unsubscribe.done_title`, `already_title`, `reenable_hint`: the promise about
+   scope ("تبقى رسائل أمان الحساب الضرورية متاحة").
+6. `auth.setup.language_hint`, `profile.language.help`,
+   `profile.language.help_guest`: exact claims about what changes notifications
+   versus this device.
+7. `predictions.votes.role` "عرض دوّار" and `slide_role` "شريحة".
+8. `nav.skip_to_content` "انتقل إلى المحتوى".
+9. `fantasy.points.vice_takeover` "تسلّم نائب القائد الشارة" and
+   `matches.status.delayed` "تأخر الانطلاق".
+10. Count labels: `fantasy.players.showing`, `pepites.ranking.count_short`,
+    `nav.search.results_*` (11 to 99 results read "{n} نتيجة", acceptable in
+    written Arabic; the reader should confirm).
+
+Also noted by the final review: `tests/e2e/curva-off.e2e.ts` fails against the
+default dev server because the bar shows "Curva" rather than "Pépites"; Phase C
+only changed "Matches" to "Matchs" in it, so the spec looks out of date for an
+older reason (not confirmed at the base).
 
 ## Launch blockers, updated
 
