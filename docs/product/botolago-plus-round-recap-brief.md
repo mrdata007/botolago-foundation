@@ -46,6 +46,7 @@ Approved scope: owner decision of 2026-10-15, design v2 « Vue tactique » (the 
 ## Acceptance criteria
 
 Functional
+
 - Off: no node, no request. Locked: the free score and rank are clear, nothing of the member's pitch or
   figures is rendered under the blur (the example is a fixed dataset). Member: the full section.
 - Every figure that depends on ratings carries « Publié le … »; a player not yet scored reads « en attente »
@@ -58,6 +59,7 @@ Functional
   is not in, writes nothing. `bun run backend:migrations:check` passes. No database was touched by this lane.
 
 Visual (measured, not asserted)
+
 - Match the v2 design: navy pitch with mowing stripes, chips lit by points (mint rim at 8 and above, hatched
   sky rim for « en attente »), captain badge, transfer badge, cause rail with thin tracks, bench strip.
 - FR and AR at 390 px and FR at 1280 px, in member, locked and off states, no horizontal overflow checked per

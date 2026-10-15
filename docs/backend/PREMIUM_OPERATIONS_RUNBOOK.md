@@ -544,3 +544,38 @@ app_private.premium_settings;` first. Switching the mode off
 > stop the webhook recording events. A delivery already in flight can finish
 > after the pause: check the Edge Function logs as well as the setting. Pause
 > automatic account deletion too (above) before a write to the erase function.
+
+## Premium round recap: « Votre journée expliquée »
+
+Migration `20261015120000_premium_round_recap.sql`, applied by
+`scripts/backend/apply-20261015120000-premium-round-recap.sql` **after** the league
+context. It adds one api function (`api.get_round_recap(p_gameweek uuid, p_league uuid)`)
+and two helpers (`app_private.round_recap_league`, `round_recap_captain`); no table, no
+column, no job, no setting and no row, and it replaces nothing. The read is `STABLE`
+and writes nothing, so it needs no entry in `AGENTS.md`. **Applying the migration is a
+database write**, the rehearsal included: follow `AGENTS.md`, "One writer at a time, per
+database", with a baseline read before and a comparison after. Production only through
+the guarded script, which the owner runs; nothing here was run against any database
+(pgTAP `premium_round_recap.test.sql` is the check, in CI's `database-quality` job).
+
+It explains one journée of the caller's own team: the score and its parts, the eleven
+and the bench with their published points, the effective captain, the journée's
+confirmed transfers with this journée's points of the player out and in, and the gap
+to the average of ONE private league (members only, averages hidden under three
+managers). « Vos autres choix » is a remainder (`othersIsRemainder: true`), not a
+per-player measure.
+
+- **Points, never ratings.** The Fantasy ledger does not say which `rating` line is a
+  real SofaScore rating and which is the 5 given to a player who appeared without one
+  (`FANTASY_RATING_POINTS.md`). The read serves points only. A player whose points are
+  not published has `pending: true` and `points: null`. If the ledger ever records which
+  fives are the no-rating rule, add a `rated` flag here and let the screen say « sans
+  note ».
+- **The captain** is the scoring result's `effectiveCaptainId`, else the lineup's
+  captain who played, else the vice-captain who played; counted points = his points plus
+  the result's captain bonus. The lineup's own `multiplier` column is not the scoring
+  multiplier and is not used.
+- **No absence data.** The app has no injury or suspension source; the read serves none.
+- Journées offered: those with a result for the caller's team whose status is
+  provisional, finalizing, finalized or corrected. A cancelled journée's results do not
+  count towards ranks.
