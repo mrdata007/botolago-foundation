@@ -195,7 +195,18 @@ export function seasonFacts(career: CareerMember, league: LeagueSeries | null): 
 /** Whole numbers plain, others with one decimal; a true minus sign; `sign` adds the plus. */
 function useNumber() {
   const { num } = useSeasonFmt();
-  return (n: number, sign = false) => num(n, Number.isInteger(n) ? 0 : 1, sign);
+  const { lang } = usePlusCopy();
+  // A signed figure keeps its sign on the correct side in Arabic text: a left-to-right isolate.
+  return (n: number, sign = false) => {
+    const value = num(n, Number.isInteger(n) ? 0 : 1, sign);
+    return lang === "ar" ? `\u2066${value}\u2069` : value;
+  };
+}
+
+/** A name, isolated in Arabic text so its dots and dashes stay with it. */
+function useName() {
+  const { lang } = usePlusCopy();
+  return (name: string) => (lang === "ar" ? `\u2068${name}\u2069` : name);
 }
 
 function RecapBody({
@@ -213,8 +224,10 @@ function RecapBody({
   onPick?: (gameweekId: string) => void;
 }) {
   const { t, text, lang } = usePlusCopy();
-  const { rankOf } = useSeasonFmt();
+  const { rankOf, num } = useSeasonFmt();
   const n = useNumber();
+  const nm = useName();
+  const ltr = (value: string) => (lang === "ar" ? `\u2066${value}\u2069` : value);
   const [cause, setCause] = useState<RecapCause>("captain");
   const selectId = useId();
 
@@ -241,9 +254,9 @@ function RecapBody({
     view.movement === null
       ? null
       : view.movement > 0
-        ? text("plus.recap.move_up", { n: view.movement })
+        ? text("plus.recap.move_up", { n: n(view.movement, true) })
         : view.movement < 0
-          ? text("plus.recap.move_down", { n: Math.abs(view.movement) })
+          ? text("plus.recap.move_down", { n: n(-Math.abs(view.movement)) })
           : t("plus.recap.move_same");
   const size = view.league?.members ?? null;
 
@@ -257,29 +270,31 @@ function RecapBody({
 
   const captainLine = captain
     ? captain.pending || captain.counted === null
-      ? text("plus.recap.captain_plain", { name: captain.name, formula: "—" })
+      ? text("plus.recap.captain_plain", { name: nm(captain.name), formula: "—" })
       : captain.vsLeague !== null && captain.multiplier !== null && captain.multiplier > 1
         ? text("plus.recap.captain_line", {
-            name: captain.name,
-            formula: `${n(captain.points ?? 0)} × ${n(captain.multiplier)} = ${n(captain.counted)}`,
+            name: nm(captain.name),
+            formula: ltr(
+              `${num(captain.points ?? 0)} × ${num(captain.multiplier)} = ${num(captain.counted)}`,
+            ),
             gap: n(captain.vsLeague, true),
           })
-        : text("plus.recap.captain_plain", { name: captain.name, formula: n(captain.counted) })
+        : text("plus.recap.captain_plain", { name: nm(captain.name), formula: n(captain.counted) })
     : null;
   const transferLine = (item: RoundRecapView["transfers"][number]) =>
     item.pending || item.gain === null || item.net === null
-      ? text("plus.recap.transfer_wait", { out: item.playerOut, in: item.playerIn })
+      ? text("plus.recap.transfer_wait", { out: nm(item.playerOut), in: nm(item.playerIn) })
       : item.hitShare > 0
         ? text("plus.recap.transfer_line", {
-            out: item.playerOut,
-            in: item.playerIn,
+            out: nm(item.playerOut),
+            in: nm(item.playerIn),
             gain: n(item.gain, true),
             hit: n(-item.hitShare),
             net: n(item.net, true),
           })
         : text("plus.recap.transfer_free", {
-            out: item.playerOut,
-            in: item.playerIn,
+            out: nm(item.playerOut),
+            in: nm(item.playerIn),
             gain: n(item.gain, true),
           });
 
@@ -510,7 +525,7 @@ function RecapBody({
               <li>
                 <Clock aria-hidden />
                 {pendingNames.length === 1
-                  ? text("plus.recap.pending_one", { name: pendingNames[0]! })
+                  ? text("plus.recap.pending_one", { name: nm(pendingNames[0]!) })
                   : text("plus.recap.pending_many", { n: pendingNames.length })}
               </li>
             ) : null}
@@ -562,6 +577,9 @@ function RecapBody({
                   })
                 }
               />
+              <span className="pr__share-label" aria-hidden>
+                {t("plus.recap.share")}
+              </span>
             </div>
           ) : null}
         </section>
@@ -684,6 +702,7 @@ function CauseButton({
 
 function SeasonStrip({ season }: { season: RecapSeasonFacts }) {
   const { t, text } = usePlusCopy();
+  const nm = useName();
   const { rankOf } = useSeasonFmt();
   const n = useNumber();
   const title =
@@ -698,8 +717,8 @@ function SeasonStrip({ season }: { season: RecapSeasonFacts }) {
         : text("plus.recap.season_title_plain", { pts: n(season.total), n: season.journees });
   const transferText = (item: NonNullable<RecapSeasonFacts["bestTransfer"]>) =>
     text("plus.recap.tile_transfer_v", {
-      out: item.out,
-      in: item.into,
+      out: nm(item.out),
+      in: nm(item.into),
       gain: n(item.gain, true),
       n: item.seq,
     });

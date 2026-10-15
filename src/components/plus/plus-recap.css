@@ -384,6 +384,8 @@
 /* bench */
 .pr__bench {
   display: flex;
+  flex-wrap: wrap;
+  min-inline-size: 0;
   align-items: center;
   gap: var(--po-space-2);
   padding: var(--po-space-2);
@@ -393,7 +395,7 @@
   border-block-start: 4px solid oklch(0.82 0.18 152 / 0.35);
 }
 .pr__bench-label {
-  inline-size: 72px;
+  inline-size: 100%;
   font-size: 12px;
   line-height: 16px;
   color: var(--po-text-muted);
@@ -639,11 +641,33 @@
   color: var(--po-text-muted);
 }
 .pr__share {
+  position: relative;
   display: flex;
   margin-block-start: var(--po-space-1);
 }
 .pr__share > * {
   flex: 1;
+}
+.pr__share button {
+  inline-size: 100%;
+  justify-content: flex-start;
+  padding-inline: var(--po-space-4);
+  min-block-size: 48px;
+  border: 0;
+  border-radius: var(--po-radius-md);
+  background: var(--po-mint);
+  color: var(--po-on-mint);
+  box-shadow: var(--po-glow);
+  font-family: var(--po-font-display);
+  font-size: 16px;
+  line-height: 24px;
+  cursor: pointer;
+}
+.pr__share button:hover {
+  background: var(--po-mint);
+}
+.pr__share button svg {
+  color: inherit;
 }
 
 /* the season so far */
@@ -764,4 +788,16 @@
       transform: none;
     }
   }
+}
+
+.pr__share-label {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: var(--po-space-14) var(--po-space-4);
+  display: flex;
+  align-items: center;
+  color: var(--po-on-mint);
+  font-family: var(--po-font-display);
+  font-size: 16px;
+  pointer-events: none;
 }
