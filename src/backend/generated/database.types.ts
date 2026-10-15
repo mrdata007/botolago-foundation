@@ -1298,6 +1298,10 @@ export type Database = {
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_premium: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      get_round_recap: {
+        Args: { p_gameweek?: string; p_league?: string }
+        Returns: Json
+      }
       home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
         Args: {
