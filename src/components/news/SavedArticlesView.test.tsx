@@ -106,6 +106,12 @@ describe("the reading list", () => {
     expect(html).toContain(`aria-label="${fr["news.bookmark"]}"`);
   });
 
+  test("has a polite live region ready for the removal announcement, and tags each row", async () => {
+    const html = await render();
+    expect(html).toContain('<p role="status" aria-live="polite" class="sr-only"></p>');
+    for (const id of [ID_A, ID_GONE, ID_B]) expect(html).toContain(`data-saved-id="${id}"`);
+  });
+
   test("names the list, so a screen reader can find it", async () => {
     const html = await render();
     expect(html).toContain(`<ul class="grid gap-2.5" aria-label="${fr["news.section.saved"]}"`);

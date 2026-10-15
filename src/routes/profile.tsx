@@ -676,8 +676,15 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
  * "0", which would tell a reader with saved stories that they have none.
  */
 function SavedArticlesCount() {
+  const { t } = useI18n();
   const saved = useSavedArticles();
-  return <span className={ui.stat.sm}>{saved.idsKnown ? saved.ids.length : "–"}</span>;
+  if (saved.idsKnown) return <span className={ui.stat.sm}>{saved.ids.length}</span>;
+  return (
+    <span className={ui.stat.sm}>
+      <span aria-hidden>–</span>
+      <span className="sr-only">{t("news.saved.count_unknown")}</span>
+    </span>
+  );
 }
 
 /** The preferences a signed-out visitor still has: language and appearance. */

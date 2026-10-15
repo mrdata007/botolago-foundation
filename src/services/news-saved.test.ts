@@ -94,6 +94,47 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
     expect(await collectSavedIds(repository, context)).toEqual([]);
   });
 
+  test("stops when the server repeats a cursor, and counts each id once", async () => {
+    let calls = 0;
+    const repeating: Pick<NewsRepository, "getSaved"> = {
+      async getSaved() {
+        calls += 1;
+        return {
+          items: [card(1), card(2)],
+          nextCursor: { createdAt: "2026-10-02T10:00:00.000Z", articleId: uuid(2) },
+        };
+      },
+    };
+    const ids = await collectSavedIds(repeating, context);
+    expect(ids).toEqual([uuid(1), uuid(2)]);
+    expect(calls).toBe(2);
+  });
+
+  test("says so when the page cap is hit instead of truncating silently", async () => {
+    let calls = 0;
+    const endless: Pick<NewsRepository, "getSaved"> = {
+      async getSaved() {
+        calls += 1;
+        return {
+          items: [card(calls)],
+          nextCursor: { createdAt: "2026-10-02T10:00:00.000Z", articleId: uuid(calls) },
+        };
+      },
+    };
+    const warnings: string[] = [];
+    const original = console.warn;
+    console.warn = (message: string) => void warnings.push(message);
+    try {
+      const ids = await collectSavedIds(endless, context);
+      expect(ids).toHaveLength(40);
+      expect(calls).toBe(40);
+    } finally {
+      console.warn = original;
+    }
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("40 pages");
+  });
+
   test("a failed read throws instead of answering with a shorter list", async () => {
     const repository: Pick<NewsRepository, "getSaved"> = {
       async getSaved() {

@@ -6,12 +6,12 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
 import {
   savedCollectionEnabled,
+  savedCollectionPhase,
   savedCollectionQueryKey,
   visibleSavedEntries,
   type SavedEntry,
 } from "@/lib/saved-collection";
 import { getNewsDataMode, newsService } from "@/services/news";
-import type { SavedArticlesPhase } from "./SavedArticlesView";
 
 /**
  * The reader's saved-articles collection, ready for `SavedArticlesView`.
@@ -32,7 +32,9 @@ export function useSavedCollection() {
   const mode = getNewsDataMode();
   const { user, status } = useAuth();
   const { lang } = useI18n();
-  const saved = useSavedArticles();
+  // `fresh`: re-read the saved ids on arrival, so a story saved on another
+  // device in the last 30 seconds is not hidden by a cached answer.
+  const saved = useSavedArticles({ fresh: true });
   const accountId = user?.id ?? null;
 
   const enabled = NEWS_ENABLED && savedCollectionEnabled(mode, status, saved.idsKnown);
@@ -59,12 +61,13 @@ export function useSavedCollection() {
     [fetched, saved.ids, saved.idsKnown],
   );
 
-  let phase: SavedArticlesPhase;
-  if (mode === "supabase" && status === "loading") phase = "loading";
-  else if (mode === "supabase" && status !== "authenticated") phase = "signin";
-  else if (query.isError && !query.data && !query.isFetching) phase = "error";
-  else if (!query.data) phase = "loading";
-  else phase = "ready";
+  const phase = savedCollectionPhase({
+    mode,
+    status,
+    isError: query.isError,
+    hasData: query.data !== undefined,
+    isFetching: query.isFetching,
+  });
 
   return {
     phase,

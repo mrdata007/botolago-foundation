@@ -50,7 +50,10 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
  * parent route also covers the `/news/$articleId` child, which is gated again
  * in its own file so the two can never drift apart.
  */
-function redirectWhileNewsIsHidden(): void {
+// Exported so `profile.saved.tsx` gates itself the same way; the flag tests
+// read this file for the gate, so it stays here.
+// eslint-disable-next-line react-refresh/only-export-components
+export function redirectWhileNewsIsHidden(): void {
   if (!NEWS_ENABLED) throw redirect({ to: "/", replace: true });
 }
 

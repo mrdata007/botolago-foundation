@@ -41,7 +41,7 @@
  *   - `src/routes/index.tsx` — Home news rail, "view all", discovery tile
  *   - `src/routes/fantasy.index.tsx` — Fantasy hub news rail + follow tile
  *   - `src/routes/profile.tsx` — saved-articles row, and `src/routes/profile.saved.tsx`
- *     (the list it opens; redirects to Profile while News is hidden)
+ *     (the list it opens; redirects Home while News is hidden)
  *   - `src/routes/matches.$matchId.tsx` — related-news section AND its fetch
  *   - `src/routes/clubs.$clubId.tsx` — the club's news fetch, and
  *     `src/components/clubs/ClubOverview.tsx` — the section it feeds

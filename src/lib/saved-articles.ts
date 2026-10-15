@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthProvider";
 import { getNewsDataMode, newsService } from "@/services/news";
+import { toast } from "sonner";
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
+import type { TranslationKey } from "@/i18n/dictionaries";
+import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { savedCollectionQueryKey } from "@/lib/saved-collection";
 
@@ -36,10 +41,33 @@ function writeLocal(next: string[]): void {
   listeners.forEach((listener) => listener(next));
 }
 
-export function useSavedArticles() {
+/**
+ * Says why a save or an unsave did not go through. The bookmark that was
+ * toggled rolls back by itself and is the way to try again; this is the
+ * message that explains why it came back. A refusal for want of the one-time
+ * code gets the auth layer's notice instead (one toast, never two).
+ */
+export function reportSavedMutationFailure(
+  error: unknown,
+  wasSaved: boolean,
+  t: (key: TranslationKey) => string,
+  notify: {
+    stepUp: (t: (key: TranslationKey) => string) => void;
+    error: (message: string) => void;
+  } = {
+    stepUp: showStepUpNotice,
+    error: (message) => void toast.error(message),
+  },
+): void {
+  if (isMfaStepUpError(error)) notify.stepUp(t);
+  else notify.error(wasSaved ? t("news.saved.remove_error") : t("news.saved.save_error"));
+}
+
+export function useSavedArticles(options: { fresh?: boolean } = {}) {
   const mode = getNewsDataMode();
   const { user, status, requireAuth } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const queryKey = ["news", "saved-article-ids", user?.id ?? "anonymous"] as const;
   const [localIds, setLocalIds] = useState<string[]>([]);
   const [localHydrated, setLocalHydrated] = useState(false);
@@ -61,7 +89,8 @@ export function useSavedArticles() {
     queryKey,
     queryFn: () => newsService.getSavedIds(),
     enabled: NEWS_ENABLED && mode === "supabase" && status === "authenticated",
-    staleTime: 30_000,
+    // `fresh` (the collection page): always re-read on mount.
+    staleTime: options.fresh ? 0 : 30_000,
   });
 
   const mutation = useMutation({
@@ -78,8 +107,9 @@ export function useSavedArticles() {
       );
       return { previous };
     },
-    onError: (_error, _variables, rollback) => {
+    onError: (error, { saved }, rollback) => {
       if (rollback) queryClient.setQueryData(queryKey, rollback.previous);
+      reportSavedMutationFailure(error, saved, t);
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey });

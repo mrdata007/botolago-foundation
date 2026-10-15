@@ -11,9 +11,16 @@ import type { Article } from "@/types/domain";
  */
 
 /**
- * One saved story. `unavailable` is a save whose story can no longer be opened
- * (unpublished, withdrawn, or deleted): the reader keeps a row they can remove,
- * instead of the list silently losing it or the page failing.
+ * One saved story.
+ *
+ * `unavailable` (a save whose story can no longer be opened, kept as a row the
+ * reader can remove) exists in PREVIEW (mock) mode only, where the device holds
+ * the ids and asks for each story. In production it never occurs: the server's
+ * `api.news_saved_articles` keeps only stories `news_is_public` accepts, so a
+ * withdrawn or deleted story is left out of the list AND of the count, and its
+ * `app.saved_articles` row stays orphaned where the reader cannot see or remove
+ * it. Showing those rows in production needs a server function that returns
+ * them (a migration), recorded as a follow-up.
  */
 export type SavedEntry =
   | { kind: "article"; article: Article }
@@ -69,4 +76,52 @@ export function visibleSavedEntries(
   if (!idsKnown) return [...entries];
   const saved = new Set(savedIds);
   return entries.filter((entry) => saved.has(savedEntryId(entry)));
+}
+
+/** Which of its states the collection page is in. */
+export type SavedCollectionPhase = "loading" | "signin" | "error" | "ready";
+
+/**
+ * The page's state from the facts that decide it. A failed first read is
+ * `error` (with a retry), never an empty list; a retry in flight is `loading`
+ * again, not a stuck error; a reader with no signed-in account (production) is
+ * asked to sign in rather than shown a list that cannot exist.
+ */
+export function savedCollectionPhase(input: {
+  mode: "mock" | "supabase";
+  status: AuthStatus;
+  isError: boolean;
+  hasData: boolean;
+  isFetching: boolean;
+}): SavedCollectionPhase {
+  if (input.mode === "supabase" && input.status === "loading") return "loading";
+  if (input.mode === "supabase" && input.status !== "authenticated") return "signin";
+  if (input.isError && !input.hasData && !input.isFetching) return "error";
+  if (!input.hasData) return "loading";
+  return "ready";
+}
+
+/** Ids that were in the previous list and are not in the next one. */
+export function removedSavedIds(previous: readonly string[], next: readonly string[]): string[] {
+  const kept = new Set(next);
+  return previous.filter((id) => !kept.has(id));
+}
+
+/**
+ * Where keyboard focus goes when the row that held it is removed: the next row
+ * that survives, else the previous one, else `null` (the caller then focuses
+ * the list's container). Without this the removed row's button unmounts and
+ * focus falls to the document body.
+ */
+export function focusTargetAfterRemoval(
+  previous: readonly string[],
+  next: readonly string[],
+  focusedId: string,
+): string | null {
+  const at = previous.indexOf(focusedId);
+  if (at < 0) return null;
+  const kept = new Set(next);
+  for (let i = at + 1; i < previous.length; i += 1) if (kept.has(previous[i]!)) return previous[i]!;
+  for (let i = at - 1; i >= 0; i -= 1) if (kept.has(previous[i]!)) return previous[i]!;
+  return null;
 }

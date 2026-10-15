@@ -1,10 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/shell/AppShell";
 import { UiHeader } from "@/components/ui-kit";
 import { SavedArticlesView } from "@/components/news/SavedArticlesView";
 import { useSavedCollection } from "@/components/news/useSavedCollection";
 import { useI18n } from "@/i18n/provider";
-import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { redirectWhileNewsIsHidden } from "./news";
 
 /**
  * The reader's saved articles (`/profile/saved`): the place the "Enregistrer"
@@ -14,12 +14,10 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
  * answered `private, no-store` (`withSiteHeaders`), and it is `noindex` as well.
  *
  * While News is hidden (`NEWS_ENABLED`) there is nothing to save from, so this
- * goes back to Profile, like the News routes do for Home.
+ * redirects Home exactly as the News routes do (`redirectWhileNewsIsHidden`).
  */
 export const Route = createFileRoute("/profile/saved")({
-  beforeLoad: () => {
-    if (!NEWS_ENABLED) throw redirect({ to: "/profile", replace: true });
-  },
+  beforeLoad: redirectWhileNewsIsHidden,
   head: () => ({
     meta: [
       { title: "Articles enregistrés — BotolaGO" },
@@ -32,6 +30,14 @@ export const Route = createFileRoute("/profile/saved")({
 function SavedArticlesPage() {
   const { t } = useI18n();
   const collection = useSavedCollection();
+  const router = useRouter();
+  const navigate = useNavigate();
+  // Back to where the reader came from (News or Profile); a page opened
+  // directly has nothing to go back to, so it falls back to Profile.
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else void navigate({ to: "/profile", replace: true });
+  };
   return (
     <AppShell
       topBar={
@@ -39,7 +45,7 @@ function SavedArticlesPage() {
           sticky
           kicker={t("profile.title")}
           title={t("news.section.saved")}
-          backTo="/profile"
+          onBack={goBack}
         />
       }
     >

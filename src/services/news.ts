@@ -416,15 +416,21 @@ export async function collectSavedIds(
   repository: Pick<NewsRepository, "getSaved">,
   requestContext: RepositoryContext,
 ): Promise<string[]> {
-  const ids: string[] = [];
+  const ids = new Set<string>();
+  const seenCursors = new Set<string>();
   let cursor: string | null = null;
   for (let page = 0; page < SAVED_IDS_MAX_PAGES; page += 1) {
     const result = await repository.getSaved(SAVED_PAGE_SIZE, requestContext, cursor);
-    for (const item of result.items) ids.push(item.id);
+    for (const item of result.items) ids.add(item.id);
     cursor = encodeSavedCursor(result.nextCursor);
-    if (!cursor) break;
+    // A cursor seen before would loop forever on the same page.
+    if (!cursor || seenCursors.has(cursor)) return [...ids];
+    seenCursors.add(cursor);
   }
-  return ids;
+  console.warn(
+    `[news] saved ids stopped at ${SAVED_IDS_MAX_PAGES} pages (${ids.size} ids); the list is longer.`,
+  );
+  return [...ids];
 }
 
 /** One page of the saved collection, as rows, plus the cursor of the next. */

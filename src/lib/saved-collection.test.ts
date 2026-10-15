@@ -3,7 +3,10 @@ import { QueryClient } from "@tanstack/react-query";
 
 import { forgetAccountQueries, queryKeyNamesAccount } from "@/auth/account-queries";
 import {
+  focusTargetAfterRemoval,
+  removedSavedIds,
   savedCollectionEnabled,
+  savedCollectionPhase,
   savedCollectionQueryKey,
   savedEntryId,
   visibleSavedEntries,
@@ -127,5 +130,72 @@ describe("whose list it is", () => {
   test("in preview mode the device's own list is read once it is loaded", () => {
     expect(savedCollectionEnabled("mock", "guest", false)).toBe(false);
     expect(savedCollectionEnabled("mock", "guest", true)).toBe(true);
+  });
+});
+
+describe("the page's state", () => {
+  const base = {
+    mode: "supabase" as const,
+    status: "authenticated" as const,
+    isError: false,
+    hasData: false,
+    isFetching: false,
+  };
+
+  test("waits while the session is still resolving", () => {
+    expect(savedCollectionPhase({ ...base, status: "loading" })).toBe("loading");
+  });
+
+  test("asks anyone without a signed-in account to sign in (production)", () => {
+    for (const status of ["guest", "anonymous", "mfa_required", "mfa_unconfirmed"] as const) {
+      expect(savedCollectionPhase({ ...base, status })).toBe("signin");
+    }
+  });
+
+  test("a failed first read is an error, whatever the account", () => {
+    expect(savedCollectionPhase({ ...base, isError: true })).toBe("error");
+  });
+
+  test("a retry in flight is loading again, not a stuck error", () => {
+    expect(savedCollectionPhase({ ...base, isError: true, isFetching: true })).toBe("loading");
+  });
+
+  test("a failure after rows were loaded keeps the rows", () => {
+    expect(savedCollectionPhase({ ...base, isError: true, hasData: true })).toBe("ready");
+  });
+
+  test("is loading until the first answer, then ready", () => {
+    expect(savedCollectionPhase({ ...base, isFetching: true })).toBe("loading");
+    expect(savedCollectionPhase({ ...base, hasData: true })).toBe("ready");
+  });
+
+  test("preview mode never asks for sign-in", () => {
+    expect(savedCollectionPhase({ ...base, mode: "mock", status: "guest", hasData: true })).toBe(
+      "ready",
+    );
+  });
+});
+
+describe("a row removed under the reader's focus", () => {
+  const before = ["a", "b", "c", "d"];
+
+  test("lists what was removed", () => {
+    expect(removedSavedIds(before, ["a", "c", "d"])).toEqual(["b"]);
+    expect(removedSavedIds(before, before)).toEqual([]);
+    expect(removedSavedIds(before, [])).toEqual(before);
+  });
+
+  test("focus goes to the next surviving row", () => {
+    expect(focusTargetAfterRemoval(before, ["a", "c", "d"], "b")).toBe("c");
+    expect(focusTargetAfterRemoval(before, ["a", "d"], "b")).toBe("d");
+  });
+
+  test("the last row hands focus to the one before it", () => {
+    expect(focusTargetAfterRemoval(before, ["a", "b", "c"], "d")).toBe("c");
+  });
+
+  test("with no row left, there is no target (the container takes focus)", () => {
+    expect(focusTargetAfterRemoval(["a"], [], "a")).toBeNull();
+    expect(focusTargetAfterRemoval(before, ["a"], "z")).toBeNull();
   });
 });
