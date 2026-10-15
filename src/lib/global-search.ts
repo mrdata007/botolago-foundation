@@ -71,6 +71,80 @@ export function committableEntry(
   return active >= 0 && active < results.length ? results[active] : undefined;
 }
 
+/**
+ * The DOM id of one option, for `aria-activedescendant`. Built from the
+ * option's own kind and id, not its position, so it stays the same while the
+ * list reorders under the visitor's typing. Anything that is not safe in an
+ * id reference (a space ends the reference) is made an underscore.
+ */
+export function searchOptionId(listId: string, entry: Pick<SearchEntry, "kind" | "id">): string {
+  return `${listId}-${entry.kind}-${entry.id}`.replace(/\s/g, "_");
+}
+
+/**
+ * What the field's `aria-activedescendant` names: the active option's id,
+ * and nothing when no option is on screen (closed panel, empty or loading
+ * list, nothing active). An id that points at nothing is worse than none.
+ */
+export function activeDescendantId(input: {
+  listId: string;
+  results: readonly SearchEntry[];
+  active: number;
+  panelVisible: boolean;
+}): string | undefined {
+  const entry = committableEntry(input.results, input.active, input.panelVisible);
+  return entry ? searchOptionId(input.listId, entry) : undefined;
+}
+
+/**
+ * Whether a key event belongs to an input method (a Japanese, Chinese or
+ * Korean candidate list): its Enter and arrows pick a candidate and must not
+ * also pick a search result. Only the standard `isComposing` flag is read: a
+ * soft keyboard that reports every key as keyCode 229 would otherwise lose
+ * its Enter.
+ */
+export function isComposingKey(event: { isComposing?: boolean }): boolean {
+  return event.isComposing === true;
+}
+
+/**
+ * What a screen reader is told as the list changes (a polite live region that
+ * stays in the page): the number of results (and that some could not be
+ * read), that it is loading, that there is none, or that the search is
+ * unavailable. Nothing while the panel is closed. It is the live region that
+ * speaks, not the visible note: a note that appears already filled is often
+ * not read.
+ */
+export type SearchAnnouncement =
+  | { kind: "results"; count: number; partial: boolean }
+  | { kind: "loading" }
+  | { kind: "empty" }
+  | { kind: "unavailable"; coverage: "none" | "partial" }
+  | null;
+
+export function searchAnnouncement(input: {
+  panelVisible: boolean;
+  panel: SearchPanelState;
+  resultCount: number;
+}): SearchAnnouncement {
+  if (!input.panelVisible) return null;
+  const { panel } = input;
+  if (panel.kind === "results")
+    return { kind: "results", count: input.resultCount, partial: panel.partial };
+  if (panel.kind === "loading") return { kind: "loading" };
+  if (panel.kind === "empty") return { kind: "empty" };
+  return { kind: "unavailable", coverage: panel.coverage };
+}
+
+/**
+ * Whether the field may claim the list is open: only while the listbox is
+ * really drawn (there are options). "Searching" and "no result" are lines
+ * beside it, and an expanded field with nothing to choose is a lie.
+ */
+export function listboxExpanded(input: { panelVisible: boolean; resultCount: number }): boolean {
+  return input.panelVisible && input.resultCount > 0;
+}
+
 /** How one catalog (clubs, players) is doing, as the search panel needs it. */
 export interface SearchSourceHealth {
   pending: boolean;

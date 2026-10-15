@@ -24,6 +24,7 @@ import {
 import { MfaError, type MfaErrorCode } from "@/backend/auth/mfa-errors";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { ui, UiButton, UiCard, UiHeader, UiIconButton } from "@/components/ui-kit";
+import { formatMoroccoDate } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile/security")({
@@ -51,7 +52,7 @@ function errorKey(code: MfaErrorCode): TranslationKey {
 }
 
 function SecurityPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { status } = useAuth();
   const navigate = useNavigate();
 
@@ -338,7 +339,8 @@ function SecurityPage() {
               {enrolled && factors[0] && (
                 <p className={cn("mt-1", ui.text.micro, ui.tone.muted)}>
                   {t("auth.mfa.enabled_since")}{" "}
-                  {new Date(factors[0].createdAt).toLocaleDateString()}
+                  {/* The chosen language's date on Morocco's calendar, not the browser's. */}
+                  <bdi>{formatMoroccoDate(factors[0].createdAt, lang)}</bdi>
                 </p>
               )}
             </div>

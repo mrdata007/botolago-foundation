@@ -58,7 +58,7 @@ export function SwipeDeck({
   return (
     <div
       role="region"
-      aria-roledescription="carousel"
+      aria-roledescription={t("predictions.votes.role")}
       aria-label={label}
       className="grid gap-1"
       data-testid={testId}
@@ -76,7 +76,7 @@ export function SwipeDeck({
           <div
             key={slide.key}
             role="group"
-            aria-roledescription="slide"
+            aria-roledescription={t("predictions.votes.slide_role")}
             aria-label={slideLabel(index)}
             className="flex min-w-0 shrink-0 basis-full snap-start [&>*]:flex-1"
           >
@@ -86,18 +86,20 @@ export function SwipeDeck({
       </div>
 
       {count > 1 ? (
-        <div className="flex items-center justify-center">
+        // Each dot's button is a 44px square, so a long deck wraps to a
+        // second row rather than shrinking a target under the floor.
+        <div className="flex flex-wrap items-center justify-center">
           {slides.map((slide, index) => (
             // Sofascore's dots: round, all one size, the current one in ink.
-            // The dot stays small; the button around it is a 24 x 32 px
-            // target, so a thumb lands on the card it aims at.
+            // The dot stays small; the button around it is the kit's 44px
+            // target (`ui.space.tap`), so a thumb lands on the card it aims at.
             <button
               key={slide.key}
               type="button"
               aria-label={slideLabel(index)}
               aria-current={index === active ? "true" : undefined}
               onClick={() => goTo(index)}
-              className={cn("grid h-8 min-w-6 place-items-center px-1", ui.focus)}
+              className={cn("grid place-items-center", ui.space.tap, ui.focus)}
             >
               <span
                 aria-hidden

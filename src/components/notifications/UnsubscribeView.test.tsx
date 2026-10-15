@@ -91,6 +91,15 @@ describe("UnsubscribeView", () => {
     expect(html).not.toContain("<button");
   });
 
+  it("scopes the success to notification e-mails and keeps account-security mail out of the promise (LOC-10)", async () => {
+    const html = await view("unsubscribed");
+    expect(html).toContain("Vos e-mails de notification BotolaGO sont désactivés.");
+    expect(html).toContain(
+      "Les messages nécessaires à la sécurité de votre compte restent disponibles.",
+    );
+    expect(html).not.toContain("Vous ne recevrez plus d");
+  });
+
   it("has its own line for a reader who was already unsubscribed", async () => {
     const html = await view("already_unsubscribed");
     expect(html).toContain('data-testid="unsubscribe-already"');
