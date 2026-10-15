@@ -509,6 +509,8 @@ export const ar = {
   "fantasy.rankings.empty": "لا يوجد مدرب مطابق لبحثك.",
   "fantasy.rankings.empty_yet": "لا يوجد ترتيب حاليًا.",
   "fantasy.rankings.count": "مدرب في الترتيب",
+  "fantasy.rankings.search_limited":
+    "يشمل البحث أول {scanned} مدرب فقط (من أصل {total}). يمكنك الوصول إلى الباقين بالتنقل بين الصفحات.",
   "fantasy.rankings.prev": "الصفحة السابقة",
   "fantasy.rankings.next": "الصفحة التالية",
   "fantasy.rankings.page": "صفحة",
@@ -661,6 +663,19 @@ export const ar = {
   "fantasy.leagues.empty_title": "لا توجد دوريات",
   "fantasy.leagues.no_members_title": "لا يوجد مدرب",
   "fantasy.leagues.of_members": "من {n}",
+  "fantasy.leagues.show_more": "عرض بقية الترتيب",
+  "fantasy.leagues.more_failed": "تعذّر تحميل بقية الترتيب. تظل المراتب المعروضة صحيحة.",
+  "fantasy.leagues.stale": "تعذّر التحديث حاليًا: هذه البيانات هي آخر ما تمّت قراءته بنجاح.",
+  "fantasy.leagues.read_failed": "تعذّر تحميل دورياتك. لم تختفِ: أعد المحاولة.",
+  "fantasy.leagues.public_read_failed": "تعذّر تحميل الدوريات العامة.",
+  "fantasy.leagues.members_read_failed":
+    "تعذّر تحميل قائمة المدربين. القائمة ليست فارغة: أعد المحاولة.",
+  "fantasy.leagues.joined_refresh_failed":
+    "لقد انضممت إلى الدوري بالفعل، لكن تعذّر تحديث معلوماته. رمزك صحيح: أعد المحاولة.",
+  "fantasy.leagues.join_network":
+    "تعذّر الاتصال، والرمز ليس هو السبب. تحقّق من اتصالك وأعد المحاولة؛ ربما انضممت بالفعل إلى الدوري، فراجع دورياتك.",
+  "fantasy.leagues.join_unavailable":
+    "الخدمة غير متاحة مؤقتًا، والرمز ليس هو السبب. أعد المحاولة بعد قليل؛ ربما انضممت بالفعل إلى الدوري، فراجع دورياتك.",
   "fantasy.players.title": "اللاعبون",
   "fantasy.players.watchlist": "قائمة المتابعة",
   "fantasy.players.add_watch": "أضف إلى قائمتي",

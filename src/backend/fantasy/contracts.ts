@@ -699,6 +699,8 @@ export interface FantasyRepository {
     leagueId: string,
     gameweekId: string | null,
     context: RepositoryContext,
+    /** Rows after this position in the server's order; omitted for the first page. */
+    cursor?: { readonly rank: number; readonly teamId: string } | null,
   ): Promise<FantasyLeagueStandingPageDto>;
   getOverallStandings(
     input: FantasyOverallStandingsInput,

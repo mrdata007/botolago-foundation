@@ -454,7 +454,11 @@ export const BASELINES: Baselines = {
   // notice gives `fantasy.error.retry` and `fantasy.error.reload_latest` their
   // first call sites (-2); its seven new keys are all referenced. 249 -> 247
   // (measured with `bun scripts/qa/i18n-gate.ts`).
-  W3: 247,
+  //
+  // Audit remediation B3 (FANT-03/05, UX-003/004, 2026-10-15): the league page's
+  // "100 / 250 membres" line gives `fantasy.leagues.members` its first call site
+  // (-1); the ten new keys are all referenced. 247 -> 246 (measured).
+  W3: 246,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

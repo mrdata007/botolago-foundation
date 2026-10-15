@@ -16,6 +16,7 @@ import {
   STANDINGS_NAME_CELL,
 } from "@/components/fantasy-lists/standings";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
+import { fill, ltr } from "@/components/manager-card/interpolate";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ReportNameMenu } from "@/components/report/ReportNameMenu";
@@ -241,6 +242,16 @@ function RankingsPage() {
                   onChange={setSearch}
                   label={t("fantasy.rankings.search")}
                 />
+                {/* FANT-05: the server cannot search, so on a board larger than
+                    the search can look through, say how far it looked. */}
+                {search.trim() && data.searchLimit ? (
+                  <p role="status" className={cn("-mt-2", ui.text.meta, ui.tone.muted)}>
+                    {fill(t("fantasy.rankings.search_limited"), {
+                      scanned: ltr(nf.format(data.searchLimit.scanned)),
+                      total: ltr(nf.format(data.searchLimit.total)),
+                    })}
+                  </p>
+                ) : null}
 
                 <div ref={tableRef} className="scroll-mt-4">
                   {data.rows.length === 0 ? (
