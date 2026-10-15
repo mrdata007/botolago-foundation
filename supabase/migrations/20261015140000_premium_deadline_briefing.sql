@@ -194,11 +194,18 @@ begin
     v_diff := '[]'::jsonb;
   end;
 
-  select count(*)::integer into v_listed
-  from app.fixture_absences a
-  join app.fantasy_fixture_assignments fa
-    on fa.fixture_id = a.fixture_id and fa.gameweek_id = v_gw.id
-    and fa.superseded_at is null and fa.counts_points;
+  -- Whether any absence list exists for this journée: either source counts, the same two the
+  -- squad below reads, so a listed absence is never shown beside "no list available".
+  select (select count(*)::integer
+          from app.fixture_absences a
+          join app.fantasy_fixture_assignments fa
+            on fa.fixture_id = a.fixture_id and fa.gameweek_id = v_gw.id
+            and fa.superseded_at is null and fa.counts_points)
+       + (select count(*)::integer
+          from app.player_availability av
+          where av.active and av.status in ('injured', 'suspended')
+            and av.starts_on <= current_date and (av.ends_on is null or av.ends_on >= current_date))
+  into v_listed;
 
   with owned as (
     select fp.id, fp.football_player_id, fp.football_team_id, fp.price, m.current_sale_price,
