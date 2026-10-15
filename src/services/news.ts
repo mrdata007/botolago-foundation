@@ -118,13 +118,14 @@ function fallbackGradient(id: string): string {
  *     third-party source (it has a publisher) and kept for CMS stories.
  *   - a body image not served from our own `news-media` bucket is removed
  *     with its figure, for the same no-hotlinking reason.
- *   - for a third-party story, an anchor in `bodyHtml` pointing off-site is
- *     removed *with its text*,
- *     not merely unwrapped. Measuring the rendered DOM is what showed why:
- *     unwrapping left the words "read the original on <source>" behind, which
- *     is attribution in its own right. Anchors that are not absolute URLs
- *     (our own relative links) are unwrapped instead, so internal prose keeps
- *     its words.
+ *   - for a third-party story, every off-site anchor in `bodyHtml` loses its
+ *     link, and the one that is the SOURCE CREDIT loses its text with it.
+ *     Measuring the rendered DOM is what showed why: unwrapping left the words
+ *     "read the original on <source>" behind, which is attribution in its own
+ *     right. An anchor that is not a credit ("la signature du joueur") is
+ *     reporting: it is unwrapped, so the sentence keeps its words. What
+ *     counts as a credit is `isAttributionAnchor`. Anchors that are not
+ *     absolute URLs (our own relative links) are unwrapped as well.
  *
  * Nothing here fetches, rehosts or otherwise works around a third party's
  * access controls — it only removes our own display of their attribution.
@@ -145,15 +146,144 @@ function sameName(a: string | null | undefined, b: string | null | undefined): b
 }
 
 /**
- * Removes every off-site anchor and the text it wraps, and unwraps the rest.
+ * How an anchor's text reads when it is a source credit rather than reporting.
+ *
+ * Written generically and naming no provider (see the rule above). Every
+ * pattern is anchored to the WHOLE text of the anchor and bounded in length:
+ * "Read the original article" is a credit, "will see more investment" and
+ * "قال المصدر" ("the source said") are sentences. French, Arabic and English,
+ * since the machine-ingested stubs come in all three. Matched
+ * case-insensitively.
+ */
+const MORE_WORDS = String.raw`(?:\s+\S+){0,3}`;
+const ATTRIBUTION_TEXT = new RegExp(
+  [
+    // "Lire l'original (sur X)", "Lire la suite", "Consulter l'article complet".
+    String.raw`^\s*(?:lire|lisez|voir|consulter|découvrir|poursuivre)\b[^<]{0,30}?\b(?:l['’]?\s?original|l['’]?\s?article(?: original| complet)?|la suite|suite|source)(?:\s+(?:sur|chez|à|via)\b.{0,40})?[\s.»…→>]*$`,
+    String.raw`^\s*(?:article original|suite sur\b.{0,40})\s*$`,
+    // "Source", "Source : X", "via X".
+    String.raw`^\s*source\s*(?::\s*\S+${MORE_WORDS})?\s*$`,
+    String.raw`^\s*via\s*:?\s*\S+${MORE_WORDS}\s*$|^\s*via\s*$`,
+    // "Read the original (article) (on X)", "Continue reading", "Read more".
+    String.raw`^\s*(?:read|continue reading|view|see)\b[^<]{0,30}?\b(?:original(?: article| story| post)?|full (?:article|story)|more|source|here)(?:\s+(?:on|at|from|via)\b.{0,40})?[\s.»…→>]*$`,
+    String.raw`^\s*(?:the\s+)?original (?:article|story|post|source)\s*$`,
+    String.raw`^\s*(?:click here|read more|continue reading|read on|lire la suite)\s*$`,
+    // Arabic: "اقرأ الأصل", "قراءة المزيد", "المصدر (: X)", "المقال الأصلي".
+    String.raw`^\s*(?:اقرأ|إقرأ)\s+(?:الأصل|المزيد|المقال الأصلي|الخبر الأصلي|المقال كاملا|الخبر كاملا|المقال كاملاً|الخبر كاملاً)${MORE_WORDS}\s*$`,
+    String.raw`^\s*(?:قراءة المزيد|المقال الأصلي|الخبر الأصلي)${MORE_WORDS}\s*$`,
+    String.raw`^\s*المصدر\s*(?::\s*\S+${MORE_WORDS})?\s*$`,
+    String.raw`^\s*المزيد على\s+\S+${MORE_WORDS}\s*$`,
+  ].join("|"),
+  "i",
+);
+
+/** A bare web address as anchor text, with or without its scheme. */
+const BARE_ADDRESS =
+  /^(?:https?:\/\/\S+|www\.\S+|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/\S*)?)$/i;
+
+/** The text of an anchor as a reader sees it: tags dropped, entities decoded, spaces folded. */
+function visibleText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#x27;|&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Letters and digits only, lowercased: for finding a name inside another text. */
+function squash(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}]/gu, "")
+    .toLocaleLowerCase();
+}
+
+/** A host without its "www.", lowercased; `null` for anything unreadable. */
+function hostOf(address: string | null | undefined): string | null {
+  if (!address) return null;
+  try {
+    return new URL(address.replace(/&amp;/g, "&").trim()).hostname
+      .replace(/^www\./i, "")
+      .toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/** What the story says about its own source, for telling a credit from reporting. */
+interface StorySource {
+  /** The publisher's and the licensed source's names. */
+  readonly names: readonly string[];
+  /** The host of the licensed source's address, when it has one. */
+  readonly host: string | null;
+}
+
+/**
+ * Whether an off-site anchor is the story's source credit, to be removed with
+ * its words, rather than a phrase of the reporting that happens to be linked.
+ *
+ * It is a credit when its text is empty, is itself a web address, reads like
+ * "read the original" (`ATTRIBUTION_TEXT`), or names the story's own source
+ * (the publisher or licensed source the DTO carries). It is also one when it
+ * is named after the site it points at AND that site is the story's licensed
+ * source. Naming the site it points at is not enough on its own, wherever the
+ * anchor sits: "sanctionné par <a href="fifa.com">la FIFA</a>." and "Le
+ * <a href="wydad.ma">Wydad</a> a annoncé" are reporting that happens to link
+ * the body they name. Anything else -- "la signature du joueur" -- is the
+ * article's own wording.
+ */
+function isAttributionAnchor(href: string, text: string, source: StorySource): boolean {
+  if (text === "") return true;
+  if (BARE_ADDRESS.test(text)) return true;
+  if (ATTRIBUTION_TEXT.test(text)) return true;
+  const squashed = squash(text);
+  if (squashed === "") return true;
+  const named = source.names.map(squash).filter((name) => name.length >= 3);
+  if (named.some((name) => squashed.includes(name))) return true;
+  const host = hostOf(href);
+  if (host === null) return false;
+  // "elbotola" from www.elbotola.com: the site's own name, whatever it is.
+  const labels = host.split(".");
+  const site = squash(labels.length > 1 ? labels[labels.length - 2]! : labels[0]!);
+  if (site.length < 4 || !squashed.includes(site)) return false;
+  return host === source.host;
+}
+
+/**
+ * Removes every off-site link from a third-party story and keeps the words.
+ *
+ * An anchor that is the story's source credit goes with its text: unwrapping
+ * "Lire l'original sur <source>" would leave attribution behind. Every other
+ * anchor -- off-site or not -- is unwrapped to its text, so removing a link
+ * never removes the reporting that was linked ("Le club a confirmé <a>la
+ * signature du joueur</a>." stays a sentence). Anchors nested in one another
+ * (which the sanitizer should not let through) are settled innermost first.
  *
  * The body HTML is already sanitized server-side (`src/backend/news/
  * sanitizer.ts`), so this operates on a known-narrow tag set; it is an
  * editorial-policy pass, not a security boundary.
  */
-function removeOutboundLinks(html: string): string {
-  return html
-    .replace(/<a\b[^>]*\bhref\s*=\s*["']https?:\/\/[^>]*>[\s\S]*?<\/a\s*>/gi, "")
+function removeOutboundLinks(html: string, source: StorySource): string {
+  // An anchor with no other anchor opening inside it: the innermost first.
+  const innermost = /<a\b([^>]*)>((?:(?!<a\b)[\s\S])*?)<\/a\s*>/gi;
+  let current = html;
+  for (let pass = 0; pass < 8; pass++) {
+    const next = current.replace(
+      innermost,
+      (_anchor: string, attributes: string, inner: string) => {
+        const match = /\bhref\s*=\s*"([^"]*)"|\bhref\s*=\s*'([^']*)'/i.exec(attributes);
+        const href = match?.[1] ?? match?.[2] ?? "";
+        if (!/^https?:\/\//i.test(href.trim())) return inner;
+        return isAttributionAnchor(href, visibleText(inner), source) ? "" : inner;
+      },
+    );
+    if (next === current) break;
+    current = next;
+  }
+  return current
     .replace(/<a\b[^>]*>/gi, "")
     .replace(/<\/a\s*>/gi, "")
     .replace(/<p>\s*<\/p>/gi, "");
@@ -243,7 +373,13 @@ export function sanitizeArticleAttribution<T extends ArticleCardDto | ArticleDet
     // attribution); original BotolaGO stories keep their safe links.
     (sanitized as ArticleDetailDto).bodyHtml = removeOffsiteImages(
       thirdPartySource
-        ? removeOutboundLinks(sanitized.bodyHtml)
+        ? removeOutboundLinks(sanitized.bodyHtml, {
+            names: [
+              publisherName,
+              "source" in sanitized ? sanitized.source?.name : undefined,
+            ].filter((name): name is string => typeof name === "string" && name.trim() !== ""),
+            host: hostOf("source" in sanitized ? sanitized.source?.url : null),
+          })
         : keepSafeLinks(sanitized.bodyHtml),
       supabaseUrl,
     );

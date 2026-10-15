@@ -222,6 +222,13 @@ Rules that matter:
 Environment (all optional): `SOFASCORE_DETAILS_PER_TICK`,
 `SOFASCORE_DETAILS_BACKFILL_LIMIT`.
 
+What the match page says about it: a match in play is read for its incidents
+only, so on this feed the Stats tab has nothing to wait for. The page cannot read
+the switch above, and the switch defaults to `sportsmonks`, so the empty Stats
+panel uses wording that is true on both feeds: no statistics yet, shown here as
+soon as they exist, most often after the match (`matches.detail.no_stats_updating`).
+It does not say the page updates itself for them.
+
 Known limit: events are keyed `sofascore:event:<incident id>`, the SportsMonks
 ones `sportsmonks:event:<id>`. A match whose details were stored by SportsMonks
 and are then fetched from SofaScore shows both. The backfill skips marked

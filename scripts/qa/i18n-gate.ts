@@ -460,6 +460,13 @@ export const BASELINES: Baselines = {
   // and `news.saved.empty`, dead since the saved rail was dropped, their first
   // call sites (-2); its nine new keys are all referenced. 247 -> 245
   // (measured with `bun scripts/qa/i18n-gate.ts`).
+  // Audit remediation B7 (DATA-04, 2026-10-15): the match card's spoken state
+  // was `t(`matches.a11y.status_${match.status}`)`, a template prefix that
+  // reached every `status_*` key. It is now `offStatusA11y`, four literal
+  // branches, so W4 falls 69 -> 68. `matches.a11y.status_scheduled`, which only
+  // the template reached (the card says a scheduled match's kick-off, never
+  // that word), is deleted with it, so W3 stays 247; `no_data_called_off` is
+  // replaced by three referenced keys.
   W3: 245,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
@@ -495,7 +502,7 @@ export const BASELINES: Baselines = {
   // titles itself with the tapped section's `t(section.labelKey)`, read from
   // the bar's item table exactly as BottomNav reads it, so the key is a real
   // `TranslationKey` the compiler checks. +1; with the BotolaGO+ screens above, 68 -> 69 (measured).
-  W4: 69,
+  W4: 68,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
