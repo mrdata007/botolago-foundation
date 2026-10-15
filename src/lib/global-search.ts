@@ -37,6 +37,67 @@ export function searchEntries(entries: SearchEntry[], query: string, limit = 8):
   return scored.slice(0, limit).map((s) => s.entry);
 }
 
+/**
+ * The option the keyboard is on, kept inside what is shown: -1 when nothing is
+ * listed, else 0 to count - 1. The page derives it on every render from the
+ * stored index, so a list that shrank, or filled after an arrow press on an
+ * empty one, never leaves the index on an option that is not there (audit
+ * SOL-03).
+ */
+export function clampActiveIndex(active: number, count: number): number {
+  if (count <= 0) return -1;
+  if (!Number.isFinite(active) || active < 0) return 0;
+  return Math.min(Math.trunc(active), count - 1);
+}
+
+/** ArrowDown / ArrowUp from the (clamped) active option, staying inside the list. */
+export function moveActiveIndex(active: number, direction: "up" | "down", count: number): number {
+  const current = clampActiveIndex(active, count);
+  if (current < 0) return -1;
+  return direction === "down" ? Math.min(current + 1, count - 1) : Math.max(current - 1, 0);
+}
+
+/**
+ * What Enter may open: the active result, and only while the list is on screen
+ * and the index is a real position in it. After Escape the results still exist
+ * in memory but are not shown, so Enter must not act on them.
+ */
+export function committableEntry(
+  results: readonly SearchEntry[],
+  active: number,
+  panelVisible: boolean,
+): SearchEntry | undefined {
+  if (!panelVisible || !Number.isInteger(active)) return undefined;
+  return active >= 0 && active < results.length ? results[active] : undefined;
+}
+
+/** How one catalog (clubs, players) is doing, as the search panel needs it. */
+export interface SearchSourceHealth {
+  pending: boolean;
+  failed: boolean;
+}
+
+export type SearchPanelState =
+  | { kind: "results"; partial: boolean }
+  | { kind: "loading" }
+  | { kind: "unavailable" }
+  | { kind: "empty" };
+
+/**
+ * What the panel says. "No result" is only true once every catalog has loaded;
+ * a catalog that failed is "unavailable", and matches from the other one are
+ * kept and flagged partial (audit UX-007).
+ */
+export function searchPanelState(input: {
+  resultCount: number;
+  sources: readonly SearchSourceHealth[];
+}): SearchPanelState {
+  const failed = input.sources.some((source) => source.failed);
+  if (input.resultCount > 0) return { kind: "results", partial: failed };
+  if (input.sources.some((source) => source.pending)) return { kind: "loading" };
+  return failed ? { kind: "unavailable" } : { kind: "empty" };
+}
+
 /** One character with capitals and accents folded away; may be empty or longer than one. */
 function foldChar(char: string): string {
   return char.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

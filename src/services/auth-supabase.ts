@@ -125,6 +125,10 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   const msg = (err.message ?? "").toLowerCase();
   const status = err.status ?? 0;
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
+  // The client's own "the request did not get a usable answer" error (a lost
+  // connection, a gateway that answered 502/503/504): its message is whatever
+  // the browser said, so go by the name rather than the wording (audit QA-04).
+  if (err.name === "AuthRetryableFetchError") return "network";
   if (status === 401 || msg.includes("session_not_found")) return "session_expired";
   if (msg.includes("invalid login") || msg.includes("invalid credentials")) return "credentials";
   // Asking to delete the account bans it at once (account deletion migration
@@ -141,7 +145,8 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   if (msg.includes("weak password") || msg.includes("password should")) return "weak_password";
   if (msg.includes("provider is not enabled") || msg.includes("provider disabled"))
     return "provider_unavailable";
-  if (msg.includes("failed to fetch") || msg.includes("network")) return "network";
+  if (msg.includes("failed to fetch") || msg.includes("load failed") || msg.includes("network"))
+    return "network";
   if (msg.includes("username_taken")) return "username_taken";
   if (msg.includes("reserved_username") || msg.includes("username_reserved"))
     return "reserved_username";

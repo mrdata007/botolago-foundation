@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
@@ -13,6 +13,7 @@ import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { authNextSearch } from "@/lib/auth-callback";
 import { track } from "@/lib/analytics";
+import { resendFailureKey, singleFlight, verifyFailureKey } from "@/lib/auth-verify-feedback";
 
 export const Route = createFileRoute("/auth/verify")({
   head: () => ({ meta: [{ title: "Vérification — BotolaGO" }] }),
@@ -31,6 +32,7 @@ function VerifyPage() {
   const [error, setError] = useState<TranslationKey | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(30);
+  const [resending, setResending] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -51,9 +53,9 @@ function VerifyPage() {
     const res = await authService.verifyCode(email, code);
     setSubmitting(false);
     if (!res.ok) {
-      setError(
-        res.errorCode === "otp_expired" ? "auth.error.otp_expired" : "auth.error.otp_invalid",
-      );
+      // The code stays in the field: a lost connection or a rate limit is not
+      // a wrong code, and the reader retries with the same six digits.
+      setError(verifyFailureKey(res.errorCode));
       return;
     }
     markWelcomeDone();
@@ -63,12 +65,32 @@ function VerifyPage() {
     navigate({ to: "/auth/profile-setup", search: { next } });
   };
 
+  // One resend at a time: a second press while the first is on its way does
+  // nothing (the cooldown only starts once the answer is in).
+  const sendOnce = useMemo(
+    () => singleFlight(() => authService.resendCode(email, next)),
+    [email, next],
+  );
   const resend = async () => {
-    if (cooldown > 0) return;
-    const res = await authService.resendCode(email, next);
-    if (res.ok) {
-      setCooldown(30);
-      toast.success(t("auth.verify.resend"));
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    setError(null);
+    try {
+      const sent = await sendOnce();
+      if (!sent.ran) return;
+      if (sent.value.ok) {
+        setCooldown(30);
+        toast.success(t("auth.verify.resend"));
+      } else {
+        // Never pretend a mail went out; the cooldown and the server's rate
+        // limit are unchanged, and the button is free to try again. Shown in
+        // the same alert line as a verification failure.
+        setError(resendFailureKey(sent.value.errorCode));
+      }
+    } catch {
+      setError(resendFailureKey(undefined));
+    } finally {
+      setResending(false);
     }
   };
 
@@ -147,8 +169,10 @@ function VerifyPage() {
             size="sm"
             className={cn("-me-2", cooldown > 0 && ui.text.tabular)}
             onClick={resend}
-            disabled={cooldown > 0}
+            disabled={cooldown > 0 || resending}
+            aria-busy={resending}
           >
+            {resending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {cooldown > 0 ? `${t("auth.verify.resend_in")} ${cooldown}s` : t("auth.verify.resend")}
           </UiButton>
         </div>

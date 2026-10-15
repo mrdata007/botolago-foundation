@@ -37,6 +37,8 @@ describe("Supabase error mapping", () => {
     ["Password should be at least 8 characters", 422, "weak_password"],
     ["Provider is not enabled", 400, "provider_unavailable"],
     ["Failed to fetch", undefined, "network"],
+    // Safari's own wording for a request that never reached the server.
+    ["Load failed", undefined, "network"],
     ["User is banned", 400, "account_closed"],
     ["Some other issue", 500, "generic"],
   ];
@@ -47,6 +49,14 @@ describe("Supabase error mapping", () => {
       expect(mapError(err as any)).toBe(expected);
     });
   }
+  it("returns 'network' for the client's own retryable-fetch error, whatever its message says (QA-04)", () => {
+    expect(
+      mapError({ name: "AuthRetryableFetchError", message: "Unexpected end", status: 0 } as any),
+    ).toBe("network");
+    expect(mapError({ name: "AuthRetryableFetchError", message: "{}", status: 502 } as any)).toBe(
+      "network",
+    );
+  });
   it("returns 'rate_limited' for HTTP 429", () => {
     expect(mapError({ message: "too many", status: 429 } as any)).toBe("rate_limited");
   });
