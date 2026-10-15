@@ -577,7 +577,9 @@ export async function collectSavedIds(
     for (const item of result.items) ids.add(item.id);
     cursor = encodeSavedCursor(result.nextCursor);
     // A cursor seen before would loop forever on the same page.
-    if (!cursor || seenCursors.has(cursor)) return { ids: [...ids], complete: true };
+    if (!cursor) return { ids: [...ids], complete: true };
+    // A repeated cursor means the rest of the list could not be read.
+    if (seenCursors.has(cursor)) return { ids: [...ids], complete: false };
     seenCursors.add(cursor);
   }
   console.warn(
@@ -597,13 +599,23 @@ export async function readArticleSavedState(
   language: NewsLanguage,
   requestContext: RepositoryContext,
 ): Promise<boolean> {
-  const article = await getArticleWithLanguageFallback(
+  const first = await getArticleWithLanguageFallback(
     repository,
     articleId,
     language,
     requestContext,
   );
-  return article.isSaved;
+  // The server answers an edition id asked in the other language with that
+  // language's sibling edition, a different row with its own saved state. Only
+  // an answer for the very edition asked about may decide a save or a removal.
+  if (first.id === articleId) return first.isSaved;
+  const second = await repository.getArticle(
+    articleId,
+    language === "fr" ? "ar" : "fr",
+    requestContext,
+  );
+  if (second.id === articleId) return second.isSaved;
+  throw new NewsError("data_unavailable", "The saved state of this article could not be read.");
 }
 
 /** One page of the saved collection, as rows, plus the cursor of the next. */

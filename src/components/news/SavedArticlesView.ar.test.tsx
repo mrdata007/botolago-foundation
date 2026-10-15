@@ -114,7 +114,7 @@ describe("the reading list in Arabic", () => {
 
 describe("the over-2,000 note in Arabic", () => {
   test("is in Arabic, with the cap as Latin digits and no grouping space", async () => {
-    const html = await render({ overLimit: true });
+    const html = await render({ overCount: 2000 });
     expect(text(html)).toContain(ar["news.saved.over_limit"].replace("{count}", "2000"));
     expect(html).toContain('data-testid="saved-over-limit"');
   });

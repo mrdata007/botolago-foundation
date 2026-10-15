@@ -113,7 +113,9 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
         };
       },
     };
-    const { ids } = await collectSavedIds(repeating, context);
+    const { ids, complete } = await collectSavedIds(repeating, context);
+    // The rest of the list could not be read, so it is not the whole list.
+    expect(complete).toBe(false);
     expect(ids).toEqual([uuid(1), uuid(2)]);
     expect(calls).toBe(2);
   });
@@ -191,6 +193,38 @@ describe("one story's saved state, from the server", () => {
       };
       expect(await readArticleSavedState(repository, uuid(1), "fr", context)).toBe(isSaved);
     }
+  });
+
+  /**
+   * `news_article_detail` answers an edition id asked in the other language
+   * with that language's sibling edition: a different row (its own id and
+   * saved state). Here the French edition is saved and its Arabic sibling is not.
+   */
+  function siblingRepository(): Pick<NewsRepository, "getArticle"> {
+    return {
+      async getArticle(identifier, language) {
+        const french = identifier === uuid(1);
+        if (language === "fr") return detail(french);
+        return { ...detail(false), id: uuid(2), language: "ar" } as ArticleDetailDto;
+      },
+    };
+  }
+
+  test("the sibling edition's answer is not taken for the edition asked about", async () => {
+    // Asked in the wrong language: the first read returns the sibling (unsaved);
+    // the guard re-reads in the other language and gets the right edition.
+    expect(await readArticleSavedState(siblingRepository(), uuid(1), "ar", context)).toBe(true);
+    // Asked in its own language: one read.
+    expect(await readArticleSavedState(siblingRepository(), uuid(1), "fr", context)).toBe(true);
+  });
+
+  test("if neither language returns the edition asked about, it throws instead of guessing", async () => {
+    const neither: Pick<NewsRepository, "getArticle"> = {
+      async getArticle() {
+        return { ...detail(true), id: uuid(2) } as ArticleDetailDto;
+      },
+    };
+    await expect(readArticleSavedState(neither, uuid(1), "fr", context)).rejects.toThrow();
   });
 
   test("a failed read throws, so no save or removal is guessed", async () => {

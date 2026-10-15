@@ -4,6 +4,7 @@ import { useSavedArticles } from "@/lib/saved-articles";
 import { ui, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import type { Language } from "@/types/domain";
 
 /**
  * Reusable save-toggle. Persists to the local saved-articles store and
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 export function SavedButton({
   articleId,
   serverSaved,
+  language,
   variant = "chip",
   className,
 }: {
@@ -36,6 +38,8 @@ export function SavedButton({
    * whose saved ids cannot tell for a story outside the newest 2,000.
    */
   serverSaved?: boolean;
+  /** The story's own edition language (`Article.language`). */
+  language?: Language;
   variant?: "chip" | "soft" | "overlay" | "thumb";
   className?: string;
 }) {
@@ -47,7 +51,7 @@ export function SavedButton({
   const onClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    toggle(articleId);
+    toggle(articleId, { shown: saved, language });
   };
 
   if (variant === "soft") {

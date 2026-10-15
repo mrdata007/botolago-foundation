@@ -13,7 +13,6 @@ import {
   type SavedEntry,
 } from "@/lib/saved-collection";
 import { formatCount } from "@/components/pepites/pepites-format";
-import { SAVED_IDS_LIMIT } from "@/services/news";
 import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { NewsRowSkeleton } from "./NewsSkeletons";
@@ -99,8 +98,11 @@ export function SavedArticlesView(props: SavedArticlesViewProps) {
 interface SavedArticlesViewProps {
   phase: SavedArticlesPhase;
   entries: readonly SavedEntry[];
-  /** The account has more saves than the app counts (2,000): say so. */
-  overLimit?: boolean;
+  /**
+   * The account has more saves than the app lists (2,000): the number the page
+   * says "more than" (the ids it holds), else `null`.
+   */
+  overCount?: number | null;
   hasMore: boolean;
   loadingMore: boolean;
   /** The next page failed; the rows already loaded stay. */
@@ -113,7 +115,7 @@ interface SavedArticlesViewProps {
 function SavedArticlesBody({
   phase,
   entries,
-  overLimit = false,
+  overCount = null,
   hasMore,
   loadingMore,
   moreFailed,
@@ -172,9 +174,9 @@ function SavedArticlesBody({
 
   return (
     <div className="grid gap-2.5">
-      {overLimit && (
+      {overCount !== null && (
         <p className={cn(ui.text.secondary, ui.tone.muted)} data-testid="saved-over-limit">
-          {t("news.saved.over_limit").replace("{count}", formatCount(SAVED_IDS_LIMIT, lang))}
+          {t("news.saved.over_limit").replace("{count}", formatCount(overCount, lang))}
         </p>
       )}
       <ul className="grid gap-2.5" aria-label={t("news.section.saved")}>

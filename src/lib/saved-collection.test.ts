@@ -6,6 +6,7 @@ import {
   focusTargetAfterRemoval,
   mergeSavedSnapshot,
   removedSavedIds,
+  resolveAskedToggle,
   savedCollectionEnabled,
   savedCollectionPhase,
   savedCollectionQueryKey,
@@ -297,5 +298,32 @@ describe("a reader with more than 2,000 saves", () => {
     expect(
       mergeSavedSnapshot({ ids: [], complete: true }, partial({ removed: ["x"] })).removed,
     ).toEqual([]);
+  });
+});
+
+describe("a tap that had to ask the server", () => {
+  test("a bookmark drawn unsaved on a story the server holds as saved writes nothing", () => {
+    // shown = false ("Enregistrer"), server = true: the reader wants it saved
+    // and it is. An unsave here would be the reverse of the tap.
+    expect(resolveAskedToggle(false, true)).toEqual({ write: false });
+  });
+
+  test("a bookmark drawn saved on a story the server holds as unsaved writes nothing", () => {
+    expect(resolveAskedToggle(true, false)).toEqual({ write: false });
+  });
+
+  test("when the display and the server agree, the tap flips it", () => {
+    expect(resolveAskedToggle(true, true)).toEqual({ write: true, saved: true });
+    expect(resolveAskedToggle(false, false)).toEqual({ write: true, saved: false });
+  });
+
+  test("a failed write puts back that one story and leaves the others as they are", () => {
+    // Two unsaves of stories beyond the set; the first one fails.
+    let snapshot: SavedIdsSnapshot = { ids: ["n"], complete: false, removed: [] };
+    snapshot = withSavedState(snapshot, "old-1", false);
+    snapshot = withSavedState(snapshot, "old-2", false);
+    const rolledBack = withSavedState(snapshot, "old-1", true);
+    expect(rolledBack.removed).toEqual(["old-2"]);
+    expect(rolledBack.ids).toContain("old-1");
   });
 });

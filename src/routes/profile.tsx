@@ -706,11 +706,16 @@ function SavedArticlesCount() {
   if (saved.idsKnown && !saved.complete) {
     return (
       <span className={ui.stat.sm}>
-        {t("news.saved.count_over").replace("{count}", formatCount(SAVED_IDS_LIMIT, lang))}
+        {t("news.saved.count_over").replace(
+          "{count}",
+          formatCount(Math.min(saved.ids.length, SAVED_IDS_LIMIT), lang),
+        )}
       </span>
     );
   }
-  if (saved.idsKnown) return <span className={ui.stat.sm}>{saved.ids.length}</span>;
+  if (saved.idsKnown) {
+    return <span className={ui.stat.sm}>{formatCount(saved.ids.length, lang)}</span>;
+  }
   return (
     <span className={ui.stat.sm}>
       <span aria-hidden>–</span>

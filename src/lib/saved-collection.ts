@@ -116,6 +116,23 @@ export function planSavedToggle(
   return "ask";
 }
 
+/**
+ * What to do once the server has answered for a story the app could not decide.
+ * The reader tapped the bookmark as it was drawn (`shown`), meaning "the
+ * opposite of that". If the server already holds the opposite, there is
+ * nothing to write: sending the flip of the server's answer would do the
+ * reverse of the tap (an "Enregistrer" button on a saved story, tapped, would
+ * unsave it). The caller records `serverSaved` so the button shows the truth.
+ * Otherwise the write is the flip of the server's answer.
+ */
+export function resolveAskedToggle(
+  shown: boolean,
+  serverSaved: boolean,
+): { write: false } | { write: true; saved: boolean } {
+  if (serverSaved === !shown) return { write: false };
+  return { write: true, saved: serverSaved };
+}
+
 /** The snapshot after `id` is saved (`nowSaved`) or unsaved. */
 export function withSavedState(
   snapshot: SavedIdsSnapshot,

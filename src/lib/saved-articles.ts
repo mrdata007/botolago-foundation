@@ -8,10 +8,12 @@ import { isMfaStepUpError } from "@/backend/auth/step-up";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import type { Language } from "@/types/domain";
 import {
   mergeSavedSnapshot,
   savedCollectionQueryKey,
   planSavedToggle,
+  resolveAskedToggle,
   savedStateOf,
   withSavedState,
   type SavedIdsSnapshot,
@@ -82,6 +84,10 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
   // Stories whose saved state is being asked of the server (see `toggle`), so a
   // second tap cannot start a second check.
   const checking = useRef(new Set<string>());
+  // The account as of the latest render, so a tap that waited on the server can
+  // tell whether the reader switched account while it waited.
+  const accountRef = useRef(accountKey);
+  accountRef.current = accountKey;
 
   useEffect(() => {
     if (mode !== "mock") return;
@@ -119,10 +125,13 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
       // Without a read list there is nothing to update; the refetch after the
       // write brings the real one.
       if (previous) queryClient.setQueryData(queryKey, withSavedState(previous, id, !saved));
-      return { previous };
     },
-    onError: (error, { saved }, rollback) => {
-      if (rollback?.previous) queryClient.setQueryData(queryKey, rollback.previous);
+    onError: (error, { id, saved }) => {
+      // Put back this one story only: other taps may have changed the list
+      // since, and restoring the whole earlier snapshot would undo them.
+      queryClient.setQueryData<SavedIdsSnapshot | undefined>(queryKey, (current) =>
+        current ? withSavedState(current, id, saved) : current,
+      );
       reportSavedMutationFailure(error, saved, t);
     },
     onSettled: () => {
@@ -152,8 +161,13 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
       mode === "mock" ? ids.includes(id) : savedStateOf(snapshot, id, serverSaved) === true,
     [ids, mode, snapshot],
   );
+  /**
+   * A tap on a story's bookmark. `shown` is the state the bookmark displayed
+   * (what the reader saw), so the tap means "the opposite of that". `language`
+   * is the story's own edition language, for the server read below.
+   */
   const toggle = useCallback(
-    (id: string) => {
+    (id: string, options: { shown?: boolean; language?: Language } = {}) => {
       if (mode === "mock") {
         const current = readLocal();
         writeLocal(
@@ -174,16 +188,51 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
           }
           if (checking.current.has(id)) return;
           checking.current.add(id);
+          const accountAtTap = accountKey;
+          const shown = options.shown ?? false;
           newsService
-            .isArticleSaved(id, lang)
-            .then((saved) => mutation.mutate({ id, saved }))
+            .isArticleSaved(id, options.language ?? lang)
+            .then((serverSaved) => {
+              // Another account signed in while the server answered: its
+              // answer is about the previous reader.
+              if (accountRef.current !== accountAtTap) return;
+              const next = resolveAskedToggle(shown, serverSaved);
+              if (!next.write) {
+                // The server already holds what the reader asked for (the
+                // bookmark was drawn from an out-of-date answer). Record the
+                // truth so the button shows it; a write would do the reverse
+                // of the tap.
+                queryClient.setQueryData<SavedIdsSnapshot | undefined>(queryKey, (current) =>
+                  current ? withSavedState(current, id, serverSaved) : current,
+                );
+                return;
+              }
+              mutation.mutate({ id, saved: next.saved });
+            })
             .catch((error: unknown) => reportSavedMutationFailure(error, false, t))
             .finally(() => checking.current.delete(id));
         },
         { reason: "Connectez-vous pour enregistrer cet article." },
       );
     },
-    [lang, mode, mutation, queryClient, queryKey, requireAuth, t],
+    [accountKey, lang, mode, mutation, queryClient, queryKey, requireAuth, t],
+  );
+
+  /**
+   * Take a story out of the collection. Every row of the Saved page is saved
+   * by the server's own list, so this is an explicit unsave, never a toggle.
+   */
+  const unsave = useCallback(
+    (id: string) => {
+      if (mode === "mock") {
+        writeLocal(readLocal().filter((value) => value !== id));
+        return;
+      }
+      requireAuth(() => mutation.mutate({ id, saved: true }), {
+        reason: "Connectez-vous pour enregistrer cet article.",
+      });
+    },
+    [mode, mutation, requireAuth],
   );
 
   return {
@@ -192,6 +241,7 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
     removed,
     isSaved,
     toggle,
+    unsave,
     hydrated: mode === "mock" ? localHydrated : status !== "loading" && !cloud.isLoading,
     // True once `ids` is the reader's real list, not the empty one a failed or
     // not-yet-started read leaves behind (`hydrated` is also true after a
