@@ -18,8 +18,12 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 
 const iso = z.string().datetime({ offset: true });
 
-/** The two products (plan 5.3 `premium_products.code`). The season pass of earlier drafts is gone. */
-export const PREMIUM_PRODUCT_CODES = ["plus_monthly", "plus_yearly"] as const;
+/**
+ * The products (`premium_products.code`). Only `plus_season` is offered (owner decision, 2026-10-15:
+ * one purchase, valid until the end of the Fantasy season). The monthly and yearly codes stay so that
+ * old data still parses; no screen offers them.
+ */
+export const PREMIUM_PRODUCT_CODES = ["plus_season", "plus_monthly", "plus_yearly"] as const;
 export type PremiumProductCode = (typeof PREMIUM_PRODUCT_CODES)[number];
 
 /** Subscription states (plan 5.2). `none` is "never subscribed". */
@@ -45,10 +49,12 @@ export const premiumPriceSchema = z.object({
   code: z.enum(PREMIUM_PRODUCT_CODES),
   /** Whole dirhams, all taxes included. */
   amountMad: z.number().int().positive(),
-  /** 1 for the monthly pass, 12 for the yearly one. */
-  periodMonths: z.number().int().positive(),
-  /** The monthly pass renews at the same price; the yearly pass never renews by itself. */
+  /** Null for the Saison: its validity is the season's end, not a number of months. */
+  periodMonths: z.number().int().positive().nullable(),
+  /** The Saison never renews. */
   renews: z.boolean(),
+  /** When the Saison ends (the current Fantasy season's end), as an ISO string. */
+  validUntil: iso.nullable(),
 });
 export type PremiumPrice = z.infer<typeof premiumPriceSchema>;
 
@@ -68,16 +74,18 @@ export type PremiumStatus = z.infer<typeof premiumStatusSchema>;
 const premiumPriceWireSchema = z
   .object({
     code: z.enum(PREMIUM_PRODUCT_CODES),
-    periodMonths: z.number().int().positive(),
+    periodMonths: z.number().int().positive().nullable().optional(),
     renews: z.boolean(),
     priceMinor: z.number().int().positive().multipleOf(100),
     currency: z.literal("MAD"),
+    validUntil: iso.nullable().optional(),
   })
-  .transform(({ code, periodMonths, renews, priceMinor }) => ({
+  .transform(({ code, periodMonths, renews, priceMinor, validUntil }) => ({
     code,
     amountMad: priceMinor / 100,
-    periodMonths,
+    periodMonths: periodMonths ?? null,
     renews,
+    validUntil: validUntil ?? null,
   }));
 
 /** The raw `api.premium_status()` answer, converted to `PremiumStatus`. */
@@ -104,22 +112,68 @@ export const myPremiumSchema = z.discriminatedUnion("available", [
 export type MyPremium = z.infer<typeof myPremiumSchema>;
 export type MyPremiumAvailable = Extract<MyPremium, { available: true }>;
 
-/** One payment, for the receipts list in Profil (lane F serves it; empty until then). */
-export const premiumReceiptSchema = z.object({
-  id: z.string(),
-  paidAt: iso,
-  amountMad: z.number().int().nonnegative(),
-  productCode: z.enum(PREMIUM_PRODUCT_CODES),
-  /** A link to the invoice, or null while it is being made. */
-  url: z.string().url().nullable(),
-});
-export type PremiumReceipt = z.infer<typeof premiumReceiptSchema>;
-
-/** The owner's prices, 2026-10-13: 20 MAD a month, 200 MAD a year (12 months from purchase). */
+/** The owner's price, 2026-10-15: 200 MAD, the same whenever it is bought. */
+export const SEASON_PRICE_MAD = 200;
 export const LAUNCH_PRICES: readonly PremiumPrice[] = [
-  { code: "plus_monthly", amountMad: 20, periodMonths: 1, renews: true },
-  { code: "plus_yearly", amountMad: 200, periodMonths: 12, renews: false },
+  {
+    code: "plus_season",
+    amountMad: SEASON_PRICE_MAD,
+    periodMonths: null,
+    renews: false,
+    validUntil: null,
+  },
 ];
+
+/**
+ * How a buyer pays today (`api.get_premium_payment_details()`): by hand, with a receipt sent on
+ * WhatsApp. The details are typed in by the owner in the admin screen; none of them is in code.
+ * `{ available: false }` while the mode is off or no WhatsApp number is set.
+ */
+const text = z.string().nullable().optional();
+export const paymentDetailsSchema = z
+  .object({
+    available: z.boolean(),
+    whatsapp: text,
+    bankHolder: text,
+    bankName: text,
+    rib: text,
+    cashplusName: text,
+    noteFr: text,
+    noteAr: text,
+    amountMinor: z.number().int().nonnegative().optional(),
+    currency: z.string().optional(),
+  })
+  .transform((value) => ({
+    available: value.available && Boolean(value.whatsapp),
+    whatsapp: value.whatsapp ?? null,
+    bankHolder: value.bankHolder ?? null,
+    bankName: value.bankName ?? null,
+    rib: value.rib ?? null,
+    cashplusName: value.cashplusName ?? null,
+    noteFr: value.noteFr ?? null,
+    noteAr: value.noteAr ?? null,
+    amountMad: (value.amountMinor ?? SEASON_PRICE_MAD * 100) / 100,
+  }));
+export type PaymentDetails = z.infer<typeof paymentDetailsSchema>;
+export const PAYMENT_DETAILS_OFF: PaymentDetails = {
+  available: false,
+  whatsapp: null,
+  bankHolder: null,
+  bankName: null,
+  rib: null,
+  cashplusName: null,
+  noteFr: null,
+  noteAr: null,
+  amountMad: SEASON_PRICE_MAD,
+};
+
+/** `api.get_my_premium_pay_code()`: `{ code }`, or `{ available: false }` while the mode is off. */
+export const payCodeSchema = z
+  .object({ available: z.boolean().optional(), code: z.string().nullable().optional() })
+  .transform((value) => ({
+    code: value.available === false || !value.code ? null : value.code,
+  }));
+export type PayCode = z.infer<typeof payCodeSchema>;
 
 /** Whether a state carries the member features. */
 export function isMemberState(state: PremiumState): boolean {
@@ -127,26 +181,15 @@ export function isMemberState(state: PremiumState): boolean {
 }
 
 /**
- * What an action that lane F or G will build answers today. `soon` is not a failure: the screens
- * show the « bientôt » message and nothing else happens.
- */
-export type PremiumActionResult = { status: "soon" } | { status: "ok" } | { status: "error" };
-
-/**
- * The reads lane B will serve, plus the actions later lanes will. Only `status` and `mine` map to
- * database functions of lane B (`premium_status`, `get_my_premium`); the rest are stubs that
- * answer `soon` (checkout, cancel, restore) or an empty list (receipts).
+ * The reads the Saison screens use: the public facts, the caller's own Saison, how to pay and the
+ * caller's personal payment code. There is no checkout, cancel or restore: staff activate a Saison
+ * once the receipt has been checked.
  */
 export interface PremiumRepository {
   status(context: RepositoryContext): Promise<PremiumStatus>;
   mine(context: RepositoryContext): Promise<MyPremium>;
-  receipts(context: RepositoryContext): Promise<readonly PremiumReceipt[]>;
-  startCheckout(
-    product: PremiumProductCode,
-    context: RepositoryContext,
-  ): Promise<PremiumActionResult>;
-  cancel(context: RepositoryContext): Promise<PremiumActionResult>;
-  restore(context: RepositoryContext): Promise<PremiumActionResult>;
+  getPaymentDetails(context: RepositoryContext): Promise<PaymentDetails>;
+  getMyPayCode(context: RepositoryContext): Promise<PayCode>;
 }
 
 /** The answer when the feature is off, or when no repository exists yet. */

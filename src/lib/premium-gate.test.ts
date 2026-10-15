@@ -59,8 +59,7 @@ describe("the entry points", () => {
     expect(read("src/components/shell/TopBar.tsx")).toMatch(
       /PlusHeaderLogo\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
     );
-    expect(curva("CurvaHome.tsx")).toMatch(
-      /PREMIUM_SURFACES \? \([\s\S]*?<PlusRenewalReminder \/>/,
-    );
+    // No renewal or grace banner exists any more: a Saison has nothing to remind.
+    expect(curva("CurvaHome.tsx")).not.toContain("PlusRenewal");
   });
 });

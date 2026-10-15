@@ -13,7 +13,6 @@ import { pickHero } from "@/components/manager-card/moments/moments";
 import { momentStore, useMomentGate } from "@/components/manager-card/moments/use-moment-gate";
 import { heroShownThisSession } from "@/components/manager-card/storage";
 import { fromMyCard } from "@/components/manager-card/to-profile";
-import { PlusRenewalReminder } from "@/components/plus/PlusRenewal";
 import { ui, UiLinkButton, UiButton, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
@@ -252,7 +251,6 @@ export function OwnerHome({
           )}
           data-testid="curva-plus-top"
         >
-          <PlusRenewalReminder />
           {PlusHomeMemberSlot ? (
             <Suspense fallback={null}>
               <PlusHomeMemberSlot />

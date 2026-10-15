@@ -1,6 +1,7 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import {
   MY_PREMIUM_OFF,
+  PAYMENT_DETAILS_OFF,
   PREMIUM_STATUS_OFF,
   type PremiumRepository,
 } from "@/backend/premium/contracts";
@@ -18,15 +19,13 @@ import { authService } from "@/services/auth";
  *     `api.get_my_premium()`): a database that does not have them yet answers like the feature
  *     switched off;
  *   - every other build gets `OFF_REPOSITORY`: the feature reads as switched off, with no request
- *     at all. Checkout and the rest answer « bientôt » in both.
+ *     at all.
  */
 export const OFF_REPOSITORY: PremiumRepository = {
   status: async () => PREMIUM_STATUS_OFF,
   mine: async () => MY_PREMIUM_OFF,
-  receipts: async () => [],
-  startCheckout: async () => ({ status: "soon" }),
-  cancel: async () => ({ status: "soon" }),
-  restore: async () => ({ status: "soon" }),
+  getPaymentDetails: async () => PAYMENT_DETAILS_OFF,
+  getMyPayCode: async () => ({ code: null }),
 };
 
 /** Which repository a build gets: the pure decision, so a test can walk it. */
@@ -72,16 +71,10 @@ export const premiumService = {
   async mine(signal?: AbortSignal) {
     return (await getPremiumRepository()).mine(context(signal));
   },
-  async receipts(signal?: AbortSignal) {
-    return (await getPremiumRepository()).receipts(context(signal));
+  async paymentDetails(signal?: AbortSignal) {
+    return (await getPremiumRepository()).getPaymentDetails(context(signal));
   },
-  async startCheckout(product: Parameters<PremiumRepository["startCheckout"]>[0]) {
-    return (await getPremiumRepository()).startCheckout(product, context());
-  },
-  async cancel() {
-    return (await getPremiumRepository()).cancel(context());
-  },
-  async restore() {
-    return (await getPremiumRepository()).restore(context());
+  async payCode(signal?: AbortSignal) {
+    return (await getPremiumRepository()).getMyPayCode(context(signal));
   },
 };

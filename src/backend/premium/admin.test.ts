@@ -257,6 +257,106 @@ describe("repository", () => {
     ]);
   });
 
+  test("the Saison: activation, code lookup and the payment details use the contract's names", async () => {
+    const { api, calls } = fakeApi({
+      admin_activate_premium_season: {
+        data: {
+          grantId: GRANT,
+          userId: USER,
+          startsAt: T0,
+          endsAt: T0,
+          productCode: "plus_season",
+        },
+      },
+      admin_find_premium_member_by_code: { data: MEMBER },
+      admin_get_premium_payment_details: {
+        data: { whatsapp: "+212600000000", rib: "000 000 0000", updatedAt: T0 },
+      },
+      admin_set_premium_payment_details: { data: { whatsapp: "+212600000000" } },
+    });
+    const repository = new SupabasePremiumAdminRepository(api);
+    const key = "22222222-2222-4222-8222-222222222222";
+    await repository.activateSeason(
+      USER,
+      "bank_transfer",
+      " VIR-1 ",
+      "Reçu vérifié.",
+      key,
+      context,
+    );
+    await repository.activateSeason(USER, "free", "ignored", "Geste de l'équipe.", key, context);
+    await repository.findByCode("BG-7K4M9X", "Support ticket 4471", context);
+    const details = await repository.getPaymentDetails(context);
+    expect(details).toMatchObject({
+      whatsappNumber: "+212600000000",
+      rib: "000 000 0000",
+      bankName: null,
+    });
+    await repository.setPaymentDetails(
+      {
+        bankHolder: " ",
+        bankName: null,
+        rib: "000 000 0000",
+        cashplusName: null,
+        whatsappNumber: "+212600000000",
+        noteFr: null,
+        noteAr: null,
+      },
+      "Premiers réglages.",
+      key,
+      context,
+    );
+    expect(calls[0]).toEqual({
+      name: "admin_activate_premium_season",
+      args: {
+        p_user_id: USER,
+        p_payment_method: "bank_transfer",
+        p_payment_reference: "VIR-1",
+        p_reason: "Reçu vérifié.",
+        p_idempotency_key: key,
+      },
+    });
+    expect(calls[1]?.args?.p_payment_reference).toBeNull();
+    expect(calls[2]).toEqual({
+      name: "admin_find_premium_member_by_code",
+      args: {
+        p_code: "BG-7K4M9X",
+        p_reason: "Support ticket 4471",
+        p_request_id: context.requestId,
+      },
+    });
+    expect(calls[4]?.args?.p_details).toEqual({
+      bankHolder: null,
+      bankName: null,
+      rib: "000 000 0000",
+      cashplusName: null,
+      whatsapp: "+212600000000",
+      noteFr: null,
+      noteAr: null,
+    });
+  });
+
+  test("a payment code is a lookup of its own, and a grant may carry its payment", () => {
+    expect(parsePremiumLookupQuery(" bg-7k4m9x ")).toEqual({ kind: "code", code: "BG-7K4M9X" });
+    const parsed = premiumAdminMemberSchema.parse({
+      ...MEMBER,
+      grants: [
+        {
+          grantId: GRANT,
+          startsAt: T0,
+          endsAt: T0,
+          reason: "Virement vérifié.",
+          revokedAt: null,
+          productCode: "plus_season",
+          paymentMethod: "cashplus",
+          paymentReference: "CP-88",
+          amountMinor: 20000,
+        },
+      ],
+    });
+    expect(parsed.grants[0]).toMatchObject({ paymentMethod: "cashplus", amountMinor: 20000 });
+  });
+
   test("a database refusal surfaces under its own name", async () => {
     const { api } = fakeApi({
       admin_grant_premium: { error: { message: "premium_grant_period_invalid", code: "PT400" } },

@@ -3,6 +3,7 @@ import type {
   PremiumAdminOverview,
   BillingOutcome,
   PremiumAdminProduct,
+  PaymentMethod,
   PremiumGrantDurationKey,
   PremiumMode,
   PremiumSource,
@@ -42,6 +43,9 @@ export function formatPrice(priceMinor: number, currency: string, lang: Lang): s
 /** "20 MAD / mois", "200 MAD / an", or "…/ 3 mois" for any other period the database may hold. */
 export function formatProductPrice(product: PremiumAdminProduct, lang: Lang): string {
   const price = formatPrice(product.priceMinor, product.currency, lang);
+  // The Saison has no period: it is paid once and ends with the Fantasy season.
+  if (product.periodMonths === null)
+    return lang === "ar" ? `${price} / مرة واحدة` : `${price} · une fois`;
   if (product.periodMonths === 1) return lang === "ar" ? `${price} / شهر` : `${price} / mois`;
   if (product.periodMonths === 12) return lang === "ar" ? `${price} / سنة` : `${price} / an`;
   return lang === "ar"
@@ -50,6 +54,11 @@ export function formatProductPrice(product: PremiumAdminProduct, lang: Lang): st
 }
 
 export function renewalLabel(product: PremiumAdminProduct, lang: Lang): string {
+  if (product.periodMonths === null) {
+    return lang === "ar"
+      ? "صالح حتى نهاية موسم الفانتازي، بلا تجديد"
+      : "Valable jusqu’à la fin de la saison Fantasy, sans reconduction";
+  }
   if (product.renews) return lang === "ar" ? "يتجدد تلقائياً" : "Renouvellement automatique";
   return lang === "ar"
     ? `${product.periodMonths} أشهر من تاريخ الشراء، بلا تجديد تلقائي`
@@ -57,8 +66,9 @@ export function renewalLabel(product: PremiumAdminProduct, lang: Lang): string {
 }
 
 const PRODUCT_NAMES: Record<string, Pair> = {
-  plus_monthly: { fr: "Mensuel", ar: "شهري" },
-  plus_yearly: { fr: "Annuel", ar: "سنوي" },
+  plus_season: { fr: "Saison 2026/27", ar: "موسم 2026/27" },
+  plus_monthly: { fr: "Mensuel (ancien)", ar: "شهري (قديم)" },
+  plus_yearly: { fr: "Annuel (ancien)", ar: "سنوي (قديم)" },
 };
 
 /**
@@ -86,22 +96,22 @@ export const MODE_BANNERS: Record<PremiumMode, { tone: "info" | "alert"; text: P
   off: {
     tone: "alert",
     text: {
-      fr: "Éteint : personne ne voit l’abonnement, même avec une offre du personnel.",
-      ar: "متوقف: لا أحد يرى الاشتراك، حتى مع هدية من الفريق.",
+      fr: "Éteint : personne ne voit la Saison, même avec un accès offert par le personnel.",
+      ar: "متوقف: لا أحد يرى الموسم، حتى مع وصول ممنوح من الفريق.",
     },
   },
   preview: {
     tone: "info",
     text: {
-      fr: "Aperçu : seuls les abonnés le voient (offre du personnel ou achat de test). Rien n’est public.",
-      ar: "معاينة: لا يراه إلا المشتركون (هدية من الفريق أو شراء تجريبي). لا شيء علني.",
+      fr: "Aperçu : seuls les comptes qui ont une Saison la voient (activée par le personnel). Rien n’est public.",
+      ar: "معاينة: لا يراه إلا من لديهم موسم (يفعّله الفريق). لا شيء علني.",
     },
   },
   on: {
     tone: "info",
     text: {
-      fr: "Ouvert : l’abonnement est visible par tout le monde.",
-      ar: "مفتوح: الاشتراك ظاهر للجميع.",
+      fr: "Ouvert : la Saison est visible par tout le monde.",
+      ar: "مفتوح: الموسم ظاهر للجميع.",
     },
   },
 };
@@ -115,15 +125,15 @@ export function grantWhereToLook(
   const lead =
     lang === "ar"
       ? own
-        ? "يظهر الاشتراك في الملف الشخصي وعلى بطاقتك:"
-        : "سجّل الدخول بهذا الحساب: يظهر الاشتراك في الملف الشخصي وعلى بطاقته:"
+        ? "يظهر الموسم في الملف الشخصي وعلى بطاقتك:"
+        : "سجّل الدخول بهذا الحساب: يظهر الموسم في الملف الشخصي وعلى بطاقته:"
       : own
-        ? "L’abonnement apparaît dans Profil et sur votre carte :"
-        : "Connectez-vous avec ce compte : l’abonnement apparaît dans Profil et sur sa carte :";
+        ? "La Saison apparaît dans Profil et sur votre carte :"
+        : "Connectez-vous avec ce compte : la Saison apparaît dans Profil et sur sa carte :";
   const off =
     mode === "off"
       ? lang === "ar"
-        ? "الوضع متوقف حاليًا: لن يظهر الاشتراك قبل أن يفتح المالك المعاينة."
+        ? "الوضع متوقف حاليًا: لن يظهر الموسم قبل أن يفتح المالك المعاينة."
         : "Le mode est Éteint : rien n’apparaîtra tant que le propriétaire n’a pas ouvert l’aperçu."
       : null;
   return { lead, off };
@@ -218,6 +228,14 @@ export const OUTCOME_LABELS: Record<BillingOutcome, Pair> = {
   rejected_signature: { fr: "Signature refusée", ar: "التوقيع مرفوض" },
 };
 
+/** How a Saison was paid, for the chips and the grants list. */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, Pair> = {
+  bank_transfer: { fr: "Virement", ar: "تحويل" },
+  cashplus: { fr: "CashPlus", ar: "كاش بلس" },
+  wafacash: { fr: "Wafacash", ar: "وفاكاش" },
+  free: { fr: "Offert", ar: "هدية" },
+};
+
 export const GRANT_DURATION_LABELS: Record<PremiumGrantDurationKey, Pair> = {
   month: { fr: "30 jours", ar: "30 يوماً" },
   quarter: { fr: "90 jours", ar: "90 يوماً" },
@@ -287,9 +305,49 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
     fr: "La recherche par e-mail demande l’accès à l’annuaire des utilisateurs. Utilisez l’identifiant du compte.",
     ar: "البحث بالبريد الإلكتروني يتطلب صلاحية دليل المستخدمين. استعمل معرّف الحساب.",
   },
+  premium_code_not_found: {
+    fr: "Aucun compte ne correspond à ce code. Vérifiez-le avec l’acheteur.",
+    ar: "لا يوجد حساب يطابق هذا الرمز. تحقق منه مع المشتري.",
+  },
+  season_already_active: {
+    fr: "Ce compte a déjà une Saison valable jusqu’à la fin de la saison : rien à activer.",
+    ar: "لهذا الحساب موسم ساري حتى نهاية الموسم: لا شيء لتفعيله.",
+  },
+  premium_season_unavailable: {
+    fr: "Aucune saison Fantasy n’est en cours : la Saison ne peut pas être activée.",
+    ar: "لا يوجد موسم فانتازي جارٍ: لا يمكن تفعيل الموسم.",
+  },
+  premium_season_ended: {
+    fr: "La saison Fantasy est déjà terminée : la Saison ne peut plus être activée.",
+    ar: "انتهى الموسم الفانتازي: لا يمكن تفعيل الموسم.",
+  },
+  premium_payment_reference_invalid: {
+    fr: "La référence du paiement doit faire entre 1 et 80 caractères.",
+    ar: "يجب أن يتراوح مرجع الدفع بين 1 و80 حرفًا.",
+  },
+  premium_product_unavailable: {
+    fr: "La Saison n'est pas en vente sur ce serveur : vérifiez que la mise à jour de la base est appliquée.",
+    ar: "الموسم غير متاح للبيع على هذا الخادم: تحقق من تطبيق تحديث قاعدة البيانات.",
+  },
+  premium_payment_reference_required: {
+    fr: "Indiquez la référence du paiement (numéro du virement ou du reçu).",
+    ar: "أدخل مرجع الدفع (رقم التحويل أو الإيصال).",
+  },
+  premium_payment_method_invalid: {
+    fr: "Le mode de paiement n’est pas accepté.",
+    ar: "طريقة الدفع غير مقبولة.",
+  },
+  premium_payment_details_invalid: {
+    fr: "Les coordonnées ne sont pas valides. Le numéro WhatsApp compte 8 à 16 chiffres, avec un « + » possible au début ; le RIB, 10 à 40 caractères (chiffres, lettres, espaces, points, tirets).",
+    ar: "البيانات غير صالحة. رقم واتساب من 8 إلى 16 رقمًا، ويمكن أن يبدأ بـ «+».",
+  },
+  premium_code_invalid: {
+    fr: "Ce code n’a pas le bon format : « BG- » suivi de six caractères.",
+    ar: "صيغة الرمز غير صحيحة: «BG-» ثم ستة أحرف.",
+  },
   premium_lookup_invalid: {
-    fr: "Saisissez l’identifiant du compte (UUID) ou son adresse e-mail complète.",
-    ar: "أدخل معرّف الحساب (UUID) أو بريده الإلكتروني الكامل.",
+    fr: "Saisissez l’identifiant du compte (UUID), son code de paiement (BG-…) ou son adresse e-mail complète.",
+    ar: "أدخل معرّف الحساب (UUID) أو رمز الدفع (BG-…) أو بريده الإلكتروني الكامل.",
   },
 };
 

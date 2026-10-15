@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import {
   isMemberState,
+  PAYMENT_DETAILS_OFF,
+  SEASON_PRICE_MAD,
   type MyPremium,
-  type PremiumActionResult,
+  type PayCode,
+  type PaymentDetails,
   type PremiumPrice,
   type PremiumProductCode,
-  type PremiumReceipt,
   type PremiumSource,
   type PremiumState,
   type PremiumStatus,
@@ -27,7 +29,8 @@ import { premiumService } from "./premium";
 export const premiumKeys = {
   status: ["premium", "status"] as const,
   mine: (userId: string | null) => ["premium", "mine", userId] as const,
-  receipts: (userId: string | null) => ["premium", "receipts", userId] as const,
+  payment: (userId: string | null) => ["premium", "payment", userId] as const,
+  payCode: (userId: string | null) => ["premium", "pay-code", userId] as const,
 };
 
 export interface PremiumView {
@@ -44,13 +47,12 @@ export interface PremiumView {
   productCode: PremiumProductCode | null;
   /** Where the membership comes from; `grant` is a complimentary one (no product, no payment). */
   source: PremiumSource | null;
-  /** End of the paid period (the renewal date for the monthly pass). */
+  /** When the reader's Saison ends (or ended). */
   periodEnd: Date | null;
-  /** Cancelled, the period is not over: no renewal. */
-  cancelling: boolean;
-  startCheckout: (product: PremiumProductCode) => Promise<PremiumActionResult>;
-  cancel: () => Promise<PremiumActionResult>;
-  restore: () => Promise<PremiumActionResult>;
+  /** The Saison's price in whole dirhams (the server's, else the owner's 200 MAD). */
+  seasonPrice: number;
+  /** When a Saison bought now ends: the current Fantasy season's end. Null until known. */
+  seasonEnd: Date | null;
 }
 
 /** The pure part: two server answers and a sign-in flag in, one view out. */
@@ -58,7 +60,7 @@ export function derivePremium(
   status: PremiumStatus | undefined,
   mine: MyPremium | undefined,
   signedIn: boolean,
-): Omit<PremiumView, "startCheckout" | "cancel" | "restore" | "ready"> {
+): Omit<PremiumView, "ready"> {
   const statusEnabled = status?.enabled === true;
   // Database mode `preview`: the status discloses nothing (`enabled: false`), and
   // `get_my_premium` answers `available: true` for members alone. That reader, and only that
@@ -68,6 +70,7 @@ export function derivePremium(
   const enabled = statusEnabled || previewMember;
   const member = enabled && signedIn && mine?.available === true ? mine : null;
   const state: PremiumState = member ? member.state : "none";
+  const season = status?.prices.find((price) => price.code === "plus_season");
   return {
     enabled,
     checkoutEnabled: enabled && status?.checkoutEnabled === true,
@@ -78,18 +81,14 @@ export function derivePremium(
     productCode: member?.productCode ?? null,
     source: member?.source ?? null,
     periodEnd: member?.currentPeriodEnd ? new Date(member.currentPeriodEnd) : null,
-    cancelling: member ? member.cancelAtPeriodEnd || state === "cancelling" : false,
+    seasonPrice: season?.amountMad ?? SEASON_PRICE_MAD,
+    seasonEnd: season?.validUntil ? new Date(season.validUntil) : null,
   };
 }
-
-const soon = async (): Promise<PremiumActionResult> => ({ status: "soon" });
 
 const OFF_VIEW: PremiumView = {
   ready: true,
   ...derivePremium(undefined, undefined, false),
-  startCheckout: soon,
-  cancel: soon,
-  restore: soon,
 };
 
 function useOffPremium(): PremiumView {
@@ -131,12 +130,6 @@ function useLivePremium(): PremiumView {
     staleTime: 30_000,
     retry: false,
   });
-  const startCheckout = useCallback(
-    (product: PremiumProductCode) => premiumService.startCheckout(product),
-    [],
-  );
-  const cancel = useCallback(() => premiumService.cancel(), []);
-  const restore = useCallback(() => premiumService.restore(), []);
   return useMemo(
     () => ({
       ready: premiumReady({
@@ -145,42 +138,53 @@ function useLivePremium(): PremiumView {
         mineLoading: mine.isLoading,
       }),
       ...derivePremium(status.data, mine.data, userId !== null),
-      startCheckout,
-      cancel,
-      restore,
     }),
-    [
-      status.isPending,
-      status.data,
-      authLoading,
-      mine.isLoading,
-      mine.data,
-      userId,
-      startCheckout,
-      cancel,
-      restore,
-    ],
+    [status.isPending, status.data, authLoading, mine.isLoading, mine.data, userId],
   );
 }
 
 export const usePremium: () => PremiumView = PREMIUM_SURFACES ? useLivePremium : useOffPremium;
 
-function useLiveReceipts(enabled: boolean): readonly PremiumReceipt[] {
+/** What the pay screen reads: how to pay, and the reader's personal code. */
+export interface PayView {
+  /** Both answers are in (or the reader is signed out / the feature is off). */
+  ready: boolean;
+  details: PaymentDetails;
+  code: string | null;
+}
+
+const OFF_PAY: PayView = { ready: true, details: PAYMENT_DETAILS_OFF, code: null };
+
+function useLivePay(enabled: boolean): PayView {
   const user = useOptionalAuth()?.user ?? null;
   const userId = user?.id ?? null;
-  const query = useQuery({
-    queryKey: premiumKeys.receipts(userId),
-    queryFn: ({ signal }) => premiumService.receipts(signal),
-    enabled: enabled && userId !== null,
+  const on = enabled && userId !== null;
+  const details = useQuery({
+    queryKey: premiumKeys.payment(userId),
+    queryFn: ({ signal }) => premiumService.paymentDetails(signal),
+    enabled: on,
     staleTime: 60_000,
     retry: false,
   });
-  return query.data ?? [];
+  const code = useQuery<PayCode>({
+    queryKey: premiumKeys.payCode(userId),
+    queryFn: ({ signal }) => premiumService.payCode(signal),
+    enabled: on,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  return useMemo(
+    () => ({
+      ready: !on || (!details.isPending && !code.isPending) || details.isError,
+      details: details.data ?? PAYMENT_DETAILS_OFF,
+      code: code.data?.code ?? null,
+    }),
+    [on, details.isPending, details.isError, details.data, code.isPending, code.data],
+  );
 }
-const NO_RECEIPTS: readonly PremiumReceipt[] = [];
-const useNoReceipts = (): readonly PremiumReceipt[] => NO_RECEIPTS;
+const useOffPay = (_enabled: boolean): PayView => OFF_PAY;
 
-/** The member's payments, for the Profil list. Empty until lane F serves them. */
-export const usePremiumReceipts: (enabled: boolean) => readonly PremiumReceipt[] = PREMIUM_SURFACES
-  ? useLiveReceipts
-  : useNoReceipts;
+/** The pay screen's reads (payment details and the personal code). Signed in only. */
+export const usePremiumPay: (enabled: boolean) => PayView = PREMIUM_SURFACES
+  ? useLivePay
+  : useOffPay;

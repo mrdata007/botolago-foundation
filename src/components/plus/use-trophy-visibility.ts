@@ -6,7 +6,7 @@ import { useTrophyCopy } from "./trophy-copy";
 
 /**
  * « Montrer mes trophées »: the value the switch shows, and the way to flip it. The two places that
- * show the switch (the trophies page and Profil › Mon abonnement) share this, and the cached cabinet,
+ * show the switch (the trophies page and Profil › Ma saison) share this, and the cached cabinet,
  * so they always agree. A toast says what changed, or that it could not be saved.
  */
 export function useTrophyVisibilitySwitch(current: boolean) {

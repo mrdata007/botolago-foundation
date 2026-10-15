@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BarChart3, ChevronRight, Settings2, Sparkles, Swords } from "lucide-react";
+import { BarChart3, CalendarCheck, ChevronRight, Sparkles, Swords } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -11,7 +11,8 @@ import { PlusStylePicker } from "./PlusStylePicker";
 import { editionLabel, editionOf } from "./plus-card-style";
 import { usePlusMemberCard } from "./use-plus-member-card";
 import { usePlusAccess } from "./plus-access";
-import { PLUS_NAME, usePlusCopy } from "./plus-copy";
+import { formatPlusDate, PLUS_NAME, usePlusCopy } from "./plus-copy";
+import { usePremium } from "@/services/use-premium";
 
 const ROW_CLASS = cn(
   "flex w-full items-center gap-3 px-4 py-3 text-start",
@@ -19,7 +20,7 @@ const ROW_CLASS = cn(
   "transition-colors hover:bg-[color:var(--ui-surface-sunken)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
 );
 
-/** One row of « Mon abonnement »: an icon, a title, one line, a chevron. A link, or a button. */
+/** One row of « Ma saison »: an icon, a title, one line, a chevron. A link, or a button. */
 export function PlusHubRow({
   icon,
   title,
@@ -173,12 +174,13 @@ export function PlusFeatureRows({ withSeason }: { withSeason: boolean }) {
 }
 
 /**
- * « Mon abonnement » on Curva's card page, for a member: the card's style, the duels, and the way
+ * « Ma saison » on Curva's card page, for a member: the card's style, the duels, and the way
  * to the hub in Profil. Nothing for anyone else (the locked rows are `PlusEntryRows`).
  */
 export function PlusMemberRows() {
   const access = usePlusAccess();
-  const { t } = usePlusCopy();
+  const premium = usePremium();
+  const { t, text, lang } = usePlusCopy();
   if (access !== "member") return null;
   return (
     <section data-testid="plus-member-rows">
@@ -193,12 +195,16 @@ export function PlusMemberRows() {
       <UiCard padding="none" className="overflow-hidden">
         <PlusFeatureRows withSeason={false} />
         <PlusHubRow
-          icon={<Settings2 aria-hidden />}
-          title={t("plus.hub.manage_t")}
-          body={t("plus.hub.manage_d")}
+          icon={<CalendarCheck aria-hidden />}
+          title={t("plus.hub.status_t")}
+          body={
+            premium.periodEnd
+              ? text("plus.hub.status_d", { date: formatPlusDate(lang, premium.periodEnd) })
+              : t("plus.hub.status_d_nodate")
+          }
           ruled
           to="/profile"
-          testId="plus-hub-manage"
+          testId="plus-hub-status"
         />
       </UiCard>
     </section>
