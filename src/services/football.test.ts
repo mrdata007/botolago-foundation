@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { MatchCardDto, StandingRowDto, TeamSummaryDto } from "@/backend/football/contracts";
+import {
+  FIXTURE_STATUSES,
+  type MatchCardDto,
+  type StandingRowDto,
+  type TeamSummaryDto,
+} from "@/backend/football/contracts";
 import { mapFootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { tableZones } from "@/lib/league-table";
@@ -17,6 +22,9 @@ import {
 } from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
+
+const totalPlayedOf = (rows: readonly { readonly played: number }[]) =>
+  rows.reduce((sum, row) => sum + row.played, 0);
 
 describe("Football frontend repository cutover", () => {
   test("fails closed when production mode is not configured", () => {
@@ -301,6 +309,64 @@ describe("a fixture called off", () => {
       "postponed",
     ]);
   });
+
+  /**
+   * Audit DATA-04: cancelled, abandoned and suspended fixtures were labelled
+   * "postponed". The group status stays (filtering), but each fixture carries
+   * the provider's own word, and every status reads as exactly one thing.
+   */
+  test("every provider status has one presentation: group, specific word, date and called-off flags", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const [fixture] = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 1 },
+      context,
+    );
+    const shown = (status: MatchCardDto["status"]) => {
+      const match = toMatch({ ...fixture!, status });
+      return [
+        status,
+        match.status,
+        match.offStatus ?? null,
+        match.dateUnconfirmed,
+        match.calledOff,
+      ] as const;
+    };
+    expect(FIXTURE_STATUSES.map(shown)).toEqual([
+      ["scheduled", "scheduled", null, false, false],
+      ["not_started", "scheduled", null, false, false],
+      ["live_first_half", "live", null, false, false],
+      ["half_time", "live", null, false, false],
+      ["live_second_half", "live", null, false, false],
+      ["extra_time", "live", null, false, false],
+      ["penalties", "live", null, false, false],
+      ["finished", "finished", null, false, false],
+      ["postponed", "postponed", "postponed", true, false],
+      ["cancelled", "postponed", "cancelled", true, true],
+      ["suspended", "postponed", "suspended", false, false],
+      ["delayed", "scheduled", null, false, false],
+      ["abandoned", "postponed", "abandoned", false, true],
+    ]);
+  });
+
+  test("a status this build does not know is a fixture still to come, never finished and never scored", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const [fixture] = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 1 },
+      context,
+    );
+    const unknown = toMatch({
+      ...fixture!,
+      status: "interrupted_by_provider" as MatchCardDto["status"],
+      homeScore: null,
+      awayScore: null,
+    });
+    expect(unknown.status).toBe("scheduled");
+    expect(unknown.offStatus).toBeUndefined();
+    expect(unknown.homeScore).toBeUndefined();
+    expect(unknown.awayScore).toBeUndefined();
+  });
 });
 
 describe("the live strip's fixtures", () => {
@@ -414,6 +480,91 @@ describe("the season table", () => {
     expect(buildStandings(fixtures, stale).overall.map((row) => row.clubId)).toEqual(
       computed.map((row) => row.clubId),
     );
+  });
+
+  /**
+   * Audit DATA-05: a stored table won whenever it covered as many matches, so a
+   * result corrected from a home win to an away win (the played count
+   * unchanged) left the old wins and points on the table.
+   */
+  describe("a result corrected at an unchanged played count", () => {
+    async function correctedSeason() {
+      const { fixtures } = await completedSeason();
+      const stored = storedFrom(fixtures, buildStandings(fixtures, []).overall);
+      const index = fixtures.findIndex(
+        (fixture) =>
+          fixture.status === "finished" &&
+          fixture.homeScore !== null &&
+          fixture.awayScore !== null &&
+          fixture.homeScore !== fixture.awayScore,
+      );
+      const original = fixtures[index]!;
+      // Home win to away win: the same two clubs, the same match, the score reversed.
+      const corrected = fixtures.map((fixture, at) =>
+        at === index
+          ? {
+              ...fixture,
+              homeScore: original.awayScore,
+              awayScore: original.homeScore,
+              providerUpdatedAt: "2026-07-20T10:00:00+00:00",
+              updatedAt: "2026-07-20T10:00:05+00:00",
+            }
+          : fixture,
+      );
+      return { fixtures, stored, corrected, original };
+    }
+
+    test("the table follows the corrected result, and says it is worked out from the results", async () => {
+      const { stored, corrected, original } = await correctedSeason();
+      const standings = buildStandings(corrected, stored);
+      const fromResults = buildStandings(corrected, []);
+
+      expect(standings.computed).toBe(true);
+      expect(standings.overall).toEqual(fromResults.overall);
+      // Nobody played one match more or fewer: the count that used to decide it is equal.
+      expect(totalPlayedOf(standings.overall)).toBe(totalPlayedOf(stored));
+      // The home club's record moved with the reversed score: a win became a
+      // loss, or a loss a win.
+      const before = stored.find((row) => row.team.id === original.homeTeam.id)!;
+      const after = standings.overall.find((row) => row.clubId === original.homeTeam.id)!;
+      const reversedInFavour = original.homeScore! < original.awayScore!;
+      expect([after.won - before.won, after.lost - before.lost]).toEqual(
+        reversedInFavour ? [1, -1] : [-1, 1],
+      );
+      // The overall table now agrees with the home table on that club's home record.
+      const home = standings.home.find((row) => row.clubId === original.homeTeam.id)!;
+      expect(home.won + home.drawn + home.lost).toBe(home.played);
+    });
+
+    test("a stored table written after the last result is still the provider's word", async () => {
+      const { stored, corrected } = await correctedSeason();
+      const newer = stored.map((row) => ({
+        ...row,
+        providerUpdatedAt: "2026-07-21T00:00:00+00:00",
+      }));
+      expect(buildStandings(corrected, newer).computed).toBe(false);
+    });
+
+    test("an official deduction, which moves points and rank but not the record, stays", async () => {
+      const { fixtures, stored } = await correctedSeason();
+      const deducted = stored.map((row) =>
+        row.rank === 1
+          ? { ...row, points: row.points - 3, rank: 2 }
+          : row.rank === 2
+            ? { ...row, rank: 1 }
+            : row,
+      );
+      // Results newer than the table, and the table still wins: its record agrees with them.
+      const later = fixtures.map((fixture) => ({
+        ...fixture,
+        providerUpdatedAt: "2026-07-20T10:00:00+00:00",
+        updatedAt: "2026-07-20T10:00:05+00:00",
+      }));
+      const standings = buildStandings(later, deducted);
+      expect(standings.computed).toBe(false);
+      expect(standings.overall[0]!.points).toBe(stored.find((row) => row.rank === 2)!.points);
+      expect(standings.overall[1]!.points).toBe(stored.find((row) => row.rank === 1)!.points - 3);
+    });
   });
 
   test("has no table before the first result, and counts only finished matches with a score", async () => {

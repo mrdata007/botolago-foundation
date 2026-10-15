@@ -454,7 +454,15 @@ export const BASELINES: Baselines = {
   // notice gives `fantasy.error.retry` and `fantasy.error.reload_latest` their
   // first call sites (-2); its seven new keys are all referenced. 249 -> 247
   // (measured with `bun scripts/qa/i18n-gate.ts`).
-  W3: 247,
+  //
+  // Audit remediation B7 (DATA-04, 2026-10-15): the match card's spoken state
+  // was `t(`matches.a11y.status_${match.status}`)`, a template prefix that
+  // reached every `status_*` key. It is now `offStatusA11y`, four literal
+  // branches, so W4 falls 69 -> 68 and `matches.a11y.status_scheduled`, which
+  // only the template reached (the card says a scheduled match's kick-off,
+  // never that word), is referenced nowhere: W3 247 -> 248. The new keys are
+  // all referenced, and `no_data_called_off` is replaced by three.
+  W3: 248,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -489,7 +497,7 @@ export const BASELINES: Baselines = {
   // titles itself with the tapped section's `t(section.labelKey)`, read from
   // the bar's item table exactly as BottomNav reads it, so the key is a real
   // `TranslationKey` the compiler checks. +1; with the BotolaGO+ screens above, 68 -> 69 (measured).
-  W4: 69,
+  W4: 68,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

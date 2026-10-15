@@ -84,6 +84,95 @@ describe("third-party attribution is stripped at the data layer", () => {
     expect(safe.bodyHtml).toContain("نص");
   });
 
+  /**
+   * Audit DATA-07: removing a third-party link also removed the words it
+   * wrapped, so "Le club a confirmé <a>la signature du joueur</a>." lost its
+   * object. The link goes; the reporting stays. Only a link that is the
+   * story's own source credit takes its text with it.
+   */
+  describe("removing a link keeps the reporting it wrapped", () => {
+    const body = (html: string, overrides: Partial<ArticleDetailDto> = {}) =>
+      sanitizeArticleAttribution(detailFixture({ bodyHtml: html, ...overrides })).bodyHtml;
+
+    test("an ordinary linked phrase keeps its words and loses its link", () => {
+      const html = body(
+        '<p>Le club a confirmé <a href="https://example.test/announcement">la signature du joueur</a>.</p>',
+      );
+      expect(html).toBe("<p>Le club a confirmé la signature du joueur.</p>");
+      expect(html).not.toContain("<a");
+      expect(html).not.toContain("href");
+      expect(html).not.toContain("example.test");
+    });
+
+    test("the same in Arabic, and with markup inside the link", () => {
+      expect(
+        body(
+          '<p>أعلن النادي <a href="https://example.test/x"><strong>تعاقده مع اللاعب</strong></a> رسميا.</p>',
+        ),
+      ).toBe("<p>أعلن النادي <strong>تعاقده مع اللاعب</strong> رسميا.</p>");
+    });
+
+    test("a single-quoted href is read the same way", () => {
+      expect(body("<p>Il a signé <a href='https://example.test/x'>pour trois ans</a>.</p>")).toBe(
+        "<p>Il a signé pour trois ans.</p>",
+      );
+    });
+
+    test("a source credit still goes with its text, in French, English and Arabic", () => {
+      for (const credit of [
+        "Lire l'original",
+        "Lire la suite sur le site",
+        "Read the original article",
+        "Continue reading",
+        "Source",
+        "via",
+        "https://example-source.test/a",
+        "اقرأ الأصل",
+        "المصدر",
+        "قراءة المزيد",
+      ]) {
+        const html = body(`<p>Texte. <a href="https://example-source.test/a">${credit}</a></p>`);
+        expect([credit, html]).toEqual([credit, "<p>Texte. </p>"]);
+      }
+    });
+
+    test("a link whose text names the story's own publisher or source is a credit", () => {
+      const named = body(
+        '<p>Le match <a href="https://x.test/a">selon Example Source</a> a été reporté.</p>',
+      );
+      expect(named).not.toContain("Example Source");
+      const sourced = body('<p>Fin. <a href="https://x.test/a">Atlas Daily</a></p>', {
+        source: { name: "Atlas Daily", url: "https://x.test/a" },
+      });
+      expect(sourced).not.toContain("Atlas");
+      // The site the link points at, named by its address.
+      const bySite = body('<p>Fin. <a href="https://www.sportnews.test/a">SportNews</a></p>');
+      expect(bySite).not.toContain("SportNews");
+    });
+
+    test("the licensed source field is untouched by it", () => {
+      const source = { name: "Atlas Daily", url: "https://x.test/a" };
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          source,
+          bodyHtml: '<p>Il a signé <a href="https://x.test/b">pour trois ans</a>.</p>',
+        }),
+      );
+      expect(safe.source).toEqual(source);
+      expect(safe.bodyHtml).toBe("<p>Il a signé pour trois ans.</p>");
+    });
+
+    test("an original BotolaGO story keeps its safe links", () => {
+      const safe = sanitizeArticleAttribution(
+        detailFixture({
+          publisher: null,
+          bodyHtml: '<p>Voir <a href="https://example.test/x">la fiche</a>.</p>',
+        }),
+      );
+      expect(safe.bodyHtml).toContain('<a href="https://example.test/x"');
+    });
+  });
+
   test("a licensed story keeps its source credit; the raw publisher label still goes", () => {
     const source = { name: "البطولة", url: "https://www.elbotola.com/article/x.html" };
     const safe = sanitizeArticleAttribution(detailFixture({ source }));

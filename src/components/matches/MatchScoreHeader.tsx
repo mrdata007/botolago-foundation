@@ -7,12 +7,14 @@ import { useI18n } from "@/i18n/provider";
 import { compactClubName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
+import { matchOffStatus } from "@/lib/match-off-status";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { liveClock } from "@/lib/live-minute";
 import { useLiveStageLabels } from "./live-stage";
+import { offStatusLabel, offStatusNotice } from "./off-status-copy";
 import { BallIcon } from "./BallIcon";
 import { presentScore, scoreSentence } from "@/lib/match-score";
 import { FlipScore } from "./FlipScore";
@@ -107,6 +109,7 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
+  const offStatus = matchOffStatus(match);
   const unconfirmedDate = isKickoffDateUnconfirmed(match);
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   // A postponed match has no day either, so the meta line drops the date
@@ -231,7 +234,7 @@ export function MatchScoreHeader({
                 "bg-[color:var(--ui-caution)] text-[color:var(--ui-on-caution)]",
               )}
             >
-              {t("matches.status.postponed")}
+              {offStatusLabel(offStatus, t)}
             </span>
           ) : null}
         </div>
@@ -284,7 +287,7 @@ export function MatchScoreHeader({
                 ui.tone.muted,
               )}
             >
-              {t("matches.detail.postponed_notice")}
+              {offStatusNotice(offStatus, t)}
             </p>
           )}
         </div>

@@ -21,6 +21,7 @@ import {
   matchDataPhase,
   noEventsMessage,
   noLineupsMessage,
+  liveStatsSource,
   noStatsMessage,
   type MatchDataPhase,
 } from "./match-empty-states";
@@ -40,10 +41,19 @@ const PHASES: readonly MatchDataPhase[] = [
   "finished",
   "unreported",
   "postponed",
-  "called_off",
+  "suspended",
+  "cancelled",
+  "abandoned",
 ];
 /** The phases in which nothing more will come by itself: their copy promises nothing. */
-const SETTLED = ["finished", "unreported", "postponed", "called_off"] as const;
+const SETTLED = [
+  "finished",
+  "unreported",
+  "postponed",
+  "suspended",
+  "cancelled",
+  "abandoned",
+] as const;
 const MESSAGES = { stats: noStatsMessage, events: noEventsMessage, lineups: noLineupsMessage };
 
 describe("matchDataPhase", () => {
@@ -58,9 +68,9 @@ describe("matchDataPhase", () => {
     penalties: "live",
     finished: "finished",
     postponed: "postponed",
-    suspended: "postponed",
-    cancelled: "called_off",
-    abandoned: "called_off",
+    suspended: "suspended",
+    cancelled: "cancelled",
+    abandoned: "abandoned",
   };
 
   test("reads every provider status the way the page presents it", async () => {
@@ -178,8 +188,11 @@ describe("empty-panel copy", () => {
         // Upcoming, live and finished never share a line.
         const [upcoming, , live, finished] = lines;
         expect(new Set([upcoming, live, finished]).size).toBe(3);
-        // Awaiting a late start says what live says; unreported, what finished says.
-        expect(message("awaiting", t)).toBe(live!);
+        // Awaiting a late start says what live says on a feed that fills the
+        // panel during play; unreported, what finished says.
+        const liveOnFullFeed =
+          message === noStatsMessage ? noStatsMessage("live", t, "sportsmonks") : live!;
+        expect(message("awaiting", t)).toBe(liveOnFullFeed);
         expect(message("unreported", t)).toBe(finished!);
         if (lang === "ar") for (const line of lines) expect(line).toMatch(/[؀-ۿ]/);
       }
@@ -304,30 +317,63 @@ describe("a finished match with no detail data", () => {
 });
 
 describe("the other phases on screen", () => {
-  test("a live match's empty Stats tab says nothing has arrived yet and the page refreshes", () => {
+  test("a live match's empty Stats tab says when the statistics are looked for, not that they are arriving", () => {
+    // SofaScore, the documented live feed, reads a match in play for its
+    // incidents only and asks for team statistics after full time. The page
+    // refreshes itself, but nothing it fetches in play carries them (audit
+    // DATA-06), so the panel must not wait on them.
     const html = inFrench(
       <StatComparison stats={[]} home={home} away={away} palettes={palettes} isLive phase="live" />,
     );
-    expect(html).toContain("Aucune statistique reçue pour l&#x27;instant.");
-    expect(html).toContain("Cette page se met à jour automatiquement.");
+    expect(html).toContain(
+      "Les statistiques sont recherchées après le match, selon leur disponibilité.",
+    );
+    expect(html).not.toContain("Aucune statistique reçue");
+    expect(html).not.toContain("se met à jour automatiquement");
   });
 
-  test("a postponed or called-off match says so on every panel", () => {
-    const postponed = inFrench(
-      <LineupsView lineups={[]} home={home} away={away} palettes={palettes} phase="postponed" />,
+  test("the live Stats copy follows the live feed: SofaScore defers statistics, a fuller feed fills them in", () => {
+    for (const lang of ["fr", "ar"] as const) {
+      const t = inLanguage(lang);
+      const deferred = noStatsMessage("live", t, "sofascore");
+      const filling = noStatsMessage("live", t, "sportsmonks");
+      expect(deferred).toBe(t("matches.detail.no_stats_after_match"));
+      expect(filling).toBe(t("matches.detail.no_stats_updating"));
+      expect(deferred).not.toBe(filling);
+      // Unspecified is the documented feed.
+      expect(noStatsMessage("live", t)).toBe(deferred);
+    }
+    expect(noStatsMessage("live", inLanguage("ar"))).toBe(
+      "تُجلب الإحصائيات بعد نهاية المباراة، حسب توفرها.",
     );
-    expect(postponed).toContain("Match reporté : pas de données à afficher.");
-    const calledOff = inFrench(
-      <EventTimeline
-        events={[]}
-        home={home}
-        away={away}
-        palettes={palettes}
-        isLive={false}
-        phase="called_off"
-      />,
-    );
-    expect(calledOff).toContain("Match annulé ou arrêté : pas de données à afficher.");
+    // Only "sportsmonks" turns the claim back on; anything else is SofaScore.
+    expect(liveStatsSource("sportsmonks")).toBe("sportsmonks");
+    expect(liveStatsSource(" SportsMonks ")).toBe("sportsmonks");
+    for (const other of [undefined, "", "sofascore", "other"]) {
+      expect(liveStatsSource(other)).toBe("sofascore");
+    }
+  });
+
+  test("a match that is not being played says which of the four it is on every panel", () => {
+    const panel = (phase: MatchDataPhase) =>
+      inFrench(
+        <EventTimeline
+          events={[]}
+          home={home}
+          away={away}
+          palettes={palettes}
+          isLive={false}
+          phase={phase}
+        />,
+      );
+    expect(
+      inFrench(
+        <LineupsView lineups={[]} home={home} away={away} palettes={palettes} phase="postponed" />,
+      ),
+    ).toContain("Match reporté : pas de données à afficher.");
+    expect(panel("suspended")).toContain("Match interrompu : pas de données à afficher.");
+    expect(panel("cancelled")).toContain("Match annulé : pas de données à afficher.");
+    expect(panel("abandoned")).toContain("Match arrêté : pas de données à afficher.");
   });
 });
 
@@ -355,7 +401,9 @@ describe("empty, unavailable and failed are three different things (batch 4)", (
     "finished",
     "unreported",
     "postponed",
-    "called_off",
+    "suspended",
+    "cancelled",
+    "abandoned",
   ];
 
   test("data still expected is an empty panel; data that will not come is an unavailable one", () => {
@@ -368,7 +416,9 @@ describe("empty, unavailable and failed are three different things (batch 4)", (
       "finished",
       "unreported",
       "postponed",
-      "called_off",
+      "suspended",
+      "cancelled",
+      "abandoned",
     ]);
   });
 
