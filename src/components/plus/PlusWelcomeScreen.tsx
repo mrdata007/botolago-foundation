@@ -1,4 +1,3 @@
-import type { PremiumProductCode } from "@/backend/premium/contracts";
 import type { CardProfile } from "@/components/manager-card/types";
 
 import { PlusCard } from "./PlusCard";
@@ -6,15 +5,15 @@ import { styleLabel, usePlusCopy, type PlusStyle } from "./plus-copy";
 import { DateText } from "./plus-text";
 
 /**
- * Screen 4, « Ta saison est ouverte » (sketch `#screen-4`): the card, one access line (plan, until
- * or next date, « Gérer dans Profil »), « Ouvrir ma saison ». Reached only through a purchase (the
- * member state), never from screen 3 directly; the expiry and cancellation explanations live in
- * Profil, not here. The reveal is a CSS animation that `prefers-reduced-motion` turns off.
+ * Screen 4, « Votre Saison est ouverte » (sketch `#screen-4`): the card, one access line (the Saison
+ * and its end date, « Voir Ma saison »), « Ouvrir ma saison ». Reached only by a member (staff
+ * activate the Saison once the payment is checked), never from screen 3 directly; what happens when
+ * the Saison ends is told in Profil, not here. The reveal is a CSS animation that
+ * `prefers-reduced-motion` turns off.
  */
 export function PlusWelcomeScreen({
   profile,
   style,
-  productCode,
   periodEnd,
   onOpen,
   onManage,
@@ -23,7 +22,6 @@ export function PlusWelcomeScreen({
 }: {
   profile: CardProfile;
   style: PlusStyle;
-  productCode: PremiumProductCode | null;
   periodEnd: Date | null;
   onOpen: () => void;
   onManage: () => void;
@@ -31,7 +29,6 @@ export function PlusWelcomeScreen({
   titleRef: React.Ref<HTMLHeadingElement>;
 }) {
   const { t, f } = usePlusCopy();
-  const monthly = productCode === "plus_monthly";
   return (
     <>
       <div className="plus-body">
@@ -46,13 +43,9 @@ export function PlusWelcomeScreen({
         </div>
         <div className="plus-panel plus-recap">
           <p className="plus-recap-plan">
-            <b>{monthly ? t("plus.monthly.name") : t("plus.yearly.name")}</b>
+            <b>{t("plus.season.name")}</b>
             {periodEnd ? (
-              <span>
-                {f(monthly ? "plus.s4.access_monthly" : "plus.s4.access_yearly", {
-                  date: <DateText date={periodEnd} />,
-                })}
-              </span>
+              <span>{f("plus.s4.access", { date: <DateText date={periodEnd} /> })}</span>
             ) : null}
           </p>
           <button type="button" className="plus-btn plus-btn--text" onClick={onManage}>

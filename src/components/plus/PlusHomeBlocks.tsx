@@ -308,7 +308,7 @@ function DuelSummary() {
 }
 
 /**
- * The member's identity on Curva: the logo and the way to « Mon abonnement ». The product name is
+ * The member's identity on Curva: the logo and the way to « Ma saison ». The product name is
  * the logo, never typed (its spoken label carries it).
  */
 export function PlusHomeMember() {

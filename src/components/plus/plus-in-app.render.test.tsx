@@ -186,7 +186,7 @@ describe("the member mark and the header logo", () => {
     const html = await render(<PlusHeaderLogo />);
     expect(html).toContain("plus-logo");
     expect(text(html)).not.toContain("BotolaGO+");
-    expect(html).toContain('aria-label="Membre BotolaGO+"');
+    expect(html).toContain('aria-label="Saison BotolaGO+ active"');
   });
 });
 

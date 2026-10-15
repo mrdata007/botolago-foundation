@@ -36,37 +36,46 @@ const text = (html: string) =>
 const noop = () => undefined;
 const NOW = new Date(2026, 9, 13, 10, 30);
 
-describe("the paywall (screen 3)", () => {
+describe("the offer (screen 3)", () => {
+  const price = LAUNCH_PRICES[0]!;
+  const prices = [{ ...price, validUntil: "2027-05-31T20:00:00.000Z" }];
   const html = render(
     <PlusPaywallScreen
-      now={NOW}
-      prices={LAUNCH_PRICES}
-      plan="plus_yearly"
-      onPlan={noop}
+      prices={prices}
       profile={SAMPLE_CARD_PROFILE}
       onBuy={noop}
-      onRestore={noop}
       titleRef={null}
     />,
   );
   const visible = text(html);
 
-  it("leads with the logo and the selected plan card, « Le plus avantageux », the check", () => {
+  it("leads with the logo and ONE card: Saison 2026/27, 200 MAD, valid until the server's date", () => {
     expect(html).toContain('class="plus-s3-logo"');
     expect(html).toContain(`aria-label="${PLUS_NAME}"`);
-    expect(visible).toContain(fr["plus.s3.best"]);
-    expect(visible).toContain("Annuel");
-    expect(visible).toContain("200 MAD pour 12 mois");
-    expect(visible).toContain("Soit 16,67 MAD par mois · 40 MAD d'économie");
-    expect(html).toContain('class="plus-tick"');
+    expect(html.match(/data-testid="plus-season-card"/g)).toHaveLength(1);
+    expect(visible).toContain("Saison 2026/27");
+    expect(visible).toContain("200 MAD · un seul paiement");
+    expect(visible).toContain("Valable jusqu'au 31 mai 2027");
   });
-  it("keeps the other plan in the radio group, behind « Voir toutes les offres »", () => {
-    expect(html.match(/type="radio"/g)).toHaveLength(2);
-    expect(html).toContain('data-open="false"');
-    expect(visible).toContain(fr["plus.s3.all_plans"]);
-    expect(visible).toContain("Mensuel");
-    expect(visible).toContain("20 MAD par mois");
-    expect(visible).toContain("Renouvelé le 13 nov. 2026");
+  it("says the end of the season in words while the server has not given a date", () => {
+    const bare = text(
+      render(
+        <PlusPaywallScreen
+          prices={LAUNCH_PRICES}
+          profile={SAMPLE_CARD_PROFILE}
+          onBuy={noop}
+          titleRef={null}
+        />,
+      ),
+    );
+    expect(bare).toContain("Valable jusqu'à la fin de la saison");
+  });
+  it("has no monthly card, no toggle, no saving, no radio, no restore", () => {
+    expect(html).not.toContain('type="radio"');
+    expect(html).not.toContain("plus-all");
+    for (const gone of ["Mensuel", "mensuel", "économie", "Restaurer", "Le plus avantageux"]) {
+      expect(visible).not.toContain(gone);
+    }
   });
   it("lists the four benefits, in order, under the title", () => {
     const at = (s: string) => visible.indexOf(s);
@@ -80,20 +89,18 @@ describe("the paywall (screen 3)", () => {
     expect(order.every((i) => i >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(visible).toContain("Sans publicité");
-    expect(visible).toContain("Vous ne verrez jamais de publicité dans l'application.");
   });
-  it("has ONE subscribe button, and the terms and restore links under it", () => {
+  it("has ONE button, « Payer ma Saison », always enabled, and the terms link under it", () => {
     expect(html.match(/plus-btn plus-btn--primary/g)).toHaveLength(1);
-    expect(visible).toContain("S'abonner");
-    expect(visible).toContain("Conditions de l'abonnement");
-    expect(visible).toContain("Restaurer un achat");
+    expect(html).not.toMatch(/class="plus-btn plus-btn--primary"[^>]*disabled/);
+    expect(visible).toContain("Payer ma Saison");
+    expect(visible).toContain("Conditions de la Saison");
   });
-  it("states the terms with dates and the saving basis computed from today", () => {
-    expect(visible).toContain("13 octobre 2027");
-    expect(visible).toContain("Pas de renouvellement automatique");
-    expect(visible).toContain(
-      "12 paiements mensuels sur les mêmes 12 mois, soit 20 MAD × 12 = 240 MAD",
-    );
+  it("states the terms: one payment, the end date, nothing renews, access once checked", () => {
+    expect(visible).toContain("Paiement unique de 200 MAD");
+    expect(visible).toContain("court jusqu'au 31 mai 2027");
+    expect(visible).toContain("aucun prélèvement automatique");
+    expect(visible).toContain("dès que l'équipe a vérifié votre paiement");
   });
   it("never types the product name as text on screen", () => {
     expect(visible).not.toContain("BotolaGO+");
@@ -101,22 +108,16 @@ describe("the paywall (screen 3)", () => {
   });
 });
 
-describe("the paywall, the short door every entry opens", () => {
+describe("the offer, the short door every entry opens", () => {
   const paywall = (props: {
     context?: "season" | "duel" | "career" | "editions" | "rivals" | "briefing";
-    open?: boolean;
   }) =>
     render(
       <PlusPaywallScreen
-        now={NOW}
         prices={LAUNCH_PRICES}
-        plan="plus_yearly"
-        onPlan={noop}
         profile={SAMPLE_CARD_PROFILE}
         context={props.context}
-        checkoutOpen={props.open}
         onBuy={noop}
-        onRestore={noop}
         titleRef={null}
       />,
     );
@@ -132,20 +133,6 @@ describe("the paywall, the short door every entry opens", () => {
       expect(html.match(/<h1/g)).toHaveLength(1);
     }
   });
-  it("says « Bientôt disponible », disabled, with one line, while checkout is not open", () => {
-    const html = paywall({ open: false });
-    const visible = text(html);
-    expect(html).toMatch(/<button[^>]*class="plus-btn plus-btn--primary"[^>]*disabled/);
-    expect(visible).toContain("Bientôt disponible");
-    expect(visible).toContain(fr["plus.s3.soon_line"]);
-    expect(visible).not.toContain("S'abonner");
-    expect(visible).not.toContain("Restaurer un achat");
-  });
-  it("is « S'abonner » and enabled when checkout is open", () => {
-    const html = paywall({ open: true });
-    expect(html).not.toMatch(/class="plus-btn plus-btn--primary"[^>]*disabled/);
-    expect(text(html)).toContain("S'abonner");
-  });
   it("has no refund line to confirm and no dead chevron on a benefit row", () => {
     const html = paywall({});
     expect(text(html)).not.toContain("à confirmer");
@@ -154,13 +141,15 @@ describe("the paywall, the short door every entry opens", () => {
     expect("plus.terms.refund" in fr).toBe(false);
     expect("plus.terms.refund" in ar).toBe(false);
   });
-  it("uses one vocabulary: no « pass », no « offres » for plans, no « membre »", () => {
+  it("uses one vocabulary: Saison, none of the words the owner ruled out", () => {
     const keys = Object.keys(fr).filter((k) =>
-      /^plus\.(s[123]|ctx|page|terms|note|prices|meta)/.test(k),
+      /^plus\.(s[1-5]|ctx|page|terms|note|prices|meta|season|pay|profile|hub)/.test(k),
     );
     for (const key of keys) {
       const word = fr[key as keyof typeof fr];
-      expect(word, key).not.toMatch(/\bpass\b|offres|débloquer|premium|\bmembres?\b/i);
+      expect(word, key).not.toMatch(
+        /abonn|\bpass\b|premium|\bmembres?\b|débloqu|provisoire|mensuel|renouvel/i,
+      );
     }
   });
 });
@@ -207,7 +196,7 @@ describe("the other screens", () => {
     expect(visible).toContain("Vous menez Sami de 14 points");
     expect(visible).toContain("Voir le duel");
     expect(visible).toContain("Exemple");
-    expect(visible).toContain("Choisir ma formule");
+    expect(visible).toContain("Découvrir la Saison");
     // no sub-text paragraphs: the removed explanations are gone
     expect(visible).not.toContain("Ce que ça dit");
   });
@@ -227,12 +216,11 @@ describe("the other screens", () => {
     expect(html.match(/class="draw l-lead"/g)).toHaveLength(1);
     expect(html.match(/class="draw l-you"/g)).toHaveLength(1);
   });
-  it("screen 4: the card, one access line, « Gérer dans Profil », « Ouvrir ma saison »", () => {
+  it("screen 4: the card, one access line, « Voir Ma saison », « Ouvrir ma saison »", () => {
     const html = render(
       <PlusWelcomeScreen
         profile={SAMPLE_CARD_PROFILE}
         style="chrome"
-        productCode="plus_monthly"
         periodEnd={new Date(2026, 10, 13)}
         onOpen={noop}
         onManage={noop}
@@ -243,9 +231,9 @@ describe("the other screens", () => {
     const visible = text(html);
     expect(visible).toContain("Votre saison est ouverte");
     expect(visible).toContain("Votre carte passe au style Chrome.");
-    expect(visible).toContain("Mensuel");
-    expect(visible).toContain("se renouvelle le 13 novembre 2026");
-    expect(visible).toContain("Gérer dans Profil");
+    expect(visible).toContain("Saison 2026/27");
+    expect(visible).toContain("jusqu'au 13 novembre 2026");
+    expect(visible).toContain("Voir Ma saison");
     expect(visible).toContain("Ouvrir ma saison");
   });
 });
@@ -274,15 +262,6 @@ describe("the logo", () => {
 });
 
 describe("counted nouns", () => {
-  it("agree with the number in Arabic: 1 singular, 2 dual, 3 to 10 plural, 11 and over singular", () => {
-    const word = (n: number) => ar[pluralKey("payments", n, "ar") as keyof typeof ar];
-    expect(word(1)).toBe("دفعة شهرية واحدة");
-    expect(word(2)).toBe("دفعتين شهريتين");
-    expect(word(3)).toBe("{n} دفعات شهرية");
-    expect(word(10)).toBe("{n} دفعات شهرية");
-    expect(word(11)).toBe("{n} دفعة شهرية");
-    expect(word(12)).toBe("{n} دفعة شهرية");
-  });
   it("are one / other in French", () => {
     expect(fr[pluralKey("points", 1, "fr") as keyof typeof fr]).toBe("1 point");
     expect(fr[pluralKey("points", 71, "fr") as keyof typeof fr]).toBe("{n} points");
@@ -315,7 +294,7 @@ describe("the plus.* dictionary", () => {
         expect(value, key).not.toContain("BotolaGO+");
       }
     }
-    for (const key of ["plus.with", "plus.terms.yearly1"]) {
+    for (const key of ["plus.with", "plus.terms.until", "plus.terms.until_end"]) {
       expect(fr[key as keyof typeof fr]).toContain("{logo}");
       expect(ar[key as keyof typeof ar]).toContain("{logo}");
     }
@@ -336,20 +315,25 @@ describe("the plus.* dictionary", () => {
       expect(fr[key as keyof typeof fr], key).not.toMatch(tu);
     }
   });
-  it("never hedges the monthly renewal in either language", () => {
-    const hedge =
-      /ne se renouvelle pas|sans renouvellement automatique|ne renouvelle pas de lui|لا يتجدد/;
-    for (const key of [
-      "plus.monthly.l2",
-      "plus.terms.monthly1",
-      "plus.terms.monthly2",
-      "plus.s4.access_monthly",
-      "plus.reminder.title",
-    ]) {
-      expect(fr[key as keyof typeof fr], key).not.toMatch(hedge);
-      expect(ar[key as keyof typeof ar], key).not.toMatch(hedge);
+  it("carries none of the words the owner ruled out for the Saison (French)", () => {
+    const ruledOut = /abonn|\bpass\b|premium|\bmembres?\b|débloqu|provisoire|mensuel|renouvel/i;
+    const mine = keys.filter((k) =>
+      /^plus\.(s[2-5]\.|ctx|page|terms|season|pay|profile|hub|meta|lock|in\.member|tr\.(rule|locked_tag|frames_note))/.test(
+        k,
+      ),
+    );
+    for (const key of mine) expect(fr[key as keyof typeof fr], key).not.toMatch(ruledOut);
+    expect(fr["lock.curva.title.plus"]).not.toMatch(ruledOut);
+  });
+  it("carries no subscription vocabulary in Arabic either, and Western digits", () => {
+    const ruledOut = /اشتراك|مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
+    for (const key of keys) {
+      const value = ar[key as keyof typeof ar] as string;
+      if (/^plus\.(s3|terms|season|pay|profile|hub|page|meta|lock|in\.member)/.test(key)) {
+        expect(value, key).not.toMatch(ruledOut);
+      }
+      expect(value, key).not.toMatch(/[\u0660-\u0669]/);
     }
-    expect(fr["plus.monthly.l2"]).toContain("Renouvelé");
   });
   it("names the electric edition in the feminine in Arabic (كهربائية)", () => {
     expect(ar["plus.style.electric"]).toBe("كهربائية");

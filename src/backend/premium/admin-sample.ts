@@ -9,6 +9,13 @@ import {
   type PremiumAdminOverview,
   type PremiumAdminRepository,
   type PremiumAdminRevokeResult,
+  type PremiumAdminSeasonResult,
+  type PremiumPaymentDetails,
+  type PremiumPaymentDetailsInput,
+  type PaymentMethod,
+  isValidPaymentReference,
+  isValidRib,
+  isValidWhatsappNumber,
 } from "./admin";
 
 /**
@@ -27,6 +34,8 @@ export const SAMPLE_ACCOUNTS = {
   none: "5a000000-0000-4000-8000-000000000003",
 } as const;
 export const SAMPLE_EMAIL = "karim@example.test";
+/** The payment code of the account that has never paid (…0003): EXAMPLE data. */
+export const SAMPLE_PAY_CODE = "BG-7K4M9X";
 
 const DAY = 86_400_000;
 const iso = (offsetDays: number, now: number) => new Date(now + offsetDays * DAY).toISOString();
@@ -38,6 +47,10 @@ export interface SampleOptions {
   failWriteWith?: string;
   /** Omit the by-product counts, as a database that migration 20261013100500 has not reached does. */
   withoutByProduct?: boolean;
+  /** `none`: the Saison's end is not known (the premium status does not carry it). */
+  seasonEnd?: string | null;
+  /** The payment details are not set yet. */
+  noPaymentDetails?: boolean;
   /** The mode the overview reports (default: preview). */
   mode?: "off" | "preview" | "on";
   /** Every account is unknown. */
@@ -49,12 +62,35 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
   private readonly now: number;
   private grants: Record<string, PremiumAdminGrant[]>;
   private eventId = 40;
+  private details: PremiumPaymentDetails;
   /** The audited reads this repository answered, so a test can check the reason went with them. */
   readonly audit: { userId: string; reason: string; requestId: string }[] = [];
 
   constructor(private readonly options: SampleOptions = {}) {
     this.now = options.now ?? Date.now();
     const now = this.now;
+    this.details = options.noPaymentDetails
+      ? {
+          bankHolder: null,
+          bankName: null,
+          rib: null,
+          cashplusName: null,
+          whatsappNumber: null,
+          noteFr: null,
+          noteAr: null,
+          updatedAt: null,
+        }
+      : {
+          // EXAMPLES: the real ones are typed by the owner in this very form.
+          bankHolder: "BotolaGO SARL",
+          bankName: "Banque exemple",
+          rib: "000 000 0000000000000000 00",
+          cashplusName: "BotolaGO SARL",
+          whatsappNumber: "+212600000000",
+          noteFr: null,
+          noteAr: null,
+          updatedAt: iso(-3, now),
+        };
     this.grants = {
       [SAMPLE_ACCOUNTS.comp]: [
         {
@@ -70,6 +106,17 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
           endsAt: iso(-170, now),
           reason: "Geste commercial après un double paiement.",
           revokedAt: iso(-190, now),
+        },
+        {
+          grantId: "5a900000-0000-4000-8000-000000000003",
+          startsAt: iso(-400, now),
+          endsAt: iso(-230, now),
+          reason: "Virement reçu et vérifié.",
+          revokedAt: null,
+          productCode: "plus_season",
+          paymentMethod: "bank_transfer",
+          paymentReference: "VIR-2026-0412",
+          amountMinor: 20000,
         },
       ],
     };
@@ -90,12 +137,20 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
       },
       products: [
         {
+          code: "plus_season",
+          periodMonths: null,
+          renews: false,
+          priceMinor: 20000,
+          currency: "MAD",
+          active: true,
+        },
+        {
           code: "plus_monthly",
           periodMonths: 1,
           renews: true,
           priceMinor: 2000,
           currency: "MAD",
-          active: true,
+          active: false,
         },
         {
           code: "plus_yearly",
@@ -103,7 +158,7 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
           renews: false,
           priceMinor: 20000,
           currency: "MAD",
-          active: true,
+          active: false,
         },
       ],
       membersByState: { active: 42, cancelling: 5, grace: 2, on_hold: 1, expired: 17, refunded: 3 },
@@ -111,6 +166,7 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
         ? {}
         : {
             membersByProduct: {
+              plus_season: { active: 8 },
               plus_monthly: { active: 30, cancelling: 5, grace: 2, on_hold: 1, expired: 14 },
               plus_yearly: { active: 12, expired: 3, refunded: 3 },
             },
@@ -205,6 +261,74 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
       };
     }
     return { userId, isMember: liveGrant, entitlement: null, grants, events: [] };
+  }
+
+  async seasonEnd(): Promise<string | null> {
+    return this.options.seasonEnd === undefined
+      ? "2027-05-31T20:00:00.000Z"
+      : this.options.seasonEnd;
+  }
+
+  async findByCode(
+    code: string,
+    reason: string,
+    context: RepositoryContext,
+  ): Promise<PremiumAdminMember> {
+    if (this.options.empty || code !== SAMPLE_PAY_CODE) {
+      throw new PremiumAdminError("premium_code_not_found");
+    }
+    return this.member(SAMPLE_ACCOUNTS.none, reason, context);
+  }
+
+  async activateSeason(
+    userId: string,
+    method: PaymentMethod,
+    reference: string,
+    reason: string,
+  ): Promise<PremiumAdminSeasonResult> {
+    if (this.options.failWriteWith) {
+      throw new Error(this.options.failWriteWith);
+    }
+    const ends = await this.seasonEnd();
+    if (!ends) throw new PremiumAdminError("premium_season_unavailable");
+    if (method !== "free" && !isValidPaymentReference(reference)) {
+      throw new PremiumAdminError("premium_payment_reference_required");
+    }
+    const already = (this.grants[userId] ?? []).some(
+      (g) => !g.revokedAt && Date.parse(g.endsAt) >= Date.parse(ends),
+    );
+    if (already) throw new PremiumAdminError("season_already_active");
+    const item: PremiumAdminGrant = {
+      grantId: `5a900000-0000-4000-8000-0000000002${String(++this.eventId).padStart(2, "0")}`,
+      startsAt: new Date(this.now).toISOString(),
+      endsAt: ends,
+      reason,
+      revokedAt: null,
+      productCode: "plus_season",
+      paymentMethod: method,
+      paymentReference: method === "free" ? null : reference.trim(),
+      amountMinor: method === "free" ? 0 : 20000,
+    };
+    this.grants[userId] = [item, ...(this.grants[userId] ?? [])];
+    return { grantId: item.grantId, userId, startsAt: item.startsAt, endsAt: ends };
+  }
+
+  async getPaymentDetails(): Promise<PremiumPaymentDetails> {
+    return this.details;
+  }
+
+  async setPaymentDetails(details: PremiumPaymentDetailsInput): Promise<PremiumPaymentDetails> {
+    if (this.options.failWriteWith) {
+      throw new Error(this.options.failWriteWith);
+    }
+    if (
+      (details.whatsappNumber && !isValidWhatsappNumber(details.whatsappNumber)) ||
+      (details.rib && !isValidRib(details.rib))
+    ) {
+      throw new PremiumAdminError("premium_payment_details_invalid");
+    }
+    this.details = { ...details, updatedAt: new Date(this.now).toISOString() };
+    return this.details;
   }
 
   async grant(userId: string, endsAt: string, reason: string): Promise<PremiumAdminGrantResult> {

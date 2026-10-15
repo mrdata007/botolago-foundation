@@ -64,12 +64,16 @@ describe("prices come from the amount the API returned", () => {
   test("renewal is read from the data", () => {
     expect(renewalLabel(monthly, "fr")).toContain("automatique");
     expect(renewalLabel(yearly, "fr")).toContain("sans renouvellement");
+    const season = { ...yearly, code: "plus_season", periodMonths: null };
+    expect(formatProductPrice(season, "fr")).toBe("200 MAD · une fois");
+    expect(renewalLabel(season, "fr")).toContain("fin de la saison");
   });
   test("an unknown product reads « Autre formule », never its code", () => {
-    expect(productName("plus_monthly", "fr")).toBe("Mensuel");
-    expect(productName("plus_yearly", "ar")).toBe("سنوي");
-    expect(productName("plus_season", "fr")).toBe("Autre formule");
-    expect(productName("plus_season", "ar")).not.toContain("plus_season");
+    expect(productName("plus_monthly", "fr")).toBe("Mensuel (ancien)");
+    expect(productName("plus_yearly", "ar")).toBe("سنوي (قديم)");
+    expect(productName("plus_season", "fr")).toBe("Saison 2026/27");
+    expect(productName("plus_future", "fr")).toBe("Autre formule");
+    expect(productName("plus_future", "ar")).not.toContain("plus_future");
   });
 });
 
@@ -131,9 +135,9 @@ describe("the mode banner", () => {
         expect(text.startsWith(MODE_LABELS[mode][lang])).toBe(true);
       }
     }
-    expect(MODE_BANNERS.off.text.fr).toContain("même avec une offre du personnel");
+    expect(MODE_BANNERS.off.text.fr).toContain("même avec un accès offert par le personnel");
     expect(MODE_BANNERS.preview.text.fr).toContain(
-      "seuls les abonnés le voient (offre du personnel ou achat de test)",
+      "seuls les comptes qui ont une Saison la voient (activée par le personnel)",
     );
   });
 });

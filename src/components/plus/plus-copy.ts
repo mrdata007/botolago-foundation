@@ -37,22 +37,15 @@ const POINTS: PluralKeys = {
   few: "plus.points_few",
   other: "plus.points_other",
 };
-const PAYMENTS: PluralKeys = {
-  one: "plus.payments_one",
-  two: "plus.payments_two",
-  few: "plus.payments_few",
-  other: "plus.payments_other",
-};
 const ROUNDS: PluralKeys = {
   one: "card.rounds_one",
   two: "card.rounds_two",
   few: "card.rounds_few",
   other: "card.rounds_other",
 };
-export type CountKind = "points" | "payments" | "rounds";
+export type CountKind = "points" | "rounds";
 const FAMILIES: Record<CountKind, PluralKeys> = {
   points: POINTS,
-  payments: PAYMENTS,
   rounds: ROUNDS,
 };
 

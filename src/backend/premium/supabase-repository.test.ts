@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { onMfaStepUpRequired } from "@/backend/auth/step-up";
 import { OFF_REPOSITORY, premiumRepositoryKind } from "@/services/premium";
 
-import { LAUNCH_PRICES, MY_PREMIUM_OFF, PREMIUM_STATUS_OFF } from "./contracts";
+import { MY_PREMIUM_OFF, PAYMENT_DETAILS_OFF, PREMIUM_STATUS_OFF } from "./contracts";
 import { SupabasePremiumRepository } from "./supabase-repository";
 
 type Result = { data: unknown; error: { code?: string; message?: string } | null };
@@ -26,17 +26,23 @@ const STATUS_WIRE = {
   enabled: true,
   checkoutEnabled: false,
   prices: [
-    { code: "plus_monthly", periodMonths: 1, renews: true, priceMinor: 2000, currency: "MAD" },
-    { code: "plus_yearly", periodMonths: 12, renews: false, priceMinor: 20000, currency: "MAD" },
+    {
+      code: "plus_season",
+      periodMonths: null,
+      renews: false,
+      priceMinor: 20000,
+      currency: "MAD",
+      validUntil: "2027-05-31T20:00:00+00:00",
+    },
   ],
-  savingMinor: 4000,
+  savingMinor: null,
   editions: [],
 };
 const MINE_WIRE = {
   available: true,
   state: "active",
-  productCode: "plus_monthly",
-  source: "web",
+  productCode: "plus_season",
+  source: "grant",
   currentPeriodEnd: "2026-11-13T10:00:00+00:00",
   cancelAtPeriodEnd: false,
 };
@@ -50,7 +56,15 @@ describe("the Supabase premium repository (finding 5)", () => {
     expect(await repository.status(context)).toEqual({
       enabled: true,
       checkoutEnabled: false,
-      prices: [...LAUNCH_PRICES],
+      prices: [
+        {
+          code: "plus_season",
+          amountMad: 200,
+          periodMonths: null,
+          renews: false,
+          validUntil: "2027-05-31T20:00:00+00:00",
+        },
+      ],
     });
     expect(await repository.mine(context)).toEqual(MINE_WIRE as never);
     expect(calls.map((call) => call.name)).toEqual(["premium_status", "get_my_premium"]);
@@ -134,13 +148,50 @@ describe("the Supabase premium repository (finding 5)", () => {
     await expect(repository.mine(context)).rejects.toThrow();
   });
 
-  it("serves no receipts and answers « bientôt » to checkout, cancel and restore, with no request", async () => {
-    const { repository, calls } = fakeApi(() => ({ data: null, error: null }));
-    expect(await repository.receipts(context)).toEqual([]);
-    expect(await repository.startCheckout()).toEqual({ status: "soon" });
-    expect(await repository.cancel()).toEqual({ status: "soon" });
-    expect(await repository.restore()).toEqual({ status: "soon" });
-    expect(calls).toEqual([]);
+  it("calls api.get_premium_payment_details and api.get_my_premium_pay_code", async () => {
+    const { repository, calls } = fakeApi((name) => ({
+      data:
+        name === "get_premium_payment_details"
+          ? {
+              available: true,
+              whatsapp: "+212 6 00 00 00 00",
+              bankHolder: "BotolaGO SARL",
+              bankName: null,
+              rib: "000 000 0000000000000000 00",
+              cashplusName: null,
+              noteFr: null,
+              noteAr: null,
+              amountMinor: 20000,
+              currency: "MAD",
+            }
+          : { code: "BG-7K4M9X" },
+      error: null,
+    }));
+    expect(await repository.getPaymentDetails(context)).toMatchObject({
+      available: true,
+      rib: "000 000 0000000000000000 00",
+      amountMad: 200,
+    });
+    expect(await repository.getMyPayCode(context)).toEqual({ code: "BG-7K4M9X" });
+    expect(calls.map((call) => call.name)).toEqual([
+      "get_premium_payment_details",
+      "get_my_premium_pay_code",
+    ]);
+  });
+
+  it("reads « not there yet » for the pay reads (no function, no session, mode off) as not available", async () => {
+    for (const error of [
+      { code: "PGRST202", message: "Could not find the function" },
+      { code: "PT401", message: "authentication_required" },
+      { code: "PT403", message: "mfa_required" },
+    ]) {
+      const { repository } = fakeApi(() => ({ data: null, error }));
+      expect(await repository.getPaymentDetails(context)).toEqual(PAYMENT_DETAILS_OFF);
+      expect(await repository.getMyPayCode(context)).toEqual({ code: null });
+    }
+    const off = fakeApi(() => ({ data: { available: false }, error: null }));
+    expect((await off.repository.getPaymentDetails(context)).available).toBe(false);
+    expect(await off.repository.getMyPayCode(context)).toEqual({ code: null });
   });
 });
 
@@ -153,6 +204,7 @@ describe("which repository a build gets (finding 5)", () => {
   it("keeps the off repository silent: off answers, nothing to ask", async () => {
     expect(await OFF_REPOSITORY.status(context)).toEqual(PREMIUM_STATUS_OFF);
     expect(await OFF_REPOSITORY.mine(context)).toEqual(MY_PREMIUM_OFF);
-    expect(await OFF_REPOSITORY.receipts(context)).toEqual([]);
+    expect(await OFF_REPOSITORY.getPaymentDetails(context)).toEqual(PAYMENT_DETAILS_OFF);
+    expect(await OFF_REPOSITORY.getMyPayCode(context)).toEqual({ code: null });
   });
 });
