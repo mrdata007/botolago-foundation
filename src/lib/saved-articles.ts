@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthProvider";
 import { getNewsDataMode, newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { savedCollectionQueryKey } from "@/lib/saved-collection";
 
 // Device-local persistence exists only in explicit preview/mock mode. Supabase
 // mode is server-authoritative and never falls back to these values.
@@ -80,7 +81,12 @@ export function useSavedArticles() {
     onError: (_error, _variables, rollback) => {
       if (rollback) queryClient.setQueryData(queryKey, rollback.previous);
     },
-    onSettled: () => void queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey });
+      // The collection page reads the same saves; refetch it so an unsave
+      // (or a save from a card) is what the server now says.
+      void queryClient.invalidateQueries({ queryKey: savedCollectionQueryKey(user?.id ?? null) });
+    },
   });
 
   const ids = useMemo(
@@ -109,6 +115,10 @@ export function useSavedArticles() {
     isSaved,
     toggle,
     hydrated: mode === "mock" ? localHydrated : status !== "loading" && !cloud.isLoading,
+    // True once `ids` is the reader's real list, not the empty one a failed or
+    // not-yet-started read leaves behind (`hydrated` is also true after a
+    // failure). The collection hides unsaved stories only when this holds.
+    idsKnown: mode === "mock" ? localHydrated : cloud.data !== undefined,
     pending: mutation.isPending,
   };
 }

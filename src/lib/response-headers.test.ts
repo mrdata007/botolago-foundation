@@ -60,6 +60,7 @@ describe("site response headers", () => {
     for (const path of [
       "/auth/mfa-challenge?next=%2Ffantasy%2Fteam",
       "/profile/security",
+      "/profile/saved",
       "/fantasy/leagues/abc",
       "/pronostics/ligues/rejoindre",
     ]) {

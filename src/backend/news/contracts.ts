@@ -103,6 +103,27 @@ export const articlePageSchema = z.object({
 });
 export type ArticlePageDto = z.infer<typeof articlePageSchema>;
 
+/**
+ * The reader's saved list pages by WHEN IT WAS SAVED, not by when the story
+ * was published, so its cursor is `{ createdAt, articleId }` -- the arguments
+ * `api.news_saved_articles` takes back (`p_after_created_at`,
+ * `p_after_article_id`). It used to be parsed with `articlePageSchema`, whose
+ * cursor is `{ publishedAt, id }`: a reader with more saved stories than one
+ * page (the function caps a page at 50) got "invalid DTO" for the whole list,
+ * so the count read 0 and every saved story looked unsaved.
+ */
+export const savedCursorSchema = z.object({
+  createdAt: z.string().datetime({ offset: true }),
+  articleId: z.string().uuid(),
+});
+export type SavedCursor = z.infer<typeof savedCursorSchema>;
+
+export const savedArticlePageSchema = z.object({
+  items: z.array(articleCardSchema),
+  nextCursor: savedCursorSchema.nullable(),
+});
+export type SavedArticlePageDto = z.infer<typeof savedArticlePageSchema>;
+
 export const homeModulesSchema = z.object({
   lead: articleCardSchema.nullable(),
   featured: z.array(articleCardSchema),
@@ -385,7 +406,15 @@ export interface NewsRepository {
     context: RepositoryContext,
   ): Promise<readonly ArticleCardDto[]>;
   search(input: NewsSearchInput, context: RepositoryContext): Promise<ArticlePageDto>;
-  getSaved(limit: number, context: RepositoryContext): Promise<ArticlePageDto>;
+  /**
+   * One page of the reader's saved stories, newest save first. `cursor` is the
+   * previous page's `nextCursor`, encoded by `encodeSavedCursor`.
+   */
+  getSaved(
+    limit: number,
+    context: RepositoryContext,
+    cursor?: string | null,
+  ): Promise<SavedArticlePageDto>;
   save(articleId: string, context: RepositoryContext): Promise<void>;
   unsave(articleId: string, context: RepositoryContext): Promise<void>;
 
