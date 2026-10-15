@@ -2,9 +2,10 @@
 //
 // Signed out, a tap asks for an account first. Signed in, it saves the
 // reminder on the server (a match subscription) and says honestly what will
-// happen: the reminder reaches the inbox and e-mail about an hour before
-// kick-off, and only for an account that has e-mail notifications on, so when
-// they are off the toast offers to turn them on.
+// happen: it promises the e-mail about an hour before kick-off only when the
+// account's e-mail route is open, offers to turn e-mail on when that is the only
+// thing missing, and otherwise says just that the reminder is saved
+// (`emailRoute`, audit PRO-04).
 
 import { Bell, BellRing } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import { UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { emailRoute, reminderToast } from "@/lib/delivery-promise";
 import { rememberReminder, replaceReminders, useHasReminder } from "@/lib/match-reminders";
 import {
   loadMyMatchReminders,
@@ -64,8 +66,13 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
         toast(t("reminders.toast.off"));
         return;
       }
+      // What the toast may say depends on whether this account's e-mail route is open
+      // (`emailRoute`): a reminder is promised only then, and never when the preferences
+      // could not be read.
       const preferences = await loadMyNotificationPreferences().catch(() => null);
-      if (preferences && !preferences.channels.email) {
+      const route = emailRoute(preferences, auth?.user?.verified, "matchAlerts");
+      const kind = reminderToast(route);
+      if (kind === "reminders.toast.needs_email") {
         toast(t("reminders.toast.needs_email"), {
           action: {
             label: t("reminders.toast.enable_email"),
@@ -76,8 +83,10 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
             },
           },
         });
-      } else {
+      } else if (kind === "reminders.toast.on") {
         toast.success(t("reminders.toast.on"));
+      } else {
+        toast.success(t("reminders.toast.saved"));
       }
     } catch {
       toast.error(t("state.error"));

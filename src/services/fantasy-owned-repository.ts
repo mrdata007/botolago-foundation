@@ -21,7 +21,7 @@ import type { FantasyPersistedState } from "@/services/fantasy-state";
 import { fantasyStateStore, DEFAULT_STATE } from "@/services/fantasy-state";
 import { fantasyService } from "@/services/fantasy-mock";
 import { finalizeGameweek as localFinalize } from "@/services/lifecycle-service";
-import { applyConfirmedTransfers } from "@/services/transfers-service";
+import { applyConfirmedTransfers, type OwnedPlayerRecord } from "@/services/transfers-service";
 import type { ChipsState } from "@/lib/fantasy-engine";
 import { fantasyPlayers as mockPlayers } from "@/mocks/fantasy-data";
 
@@ -73,6 +73,13 @@ export interface FantasySnapshot {
    * stands in (purchase price is the current price there).
    */
   salePrices?: Record<string, number>;
+  /**
+   * Who the manager owns, by fantasy player id, as the server's team record
+   * says it (position, club, market price, status). The buying pool lists only
+   * active, eligible players, so an owned player who left it is resolved from
+   * here instead (SOL-02). V2 cloud adapter only.
+   */
+  ownedPlayers?: Record<string, OwnedPlayerRecord>;
   activeChipCancellable: boolean;
   /** True when authenticated cloud team exists but has zero squad rows. */
   emptyCloudSquad?: boolean;
@@ -750,6 +757,18 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       currentGameweekId: team.currentGameweekId,
       purchasePrices,
       salePrices,
+      ownedPlayers: Object.fromEntries(
+        team.squad.map((player) => [
+          player.fantasyPlayerId,
+          {
+            id: player.fantasyPlayerId,
+            clubId: player.footballTeamId,
+            position: player.position,
+            price: player.price,
+            status: player.status,
+          },
+        ]),
+      ),
       activeChipCancellable: team.chips.activeCancellable,
       emptyCloudSquad: squad.length === 0,
     };

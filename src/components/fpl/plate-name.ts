@@ -22,3 +22,11 @@ export function plateName(fullName: string): string {
   if (previous && (TAILS.has(last) || previous === HEAD)) return `${previous} ${last}`;
   return last;
 }
+
+/**
+ * What the plate shows for a player: his surname, or a stand-in wording whole
+ * (cutting "Joueur retiré du marché" to its last word would read "marché").
+ */
+export function plateText(fullName: string, placeholder?: boolean): string {
+  return placeholder ? fullName.trim() : plateName(fullName);
+}

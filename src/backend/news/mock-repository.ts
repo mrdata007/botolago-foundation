@@ -5,6 +5,7 @@ import type {
   ArticleDetailDto,
   ArticleEditorialDetailDto,
   ArticlePageDto,
+  SavedArticlePageDto,
   CreateDraftInput,
   CreateDraftResult,
   EditorialRevisionDto,
@@ -179,7 +180,7 @@ export class MockNewsRepository implements NewsRepository {
     return { items: items.slice(0, input.limit ?? 20), nextCursor: null };
   }
 
-  async getSaved(limit: number): Promise<ArticlePageDto> {
+  async getSaved(limit: number): Promise<SavedArticlePageDto> {
     const items = [...this.saved]
       .map((id) => db.articles.findIndex((_article, index) => articleUuid(index) === id))
       .filter((index) => index >= 0)

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
+
+import { forgetAccountQueries } from "@/auth/account-queries";
 
 import { ManagerCardError } from "@/backend/manager-card/errors";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
@@ -11,6 +13,7 @@ import {
   acknowledgeMoments,
   fetchMyCard,
   invalidateMyManagerCard,
+  invalidateViewerCards,
   managerCardKeys,
 } from "./use-manager-card";
 
@@ -57,11 +60,76 @@ describe("the query keys", () => {
   it("are the plan's, with the team ids sorted", () => {
     expect(managerCardKeys.status).toEqual(managerCardStatusKey);
     expect(managerCardKeys.me("u")).toEqual(["manager-card", "me", "u"]);
-    expect(managerCardKeys.cards(["b", "a"])).toEqual(["manager-card", "cards", "a,b"]);
+    expect(managerCardKeys.cards("u", ["b", "a"])).toEqual(["manager-card", "cards", "u", "a,b"]);
     expect(managerCardKeys.history("u", null)).toEqual(["manager-card", "history", "u", null]);
     // An account's id is in its keys, so signing out forgets them (`forgetAccountQueries`).
     expect(managerCardKeys.me("u")).toContain("u");
     expect(managerCardKeys.history("u", "s")).toContain("u");
+    expect(managerCardKeys.cards("u", ["a"])).toContain("u");
+  });
+});
+
+// SEC-03: the edition a card shows depends on who is looking (a paid edition
+// in preview shows to its owner only, 20261013100100), so the batch answer is
+// the viewer's, not the team ids'.
+describe("SEC-03: league cards are cached per viewer", () => {
+  const A = "10000000-0000-4000-8000-00000000000a";
+  const B = "10000000-0000-4000-8000-00000000000b";
+  const teams = ["t2", "t1"];
+
+  it("two viewers asking for the same teams use two entries", () => {
+    expect(managerCardKeys.cards(A, teams)).not.toEqual(managerCardKeys.cards(B, teams));
+    // Order of the team ids still does not matter within one viewer.
+    expect(managerCardKeys.cards(A, ["t1", "t2"])).toEqual(managerCardKeys.cards(A, teams));
+  });
+
+  it("B never finds the batch cached for A, and signing A out removes it", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(managerCardKeys.cards(A, teams), [{ edition: "gold" }]);
+    // B's screen asks for the same teams within A's five minutes.
+    expect(queryClient.getQueryData(managerCardKeys.cards(B, teams))).toBeUndefined();
+    expect(queryClient.getQueryState(managerCardKeys.cards(B, teams))).toBeUndefined();
+
+    forgetAccountQueries(queryClient, A);
+    const left = queryClient.getQueryCache().findAll({ queryKey: ["manager-card"] });
+    expect(left).toHaveLength(0);
+  });
+
+  it("choosing a design re-reads the viewer's own batches, and nobody else's", async () => {
+    const queryClient = new QueryClient();
+    const reads = { a: 0, b: 0 };
+    const watch = (viewer: string, name: "a" | "b") =>
+      new QueryObserver(queryClient, {
+        queryKey: managerCardKeys.cards(viewer, teams),
+        staleTime: 5 * 60_000,
+        queryFn: async () => ++reads[name],
+      }).subscribe(() => {});
+    const stopA = watch(A, "a");
+    const stopB = watch(B, "b");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(reads).toEqual({ a: 1, b: 1 });
+
+    invalidateViewerCards(queryClient, A);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(reads).toEqual({ a: 2, b: 1 });
+    stopA();
+    stopB();
+  });
+
+  it("an answer for A that lands after sign-out is not written back", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    let answer: (value: unknown) => void = () => {};
+    const observer = new QueryObserver(queryClient, {
+      queryKey: managerCardKeys.cards(A, teams),
+      queryFn: () => new Promise((resolve) => (answer = resolve)),
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    forgetAccountQueries(queryClient, A);
+    unsubscribe();
+    answer([{ edition: "gold" }]);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(queryClient.getQueryData(managerCardKeys.cards(A, teams))).toBeUndefined();
+    expect(queryClient.getQueryData(managerCardKeys.cards(B, teams))).toBeUndefined();
   });
 });
 

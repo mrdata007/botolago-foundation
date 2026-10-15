@@ -40,10 +40,19 @@ const PHASES: readonly MatchDataPhase[] = [
   "finished",
   "unreported",
   "postponed",
-  "called_off",
+  "suspended",
+  "cancelled",
+  "abandoned",
 ];
 /** The phases in which nothing more will come by itself: their copy promises nothing. */
-const SETTLED = ["finished", "unreported", "postponed", "called_off"] as const;
+const SETTLED = [
+  "finished",
+  "unreported",
+  "postponed",
+  "suspended",
+  "cancelled",
+  "abandoned",
+] as const;
 const MESSAGES = { stats: noStatsMessage, events: noEventsMessage, lineups: noLineupsMessage };
 
 describe("matchDataPhase", () => {
@@ -58,9 +67,9 @@ describe("matchDataPhase", () => {
     penalties: "live",
     finished: "finished",
     postponed: "postponed",
-    suspended: "postponed",
-    cancelled: "called_off",
-    abandoned: "called_off",
+    suspended: "suspended",
+    cancelled: "cancelled",
+    abandoned: "abandoned",
   };
 
   test("reads every provider status the way the page presents it", async () => {
@@ -304,30 +313,50 @@ describe("a finished match with no detail data", () => {
 });
 
 describe("the other phases on screen", () => {
-  test("a live match's empty Stats tab says nothing has arrived yet and the page refreshes", () => {
+  test("a live match's empty Stats tab promises neither an automatic update nor an arrival", () => {
+    // SofaScore reads a match in play for its incidents only and asks for team
+    // statistics after full time, and the page cannot tell which feed is on
+    // (audit DATA-06): the copy is true on both. It says there are none yet,
+    // that they show here once they exist, and that this is most often after
+    // the match.
     const html = inFrench(
       <StatComparison stats={[]} home={home} away={away} palettes={palettes} isLive phase="live" />,
     );
-    expect(html).toContain("Aucune statistique reçue pour l&#x27;instant.");
-    expect(html).toContain("Cette page se met à jour automatiquement.");
+    expect(html).toContain(
+      "Pas encore de statistiques. Elles s&#x27;affichent ici dès qu&#x27;elles sont disponibles, le plus souvent après le match.",
+    );
+    expect(html).not.toContain("se met à jour automatiquement");
+    expect(html).not.toContain("Aucune statistique reçue");
+    for (const phase of ["live", "awaiting"] as const) {
+      expect(noStatsMessage(phase, inLanguage("ar"))).toBe(
+        "لا توجد إحصائيات بعد. ستظهر هنا فور توفرها، وغالبًا بعد نهاية المباراة.",
+      );
+      for (const lang of ["fr", "ar"] as const) {
+        expect(noStatsMessage(phase, inLanguage(lang))).not.toMatch(/تلقائي|automatiquement/);
+      }
+    }
   });
 
-  test("a postponed or called-off match says so on every panel", () => {
-    const postponed = inFrench(
-      <LineupsView lineups={[]} home={home} away={away} palettes={palettes} phase="postponed" />,
-    );
-    expect(postponed).toContain("Match reporté : pas de données à afficher.");
-    const calledOff = inFrench(
-      <EventTimeline
-        events={[]}
-        home={home}
-        away={away}
-        palettes={palettes}
-        isLive={false}
-        phase="called_off"
-      />,
-    );
-    expect(calledOff).toContain("Match annulé ou arrêté : pas de données à afficher.");
+  test("a match that is not being played says which of the four it is on every panel", () => {
+    const panel = (phase: MatchDataPhase) =>
+      inFrench(
+        <EventTimeline
+          events={[]}
+          home={home}
+          away={away}
+          palettes={palettes}
+          isLive={false}
+          phase={phase}
+        />,
+      );
+    expect(
+      inFrench(
+        <LineupsView lineups={[]} home={home} away={away} palettes={palettes} phase="postponed" />,
+      ),
+    ).toContain("Match reporté : pas de données à afficher.");
+    expect(panel("suspended")).toContain("Match interrompu : pas de données à afficher.");
+    expect(panel("cancelled")).toContain("Match annulé : pas de données à afficher.");
+    expect(panel("abandoned")).toContain("Match arrêté : pas de données à afficher.");
   });
 });
 
@@ -355,7 +384,9 @@ describe("empty, unavailable and failed are three different things (batch 4)", (
     "finished",
     "unreported",
     "postponed",
-    "called_off",
+    "suspended",
+    "cancelled",
+    "abandoned",
   ];
 
   test("data still expected is an empty panel; data that will not come is an unavailable one", () => {
@@ -368,7 +399,9 @@ describe("empty, unavailable and failed are three different things (batch 4)", (
       "finished",
       "unreported",
       "postponed",
-      "called_off",
+      "suspended",
+      "cancelled",
+      "abandoned",
     ]);
   });
 

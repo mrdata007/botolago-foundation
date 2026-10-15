@@ -24,7 +24,16 @@ export interface PointsViewModel {
   /** XI points including captain multiplier BEFORE the transfer hit is subtracted. */
   rawXiPoints: number;
   captainBonus: number;
+  /**
+   * Who actually carried the captain multiplier. `null` is an answer, not a
+   * gap: nobody has yet (a pending result) or nobody appeared. Callers must
+   * not fill it in from another source.
+   */
   effectiveCaptainId: string | null;
+  /** The captain the manager chose for this round (may differ from the effective one). */
+  originalCaptainId: string | null;
+  /** The vice-captain the manager chose for this round. */
+  viceCaptainId: string | null;
   captainMultiplier: number;
   /** True when the vice-captain stepped in because the captain didn't play. */
   captainTookOver: boolean;
@@ -128,6 +137,8 @@ export function buildPointsViewModel(input: BuildInputs): PointsViewModel {
     rawXiPoints,
     captainBonus: engine.captainBonus,
     effectiveCaptainId: capId,
+    originalCaptainId: captainDeclared,
+    viceCaptainId: input.team.squad.find((s) => s.isViceCaptain)?.playerId ?? null,
     captainMultiplier: cap.multiplier,
     captainTookOver,
     originalBenchPoints: engine.benchPoints,
@@ -158,6 +169,8 @@ export function buildLegacyViewModel(
     rawXiPoints: gw.totalPoints,
     captainBonus: 0,
     effectiveCaptainId: gw.captainId ?? null,
+    originalCaptainId: gw.breakdown.find((p) => p.isCaptain)?.playerId ?? gw.captainId ?? null,
+    viceCaptainId: gw.breakdown.find((p) => p.isViceCaptain)?.playerId ?? null,
     captainMultiplier: 1,
     captainTookOver: false,
     originalBenchPoints: gw.benchPoints,
@@ -188,6 +201,9 @@ export function buildServerPointsViewModel(result: GameweekResult): PointsViewMo
     rawXiPoints: result.totalPoints + a.transferHit,
     captainBonus: a.captainPoints,
     effectiveCaptainId: a.effectiveCaptainId,
+    // The roles recorded for this round (the lineup's flags), never today's squad.
+    originalCaptainId: result.breakdown.find((p) => p.isCaptain)?.playerId ?? null,
+    viceCaptainId: result.breakdown.find((p) => p.isViceCaptain)?.playerId ?? null,
     captainMultiplier: a.captainMultiplier,
     captainTookOver: !!captain && captain.isViceCaptain === true,
     originalBenchPoints: result.benchPoints,

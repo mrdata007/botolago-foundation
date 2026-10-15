@@ -53,6 +53,12 @@ export interface FantasyPlayer extends Player {
    * signed release still holds today ever arrives here.
    */
   photoUrl?: string | null;
+  /**
+   * True when `name` is a stand-in wording, not the player's name (an owned
+   * player the buying pool no longer lists, SOL-02). A plate then shows it whole
+   * instead of cutting it to a "surname", and the picker never offers him.
+   */
+  placeholder?: boolean;
 }
 
 export interface SquadPlayer {
@@ -151,9 +157,26 @@ export interface PointsEvent {
   fixtureId?: string;
 }
 
+/**
+ * Who a player is, as the server describes him in a round's result
+ * (`api.get_my_fantasy_points`, migration 20261015120300). It lets an old round
+ * name a player who has since left today's buying pool. It is the player's
+ * current catalogue row, not a copy taken in that round: a player who
+ * transferred since shows his current club. Absent when the server does not
+ * send it yet.
+ */
+export interface PlayerRoundIdentity {
+  name: string;
+  position: Position;
+  clubId: string;
+  teamName: string;
+  teamShortName: string;
+}
+
 export interface PlayerPointsBreakdown {
   multiplier?: number;
   playerId: string;
+  identity?: PlayerRoundIdentity;
   totalPoints: number;
   minutesPlayed: number;
   isCaptain?: boolean;
