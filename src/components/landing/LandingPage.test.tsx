@@ -87,7 +87,7 @@ describe("LandingPage (server render)", () => {
    * without an account, so the hero itself carries an explicit way to the
    * match list, next to the game's call to action and not in place of it.
    */
-  it("offers today's matches in the hero, as a link to /matches, before the explanation anchor", async () => {
+  it("offers the match list in the hero, as a link to /matches, before the explanation anchor", async () => {
     const html = await render();
     const link = html.match(/<a\b[^>]*data-testid="landing-cta-matches"[^>]*>[\s\S]*?<\/a>/);
     expect(link).not.toBeNull();
@@ -100,7 +100,7 @@ describe("LandingPage (server render)", () => {
   });
 
   it("words the action in both languages, with no promise beyond the match list", () => {
-    expect(fr["landing.cta_matches"]).toBe("Voir les matchs du jour");
+    expect(fr["landing.cta_matches"]).toBe("Voir les matchs et résultats");
     expect(/[؀-ۿ]/.test(ar["landing.cta_matches"])).toBe(true);
     // The same shape: no placeholder, no figure.
     expect(ar["landing.cta_matches"]).not.toMatch(/[{}\d]/);
@@ -117,6 +117,8 @@ describe("LandingPage (server render)", () => {
     const block = source.slice(source.lastIndexOf("<Link", end), end);
     expect(block).toContain('to="/matches"');
     expect(block).not.toContain("track(");
+    // Leaving by it is the welcome, as for every other link on the page.
+    expect(block).toContain("onClick={onLeave}");
   });
 
   it("answers the objections in five native disclosures", async () => {
