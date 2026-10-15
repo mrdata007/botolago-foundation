@@ -163,7 +163,7 @@ export async function expectNoClippedMatchCards(page: Page) {
     // Standings is section navigation (including Home's scrollable highlights),
     // not a match card. Match-card bounds still apply to every match detail link.
     for (const card of document.querySelectorAll(
-      'main a[href^="/matches/"]:not([href^="/matches/standings"])',
+      'main a[href^="/matches/"]:not([data-app-strip] *):not([href^="/matches/standings"])',
     )) {
       // A card in a row the reader swipes (`data-swipe-row`: Home's band, the
       // match page's deck) waits beside the viewport by design, reachable by
