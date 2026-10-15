@@ -891,7 +891,7 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
                 : summary.ambiguousWrite.leaseExtended
                   ? "kept, left to expire"
                   : "NOT extended, left to expire"
-            }. Do not start another worker until it expires`,
+            }${summary.ambiguousWrite.leaseReleased ? "" : ". Do not start another worker until it expires"}`,
           ],
         ] as Array<[string, string]>)
       : []),

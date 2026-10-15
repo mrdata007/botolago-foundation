@@ -1168,6 +1168,39 @@ describe("the record says whether the lease was really extended, and the grace i
   });
 });
 
+describe("the wall-clock bound counts the time the lease extension took", () => {
+  it("asks for the grace left after a slow extension, not before it", async () => {
+    let now = 1_000_000;
+    const asked: number[] = [];
+    const gateway: FantasyWorkerGateway = {
+      rpc: async (name) => {
+        if (name === "service_fantasy_worker_lease_acquire")
+          return { acquired: true, token: "11111111-1111-4111-8111-111111111111" };
+        if (name === "service_fantasy_worker_lease_extend") {
+          now += 8_000; // the extension itself takes 8 s
+          return { extended: true };
+        }
+        if (name === "service_fantasy_worker_lease_release") return { released: true };
+        if (name === SYNC)
+          throw ambiguousRpcTimeout(name, async (graceMs) => {
+            asked.push(graceMs);
+            return "unsettled";
+          });
+        return {};
+      },
+    };
+    // 10 s of wall clock are left when the write is found in doubt; 8 s go on the extension.
+    const result = await runFantasyWorkerPass(gateway, {
+      holder: "edge:slow-extend",
+      now: () => now,
+      ambiguousGraceMs: 10_000,
+      wallClockMs: 10_000,
+    });
+    expect(asked).toEqual([2_000]);
+    expect(result.ambiguous).toMatchObject({ settled: false, leaseExtended: true });
+  });
+});
+
 describe("replyShowsStatementOver", () => {
   it("is the rule the gateway uses", () => {
     expect(replyShowsStatementOver({})).toBe(true);

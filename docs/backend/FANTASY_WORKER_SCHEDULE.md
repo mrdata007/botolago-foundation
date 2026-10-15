@@ -181,7 +181,7 @@ still commit. They now share the Edge rule instead of copying it:
   stops the loop: no other gameweek (the ones not started are listed in `deferredGameweeks`), the lease is extended and kept,
   released only after the original request answered, otherwise left to expire. The pass also makes **no further write**:
   no prize catch-up (`prizes: { skipped: "write_in_doubt" }`) and no second calendar sync. Its reads still run, so the
-  deadline watch and the points check still alert. The verdict is `failed` (the workflow goes red), the gameweek's entry in
+  deadline watch and the points check still alert. The verdict is `failed` (the workflow goes red and the alert issue is filed as `fantasy_write_in_doubt`, saying to wait for the lease, docs/operations/ALERTS.md), the gameweek's entry in
   `workers` carries `fantasy_worker_rpc_timeout` or `fantasy_worker_rpc_unconfirmed`, and the evidence file has a top-level
   `ambiguousWrite: { rpc, leaseExtended, settled, leaseReleased }` and a "Write in doubt" row on the run page.
 - **Manual runner.** `runManualWorker` does the same for its single gameweek: it prints
@@ -193,13 +193,17 @@ still commit. They now share the Edge rule instead of copying it:
 - The only visible difference for a lifecycle read that times out: its code is now `fantasy_worker_rpc_timeout`
   instead of the opaque `fantasy_orchestrator_rpc_failed`.
 
-**Still open (smaller).** (1) The orchestrator's lease covers only its lifecycle loop, as before. Its first calendar sync,
-the performance ingestion, the prize catch-up and the second calendar sync run outside it, so a 60 s abort on one of them is
-still an ordinary failure and the lease (if any) is already released. They are guarded RPCs with their own locks, and a
-scheduled GitHub run stands aside while the database worker is healthy, but this is not the Edge rule. Widening it means
-holding the lease across the whole orchestrator function and is a separate change. (2) Nothing here was run against a
-real database; see the tests below. (3) Same limit as the Edge path: the lease is not a database fence, and the 420 s
-extension only protects while the service role's `statement_timeout` is below it (owner check above).
+**Still open (smaller).** (1) **The orchestrator is not under the lease as a whole, with or without any timeout.** The
+lease covers only its lifecycle loop. Its first calendar sync runs _before_ the lease is taken; the performance
+ingestion, the prize catch-up and the second calendar sync run outside it too. So even on a clean run they can overlap an
+Edge pass, which makes its own calendar sync and prize evaluation under its lease. This includes a scheduled GitHub run
+that defers to a healthy database worker: it skips only the lifecycle and still runs both calendar syncs and the prize
+call. Whether those overlaps are harmless (that the calendar sync and the prize evaluation serialise on their own row
+locks and are idempotent) was **not checked against the SQL in this change and is unverified**. A 60 s abort on one of
+these calls is still an ordinary failure, not the Edge rule. Holding the lease across the whole orchestrator function
+would close it; that is a separate change. (2) Nothing here was run against a real database; see the tests below.
+(3) Same limit as the Edge path: the lease is not a database fence, and the 420 s extension only protects while the
+service role's `statement_timeout` is below it (owner check above).
 
 ### Prize evaluation never stops the game, but is not hidden
 
@@ -361,6 +365,6 @@ the lane report): the two migrations apply, and all 97 assertions of the pgTAP f
 - The run record is written by one more RPC after the pass; after a stuck database the extension, the grace (10 s) and
   the record can add up past the Edge wall-clock limit, in which case there is no row and the lease simply expires.
 - The GitHub orchestrator and the manual runner use the ambiguity rule in their lifecycle loop only; their calendar sync,
-  ingestion and prize calls run outside the lease and keep the plain 60 s failure (see "Still open" above).
+  ingestion and prize calls run outside the lease, keep the plain 60 s failure and can overlap an Edge pass (unverified, see "Still open" above).
 - A pass in flight survives a pause until its lease ends (about nine minutes).
 - The Edge function is a second deploy target: it must be deployed from the same commit as the migration.

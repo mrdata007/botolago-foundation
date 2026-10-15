@@ -1420,12 +1420,14 @@ export const AMBIGUOUS_GRACE_MS = 10_000;
  * to answer. Release the lease only if it did; otherwise leave it to lapse by
  * itself, which is also how a crashed worker recovers. None of these steps can
  * throw. `token` is null when no lease is held (nothing to extend or release).
+ * `graceMs` may be a function: it is read after the extension, so a wall-clock bound
+ * counts the time the extension took.
  */
 export async function holdLeaseForAmbiguousWrite(
   call: RpcCall,
   token: string | null,
   ambiguousTimeout: AmbiguousRpcTimeout,
-  graceMs: number,
+  graceMs: number | (() => number),
 ): Promise<AmbiguousWrite> {
   let leaseExtended = false;
   if (token) {
@@ -1443,7 +1445,11 @@ export async function holdLeaseForAmbiguousWrite(
   }
   let settled = false;
   try {
-    settled = (await ambiguousTimeout.settle(graceMs)) === "answered";
+    // A function is read only now, after the extension, so a wall-clock bound counts
+    // the time the extension took.
+    settled =
+      (await ambiguousTimeout.settle(typeof graceMs === "function" ? graceMs() : graceMs)) ===
+      "answered";
   } catch {
     settled = false;
   }
@@ -1650,12 +1656,14 @@ export async function runFantasyWorkerPass(
   } finally {
     const raw: RpcCall = (name, args) => gateway.rpc(name, args);
     if (ambiguousTimeout) {
-      // Never wait past what is left of the Edge function's wall clock.
-      const graceMs = Math.min(
-        options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
-        Math.max(0, startedMs + (options.wallClockMs ?? EDGE_WALL_CLOCK_MS) - clock()),
+      // Never wait past what is left of the Edge function's wall clock, counted after
+      // the lease extension (which takes time of its own).
+      ambiguous = await holdLeaseForAmbiguousWrite(raw, token, ambiguousTimeout, () =>
+        Math.min(
+          options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+          Math.max(0, startedMs + (options.wallClockMs ?? EDGE_WALL_CLOCK_MS) - clock()),
+        ),
       );
-      ambiguous = await holdLeaseForAmbiguousWrite(raw, token, ambiguousTimeout, graceMs);
     } else if (token) {
       await releaseWorkerLease(raw, token);
     }

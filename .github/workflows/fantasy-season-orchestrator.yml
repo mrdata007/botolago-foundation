@@ -128,7 +128,7 @@ jobs:
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
-          bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/read-football-data-source.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
+          bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/read-football-data-source.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/fantasy-script-ambiguous-write.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
           bun run backend:secrets:check
 
       # While SofaScore is the football data source (api.football_data_source()

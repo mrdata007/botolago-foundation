@@ -108,12 +108,12 @@ async function answer(s: Server, name: string, args: Record<string, unknown>): P
       s.lease = { token: id(990), released: false, extendedSeconds: [] };
       return { data: { acquired: true, token: id(990), holder: args.p_holder }, status: 200 };
     case LEASE_EXTEND: {
-      const ok = s.lease?.token === args.p_token && !s.lease.released;
+      const ok = s.lease !== null && s.lease.token === args.p_token && !s.lease.released;
       if (ok) s.lease!.extendedSeconds.push(Number(args.p_ttl_seconds));
       return { data: { extended: ok }, status: 200 };
     }
     case LEASE_RELEASE: {
-      const ok = s.lease?.token === args.p_token && !s.lease.released;
+      const ok = s.lease !== null && s.lease.token === args.p_token && !s.lease.released;
       if (ok) s.lease!.released = true;
       return { data: { released: ok }, status: 200 };
     }
@@ -277,6 +277,7 @@ describe("GitHub orchestrator: a write that timed out is ambiguous (SEC-01)", ()
     // The reads still ran, so the evidence and the alert hold.
     expect(count(s, WATCH)).toBe(1);
     expect(renderHealthSummary(summary)).toContain("Write in doubt");
+    expect(renderHealthSummary(summary)).toContain("Do not start another worker until it expires");
     expect(renderHealthSummary(summary)).toContain(ADVANCE);
 
     // The original write finally ends; the lease is still never released.
@@ -301,6 +302,9 @@ describe("GitHub orchestrator: a write that timed out is ambiguous (SEC-01)", ()
       s.events.indexOf(`start:${LEASE_RELEASE}`),
     );
     expect(s.lease?.released).toBe(true);
+    // The row no longer tells the operator to wait once the lease is released.
+    expect(renderHealthSummary(summary)).toContain("Write in doubt");
+    expect(renderHealthSummary(summary)).not.toContain("Do not start another worker");
     // Still stopped: no second gameweek, no further write, still red.
     expect(count(s, STATE)).toBe(1);
     expect(count(s, PRIZES)).toBe(0);
@@ -561,6 +565,46 @@ describe("the shared lease-keeping step", () => {
       });
       expect(s.lease.released).toBe(outcome === "answered");
     }
+  });
+
+  test("never throws with a token either: a failing call, and a request that did answer", async () => {
+    const calls: string[] = [];
+    const error = ambiguousRpcTimeout(ADVANCE, async () => "answered");
+    const held = await holdLeaseForAmbiguousWrite(
+      async (name) => {
+        calls.push(name);
+        throw new Error("down");
+      },
+      id(990),
+      error,
+      5,
+    );
+    // The extension and the release both failed; the answer is still reported.
+    expect(held).toEqual({
+      rpc: ADVANCE,
+      leaseExtended: false,
+      settled: true,
+      leaseReleased: false,
+    });
+    expect(calls).toEqual([LEASE_EXTEND, LEASE_RELEASE]);
+  });
+
+  test("a function grace is read after the extension, not before", async () => {
+    let clock = 0;
+    const asked: number[] = [];
+    await holdLeaseForAmbiguousWrite(
+      async () => {
+        clock += 8_000;
+        return { extended: true };
+      },
+      id(990),
+      ambiguousRpcTimeout(ADVANCE, async (graceMs) => {
+        asked.push(graceMs);
+        return "unsettled";
+      }),
+      () => 10_000 - clock,
+    );
+    expect(asked).toEqual([2_000]);
   });
 
   test("never throws, and without a token touches no lease", async () => {
