@@ -165,11 +165,12 @@ values (pg_temp.u(700), pg_temp.u(5), pg_temp.u(301), 'Les Lions du Derb', 'priv
   encode(extensions.digest('briefing-league', 'sha256'), 'hex'), 'ABCD', 2);
 insert into app.fantasy_league_memberships (league_id, fantasy_team_id, user_id)
 values (pg_temp.u(700), pg_temp.u(400), pg_temp.u(301)), (pg_temp.u(700), pg_temp.u(401), pg_temp.u(302));
-insert into app.fantasy_rankings (fantasy_season_id, league_id, fantasy_team_id, rank, total_points, calculation_version, calculated_at)
-values (pg_temp.u(5), pg_temp.u(700), pg_temp.u(400), 1, 50, 1, '2091-10-05 13:00+00'),
-  (pg_temp.u(5), pg_temp.u(700), pg_temp.u(401), 2, 45, 1, '2091-10-05 13:00+00'),
-  (pg_temp.u(5), pg_temp.u(700), pg_temp.u(400), 2, 60, 1, '2091-10-12 13:00+00'),
-  (pg_temp.u(5), pg_temp.u(700), pg_temp.u(401), 1, 66, 1, '2091-10-12 13:00+00');
+-- One ranking per gameweek and team: the older pair is after G8, the current one after G9.
+insert into app.fantasy_rankings (fantasy_season_id, gameweek_id, league_id, fantasy_team_id, rank, total_points, calculation_version, calculated_at)
+values (pg_temp.u(5), pg_temp.gw(8), pg_temp.u(700), pg_temp.u(400), 1, 50, 1, '2091-10-05 13:00+00'),
+  (pg_temp.u(5), pg_temp.gw(8), pg_temp.u(700), pg_temp.u(401), 2, 45, 1, '2091-10-05 13:00+00'),
+  (pg_temp.u(5), pg_temp.gw(9), pg_temp.u(700), pg_temp.u(400), 2, 60, 1, '2091-10-12 13:00+00'),
+  (pg_temp.u(5), pg_temp.gw(9), pg_temp.u(700), pg_temp.u(401), 1, 66, 1, '2091-10-12 13:00+00');
 
 create function pg_temp.brief(p_user uuid, p_aal text default 'aal1') returns jsonb language sql as $$
   select pg_temp.run(p_user, p_aal, 'api.get_my_deadline_briefing()') $$;
