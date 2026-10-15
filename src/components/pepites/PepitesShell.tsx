@@ -125,10 +125,12 @@ export function PepitesChipRow({
 /**
  * A Pépites title fills its row (`flex-1`), so its box spans the band
  * whatever the title's length, and it WRAPS instead of truncating:
- * `UiPageTitle` truncates because the app's hub titles are one word
- * ("Matches"), while Pépites titles carry data ("Top 10 · Semaine 15",
- * "Classement final 2025-26") that an ellipsis would cut, worst beside the
- * trailing buttons on a 390px phone. The display leading holds two lines.
+ * `UiPageTitle` sizes its heading to the title and wraps the control onto a
+ * second line when they do not fit (the app's hub titles are one word,
+ * "Matches"), while Pépites titles carry data ("Top 10 · Semaine 15",
+ * "Classement final 2025-26") and are better kept beside the trailing
+ * buttons on a 390px phone, wrapping inside the row. The display leading
+ * holds two lines.
  */
 const TITLE_FILLS_AND_WRAPS =
   "[&_:is(h1,h2)]:flex-1 [&_:is(h1,h2)]:whitespace-normal [&_:is(h1,h2)]:text-balance";
