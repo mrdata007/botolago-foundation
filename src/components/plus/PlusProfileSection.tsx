@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { usePremium, usePremiumReceipts } from "@/services/use-premium";
 
 import { PlusFeatureRows, PlusFormerStyleRow, PlusHubRow } from "./PlusMemberRows";
+import { PlusTrophyVisibilityRow } from "./PlusTrophyVisibilityRow";
 import { PlusLogo } from "./PlusLogo";
 import { formatPlusDate, PLUS_NAME, usePlusCopy } from "./plus-copy";
 import { DateText, Money } from "./plus-text";
@@ -192,6 +193,7 @@ function MemberHub({ receipts }: { receipts: readonly PremiumReceipt[] }) {
 
       <UiCard padding="none" className="overflow-hidden">
         <PlusFeatureRows withSeason />
+        <PlusTrophyVisibilityRow ruled />
         <PlusHubRow
           icon={<Settings2 aria-hidden />}
           title={t("plus.hub.manage_t")}

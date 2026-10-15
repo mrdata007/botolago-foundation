@@ -16,6 +16,7 @@ import { STAT_CODES, type LineSpec, type ReplayItem } from "@/components/manager
 import { ui, UiButton, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { PlusEntryRows } from "@/components/plus/PlusEntry";
 import { PlusMemberRows } from "@/components/plus/PlusMemberRows";
+import { TrophyCardFrame } from "@/components/plus/TrophyCardFrame";
 import { usePlusAccess } from "@/components/plus/plus-access";
 import { track } from "@/lib/analytics";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
@@ -76,6 +77,24 @@ const PlusSeasonSlot = PREMIUM_SURFACES
     )
   : null;
 
+/** « Votre journée expliquée » (BotolaGO+), under « Votre saison »: the same switches, its own chunk. */
+const PlusRecapSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusRecapSlot").then((module) => ({
+        default: module.PlusRecapSlot,
+      })),
+    )
+  : null;
+
+/** « Trophées » (BotolaGO+): the lit cabinet for members, the earned list and a blur for the rest. */
+const PlusTrophiesSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusTrophiesSlot").then((module) => ({
+        default: module.PlusTrophiesSlot,
+      })),
+    )
+  : null;
+
 /** The one line of state the card page asks WP4 for. */
 const TIER_DOWN: readonly LineSpec["kind"][] = ["tier_down"];
 
@@ -122,36 +141,38 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             : "md:sticky md:top-[calc(var(--topbar-h)+16px)] md:self-start",
         )}
       >
-        <CardStage
-          profile={profile}
-          beat={beat}
-          flippable
-          glow={change.glow}
-          countOvr={change.shownOvr}
-        >
-          <RatingLine
-            ovr={change.shownOvr}
-            tier={view.tier}
-            counted={card.gameweeksCounted}
-            min={card.minRated}
-            statsFilled={view.statsFilled}
-            season={view.newSeason ? view.numberSeason : null}
-            formingLabel={moments.m3.label}
-            closedSeason={card.seasonClosed ? card.season.label : null}
-            change={change.badge ?? badge}
-          />
-          {motion ? (
-            <UiButton
-              variant="ghost"
-              size="sm"
-              className="mt-1"
-              onClick={() => play(stageReplayBeat(card))}
-            >
-              <RotateCcw className="h-4 w-4" aria-hidden />
-              {moments.m4.sheetReplay}
-            </UiButton>
-          ) : null}
-        </CardStage>
+        <TrophyCardFrame>
+          <CardStage
+            profile={profile}
+            beat={beat}
+            flippable
+            glow={change.glow}
+            countOvr={change.shownOvr}
+          >
+            <RatingLine
+              ovr={change.shownOvr}
+              tier={view.tier}
+              counted={card.gameweeksCounted}
+              min={card.minRated}
+              statsFilled={view.statsFilled}
+              season={view.newSeason ? view.numberSeason : null}
+              formingLabel={moments.m3.label}
+              closedSeason={card.seasonClosed ? card.season.label : null}
+              change={change.badge ?? badge}
+            />
+            {motion ? (
+              <UiButton
+                variant="ghost"
+                size="sm"
+                className="mt-1"
+                onClick={() => play(stageReplayBeat(card))}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden />
+                {moments.m4.sheetReplay}
+              </UiButton>
+            ) : null}
+          </CardStage>
+        </TrophyCardFrame>
       </div>
 
       <div
@@ -168,6 +189,16 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         {PlusSeasonSlot ? (
           <Suspense fallback={null}>
             <PlusSeasonSlot />
+          </Suspense>
+        ) : null}
+        {PlusRecapSlot ? (
+          <Suspense fallback={null}>
+            <PlusRecapSlot />
+          </Suspense>
+        ) : null}
+        {PlusTrophiesSlot ? (
+          <Suspense fallback={null}>
+            <PlusTrophiesSlot profile={profile} />
           </Suspense>
         ) : null}
         {PREMIUM_SURFACES ? <PlusMemberRows /> : null}

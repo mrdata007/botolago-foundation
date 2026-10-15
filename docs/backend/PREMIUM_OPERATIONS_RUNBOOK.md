@@ -389,6 +389,58 @@ must say `true`. It is rebuilt by
 the two helpers; nothing depends on them. Switching BotolaGO+ off already hides
 the read.
 
+## Premium deadline briefing: « Briefing avant la deadline »
+
+Migration `20261015140000_premium_deadline_briefing.sql`, applied by
+`scripts/backend/apply-20261015140000-premium-deadline-briefing.sql` **after**
+the premium card reads and the Fantasy rating points (20261014090000). It adds
+two api functions and two helpers, no table, no column, no job and no row, and
+replaces nothing. Both reads are `STABLE` and write nothing, so they need no
+entry in `AGENTS.md`; there is no new scheduled job. **Applying the migration is
+a database write**, the rollback-only rehearsal included: follow `AGENTS.md`,
+"One writer at a time, per database".
+
+| Function                                                           | Who     | Answers                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.get_my_deadline_briefing(p_season_id uuid)`                   | Members | The caller's team and the gameweek open for changes: bank, free transfers, hit cost, club limit; per player the provider's absence, the last three journées' published points, the next opponent with our difficulty estimate; the league rank |
+| `api.get_my_briefing_alternatives(p_player_out uuid, p_limit int)` | Members | Same-position players within sale price plus bank, not in the squad, not over the club limit, by price, with their last three journées' published points                                                                                       |
+
+Like the other premium reads they answer `{"available": false}` while BotolaGO+
+is `off` (and in `preview` to a non-member), `{"available": true, "locked":
+true}` to a non-member once `on`, and need the MFA step-up.
+
+**What is true, and what is not.** The app has no injury or suspension feed. An
+"absence" is exactly a row of `app.fixture_absences` (for a fixture of the open
+gameweek) or an active injured/suspended row of `app.player_availability`, with
+the provider's date; today only the SportsMonks importer writes them, and the
+SofaScore source writes none. `absenceFeed.listed` says how many the provider
+listed for the gameweek: zero means "no list available", never "nobody is
+absent", and the screen says so. `app.fantasy_players.status` is not read: nothing
+writes it.
+
+**A rating-less 5.** Under the rating rule a player who appeared without a rating
+scores 5, and a rating of 4.5 to 5.49 also rounds to 5; the stored result does not
+say which. A 5 after an appearance, while the rating rule is on for that
+gameweek, is therefore returned as `no_rating` with no number and shown as
+« sans note ». A real 5.0 is shown the same way until the save records the missing
+rating explicitly (owner decision: see the pull request).
+
+**« Depuis votre visite »** is kept on the reader's device (`localStorage`,
+labelled « sur cet appareil »): nothing is stored about visits in the database.
+
+**Applying.** Rehearsal, then `'apply'` in the `bg.deadline_briefing_mode` line.
+Re-read after the rehearsal:
+`select to_regprocedure('api.get_my_deadline_briefing(uuid)') is null;` must say
+`true`. Rebuild the script with
+`bun scripts/backend/build-apply-premium-deadline-briefing.ts`;
+`apply-premium-deadline-briefing-script.test.ts` fails if they drift.
+`supabase/tests/database/premium_deadline_briefing.test.sql` is the alarm for the
+reads' behaviour; CI's `database-quality` job is the authority.
+
+**Rolling back.** Not expected: a forward migration that drops the two functions
+and the two helpers; nothing depends on them. Switching BotolaGO+ off already
+hides the reads.
+
 ## Account deletion
 
 `app_private.account_deletion_erase` now:
@@ -544,3 +596,73 @@ app_private.premium_settings;` first. Switching the mode off
 > stop the webhook recording events. A delivery already in flight can finish
 > after the pause: check the Edge Function logs as well as the setting. Pause
 > automatic account deletion too (above) before a write to the erase function.
+
+## Premium round recap: « Votre journée expliquée »
+
+Migration `20261015120000_premium_round_recap.sql`, applied by
+`scripts/backend/apply-20261015120000-premium-round-recap.sql` **after** the league
+context. It adds one api function (`api.get_round_recap(p_gameweek uuid, p_league uuid)`)
+and two helpers (`app_private.round_recap_league`, `round_recap_captain`); no table, no
+column, no job, no setting and no row, and it replaces nothing. The read is `STABLE`
+and writes nothing, so it needs no entry in `AGENTS.md`. **Applying the migration is a
+database write**, the rehearsal included: follow `AGENTS.md`, "One writer at a time, per
+database", with a baseline read before and a comparison after. Production only through
+the guarded script, which the owner runs; nothing here was run against any database
+(pgTAP `premium_round_recap.test.sql` is the check, in CI's `database-quality` job).
+
+It explains one journée of the caller's own team: the score and its parts, the eleven
+and the bench with their published points, the effective captain, the journée's
+confirmed transfers with this journée's points of the player out and in, and the gap
+to the average of ONE private league (members only, averages hidden under three
+managers). « Vos autres choix » is a remainder (`othersIsRemainder: true`), not a
+per-player measure.
+
+- **Points, never ratings.** The Fantasy ledger does not say which `rating` line is a
+  real SofaScore rating and which is the 5 given to a player who appeared without one
+  (`FANTASY_RATING_POINTS.md`). The read serves points only. A player whose points are
+  not published has `pending: true` and `points: null`. If the ledger ever records which
+  fives are the no-rating rule, add a `rated` flag here and let the screen say « sans
+  note ».
+- **The captain** is the scoring result's `effectiveCaptainId`, else the lineup's
+  captain who played, else the vice-captain who played; counted points = his points plus
+  the result's captain bonus. The lineup's own `multiplier` column is not the scoring
+  multiplier and is not used.
+- **No absence data.** The app has no injury or suspension source; the read serves none.
+- Journées offered: those with a result for the caller's team whose status is
+  provisional, finalizing, finalized or corrected. A cancelled journée's results do not
+  count towards ranks.
+
+## Rivaux (pinned rivals and the lead-change notification)
+
+Migrations `20261015130000` (the notification type, alone), `20261015130100` (tables, reads, text) and
+`20261015130200` (the tick and its two jobs); design in
+[`docs/product/botolago-plus-rivals-brief.md`](../product/botolago-plus-rivals-brief.md).
+
+- **Apply, staging first, in this order, each from its own SQL-editor paste:**
+  `scripts/backend/apply-20261015130000-rivals-notification-type.sql` (let it commit), then
+  `scripts/backend/apply-20261015130100-rivals.sql`. Both ship as a rehearsal that ends in a deliberate
+  error; change the mode line to `apply` to save. Rebuilt by
+  `bun scripts/backend/build-apply-premium-rivals.ts`, checked by
+  `apply-premium-rivals-script.test.ts`. The second one is a writer (four tables, two scheduled jobs):
+  AGENTS.md "One writer at a time" applies.
+- **Ships off.** The five `api` functions answer `{"available": false}` while BotolaGO+ or the Manager
+  Card reads are off. `rivals-tick` is scheduled but does nothing until
+  `select app_private.rivals_configure(true);`, and then only for members who turned the notification on
+  (`api.set_rivals_notify`, off by default) before the journée that produced the change was published.
+  The tick is state-based: each pass compares who leads on the current published totals with the leader
+  last recorded for that pin in `app_private.rival_lead_notices` (one row per pin, recorded for every
+  pin). The first sight of a pin only records; a change notifies once; a correction of an older journée
+  that flips the lead is told in the « Résultat corrigé » wording. In-app, plus a push
+  to each working phone when the member has push and Fantasy reminders on (a pending delivery that the
+  push claim sends only while `app_private.notification_push_settings.mode` allows, as for the Manager
+  Card rating change; topic Fantasy, life 12 hours). No email.
+- **Privacy.** A friend's journée scores and totals are what the league already shows. Their captain
+  and last transfer come back only when they switched their card history on
+  (`app.card_history_visibility`, unchanged, default off). Pins are readable by their owner only; the
+  friend is not told. A pin whose two managers no longer share an active private league is not returned
+  and is dropped the next time its owner pins someone.
+- **Erasure.** `app.pinned_rivals`, `app.rival_preferences` and `app_private.rival_lead_notices`
+  cascade from `app.profiles`, so the account erasure removes a member's rows and every pin that
+  points at an erased account.
+- **Pause before a write** to those tables: `select app_private.rivals_configure(false);` and restore
+  afterwards (AGENTS.md, "Check the scheduled jobs too").

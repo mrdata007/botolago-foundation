@@ -200,11 +200,12 @@ select extensions.is(
      and p.prosrc ~* 'premium_entitlements|premium_grants|premium_settings|premium_products|billing_events|billing_customers|card_edition|has_premium'),
   'api.admin_get_premium_member,api.admin_grant_premium,api.admin_premium_overview,api.admin_revoke_premium,'
   || 'api.choose_card_design,api.get_card_duel,api.get_card_league_context,api.get_manager_cards,api.get_my_card_career,'
-  || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,'
+  || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,api.get_round_recap,'
   || 'api.premium_status,api.service_apply_billing_event,api.set_card_history_visibility,'
-  || 'app_private.account_deletion_erase,app_private.card_edition_effective,app_private.card_premium_mode,'
-  || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user',
-  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
+  || 'app_private.account_deletion_erase,app_private.briefing_membership,app_private.card_edition_effective,app_private.card_premium_mode,'
+  || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user,'
+  || 'app_private.rivals_gate,app_private.rivals_tick,app_private.trophy_access',
+  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same), the round recap read (20261015120000, the same), the Rivaux gate and tick (20261015130100 and 20261015130200: the tick only tells a member their own rival took the lead), the deadline briefing''s membership check (20261015140000: its two reads display the caller''s own team and write nothing), the Trophées access check (20261015150200, which only says off, free or member) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('api', 'app', 'app_private')
@@ -212,7 +213,7 @@ select extensions.is(
      and (p.proname ~ '(tick|compute|rank|standing|league|score|points|evaluate|finalize)')
      -- the one display read named after the league it reads (20261014150000): it computes
      -- nothing and writes nothing, and the list above names it
-     and p.proname <> 'get_card_league_context'),
+     and p.proname <> all (array['get_card_league_context', 'rivals_tick'])),
   0, 'in particular none whose name is a tick, a computation, a ranking, a standing, a league, a score or a finalization (apart from the league context read, which only displays)');
 
 select * from extensions.finish();

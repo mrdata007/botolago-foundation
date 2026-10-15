@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import type { MateTrophies } from "@/backend/trophies/contracts";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { STANDINGS_FIGURE_CELL, STANDINGS_NAME_CELL } from "@/components/fantasy-lists/standings";
 import { CardToken } from "@/components/manager-card/CardToken";
@@ -13,6 +14,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { DASH, Figure, PersonName } from "./figures";
+import { MateTrophyChip } from "./MateTrophies";
 import { cardLine, rowReportTargets, type PeopleRow } from "./people";
 
 /**
@@ -22,7 +24,9 @@ import { cardLine, rowReportTargets, type PeopleRow } from "./people";
  *
  * The reader's own row has a 4px bar in the action gradient at its inline start. With `onOpen`
  * the name is a button stretched over the row (the face-à-face opens from it); the report control
- * sits above that overlay, for other managers only.
+ * sits above that overlay, for other managers only. With `trophies` (by team id) and
+ * `onOpenTrophies`, a league mate who shows trophies gets a small trophy count chip before it, which
+ * opens them read-only; the reader's own row never has one.
  */
 export function LeagueRows({
   rows,
@@ -30,11 +34,16 @@ export function LeagueRows({
   onOpen,
   head = false,
   ownRef,
+  trophies,
+  onOpenTrophies,
 }: {
   rows: readonly PeopleRow[];
   caption: string;
   onOpen?: (row: PeopleRow) => void;
   head?: boolean;
+  /** The trophies the mates show, by standings row (team id). */
+  trophies?: ReadonlyMap<string, MateTrophies>;
+  onOpenTrophies?: (row: PeopleRow) => void;
   /** Receives the reader's own row, so the page can scroll it into view. */
   ownRef?: (element: HTMLTableRowElement | null) => void;
 }) {
@@ -62,6 +71,8 @@ export function LeagueRows({
             nf={nf}
             onOpen={onOpen}
             ownRef={row.own ? ownRef : undefined}
+            mate={row.own ? undefined : trophies?.get(row.standing.managerId)}
+            onOpenTrophies={onOpenTrophies}
           />
         ))}
       </UiTBody>
@@ -75,12 +86,16 @@ function LeagueRow({
   nf,
   onOpen,
   ownRef,
+  mate,
+  onOpenTrophies,
 }: {
   row: PeopleRow;
   last: boolean;
   nf: Intl.NumberFormat;
   onOpen?: (row: PeopleRow) => void;
   ownRef?: (element: HTMLTableRowElement | null) => void;
+  mate?: MateTrophies;
+  onOpenTrophies?: (row: PeopleRow) => void;
 }) {
   const curva = useCurvaCopy();
   const nameClass = cn(
@@ -143,6 +158,9 @@ function LeagueRow({
               <CardLineText row={row} youLabel={row.own ? curva.peopleYou : null} />
             </div>
           )}
+          {mate && onOpenTrophies ? (
+            <MateTrophyChip name={row.name} count={mate.count} onOpen={() => onOpenTrophies(row)} />
+          ) : null}
           {onOpen && !row.own ? (
             <ReportNameMenu targets={rowReportTargets(row)} className="relative z-10" />
           ) : null}

@@ -1,8 +1,10 @@
 import { PlusHomeDuel, PlusHomeMember, PlusHomeSeason } from "@/components/plus/PlusHomeBlocks";
 import type { DuelSide } from "@/components/plus/PlusDuelSection";
+import { PlusRivals } from "@/components/plus/PlusRivals";
 import { usePlusAccess } from "@/components/plus/plus-access";
 
 import { closestRival, type PeopleRow } from "./people";
+import { rivalsSlotProps } from "./rivals-slot";
 import type { CurvaPeople } from "./use-curva-people";
 
 const sideOf = (row: PeopleRow): DuelSide => ({
@@ -62,4 +64,17 @@ export function PlusHomeMemberSlot() {
   const access = usePlusAccess();
   if (access !== "member") return null;
   return <PlusHomeMember />;
+}
+
+/**
+ * « Vos rivaux » under « Votre duel »: up to three friends of the reader's private leagues, one
+ * poster each. Off: nothing, no node and no request. A non-member: their real points against their
+ * closest league mate (the standings the home already loads) over the blurred example, and the
+ * limits said plainly (nothing while the league's table is not in yet or the reader is alone in
+ * it). A member: the posters, from the rivals read alone, whatever the selected league shows.
+ */
+export function PlusHomeRivalsSlot({ people }: { people: CurvaPeople }) {
+  const access = usePlusAccess();
+  const props = rivalsSlotProps(access, people);
+  return props ? <PlusRivals {...props} /> : null;
 }

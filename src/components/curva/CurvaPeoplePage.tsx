@@ -18,15 +18,18 @@ import {
   UiLinkButton,
   UiSkeleton,
 } from "@/components/ui-kit";
+import { usePlusAccess } from "@/components/plus/plus-access";
 import { takeDuelReturn } from "@/components/plus/plus-return";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { useLeagueMemberTrophies } from "@/services/use-trophies";
 
 import { PersonName } from "./figures";
 import { HeadToHeadSheet } from "./HeadToHeadSheet";
 import { LeagueBand } from "./LeagueBand";
 import { LeagueRows } from "./LeagueRows";
+import { MateTrophiesSheet } from "./MateTrophies";
 import { newlyRated, sameClub, type PeopleRow } from "./people";
 import { CurvaError, CurvaLoading, CurvaUnavailable } from "./StateBlocks";
 import { useCurvaPeople } from "./use-curva-people";
@@ -67,6 +70,7 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
   const search = useSearch({ from: "/curva/les-votres" });
   const people = useCurvaPeople(true, search.ligue);
   const [open, setOpen] = useState<PeopleRow | null>(null);
+  const [trophyRow, setTrophyRow] = useState<PeopleRow | null>(null);
   const [onlyClub, setOnlyClub] = useState(false);
   const [hint, setHint] = useState(false);
   useViewEvent("curva_people_view");
@@ -79,6 +83,12 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
   };
 
   const { league, rows } = people;
+
+  // The trophies the mates show (BotolaGO+ on for the reader, member or not: looking is free). Off
+  // asks for nothing; a league the database refuses simply has no chips.
+  const access = usePlusAccess();
+  const mates = useLeagueMemberTrophies(league?.id ?? null, access !== "off");
+  const mateTrophies = mates.data ?? undefined;
 
   // Back from the offer's « Découvrir » in a duel: the sheet that was open opens again.
   const duelReturn = useRef<string | null | undefined>(undefined);
@@ -201,6 +211,8 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
                 rows={shown}
                 caption={league.name}
                 head
+                trophies={mateTrophies}
+                onOpenTrophies={setTrophyRow}
                 onOpen={(row) => {
                   if (row.card && !row.own) setOpen(row);
                 }}
@@ -259,6 +271,14 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
           ) : null}
         </>
       )}
+      <MateTrophiesSheet
+        open={trophyRow !== null}
+        onOpenChange={(next) => {
+          if (!next) setTrophyRow(null);
+        }}
+        name={trophyRow?.name ?? ""}
+        mate={trophyRow ? (mateTrophies?.get(trophyRow.standing.managerId) ?? null) : null}
+      />
       <HeadToHeadSheet
         open={open !== null}
         onOpenChange={(next) => {

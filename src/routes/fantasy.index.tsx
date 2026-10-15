@@ -21,6 +21,7 @@ import { FantasyHubRound } from "@/components/fantasy/FantasyHubRound";
 import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
 import { FantasyGuestExplainer } from "@/components/fantasy/FantasyGuestIntro";
 import { deadlineChecklist } from "@/lib/deadline-checklist";
+import { PlusBriefingEntry } from "@/components/plus/PlusBriefing";
 import { PrizeWelcome as ArrivalDialog } from "@/components/prizes/PrizeWelcome";
 import {
   FantasyHubLeagues,
@@ -217,6 +218,13 @@ function FantasyHub() {
             ][lang === "ar" ? "ar" : "fr"],
           )}
         />
+      ) : null}
+
+      {/* BotolaGO+ « Briefing avant la deadline »: nothing while the feature is off. */}
+      {hasTeam && gameweek && screen.phase === "ready" ? (
+        <div className={ui.space.gutter}>
+          <PlusBriefingEntry gameweekNumber={gameweek.number} />
+        </div>
       ) : null}
 
       <div className={cn("pt-3.5", ui.space.gutter)}>
