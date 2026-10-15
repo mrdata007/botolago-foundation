@@ -206,7 +206,8 @@ function useNumber() {
 /** A name, isolated in Arabic text so its dots and dashes stay with it. */
 function useName() {
   const { lang } = usePlusCopy();
-  return (name: string) => (lang === "ar" ? `\u2068${name}\u2069` : name);
+  // Kept on one line (no-break spaces) so a Latin name is never split across two Arabic lines.
+  return (name: string) => (lang === "ar" ? `\u2068${name.replace(/ /g, "\u00a0")}\u2069` : name);
 }
 
 function RecapBody({
