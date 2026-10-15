@@ -24,9 +24,14 @@ export interface PlayersSearch {
   readonly compare?: string;
   readonly q?: string;
   readonly pos?: PlayerPositionFilter;
-  readonly club?: string;
-  /** The price cap in millions, as a whole number. */
-  readonly max?: string;
+  /**
+   * A club id. An id that is only digits is a number here, because the router
+   * writes a numeric string between quotes (`club=%22123%22`) and a number
+   * as it is (`club=123`); read it with `String(...)`.
+   */
+  readonly club?: string | number;
+  /** The price cap in millions, a whole number (a number, so the URL has no quotes). */
+  readonly max?: number;
   readonly sort?: Exclude<PlayerSortKey, "points">;
   readonly dir?: "asc";
   /** From 2: page 1 is the default. */
@@ -36,7 +41,6 @@ export interface PlayersSearch {
 export const PLAYERS_SEARCH_MAX_LENGTH = 80;
 const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
 const WHOLE_NUMBER = /^\d{1,3}$/;
-const MAX_PAGE = 999;
 
 /** The router JSON-parses a query value first: `max=8` arrives as the number 8. */
 function textOf(value: unknown): string | undefined {
@@ -46,25 +50,31 @@ function textOf(value: unknown): string | undefined {
   return undefined;
 }
 
+/** `"123"` becomes 123 so the router writes it bare; `"007"` and `"1e3"` stay text. */
+function plainNumberOrText(text: string): string | number {
+  const number = Number(text);
+  return Number.isSafeInteger(number) && String(number) === text ? number : text;
+}
+
 export function validatePlayersSearch(search: Record<string, unknown>): PlayersSearch {
   const compare = typeof search.compare === "string" && search.compare ? search.compare : undefined;
   const q = textOf(search.q)?.slice(0, PLAYERS_SEARCH_MAX_LENGTH);
   const pos = PLAYER_POSITIONS.find((candidate) => candidate === search.pos);
   const clubText = textOf(search.club);
-  const club = clubText !== undefined && SAFE_KEY.test(clubText) ? clubText : undefined;
+  const club =
+    clubText !== undefined && SAFE_KEY.test(clubText) ? plainNumberOrText(clubText) : undefined;
   const maxText = textOf(search.max);
-  const max =
-    maxText !== undefined && WHOLE_NUMBER.test(maxText) ? String(Number(maxText)) : undefined;
+  const max = maxText !== undefined && WHOLE_NUMBER.test(maxText) ? Number(maxText) : undefined;
   const sort = PLAYER_SORT_KEYS.find((candidate) => candidate === search.sort);
-  const pageNumber = Number(textOf(search.page));
-  const page =
-    Number.isInteger(pageNumber) && pageNumber >= 2 ? Math.min(pageNumber, MAX_PAGE) : undefined;
+  const pageText = textOf(search.page);
+  const pageNumber = pageText !== undefined && WHOLE_NUMBER.test(pageText) ? Number(pageText) : 0;
+  const page = pageNumber >= 2 ? pageNumber : undefined;
   return {
     ...(compare ? { compare } : {}),
     ...(q && q.trim() ? { q } : {}),
     ...(pos ? { pos } : {}),
-    ...(club ? { club } : {}),
-    ...(max && max !== "0" ? { max } : {}),
+    ...(club !== undefined ? { club } : {}),
+    ...(max ? { max } : {}),
     ...(sort && sort !== "points" ? { sort } : {}),
     ...(search.dir === "asc" ? { dir: "asc" as const } : {}),
     ...(page ? { page } : {}),

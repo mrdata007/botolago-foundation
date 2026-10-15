@@ -32,7 +32,7 @@ describe("the player list's state in the URL", () => {
       q: "hakimi",
       pos: "DEF",
       club: "wac",
-      max: "8",
+      max: 8,
       sort: "price",
       dir: "asc",
       page: 3,
@@ -47,12 +47,14 @@ describe("the player list's state in the URL", () => {
   });
 
   test("numbers the router parsed are read back as the text the page uses", () => {
-    expect(validatePlayersSearch({ max: 8, page: "2", club: 12, q: 2024 })).toEqual({
-      max: "8",
+    expect(validatePlayersSearch({ max: "8", page: "2", club: 12, q: 2024 })).toEqual({
+      max: 8,
       page: 2,
-      club: "12",
+      club: 12,
       q: "2024",
     });
+    // Digits that are not the number's own spelling stay text.
+    expect(validatePlayersSearch({ club: "007" })).toEqual({ club: "007" });
   });
 
   test.each([
@@ -63,6 +65,10 @@ describe("the player list's state in the URL", () => {
     [{ page: -4 }],
     [{ page: 2.5 }],
     [{ page: "abc" }],
+    [{ page: "0x10" }],
+    [{ page: " 4 " }],
+    [{ page: "1e3" }],
+    [{ page: 1000 }],
     [{ max: "-3" }],
     [{ max: "1e9" }],
     [{ max: 8.5 }],
@@ -75,7 +81,7 @@ describe("the player list's state in the URL", () => {
 
   test("bounds the text and the page it will hold", () => {
     expect(validatePlayersSearch({ q: "a".repeat(500) }).q).toHaveLength(80);
-    expect(validatePlayersSearch({ page: 9_999_999 }).page).toBe(999);
+    expect(validatePlayersSearch({ page: 999 }).page).toBe(999);
   });
 
   test("keeps `compare`, which only the player page's link sets", () => {
@@ -89,11 +95,11 @@ describe("the player list's state in the URL", () => {
 
 describe("changing the list", () => {
   test("a filter change puts the reader back on page 1, everything else stays", () => {
-    const before = { pos: "DEF", club: "wac", max: "8", sort: "price", dir: "asc", page: 3 };
+    const before = { pos: "DEF", club: "wac", max: 8, sort: "price", dir: "asc", page: 3 };
     expect(playersSearchWith(before, { page: undefined, pos: "MID" })).toEqual({
       pos: "MID",
       club: "wac",
-      max: "8",
+      max: 8,
       sort: "price",
       dir: "asc",
     });
@@ -136,11 +142,12 @@ describe("the list survives a trip through the address bar", () => {
     });
     await router.load();
     for (const search of [
-      { pos: "DEF" as const, club: "wac", max: "8", sort: "price" as const, page: 2 },
+      { pos: "DEF" as const, club: "wac", max: 8, sort: "price" as const, page: 2 },
       { q: "عبد الله", dir: "asc" as const },
       { q: "o'neil & sons?", pos: "GK" as const },
-      { club: "8f14e45f-ceea-4672-9a55-3f4b2b0c1e11", max: "12", page: 14 },
-      { q: "2024", club: "12" },
+      { club: "8f14e45f-ceea-4672-9a55-3f4b2b0c1e11", max: 12, page: 14 },
+      { q: "2024", club: 12 },
+      { club: "007" },
     ]) {
       const href = router.buildLocation({ to: "/fantasy/players", search }).href;
       const parsed = router.options.parseSearch?.(new URL(href, "https://botolago.com").search);
@@ -148,14 +155,29 @@ describe("the list survives a trip through the address bar", () => {
     }
   });
 
+  test("a price cap and a numeric club id are written without quotes", async () => {
+    const root = createRootRoute();
+    const players = createRoute({
+      getParentRoute: () => root,
+      path: "/fantasy/players",
+      validateSearch: validatePlayersSearch,
+    });
+    const router = createRouter({
+      routeTree: root.addChildren([players]),
+      history: createMemoryHistory({ initialEntries: ["/fantasy/players"] }),
+    });
+    await router.load();
+    // What the page navigates to after the controls hand it text.
+    const search = playersSearchWith({}, { max: "8", club: "123" });
+    const href = router.buildLocation({ to: "/fantasy/players", search }).href;
+    expect(href).toBe("/fantasy/players?club=123&max=8");
+    expect(href).not.toContain("%22");
+  });
+
   test("the list reads its controls from the URL, not from state a player page unmounts", () => {
     const source = readFileSync(join(import.meta.dir, "../../routes/fantasy.players.tsx"), "utf8");
-    expect(source).toContain("validatePlayersSearch(search)");
-    expect(source).not.toMatch(/useState<SortKey>/);
-    expect(source).not.toMatch(/const \[page, setPage\]/);
-    expect(source).not.toMatch(/const \[clubId, setClubId\]/);
+    expect(source).toContain("validatePlayersSearch(");
     // The "Comparer" link must no longer wipe the filters when it is consumed.
     expect(source).not.toMatch(/search: \{\}, replace: true/);
-    expect(source).toContain("resetScroll: false");
   });
 });

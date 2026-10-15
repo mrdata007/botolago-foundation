@@ -40,6 +40,7 @@ import {
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
 import { isSessionSettled } from "@/auth/second-factor";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
@@ -430,6 +431,7 @@ function MyLeagues() {
   const { t } = useI18n();
   const { source, key } = useFantasyDataSource();
   const guest = source === "guest";
+  const returnSearch = useAuthReturnSearch();
 
   const privateQ = useQuery({
     queryKey: key("leagues", "private"),
@@ -448,11 +450,18 @@ function MyLeagues() {
         <h2 className={cn(ui.display.section, ui.tone.default)}>{t("auth.prompt.title")}</h2>
         <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.prompt.body")}</p>
         <div className="mt-4 grid gap-2">
-          <UiLinkButton to="/auth/login" search={{ next: "/fantasy/rankings" }}>
+          <UiLinkButton
+            to="/auth/login"
+            search={{ next: returnSearch.next ?? "/fantasy/rankings" }}
+          >
             <LogIn className="h-4 w-4" aria-hidden />
             {t("auth.prompt.login")}
           </UiLinkButton>
-          <UiLinkButton to="/auth/register" search={{ next: "/fantasy/rankings" }} variant="ink">
+          <UiLinkButton
+            to="/auth/register"
+            search={{ next: returnSearch.next ?? "/fantasy/rankings" }}
+            variant="ink"
+          >
             <UserPlus className="h-4 w-4" aria-hidden />
             {t("auth.prompt.register")}
           </UiLinkButton>

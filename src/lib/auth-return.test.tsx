@@ -150,27 +150,127 @@ describe("the sign-in links read the page the reader is on", () => {
   });
 });
 
+describe("what a return target never carries", () => {
+  const INVITE_SECRET = "0123456789ABCDEF0123456789ABCDEF";
+
+  test("the invite's hash is dropped, the page is kept", () => {
+    expect(
+      authReturnTarget({
+        pathname: "/pronostics/ligues/rejoindre",
+        searchStr: "",
+        hash: `code=${INVITE_SECRET}&game=fantasy`,
+      }),
+    ).toBe("/pronostics/ligues/rejoindre");
+  });
+
+  test.each([
+    ["access_token=AT&refresh_token=RT"],
+    [`code=${INVITE_SECRET}`],
+    ["error_description=denied"],
+    ["//evil"],
+    ["a b"],
+    ["x".repeat(65)],
+  ])("a hash that is not a plain anchor (%s) is dropped", (hash) => {
+    expect(authReturnTarget({ pathname: "/profile", searchStr: "", hash })).toBe("/profile");
+  });
+
+  test("a plain anchor is kept, with or without its #", () => {
+    expect(authReturnTarget({ pathname: "/profile", hash: "security" })).toBe("/profile#security");
+    expect(authReturnTarget({ pathname: "/profile", hash: "#security" })).toBe("/profile#security");
+    expect(authReturnTarget({ pathname: "/faq", hash: "a_b-C9" })).toBe("/faq#a_b-C9");
+  });
+
+  test.each([
+    "access_token",
+    "refresh_token",
+    "provider_token",
+    "provider_refresh_token",
+    "token",
+    "token_hash",
+    "code",
+    "type",
+    "authorization_id",
+    "error",
+    "error_code",
+    "error_description",
+  ])("the query key %s is removed and the filters beside it stay", (key) => {
+    expect(
+      authReturnTarget({
+        pathname: "/news",
+        searchStr: `?category=mercato&${key}=SECRET&club=wac`,
+      }),
+    ).toBe("/news?category=mercato&club=wac");
+    expect(authReturnTarget({ pathname: "/news", searchStr: `?${key}=SECRET` })).toBe("/news");
+  });
+
+  test("a credential key is found however it is written", () => {
+    expect(authReturnTarget({ pathname: "/news", searchStr: "?%63ode=S&Token=S&a=1" })).toBe(
+      "/news?a=1",
+    );
+    expect(authReturnTarget({ pathname: "/news", searchStr: "?code&a=1" })).toBe("/news?a=1");
+  });
+
+  test("the auth pages and the unsubscribe link are not places to return to", () => {
+    expect(authReturnTarget({ pathname: "/unsubscribe", searchStr: "?token=SECRET" })).toBe(
+      undefined,
+    );
+    expect(authReturnTarget({ pathname: "/unsubscribe" })).toBeUndefined();
+    expect(authReturnTarget({ pathname: "/auth/login", searchStr: "?next=%2Ffantasy" })).toBe(
+      undefined,
+    );
+    expect(
+      authReturnTarget({
+        pathname: "/auth/callback",
+        searchStr: "?code=PKCE&next=%2F",
+        hash: "access_token=AT&refresh_token=RT",
+      }),
+    ).toBeUndefined();
+    expect(authReturnTarget({ pathname: "/AUTH/verify" })).toBeUndefined();
+    expect(authReturnTarget({ pathname: "/a/../auth/login" })).toBeUndefined();
+    // Only the folder: a page that merely starts with the letters is ordinary.
+    expect(authReturnTarget({ pathname: "/authors" })).toBe("/authors");
+  });
+
+  test("a very long address is cut to its path, and a very long path is dropped", () => {
+    const long = "x".repeat(5000);
+    expect(authReturnTarget({ pathname: "/news", searchStr: `?q=${long}`, hash: "top" })).toBe(
+      "/news",
+    );
+    expect(authReturnTarget({ pathname: `/${"a".repeat(100000)}` })).toBeUndefined();
+    const result = authReturnTarget({ pathname: "/news", searchStr: `?q=${"y".repeat(1900)}` });
+    expect(result?.length).toBeLessThanOrEqual(2000);
+  });
+
+  test("ordinary filters and anchors still survive", () => {
+    expect(authReturnTarget({ pathname: "/pronostics", searchStr: "?journee=12&tab=ligues" })).toBe(
+      "/pronostics?journee=12&tab=ligues",
+    );
+    expect(
+      authReturnTarget({ pathname: "/fantasy/points", searchStr: "?round=7", hash: "security" }),
+    ).toBe("/fantasy/points?round=7#security");
+  });
+});
+
 describe("every sign-in entry point uses the shared return target", () => {
   const read = (file: string) => readFileSync(join(import.meta.dir, "..", file), "utf8");
 
   test.each([
     "components/auth/AuthPromptDialog.tsx",
     "components/pepites/PepitesFollowButton.tsx",
+    "components/fantasy/FantasyAccessGate.tsx",
+    "components/fpl/FantasyScreenGate.tsx",
+    "components/pepites/PepitesRanking.tsx",
     "routes/notifications.tsx",
     "routes/profile.tsx",
+    "routes/fantasy.rankings.tsx",
   ])("%s", (file) => {
-    const source = read(file);
-    expect(source).toContain("useAuthReturnSearch");
-    // The shape that dropped the query.
-    expect(source).not.toMatch(/search: \{ next: pathname \}/);
+    expect(read(file)).toContain("useAuthReturnSearch");
   });
 
-  test("the inbox and profile sign-in links carry the search", () => {
-    for (const file of ["routes/notifications.tsx", "routes/profile.tsx"]) {
-      const source = read(file);
-      expect(source).toMatch(/to="\/auth\/register"\s+search=\{returnSearch\}/);
-      expect(source).toMatch(/to="\/auth\/login"\s+search=\{returnSearch\}/);
-    }
+  test("the Curva lock screen has no copy of the logic", () => {
+    const source = read(join("components", "curva", "CurvaLockScreen.tsx"));
+    expect(source).toContain("authReturnTarget(");
+    expect(source).not.toContain("sanitizeAuthCallbackNext");
   });
 
   test("the pages that land on next hand the router a location, not a bare path", () => {
@@ -179,9 +279,13 @@ describe("every sign-in entry point uses the shared return target", () => {
       "routes/auth.register.tsx",
       "routes/auth.profile-setup.tsx",
     ]) {
-      const source = read(file);
-      expect(source).toContain("authLanding(");
-      expect(source).not.toMatch(/navigate\(\{ to: next \}\)/);
+      expect(read(file)).toContain("authLanding(");
+    }
+  });
+
+  test("the full-page landings replace the sign-in entry too", () => {
+    for (const file of ["routes/auth.login.tsx", "routes/auth.mfa-challenge.tsx"]) {
+      expect(read(file)).toContain("window.location.replace(sanitizeAuthCallbackNext(next))");
     }
   });
 });

@@ -13,7 +13,7 @@ import { ui, UiCard, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
-import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authReturnTarget } from "@/lib/auth-callback";
 import { cn } from "@/lib/utils";
 
 import { CardStage } from "./CardStage";
@@ -71,9 +71,7 @@ export function CurvaLockScreen(): JSX.Element {
   const { pathname, next } = useRouterState({
     select: (state) => ({
       pathname: state.location.pathname,
-      next: sanitizeAuthCallbackNext(
-        `${state.location.pathname}${state.location.searchStr}${state.location.hash ? `#${state.location.hash}` : ""}`,
-      ),
+      next: authReturnTarget(state.location),
     }),
   });
   const beat = useStageBeat({ kind: "guest", counted: null });

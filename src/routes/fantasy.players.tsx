@@ -155,8 +155,8 @@ function PlayersPage() {
   // rather than stepping back through every chip tapped) and keeps the scroll
   // where it is. What is only a default stays out of the URL.
   const pos: Position | "" = search.pos ?? "";
-  const clubId = search.club ?? "";
-  const maxPrice = search.max ?? "";
+  const clubId = search.club === undefined ? "" : String(search.club);
+  const maxPrice = search.max === undefined ? "" : String(search.max);
   const sort: SortKey = search.sort ?? "points";
   const dir: SortDir = search.dir ?? "desc";
   const page = search.page ?? 1;
@@ -176,13 +176,20 @@ function PlayersPage() {
   // The search box keeps what is typed and writes the URL once typing pauses,
   // so a keystroke is never a navigation. It starts from the URL's text.
   const [q, setQ] = useState(search.q ?? "");
+  // Compared as the URL would hold it: blank text and over-long text are not
+  // kept, and must not leave the write below repeating itself forever.
+  const qPending = (validatePlayersSearch({ q }).q ?? "") !== (search.q ?? "");
   useEffect(() => {
-    // Compared as the URL would hold it: blank text and over-long text are
-    // not kept, and must not leave this effect writing the same thing forever.
-    if ((validatePlayersSearch({ q }).q ?? "") === (search.q ?? "")) return;
+    if (!qPending) return;
     const timer = setTimeout(() => updateSearch({ q }), SEARCH_URL_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [q, search.q, updateSearch]);
+  }, [q, qPending, updateSearch]);
+  // A player opened within the pause would take the typed text with it. The
+  // text is written as the player's link is pressed, before the page changes:
+  // writing it on unmount would rewrite the player page's own address.
+  const flushSearchText = () => {
+    if (qPending) updateSearch({ q });
+  };
   const setPos = (next: Position | "") => updateSearch({ pos: next || undefined });
   const setClubId = (next: string) => updateSearch({ club: next || undefined });
   const setMaxPrice = (next: string) => updateSearch({ max: next || undefined });
@@ -550,7 +557,7 @@ function PlayersPage() {
           />
         ) : (
           <>
-            <ul className={cn(ui.surface.card, "overflow-hidden")}>
+            <ul className={cn(ui.surface.card, "overflow-hidden")} onClickCapture={flushSearchText}>
               {visible.map((p, index) => (
                 <PlayerListRow
                   key={p.id}

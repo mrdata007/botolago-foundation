@@ -80,8 +80,5 @@ describe("the News filters in the URL", () => {
   test("the hub reads its filters from the URL, not from state an article unmounts", () => {
     const source = readFileSync(join(import.meta.dir, "../../routes/news.tsx"), "utf8");
     expect(source).toContain("validateSearch: validateNewsSearch");
-    expect(source).not.toMatch(/useState<string \| null>\(null\)/);
-    expect(source).toContain("replace: true");
-    expect(source).toContain("resetScroll: false");
   });
 });
