@@ -92,11 +92,13 @@ async function rpc(name: string, args: RpcArgs) {
 // The Supabase client needs credentials this test does not have, so the News
 // API handle is replaced for this file and put back afterwards. Everything
 // above the handle (the repository, its schema parsing, the service) is real.
-const V2_CLIENT = "@/integrations/supabase/v2-client";
-const realV2Client = { ...(await import(V2_CLIENT)) };
-mock.module(V2_CLIENT, () => ({ ...realV2Client, getNewsApi: () => ({ rpc }) }));
+const realV2Client = { ...(await import("@/integrations/supabase/v2-client")) };
+mock.module("@/integrations/supabase/v2-client", () => ({
+  ...realV2Client,
+  getNewsApi: () => ({ rpc }),
+}));
 afterAll(() => {
-  mock.module(V2_CLIENT, () => realV2Client);
+  mock.module("@/integrations/supabase/v2-client", () => realV2Client);
 });
 
 const { SupabaseNewsRepository } = await import("./supabase-repository");
