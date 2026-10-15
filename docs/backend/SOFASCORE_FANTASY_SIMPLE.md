@@ -138,8 +138,12 @@ overridden, retries dedupe by digest):
   (capped at 90, at least 1), his clean sheet follows those minutes (60 or more,
   nothing conceded), and the case is counted as `minutesFromSofascore` in the
   `football_live_refresh_fantasy` log line. Goals conceded still come from the
-  substitution times. Times that cannot be ordered still hold it
-  (`timeline_unresolved`).
+  substitution times. A goal in the same minute as a player's substitution or
+  dismissal is placed by SofaScore's own order of events (owner decision
+  2026-10-15, option A): SofaScore lists a match's incidents newest first, and
+  that order is used when the whole list agrees with it. Times that still cannot
+  be ordered (the list is not in time order, or the player came on and went off
+  in the goal's minute) hold it (`timeline_unresolved`).
 - **Held for review, never guessed**: an unknown score-relevant incident label
   (an own goal has never been seen), a lineup `ownGoals` no incident explains, a
   second yellow card (whether the first yellow is also listed is unestablished,

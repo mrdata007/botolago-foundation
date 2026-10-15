@@ -33,7 +33,9 @@
  *   counts stoppage time in `minutesPlayed`, so a player still on the pitch at
  *   half time may be over by the first half's stoppage time: for him the upper
  *   limit is that stoppage time plus 2 when it is longer than 4 minutes (see
- *   `firstHalfStoppage`).
+ *   `firstHalfStoppage`). A goal in the same minute as a player's substitution
+ *   or dismissal is placed by SofaScore's own order of events (owner decision
+ *   2026-10-15, option A; see `chronology`); with no trusted order it is held.
  * - Assists, saves, penalties saved, penalties missed (decision M8, switched by
  *   SOFASCORE_DETAIL_FIELDS_ENABLED): count only on a FULL-coverage match
  *   (every player with minutes carries `rating` and `totalPass`). On a limited-coverage match they are
@@ -281,6 +283,25 @@ function firstHalfStoppage(match: SofascoreMatchData): number | null {
 }
 
 /**
+ * Owner decision 2026-10-15 (option A): a goal in the same minute as a player's
+ * substitution or dismissal is placed by SofaScore's own order of events, which
+ * lists a match's incidents newest first. That order is trusted only when the
+ * whole list agrees with it (no incident is at a later time than the one before
+ * it). Returns each incident's place in time (0 = earliest), or null when the
+ * list is not in that order; then same-minute ties stay held, as before.
+ */
+function chronology(
+  incidents: readonly PerformanceIncident[],
+): Map<PerformanceIncident, number> | null {
+  const at = (i: PerformanceIncident) => i.minute * 1000 + (i.addedMinutes ?? 0);
+  for (let n = 1; n < incidents.length; n += 1)
+    if (at(incidents[n]!) > at(incidents[n - 1]!)) return null;
+  const order = new Map<PerformanceIncident, number>();
+  incidents.forEach((i, n) => order.set(i, incidents.length - 1 - n));
+  return order;
+}
+
+/**
  * May this unmapped, appearing player be left out of the request?
  *
  * Only one who has nothing the score depends on: no goal, own goal or penalty
@@ -417,11 +438,20 @@ export async function prepareSofascoreObservation(
   for (const p of match.lineups.players) lineupById.set(p.externalId, p);
   const subIn = new Map<string, number>();
   const subOut = new Map<string, number>();
+  const subInEvent = new Map<string, PerformanceIncident>();
+  const subOutEvent = new Map<string, PerformanceIncident>();
   for (const i of match.incidents) {
     if (i.kind !== "substitution") continue;
-    if (i.playerIn?.externalId) subIn.set(i.playerIn.externalId, i.minute);
-    if (i.playerOut?.externalId) subOut.set(i.playerOut.externalId, i.minute);
+    if (i.playerIn?.externalId) {
+      subIn.set(i.playerIn.externalId, i.minute);
+      subInEvent.set(i.playerIn.externalId, i);
+    }
+    if (i.playerOut?.externalId) {
+      subOut.set(i.playerOut.externalId, i.minute);
+      subOutEvent.set(i.playerOut.externalId, i);
+    }
   }
+  const order = chronology(match.incidents);
   const referenced = new Set<string>();
   for (const i of match.incidents) {
     if (i.kind === "unknown") continue;
@@ -562,10 +592,36 @@ export async function prepareSofascoreObservation(
     const started = p.starter;
     const entered = subIn.get(p.externalId) ?? null;
     const left = subOut.get(p.externalId) ?? null;
-    const dismissal = [...mine("red_card"), ...mine("second_yellow")]
-      .map((i) => i.minute)
-      .sort((a, b) => a - b)[0];
+    const dismissals = [...mine("red_card"), ...mine("second_yellow")];
+    const dismissal = dismissals.map((i) => i.minute).sort((a, b) => a - b)[0];
     const exits = [left, dismissal ?? null].filter((m): m is number => m !== null);
+
+    // A goal against his side in the minute he came on or went off (option A,
+    // `chronology`): SofaScore's order of events says whether he was on the pitch
+    // for it. Such a goal is counted here and left out of `concededAt`. With no
+    // trusted order, or on and off in that same minute, it stays in and holds.
+    const exitAt = exits.length > 0 ? Math.min(...exits) : null;
+    const entryEvent = started ? null : (subInEvent.get(p.externalId) ?? null);
+    const exitEvent =
+      exitAt === null
+        ? null
+        : ([subOutEvent.get(p.externalId), ...dismissals]
+            .filter((i): i is PerformanceIncident => i !== undefined && i.minute === exitAt)
+            .sort((a, b) => (order?.get(a) ?? 0) - (order?.get(b) ?? 0))[0] ?? null);
+    const concededAt: number[] = [];
+    let concededOnTheMinute = 0;
+    for (const g of goals) {
+      if (g.side !== opposite(p.side)) continue;
+      const onEntry = entryEvent !== null && g.minute === entered;
+      const onExit = exitEvent !== null && g.minute === exitAt;
+      if (order === null || (onEntry && onExit) || (!onEntry && !onExit)) {
+        concededAt.push(g.minute);
+      } else if (onEntry) {
+        if (order.get(g)! > order.get(entryEvent!)!) concededOnTheMinute += 1;
+      } else if (order.get(g)! < order.get(exitEvent!)!) {
+        concededOnTheMinute += 1;
+      }
+    }
 
     let part: ReturnType<typeof deriveParticipation>;
     try {
@@ -576,8 +632,9 @@ export async function prepareSofascoreObservation(
         started,
         enteredAt: started ? null : entered,
         exitedAt: exits.length > 0 ? Math.min(...exits) : null,
-        concededAt: goals.filter((g) => g.side === opposite(p.side)).map((g) => g.minute),
+        concededAt,
       });
+      part = { ...part, goalsConceded: part.goalsConceded + concededOnTheMinute };
     } catch {
       block({
         code: "timeline_unresolved",
