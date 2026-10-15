@@ -6,9 +6,9 @@
 -- who can be pinned (league mates only, not oneself, not a stranger), the cap of three, the place a
 -- removal frees, a league mate who left dropping out of the board and freeing their place; the
 -- privacy switch (a rival's captain only when they share their history); that the reads write
--- nothing; the notification (off until turned on, never told of a journée published before it was
--- turned on, a lead taken, told once, a correction that flips it told again in the corrected
--- wording, none while the tick is off); the phone push of the notification (a pending push delivery
+-- nothing; the notification (off until turned on, state-based: the first pass over a pin only records
+-- who leads, a correction of an OLDER journée that flips the lead is told in the corrected wording,
+-- told once, never for a change published before the member opted in, none while the tick is off); the phone push of the notification (a pending push delivery
 -- per working phone while the member has push and Fantasy reminders on, none otherwise, the push rules
 -- knowing the type); the French text; the two scheduled jobs; and that removing
 -- an account removes its pins and its preference.
@@ -27,7 +27,7 @@
 -- Leagues: L1 private S (A, B, C, F, G)   L2 private S (B, D)   L3 public S (A, D)
 -- A is the only member (a paid entitlement); D shares no private league with A.
 begin;
-select extensions.plan(72);
+select extensions.plan(81);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('bc1f0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -442,62 +442,106 @@ select extensions.is(
    join app.notifications n on n.id = d.notification_id where n.notification_type = 'rival_lead_change'),
   0, 'no delivery of any channel, push included, while the tick is off');
 select app_private.rivals_configure(true);
--- Turned on after the journée was published: never told of it.
+-- Turned on after the journée was published: the first pass only records who leads, whoever is
+-- eligible, and tells nobody.
 update app.rival_preferences set notify_changed_at = timestamptz '2090-01-01 00:00:00+00'
 where user_id = pg_temp.usr('A');
-select extensions.is(app_private.rivals_tick() ->> 'created', '0',
-  'a member who turned it on after the journée was published is not told of it');
+select set_config('test.tick', app_private.rivals_tick()::text, true);
+select extensions.is(current_setting('test.tick')::jsonb ->> 'created', '0',
+  'the first pass over a pin tells nobody: it only records who leads');
+select extensions.is(current_setting('test.tick')::jsonb ->> 'recorded', '2',
+  'it recorded B and C (F has no result, so no leader to record)');
+select extensions.is(
+  (select string_agg(n.leader || ':' || n.changes, ',' order by n.rival_user_id)
+   from app_private.rival_lead_notices n where n.user_id = pg_temp.usr('A')),
+  'rival:0,rival:0', 'B and C lead on the current totals, no change seen yet');
 select extensions.is(
   (select count(*)::integer from app.notification_deliveries d
    join app.notifications n on n.id = d.notification_id where n.notification_type = 'rival_lead_change'),
-  0, 'and no push is sent for a member whose notification was not on in time');
+  0, 'and no notification and no push exist');
 update app.rival_preferences set notify_changed_at = timestamptz '2026-01-01 00:00:00+00'
 where user_id = pg_temp.usr('A');
--- Pins now: B, C, F. B: A led before GW3 and C was level, B leads after; C: level before, C leads after.
-select set_config('test.tick', app_private.rivals_tick()::text, true);
-select extensions.is(current_setting('test.tick')::jsonb, '{"outcome": "ok", "gameweek": 3, "created": 2}'::jsonb,
-  'switched on: two notifications for GW3 (B takes the lead, C takes it from a level start; F has no result)');
+select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'a second pass with nothing changed tells nothing');
+select extensions.is(app_private.rivals_tick() ->> 'recorded', '0', 'and records nothing');
 select extensions.is(
-  (select jsonb_agg(n.title || ' | ' || n.body order by n.title)
-   from app.notifications n where n.user_id = pg_temp.usr('A') and n.notification_type = 'rival_lead_change'),
-  '["Brahim Test vous passe devant | 187 contre 150 après la journée 3.", "Chaimae Test vous passe devant | 155 contre 150 après la journée 3."]'::jsonb,
-  'in French, with the rival''s full name and both totals');
-select extensions.is(
-  (select count(*)::integer from app.notification_deliveries d
-   join app.notifications n on n.id = d.notification_id
-   where n.notification_type = 'rival_lead_change' and d.channel = 'in_app' and d.status = 'delivered'),
-  2, 'each has its in-app delivery');
-select extensions.is(
-  (select string_agg(d.channel || ':' || d.status || ':' || d.provider_key, ',' order by d.channel)
-   from app.notification_deliveries d
-   join app.notifications n on n.id = d.notification_id
-   where n.notification_type = 'rival_lead_change' and d.channel <> 'in_app'),
-  'push:pending:fcm,push:pending:fcm',
-  'and a push waiting for the push claim on the working phone, for each (the claim sends nothing while the push switch is off); no email');
+  (select count(*)::integer from app.notifications where notification_type = 'rival_lead_change'), 0,
+  'still no notification: the lead already held when the member was first seen is not news');
 select extensions.is(
   app_private.notification_push_topic('rival_lead_change') || '/' || app_private.notification_push_ttl('rival_lead_change')::text
     || '/' || app_private.notification_push_topic('manager_card_ovr_change') || '/' || coalesce(app_private.notification_push_topic('breaking_news'), 'null'),
   'fantasy/12:00:00/fantasy/null',
   'the push rules know the type (Fantasy reminders, 12 hours) and the others are unchanged');
-select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'a second pass tells nothing again');
+-- GW2, an OLDER journée than GW3, is corrected after GW3 was published: B 52 becomes 2, so B's
+-- total is 137 against 150 and A takes the lead. Neither journée's own pair of snapshots shows it.
+update app.fantasy_team_gameweek_results set final_score = 2, provisional_score = 2
+where fantasy_team_id = pg_temp.tm('B') and gameweek_id = pg_temp.gw(2);
+update app.fantasy_gameweeks set status = 'corrected', corrected_at = timestamptz '2089-10-01 00:00:00+00'
+where id = pg_temp.gw(2);
+select set_config('test.tick', app_private.rivals_tick()::text, true);
+select extensions.is(
+  jsonb_build_array(current_setting('test.tick')::jsonb ->> 'created', current_setting('test.tick')::jsonb ->> 'recorded',
+    current_setting('test.tick')::jsonb ->> 'gameweek'),
+  '["1", "1", "2"]'::jsonb,
+  'a correction of the older journée 2 that flips the lead is noticed: one notification (C did not change)');
+select extensions.is(
+  (select n.title || ' | ' || n.body from app.notifications n
+   where n.user_id = pg_temp.usr('A') and n.notification_type = 'rival_lead_change'),
+  'Vous reprenez la tête sur Brahim Test | Résultat corrigé, journée 2 : 150 contre 137.',
+  'in French, in the corrected wording, with the rival''s full name and both totals');
+select extensions.is(
+  (select string_agg(n.leader || ':' || n.changes, ',' order by n.rival_user_id)
+   from app_private.rival_lead_notices n where n.user_id = pg_temp.usr('A')),
+  'me:1,rival:0', 'the record now says A leads B (one change seen), C unchanged');
+select extensions.is(
+  (select count(*)::integer from app.notification_deliveries d
+   join app.notifications n on n.id = d.notification_id
+   where n.notification_type = 'rival_lead_change' and d.channel = 'in_app' and d.status = 'delivered'),
+  1, 'it has its in-app delivery');
+select extensions.is(
+  (select string_agg(d.channel || ':' || d.status || ':' || d.provider_key, ',' order by d.channel)
+   from app.notification_deliveries d
+   join app.notifications n on n.id = d.notification_id
+   where n.notification_type = 'rival_lead_change' and d.channel <> 'in_app'),
+  'push:pending:fcm',
+  'and a push waiting for the push claim on the working phone (the claim sends nothing while the push switch is off); no email');
+select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'a pass after it tells nothing again: no repeat notice');
 update app.user_preferences set push_notifications_enabled = false where user_id = pg_temp.usr('A');
--- A correction hands the lead back to A against B (B 80 becomes 30: 137 against 150).
-update app.fantasy_team_gameweek_results set final_score = 30, provisional_score = 30
-where fantasy_team_id = pg_temp.tm('B') and gameweek_id = pg_temp.gw(3);
+-- A second correction of GW2 hands the lead back to B (B 2 becomes 52: 187 against 150).
+update app.fantasy_team_gameweek_results set final_score = 52, provisional_score = 52
+where fantasy_team_id = pg_temp.tm('B') and gameweek_id = pg_temp.gw(2);
+update app.fantasy_gameweeks set corrected_at = timestamptz '2089-10-02 00:00:00+00' where id = pg_temp.gw(2);
 select extensions.is(app_private.rivals_tick() ->> 'created', '1',
-  'a correction that flips the lead is told again, once');
+  'a second correction that flips the lead back is told too, once');
 select extensions.is(
   (select n.title || ' | ' || n.body from app.notifications n
    where n.user_id = pg_temp.usr('A') and n.notification_type = 'rival_lead_change'
    order by n.created_at desc, n.id desc limit 1),
-  'Vous reprenez la tête sur Brahim Test | Résultat corrigé, journée 3 : 150 contre 137.',
-  'in the corrected wording');
+  'Brahim Test vous passe devant | Résultat corrigé, journée 2 : 187 contre 150.',
+  'in the corrected wording again');
 select extensions.is(
   (select count(*)::integer from app.notification_deliveries d
    join app.notifications n on n.id = d.notification_id
    where n.notification_type = 'rival_lead_change' and d.channel = 'push'),
-  2, 'with push switched off the corrected notice is in-app only: still the two earlier pushes');
+  1, 'with push switched off the second notice is in-app only: still the one earlier push');
 select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'and then no more');
+-- A member who opted in after that correction was published is not told of the change it makes.
+update app.rival_preferences set notify_changed_at = timestamptz '2090-01-01 00:00:00+00'
+where user_id = pg_temp.usr('A');
+update app.fantasy_team_gameweek_results set final_score = 2, provisional_score = 2
+where fantasy_team_id = pg_temp.tm('B') and gameweek_id = pg_temp.gw(2);
+update app.fantasy_gameweeks set corrected_at = timestamptz '2089-10-03 00:00:00+00' where id = pg_temp.gw(2);
+select set_config('test.tick', app_private.rivals_tick()::text, true);
+select extensions.is(
+  jsonb_build_array(current_setting('test.tick')::jsonb ->> 'created', current_setting('test.tick')::jsonb ->> 'recorded'),
+  '["0", "1"]'::jsonb,
+  'a change published before the member opted in is recorded but not told');
+select extensions.is(
+  (select string_agg(n.leader || ':' || n.changes, ',' order by n.rival_user_id)
+   from app_private.rival_lead_notices n where n.user_id = pg_temp.usr('A')),
+  'me:3,rival:0', 'the record follows the lead (three changes seen for B)');
+select extensions.is(
+  (select count(*)::integer from app.notifications where notification_type = 'rival_lead_change'), 2,
+  'and the member still has the two notices they were told');
 select app_private.rivals_configure(false);
 
 -- ---------------------------------------------------------------------------

@@ -648,7 +648,11 @@ Migrations `20261015130000` (the notification type, alone), `20261015130100` (ta
 - **Ships off.** The five `api` functions answer `{"available": false}` while BotolaGO+ or the Manager
   Card reads are off. `rivals-tick` is scheduled but does nothing until
   `select app_private.rivals_configure(true);`, and then only for members who turned the notification on
-  (`api.set_rivals_notify`, off by default) before the journée was published. In-app, plus a push
+  (`api.set_rivals_notify`, off by default) before the journée that produced the change was published.
+  The tick is state-based: each pass compares who leads on the current published totals with the leader
+  last recorded for that pin in `app_private.rival_lead_notices` (one row per pin, recorded for every
+  pin). The first sight of a pin only records; a change notifies once; a correction of an older journée
+  that flips the lead is told in the « Résultat corrigé » wording. In-app, plus a push
   to each working phone when the member has push and Fantasy reminders on (a pending delivery that the
   push claim sends only while `app_private.notification_push_settings.mode` allows, as for the Manager
   Card rating change; topic Fantasy, life 12 hours). No email.
