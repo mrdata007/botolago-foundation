@@ -53,6 +53,12 @@ export interface FantasyPlayer extends Player {
    * signed release still holds today ever arrives here.
    */
   photoUrl?: string | null;
+  /**
+   * True when `name` is a stand-in wording, not the player's name (an owned
+   * player the buying pool no longer lists, SOL-02). A plate then shows it whole
+   * instead of cutting it to a "surname", and the picker never offers him.
+   */
+  placeholder?: boolean;
 }
 
 export interface SquadPlayer {

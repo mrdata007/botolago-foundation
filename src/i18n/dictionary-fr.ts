@@ -602,6 +602,7 @@ export const fr = {
   "fantasy.transfers.preview.invalid": "Ce transfert n'est plus possible : vérifiez vos choix.",
   "fantasy.transfers.preview.network":
     "Connexion indisponible. Vos transferts sont conservés : réessayez.",
+  "fantasy.transfers.owned_unavailable": "Retiré",
   "fantasy.picker.title": "Choisir un joueur",
   "fantasy.picker.search": "Rechercher un joueur",
   "fantasy.picker.filter_club": "Club",
