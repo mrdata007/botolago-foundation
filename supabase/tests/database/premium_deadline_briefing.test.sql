@@ -86,13 +86,16 @@ insert into app.fantasy_competitions (id, football_competition_id, slug, name, a
 values (pg_temp.u(4), pg_temp.u(2), 'briefing-test', 'Briefing Test', true);
 insert into app.fantasy_seasons (id, fantasy_competition_id, football_season_id, ruleset_id, name, status, starts_at, ends_at)
 values (pg_temp.u(5), pg_temp.u(4), pg_temp.u(3), 'f6100000-0000-4000-8000-000000000100', '2091/92', 'active', '2091-08-01', '2092-06-30');
+-- One football round per gameweek: a season's gameweeks each name a distinct round.
+insert into app.rounds (id, season_id, round_number, name, status)
+select pg_temp.u(30 + n), pg_temp.u(3), n, 'Round ' || n, 'completed' from generate_series(8, 11) n;
 insert into app.fantasy_gameweeks (id, fantasy_season_id, sequence_number, name, deadline_at, starts_at, ends_at,
-  status, finalized_at, points_state, scoring_input_version)
+  status, finalized_at, points_state, scoring_input_version, football_round_id)
 values
-  (pg_temp.gw(8), pg_temp.u(5), 8, 'G8', '2091-09-30 10:00+00', '2091-09-30 12:00+00', '2091-10-02 12:00+00', 'finalized', '2091-10-05 12:00+00', 'final', 1),
-  (pg_temp.gw(9), pg_temp.u(5), 9, 'G9', '2091-10-07 10:00+00', '2091-10-07 12:00+00', '2091-10-09 12:00+00', 'finalized', '2091-10-12 12:00+00', 'final', 1),
-  (pg_temp.gw(10), pg_temp.u(5), 10, 'G10', '2091-10-14 10:00+00', '2091-10-14 12:00+00', '2091-10-16 12:00+00', 'scheduled', null, 'provisional', 1),
-  (pg_temp.gw(11), pg_temp.u(5), 11, 'G11', '2091-10-21 10:00+00', '2091-10-21 12:00+00', '2091-10-23 12:00+00', 'open', null, 'provisional', 1);
+  (pg_temp.gw(8), pg_temp.u(5), 8, 'G8', '2091-09-30 10:00+00', '2091-09-30 12:00+00', '2091-10-02 12:00+00', 'finalized', '2091-10-05 12:00+00', 'final', 1, pg_temp.u(38)),
+  (pg_temp.gw(9), pg_temp.u(5), 9, 'G9', '2091-10-07 10:00+00', '2091-10-07 12:00+00', '2091-10-09 12:00+00', 'finalized', '2091-10-12 12:00+00', 'final', 1, pg_temp.u(39)),
+  (pg_temp.gw(10), pg_temp.u(5), 10, 'G10', '2091-10-14 10:00+00', '2091-10-14 12:00+00', '2091-10-16 12:00+00', 'scheduled', null, 'provisional', 1, pg_temp.u(40)),
+  (pg_temp.gw(11), pg_temp.u(5), 11, 'G11', '2091-10-21 10:00+00', '2091-10-21 12:00+00', '2091-10-23 12:00+00', 'open', null, 'provisional', 1, pg_temp.u(41));
 
 insert into app.teams (id, slug, name, short_name, code, country_id, primary_color, secondary_color)
 select pg_temp.u(10 + n), 'briefing-club-' || n, 'Club ' || n, 'K' || n, 'KK' || n,
