@@ -595,3 +595,5 @@ history row's SHA-256 equals the repository file). Evidence in
 ## Database-scheduled worker (migration 20261013170000)
 
 The lifecycle step of this pass can also run in the Edge Function `fantasy-lifecycle-worker`, woken every 10 minutes by pg_cron once the owner switches it on. Both take one lease, so they never run at the same time; a scheduled run of this workflow stands aside from the lifecycle (the summary shows `lifecycle.owner = database_worker`) while the database job is keeping up, and does the work itself when it is not. Everything else this pass does stays. See [FANTASY_WORKER_SCHEDULE.md](FANTASY_WORKER_SCHEDULE.md).
+
+If a lifecycle write times out (60 s) or gets no reply from the database, the pass stops there and is `failed` (red): it runs no other gameweek, makes no prize call and no second calendar sync, keeps the lease (extended, released only if the request then answers, else left to expire) and reports it as `ambiguousWrite` in the evidence and a "Write in doubt" row on the run page. Do not start a manual worker or dispatch until the lease has expired (about seven minutes); the next scheduled run resumes from the database state.

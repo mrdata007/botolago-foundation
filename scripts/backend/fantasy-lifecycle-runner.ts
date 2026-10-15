@@ -1,11 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import {
+  gatewayFor,
+  type FantasyWorkerRpcClient,
+  type FantasyWorkerRpcResult,
+} from "../../supabase/functions/_shared/fantasy-lifecycle-handler.ts";
+import {
+  AMBIGUOUS_GRACE_MS,
   acquireWorkerLease,
-  releaseWorkerLease,
+  holdLeaseForAmbiguousWrite,
+  isAmbiguousRpcTimeout,
   leasedGateway,
+  releaseWorkerLease,
   runFantasyLifecycle,
-  rpcFailure,
+  type AmbiguousWrite,
   type FantasyWorkerGateway,
 } from "../../supabase/functions/_shared/fantasy-lifecycle-worker.ts";
 
@@ -17,6 +25,37 @@ export * from "../../supabase/functions/_shared/fantasy-lifecycle-worker.ts";
 
 const uuid = z.string().uuid();
 const positive = z.coerce.number().int().positive();
+
+/** How long each RPC of the GitHub callers may take before the client stops waiting. */
+export const SCRIPT_RPC_TIMEOUT_MS = 60_000;
+
+/** The slice of a supabase-js client (schema `api`) the GitHub callers use. */
+export interface RpcApiClient {
+  rpc(
+    name: string,
+    args: Record<string, unknown>,
+  ): PromiseLike<FantasyWorkerRpcResult> & {
+    abortSignal(signal: AbortSignal): PromiseLike<FantasyWorkerRpcResult>;
+  };
+}
+
+/**
+ * The gateway the GitHub callers run the lifecycle on: the Edge function's own
+ * rule (fantasy-lifecycle-handler.ts, SEC-01), so a write that timed out or failed
+ * without a conclusive reply is ambiguous and not a settled failure, and a read or
+ * a lease/log call that timed out is an ordinary failure. Built from a function so
+ * a test can hand it a fake client.
+ */
+export function lifecycleRpcGateway(
+  api: RpcApiClient,
+  fallbackCode = "fantasy_worker_rpc_failed",
+  timeoutMs = SCRIPT_RPC_TIMEOUT_MS,
+): FantasyWorkerGateway {
+  const client: FantasyWorkerRpcClient = {
+    schema: () => ({ rpc: (name, args) => api.rpc(name, args) }),
+  };
+  return gatewayFor(client, timeoutMs, fallbackCode);
+}
 
 export function trustedWorkerEnvironment(env: Record<string, string | undefined>) {
   if (env.FANTASY_MANUAL_WORKER_ENABLED !== "true") throw new Error("fantasy_worker_disabled");
@@ -43,6 +82,71 @@ export function trustedWorkerEnvironment(env: Record<string, string | undefined>
   };
 }
 
+export type ManualWorkerOutcome =
+  | { outcome: "ok"; result: unknown }
+  | {
+      outcome: "failed";
+      code: string;
+      /** A write timed out and may still be running; the lease was kept (see holdLeaseForAmbiguousWrite). */
+      ambiguous?: AmbiguousWrite;
+    };
+
+const safeFailureCode = (error: unknown) =>
+  error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
+    ? error.message
+    : "fantasy_worker_failed";
+
+/**
+ * One manual pass for one gameweek, under the shared lease. A write that timed
+ * out (or failed with no reply from the database) stops the pass and keeps the
+ * lease: it is extended, and released only if the original request then answers;
+ * otherwise it is left to expire. Never throws.
+ */
+export async function runManualWorker(
+  gateway: FantasyWorkerGateway,
+  config: { gameweekId: string; calculationVersion: number },
+  holder: string,
+  options: { ambiguousGraceMs?: number } = {},
+): Promise<ManualWorkerOutcome> {
+  const call = (name: string, args: Record<string, unknown>) => gateway.rpc(name, args);
+  // One writer at a time: the Edge Function and the orchestrator take the same
+  // lease. A database without the lease function runs unmanaged, as before.
+  let lease: Awaited<ReturnType<typeof acquireWorkerLease>>;
+  try {
+    lease = await acquireWorkerLease(call, holder);
+  } catch (error) {
+    return { outcome: "failed", code: safeFailureCode(error) };
+  }
+  if (lease.kind === "held") return { outcome: "failed", code: "fantasy_worker_lease_held" };
+  if (lease.kind === "disabled")
+    return { outcome: "failed", code: "fantasy_worker_lease_unavailable" };
+  const token = lease.kind === "acquired" ? lease.token : null;
+  let result: unknown;
+  let failure: { error: unknown } | null = null;
+  try {
+    const worker = token ? leasedGateway(gateway, { token }) : gateway;
+    result = await runFantasyLifecycle(worker, config);
+  } catch (error) {
+    failure = { error };
+  }
+  let ambiguous: AmbiguousWrite | undefined;
+  if (failure && isAmbiguousRpcTimeout(failure.error))
+    ambiguous = await holdLeaseForAmbiguousWrite(
+      call,
+      token,
+      failure.error,
+      options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+    );
+  else if (token) await releaseWorkerLease(call, token);
+  return failure
+    ? {
+        outcome: "failed",
+        code: safeFailureCode(failure.error),
+        ...(ambiguous ? { ambiguous } : {}),
+      }
+    : { outcome: "ok", result };
+}
+
 if (import.meta.main) {
   try {
     const config = trustedWorkerEnvironment(process.env);
@@ -50,41 +154,23 @@ if (import.meta.main) {
       auth: { persistSession: false, autoRefreshToken: false },
       db: { schema: "api" },
     });
-    const gateway: FantasyWorkerGateway = {
-      async rpc(name, args) {
-        const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
-        if (error) {
-          // Never serialize SQL details, input snapshots or credentials to logs.
-          const code = /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
-            ? error.message
-            : "fantasy_worker_rpc_failed";
-          throw rpcFailure(code, error.code);
-        }
-        return data;
-      },
-    };
-    // One writer at a time: the Edge Function and the orchestrator take the same
-    // lease. A database without the lease function runs unmanaged, as before.
-    const lease = await acquireWorkerLease(
-      (name, args) => gateway.rpc(name, args),
+    // Error text never reaches a log: only a safe code (lifecycleRpcGateway).
+    const done = await runManualWorker(
+      lifecycleRpcGateway(api),
+      config,
       `manual:${process.env.GITHUB_RUN_ID ?? "local"}`,
     );
-    if (lease.kind === "held") throw new Error("fantasy_worker_lease_held");
-    if (lease.kind === "disabled") throw new Error("fantasy_worker_lease_unavailable");
-    try {
-      const worker =
-        lease.kind === "acquired" ? leasedGateway(gateway, { token: lease.token }) : gateway;
-      process.stdout.write(`${JSON.stringify(await runFantasyLifecycle(worker, config))}\n`);
-    } finally {
-      if (lease.kind === "acquired")
-        await releaseWorkerLease((name, args) => gateway.rpc(name, args), lease.token);
+    if (done.outcome === "ok") process.stdout.write(`${JSON.stringify(done.result)}\n`);
+    else {
+      process.stderr.write(
+        `${JSON.stringify({ outcome: "failed", code: done.code, ...(done.ambiguous ? { ambiguous: done.ambiguous } : {}) })}\n`,
+      );
+      process.exitCode = 1;
     }
   } catch (error) {
-    const code =
-      error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
-        ? error.message
-        : "fantasy_worker_failed";
-    process.stderr.write(`${JSON.stringify({ outcome: "failed", code })}\n`);
+    process.stderr.write(
+      `${JSON.stringify({ outcome: "failed", code: safeFailureCode(error) })}\n`,
+    );
     process.exitCode = 1;
   }
 }
