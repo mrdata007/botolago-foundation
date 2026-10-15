@@ -22,6 +22,7 @@ import {
   awaitingScoring,
   barFor,
   nextSaveBar,
+  picksAccepted,
   scoringMoved,
   seedUpdatedAt,
   shownSaveState,
@@ -402,5 +403,17 @@ describe("save responses after navigating to another round", () => {
     expect(client.getQueryData(predictionsKeys.mine("A", 1))).toBeUndefined();
     expect(items(client, "B", 1)).toEqual([]);
     client.clear();
+  });
+});
+
+describe("picksAccepted: no tap is taken before the session is known", () => {
+  test("waits while the session loads, so a tap is not filed as a visitor's and lost", () => {
+    expect(picksAccepted("loading")).toBe(false);
+  });
+
+  test("accepts once the session is settled, for an account or a visitor", () => {
+    for (const status of ["authenticated", "anonymous", "guest"] as const) {
+      expect(picksAccepted(status)).toBe(true);
+    }
   });
 });
