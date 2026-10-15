@@ -94,4 +94,10 @@ catalog and preventing a second movement for retries of the same gameweek.
 Changed input after sealing requires a reviewed correction path; the worker
 must never silently accept a new source digest into a sealed result.
 
+A write that times out (60 s) or gets no reply from the database is not treated as a plain failure: the run stops,
+keeps the shared worker lease (extended 420 s, released only if the original request then answers, else left to
+expire) and prints `{"outcome":"failed","code":"fantasy_worker_rpc_timeout"|"fantasy_worker_rpc_unconfirmed","ambiguous":{...}}`
+on stderr. Do not start another worker, manual or scheduled, until the lease has expired (about seven minutes), and
+check the gameweek's state before re-running. See [FANTASY_WORKER_SCHEDULE.md](FANTASY_WORKER_SCHEDULE.md).
+
 No schedule is enabled by this release.

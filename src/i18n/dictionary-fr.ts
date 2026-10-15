@@ -11,6 +11,12 @@ export const fr = {
   "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
   "fantasy.scoring.estimatesPolicy":
     "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",
+  // Audit LOC-01: names the rounds each explanation governs once the rating
+  // rule exists beside the action-based scale ({n} is a round number).
+  "fantasy.scoring.eventUntil": "Jusqu’à la journée {n} : barème par actions.",
+  "fantasy.scoring.ratingFrom": "À partir de la journée {n} : points selon la note SofaScore.",
+  "fantasy.scoring.ratingSafeguards":
+    "Quand les points suivent la note, des données de participation essentielles manquantes retardent la validation, et une note publiée ou corrigée plus tard met à jour les points tant que la journée n’est pas validée.",
   "fantasy.scoring.full": "Barème complet",
   "fantasy.scoring.simple": "Barème simplifié",
   "fantasy.scoring.pending": "En attente des données",
@@ -319,6 +325,12 @@ export const fr = {
   "matches.detail.kickoff": "Coup d'envoi",
   "matches.detail.head_to_head": "Confrontations directes",
   "matches.detail.no_h2h": "Pas de confrontation récente entre ces deux équipes.",
+  "matches.detail.section_failed.timeline": "Impossible de charger les moments forts.",
+  "matches.detail.section_failed.stats": "Impossible de charger les statistiques du match.",
+  "matches.detail.section_failed.pressure": "Impossible de charger le graphique de pression.",
+  "matches.detail.section_failed.lineups": "Impossible de charger les compositions.",
+  "matches.detail.section_failed.absences": "Impossible de charger la liste des absents.",
+  "matches.detail.section_failed.h2h": "Impossible de charger les confrontations directes.",
   "matches.detail.h2h_wins_one": "Victoire {club}",
   "matches.detail.h2h_wins_other": "Victoires {club}",
   "matches.detail.table_context": "Contexte au classement",
@@ -416,6 +428,7 @@ export const fr = {
   "matches.absences.suspension": "Suspendu",
   "matches.absences.return": "Retour prévu le {date}",
   "matches.a11y.score": "Score : {home} {hs}, {away} {as}",
+  "matches.a11y.score_unavailable": "Score indisponible : {home} contre {away}",
   "matches.a11y.date_navigation": "Choisir une date de match",
   "matches.a11y.status_filters": "Filtrer les matchs par statut",
   "matches.a11y.kickoff_at": "Coup d'envoi à {time}",
@@ -529,6 +542,7 @@ export const fr = {
   "fantasy.rank.up": "En hausse",
   "fantasy.rank.down": "En baisse",
   "fantasy.rank.same": "Position inchangée",
+  "fantasy.rank.unknown": "Évolution non disponible",
   "fantasy.tab.players": "Joueurs",
   "fantasy.gameweek.status.scheduled": "À venir",
   "fantasy.gameweek.status.open": "Ouverte",
@@ -575,6 +589,19 @@ export const fr = {
   "fantasy.transfers.error.over_budget": "Budget insuffisant pour ces transferts.",
   "fantasy.transfers.error.deadline": "La date limite est dépassée — impossible de confirmer.",
   "fantasy.transfers.error.no_changes": "Aucun transfert à confirmer.",
+  "fantasy.transfers.preview.pending": "Calcul du transfert en cours…",
+  "fantasy.transfers.preview.failed": "Le calcul du transfert a échoué. Réessayez.",
+  "fantasy.transfers.preview.budget":
+    "Budget insuffisant : il manque {amount} M pour ces transferts. Choisissez un joueur moins cher.",
+  "fantasy.transfers.preview.budget_changed":
+    "Le budget ou les prix ont changé. Vérifiez vos choix, puis réessayez.",
+  "fantasy.transfers.preview.stale":
+    "Une version plus récente de votre équipe existe. Rechargez-la : vos transferts sont conservés.",
+  "fantasy.transfers.preview.step_up":
+    "Un code de confirmation est demandé. Saisissez-le, puis réessayez : vos transferts sont conservés.",
+  "fantasy.transfers.preview.invalid": "Ce transfert n'est plus possible : vérifiez vos choix.",
+  "fantasy.transfers.preview.network":
+    "Connexion indisponible. Vos transferts sont conservés : réessayez.",
   "fantasy.picker.title": "Choisir un joueur",
   "fantasy.picker.search": "Rechercher un joueur",
   "fantasy.picker.filter_club": "Club",
@@ -817,7 +844,7 @@ export const fr = {
     "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
   "fantasy.onboarding.step2_title": "Marquez des points",
   "fantasy.onboarding.step2_body":
-    "Chaque joueur marque sa note SofaScore du match, arrondie à l’entier le plus proche.",
+    "Chaque joueur marque des points selon sa performance en match. Le barème en vigueur est détaillé dans le règlement.",
   "fantasy.onboarding.step3_title": "Défiez vos amis",
   "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
   "fantasy.onboarding.skip": "Passer",
@@ -850,6 +877,10 @@ export const fr = {
     "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe.",
   "fantasy.create.guest_note":
     "Votre brouillon est gardé sur cet appareil. Un compte gratuit est demandé à l’enregistrement.",
+  "fantasy.create.guest_unsaved":
+    "Cet appareil ne peut pas garder votre brouillon : votre équipe n’existe que tant que cette page reste ouverte. Rechargée ou fermée, la composition serait perdue.",
+  "fantasy.create.sign_in_reason_unsaved":
+    "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe. Cet appareil ne garde pas votre brouillon : ne rechargez pas la page pendant l’inscription, n’ouvrez pas le lien de confirmation par e-mail dans un autre onglet, et évitez la connexion Google, qui quitte la page.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",
@@ -1158,6 +1189,7 @@ export const fr = {
   "fpl.points": "Points",
   "fpl.highest": "Meilleur",
   "fpl.last_updated": "Dernière mise à jour",
+  "fpl.last_retrieved": "Données chargées",
   "fpl.pos": "Pos",
   "fpl.team": "Équipe",
   "fpl.total": "Total",
@@ -2207,6 +2239,22 @@ export const fr = {
   "predictions.claim.started_two": "2 matchs déjà commencés n'ont pas pu être ajoutés",
   "predictions.claim.started_few": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
   "predictions.claim.started_other": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
+  "predictions.claim.pending": "Ajout de vos pronostics de visiteur à votre compte…",
+  "predictions.claim.unsaved_one":
+    "1 pronostic fait avant la connexion n'est pas encore sur votre compte",
+  "predictions.claim.unsaved_two":
+    "2 pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.unsaved_few":
+    "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.unsaved_other":
+    "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.failed_body":
+    "Rien n'est perdu : vos pronostics restent sur ce téléphone. Réessayez avant le coup d'envoi : un match commencé ne peut plus être ajouté.",
+  "predictions.claim.retrying": "Nouvel essai automatique en cours…",
+  "predictions.personal.loading": "Chargement de vos pronostics enregistrés…",
+  "predictions.personal.failed":
+    "Vos pronostics enregistrés n'ont pas pu être chargés. La modification est suspendue pour ne pas écraser vos scores.",
+  "predictions.personal.unknown_pick": "Pronostic pas encore chargé",
 
   /* Pronostics (BG-0146): leagues and invitations */
   "predictions.tab.leagues": "Ligues",
@@ -2684,11 +2732,8 @@ export const fr = {
     "Exemple : votre capitaine marque {n} pts, il vous en rapporte {double}.",
   "landing.step3_title": "Marquez des points, grimpez au classement",
   "landing.step3_body":
-    "Vos joueurs marquent leur note SofaScore de chaque match, arrondie à l’entier le plus proche.",
-  "landing.scoring_label": "Extrait du barème",
-  "landing.scoring_rating_high": "Note SofaScore de 7,5",
-  "landing.scoring_rating_low": "Note SofaScore de 6,4",
-  "landing.scoring_no_rating": "Entré en jeu, sans note SofaScore",
+    "Vos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.",
+  "landing.scoring_link": "Voir le barème en vigueur",
   "landing.points_value": "{n} pts",
   "landing.why_title": "Pourquoi vous allez revenir",
   "landing.why1_title": "Les joueurs que vous suivez déjà",
@@ -2727,7 +2772,7 @@ export const fr = {
     "Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.",
   "landing.faq_points_q": "Comment marque-t-on des points ?",
   "landing.faq_points_a":
-    "Chaque joueur marque sa note SofaScore du match, arrondie à l’entier le plus proche (7,5 donne 8). Un joueur entré en jeu sans note marque 5 points, un joueur qui n’a pas joué 0, et votre capitaine compte double.",
+    "Chaque joueur marque des points selon ses performances en match, et votre capitaine compte double. Le barème en vigueur et la façon dont les points sont validés sont détaillés dans le règlement.",
   "landing.faq_account_q": "Faut-il un compte ?",
   "landing.faq_account_a":
     "Pour composer votre équipe, non. Pour l’enregistrer et entrer au classement, oui : un compte gratuit, avec une adresse e-mail à confirmer.",

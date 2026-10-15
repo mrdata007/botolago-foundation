@@ -82,7 +82,7 @@ export interface FantasyOwnedContextValue {
 
 const Ctx = createContext<FantasyOwnedContextValue | null>(null);
 
-const SNAPSHOT_KIND = "snapshot";
+export const SNAPSHOT_KIND = "snapshot";
 const LOCAL_OWNER = "__local__";
 
 export function FantasyOwnedProvider({ children }: { children: ReactNode }) {

@@ -68,7 +68,7 @@ jobs:
       - name: Verify the exact worker runtime
         run: |
           bun install --frozen-lockfile
-          bun test scripts/backend/fantasy-lifecycle-runner.test.ts src/backend/fantasy/scoring.test.ts src/backend/fantasy/substitutions.test.ts
+          bun test scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/fantasy-script-ambiguous-write.test.ts src/backend/fantasy/scoring.test.ts src/backend/fantasy/substitutions.test.ts
           bun run backend:secrets:check
       - name: Run bounded trusted worker
         env:

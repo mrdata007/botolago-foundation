@@ -235,7 +235,7 @@ describe("Option A common blocks", () => {
     expect(strip).toContain("ui.score.row");
     // The figures are `FlipScore`s (each drops in when it changes); still three pieces, so Arabic keeps the order.
     expect(strip).toMatch(
-      /<FlipScore value=\{hs\} \/>\s*<span aria-hidden>–<\/span>\s*<FlipScore value=\{as\} \/>/,
+      /<FlipScore value=\{score.home\} \/>\s*<span aria-hidden>–<\/span>\s*<FlipScore value=\{score.away\} \/>/,
     );
     expect(strip).not.toMatch(/<bdi\b[^>]*className=[^>]*\bflex\b/);
     // The breathing dot stays, and the minute is plain on navy (not live-fg).

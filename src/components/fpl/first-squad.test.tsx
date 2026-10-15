@@ -19,6 +19,7 @@ import {
   accountDraftKey,
   createDraftProgress,
   GUEST_DRAFT_KEY,
+  guestDraftAtRisk,
 } from "@/services/fantasy-create-draft";
 import { initCreateDraft, placePlayer } from "@/services/fantasy-create-service";
 import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
@@ -289,5 +290,39 @@ describe("the hub offers the draft back", () => {
   it("does not tell a signed-in manager an account will be asked for", async () => {
     const html = await render(<FantasyResumeDraft filled={15} total={15} audience="no_team" />);
     expect(decode(html)).not.toContain(fr["fantasy.create.guest_note"]);
+  });
+});
+
+describe("a visitor's squad the device could not keep (UX-009)", () => {
+  beforeEach(() => fantasyDraftsStore.__resetAll());
+
+  it("is at risk only for a visitor with players in the squad and a refused write", () => {
+    expect(guestDraftAtRisk({ source: "guest", deviceKeepsDraft: false, filled: 15 })).toBe(true);
+    expect(guestDraftAtRisk({ source: "guest", deviceKeepsDraft: true, filled: 15 })).toBe(false);
+    expect(guestDraftAtRisk({ source: "guest", deviceKeepsDraft: false, filled: 0 })).toBe(false);
+    expect(guestDraftAtRisk({ source: "cloud", deviceKeepsDraft: false, filled: 15 })).toBe(false);
+  });
+
+  it("the hub does not promise 'gardé sur cet appareil' for a draft held in memory only", async () => {
+    const local = (globalThis as any).window.localStorage;
+    const realSetItem = local.setItem;
+    local.setItem = () => {
+      throw new DOMException("quota", "QuotaExceededError");
+    };
+    try {
+      let draft = initCreateDraft("Atlas FC");
+      const pool = [...fantasyPlayers];
+      for (const slot of draft.slots.slice(0, 3)) {
+        const player = pool.find((p) => p.position === slot.position)!;
+        pool.splice(pool.indexOf(player), 1);
+        draft = placePlayer(draft, slot.slot, player.id);
+      }
+      expect(fantasyDraftsStore.save(GUEST_DRAFT_KEY, draft)).toBe(false);
+      const html = await render(<FantasyResumeDraft filled={3} total={15} audience="signed_out" />);
+      expect(decode(html)).toContain(fr["fantasy.create.guest_unsaved"]);
+      expect(decode(html)).not.toContain(fr["fantasy.create.guest_note"]);
+    } finally {
+      local.setItem = realSetItem;
+    }
   });
 });

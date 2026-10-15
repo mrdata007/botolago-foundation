@@ -9,6 +9,12 @@ export const ar = {
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
   "fantasy.scoring.estimatesPolicy":
     "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
+  // Audit LOC-01: names the rounds each explanation governs once the rating
+  // rule exists beside the action-based scale ({n} is a round number).
+  "fantasy.scoring.eventUntil": "حتى الجولة {n}: احتساب النقاط حسب أحداث المباراة.",
+  "fantasy.scoring.ratingFrom": "ابتداءً من الجولة {n}: النقاط حسب تقييم SofaScore.",
+  "fantasy.scoring.ratingSafeguards":
+    "عندما تُحتسب النقاط حسب التقييم، يؤخر نقص بيانات المشاركة الأساسية اعتماد النقاط، وأي تقييم يُنشر أو يُصحَّح لاحقاً يحدّث النقاط ما دامت الجولة لم تُعتمد بعد.",
   "fantasy.scoring.full": "احتساب كامل",
   "fantasy.scoring.simple": "احتساب مبسط",
   "fantasy.scoring.pending": "في انتظار البيانات",
@@ -305,6 +311,12 @@ export const ar = {
   "matches.detail.kickoff": "انطلاق المباراة",
   "matches.detail.head_to_head": "المواجهات المباشرة",
   "matches.detail.no_h2h": "لا توجد مواجهات حديثة بين الفريقين.",
+  "matches.detail.section_failed.timeline": "تعذّر تحميل أبرز اللحظات.",
+  "matches.detail.section_failed.stats": "تعذّر تحميل إحصائيات المباراة.",
+  "matches.detail.section_failed.pressure": "تعذّر تحميل مخطط الضغط.",
+  "matches.detail.section_failed.lineups": "تعذّر تحميل التشكيلات.",
+  "matches.detail.section_failed.absences": "تعذّر تحميل قائمة الغيابات.",
+  "matches.detail.section_failed.h2h": "تعذّر تحميل المواجهات المباشرة.",
   "matches.detail.h2h_wins_one": "فوز {club}",
   "matches.detail.h2h_wins_other": "انتصارات {club}",
   "matches.detail.table_context": "الترتيب في الجدول",
@@ -396,6 +408,7 @@ export const ar = {
   "matches.absences.suspension": "موقوف",
   "matches.absences.return": "العودة المتوقعة في {date}",
   "matches.a11y.score": "النتيجة: {home} {hs}، {away} {as}",
+  "matches.a11y.score_unavailable": "النتيجة غير متوفرة: {home} ضد {away}",
   "matches.a11y.date_navigation": "اختيار تاريخ المباراة",
   "matches.a11y.status_filters": "تصفية المباريات حسب الحالة",
   "matches.a11y.kickoff_at": "انطلاق المباراة على الساعة {time}",
@@ -505,6 +518,7 @@ export const ar = {
   "fantasy.rank.up": "تقدّم",
   "fantasy.rank.down": "تراجع",
   "fantasy.rank.same": "المركز دون تغيير",
+  "fantasy.rank.unknown": "لا تتوفر بيانات عن تغيّر المركز",
   "fantasy.tab.players": "اللاعبون",
   "fantasy.gameweek.status.scheduled": "قريباً",
   "fantasy.gameweek.status.open": "مفتوحة",
@@ -551,6 +565,17 @@ export const ar = {
   "fantasy.transfers.error.over_budget": "الرصيد لا يكفي لإتمام الانتقالات.",
   "fantasy.transfers.error.deadline": "انتهى الموعد النهائي — لا يمكن التأكيد.",
   "fantasy.transfers.error.no_changes": "لا توجد انتقالات للتأكيد.",
+  "fantasy.transfers.preview.pending": "جارٍ احتساب الانتقال…",
+  "fantasy.transfers.preview.failed": "تعذّر احتساب الانتقال. أعد المحاولة.",
+  "fantasy.transfers.preview.budget":
+    "الرصيد لا يكفي: ينقصك {amount} م لإتمام هذه الانتقالات. اختر لاعبًا أقل سعرًا.",
+  "fantasy.transfers.preview.budget_changed":
+    "تغيّرت الميزانية أو الأسعار. راجع اختياراتك ثم أعد المحاولة.",
+  "fantasy.transfers.preview.stale": "توجد نسخة أحدث من فريقك. أعد تحميلها، فانتقالاتك محفوظة.",
+  "fantasy.transfers.preview.step_up":
+    "مطلوب رمز التأكيد. أدخله ثم أعد المحاولة، فانتقالاتك محفوظة.",
+  "fantasy.transfers.preview.invalid": "لم يعد هذا الانتقال ممكنًا. راجع اختياراتك.",
+  "fantasy.transfers.preview.network": "لا يوجد اتصال. انتقالاتك محفوظة، أعد المحاولة.",
   "fantasy.picker.title": "اختيار لاعب",
   "fantasy.picker.search": "ابحث عن لاعب",
   "fantasy.picker.filter_club": "النادي",
@@ -784,7 +809,7 @@ export const ar = {
     "اختر 15 لاعباً بميزانية 100 م وشكّل 11 لاعباً أساسياً في كل جولة.",
   "fantasy.onboarding.step2_title": "اجمع النقاط",
   "fantasy.onboarding.step2_body":
-    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح.",
+    "يحصد كل لاعب نقاطاً بحسب أدائه في المباراة، ونظام النقاط المعتمد موضّح في صفحة القواعد.",
   "fantasy.onboarding.step3_title": "تحدَّ أصدقاءك",
   "fantasy.onboarding.step3_body": "أنشئ دوري خاصاً برمز وتنافس على الصدارة.",
   "fantasy.onboarding.skip": "تخطي",
@@ -814,6 +839,10 @@ export const ar = {
   "fantasy.intro.sign_in_note": "كوّن فريقك الآن: لا يُطلب حساب مجاني إلا عند الحفظ.",
   "fantasy.create.sign_in_reason": "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك.",
   "fantasy.create.guest_note": "مسودتك محفوظة على هذا الجهاز. يُطلب حساب مجاني عند الحفظ.",
+  "fantasy.create.guest_unsaved":
+    "لا يستطيع هذا الجهاز حفظ مسودتك: يبقى فريقك ما دامت هذه الصفحة مفتوحة. إن أُعيد تحميلها أو أُغلقت ضاعت التشكيلة.",
+  "fantasy.create.sign_in_reason_unsaved":
+    "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك. هذا الجهاز لا يحفظ مسودتك: لا تُعد تحميل الصفحة أثناء التسجيل، ولا تفتح رابط تأكيد البريد في تبويب آخر، وتجنّب الدخول عبر Google لأنه يغادر الصفحة.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",
@@ -1095,6 +1124,7 @@ export const ar = {
   "fpl.points": "النقاط",
   "fpl.highest": "الأعلى",
   "fpl.last_updated": "آخر تحديث",
+  "fpl.last_retrieved": "تم تحميل البيانات",
   "fpl.pos": "المركز",
   "fpl.team": "الفريق",
   "fpl.total": "المجموع",
@@ -2075,6 +2105,18 @@ export const ar = {
   "predictions.claim.started_two": "مباراتان انطلقتا ولم يُضف توقعهما",
   "predictions.claim.started_few": "{n} مباريات انطلقت ولم تُضف توقعاتها",
   "predictions.claim.started_other": "{n} مباراة انطلقت ولم تُضف توقعاتها",
+  "predictions.claim.pending": "جارٍ إضافة توقعاتك كزائر إلى حسابك…",
+  "predictions.claim.unsaved_one": "توقع واحد سجّلته قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_two": "توقعان قبل تسجيل الدخول لم يُضافا إلى حسابك بعد",
+  "predictions.claim.unsaved_few": "{n} توقعات قبل تسجيل الدخول لم تُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_other": "{n} توقعًا قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
+  "predictions.claim.failed_body":
+    "لم يضع شيء: توقعاتك باقية على هذا الهاتف. أعد المحاولة قبل انطلاق المباراة: لا يمكن إضافة توقع مباراة بدأت.",
+  "predictions.claim.retrying": "تُعاد المحاولة تلقائيًا…",
+  "predictions.personal.loading": "جارٍ تحميل توقعاتك المحفوظة…",
+  "predictions.personal.failed":
+    "تعذّر تحميل توقعاتك المحفوظة. عُلّق التعديل حتى لا تُستبدل توقعاتك المحفوظة.",
+  "predictions.personal.unknown_pick": "لم يُحمَّل التوقع بعد",
 
   /* Pronostics (BG-0146): leagues and invitations */
   "predictions.tab.leagues": "الدوريات",
@@ -2531,11 +2573,8 @@ export const ar = {
   "landing.step2_example": "مثال: يحصد قائدك {n} نقاط، فتحصل أنت على {double}.",
   "landing.step3_title": "اجمع النقاط وتقدّم في الترتيب",
   "landing.step3_body":
-    "يحصل لاعبوك على تقييمهم على SofaScore في كل مباراة، مقرّباً إلى أقرب عدد صحيح.",
-  "landing.scoring_label": "من نظام النقاط",
-  "landing.scoring_rating_high": "تقييم SofaScore 7.5",
-  "landing.scoring_rating_low": "تقييم SofaScore 6.4",
-  "landing.scoring_no_rating": "شارك دون تقييم SofaScore",
+    "يحصد لاعبوك نقاطاً بحسب أدائهم في المباريات. نظام النقاط المعتمد منشور في صفحة القواعد.",
+  "landing.scoring_link": "اطّلع على نظام النقاط المعتمد",
   "landing.points_value": "{n} نقاط",
   "landing.why_title": "لماذا ستعود في كل جولة",
   "landing.why1_title": "لاعبون تتابعهم أصلاً",
@@ -2571,7 +2610,7 @@ export const ar = {
     "نعم. الفريق الذي تنشئه الآن يدخل الجولة المفتوحة التالية ويجمع النقاط ابتداءً منها.",
   "landing.faq_points_q": "كيف تُحتسب النقاط؟",
   "landing.faq_points_a":
-    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح (7.5 تصبح 8). اللاعب الذي شارك دون تقييم يحصل على 5 نقاط، ومن لم يشارك يحصل على 0، ونقاط قائدك تُحتسب مضاعفة.",
+    "يحصد كل لاعب نقاطاً بحسب أدائه في المباراة، ونقاط قائدك تُحتسب مضاعفة. تجد نظام النقاط المعتمد وطريقة اعتماد النقاط في صفحة القواعد.",
   "landing.faq_account_q": "هل أحتاج إلى حساب؟",
   "landing.faq_account_a":
     "لتكوين فريقك، لا. لحفظه ودخول الترتيب، نعم: حساب مجاني مع تأكيد بريدك الإلكتروني.",

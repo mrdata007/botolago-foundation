@@ -11,7 +11,7 @@
 // Serialization is deterministic and validated on read so malformed stale
 // entries are ignored safely rather than crashing consumers.
 
-import { readJSON, writeJSON, removeKey } from "@/lib/storage";
+import { readJSON, tryWriteJSON, removeKey } from "@/lib/storage";
 
 export type FantasyDraftKind = "team" | "transfers" | "create-team";
 
@@ -34,6 +34,15 @@ interface StoredMap {
 }
 
 const KEY = "fantasy.drafts";
+
+/**
+ * Drafts the browser would not keep (storage blocked or full), held in memory
+ * for this visit. A page change inside the app (the sign-up screens) keeps
+ * them; a reload does not, which is why `save` says whether the device took
+ * the draft. They are read first, are dropped by `remove` / `clearForUid` like
+ * any draft, and are cleared once a later write succeeds.
+ */
+const unsaved: StoredMap = {};
 
 export function flattenDraftKey(k: FantasyDraftKey): string {
   return `${k.uid}::${k.teamId}::${k.baseVersion}::${k.kind}`;
@@ -58,28 +67,41 @@ function isValidEntry(v: unknown): v is FantasyDraftEntry {
 
 function readMap(): StoredMap {
   const raw = readJSON<StoredMap>(KEY);
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const out: StoredMap = {};
-  for (const [k, v] of Object.entries(raw)) {
-    if (isValidEntry(v)) out[k] = v;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    for (const [k, v] of Object.entries(raw)) {
+      if (isValidEntry(v)) out[k] = v;
+    }
   }
+  for (const [k, v] of Object.entries(unsaved)) out[k] = v;
   return out;
 }
 
-function writeMap(m: StoredMap): void {
-  writeJSON<StoredMap>(KEY, m);
+/** True when the browser stored the map. */
+function writeMap(m: StoredMap): boolean {
+  const ok = tryWriteJSON<StoredMap>(KEY, m);
+  if (ok) for (const k of Object.keys(unsaved)) delete unsaved[k];
+  return ok;
 }
 
 export const fantasyDraftsStore = {
-  save<T>(key: FantasyDraftKey, payload: T): void {
-    if (!key.uid) return;
+  /**
+   * Whether the draft reached browser storage. `false`: the draft lives in
+   * memory for this visit only (see `unsaved`), and a screen must not say it
+   * is "kept on this device".
+   */
+  save<T>(key: FantasyDraftKey, payload: T): boolean {
+    if (!key.uid) return false;
+    // No device on the server: nothing to keep, and the module-level memory
+    // below must never hold one visitor's draft for the next request.
+    if (typeof window === "undefined") return false;
     const m = readMap();
-    m[flattenDraftKey(key)] = {
-      key,
-      payload,
-      updatedAt: Date.now(),
-    };
-    writeMap(m);
+    const flat = flattenDraftKey(key);
+    const entry: FantasyDraftEntry = { key, payload, updatedAt: Date.now() };
+    m[flat] = entry;
+    const stored = writeMap(m);
+    if (!stored) unsaved[flat] = entry;
+    return stored;
   },
 
   read<T>(key: FantasyDraftKey): FantasyDraftEntry<T> | null {
@@ -89,8 +111,10 @@ export const fantasyDraftsStore = {
   },
 
   remove(key: FantasyDraftKey): void {
+    const flat = flattenDraftKey(key);
+    delete unsaved[flat];
     const m = readMap();
-    delete m[flattenDraftKey(key)];
+    delete m[flat];
     writeMap(m);
   },
 
@@ -108,14 +132,21 @@ export const fantasyDraftsStore = {
     for (const [flat, entry] of Object.entries(m)) {
       if (entry.key.uid === uid) {
         delete m[flat];
+        delete unsaved[flat];
         mutated = true;
       }
     }
     if (mutated) writeMap(m);
   },
 
+  /** True while this draft exists only in memory because the browser would not keep it. */
+  hasUnsaved(key: FantasyDraftKey): boolean {
+    return flattenDraftKey(key) in unsaved;
+  },
+
   /** Dev/test only. */
   __resetAll(): void {
+    for (const k of Object.keys(unsaved)) delete unsaved[k];
     removeKey(KEY);
   },
 };

@@ -82,6 +82,7 @@ export function LeagueTable({
     up: t("fantasy.rank.up"),
     down: t("fantasy.rank.down"),
     same: t("fantasy.rank.same"),
+    unknown: t("fantasy.rank.unknown"),
   };
 
   return (

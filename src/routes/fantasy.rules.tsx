@@ -45,6 +45,7 @@ import {
   type ScoringTable as ScoringTableModel,
   type ScoringTableRow,
 } from "@/lib/fantasy-rules-table";
+import { scoringPolicyView } from "@/lib/fantasy-scoring-policy";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -106,6 +107,7 @@ function RulesPage() {
   // Read from the server's own lists; nothing here computes a point.
   const scoringTable = useMemo(() => (rules ? buildScoringTable(rules) : null), [rules]);
   const chips = useMemo(() => (rules ? buildChipList(rules.chips) : []), [rules]);
+  const policy = scoringPolicyView(rules);
 
   const sections: {
     icon: ComponentType<{ className?: string }>;
@@ -242,8 +244,29 @@ function RulesPage() {
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
           {t("fantasy.rules.provisional_desc")}
         </p>
-        {rulesQ.data?.adaptiveScoring && (
-          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+        {/* With the rating rule on, each explanation names the rounds it governs
+            (audit LOC-01): the rating from its first round, the action-based
+            paragraph only for the rounds before it. */}
+        {policy.ratingFromGameweek !== null && (
+          <>
+            <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
+              {t("fantasy.scoring.ratingFrom").replace("{n}", nf.format(policy.ratingFromGameweek))}
+            </p>
+            <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+              {t("fantasy.scoring.ratingSafeguards")}
+            </p>
+          </>
+        )}
+        {policy.eventPolicyUntilGameweek !== null && (
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
+            {t("fantasy.scoring.eventUntil").replace(
+              "{n}",
+              nf.format(policy.eventPolicyUntilGameweek),
+            )}
+          </p>
+        )}
+        {policy.showEventPolicy && (
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
             {t("fantasy.scoring.policy")}
           </p>
         )}

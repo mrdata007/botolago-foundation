@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { PredictionFixtureDto } from "@/backend/predictions/contracts";
@@ -7,6 +7,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
+  UiAlert,
   UiBadge,
   UiButton,
   UiCard,
@@ -26,15 +27,25 @@ import { PredictionsShareButton, type ShareTally } from "./PredictionsShareButto
 import { LeaguesPanel } from "./leagues/LeaguesPanel";
 import { PredictionsLeaderboard } from "./PredictionsLeaderboard";
 import { PredictionsStickyBar } from "./PredictionsStickyBar";
-import { formatDayHeading, formatLockMoment, matchDay, remainingLabel } from "./predictions-copy";
+import { claimStatusFor, useGuestClaim, type GuestClaimStatus } from "./guest-claim";
+import {
+  claimStartedLabel,
+  claimUnsavedLabel,
+  formatDayHeading,
+  formatLockMoment,
+  matchDay,
+  remainingLabel,
+} from "./predictions-copy";
 import { RoundSwitcher } from "./RoundSwitcher";
 import { ScoringRulesSheet } from "./ScoringRulesSheet";
 import {
   isFixtureOpen,
-  nextPick,
+  picksAreKnown,
   readFailure,
+  stepPick,
   usePredictionsRound,
   useGuestPredictions,
+  type PersonalReadState,
   type Pick,
   type RoundSeed,
 } from "./use-predictions-round";
@@ -68,6 +79,7 @@ export function PredictionsPage({
   const [rulesOpen, setRulesOpen] = useState(false);
   const model = usePredictionsRound(roundNumber, seed);
   const guest = useGuestPredictions();
+  const claim = useGuestClaim();
   const { round, query, now } = model;
 
   const header = (share: ReactNode) => (
@@ -131,6 +143,13 @@ export function PredictionsPage({
   const picks = new Map<string, Pick | null>(
     fixtures.map((fixture) => [fixture.id, model.pickFor(fixture.id)]),
   );
+  // The reader's own picks, read separately from the journée: until they are
+  // known, counts and "no prediction" would be guesses.
+  const personal = model.personal.state;
+  const picksKnown = picksAreKnown(
+    personal,
+    countable.map((fixture) => model.personalFor(fixture.id)),
+  );
   const done = countable.filter((fixture) => picks.get(fixture.id)).length;
   const openWithoutPick = countable.filter(
     (fixture) => isFixtureOpen(fixture, now) && !picks.get(fixture.id),
@@ -187,15 +206,17 @@ export function PredictionsPage({
             {/* Each half keeps to one line: a wrap falls between them, never
                 before the French " : ". */}
             <span className="whitespace-nowrap">
-              {openWithoutPick > 0
-                ? remainingLabel(openWithoutPick, lang, t)
-                : done > 0
-                  ? t("predictions.all_done")
-                  : null}
+              {!picksKnown
+                ? null
+                : openWithoutPick > 0
+                  ? remainingLabel(openWithoutPick, lang, t)
+                  : done > 0
+                    ? t("predictions.all_done")
+                    : null}
             </span>
             {journee.nextLockAt ? (
               <>
-                {openWithoutPick > 0 || done > 0 ? " · " : null}
+                {picksKnown && (openWithoutPick > 0 || done > 0) ? " · " : null}
                 <span className="whitespace-nowrap">
                   {t("predictions.next_lock").replace(
                     "{when}",
@@ -205,6 +226,15 @@ export function PredictionsPage({
               </>
             ) : null}
           </p>
+          <PersonalReadNotice
+            state={personal}
+            fetching={model.personal.fetching}
+            onRetry={model.personal.retry}
+          />
+          <GuestClaimNotice
+            status={claimStatusFor(claim.status, model.uid)}
+            onRetry={claim.retry}
+          />
           {!model.uid && !model.guestPersistent ? (
             <UiCard padding="sm" testId="predictions-storage-blocked">
               <p className={ui.text.meta}>{t("predictions.guest.storage_blocked")}</p>
@@ -225,9 +255,15 @@ export function PredictionsPage({
                   notCounted={!model.uid && guest.state.notCounted.includes(fixture.id)}
                   saved={model.uid ? (model.mine.get(fixture.id) ?? null) : undefined}
                   savedReady={!model.uid || model.mineQuery.isSuccess}
+                  personal={model.personalFor(fixture.id)}
                   stepsDisabled={!model.picksOpen}
                   onStep={(side, delta) => {
-                    const next = nextPick(picks.get(fixture.id) ?? null, side, delta);
+                    const next = stepPick(
+                      model.personalFor(fixture.id),
+                      picks.get(fixture.id) ?? null,
+                      side,
+                      delta,
+                    );
                     if (next) model.setPick(fixture, next);
                   }}
                 />
@@ -253,6 +289,7 @@ export function PredictionsPage({
 
           <PredictionsStickyBar
             done={done}
+            doneKnown={picksKnown}
             total={countable.length}
             state={model.saveState}
             onRetry={model.retrySave}
@@ -287,6 +324,108 @@ function shareTally(
     if (kind === "exact") exact += 1;
   }
   return played > 0 ? { correct, played, exact } : null;
+}
+
+/**
+ * The reader's saved picks are read apart from the journée. While that read is
+ * open or has failed, the cards say so (never "no prediction") and editing is
+ * off; a failed read has its own retry.
+ */
+export function PersonalReadNotice({
+  state,
+  fetching = false,
+  onRetry,
+}: {
+  state: PersonalReadState;
+  /** A retry is running: the button waits for its answer. */
+  fetching?: boolean;
+  onRetry: () => void;
+}) {
+  const { t } = useI18n();
+  if (state === "loading") {
+    return (
+      <p
+        role="status"
+        className={cn("text-center", ui.text.meta, ui.tone.muted)}
+        data-testid="predictions-personal-loading"
+      >
+        {t("predictions.personal.loading")}
+      </p>
+    );
+  }
+  if (state !== "failed") return null;
+  return (
+    <UiAlert
+      tone="caution"
+      testId="predictions-personal-failed"
+      action={
+        <UiButton
+          size="sm"
+          variant="soft"
+          onClick={onRetry}
+          disabled={fetching}
+          aria-busy={fetching}
+        >
+          {fetching ? (
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+          ) : null}
+          {t("state.retry")}
+        </UiButton>
+      }
+    >
+      {t("predictions.personal.failed")}
+    </UiAlert>
+  );
+}
+
+/**
+ * The visitor's picks on their way to the account. While some remain unsaved
+ * the reader is told how many and can retry; a match that had started is said
+ * to be left out. The server's kick-off deadline stays what decides.
+ */
+export function GuestClaimNotice({
+  status,
+  onRetry,
+}: {
+  status: GuestClaimStatus;
+  onRetry: () => void;
+}) {
+  const { t, lang } = useI18n();
+  if (status.phase === "pending") {
+    return (
+      <p
+        role="status"
+        className={cn("text-center", ui.text.meta, ui.tone.muted)}
+        data-testid="predictions-claim-pending"
+      >
+        {t("predictions.claim.pending")}
+      </p>
+    );
+  }
+  if (status.phase === "failed") {
+    return (
+      <UiAlert
+        tone="caution"
+        testId="predictions-claim-failed"
+        title={claimUnsavedLabel(status.remaining, lang, t)}
+        action={
+          <UiButton size="sm" variant="soft" onClick={onRetry}>
+            {t("state.retry")}
+          </UiButton>
+        }
+      >
+        {status.retrying ? t("predictions.claim.retrying") : t("predictions.claim.failed_body")}
+      </UiAlert>
+    );
+  }
+  if (status.phase === "done" && status.started > 0) {
+    return (
+      <UiAlert tone="info" testId="predictions-claim-started">
+        {claimStartedLabel(status.started, lang, t)}
+      </UiAlert>
+    );
+  }
+  return null;
 }
 
 function ComingSoon() {

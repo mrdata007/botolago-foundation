@@ -47,7 +47,11 @@ export function TransferConfirmScreen({
   busy,
   notice,
 }: {
-  pairs: Array<{ out: FantasyPlayer; in: FantasyPlayer }>;
+  /**
+   * `outValue` is what the leaving player sells for (the owner's sale value);
+   * absent, his price is shown, as before.
+   */
+  pairs: Array<{ out: FantasyPlayer; outValue?: number; in: FantasyPlayer }>;
   clubs: Club[];
   gameweek: number;
   deadlineIso: string;
@@ -74,7 +78,7 @@ export function TransferConfirmScreen({
 
   const clubOf = (id: string) => findClub(clubs, id);
 
-  const line = (player: FantasyPlayer, side: "out" | "in") => {
+  const line = (player: FantasyPlayer, side: "out" | "in", value: number = player.price) => {
     const club = clubOf(player.clubId);
     return (
       <div className="flex min-w-0 items-stretch">
@@ -124,9 +128,7 @@ export function TransferConfirmScreen({
               {club ? tr(club.shortName) : ""}
             </div>
           </div>
-          <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
-            {nf.format(player.price)}
-          </span>
+          <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>{nf.format(value)}</span>
         </div>
       </div>
     );
@@ -162,7 +164,7 @@ export function TransferConfirmScreen({
         <ul>
           {pairs.map((pair) => (
             <li key={pair.out.id + pair.in.id} className={ui.rule.block}>
-              {line(pair.out, "out")}
+              {line(pair.out, "out", pair.outValue ?? pair.out.price)}
               {line(pair.in, "in")}
             </li>
           ))}

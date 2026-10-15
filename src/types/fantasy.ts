@@ -97,9 +97,16 @@ export interface LeagueStanding {
   /** Optional club affiliation used for the crest badge in league tables. */
   clubId?: string;
   rank: number;
-  previousRank: number;
+  /** The rank this board held before; null when the server has none to give. */
+  previousRank: number | null;
   gameweekScore: number;
   totalScore: number;
+  /**
+   * ISO. When the ranking service calculated this row (the API's
+   * `calculatedAt`); absent from the mock board. It is what dates a league's
+   * standings (`leagueFreshness`).
+   */
+  calculatedAt?: string;
 }
 
 /**

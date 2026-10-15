@@ -153,7 +153,7 @@ describe("Fantasy, the leagues (/fantasy/leagues and below)", () => {
     const source = code("src/routes/fantasy.leagues.$leagueId.tsx");
     expect(source).toContain(IMPORT);
     expect(source).toContain(TEST);
-    const leave = handler(source, "const leave = async", "const updated =");
+    const leave = handler(source, "const leave = async", "const movementLabels =");
     expect(leave).toContain("catch (error)");
     expect(leave).toContain(
       stepUpThen("isMfaStepUpError(error)", 'toast.error(t("state.error"));'),

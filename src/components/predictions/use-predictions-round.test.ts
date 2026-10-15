@@ -21,11 +21,18 @@ import {
   predictionsKeys,
   awaitingScoring,
   barFor,
+  canEditPicks,
+  fixturePersonalState,
+  picksAreKnown,
+  nextPick,
   nextSaveBar,
+  personalReadState,
+  pickIsUnknown,
   picksAccepted,
   scoringMoved,
   seedUpdatedAt,
   shownSaveState,
+  stepPick,
   type SaveQueueServices,
 } from "./use-predictions-round";
 
@@ -403,6 +410,142 @@ describe("save responses after navigating to another round", () => {
     expect(client.getQueryData(predictionsKeys.mine("A", 1))).toBeUndefined();
     expect(items(client, "B", 1)).toEqual([]);
     client.clear();
+  });
+});
+
+describe("the reader's own picks are read apart from the journée (QA-01)", () => {
+  const read = (over: Partial<Parameters<typeof personalReadState>[0]> = {}) =>
+    personalReadState({
+      signedIn: true,
+      roundResolved: true,
+      hasData: false,
+      hasError: false,
+      ...over,
+    });
+
+  test("a signed-in reader is loading until their picks arrive, not 'ready with none'", () => {
+    expect(read()).toBe("loading");
+    expect(read({ hasData: true })).toBe("ready");
+  });
+
+  test("a failed first read is 'failed', never 'ready' or 'absent'", () => {
+    expect(read({ hasError: true })).toBe("failed");
+  });
+
+  test("picks already read stay known while read again, and when that second read fails", () => {
+    expect(read({ hasData: true, hasError: true })).toBe("ready");
+  });
+
+  test("an account switch starts unknown again: the new account has no data yet", () => {
+    // The query key carries the account, so B starts with hasData false.
+    expect(read({ hasData: true })).toBe("ready");
+    expect(read({ hasData: false })).toBe("loading");
+  });
+
+  test("a visitor, or a screen with no journée yet, has nothing to wait for", () => {
+    expect(read({ signedIn: false })).toBe("not_needed");
+    expect(read({ roundResolved: false })).toBe("not_needed");
+  });
+
+  test("editing waits for loading and failed, and only those", () => {
+    expect(canEditPicks("loading")).toBe(false);
+    expect(canEditPicks("failed")).toBe(false);
+    expect(canEditPicks("ready")).toBe(true);
+    expect(canEditPicks("not_needed")).toBe(true);
+  });
+
+  test("a missing pick is unknown while the read is open or failed, absent once it is ready", () => {
+    expect(pickIsUnknown("loading", null)).toBe(true);
+    expect(pickIsUnknown("failed", null)).toBe(true);
+    expect(pickIsUnknown("ready", null)).toBe(false);
+    expect(pickIsUnknown("not_needed", null)).toBe(false);
+    // A draft the reader already typed is a pick, not an unknown.
+    expect(pickIsUnknown("failed", { home: 1, away: 0 })).toBe(false);
+  });
+
+  test("one tap from an unseen 2-2 cannot become 1-0 while the read is unresolved", () => {
+    // The old behaviour: with the saved 2-2 unread, the missing pick starts at 0-0.
+    expect(nextPick(null, "home", 1)).toEqual({ home: 1, away: 0 });
+    for (const state of ["loading", "failed"] as const) {
+      expect(stepPick(state, null, "home", 1)).toBeNull();
+      expect(stepPick(state, null, "away", -1)).toBeNull();
+      // Not even a pending draft the reader typed is stepped over unseen picks.
+      expect(stepPick(state, { home: 1, away: 0 }, "home", 1)).toBeNull();
+    }
+  });
+
+  test("once the read has resolved, a tap steps from the real saved score", () => {
+    expect(stepPick("ready", { home: 2, away: 2 }, "home", 1)).toEqual({ home: 3, away: 2 });
+    expect(stepPick("ready", null, "home", 1)).toEqual({ home: 1, away: 0 });
+    expect(stepPick("not_needed", null, "away", 1)).toEqual({ home: 0, away: 1 });
+  });
+});
+
+describe("a session still loading is not a visitor (QA-01 review)", () => {
+  const base = { signedIn: false, roundResolved: true, hasData: false, hasError: false };
+
+  test("while auth is loading, picks are unknown and editing is off, signed in or not yet", () => {
+    // Every page load, and while one account replaces another, uid is null.
+    expect(personalReadState({ ...base, authLoading: true })).toBe("loading");
+    expect(canEditPicks(personalReadState({ ...base, authLoading: true }))).toBe(false);
+    // Even with a previous account's data in hand.
+    expect(personalReadState({ ...base, signedIn: true, hasData: true, authLoading: true })).toBe(
+      "loading",
+    );
+  });
+
+  test("once the session has settled as signed out, the visitor edits their phone's picks", () => {
+    expect(personalReadState({ ...base, authLoading: false })).toBe("not_needed");
+    expect(canEditPicks(personalReadState({ ...base }))).toBe(true);
+  });
+
+  test("while the account's picks are read again after the guest import, editing waits", () => {
+    const signedIn = { ...base, signedIn: true, hasData: true };
+    expect(personalReadState({ ...signedIn, staleAfterImport: true })).toBe("loading");
+    expect(personalReadState({ ...signedIn, staleAfterImport: false })).toBe("ready");
+  });
+});
+
+describe("a match the guest import may still change is unknown (QA-01/QA-05 review)", () => {
+  const held = new Set(["fx-held"]);
+
+  test("a held match is loading even when the screen's picks are ready", () => {
+    expect(fixturePersonalState("ready", held, "fx-held")).toBe("loading");
+    expect(fixturePersonalState("ready", held, "fx-other")).toBe("ready");
+  });
+
+  test("it cannot be stepped, so one tap cannot write 1-0 over a guest 2-2 the server may keep", () => {
+    expect(stepPick(fixturePersonalState("ready", held, "fx-held"), null, "home", 1)).toBeNull();
+    expect(stepPick(fixturePersonalState("ready", held, "fx-other"), null, "home", 1)).toEqual({
+      home: 1,
+      away: 0,
+    });
+  });
+
+  test("the save guard in setPick is this same gate", () => {
+    const writable = (state: Parameters<typeof canEditPicks>[0], id: string) =>
+      canEditPicks(fixturePersonalState(state, held, id));
+    expect(writable("ready", "fx-held")).toBe(false);
+    expect(writable("failed", "fx-other")).toBe(false);
+    expect(writable("loading", "fx-other")).toBe(false);
+    expect(writable("ready", "fx-other")).toBe(true);
+    expect(writable("not_needed", "fx-other")).toBe(true);
+  });
+});
+
+describe("picksAreKnown: the counts of the round", () => {
+  test("known when the read is done and no fixture waits on a guest import", () => {
+    expect(picksAreKnown("ready", ["ready", "ready"])).toBe(true);
+    expect(picksAreKnown("not_needed", ["not_needed"])).toBe(true);
+  });
+  test("not known while a fixture is held by a pending guest import", () => {
+    const held = new Set(["fx-held"]);
+    const states = ["fx-held", "fx-other"].map((id) => fixturePersonalState("ready", held, id));
+    expect(picksAreKnown("ready", states)).toBe(false);
+  });
+  test("not known while the read is loading or failed", () => {
+    expect(picksAreKnown("loading", [])).toBe(false);
+    expect(picksAreKnown("failed", ["failed"])).toBe(false);
   });
 });
 

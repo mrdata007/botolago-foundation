@@ -11,17 +11,26 @@ import {
 import { requestSportsMonksJson } from "./sportsmonks-production-probe";
 import {
   evaluateFantasyPrizes,
+  lifecycleRpcGateway,
   rpcFailure,
   runFantasyLifecycle,
+  SCRIPT_RPC_TIMEOUT_MS,
   type FantasyWorkerGateway,
+  type PrizeEvaluationSummary,
+  type RpcApiClient,
 } from "./fantasy-lifecycle-runner";
 import {
+  AMBIGUOUS_GRACE_MS,
   acquireWorkerLease,
   calendarSyncSchema,
   databaseWorkerStatus,
+  holdLeaseForAmbiguousWrite,
+  isAmbiguousRpcTimeout,
   leasedGateway,
   releaseWorkerLease,
   selectWorkerTargets,
+  type AmbiguousRpcTimeout,
+  type AmbiguousWrite,
   type CalendarSync,
   type SkippedTarget,
   type WorkerRun,
@@ -396,6 +405,13 @@ export function assessScoring(
 
 export interface OrchestratorGateway extends FantasyWorkerGateway {
   /**
+   * The gateway the lifecycle runs on (and the lease extensions with it), where a
+   * write that timed out or failed with no reply from the database is ambiguous
+   * (lifecycleRpcGateway, SEC-01). Absent: the lifecycle runs on `rpc`, as before.
+   * Every other call (calendar sync, prizes, reads) goes through `rpc`.
+   */
+  lifecycle?: FantasyWorkerGateway;
+  /**
    * One bounded finished-fixture performance batch; `null` cursor starts from
    * the beginning. `providerOutage` is an outage an earlier page of this pass
    * met: the page is then listed and reported without asking the provider.
@@ -437,6 +453,8 @@ export interface OrchestratorOptions {
    * Absent: the lifecycle runs unmanaged, as it always did.
    */
   workerLease?: { holder: string; deferToDatabase: boolean };
+  /** How long to wait for a write that timed out to answer before leaving the lease to expire. */
+  ambiguousGraceMs?: number;
   /**
    * Repository variables set to a value the pass could not use; it ran on
    * their defaults instead. Reported, and the verdict is at least `waiting`.
@@ -548,10 +566,15 @@ export async function orchestrateFantasySeason(
   // Never silently starve later rounds behind old missing-data incidents.
   if (deferredGameweeks.length > 0) verdict = mergeVerdict(verdict, "escalate");
   if (lifecycleOwner === "lease_held") verdict = mergeVerdict(verdict, "waiting");
+  const lifecycleGateway = gateway.lifecycle ?? gateway;
   const worker: FantasyWorkerGateway = lease
-    ? leasedGateway(gateway, { token: lease.token })
-    : gateway;
-  for (const target of targets) {
+    ? leasedGateway(lifecycleGateway, { token: lease.token })
+    : lifecycleGateway;
+  // A write that timed out (or failed with no reply from the database) may still
+  // commit: not a settled failure. The pass stops here, runs no other gameweek and
+  // no further write, and keeps the lease (below). docs/backend/FANTASY_WORKER_SCHEDULE.md.
+  let ambiguousTimeout: AmbiguousRpcTimeout | null = null;
+  for (const [index, target] of targets.entries()) {
     try {
       const result = (await runFantasyLifecycle(worker, {
         gameweekId: target.gameweekId,
@@ -570,20 +593,47 @@ export async function orchestrateFantasySeason(
         code: safeCode(error, "fantasy_worker_failed"),
       });
       verdict = mergeVerdict(verdict, "failed");
+      if (isAmbiguousRpcTimeout(error)) {
+        ambiguousTimeout = error;
+        deferredGameweeks.push(...targets.slice(index + 1).map((later) => later.gameweekId));
+        break;
+      }
       // RPC mutations are transactional and scoped to this gameweek. Keep
       // processing independent rounds; the failed round is retried next pass.
     }
   }
 
-  if (lease) await releaseWorkerLease((name, args) => gateway.rpc(name, args), lease.token);
+  let ambiguousWrite: AmbiguousWrite | undefined;
+  const leaseCall = (name: string, args: Record<string, unknown>) => gateway.rpc(name, args);
+  if (ambiguousTimeout)
+    ambiguousWrite = await holdLeaseForAmbiguousWrite(
+      leaseCall,
+      lease?.token ?? null,
+      ambiguousTimeout,
+      options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+    );
+  else if (lease) await releaseWorkerLease(leaseCall, lease.token);
 
-  const prizes = await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
+  // With a write in doubt the pass makes no further write: no prize catch-up and no
+  // second calendar sync (the reads below still run, so the verdict and the alert hold).
+  const prizes: PrizeEvaluationSummary | { skipped: "write_in_doubt" } = ambiguousWrite
+    ? { skipped: "write_in_doubt" }
+    : await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
   if ("error" in prizes || ("blocked" in prizes && prizes.blocked.length > 0))
     verdict = mergeVerdict(verdict, "waiting");
 
-  const after = calendarSyncSchema.parse(
-    await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
-  );
+  const after = ambiguousWrite
+    ? {
+        ...before,
+        gameweeksCreated: 0,
+        assignmentsAdded: 0,
+        assignmentsSuperseded: 0,
+        kickoffsRealigned: 0,
+        deadlineChanges: 0,
+      }
+    : calendarSyncSchema.parse(
+        await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
+      );
   // A pass that could not list the finished fixtures knows nothing about their
   // statistics, and one failed read is not an incident: it waits, named by
   // `performances.error`. Until 2026-09-25 one bad payload failed the whole
@@ -715,6 +765,7 @@ export async function orchestrateFantasySeason(
       ? { lifecycle: { owner: lifecycleOwner, ...(leaseHeldBy ? { heldBy: leaseHeldBy } : {}) } }
       : {}),
     deferredGameweeks,
+    ...(ambiguousWrite ? { ambiguousWrite } : {}),
     skipped,
     prizes,
     deadlineWatch,
@@ -830,6 +881,20 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
         : `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
     ],
     ["Deferred gameweeks", String(summary.deferredGameweeks.length)],
+    ...(summary.ambiguousWrite
+      ? ([
+          [
+            "Write in doubt",
+            `\`${summary.ambiguousWrite.rpc}\` timed out or got no reply from the database; the pass stopped. Lease ${
+              summary.ambiguousWrite.leaseReleased
+                ? "released (the request answered)"
+                : summary.ambiguousWrite.leaseExtended
+                  ? "kept, left to expire"
+                  : "NOT extended, left to expire"
+            }${summary.ambiguousWrite.leaseReleased ? "" : ". Do not start another worker until it expires"}`,
+          ],
+        ] as Array<[string, string]>)
+      : []),
     ["Finished without statistics", renderCoverage(summary.performances)],
     ["Ended without final points", renderScoring(summary.scoring)],
     [
@@ -1054,6 +1119,32 @@ async function readRecoveryEvidence(directory: string | undefined): Promise<unkn
   }
 }
 
+/**
+ * The two RPC paths of the orchestrator, built from a client so a test can hand
+ * it a fake. `rpc` is every call outside the lifecycle (calendar sync, prizes,
+ * reads): it gives up at the timeout and reports an ordinary failure, as it
+ * always did. `lifecycle` is what the lifecycle loop and its lease extensions run
+ * on: there a write that timed out or got no reply from the database is
+ * ambiguous (SEC-01; lifecycleRpcGateway).
+ */
+export function orchestratorRpcGateways(
+  api: RpcApiClient,
+  timeoutMs = SCRIPT_RPC_TIMEOUT_MS,
+): { rpc: OrchestratorGateway["rpc"]; lifecycle: FantasyWorkerGateway } {
+  return {
+    async rpc(name, args) {
+      const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(timeoutMs));
+      if (error)
+        throw rpcFailure(
+          safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
+          error.code,
+        );
+      return data;
+    },
+    lifecycle: lifecycleRpcGateway(api, "fantasy_orchestrator_rpc_failed", timeoutMs),
+  };
+}
+
 if (import.meta.main) {
   let evidenceDir: string | undefined;
   let commit = "";
@@ -1070,15 +1161,7 @@ if (import.meta.main) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const gateway: OrchestratorGateway = {
-      async rpc(name, args) {
-        const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
-        if (error)
-          throw rpcFailure(
-            safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
-            error.code,
-          );
-        return data;
-      },
+      ...orchestratorRpcGateways(api),
       async ingestPerformances(afterFixtureExternalId, options) {
         if (!config.token) throw new Error("fantasy_orchestrator_credential_missing");
         const result = await runCurrentPerformanceBatch(

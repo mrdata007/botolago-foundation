@@ -386,6 +386,116 @@ export function rpcFailure(code: string, postgrestCode: string | undefined): Err
   return Object.assign(new Error(code), { postgrestCode });
 }
 
+// --- A write that timed out is ambiguous ---------------------------------------
+//
+// A client-side timeout says nothing about the database: the statement may still
+// be queued, running, or about to commit. That is a different state from an RPC
+// that answered with an error (the transaction was rolled back). A gateway that
+// gives up on a RPC which may write throws the error below, and the pass then
+// stops and keeps its lease (runFantasyWorkerPass). Aborting the HTTP request is
+// a courtesy to the client, never evidence that the database stopped.
+
+/** RPCs that only read Fantasy data: abandoning one leaves nothing in doubt. */
+const READ_ONLY_RPCS: ReadonlySet<string> = new Set([
+  "service_fantasy_lifecycle_state",
+  "service_fantasy_scoring_league_page",
+  "service_fantasy_worker_status",
+]);
+
+/** The lease and the run log: they never write Fantasy data, so a timeout there leaves no write in doubt. */
+const CONTROL_RPCS: ReadonlySet<string> = new Set([
+  "service_fantasy_worker_lease_acquire",
+  "service_fantasy_worker_lease_extend",
+  "service_fantasy_worker_lease_release",
+  "service_fantasy_worker_record_run",
+]);
+
+/** True unless the RPC is known to be read-only or a lease/log call: an unknown name is treated as a write. */
+export function rpcMayWrite(name: string): boolean {
+  return !READ_ONLY_RPCS.has(name) && !CONTROL_RPCS.has(name);
+}
+
+/**
+ * `answered`: the database really replied to the original request (with data or
+ * with an error), so the statement is over. `unsettled`: it did not within the
+ * grace, or the client gave up for another reason; nothing is known.
+ */
+export type RpcSettlement = "answered" | "unsettled";
+
+export interface AmbiguousRpcTimeout extends Error {
+  readonly ambiguous: true;
+  /** The RPC whose write may still be running. */
+  readonly rpc: string;
+  /**
+   * Waits up to `graceMs` for the original request to answer. When it does not,
+   * the request is aborted as a courtesy and `unsettled` is returned: an abort
+   * is never read as a cancellation.
+   */
+  settle(graceMs: number): Promise<RpcSettlement>;
+}
+
+/**
+ * The message stays `fantasy_worker_rpc_timeout` for a timeout, the code every log
+ * and record already carries; a write that failed before the timer without a
+ * conclusive reply says `fantasy_worker_rpc_unconfirmed`.
+ */
+export function ambiguousRpcTimeout(
+  rpc: string,
+  settle: (graceMs: number) => Promise<RpcSettlement>,
+  code = "fantasy_worker_rpc_timeout",
+): AmbiguousRpcTimeout {
+  return Object.assign(new Error(code), {
+    ambiguous: true as const,
+    rpc,
+    settle,
+  });
+}
+
+/** What a PostgREST error code looks like: `PGRST123` or a five-character SQLSTATE. */
+const DATABASE_ERROR_CODE = /^(PGRST\d{3}|[0-9A-Z]{5})$/;
+
+/**
+ * Does this reply show that the database statement is over (it answered with data
+ * or with an error, so the transaction committed or rolled back)? Not so for a
+ * failure on the client's side (status 0: network, abort, timeout), nor for a
+ * gateway 5xx (502, 504, 52x) that carries no database error code: the proxy gave
+ * up, the statement may not have. A 5xx that carries a PostgREST or SQLSTATE code
+ * came from the database. A reply with no status (a test fake) counts as a reply.
+ */
+export function replyShowsStatementOver(reply: {
+  status?: number;
+  error?: { code?: string } | null;
+}): boolean {
+  const status = reply.status;
+  if (status === 0) return false;
+  if (typeof status === "number" && status >= 500)
+    return typeof reply.error?.code === "string" && DATABASE_ERROR_CODE.test(reply.error.code);
+  return true;
+}
+
+/**
+ * For a gateway that has just got a reply (or an exception, `reply` null) to a
+ * call: the ambiguous error to throw when the call may write and the reply does
+ * not show the statement is over; otherwise null (a settled answer, or a read).
+ * Its `settle` reports `unsettled` at once: nothing was answered.
+ */
+export function unconfirmedWrite(
+  rpc: string,
+  reply: { status?: number; error?: { code?: string } | null } | null,
+): AmbiguousRpcTimeout | null {
+  if (!rpcMayWrite(rpc)) return null;
+  if (reply !== null && replyShowsStatementOver(reply)) return null;
+  return ambiguousRpcTimeout(rpc, async () => "unsettled", "fantasy_worker_rpc_unconfirmed");
+}
+
+export function isAmbiguousRpcTimeout(error: unknown): error is AmbiguousRpcTimeout {
+  return (
+    error instanceof Error &&
+    (error as { ambiguous?: unknown }).ambiguous === true &&
+    typeof (error as { settle?: unknown }).settle === "function"
+  );
+}
+
 /** Gameweeks one prize pass may evaluate; the RPC accepts 1..100. */
 export const PRIZE_EVALUATION_LIMIT = 10;
 
@@ -439,7 +549,8 @@ export function summarizePrizeEvaluation(evaluation: PrizeEvaluation): PrizeEval
 /**
  * Prize evaluation is a follow-on of a finalized gameweek, never a gate: a
  * failure is reported, retried by the hourly orchestrator, and never stops the
- * next gameweek from opening.
+ * next gameweek from opening. The one exception is a write that timed out and
+ * may still be running (ambiguousRpcTimeout), which is rethrown.
  *
  * Between this code reaching `main` and the prize migration being promoted,
  * the database has no such function. That window is expected, not a failure,
@@ -455,6 +566,9 @@ export async function evaluateFantasyPrizes(
       ),
     );
   } catch (error) {
+    // Never swallowed: a prize write that may still be running must stop the pass
+    // and keep its lease, like any other write (see ambiguousRpcTimeout).
+    if (isAmbiguousRpcTimeout(error)) throw error;
     if ((error as { postgrestCode?: unknown } | null)?.postgrestCode === "PGRST202")
       return { skipped: "prizes_not_installed" };
     return {
@@ -1066,6 +1180,19 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
 /** How long a lease lasts without being extended. */
 export const WORKER_LEASE_SECONDS = 420;
 
+/**
+ * How far a pass pushes its lease out when a write may still be running. The
+ * extension only protects while the database cannot keep a statement running
+ * longer than this: the owner checks the service role's statement_timeout (read
+ * only: `select rolname, rolconfig from pg_roles where rolname in
+ * ('service_role','authenticator');`). If it is above about 390 s, raise this
+ * (the SQL accepts up to 900). docs/backend/FANTASY_WORKER_SCHEDULE.md.
+ */
+export const AMBIGUOUS_LEASE_EXTENSION_SECONDS = 420;
+
+/** The Edge function's wall-clock limit is 150 s; 140 s leaves room for the run record. */
+export const EDGE_WALL_CLOCK_MS = 140_000;
+
 function safeCode(error: unknown, fallback: string): string {
   return error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
     ? error.message
@@ -1203,6 +1330,23 @@ export function leasedGateway(
   };
 }
 
+/**
+ * The wall-clock wrapper alone, for a pass that holds no lease token: no RPC is
+ * started after the deadline (`fantasy_worker_time_limit`).
+ */
+export function deadlineGateway(
+  inner: FantasyWorkerGateway,
+  options: { now?: () => number; deadlineAt: number },
+): FantasyWorkerGateway {
+  const now = options.now ?? Date.now;
+  return {
+    rpc(name: string, args: Record<string, unknown>) {
+      if (now() >= options.deadlineAt) throw new Error("fantasy_worker_time_limit");
+      return inner.rpc(name, args);
+    },
+  };
+}
+
 // --- The bounded pass the Edge Function runs ----------------------------------
 
 export type WorkerPassOutcome = "ok" | "partial" | "failed" | "lease_held" | "disabled";
@@ -1214,6 +1358,8 @@ export interface WorkerPassGameweek {
   outcome: string;
   code?: string;
   calls: number;
+  /** This gameweek's write timed out and may still be running (see AmbiguousRpcTimeout). */
+  ambiguous?: true;
 }
 
 export interface WorkerPassOptions {
@@ -1227,6 +1373,88 @@ export interface WorkerPassOptions {
   /** RPCs one gameweek may use (`fantasy_worker_batch_limit`, default 1500). */
   maxCallsPerGameweek?: number;
   leaseSeconds?: number;
+  /**
+   * Work on a database that has no lease function (migration 20261013170000 not
+   * applied) instead of refusing. Off by default and never set by the scheduled
+   * Edge path: that one must not run without the whole-pass lease. The wall-clock
+   * budget still applies. docs/backend/FANTASY_WORKER_SCHEDULE.md.
+   */
+  allowUnmanaged?: boolean;
+  /**
+   * How long to wait, after an RPC that may write timed out, for the original
+   * request to answer before giving up on it (default 10 s). Only an answer
+   * releases the lease early; otherwise it is left to expire.
+   */
+  ambiguousGraceMs?: number;
+  /**
+   * The Edge function's hard wall clock from the start of the pass (default 140 s of
+   * 150 s); the grace above never reaches past it.
+   */
+  wallClockMs?: number;
+}
+
+/** What a pass reports when a write timed out and its fate is not known. */
+export interface AmbiguousWrite {
+  rpc: string;
+  /**
+   * The lease extension made right after the write was in doubt succeeded. False
+   * means the lease was already gone or the extension itself failed: nothing then
+   * keeps a second pass out for the length of a lease.
+   */
+  leaseExtended: boolean;
+  /** The original request answered within the grace, so the statement is over. */
+  settled: boolean;
+  /** Only ever true after `settled`; otherwise the lease is left to expire. */
+  leaseReleased: boolean;
+}
+
+/** How long a pass waits, after a write timed out, for the original request to answer. */
+export const AMBIGUOUS_GRACE_MS = 10_000;
+
+/**
+ * What every caller holding the lease does once a write may still be running
+ * (the Edge pass, the GitHub orchestrator, the manual runner). The lease is what
+ * keeps a second pass from running beside a write that may still commit. First
+ * push its expiry out a full lease from now (so the window holds even if this
+ * process is cut off while waiting), then give the original request `graceMs`
+ * to answer. Release the lease only if it did; otherwise leave it to lapse by
+ * itself, which is also how a crashed worker recovers. None of these steps can
+ * throw. `token` is null when no lease is held (nothing to extend or release).
+ * `graceMs` may be a function: it is read after the extension, so a wall-clock bound
+ * counts the time the extension took.
+ */
+export async function holdLeaseForAmbiguousWrite(
+  call: RpcCall,
+  token: string | null,
+  ambiguousTimeout: AmbiguousRpcTimeout,
+  graceMs: number | (() => number),
+): Promise<AmbiguousWrite> {
+  let leaseExtended = false;
+  if (token) {
+    try {
+      leaseExtended =
+        z.object({ extended: z.boolean() }).parse(
+          await call("service_fantasy_worker_lease_extend", {
+            p_token: token,
+            p_ttl_seconds: AMBIGUOUS_LEASE_EXTENSION_SECONDS,
+          }),
+        ).extended === true;
+    } catch {
+      leaseExtended = false;
+    }
+  }
+  let settled = false;
+  try {
+    // A function is read only now, after the extension, so a wall-clock bound counts
+    // the time the extension took.
+    settled =
+      (await ambiguousTimeout.settle(typeof graceMs === "function" ? graceMs() : graceMs)) ===
+      "answered";
+  } catch {
+    settled = false;
+  }
+  const leaseReleased = token && settled ? await releaseWorkerLease(call, token) : false;
+  return { rpc: ambiguousTimeout.rpc, leaseExtended, settled, leaseReleased };
 }
 
 export interface WorkerPassResult {
@@ -1244,6 +1472,27 @@ export interface WorkerPassResult {
   /** Set when the pass did not run: who holds the lease. */
   heldBy?: string | null;
   prizes?: unknown;
+  /**
+   * The code of a prize problem (the prize call failed, or a season is blocked).
+   * The pass outcome is not changed by it: the game is keeping up, and an `ok`
+   * pass is what the health check and the GitHub fallback look for. It is shown in
+   * the response, the run record and the log instead.
+   */
+  prizeAttention?: string;
+  /** Set when a write timed out and may still be running; the pass stopped there. */
+  ambiguous?: AmbiguousWrite;
+  /** Set when the pass refused to run because this lease function does not exist (deployment parity). */
+  missingFunction?: string;
+}
+
+/** The code a prize result that needs attention carries, or null when it is fine or merely not installed yet. */
+function prizeAttentionCode(prizes: unknown): string | null {
+  if (typeof prizes !== "object" || prizes === null) return null;
+  const { error, blocked } = prizes as { error?: unknown; blocked?: unknown };
+  if (typeof error === "string")
+    return safeCode(new Error(error), "fantasy_prize_evaluation_failed");
+  if (Array.isArray(blocked) && blocked.length > 0) return "fantasy_prizes_blocked";
+  return null;
 }
 
 const LIMIT_CODES = new Set([
@@ -1270,12 +1519,14 @@ export async function runFantasyWorkerPass(
   const maxCalls = options.maxCallsPerGameweek ?? 1500;
   const deadlineAt = startedMs + budgetMs;
   let passError: string | null = null;
+  let prizeAttention: string | null = null;
   const finish = (
     outcome: WorkerPassOutcome,
     extra: Partial<WorkerPassResult> = {},
   ): WorkerPassResult => {
     const gameweeks = extra.gameweeks ?? [];
-    const notable = gameweeks.find((gw) => gw.code) ?? gameweeks[0];
+    const notable =
+      gameweeks.find((gw) => gw.ambiguous) ?? gameweeks.find((gw) => gw.code) ?? gameweeks[0];
     return {
       outcome,
       startedAt: new Date(startedMs).toISOString(),
@@ -1298,8 +1549,15 @@ export async function runFantasyWorkerPass(
   );
   if (lease.kind === "disabled") return finish("disabled");
   if (lease.kind === "held") return finish("lease_held", { heldBy: lease.holder });
+  // `unmanaged`: this database has no lease function, so the deployment is behind
+  // (migration 20261013170000). The scheduled path refuses rather than run
+  // without the whole-pass lease; a caller that deliberately opts in (the
+  // legacy, operator-run path) still gets the wall-clock wrapper.
+  if (lease.kind === "unmanaged" && !options.allowUnmanaged) {
+    passError = "fantasy_worker_lease_function_missing";
+    return finish("failed", { missingFunction: "service_fantasy_worker_lease_acquire" });
+  }
   const token = lease.kind === "acquired" ? lease.token : null;
-  // `unmanaged`: no lease function yet. Work without one, as the scripts always did.
   const worker: FantasyWorkerGateway = token
     ? leasedGateway(gateway, {
         token,
@@ -1307,12 +1565,14 @@ export async function runFantasyWorkerPass(
         now: clock,
         deadlineAt,
       })
-    : gateway;
+    : deadlineGateway(gateway, { now: clock, deadlineAt });
   const gameweeks: WorkerPassGameweek[] = [];
   let skipped: SkippedTarget[] = [];
   let deferred = 0;
   let outcome: WorkerPassOutcome = "ok";
   let prizes: unknown;
+  let ambiguousTimeout: AmbiguousRpcTimeout | null = null;
+  let ambiguous: AmbiguousWrite | undefined;
   try {
     const calendar = calendarSyncSchema.parse(
       await worker.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
@@ -1326,7 +1586,8 @@ export async function runFantasyWorkerPass(
     for (const target of targets) {
       if (stop || clock() >= deadlineAt) {
         deferred += 1;
-        outcome = "partial";
+        // Never turn a failure (an unsettled write above all) into a mere "partial".
+        if (outcome === "ok") outcome = "partial";
         continue;
       }
       const row = {
@@ -1355,6 +1616,16 @@ export async function runFantasyWorkerPass(
         });
       } catch (error) {
         const code = safeCode(error, "fantasy_worker_failed");
+        if (isAmbiguousRpcTimeout(error)) {
+          // A write timed out and may still commit: not a settled failure. Stop
+          // here (no other gameweek), keep the lease (below), name it.
+          gameweeks.push({ ...row, outcome: "failed", code, calls, ambiguous: true });
+          ambiguousTimeout = error;
+          passError = code;
+          outcome = "failed";
+          stop = true;
+          continue;
+        }
         gameweeks.push({ ...row, outcome: "failed", code, calls });
         if (LIMIT_CODES.has(code)) {
           // Budget, not breakage: the next tick resumes from the database state.
@@ -1366,13 +1637,43 @@ export async function runFantasyWorkerPass(
         }
       }
     }
-    if (!stop && outcome !== "failed" && clock() < deadlineAt)
+    if (!stop && outcome !== "failed" && clock() < deadlineAt) {
       prizes = await evaluateFantasyPrizes((name, args) => worker.rpc(name, args));
+      // A prize failure never stops the game (the next pass retries it, and the
+      // RPC is idempotent) and does not change the outcome: the pass kept up, and
+      // a blocked season needs an admin, not a worker restart. The orchestrator's
+      // `waiting` verdict never alerts either. It is shown, in `prizeAttention`.
+      prizeAttention = prizeAttentionCode(prizes);
+    }
   } catch (error) {
     passError = safeCode(error, "fantasy_worker_failed");
-    outcome = LIMIT_CODES.has(passError) ? "partial" : "failed";
+    if (isAmbiguousRpcTimeout(error)) {
+      ambiguousTimeout = error;
+      outcome = "failed";
+    } else {
+      outcome = LIMIT_CODES.has(passError) ? "partial" : "failed";
+    }
   } finally {
-    if (token) await releaseWorkerLease((name, args) => gateway.rpc(name, args), token);
+    const raw: RpcCall = (name, args) => gateway.rpc(name, args);
+    if (ambiguousTimeout) {
+      // Never wait past what is left of the Edge function's wall clock, counted after
+      // the lease extension (which takes time of its own).
+      ambiguous = await holdLeaseForAmbiguousWrite(raw, token, ambiguousTimeout, () =>
+        Math.min(
+          options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+          Math.max(0, startedMs + (options.wallClockMs ?? EDGE_WALL_CLOCK_MS) - clock()),
+        ),
+      );
+    } else if (token) {
+      await releaseWorkerLease(raw, token);
+    }
   }
-  return finish(outcome, { gameweeks, skipped, deferred, ...(prizes ? { prizes } : {}) });
+  return finish(outcome, {
+    gameweeks,
+    skipped,
+    deferred,
+    ...(prizes ? { prizes } : {}),
+    ...(prizeAttention ? { prizeAttention } : {}),
+    ...(ambiguous ? { ambiguous } : {}),
+  });
 }
