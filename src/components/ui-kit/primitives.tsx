@@ -82,9 +82,16 @@ export function UiScreen({
   className,
   bottomNav = false,
   raised = false,
+  as: Tag = "main",
 }: {
   children: ReactNode;
   width?: "column" | "content" | "wide" | "desktop";
+  /**
+   * The element drawn. `main` is the page's one landmark; a shell that draws
+   * its own `<main>` around more than the column (`AppShell`, whose page
+   * header sits above it) passes `div`.
+   */
+  as?: "main" | "div";
   className?: string;
   /** Reserve clearance for the fixed bottom navigation. */
   bottomNav?: boolean;
@@ -92,7 +99,7 @@ export function UiScreen({
   raised?: boolean;
 }) {
   return (
-    <main
+    <Tag
       className={cn(
         "relative mx-auto w-full",
         ui.space.gutter,
@@ -110,7 +117,7 @@ export function UiScreen({
       )}
     >
       {children}
-    </main>
+    </Tag>
   );
 }
 
