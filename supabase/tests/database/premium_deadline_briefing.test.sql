@@ -256,7 +256,7 @@ select extensions.is(
   'absenceFeed,available,gameweek,league,locked,published,squad,team',
   'the answer has exactly these eight keys');
 select extensions.is(
-  jsonb_build_object('gameweek', current_setting('test.b')::jsonb -> 'gameweek' - 'id', 'team', current_setting('test.b')::jsonb -> 'team' - 'id'),
+  jsonb_build_object('gameweek', (current_setting('test.b')::jsonb -> 'gameweek') - 'id', 'team', (current_setting('test.b')::jsonb -> 'team') - 'id'),
   '{"gameweek": {"name": "G11", "sequence": 11, "deadlineAt": "2091-10-21T10:00:00+00:00"},
     "team": {"name": "KACM Team", "bank": 0.80, "teamValue": 27.00, "freeTransfers": 1, "transferHitCost": 4,
              "maxPerClub": 3, "captainMultiplier": 2}}'::jsonb,
