@@ -445,6 +445,12 @@ const PAGE_TITLE_COLUMN = {
  * inline end (the season picker: `<UiButton variant="soft" size="sm">`), and
  * optional `children` under it (a scrolling `UiChip` row, a tablist).
  *
+ * The route name is never cut off (VIS-001). The row wraps: when the title and
+ * the control do not fit on one line (a narrow phone, or text enlarged to
+ * 200%) the control drops to a second line at the inline end, and a title
+ * wider than the row wraps onto a second line instead of ending in an
+ * ellipsis. At normal text size the one-line layout is unchanged.
+ *
  * Full-bleed like `UiHeader`: render it outside `UiScreen`'s gutter, above
  * the content column. On a wide screen its content lines up with that column
  * (`width`, default `content`).
@@ -469,9 +475,9 @@ export function UiPageTitle({
   return (
     <div className={cn(ui.surface.bar, ui.rule.block, "pb-3 pt-2", className)}>
       <div className={cn(PAGE_TITLE_COLUMN[width], ui.space.gutter)}>
-        <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
-          <Tag className={cn("min-w-0 truncate", ui.display.title)}>{title}</Tag>
-          {trailing ? <div className="shrink-0">{trailing}</div> : null}
+        <div className="flex min-h-[var(--ui-tap-min)] flex-wrap items-center gap-x-3 gap-y-2">
+          <Tag className={cn("min-w-0 break-words", ui.display.title)}>{title}</Tag>
+          {trailing ? <div className="ms-auto shrink-0">{trailing}</div> : null}
         </div>
         {children ? <div className="mt-3 min-w-0">{children}</div> : null}
       </div>
