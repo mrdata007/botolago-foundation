@@ -18,7 +18,7 @@ import { dictionaries } from "./dictionaries";
 const fr = dictionaries.fr as Record<string, string>;
 const ar = dictionaries.ar as Record<string, string>;
 
-/** Arabic text isolates Latin fragments with FSI ... PDI (U+2066 ... U+2069). */
+/** Arabic text isolates Latin fragments with LRI ... PDI (U+2066 ... U+2069). */
 const LRI = "⁦";
 const PDI = "⁩";
 
@@ -170,6 +170,15 @@ describe("LOC-10: unsubscribe confirms notification e-mails, not all corresponde
     expect(ar["unsubscribe.reenable_hint"]).toContain("تبقى رسائل أمان الحساب الضرورية متاحة.");
   });
 
+  test("the already-unsubscribed line has the same scope", () => {
+    expect(fr["unsubscribe.already_title"]).toBe(
+      "Vos e-mails de notification BotolaGO étaient déjà désactivés.",
+    );
+    expect(ar["unsubscribe.already_title"]).toBe(
+      "كانت رسائل إشعارات BotolaGO عبر البريد الإلكتروني متوقفة من قبل.",
+    );
+  });
+
   test("the Pépites-only lines are untouched", () => {
     expect(fr["unsubscribe.pepites_done_title"]).toBe("Vous ne recevrez plus l'e-mail Pépites.");
     expect(ar["unsubscribe.pepites_done_title"]).toBe("لن تصلك بعد الآن رسالة Pépites.");
@@ -188,6 +197,8 @@ describe("LOC-11: small editorial inconsistencies", () => {
     expect(ar["fantasy.points.vice_takeover"]).toBe("تسلّم نائب القائد الشارة");
     expect(fr["nav.matches"]).toBe("Matchs");
     expect(fr["matches.title"]).toBe("Matchs");
+    expect(fr["matches.table.played"]).toBe("Matchs joués");
+    expect(fr["fantasy.players.tab.fixtures"]).toBe("Matchs");
     expect(fr["club.tab.matches"]).toBe("Matchs");
     expect(fr["prizes.admin.winners.empty"]).toBe("Aucun gagnant pour ce filtre.");
     expect(ar["prizes.admin.winners.empty"]).toBe("لا يوجد فائزون يطابقون هذه التصفية.");
@@ -208,6 +219,8 @@ describe("LOC-11: small editorial inconsistencies", () => {
       join(import.meta.dir, "..", "routes", "fantasy.points.tsx"),
       "utf8",
     );
-    expect(source).toContain('<span className="flex flex-wrap items-baseline gap-x-2">');
+    expect(source).toContain(
+      '<span className="flex flex-wrap items-baseline justify-end gap-x-2">',
+    );
   });
 });

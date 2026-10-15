@@ -77,7 +77,7 @@ describe("StandingsTable", () => {
     expect(rows[0]).toContain("maghreb-f-s");
     expect(rows[0]).toContain(">+23<");
     expect(rows[0]).toContain(">59<");
-    for (const heading of ["Matches joués", "Gagnés", "Nuls", "Perdus", "Différence de buts"]) {
+    for (const heading of ["Matchs joués", "Gagnés", "Nuls", "Perdus", "Différence de buts"]) {
       expect(html).toContain(`<span class="sr-only">${heading}</span>`);
     }
   });

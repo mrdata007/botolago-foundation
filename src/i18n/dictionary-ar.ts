@@ -2037,7 +2037,7 @@ export const ar = {
   "unsubscribe.confirm_action": "إلغاء اشتراكي",
   "unsubscribe.loading": "جارٍ إلغاء الاشتراك…",
   "unsubscribe.done_title": "تم إيقاف رسائل إشعارات BotolaGO عبر البريد الإلكتروني.",
-  "unsubscribe.already_title": "رسائل BotolaGO الإلكترونية كانت معطّلة من قبل.",
+  "unsubscribe.already_title": "كانت رسائل إشعارات BotolaGO عبر البريد الإلكتروني متوقفة من قبل.",
   "unsubscribe.reenable_hint":
     "يمكنك إعادة تفعيلها في أي وقت من إعدادات الإشعارات في ملفك الشخصي. تبقى رسائل أمان الحساب الضرورية متاحة.",
   "unsubscribe.invalid_title": "هذا الرابط لم يعد صالحًا",

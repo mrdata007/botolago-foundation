@@ -578,7 +578,7 @@ function PointsBody() {
             <UiKeyValueRow
               label={t("fantasy.points.effective_captain")}
               value={
-                <span className="flex flex-wrap items-baseline gap-x-2">
+                <span className="flex flex-wrap items-baseline justify-end gap-x-2">
                   <span className="min-w-0 max-w-full truncate">{captainName}</span>
                   {vm.captainTookOver ? (
                     <span className={cn(ui.text.meta, ui.tone.muted)}>
