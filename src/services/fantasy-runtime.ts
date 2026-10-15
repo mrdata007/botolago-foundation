@@ -171,6 +171,15 @@ export function pointsDto(
     })),
     breakdown: dto.players.map((player) => ({
       playerId: player.fantasyPlayerId,
+      identity: player.identity
+        ? {
+            name: player.identity.name,
+            position: player.identity.position,
+            clubId: player.identity.footballTeamId,
+            teamName: player.identity.teamName,
+            teamShortName: player.identity.teamShortName,
+          }
+        : undefined,
       multiplier: player.multiplier,
       totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
       minutesPlayed: player.minutesPlayed ?? 0,

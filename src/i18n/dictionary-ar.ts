@@ -607,6 +607,9 @@ export const ar = {
   "fantasy.points.captain_bonus": "بونص القائد",
   "fantasy.points.effective_captain": "القائد الفعلي",
   "fantasy.points.vice_takeover": "النائب استلم الشارة",
+  "fantasy.points.unknown_player": "لاعب غير متاح",
+  "fantasy.points.unresolved_players":
+    "بعض لاعبي هذه الجولة لم يعودوا ضمن قائمة اللاعبين، لذا لا يمكن عرض أسمائهم، لكن نقاطهم محسوبة في المجموع.",
   "fantasy.points.bench_boost_contrib": "إسهام تعزيز الاحتياط",
   "fantasy.points.triple_captain_contrib": "إسهام القائد الثلاثي",
   "fantasy.points.hit": "خصم الانتقالات",
