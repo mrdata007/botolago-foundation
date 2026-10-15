@@ -20,6 +20,7 @@ import {
 import { SearchField } from "@/components/fantasy-lists/SearchField";
 import { clubLabel, findClub, isClubKey } from "@/components/fantasy/club-identity";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
+import { playersShownLabel } from "@/components/fpl/count-copy";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
   ui,
@@ -432,9 +433,7 @@ function PlayersPage() {
             )}
           >
             {list.length > 0
-              ? t("fantasy.players.showing")
-                  .replace("{n}", nf.format(visible.length))
-                  .replace("{total}", nf.format(list.length))
+              ? playersShownLabel(visible.length, list.length, lang, t, nf.format)
               : null}
           </p>
           <div className="flex items-center gap-1">

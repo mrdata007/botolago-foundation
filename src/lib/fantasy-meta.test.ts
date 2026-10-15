@@ -201,7 +201,7 @@ describe("the title in the reader's language", () => {
 
   test("a player's page is named after the player, in the reader's language", () => {
     expect(fantasyShownCopy(FANTASY_PLAYER_ROUTE_ID, "أيوب الكعبي", translate.ar)).toEqual({
-      title: "أيوب الكعبي: السعر والنقاط والفورمة — BotolaGO Fantasy",
+      title: "أيوب الكعبي: السعر والنقاط والمستوى الأخير — BotolaGO Fantasy",
       description: dictionaries.ar["fantasy.meta.player_description"].replace(
         "{name}",
         "أيوب الكعبي",

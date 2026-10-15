@@ -23,6 +23,7 @@ import { SQUAD_RULES, type FantasyPlayer, type Position } from "@/types/fantasy"
 import { findClub } from "./club-lookup";
 import { pointsUnit } from "@/lib/points-unit";
 import { exceedsBudget } from "@/services/transfers-service";
+import { pickerApplyLabel, playersShownLabel } from "./count-copy";
 import { positionWord, transferCostLabel } from "./picker-copy";
 
 export type SortKey = "form" | "price" | "selected" | "points";
@@ -446,9 +447,7 @@ export function AddPlayerScreen({
 
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pt-2">
         <p className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
-          {t("fantasy.players.showing")
-            .replace("{n}", whole.format(rows.length))
-            .replace("{total}", whole.format(players.length))}
+          {playersShownLabel(rows.length, players.length, lang, t, whole.format)}
         </p>
         <UiChip selected={hideBlocked} onClick={() => setHideBlocked((on) => !on)}>
           {t("fpl.pick.hide_blocked")}
@@ -673,7 +672,7 @@ export function AddPlayerScreen({
               {t("fpl.pick.filters_reset")}
             </UiButton>
             <UiButton onClick={() => setFiltersOpen(false)}>
-              {t("fpl.pick.filters_apply").replace("{n}", whole.format(rows.length))}
+              {pickerApplyLabel(rows.length, lang, t, whole.format)}
             </UiButton>
           </div>
         }

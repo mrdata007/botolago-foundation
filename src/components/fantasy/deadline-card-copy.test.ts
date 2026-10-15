@@ -22,9 +22,9 @@ describe("deadline card copy", () => {
   });
 
   test("Arabic has its own words for 1 and 2, and for 3 to 10", () => {
-    expect(transfersLabel(1, "ar", ar, n)).toBe("التحويلات · تحويل واحد مجاني");
-    expect(transfersLabel(2, "ar", ar, n)).toBe("التحويلات · تحويلان مجانيان");
-    expect(transfersLabel(5, "ar", ar, n)).toBe("التحويلات · 5 تحويلات مجانية");
+    expect(transfersLabel(1, "ar", ar, n)).toBe("الانتقالات · انتقال واحد مجاني");
+    expect(transfersLabel(2, "ar", ar, n)).toBe("الانتقالات · انتقالان مجانيان");
+    expect(transfersLabel(5, "ar", ar, n)).toBe("الانتقالات · 5 انتقالات مجانية");
     expect(noMatchLabel(11, 2, "ar", ar, n)).toContain("11 لاعبًا");
   });
 });
