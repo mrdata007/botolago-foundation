@@ -75,3 +75,18 @@ export function mergeLeagueStandingsPages(
     nextCursor: last && addedByLast > 0 ? last.nextCursor : null,
   };
 }
+
+/**
+ * How often the open standings re-read themselves, by how many pages are shown.
+ * A refresh of an infinite query re-reads every page loaded, one after the
+ * other, so it slows down as the reader loads more instead of stopping: scores
+ * and ranks of a league over 100 members would otherwise stay stale until the
+ * screen is left (the first page alone refreshes every minute, as before).
+ * Past five pages (500 members) the reader still gets a fresh read when they
+ * return to the window.
+ */
+export function leagueStandingsRefetchInterval(pageCount: number): number | false {
+  if (pageCount <= 1) return 60_000;
+  if (pageCount <= 5) return 5 * 60_000;
+  return false;
+}

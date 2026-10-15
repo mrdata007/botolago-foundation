@@ -65,6 +65,7 @@ import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import {
+  leagueStandingsRefetchInterval,
   mergeLeagueStandingsPages,
   type LeagueStandingCursor,
 } from "@/services/fantasy-league-pages";
@@ -168,8 +169,9 @@ function LeagueDetailBody() {
     queryFn: ({ pageParam }) => fantasyService.getLeagueStandingsPage(leagueId, pageParam),
     initialPageParam: null as LeagueStandingCursor | null,
     getNextPageParam: (_last, pages) => mergeLeagueStandingsPages(pages).nextCursor ?? undefined,
-    // A refresh re-reads every page loaded, one after the other: keep it for the first page only.
-    refetchInterval: (query) => ((query.state.data?.pages.length ?? 0) > 1 ? false : 60_000),
+    // A refresh re-reads every page loaded, one after the other: the more pages
+    // are shown, the less often (see `leagueStandingsRefetchInterval`).
+    refetchInterval: (query) => leagueStandingsRefetchInterval(query.state.data?.pages.length ?? 0),
     enabled: screen.phase === "ready",
   });
   const merged = useMemo(
