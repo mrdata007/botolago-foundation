@@ -116,7 +116,18 @@ export function workerLimits(environment: Readonly<Record<string, string | undef
   };
 }
 
-function gatewayFor(client: FantasyWorkerRpcClient, timeoutMs: number): FantasyWorkerGateway {
+/**
+ * The gateway for one pass: each RPC gets `timeoutMs`, and a write that timed out or
+ * failed without a conclusive reply is ambiguous (see fantasy-lifecycle-worker.ts).
+ * Also what the GitHub orchestrator and the manual runner build their lifecycle
+ * gateway from, so the three callers share one rule. `fallbackCode` is the safe
+ * code for a database error whose message is not already one.
+ */
+export function gatewayFor(
+  client: FantasyWorkerRpcClient,
+  timeoutMs: number,
+  fallbackCode = "fantasy_worker_rpc_failed",
+): FantasyWorkerGateway {
   type Answer =
     | { kind: "answered"; result: FantasyWorkerRpcResult }
     | { kind: "threw"; error: unknown };
@@ -182,7 +193,7 @@ function gatewayFor(client: FantasyWorkerRpcClient, timeoutMs: number): FantasyW
         // Never carry SQL details, snapshots or credentials into a log or a row.
         const message = String(result.error.message ?? "");
         throw rpcFailure(
-          /^[a-z][a-z0-9_]{2,100}$/.test(message) ? message : "fantasy_worker_rpc_failed",
+          /^[a-z][a-z0-9_]{2,100}$/.test(message) ? message : fallbackCode,
           result.error.code,
         );
       }

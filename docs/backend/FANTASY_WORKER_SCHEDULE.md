@@ -157,20 +157,53 @@ transaction rolled back), which is resumable.
   the heavy finalization RPCs), raise the constant, and `WORKER_LEASE_SECONDS` with it. Whether PostgREST cancels a
   statement when the client disconnects was not measured here.
 
-#### Open: the GitHub orchestrator and the manual runner still have the race (SEC-01 residual)
+#### The GitHub orchestrator and the manual runner follow the same rule (SEC-01 residual, closed in code)
 
-`scripts/backend/fantasy-season-orchestrator.ts` and `scripts/backend/fantasy-lifecycle-runner.ts` abort each RPC at
-60 s (`AbortSignal.timeout`), treat the abort as an ordinary failure and release the shared lease. **They do not use the
-rule above**, so a slow write there can still outlive the lease and meet a second pass. Left unchanged on purpose: (1)
-their gateways are built inside `import.meta.main` blocks with no test seam, and the orchestrator's lease only covers
-its lifecycle loop (the calendar syncs, the performance ingestion and the prize call run outside it); (2) the rule
-classifies an RPC by name and treats an unknown name as a write, and the orchestrator calls many reads under names not
-on the list, so applying it there would change error handling across a 1000-line verdict function and make its prize
-call rethrow; (3) a scheduled GitHub run stands aside while the database worker is healthy, so these are the fallback
-and the owner's manual paths, not the primary writer. The small, safe fix needs its own change: export the gateway
-builders so they can be tested, pass them the read/write lists explicitly, and let the lifecycle loop stop and keep the
-lease on an ambiguous error. Until then: do not start a manual worker or a manual orchestrator dispatch while the Edge
-worker is on and a pass has just reported `ambiguous`, and treat a 60 s timeout in those logs as unconfirmed.
+`scripts/backend/fantasy-season-orchestrator.ts` and `scripts/backend/fantasy-lifecycle-runner.ts` used to abort each RPC
+at 60 s, treat the abort as an ordinary failure, carry on to the next gameweek and release the lease while the write could
+still commit. They now share the Edge rule instead of copying it:
+
+- **One classification, one gateway.** `gatewayFor` in `fantasy-lifecycle-handler.ts` (now exported; the Edge function
+  uses it unchanged) is what both scripts build their lifecycle gateway from (`lifecycleRpcGateway` in the runner). The
+  read / control / write lists, the unconfirmed-write test (`unconfirmedWrite`, `replyShowsStatementOver`) and the
+  settle step come from `fantasy-lifecycle-worker.ts`. The lease-keeping step that used to sit inside
+  `runFantasyWorkerPass` is now one exported function, `holdLeaseForAmbiguousWrite` (extend a full 420 s, wait for the
+  grace, release only on a real answer); the Edge pass, the orchestrator and the runner all call it.
+- **Test seam.** The gateways are built by exported functions that take a client (`orchestratorRpcGateways`,
+  `lifecycleRpcGateway`), and the runner's body is `runManualWorker`, so fake clients can drive them. The
+  `import.meta.main` blocks only build the real client and print.
+- **Orchestrator.** `OrchestratorGateway` has an optional `lifecycle` gateway. The lifecycle loop and its lease
+  extensions run on it; every other call (calendar sync, performance ingestion, prizes, the reads) keeps the plain
+  60 s gateway and its old behaviour. This is deliberate: the orchestrator calls many reads under names that are not on the
+  Edge read list (`fantasy_gameweeks`, `service_fantasy_deadline_watch`, `football_data_source`), and "an unknown name is
+  a write" would turn their timeouts into ambiguous errors. Inside the lifecycle every name is known (the two reads are on
+  the list, everything else there really is a write). A write that times out, or fails with no reply from the database,
+  stops the loop: no other gameweek (the ones not started are listed in `deferredGameweeks`), the lease is extended and kept,
+  released only after the original request answered, otherwise left to expire. The pass also makes **no further write**:
+  no prize catch-up (`prizes: { skipped: "write_in_doubt" }`) and no second calendar sync. Its reads still run, so the
+  deadline watch and the points check still alert. The verdict is `failed` (the workflow goes red and the alert issue is filed as `fantasy_write_in_doubt`, saying to wait for the lease, docs/operations/ALERTS.md), the gameweek's entry in
+  `workers` carries `fantasy_worker_rpc_timeout` or `fantasy_worker_rpc_unconfirmed`, and the evidence file has a top-level
+  `ambiguousWrite: { rpc, leaseExtended, settled, leaseReleased }` and a "Write in doubt" row on the run page.
+- **Manual runner.** `runManualWorker` does the same for its single gameweek: it prints
+  `{"outcome":"failed","code":...,"ambiguous":{...}}` to stderr and exits 1; the lease is kept as above.
+- **Unchanged.** A read or lease/log call that times out is the plain failure it always was (the loop carries on to the
+  next gameweek and the lease is freed). A write the database answered with an error is a settled failure. The prize
+  failure (`waiting`) and the defer-to-database behaviour are untouched. A database without the lease function runs
+  unmanaged; an ambiguous write there still stops the pass (nothing to extend).
+- The only visible difference for a lifecycle read that times out: its code is now `fantasy_worker_rpc_timeout`
+  instead of the opaque `fantasy_orchestrator_rpc_failed`.
+
+**Still open (smaller).** (1) **The orchestrator is not under the lease as a whole, with or without any timeout.** The
+lease covers only its lifecycle loop. Its first calendar sync runs _before_ the lease is taken; the performance
+ingestion, the prize catch-up and the second calendar sync run outside it too. So even on a clean run they can overlap an
+Edge pass, which makes its own calendar sync and prize evaluation under its lease. This includes a scheduled GitHub run
+that defers to a healthy database worker: it skips only the lifecycle and still runs both calendar syncs and the prize
+call. Whether those overlaps are harmless (that the calendar sync and the prize evaluation serialise on their own row
+locks and are idempotent) was **not checked against the SQL in this change and is unverified**. A 60 s abort on one of
+these calls is still an ordinary failure, not the Edge rule. Holding the lease across the whole orchestrator function
+would close it; that is a separate change. (2) Nothing here was run against a real database; see the tests below.
+(3) Same limit as the Edge path: the lease is not a database fence, and the 420 s extension only protects while the
+service role's `statement_timeout` is below it (owner check above).
 
 ### Prize evaluation never stops the game, but is not hidden
 
@@ -301,6 +334,13 @@ A pass already running keeps its lease for up to about nine minutes (longer leas
 - `scripts/backend/fantasy-season-orchestrator.test.ts` ("one writer at a time"): lease taken and freed; another holder
   holds it; defers to a healthy database job (still watches); takes over when it is off or behind; manual dispatch
   never defers; runs unmanaged on a database without the functions.
+- `scripts/backend/fantasy-script-ambiguous-write.test.ts` (fake clients with real timers, no database): the audit's
+  10 ms timeout against a slow write, for the orchestrator and for `runManualWorker`. A slow write keeps the lease
+  (extended 420 s, not released while it runs, nor after it ends unless it answered within the grace), starts no second
+  gameweek, makes no prize call and no second calendar sync, and is named in the verdict, `workers`, `ambiguousWrite`,
+  the deferred list and the run-page row; a write that fails with status 0 or a bare 502/504 is unconfirmed; a settled
+  database error and a read that timed out stay ordinary failures; a deadline-watch timeout is untouched; a clean pass
+  is unchanged; no lease function runs unmanaged; the shared `holdLeaseForAmbiguousWrite` step.
 - `scripts/backend/fantasy-lifecycle-runner.test.ts` ("RPC cost"): the formula above, exactly, at four sizes.
 - `supabase/tests/database/fantasy_worker_schedule.test.sql` (pgTAP): privileges and RLS, the tick (off, one switch
   only, no URL, idle, invoked with the right URL/body/token, waiting, busy, interval, expired lease), what counts as
@@ -324,6 +364,7 @@ the lane report): the two migrations apply, and all 97 assertions of the pgTAP f
   statement that really runs longer than that could still overlap the next pass.
 - The run record is written by one more RPC after the pass; after a stuck database the extension, the grace (10 s) and
   the record can add up past the Edge wall-clock limit, in which case there is no row and the lease simply expires.
-- The GitHub orchestrator and the manual runner do not use the ambiguity rule (see "Open" above).
+- The GitHub orchestrator and the manual runner use the ambiguity rule in their lifecycle loop only; their calendar sync,
+  ingestion and prize calls run outside the lease, keep the plain 60 s failure and can overlap an Edge pass (unverified, see "Still open" above).
 - A pass in flight survives a pause until its lease ends (about nine minutes).
 - The Edge function is a second deploy target: it must be deployed from the same commit as the migration.

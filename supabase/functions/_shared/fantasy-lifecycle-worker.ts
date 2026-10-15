@@ -1408,6 +1408,55 @@ export interface AmbiguousWrite {
   leaseReleased: boolean;
 }
 
+/** How long a pass waits, after a write timed out, for the original request to answer. */
+export const AMBIGUOUS_GRACE_MS = 10_000;
+
+/**
+ * What every caller holding the lease does once a write may still be running
+ * (the Edge pass, the GitHub orchestrator, the manual runner). The lease is what
+ * keeps a second pass from running beside a write that may still commit. First
+ * push its expiry out a full lease from now (so the window holds even if this
+ * process is cut off while waiting), then give the original request `graceMs`
+ * to answer. Release the lease only if it did; otherwise leave it to lapse by
+ * itself, which is also how a crashed worker recovers. None of these steps can
+ * throw. `token` is null when no lease is held (nothing to extend or release).
+ * `graceMs` may be a function: it is read after the extension, so a wall-clock bound
+ * counts the time the extension took.
+ */
+export async function holdLeaseForAmbiguousWrite(
+  call: RpcCall,
+  token: string | null,
+  ambiguousTimeout: AmbiguousRpcTimeout,
+  graceMs: number | (() => number),
+): Promise<AmbiguousWrite> {
+  let leaseExtended = false;
+  if (token) {
+    try {
+      leaseExtended =
+        z.object({ extended: z.boolean() }).parse(
+          await call("service_fantasy_worker_lease_extend", {
+            p_token: token,
+            p_ttl_seconds: AMBIGUOUS_LEASE_EXTENSION_SECONDS,
+          }),
+        ).extended === true;
+    } catch {
+      leaseExtended = false;
+    }
+  }
+  let settled = false;
+  try {
+    // A function is read only now, after the extension, so a wall-clock bound counts
+    // the time the extension took.
+    settled =
+      (await ambiguousTimeout.settle(typeof graceMs === "function" ? graceMs() : graceMs)) ===
+      "answered";
+  } catch {
+    settled = false;
+  }
+  const leaseReleased = token && settled ? await releaseWorkerLease(call, token) : false;
+  return { rpc: ambiguousTimeout.rpc, leaseExtended, settled, leaseReleased };
+}
+
 export interface WorkerPassResult {
   outcome: WorkerPassOutcome;
   startedAt: string;
@@ -1607,39 +1656,14 @@ export async function runFantasyWorkerPass(
   } finally {
     const raw: RpcCall = (name, args) => gateway.rpc(name, args);
     if (ambiguousTimeout) {
-      // The lease is what keeps a second pass from running beside a write that
-      // may still commit. First push its expiry out a full lease from now (so
-      // the window holds even if this instance is cut off while waiting), then
-      // give the original request a short grace to answer. Release the lease
-      // only if it did; otherwise leave it to lapse by itself, which is also how
-      // a crashed worker recovers. None of these steps can throw.
-      let leaseExtended = false;
-      if (token) {
-        try {
-          leaseExtended =
-            z.object({ extended: z.boolean() }).parse(
-              await raw("service_fantasy_worker_lease_extend", {
-                p_token: token,
-                p_ttl_seconds: AMBIGUOUS_LEASE_EXTENSION_SECONDS,
-              }),
-            ).extended === true;
-        } catch {
-          leaseExtended = false;
-        }
-      }
-      // Never wait past what is left of the Edge function's wall clock.
-      const graceMs = Math.min(
-        options.ambiguousGraceMs ?? 10_000,
-        Math.max(0, startedMs + (options.wallClockMs ?? EDGE_WALL_CLOCK_MS) - clock()),
+      // Never wait past what is left of the Edge function's wall clock, counted after
+      // the lease extension (which takes time of its own).
+      ambiguous = await holdLeaseForAmbiguousWrite(raw, token, ambiguousTimeout, () =>
+        Math.min(
+          options.ambiguousGraceMs ?? AMBIGUOUS_GRACE_MS,
+          Math.max(0, startedMs + (options.wallClockMs ?? EDGE_WALL_CLOCK_MS) - clock()),
+        ),
       );
-      let settled = false;
-      try {
-        settled = (await ambiguousTimeout.settle(graceMs)) === "answered";
-      } catch {
-        settled = false;
-      }
-      const leaseReleased = token && settled ? await releaseWorkerLease(raw, token) : false;
-      ambiguous = { rpc: ambiguousTimeout.rpc, leaseExtended, settled, leaseReleased };
     } else if (token) {
       await releaseWorkerLease(raw, token);
     }

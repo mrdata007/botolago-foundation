@@ -53,6 +53,48 @@ describe("alert content", () => {
     });
   });
 
+  test("a lifecycle write in doubt is its own category and tells the operator to wait for the lease", () => {
+    const base = {
+      verdict: "failed",
+      workers: [{ sequence: 1, outcome: "failed", code: "fantasy_worker_rpc_timeout" }],
+    };
+    const kept = categorize({
+      ...base,
+      ambiguousWrite: {
+        rpc: "service_advance_fantasy_lifecycle",
+        leaseExtended: true,
+        settled: false,
+        leaseReleased: false,
+      },
+    });
+    expect(kept.category).toBe("fantasy_write_in_doubt");
+    expect(kept.detail).toContain("write in doubt service_advance_fantasy_lifecycle (lease kept");
+    expect(kept.detail).toContain("do not start another worker until it expires");
+    expect(kept.detail).toContain("lifecycle GW1: fantasy_worker_rpc_timeout");
+    const released = categorize({
+      ...base,
+      ambiguousWrite: { rpc: "service_advance_fantasy_lifecycle", leaseReleased: true },
+    });
+    expect(released.category).toBe("fantasy_write_in_doubt");
+    expect(released.detail).toContain("(lease released)");
+    expect(released.detail).not.toContain("do not start");
+    // Anything that is not a safe name is ignored, as everywhere else in this file.
+    expect(
+      categorize({ ...base, ambiguousWrite: { rpc: "Bearer x.y", leaseReleased: false } }),
+    ).toEqual({
+      category: "fantasy_lifecycle_refused",
+      detail: "verdict failed; lifecycle GW1: fantasy_worker_rpc_timeout",
+    });
+    // A pass that stopped on its own code keeps that code as the category.
+    expect(
+      categorize({
+        verdict: "failed",
+        code: "fantasy_orchestrator_rpc_failed",
+        ambiguousWrite: { rpc: "x_y" },
+      }).category,
+    ).toBe("fantasy_orchestrator_rpc_failed");
+  });
+
   test("names finished fixtures still without statistics past the orchestrator's threshold", () => {
     const category = categorize({
       verdict: "escalate",
