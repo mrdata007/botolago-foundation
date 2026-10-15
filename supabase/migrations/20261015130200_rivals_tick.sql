@@ -10,13 +10,19 @@
 -- BEFORE the journée was published, pinned the rival before it too, still shares an active private
 -- league with them and has notifications and in-app notifications on: compare who leads after the
 -- journée with who led before it (or, after a correction, with who the member was last told leads).
--- When the lead changed hands, create ONE in-app notification (no push, no email), once per change,
--- in French or Arabic by the member's language, quiet hours respected. A journée published before the
+-- When the lead changed hands, create ONE notification (in-app, plus a push delivery per working phone
+-- when the member has push and Fantasy reminders on; no email), once per change, in French or Arabic
+-- by the member's language, quiet hours respected. The push follows the Manager Card rating change
+-- exactly (20261012200100): the push rules below learn the type (topic "fantasy", life 12 hours), the
+-- delivery is created pending, and the push claim sends it only while
+-- app_private.notification_push_settings.mode allows ('off' sends nothing) and re-checks the reader. A journée published before the
 -- member turned the notification on is never told. A corrected result that flips the lead again is
 -- told again, in the corrected wording; one that does not flip it says nothing. Nothing is told
 -- during matches: only a published result can move a total.
 --
--- WRITES: app.notifications, app.notification_deliveries, app_private.notification_events and
+-- The push rules are replaced here (create or replace, bodies of 20261012200100 plus the new type).
+--
+-- WRITES: app.notifications, app.notification_deliveries (in_app and push), app_private.notification_events and
 -- app_private.rival_lead_notices (its own record of what each member was told). Nothing of Fantasy,
 -- the card or the pins.
 --
@@ -40,6 +46,50 @@ alter table app_private.rival_lead_notices force row level security;
 revoke all on app_private.rival_lead_notices from public, anon, authenticated, service_role;
 comment on table app_private.rival_lead_notices is
   'BotolaGO+ Rivaux: each change of lead a member was told about (who leads after it), so a correction is compared with what they were last told. Written only by app_private.rivals_tick. No grant.';
+
+-- ---------------------------------------------------------------------------
+-- The push rules learn the type: a Fantasy message (the Fantasy reminders switch), worth sending for
+-- 12 hours (quiet hours included). Otherwise the bodies of 20261012200100.
+-- ---------------------------------------------------------------------------
+create or replace function app_private.notification_push_topic(p_type text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_type
+    when 'match_starting' then 'match'
+    when 'goal' then 'match'
+    when 'goal_cancelled' then 'match'
+    when 'full_time' then 'match'
+    when 'followed_team_result' then 'match'
+    when 'deadline_24h' then 'fantasy'
+    when 'deadline_1h' then 'fantasy'
+    when 'manager_card_ovr_change' then 'fantasy'
+    when 'rival_lead_change' then 'fantasy'
+    else null
+  end;
+$$;
+
+create or replace function app_private.notification_push_ttl(p_type text)
+returns interval
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_type
+    when 'goal' then interval '10 minutes'
+    when 'goal_cancelled' then interval '10 minutes'
+    when 'match_starting' then interval '20 minutes'
+    when 'full_time' then interval '30 minutes'
+    when 'followed_team_result' then interval '30 minutes'
+    when 'deadline_1h' then interval '30 minutes'
+    when 'deadline_24h' then interval '2 hours'
+    when 'manager_card_ovr_change' then interval '12 hours'
+    when 'rival_lead_change' then interval '12 hours'
+    else interval '1 hour'
+  end;
+$$;
 
 create function app_private.rivals_tick()
 returns jsonb
@@ -93,6 +143,7 @@ begin
   for pin in
     select p.user_id, p.rival_user_id, profile.preferred_language,
       preference.notifications_enabled, preference.in_app_notifications_enabled,
+      preference.push_notifications_enabled, preference.fantasy_deadline_reminders,
       preference.notification_timezone, preference.quiet_hours_enabled,
       preference.quiet_hours_start, preference.quiet_hours_end
     from app.pinned_rivals p
@@ -197,6 +248,20 @@ begin
       notification_id, channel, provider_key, status, attempt_count, sent_at, delivered_at
     ) values (new_notification, 'in_app', 'database', 'delivered', 1,
       statement_timestamp(), statement_timestamp());
+    -- A push per working phone when the reader has push and Fantasy reminders on; the push claim
+    -- sends it only while the push switch allows, and re-checks the reader.
+    if coalesce(pin.push_notifications_enabled and pin.fantasy_deadline_reminders, false) then
+      insert into app.notification_deliveries (
+        notification_id, channel, device_registration_id, provider_key, status
+      )
+      select new_notification, 'push', device.id, device.push_provider::text, 'pending'
+      from app.device_registrations device
+      join app_private.push_destinations destination on destination.device_registration_id = device.id
+      where device.user_id = pin.user_id
+        and device.enabled and device.invalidated_at is null
+        and device.push_provider::text in ('fcm', 'apns')
+      on conflict do nothing;
+    end if;
     insert into app_private.rival_lead_notices (user_id, rival_user_id, gameweek_id, leader)
     values (pin.user_id, pin.rival_user_id, gw.gameweek_id, leader_after);
     created := created + 1;
@@ -208,7 +273,7 @@ revoke all on function app_private.rivals_tick()
   from public, anon, authenticated, service_role;
 grant execute on function app_private.rivals_tick() to postgres;
 comment on function app_private.rivals_tick() is
-  'While app_private.rivals_settings.enabled is on, creates one in-app rival_lead_change notification for each pinned rival whose lead changed hands in the season''s latest published journée, for members who opted in before it was published (a correction that flips the lead is told again). Answers {outcome: off} without writing while off. Executable by postgres only.';
+  'While app_private.rivals_settings.enabled is on, creates one rival_lead_change notification (in-app delivery, plus a pending push delivery per working phone with push and Fantasy reminders on) for each pinned rival whose lead changed hands in the season''s latest published journée, for members who opted in before it was published (a correction that flips the lead is told again). Answers {outcome: off} without writing while off. Executable by postgres only.';
 
 select cron.schedule(
   'rivals-tick',

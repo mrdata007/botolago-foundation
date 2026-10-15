@@ -244,12 +244,14 @@ null, false);` before a write that touches fixtures or notifications, and
    them.
    Where migration 20261015130200 is applied, pg_cron also runs `rivals-tick`
    at minutes 7, 22, 37 and 52. It creates the optional BotolaGO+ Rivaux
-   lead-change notification: one in-app notification (no push, no email) per
-   change of lead after the season's latest published journée, for members
+   lead-change notification: one notification (in-app, plus a pending push
+   delivery per working phone for members with push and Fantasy reminders on;
+   no email) per change of lead after the season's latest published journée, for members
    who switched it on before that journée was published, and records what it
    told in `app_private.rival_lead_notices`. It writes
    `app_private.notification_events`, `app.notifications`,
-   `app.notification_deliveries` and `app_private.rival_lead_notices`, and only
+   `app.notification_deliveries` (in-app and push rows; the push is sent only
+   while `app_private.notification_push_settings.mode` allows) and `app_private.rival_lead_notices`, and only
    while switched on in `app_private.rivals_settings` (it ships off, and the
    member's own switch in `app.rival_preferences` is off until they turn it on).
    Pause it before a write that touches those tables, the pins

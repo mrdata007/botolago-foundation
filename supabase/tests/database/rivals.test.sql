@@ -8,7 +8,9 @@
 -- privacy switch (a rival's captain only when they share their history); that the reads write
 -- nothing; the notification (off until turned on, never told of a journée published before it was
 -- turned on, a lead taken, told once, a correction that flips it told again in the corrected
--- wording, none while the tick is off); the French text; the two scheduled jobs; and that removing
+-- wording, none while the tick is off); the phone push of the notification (a pending push delivery
+-- per working phone while the member has push and Fantasy reminders on, none otherwise, the push rules
+-- knowing the type); the French text; the two scheduled jobs; and that removing
 -- an account removes its pins and its preference.
 --
 -- THE FIXTURE (season S, journées 1 to 3 published, 4 scheduled; no lineups, the figures are the
@@ -25,7 +27,7 @@
 -- Leagues: L1 private S (A, B, C, F, G)   L2 private S (B, D)   L3 public S (A, D)
 -- A is the only member (a paid entitlement); D shares no private league with A.
 begin;
-select extensions.plan(68);
+select extensions.plan(72);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('bc1f0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -156,8 +158,12 @@ from (values
 insert into app.user_preferences (user_id) select pg_temp.usr(t) from unnest(array['A','B','C','D','E','F','G','H','I']) t
 on conflict (user_id) do nothing;
 update app.user_preferences set notifications_enabled = true, in_app_notifications_enabled = true,
-  quiet_hours_enabled = false
+  push_notifications_enabled = true, fantasy_deadline_reminders = true, quiet_hours_enabled = false
 where user_id = pg_temp.usr('A');
+insert into app.device_registrations (id, user_id, device_id, platform, push_provider, locale)
+values (pg_temp.id(901), pg_temp.usr('A'), 'device-rivals-a', 'android', 'fcm', 'fr');
+insert into app_private.push_destinations (device_registration_id, destination_digest, destination_value)
+values (pg_temp.id(901), extensions.digest('rivals-token-a', 'sha256'), 'rivals-token-a-0000000-0000000000');
 
 insert into app.fantasy_teams (id, user_id, fantasy_season_id, name, bank, team_value,
   free_transfers, status, created_at)
@@ -431,12 +437,20 @@ select extensions.is(app_private.rivals_tick(), '{"outcome": "off"}'::jsonb, 'th
 select extensions.is(
   (select count(*)::integer from app.notifications where notification_type = 'rival_lead_change'),
   0, 'and wrote nothing');
+select extensions.is(
+  (select count(*)::integer from app.notification_deliveries d
+   join app.notifications n on n.id = d.notification_id where n.notification_type = 'rival_lead_change'),
+  0, 'no delivery of any channel, push included, while the tick is off');
 select app_private.rivals_configure(true);
 -- Turned on after the journée was published: never told of it.
 update app.rival_preferences set notify_changed_at = timestamptz '2090-01-01 00:00:00+00'
 where user_id = pg_temp.usr('A');
 select extensions.is(app_private.rivals_tick() ->> 'created', '0',
   'a member who turned it on after the journée was published is not told of it');
+select extensions.is(
+  (select count(*)::integer from app.notification_deliveries d
+   join app.notifications n on n.id = d.notification_id where n.notification_type = 'rival_lead_change'),
+  0, 'and no push is sent for a member whose notification was not on in time');
 update app.rival_preferences set notify_changed_at = timestamptz '2026-01-01 00:00:00+00'
 where user_id = pg_temp.usr('A');
 -- Pins now: B, C, F. B: A led before GW3 and C was level, B leads after; C: level before, C leads after.
@@ -452,13 +466,21 @@ select extensions.is(
   (select count(*)::integer from app.notification_deliveries d
    join app.notifications n on n.id = d.notification_id
    where n.notification_type = 'rival_lead_change' and d.channel = 'in_app' and d.status = 'delivered'),
-  2, 'each has its in-app delivery, and there is no push or email');
+  2, 'each has its in-app delivery');
 select extensions.is(
-  (select count(*)::integer from app.notification_deliveries d
+  (select string_agg(d.channel || ':' || d.status || ':' || d.provider_key, ',' order by d.channel)
+   from app.notification_deliveries d
    join app.notifications n on n.id = d.notification_id
    where n.notification_type = 'rival_lead_change' and d.channel <> 'in_app'),
-  0, 'no other channel');
+  'push:pending:fcm,push:pending:fcm',
+  'and a push waiting for the push claim on the working phone, for each (the claim sends nothing while the push switch is off); no email');
+select extensions.is(
+  app_private.notification_push_topic('rival_lead_change') || '/' || app_private.notification_push_ttl('rival_lead_change')::text
+    || '/' || app_private.notification_push_topic('manager_card_ovr_change') || '/' || coalesce(app_private.notification_push_topic('breaking_news'), 'null'),
+  'fantasy/12:00:00/fantasy/null',
+  'the push rules know the type (Fantasy reminders, 12 hours) and the others are unchanged');
 select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'a second pass tells nothing again');
+update app.user_preferences set push_notifications_enabled = false where user_id = pg_temp.usr('A');
 -- A correction hands the lead back to A against B (B 80 becomes 30: 137 against 150).
 update app.fantasy_team_gameweek_results set final_score = 30, provisional_score = 30
 where fantasy_team_id = pg_temp.tm('B') and gameweek_id = pg_temp.gw(3);
@@ -470,6 +492,11 @@ select extensions.is(
    order by n.created_at desc, n.id desc limit 1),
   'Vous reprenez la tête sur Brahim Test | Résultat corrigé, journée 3 : 150 contre 137.',
   'in the corrected wording');
+select extensions.is(
+  (select count(*)::integer from app.notification_deliveries d
+   join app.notifications n on n.id = d.notification_id
+   where n.notification_type = 'rival_lead_change' and d.channel = 'push'),
+  2, 'with push switched off the corrected notice is in-app only: still the two earlier pushes');
 select extensions.is(app_private.rivals_tick() ->> 'created', '0', 'and then no more');
 select app_private.rivals_configure(false);
 

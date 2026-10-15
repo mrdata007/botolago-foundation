@@ -3,7 +3,7 @@
 -- Rivaux, step 2 of 2: migrations 20261015130100 and 20261015130200
 -- (docs/product/botolago-plus-rivals-brief.md). A BotolaGO+ member pins up to three
 -- friends from their private leagues and reads a head-to-head after each published
--- journée; an optional in-app notification tells them when a published result
+-- journée; an optional notification (in-app and push) tells them when a published result
 -- changes who leads.
 --
 -- IT ADDS
@@ -36,7 +36,8 @@
 --   * This script is a writer: it creates tables, functions, rows and two scheduled
 --     jobs. Make sure nothing else is writing to this database: no GitHub Actions
 --     run in progress, no other query running, no other agent or workflow working
---     on the database. Nothing needs pausing: it touches no existing table or job.
+--     on the database. Nothing needs pausing: it touches no existing table or job (it replaces two
+--     immutable push rules, notification_push_topic and notification_push_ttl).
 --   * Production: write down that you ran it, which database, and the counts the
 --     result row shows (the rehearsal prints them).
 --
@@ -67,7 +68,8 @@
 --   * checks the result without saving anything: grants, security definer with an
 --     empty search_path, volatility; row security forced on the four tables; the
 --     switch off; eight texts; the two jobs; the tick answering "off"; the read
---     answering "off" while BotolaGO+ is off; the existing functions unchanged;
+--     answering "off" while BotolaGO+ is off; the push rules knowing the new type
+--     and the other existing functions unchanged;
 --     exactly four tables and two jobs added.
 -- ============================================================================
 
@@ -142,6 +144,13 @@ begin
   end if;
   if exists (select 1 from cron.job where jobname in ('rivals-tick', 'rivals-history-prune')) then
     raise exception 'stop: a Rivaux scheduled job already exists';
+  end if;
+  -- The push rules this replaces must be the ones of 20261012200100 (the rating change known, the
+  -- new type not yet).
+  if app_private.notification_push_topic('manager_card_ovr_change') is distinct from 'fantasy'
+    or app_private.notification_push_ttl('manager_card_ovr_change') is distinct from interval '12 hours'
+    or app_private.notification_push_topic('rival_lead_change') is not null then
+    raise exception 'stop: the push rules are not the ones this script replaces (20261012200100 missing, or already replaced)';
   end if;
   -- Remember what is there, compare afterwards.
   perform set_config('bg.rivals_jobs', (select count(*) from cron.job)::text, true);
@@ -837,13 +846,19 @@ values (
 -- BEFORE the journée was published, pinned the rival before it too, still shares an active private
 -- league with them and has notifications and in-app notifications on: compare who leads after the
 -- journée with who led before it (or, after a correction, with who the member was last told leads).
--- When the lead changed hands, create ONE in-app notification (no push, no email), once per change,
--- in French or Arabic by the member's language, quiet hours respected. A journée published before the
+-- When the lead changed hands, create ONE notification (in-app, plus a push delivery per working phone
+-- when the member has push and Fantasy reminders on; no email), once per change, in French or Arabic
+-- by the member's language, quiet hours respected. The push follows the Manager Card rating change
+-- exactly (20261012200100): the push rules below learn the type (topic "fantasy", life 12 hours), the
+-- delivery is created pending, and the push claim sends it only while
+-- app_private.notification_push_settings.mode allows ('off' sends nothing) and re-checks the reader. A journée published before the
 -- member turned the notification on is never told. A corrected result that flips the lead again is
 -- told again, in the corrected wording; one that does not flip it says nothing. Nothing is told
 -- during matches: only a published result can move a total.
 --
--- WRITES: app.notifications, app.notification_deliveries, app_private.notification_events and
+-- The push rules are replaced here (create or replace, bodies of 20261012200100 plus the new type).
+--
+-- WRITES: app.notifications, app.notification_deliveries (in_app and push), app_private.notification_events and
 -- app_private.rival_lead_notices (its own record of what each member was told). Nothing of Fantasy,
 -- the card or the pins.
 --
@@ -867,6 +882,50 @@ alter table app_private.rival_lead_notices force row level security;
 revoke all on app_private.rival_lead_notices from public, anon, authenticated, service_role;
 comment on table app_private.rival_lead_notices is
   'BotolaGO+ Rivaux: each change of lead a member was told about (who leads after it), so a correction is compared with what they were last told. Written only by app_private.rivals_tick. No grant.';
+
+-- ---------------------------------------------------------------------------
+-- The push rules learn the type: a Fantasy message (the Fantasy reminders switch), worth sending for
+-- 12 hours (quiet hours included). Otherwise the bodies of 20261012200100.
+-- ---------------------------------------------------------------------------
+create or replace function app_private.notification_push_topic(p_type text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_type
+    when 'match_starting' then 'match'
+    when 'goal' then 'match'
+    when 'goal_cancelled' then 'match'
+    when 'full_time' then 'match'
+    when 'followed_team_result' then 'match'
+    when 'deadline_24h' then 'fantasy'
+    when 'deadline_1h' then 'fantasy'
+    when 'manager_card_ovr_change' then 'fantasy'
+    when 'rival_lead_change' then 'fantasy'
+    else null
+  end;
+$$;
+
+create or replace function app_private.notification_push_ttl(p_type text)
+returns interval
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_type
+    when 'goal' then interval '10 minutes'
+    when 'goal_cancelled' then interval '10 minutes'
+    when 'match_starting' then interval '20 minutes'
+    when 'full_time' then interval '30 minutes'
+    when 'followed_team_result' then interval '30 minutes'
+    when 'deadline_1h' then interval '30 minutes'
+    when 'deadline_24h' then interval '2 hours'
+    when 'manager_card_ovr_change' then interval '12 hours'
+    when 'rival_lead_change' then interval '12 hours'
+    else interval '1 hour'
+  end;
+$$;
 
 create function app_private.rivals_tick()
 returns jsonb
@@ -920,6 +979,7 @@ begin
   for pin in
     select p.user_id, p.rival_user_id, profile.preferred_language,
       preference.notifications_enabled, preference.in_app_notifications_enabled,
+      preference.push_notifications_enabled, preference.fantasy_deadline_reminders,
       preference.notification_timezone, preference.quiet_hours_enabled,
       preference.quiet_hours_start, preference.quiet_hours_end
     from app.pinned_rivals p
@@ -1024,6 +1084,20 @@ begin
       notification_id, channel, provider_key, status, attempt_count, sent_at, delivered_at
     ) values (new_notification, 'in_app', 'database', 'delivered', 1,
       statement_timestamp(), statement_timestamp());
+    -- A push per working phone when the reader has push and Fantasy reminders on; the push claim
+    -- sends it only while the push switch allows, and re-checks the reader.
+    if coalesce(pin.push_notifications_enabled and pin.fantasy_deadline_reminders, false) then
+      insert into app.notification_deliveries (
+        notification_id, channel, device_registration_id, provider_key, status
+      )
+      select new_notification, 'push', device.id, device.push_provider::text, 'pending'
+      from app.device_registrations device
+      join app_private.push_destinations destination on destination.device_registration_id = device.id
+      where device.user_id = pin.user_id
+        and device.enabled and device.invalidated_at is null
+        and device.push_provider::text in ('fcm', 'apns')
+      on conflict do nothing;
+    end if;
     insert into app_private.rival_lead_notices (user_id, rival_user_id, gameweek_id, leader)
     values (pin.user_id, pin.rival_user_id, gw.gameweek_id, leader_after);
     created := created + 1;
@@ -1035,7 +1109,7 @@ revoke all on function app_private.rivals_tick()
   from public, anon, authenticated, service_role;
 grant execute on function app_private.rivals_tick() to postgres;
 comment on function app_private.rivals_tick() is
-  'While app_private.rivals_settings.enabled is on, creates one in-app rival_lead_change notification for each pinned rival whose lead changed hands in the season''s latest published journée, for members who opted in before it was published (a correction that flips the lead is told again). Answers {outcome: off} without writing while off. Executable by postgres only.';
+  'While app_private.rivals_settings.enabled is on, creates one rival_lead_change notification (in-app delivery, plus a pending push delivery per working phone with push and Fantasy reminders on) for each pinned rival whose lead changed hands in the season''s latest published journée, for members who opted in before it was published (a correction that flips the lead is told again). Answers {outcome: off} without writing while off. Executable by postgres only.';
 
 select cron.schedule(
   'rivals-tick',
@@ -1077,7 +1151,7 @@ begin
   execute part_20261015130100;
 
   if encode(sha256(convert_to(part_20261015130200, 'UTF8')), 'hex')
-    is distinct from '57e78a1ee4d66c0a9d57eb82d5ca65d76db6b5224ae77dd52b3eb1c20ccf76b1' then
+    is distinct from 'c2cc9b9d80e0e81c0f4e29659ee3ba61f1f61b813d7f709088f28140075b945e' then
     raise exception 'stop: 20261015130200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -1198,7 +1272,20 @@ begin
     problems := problems || 'the number of tables did not grow by exactly 4'::text;
   end if;
 
-  -- Replaces nothing.
+  -- Replaces only the two push rules, and they still answer as before for every other type.
+  if app_private.notification_push_topic('rival_lead_change') is distinct from 'fantasy'
+    or app_private.notification_push_ttl('rival_lead_change') is distinct from interval '12 hours'
+    or app_private.notification_push_topic('manager_card_ovr_change') is distinct from 'fantasy'
+    or app_private.notification_push_topic('goal') is distinct from 'match'
+    or app_private.notification_push_topic('deadline_24h') is distinct from 'fantasy'
+    or app_private.notification_push_topic('breaking_news') is not null
+    or app_private.notification_push_ttl('goal') is distinct from interval '10 minutes'
+    or app_private.notification_push_ttl('manager_card_ovr_change') is distinct from interval '12 hours'
+    or app_private.notification_push_ttl('breaking_news') is distinct from interval '1 hour' then
+    problems := problems || 'the push rules do not answer as expected'::text;
+  end if;
+
+  -- No other existing function changed.
   if (select string_agg(
         p.oid::regprocedure::text || '=' || md5(pg_get_functiondef(p.oid)), ';' order by p.oid::regprocedure::text)
       from pg_proc p where p.oid in (

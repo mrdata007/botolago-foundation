@@ -311,7 +311,7 @@ export function buildMain(): string {
 -- Rivaux, step 2 of 2: migrations ${v} and ${last}
 -- (docs/product/botolago-plus-rivals-brief.md). A BotolaGO+ member pins up to three
 -- friends from their private leagues and reads a head-to-head after each published
--- journée; an optional in-app notification tells them when a published result
+-- journée; an optional notification (in-app and push) tells them when a published result
 -- changes who leads.
 --
 -- IT ADDS
@@ -344,7 +344,8 @@ export function buildMain(): string {
 --   * This script is a writer: it creates tables, functions, rows and two scheduled
 --     jobs. Make sure nothing else is writing to this database: no GitHub Actions
 --     run in progress, no other query running, no other agent or workflow working
---     on the database. Nothing needs pausing: it touches no existing table or job.
+--     on the database. Nothing needs pausing: it touches no existing table or job (it replaces two
+--     immutable push rules, notification_push_topic and notification_push_ttl).
 --   * Production: write down that you ran it, which database, and the counts the
 --     result row shows (the rehearsal prints them).
 --
@@ -360,7 +361,8 @@ ${RUN_BLOCK("bg.rivals_mode", "select to_regclass('app.pinned_rivals') is null a
 --   * checks the result without saving anything: grants, security definer with an
 --     empty search_path, volatility; row security forced on the four tables; the
 --     switch off; eight texts; the two jobs; the tick answering "off"; the read
---     answering "off" while BotolaGO+ is off; the existing functions unchanged;
+--     answering "off" while BotolaGO+ is off; the push rules knowing the new type
+--     and the other existing functions unchanged;
 --     exactly four tables and two jobs added.
 -- ============================================================================
 
@@ -435,6 +437,13 @@ begin
   end if;
   if exists (select 1 from cron.job where jobname in ('rivals-tick', 'rivals-history-prune')) then
     raise exception 'stop: a Rivaux scheduled job already exists';
+  end if;
+  -- The push rules this replaces must be the ones of 20261012200100 (the rating change known, the
+  -- new type not yet).
+  if app_private.notification_push_topic('manager_card_ovr_change') is distinct from 'fantasy'
+    or app_private.notification_push_ttl('manager_card_ovr_change') is distinct from interval '12 hours'
+    or app_private.notification_push_topic('rival_lead_change') is not null then
+    raise exception 'stop: the push rules are not the ones this script replaces (20261012200100 missing, or already replaced)';
   end if;
   -- Remember what is there, compare afterwards.
   perform set_config('bg.rivals_jobs', (select count(*) from cron.job)::text, true);
@@ -558,7 +567,20 @@ ${apiRows}
     problems := problems || 'the number of tables did not grow by exactly ${NEW_TABLES.length}'::text;
   end if;
 
-  -- Replaces nothing.
+  -- Replaces only the two push rules, and they still answer as before for every other type.
+  if app_private.notification_push_topic('rival_lead_change') is distinct from 'fantasy'
+    or app_private.notification_push_ttl('rival_lead_change') is distinct from interval '12 hours'
+    or app_private.notification_push_topic('manager_card_ovr_change') is distinct from 'fantasy'
+    or app_private.notification_push_topic('goal') is distinct from 'match'
+    or app_private.notification_push_topic('deadline_24h') is distinct from 'fantasy'
+    or app_private.notification_push_topic('breaking_news') is not null
+    or app_private.notification_push_ttl('goal') is distinct from interval '10 minutes'
+    or app_private.notification_push_ttl('manager_card_ovr_change') is distinct from interval '12 hours'
+    or app_private.notification_push_ttl('breaking_news') is distinct from interval '1 hour' then
+    problems := problems || 'the push rules do not answer as expected'::text;
+  end if;
+
+  -- No other existing function changed.
   if (select string_agg(
         p.oid::regprocedure::text || '=' || md5(pg_get_functiondef(p.oid)), ';' order by p.oid::regprocedure::text)
       from pg_proc p where p.oid in (

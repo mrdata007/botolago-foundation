@@ -77,8 +77,15 @@ describe("guarded apply scripts for BotolaGO+ Rivaux", () => {
     }
   });
 
-  test("the main script replaces nothing, adds exactly four tables and two jobs, ships off", () => {
-    expect(mainScript).not.toMatch(/create or replace/i);
+  test("the main script replaces only the two push rules, adds exactly four tables and two jobs, ships off", () => {
+    const replaced = [...mainScript.matchAll(/create or replace function ([\w.]+)/gi)].map(
+      (m) => m[1],
+    );
+    expect([...new Set(replaced)].sort()).toEqual([
+      "app_private.notification_push_topic",
+      "app_private.notification_push_ttl",
+    ]);
+    expect(mainScript).toContain("the push rules do not answer as expected");
     expect(mainScript).toContain("an existing function changed -- this script replaces none");
     expect(mainScript).toContain("the number of tables did not grow by exactly 4");
     expect(mainScript).toContain("the number of scheduled jobs did not grow by exactly two");
@@ -97,6 +104,10 @@ describe("guarded apply scripts for BotolaGO+ Rivaux", () => {
     );
     expect(base).toContain("notify_lead_change boolean not null default false");
     expect(tick).toContain("return jsonb_build_object('outcome', 'off');");
-    expect(tick).not.toMatch(/'push'/);
+    // The push follows the Manager Card rating change: pending rows for the push claim, which sends
+    // them only while the push switch allows.
+    expect(tick).toMatch(/'push', device\.id, device\.push_provider::text, 'pending'/);
+    expect(tick).toContain("when 'rival_lead_change' then 'fantasy'");
+    expect(tick).toContain("when 'rival_lead_change' then interval '12 hours'");
   });
 });

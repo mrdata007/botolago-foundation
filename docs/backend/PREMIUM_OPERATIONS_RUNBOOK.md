@@ -561,8 +561,10 @@ Migrations `20261015130000` (the notification type, alone), `20261015130100` (ta
 - **Ships off.** The five `api` functions answer `{"available": false}` while BotolaGO+ or the Manager
   Card reads are off. `rivals-tick` is scheduled but does nothing until
   `select app_private.rivals_configure(true);`, and then only for members who turned the notification on
-  (`api.set_rivals_notify`, off by default) before the journée was published. In-app only: no push, no
-  email.
+  (`api.set_rivals_notify`, off by default) before the journée was published. In-app, plus a push
+  to each working phone when the member has push and Fantasy reminders on (a pending delivery that the
+  push claim sends only while `app_private.notification_push_settings.mode` allows, as for the Manager
+  Card rating change; topic Fantasy, life 12 hours). No email.
 - **Privacy.** A friend's journée scores and totals are what the league already shows. Their captain
   and last transfer come back only when they switched their card history on
   (`app.card_history_visibility`, unchanged, default off). Pins are readable by their owner only; the
