@@ -42,6 +42,7 @@ import {
   exceedsBudget,
   ownedSalePrice,
   parseTransfersDraft,
+  pickerPool,
   previewTransfers,
   replacementBudget,
   resolveKnownPlayers,
@@ -112,7 +113,7 @@ function TransfersBody() {
   });
 
   const team = screen.team;
-  // The buying pool: only what may be bought. Pickers get this and nothing else.
+  // The buying pool: only what may be bought.
   const players = screen.players;
   const clubs = screen.clubs;
   const gameweek = screen.gameweek;
@@ -134,6 +135,8 @@ function TransfersBody() {
       }),
     [players, owned.snapshot?.ownedPlayers, ownedUnavailableLabel],
   );
+  // What the pickers offer: the pool, never a stand-in for an owned player.
+  const pickerPlayers = useMemo(() => pickerPool(knownPlayers), [knownPlayers]);
 
   const [outIds, setOutIds] = useState<string[]>([]);
   const [inIds, setInIds] = useState<(string | null)[]>([]);
@@ -170,31 +173,42 @@ function TransfersBody() {
     draftInit.current = false;
   }, [draftKey?.uid, draftKey?.teamId, draftKey?.baseVersion]);
   useEffect(() => {
-    if (!draftKey || !team || draftInit.current) return;
+    // Wait for the pool: an incoming player is checked against it (still buyable, same position).
+    if (!draftKey || !team || screen.phase !== "ready" || draftInit.current) return;
     const entry = fantasyDraftsStore.read<unknown>(draftKey);
     if (entry) {
       // Old or damaged drafts are read safely (never paired by guesswork) or dropped.
       const restored = parseTransfersDraft(entry.payload, {
         squadIds: new Set(team.squad.map((s) => s.playerId)),
+        buyableIds: new Set(players.map((p) => p.id)),
+        positionOf: (id) => knownPlayers.find((p) => p.id === id)?.position,
       });
       if (restored) {
         setOutIds(restored.outIds);
         setInIds(restored.inIds);
       } else {
         fantasyDraftsStore.remove(draftKey);
+        setOutIds([]);
+        setInIds([]);
       }
     }
     draftInit.current = true;
-  }, [draftKey, team]);
+  }, [draftKey, team, screen.phase, players, knownPlayers]);
   const persistDraft = (nextOut: string[], nextIn: (string | null)[]) => {
     if (!draftKey) return;
     if (nextOut.length === 0) fantasyDraftsStore.remove(draftKey);
     else fantasyDraftsStore.save(draftKey, serializeTransfersDraft(nextOut, nextIn));
   };
 
+  // A pair counts once both players can be looked up; an incoming id nobody can resolve stays a
+  // placeholder rather than reaching the preview.
+  const known = new Set(knownPlayers.map((p) => p.id));
   const completePairs = outIds
     .map((outId, index) => ({ outId, inId: inIds[index] ?? null }))
-    .filter((pair): pair is { outId: string; inId: string } => !!pair.inId);
+    .filter(
+      (pair): pair is { outId: string; inId: string } =>
+        !!pair.inId && known.has(pair.outId) && known.has(pair.inId),
+    );
   const previewEnabled =
     isCloud &&
     !!owned.snapshot?.teamId &&
@@ -222,9 +236,10 @@ function TransfersBody() {
       owned.repo.previewTransfers({
         expectedVersion: owned.snapshot!.version,
         currentGameweekId: owned.snapshot!.currentGameweekId!,
-        transfers: completePairs.map((pair) => {
-          const outP = knownPlayers.find((p) => p.id === pair.outId)!;
-          const inP = knownPlayers.find((p) => p.id === pair.inId)!;
+        transfers: completePairs.flatMap((pair) => {
+          const outP = knownPlayers.find((p) => p.id === pair.outId);
+          const inP = knownPlayers.find((p) => p.id === pair.inId);
+          if (!outP || !inP) return [];
           return {
             outSourceId: pair.outId,
             inSourceId: pair.inId,
@@ -925,7 +940,7 @@ function TransfersBody() {
 
       {pickerFor && pickerOut ? (
         <AddPlayerScreen
-          players={players}
+          players={pickerPlayers}
           clubs={clubs}
           bank={pickerBudget}
           position={pickerOut.position}
@@ -943,7 +958,7 @@ function TransfersBody() {
         />
       ) : pickerAny ? (
         <AddPlayerScreen
-          players={players}
+          players={pickerPlayers}
           clubs={clubs}
           bank={Math.round((pickerBank + maxSquadPrice) * 10) / 10}
           clubLimitReached={clubLimitForIncoming}

@@ -576,7 +576,7 @@ export const ar = {
     "مطلوب رمز التأكيد. أدخله ثم أعد المحاولة، فانتقالاتك محفوظة.",
   "fantasy.transfers.preview.invalid": "لم يعد هذا الانتقال ممكنًا. راجع اختياراتك.",
   "fantasy.transfers.preview.network": "لا يوجد اتصال. انتقالاتك محفوظة، أعد المحاولة.",
-  "fantasy.transfers.owned_unavailable": "لاعب خارج السوق",
+  "fantasy.transfers.owned_unavailable": "خارج السوق",
   "fantasy.picker.title": "اختيار لاعب",
   "fantasy.picker.search": "ابحث عن لاعب",
   "fantasy.picker.filter_club": "النادي",

@@ -41,6 +41,22 @@ export function serializeTransfersDraft(
 const isId = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 
 /**
+ * What the screen knows now, to check a saved draft against. Each is optional;
+ * what is given is enforced.
+ *  - `squadIds`: a leaver must still be in the squad.
+ *  - `buyableIds`: an incoming player must still be in the buying pool.
+ *  - `positionOf`: an incoming player must play his leaver's position.
+ * An incoming player who fails a check becomes an unfilled placeholder: the
+ * pair stays, only the incoming id goes. An incoming player who is owned
+ * (staying, or himself a leaver) is never valid.
+ */
+export interface TransfersDraftRestoreOptions {
+  squadIds?: ReadonlySet<string>;
+  buyableIds?: ReadonlySet<string>;
+  positionOf?: (id: string) => string | undefined;
+}
+
+/**
  * Reads a saved draft back, or `null` when there is nothing safe to restore.
  * Never trusts the payload: it is only ever a convenience, and the server
  * re-checks every transfer when it is previewed and confirmed.
@@ -54,7 +70,7 @@ const isId = (value: unknown): value is string => typeof value === "string" && v
  */
 export function parseTransfersDraft(
   payload: unknown,
-  options: { squadIds?: ReadonlySet<string> } = {},
+  options: TransfersDraftRestoreOptions = {},
 ): ParsedTransfersDraft | null {
   if (!payload || typeof payload !== "object") return null;
   const raw = payload as {
@@ -92,7 +108,18 @@ export function parseTransfersDraft(
   for (const pair of pairs) {
     if (outIds.includes(pair.outId)) continue;
     if (options.squadIds && !options.squadIds.has(pair.outId)) continue;
-    const inId = pair.inId && pair.inId !== pair.outId && !usedIn.has(pair.inId) ? pair.inId : null;
+    const inId =
+      pair.inId &&
+      pair.inId !== pair.outId &&
+      !usedIn.has(pair.inId) &&
+      !options.squadIds?.has(pair.inId) &&
+      !pairs.some((other) => other.outId === pair.inId) &&
+      (!options.buyableIds || options.buyableIds.has(pair.inId)) &&
+      (!options.positionOf ||
+        (options.positionOf(pair.inId) !== undefined &&
+          options.positionOf(pair.inId) === options.positionOf(pair.outId)))
+        ? pair.inId
+        : null;
     if (inId) usedIn.add(inId);
     outIds.push(pair.outId);
     inIds.push(inId);
@@ -144,6 +171,7 @@ export function ownedPlayerFallback(
     ownership: 0,
     status: ownedStatus(record.status),
     photoUrl: null,
+    placeholder: true,
   };
 }
 
@@ -164,6 +192,17 @@ export function resolveKnownPlayers(
     .filter((record) => !inPool.has(record.id))
     .map((record) => ownedPlayerFallback(record, name));
   return extra.length === 0 ? pool : [...pool, ...extra];
+}
+
+/**
+ * The players a picker may offer: everyone the screen can look up except the
+ * stand-ins for owned players the buying pool no longer lists. Those can be
+ * sold, never bought.
+ */
+export function pickerPool(known: FantasyPlayer[]): FantasyPlayer[] {
+  return known.some((player) => player.placeholder)
+    ? known.filter((player) => !player.placeholder)
+    : known;
 }
 
 // ---------- Sale value of an owned player ----------

@@ -19,6 +19,7 @@ import { V2CloudFantasyRepository } from "./fantasy-owned-repository";
 import {
   ownedPlayerFallback,
   parseTransfersDraft,
+  pickerPool,
   resolveKnownPlayers,
   serializeTransfersDraft,
   type OwnedPlayerRecord,
@@ -107,7 +108,7 @@ describe("an old-format draft is never paired wrongly (SOL-01)", () => {
     }
   });
 
-  it("drops repeated leavers, repeated or self-replacing incoming, and leavers outside the squad", () => {
+  it("drops repeated leavers and repeated or self-replacing incoming, keeping the pair", () => {
     expect(
       parseTransfersDraft({
         v: 2,
@@ -116,26 +117,89 @@ describe("an old-format draft is never paired wrongly (SOL-01)", () => {
           { outId: "A", inId: "Z" },
           { outId: "B", inId: "X" },
           { outId: "C", inId: "C" },
-          { outId: "GONE", inId: "W" },
         ],
       }),
-      // GONE is not in the squad any more
-    ).toEqual({
-      outIds: ["A", "B", "C", "GONE"],
-      inIds: ["X", null, null, "W"],
+    ).toEqual({ outIds: ["A", "B", "C"], inIds: ["X", null, null] });
+  });
+
+  it("drops a leaver who is no longer in the squad, when the squad is known", () => {
+    const payload = {
+      v: 2,
+      pairs: [
+        { outId: "A", inId: "X" },
+        { outId: "GONE", inId: "W" },
+      ],
+    };
+    // Without the squad nothing can be said about GONE.
+    expect(parseTransfersDraft(payload)?.outIds).toEqual(["A", "GONE"]);
+    expect(parseTransfersDraft(payload, { squadIds: new Set(["A", "B"]) })).toEqual({
+      outIds: ["A"],
+      inIds: ["X"],
     });
+  });
+});
+
+describe("a restored draft is checked against what the screen knows now (SOL-01)", () => {
+  // Squad A, B (defenders) and D (midfielder). X, Y buyable defenders, M a buyable midfielder.
+  // C is a defender who is owned now; R a defender who left the pool.
+  const positions: Record<string, string> = {
+    A: "DEF",
+    B: "DEF",
+    C: "DEF",
+    D: "MID",
+    X: "DEF",
+    Y: "DEF",
+    M: "MID",
+    R: "DEF",
+  };
+  const options = {
+    squadIds: new Set(["A", "B", "C", "D"]),
+    buyableIds: new Set(["X", "Y", "M"]),
+    positionOf: (id: string) => positions[id],
+  };
+  const restore = (pairs: Array<{ outId: string; inId: string | null }>) =>
+    parseTransfersDraft({ v: 2, pairs }, options);
+
+  it("keeps valid pairs, including a placeholder before a filled pair", () => {
     expect(
-      parseTransfersDraft(
-        {
-          v: 2,
-          pairs: [
-            { outId: "A", inId: "X" },
-            { outId: "GONE", inId: "W" },
-          ],
-        },
-        { squadIds: new Set(["A", "B"]) },
-      ),
-    ).toEqual({ outIds: ["A"], inIds: ["X"] });
+      restore([
+        { outId: "A", inId: null },
+        { outId: "B", inId: "Y" },
+      ]),
+    ).toEqual({ outIds: ["A", "B"], inIds: [null, "Y"] });
+  });
+
+  it("turns an incoming player who is owned now into a placeholder, not a double on the pitch", () => {
+    expect(restore([{ outId: "A", inId: "C" }])).toEqual({ outIds: ["A"], inIds: [null] });
+  });
+
+  it("turns an incoming player who is himself a leaver into a placeholder", () => {
+    expect(
+      restore([
+        { outId: "A", inId: "X" },
+        { outId: "B", inId: "A" },
+      ]),
+    ).toEqual({ outIds: ["A", "B"], inIds: ["X", null] });
+  });
+
+  it("turns an incoming player who left the buying pool into a placeholder", () => {
+    expect(restore([{ outId: "A", inId: "R" }])).toEqual({ outIds: ["A"], inIds: [null] });
+  });
+
+  it("turns an incoming player of another position into a placeholder", () => {
+    expect(restore([{ outId: "A", inId: "M" }])).toEqual({ outIds: ["A"], inIds: [null] });
+    expect(restore([{ outId: "D", inId: "M" }])).toEqual({ outIds: ["D"], inIds: ["M"] });
+  });
+
+  it("applies the same checks to an old-format draft", () => {
+    expect(parseTransfersDraft({ outIds: ["A", "B"], inIds: ["C", "Y"] }, options)).toEqual({
+      outIds: ["A", "B"],
+      inIds: [null, "Y"],
+    });
+  });
+
+  it("a draft with nothing left to restore is null, so the screen clears it", () => {
+    expect(restore([{ outId: "GONE", inId: "X" }])).toBeNull();
   });
 });
 
@@ -187,6 +251,14 @@ describe("an owned player missing from the buying pool (SOL-02)", () => {
 
   it("does nothing without owned records (guest and local adapters)", () => {
     expect(resolveKnownPlayers(pool, undefined, label)).toBe(pool);
+  });
+
+  it("keeps him out of what a picker offers, and flags him as a stand-in", () => {
+    const known = resolveKnownPlayers(pool, OWNED, label);
+    expect(known.find((p) => p.id === "gone")!.placeholder).toBe(true);
+    expect(pickerPool(known).map((p) => p.id)).toEqual(["here", "other"]);
+    // Nothing to remove: the same array comes back.
+    expect(pickerPool(pool)).toBe(pool);
   });
 
   it("maps any status the pool does not know to the safe 'injured' wording, as the pool does", () => {
@@ -273,14 +345,21 @@ describe("the transfers screen is wired to them (SOL-01, SOL-02)", () => {
 
   it("never compacts the incoming list when it saves a draft", () => {
     expect(source).not.toMatch(/(inIds|nextIn|draftIn)\.filter\(Boolean\)/);
-    expect(source.match(/serializeTransfersDraft\(/g)?.length).toBe(3);
-    expect(source).toContain("parseTransfersDraft(entry.payload");
+    expect(source).toContain("serializeTransfersDraft(");
+    expect(source).toContain("parseTransfersDraft(");
   });
 
-  it("resolves players from the pool plus the owned ones, and lets the pickers see the pool only", () => {
-    expect(source).toContain("const playerOf = (id: string) => knownPlayers.find");
-    expect(source).toContain("players={knownPlayers}");
-    expect(source.match(/<AddPlayerScreen\s+players=\{players\}/g)?.length).toBe(2);
-    expect(source).not.toMatch(/AddPlayerScreen[^>]*players=\{knownPlayers\}/);
+  it("restores a draft only once the pool is loaded, and clears the screen when nothing is left", () => {
+    expect(source).toMatch(/screen\.phase !== "ready"[^\n]*draftInit\.current/);
+    expect(source).toMatch(/fantasyDraftsStore\.remove\(draftKey\);\s*setOutIds\(\[\]\);/);
+  });
+
+  it("never reaches for an unknown player with a non-null assertion in the preview", () => {
+    expect(source).not.toMatch(/knownPlayers\.find\([^)]*\)\s*!/);
+  });
+
+  it("gives the pickers the pool only, never the lookup that holds the stand-ins", () => {
+    expect(source).not.toMatch(/<AddPlayerScreen[^>]*players=\{knownPlayers\}/);
+    expect(source).toMatch(/<AddPlayerScreen\s+players=\{pickerPlayers\}/);
   });
 });
