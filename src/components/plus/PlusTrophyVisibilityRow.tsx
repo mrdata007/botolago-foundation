@@ -8,7 +8,7 @@ import { useTrophyCopy } from "./trophy-copy";
 import { useTrophyVisibilitySwitch } from "./use-trophy-visibility";
 
 /**
- * « Montrer mes trophées » in Profil › Mon abonnement: the same switch as on the trophies page,
+ * « Montrer mes trophées » in Profil › Ma saison: the same switch as on the trophies page,
  * read from and written to the same cabinet. Nothing until the cabinet has been read (the feature is
  * off, or the database does not answer), so it never asks for more than the trophies page does.
  */

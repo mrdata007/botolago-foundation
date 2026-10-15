@@ -3,9 +3,13 @@ import { useCallback, useEffect, useReducer, useRef, useState, type ReactNode } 
 
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import {
+  isValidPaymentReference,
   isValidPremiumReason,
+  isValidRib,
+  isValidWhatsappNumber,
   mapPremiumAdminError,
   parsePremiumLookupQuery,
+  PAYMENT_METHODS,
   PREMIUM_GRANT_DURATIONS,
   PREMIUM_REASON_MIN,
   premiumGrantEndsAt,
@@ -15,8 +19,10 @@ import {
   type PremiumAdminMember,
   type PremiumAdminOverview,
   type PremiumAdminRepository,
+  type PaymentMethod,
   type PremiumGrantDurationKey,
   type PremiumMode,
+  type PremiumPaymentDetails,
   type PremiumState,
 } from "@/backend/premium/admin";
 import {
@@ -39,6 +45,7 @@ import {
 import {
   eventAmount,
   EVENT_TYPE_LABELS,
+  formatPrice,
   formatProductPrice,
   GRANT_DURATION_LABELS,
   grantWhereToLook,
@@ -47,6 +54,7 @@ import {
   MODE_LABELS,
   needsReconnect,
   OUTCOME_LABELS,
+  PAYMENT_METHOD_LABELS,
   premiumAdminErrorMessage,
   productName,
   recordedStateLabel,
@@ -235,7 +243,7 @@ export function PlusAdminScreen({
         intro={
           rtl
             ? "أعداد فقط، بلا قائمة بالأعضاء. تُحتسب الحالة بحسب التواريخ، لا بحسب آخر حدث وحده."
-            : "Des nombres seulement, aucune liste de membres. L’état tient compte des dates, pas seulement du dernier événement."
+            : "Des nombres seulement, aucune liste de comptes. L’état tient compte des dates, pas seulement du dernier événement."
         }
       >
         {overview.status === "loading" && (
@@ -274,6 +282,13 @@ export function PlusAdminScreen({
         makeContext={makeContext}
         mode={ready?.settings.mode ?? null}
         onChanged={loadOverview}
+      />
+
+      <PaymentDetailsSection
+        repository={repository}
+        canGrant={canGrant}
+        lang={lang}
+        makeContext={makeContext}
       />
 
       {ready && (
@@ -332,12 +347,14 @@ function StatesBlock({ data, lang }: { data: PremiumAdminOverview; lang: Lang })
           <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
             {rtl
               ? "حسابات لها منحة من الطاقم سارية الآن، إضافة إلى الاشتراكات."
-              : "Comptes avec une offre du personnel valable aujourd’hui, en plus des abonnements."}
+              : "Comptes avec un accès offert par le personnel valable aujourd’hui, en plus des Saisons payées."}
           </p>
         </AdminSummaryCard>
       </div>
       <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="admin-plus-total">
-        {rtl ? "عدد الحسابات التي لها اشتراك: " : "Comptes ayant un abonnement : "}
+        {rtl
+          ? "عدد الحسابات التي لها اشتراك: "
+          : "Comptes ayant eu une Saison ou un ancien abonnement : "}
         <span className={cn(ui.stat.sm, ui.tone.default)}>{total}</span>
         {" · "}
         {rtl ? "آخر حدث فوترة: " : "Dernier événement de facturation : "}
@@ -544,11 +561,24 @@ function LookupSection({
   const reasonField = useRef<HTMLInputElement>(null);
 
   const read = useCallback(
-    async (userId: string | null, email: string | null, why: string) => {
+    async (
+      userId: string | null,
+      email: string | null,
+      why: string,
+      code: string | null = null,
+    ) => {
       const issued = ++generation.current;
       setPhase("loading");
       setFailure(null);
       try {
+        if (code !== null) {
+          const byCode = await repository.findByCode(code, why, makeContext());
+          if (issued !== generation.current) return;
+          setMember(byCode);
+          setReadReason(why);
+          setPhase("ready");
+          return;
+        }
         let id = userId;
         if (id === null && email !== null) {
           const found = await repository.resolveAccount(email, makeContext());
@@ -598,6 +628,7 @@ function LookupSection({
       parsed.kind === "id" ? parsed.userId : null,
       parsed.kind === "email" ? parsed.email : null,
       reason,
+      parsed.kind === "code" ? parsed.code : null,
     );
   };
 
@@ -605,14 +636,14 @@ function LookupSection({
     <Section
       headingId="admin-plus-lookup-heading"
       testId="admin-plus-lookup"
-      heading={rtl ? "البحث عن عضو" : "Consulter un membre"}
+      heading={rtl ? "البحث عن حساب" : "Consulter un compte"}
       intro={
         rtl
           ? "كل قراءة تُسجَّل في سجل التدقيق مع سببها. لا تظهر بيانات بطاقة الدفع ولا بطاقات اللعبة."
           : "Chaque consultation est consignée dans l’audit avec son motif. Aucune donnée de carte bancaire, de carte Manager ni de Fantasy n’apparaît ici."
       }
     >
-      <UiCard padding="md" role="search" aria-label={rtl ? "البحث عن عضو" : "Rechercher un membre"}>
+      <UiCard padding="md" role="search" aria-label={rtl ? "البحث عن عضو" : "Rechercher un compte"}>
         <form
           className="grid grid-cols-1 gap-4"
           onSubmit={(event) => {
@@ -625,20 +656,20 @@ function LookupSection({
             label={
               canLookupEmail
                 ? rtl
-                  ? "معرّف الحساب أو بريده الإلكتروني"
-                  : "Identifiant du compte ou e-mail"
+                  ? "رمز الدفع أو معرّف الحساب أو البريد"
+                  : "Code de paiement, identifiant ou e-mail"
                 : rtl
-                  ? "معرّف الحساب"
-                  : "Identifiant du compte"
+                  ? "رمز الدفع أو معرّف الحساب"
+                  : "Code de paiement ou identifiant"
             }
             hint={
               canLookupEmail
                 ? rtl
-                  ? "معرّف UUID أو البريد الكامل. البحث بالبريد يمر عبر دليل المستخدمين."
-                  : "Un UUID, ou l’adresse e-mail complète. La recherche par e-mail passe par l’annuaire des utilisateurs."
+                  ? "الرمز BG-XXXXXX الذي يرسله المشتري، أو UUID، أو البريد الكامل."
+                  : "Le code BG-XXXXXX envoyé par l’acheteur, un UUID, ou l’adresse e-mail complète."
                 : rtl
-                  ? "معرّف UUID. البحث بالبريد يتطلب صلاحية دليل المستخدمين."
-                  : "Un UUID. La recherche par e-mail demande l’accès à l’annuaire des utilisateurs."
+                  ? "الرمز BG-XXXXXX أو UUID. البحث بالبريد يتطلب صلاحية دليل المستخدمين."
+                  : "Le code BG-XXXXXX ou un UUID. La recherche par e-mail demande l’accès à l’annuaire des utilisateurs."
             }
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -713,7 +744,7 @@ function LookupSection({
         <div className="mt-4">
           <AdminSkeletonList rows={2} surface="card" testId="admin-plus-member-loading" />
           <p className="sr-only" role="status">
-            {rtl ? "جارٍ تحميل العضو…" : "Chargement du membre…"}
+            {rtl ? "جارٍ تحميل العضو…" : "Chargement du compte…"}
           </p>
         </div>
       )}
@@ -772,6 +803,26 @@ function MemberPanel({
   const rtl = lang === "ar";
   const [notice, setNotice] = useState<Notice>(null);
   const [duration, setDuration] = useState<PremiumGrantDurationKey>("month");
+  const [method, setMethod] = useState<PaymentMethod>("bank_transfer");
+  const [reference, setReference] = useState("");
+  const [seasonEnd, setSeasonEnd] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    void repository.seasonEnd(makeContext()).then(
+      (end) => {
+        if (!cancelled) setSeasonEnd(end);
+      },
+      () => {
+        if (!cancelled) setSeasonEnd(null);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+    // `makeContext` is a fresh closure per render; the repository is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repository]);
+  const referenceOk = method === "free" || isValidPaymentReference(reference);
   const [actionState, dispatchAction] = useReducer(
     destructiveActionReducer,
     IDLE_DESTRUCTIVE_ACTION,
@@ -805,7 +856,7 @@ function MemberPanel({
             tone: "info",
             text: rtl
               ? `مُنحت العضوية حتى ${formatUserDate(result.endsAt, lang)}. سُجّل الإجراء في التدقيق.`
-              : `Offre accordée jusqu’au ${formatUserDate(result.endsAt, lang)}. L’action est consignée dans l’audit.`,
+              : `Accès accordé jusqu’au ${formatUserDate(result.endsAt, lang)}. L’action est consignée dans l’audit.`,
             where: grantWhereToLook(member.userId === makeContext().actorId, mode, lang),
           },
           refreshFailure,
@@ -817,6 +868,39 @@ function MemberPanel({
         const code = errorCode(error);
         setNotice({ tone: "alert", text: premiumAdminErrorMessage(code, lang), code });
       }
+    }
+  };
+
+  const activate = async (reasonText: string) => {
+    setNotice(null);
+    const why = reasonText.trim();
+    try {
+      const result = await repository.activateSeason(
+        member.userId,
+        method,
+        reference,
+        why,
+        crypto.randomUUID(),
+        makeContext(),
+      );
+      const refreshFailure = await onChanged(why);
+      setReference("");
+      setNotice(
+        withRefreshOutcome(
+          {
+            tone: "info",
+            text: rtl
+              ? `فُعّل الموسم حتى ${formatUserDate(result.endsAt, lang)}. سُجّل الإجراء في التدقيق.`
+              : `Saison activée jusqu’au ${formatUserDate(result.endsAt, lang)}. L’action est consignée dans l’audit.`,
+            where: grantWhereToLook(member.userId === makeContext().actorId, mode, lang),
+          },
+          refreshFailure,
+          lang,
+        ),
+      );
+    } catch (error) {
+      const code = errorCode(error);
+      setNotice({ tone: "alert", text: premiumAdminErrorMessage(code, lang), code });
     }
   };
 
@@ -832,7 +916,7 @@ function MemberPanel({
             tone: "info",
             text: rtl
               ? "سُحبت المنحة. سُجّل الإجراء في التدقيق."
-              : "Offre retirée. L’action est consignée dans l’audit.",
+              : "Accès retiré. L’action est consignée dans l’audit.",
           },
           refreshFailure,
           lang,
@@ -860,18 +944,18 @@ function MemberPanel({
             <span data-testid="admin-plus-member-status">
               {member.isMember
                 ? rtl
-                  ? "عضو الآن"
-                  : "Membre actuellement"
+                  ? "موسم فعّال"
+                  : "Saison active"
                 : rtl
-                  ? "ليس عضواً الآن"
-                  : "Pas membre actuellement"}
+                  ? "لا موسم فعّال"
+                  : "Pas de Saison active"}
             </span>
           </StatusBadge>
         </div>
         <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
           {rtl
-            ? "يشمل الاشتراك والمنح الساريتين."
-            : "Compte l’abonnement et les offres du personnel valables aujourd’hui."}
+            ? "يشمل الموسم والوصول الممنوح الساريين."
+            : "Compte la Saison et les accès offerts valables aujourd’hui."}
         </p>
       </UiCard>
 
@@ -912,13 +996,114 @@ function MemberPanel({
       )}
       {notice?.code && needsReconnect(notice.code) && <ReconnectButton lang={lang} />}
 
+      {canGrant && (
+        <UiCard padding="md" testId="admin-plus-activate">
+          <h4 className={cn(ui.display.header, ui.tone.default)}>
+            {rtl ? "تفعيل موسم 2026/27" : "Activer la Saison 2026/27"}
+          </h4>
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+            {rtl
+              ? "بعد التحقق من الإيصال الذي أرسله المشتري عبر واتساب. يمتد الموسم حتى نهاية الموسم الفانتازي."
+              : "Une fois le reçu envoyé sur WhatsApp vérifié. La Saison court jusqu’à la fin de la saison Fantasy."}
+          </p>
+          <div className="mt-4 grid grid-cols-1 gap-4">
+            <AdminFilterChips
+              label={rtl ? "طريقة الدفع" : "Mode de paiement"}
+              options={PAYMENT_METHODS.map((value) => ({
+                value,
+                label: PAYMENT_METHOD_LABELS[value][lang],
+              }))}
+              value={method}
+              onSelect={setMethod}
+              data-testid="admin-plus-activate-method"
+            />
+            {method !== "free" && (
+              <UiInput
+                label={rtl ? "مرجع الدفع (مطلوب)" : "Référence du paiement (requise)"}
+                hint={
+                  rtl
+                    ? "رقم التحويل أو إيصال الوكالة، كما يظهر في الإيصال."
+                    : "Numéro du virement ou du reçu d’agence, tel qu’il figure sur le reçu."
+                }
+                value={reference}
+                onChange={(event) => setReference(event.target.value)}
+                maxLength={80}
+                autoComplete="off"
+                dir="auto"
+                data-testid="admin-plus-activate-reference"
+              />
+            )}
+            <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="admin-plus-activate-until">
+              {seasonEnd ? (
+                <>
+                  {rtl ? "ينتهي الموسم في " : "La Saison se termine le "}
+                  <AdminDate>{formatUserDate(seasonEnd, lang)}</AdminDate>.
+                </>
+              ) : seasonEnd === undefined ? (
+                rtl ? (
+                  "جارٍ حساب تاريخ الانتهاء…"
+                ) : (
+                  "Calcul de la date de fin…"
+                )
+              ) : rtl ? (
+                "تاريخ نهاية الموسم غير معروف: سيحسبه الخادم عند التفعيل."
+              ) : (
+                "Date de fin non connue ici : le serveur la calcule à l’activation."
+              )}
+            </p>
+            <AdminDestructiveAction
+              actionKey={`activate:${member.userId}`}
+              state={actionState}
+              dispatch={dispatchAction}
+              minimumReasonLength={PREMIUM_REASON_MIN}
+              rtl={rtl}
+              tone="primary"
+              panel="neutral"
+              initialReason={lookupReason}
+              disabled={!referenceOk}
+              triggerLabel={rtl ? "تفعيل موسم 2026/27" : "Activer la Saison 2026/27"}
+              confirmPrompt={
+                rtl ? (
+                  <>
+                    تفعيل الموسم للحساب <AdminDatum>{member.userId}</AdminDatum> (
+                    {PAYMENT_METHOD_LABELS[method].ar}
+                    {method !== "free" && (
+                      <>
+                        ، المرجع <AdminDatum>{reference.trim()}</AdminDatum>
+                      </>
+                    )}
+                    )؟ يصبح الموسم فعّالًا فورًا، ويُسجَّل الإجراء في التدقيق.
+                  </>
+                ) : (
+                  <>
+                    Activer la Saison pour le compte <AdminDatum>{member.userId}</AdminDatum> (
+                    {PAYMENT_METHOD_LABELS[method].fr}
+                    {method !== "free" && (
+                      <>
+                        , référence <AdminDatum>{reference.trim()}</AdminDatum>
+                      </>
+                    )}
+                    {seasonEnd ? <>, jusqu’au {formatUserDate(seasonEnd, lang)}</> : null}) ? Elle
+                    est active aussitôt ; l’action est consignée dans l’audit.
+                  </>
+                )
+              }
+              confirmLabel={rtl ? "تأكيد التفعيل" : "Confirmer l’activation"}
+              onConfirm={activate}
+              triggerTestId="admin-plus-activate-trigger"
+              testId="admin-plus-activate-action"
+            />
+          </div>
+        </UiCard>
+      )}
+
       <UiCard padding="md" testId="admin-plus-entitlement">
         <h4 className={cn(ui.display.header, ui.tone.default)}>
-          {rtl ? "الاشتراك" : "Abonnement"}
+          {rtl ? "الشراء المسجّل" : "Achat enregistré"}
         </h4>
         {entitlement === null ? (
           <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
-            {rtl ? "لم يشترك هذا الحساب قط." : "Ce compte n’a jamais souscrit d’abonnement."}
+            {rtl ? "لم يدفع هذا الحساب عبر الإنترنت قط." : "Ce compte n’a jamais payé en ligne."}
           </p>
         ) : (
           <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -964,11 +1149,11 @@ function MemberPanel({
 
       <UiCard padding="md" testId="admin-plus-grants">
         <h4 className={cn(ui.display.header, ui.tone.default)}>
-          {rtl ? "المنح من الطاقم" : "Offres du personnel"}
+          {rtl ? "السجل: التفعيل والمنح" : "Saisons et accès offerts"}
         </h4>
         {member.grants.length === 0 ? (
           <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
-            {rtl ? "لا منحة لهذا الحساب." : "Aucune offre pour ce compte."}
+            {rtl ? "لا منحة لهذا الحساب." : "Aucune Saison ni accès offert pour ce compte."}
           </p>
         ) : (
           <ul className="mt-3 grid grid-cols-1 gap-3">
@@ -991,8 +1176,13 @@ function MemberPanel({
           {canGrant ? (
             <div className="grid grid-cols-1 gap-4" data-testid="admin-plus-grant-form">
               <h5 className={cn(ui.text.bodyStrong, ui.tone.default)}>
-                {rtl ? "منح عضوية مجانية" : "Offrir l’abonnement"}
+                {rtl ? "منح وصول مجاني" : "Offrir un accès"}
               </h5>
+              <p className={cn(ui.text.meta, ui.tone.muted)}>
+                {rtl
+                  ? "بديل ثانوي، لمدة محددة (هدية، صحافة). لا يسجّل أي دفع."
+                  : "Action secondaire, pour une durée choisie (geste, presse). Aucun paiement n’est enregistré."}
+              </p>
               <AdminFilterChips
                 label={rtl ? "مدة المنحة" : "Durée de l’offre"}
                 options={PREMIUM_GRANT_DURATIONS.map((option) => ({
@@ -1016,7 +1206,7 @@ function MemberPanel({
                 tone="primary"
                 panel="neutral"
                 initialReason={lookupReason}
-                triggerLabel={rtl ? "منح العضوية" : "Offrir l’abonnement"}
+                triggerLabel={rtl ? "منح وصول" : "Offrir un accès"}
                 confirmPrompt={
                   rtl ? (
                     <>
@@ -1027,10 +1217,10 @@ function MemberPanel({
                     </>
                   ) : (
                     <>
-                      Offrir l’abonnement au compte <AdminDatum>{member.userId}</AdminDatum> pour{" "}
+                      Offrir un accès au compte <AdminDatum>{member.userId}</AdminDatum> pour{" "}
                       {GRANT_DURATION_LABELS[duration].fr}, soit{" "}
-                      <strong>jusqu’au {formatUserDate(grantEndsAt, lang)}</strong> ? Il devient
-                      membre aussitôt. Une seule personne suffit ; l’action est consignée dans
+                      <strong>jusqu’au {formatUserDate(grantEndsAt, lang)}</strong> ? Le compte a
+                      l’accès aussitôt. Une seule personne suffit ; l’action est consignée dans
                       l’audit.
                     </>
                   )
@@ -1044,8 +1234,8 @@ function MemberPanel({
           ) : (
             <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="admin-plus-read-only">
               {rtl
-                ? "يسمح دورك بالاطلاع على الأعضاء، لا بمنح العضوية أو سحبها."
-                : "Votre rôle permet de consulter les membres, pas d’offrir ni de retirer un abonnement."}
+                ? "يسمح دورك بالاطلاع على الحسابات، لا بتفعيل الموسم أو منحه أو سحبه."
+                : "Votre rôle permet de consulter les comptes, pas d’activer, d’offrir ni de retirer une Saison."}
             </p>
           )}
         </div>
@@ -1145,6 +1335,27 @@ function GrantRow({
         <span className={ADMIN_LABEL_CLASS}>{rtl ? "السبب" : "Motif"}</span>{" "}
         <bdi>{item.reason}</bdi>
       </p>
+      {item.paymentMethod && (
+        <p
+          className={cn("break-words", ui.text.secondary, ui.tone.default)}
+          data-testid="admin-plus-grant-payment"
+        >
+          <span className={ADMIN_LABEL_CLASS}>{rtl ? "الدفع" : "Paiement"}</span>{" "}
+          {PAYMENT_METHOD_LABELS[item.paymentMethod][lang]}
+          {item.paymentReference ? (
+            <>
+              {" · "}
+              <bdi>{item.paymentReference}</bdi>
+            </>
+          ) : null}
+          {item.amountMinor !== null && item.amountMinor !== undefined ? (
+            <>
+              {" · "}
+              <bdi>{formatPrice(item.amountMinor, "MAD", lang)}</bdi>
+            </>
+          ) : null}
+        </p>
+      )}
       {item.revokedAt && (
         <p className={cn(ui.text.meta, ui.tone.muted)}>
           {rtl ? "سُحبت في " : "Retirée le "}
@@ -1158,11 +1369,11 @@ function GrantRow({
           dispatch={dispatchAction}
           minimumReasonLength={PREMIUM_REASON_MIN}
           rtl={rtl}
-          triggerLabel={rtl ? "سحب المنحة" : "Retirer l’offre"}
+          triggerLabel={rtl ? "سحب المنحة" : "Retirer l’accès"}
           confirmPrompt={
             rtl
               ? "سحب هذه المنحة الآن؟ يفقد الحساب عضويته إن لم يكن له اشتراك ساري. يُسجَّل الإجراء في التدقيق."
-              : "Retirer cette offre maintenant ? Le compte cesse d’être membre s’il n’a pas d’abonnement en cours. L’action est consignée dans l’audit."
+              : "Retirer cet accès maintenant ? Le compte perd l’accès s’il n’a pas de Saison en cours. L’action est consignée dans l’audit."
           }
           confirmLabel={rtl ? "تأكيد السحب" : "Confirmer le retrait"}
           onConfirm={(reason) => onRevoke(item.grantId, reason)}
@@ -1222,5 +1433,306 @@ function EventRow({ event, lang }: { event: PremiumAdminEvent; lang: Lang }) {
         <AdminDatum>{event.providerEventId}</AdminDatum>
       </p>
     </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Payment details: what buyers are told to pay to (typed by the owner, never in code)
+// ---------------------------------------------------------------------------
+
+type DetailsForm = {
+  bankHolder: string;
+  bankName: string;
+  rib: string;
+  cashplusName: string;
+  whatsappNumber: string;
+  noteFr: string;
+  noteAr: string;
+};
+
+function toForm(details: PremiumPaymentDetails): DetailsForm {
+  return {
+    bankHolder: details.bankHolder ?? "",
+    bankName: details.bankName ?? "",
+    rib: details.rib ?? "",
+    cashplusName: details.cashplusName ?? "",
+    whatsappNumber: details.whatsappNumber ?? "",
+    noteFr: details.noteFr ?? "",
+    noteAr: details.noteAr ?? "",
+  };
+}
+
+/** The number as typed, without the spaces and dashes people write it with. */
+const compactNumber = (value: string) => value.replace(/[\s.-]/g, "");
+
+/**
+ * « Coordonnées de paiement »: the read view for anyone with premium.read, and the form for
+ * premium.grant. Saving asks for a reason and a second press (these are the details buyers pay to),
+ * and the database checks the permission and recent sign-in again. Nothing here is a default: until
+ * the owner types them, buyers read « Les coordonnées de paiement arrivent bientôt ».
+ */
+function PaymentDetailsSection({
+  repository,
+  canGrant,
+  lang,
+  makeContext,
+}: Pick<PlusAdminScreenProps, "repository" | "canGrant" | "lang" | "makeContext">) {
+  const rtl = lang === "ar";
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; details: PremiumPaymentDetails }
+    | { status: "error"; code: string }
+  >({ status: "loading" });
+  const [form, setForm] = useState<DetailsForm | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
+  const [actionState, dispatchAction] = useReducer(
+    destructiveActionReducer,
+    IDLE_DESTRUCTIVE_ACTION,
+  );
+
+  const load = useCallback(async () => {
+    try {
+      const details = await repository.getPaymentDetails(makeContext());
+      setState({ status: "ready", details });
+      setForm(toForm(details));
+    } catch (error) {
+      setState({ status: "error", code: errorCode(error) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repository]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const set = (key: keyof DetailsForm) => (event: { target: { value: string } }) =>
+    setForm((prev) => (prev ? { ...prev, [key]: event.target.value } : prev));
+
+  const whatsapp = form ? compactNumber(form.whatsappNumber) : "";
+  const whatsappBad = whatsapp !== "" && !isValidWhatsappNumber(whatsapp);
+  const ribBad = form ? form.rib.trim() !== "" && !isValidRib(form.rib) : false;
+  const formOk = form !== null && !whatsappBad && !ribBad;
+
+  const save = async (reasonText: string) => {
+    if (!form) return;
+    setNotice(null);
+    try {
+      const saved = await repository.setPaymentDetails(
+        { ...form, whatsappNumber: whatsapp },
+        reasonText.trim(),
+        crypto.randomUUID(),
+        makeContext(),
+      );
+      setState({ status: "ready", details: saved });
+      setForm(toForm(saved));
+      setNotice({
+        tone: "info",
+        text: rtl
+          ? "حُفظت بيانات الدفع. سُجّل الإجراء في التدقيق."
+          : "Coordonnées enregistrées. L’action est consignée dans l’audit.",
+      });
+    } catch (error) {
+      const code = errorCode(error);
+      setNotice({ tone: "alert", text: premiumAdminErrorMessage(code, lang), code });
+    }
+  };
+
+  const details = state.status === "ready" ? state.details : null;
+  const rows: Array<[string, string | null, boolean]> = details
+    ? [
+        [rtl ? "صاحب الحساب" : "Titulaire", details.bankHolder, false],
+        [rtl ? "البنك" : "Banque", details.bankName, false],
+        ["RIB", details.rib, true],
+        [
+          rtl ? "المستفيد (كاش بلس / وفاكاش)" : "Bénéficiaire CashPlus / Wafacash",
+          details.cashplusName,
+          false,
+        ],
+        [rtl ? "رقم واتساب" : "Numéro WhatsApp", details.whatsappNumber, true],
+        [rtl ? "ملاحظة بالفرنسية" : "Note (français)", details.noteFr, false],
+        [rtl ? "ملاحظة بالعربية" : "Note (arabe)", details.noteAr, false],
+      ]
+    : [];
+
+  return (
+    <Section
+      headingId="admin-plus-payment-heading"
+      testId="admin-plus-payment"
+      heading={rtl ? "بيانات الدفع" : "Coordonnées de paiement"}
+      intro={
+        rtl
+          ? "ما يراه المشتري في شاشة «ادفع موسمي». يدخلها المالك هنا فقط، دون مس بالشيفرة."
+          : "Ce que l’acheteur voit sur l’écran « Payer ma Saison ». Le propriétaire les saisit ici, jamais dans le code."
+      }
+    >
+      {state.status === "loading" && (
+        <AdminSkeletonList rows={2} surface="card" testId="admin-plus-payment-loading" />
+      )}
+      {state.status === "error" && (
+        <div data-testid="admin-plus-payment-error">
+          <ErrorNotice code={state.code} lang={lang} />
+        </div>
+      )}
+      {details && (
+        <UiCard padding="md" testId="admin-plus-payment-read">
+          {!details.whatsappNumber && (
+            <AdminNotice tone="alert" role="status" testId="admin-plus-payment-unset">
+              {rtl
+                ? "لا رقم واتساب بعد: يقرأ المشتري «بيانات الدفع ستتوفر قريبًا» ولا يظهر أي زر."
+                : "Pas de numéro WhatsApp : l’acheteur lit « Les coordonnées de paiement arrivent bientôt » et ne voit aucun bouton."}
+            </AdminNotice>
+          )}
+          <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {rows.map(([label, value, ltr]) => (
+              <AdminField key={label} label={label}>
+                {value ? (
+                  ltr ? (
+                    <AdminDatum>{value}</AdminDatum>
+                  ) : (
+                    <bdi>{value}</bdi>
+                  )
+                ) : (
+                  <span className={ui.tone.muted}>{rtl ? "غير محدد" : "Non renseigné"}</span>
+                )}
+              </AdminField>
+            ))}
+          </dl>
+          {details.updatedAt && (
+            <p className={cn("mt-3", ui.text.meta, ui.tone.muted)}>
+              {rtl ? "آخر تعديل: " : "Dernière modification : "}
+              <AdminDate>{formatUserDateTime(details.updatedAt, lang)}</AdminDate>
+            </p>
+          )}
+        </UiCard>
+      )}
+
+      {notice && (
+        <div className="mt-4">
+          <AdminNotice
+            tone={notice.tone}
+            role={notice.tone === "alert" ? "alert" : "status"}
+            testId="admin-plus-payment-message"
+          >
+            {notice.text}
+          </AdminNotice>
+          {notice.code && needsReconnect(notice.code) && <ReconnectButton lang={lang} />}
+        </div>
+      )}
+
+      {details && form && canGrant && (
+        <UiCard padding="md" className="mt-4" testId="admin-plus-payment-form">
+          <h4 className={cn(ui.display.header, ui.tone.default)}>
+            {rtl ? "تعديل بيانات الدفع" : "Modifier les coordonnées"}
+          </h4>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <UiInput
+              label={rtl ? "صاحب الحساب" : "Titulaire du compte"}
+              value={form.bankHolder}
+              onChange={set("bankHolder")}
+              maxLength={120}
+              autoComplete="off"
+              dir="auto"
+              data-testid="admin-plus-payment-holder"
+            />
+            <UiInput
+              label={rtl ? "البنك" : "Banque"}
+              value={form.bankName}
+              onChange={set("bankName")}
+              maxLength={120}
+              autoComplete="off"
+              dir="auto"
+              data-testid="admin-plus-payment-bank"
+            />
+            <UiInput
+              label="RIB"
+              hint={
+                ribBad
+                  ? rtl
+                    ? "من 10 إلى 40 حرفًا: أرقام وحروف ومسافات ونقاط وشرطات."
+                    : "10 à 40 caractères : chiffres, lettres, espaces, points, tirets."
+                  : rtl
+                    ? "يُنسخ كما هو من قبل المشتري."
+                    : "Copié tel quel par l’acheteur."
+              }
+              value={form.rib}
+              onChange={set("rib")}
+              maxLength={40}
+              autoComplete="off"
+              spellCheck={false}
+              dir="ltr"
+              aria-invalid={ribBad || undefined}
+              data-testid="admin-plus-payment-rib"
+            />
+            <UiInput
+              label={rtl ? "المستفيد (كاش بلس / وفاكاش)" : "Bénéficiaire CashPlus / Wafacash"}
+              value={form.cashplusName}
+              onChange={set("cashplusName")}
+              maxLength={120}
+              autoComplete="off"
+              dir="auto"
+              data-testid="admin-plus-payment-cashplus"
+            />
+            <UiInput
+              label={rtl ? "رقم واتساب" : "Numéro WhatsApp"}
+              hint={
+                whatsappBad
+                  ? rtl
+                    ? "من 8 إلى 16 رقمًا، و«+» اختياري في البداية."
+                    : "8 à 16 chiffres, avec un « + » possible au début."
+                  : rtl
+                    ? "يصل إليه المشتري بالإيصال ورمزه."
+                    : "Reçoit le reçu et le code de l’acheteur."
+              }
+              value={form.whatsappNumber}
+              onChange={set("whatsappNumber")}
+              maxLength={24}
+              inputMode="tel"
+              autoComplete="off"
+              dir="ltr"
+              aria-invalid={whatsappBad || undefined}
+              data-testid="admin-plus-payment-whatsapp"
+            />
+            <UiInput
+              label={rtl ? "ملاحظة بالفرنسية (اختياري)" : "Note en français (facultatif)"}
+              value={form.noteFr}
+              onChange={set("noteFr")}
+              maxLength={200}
+              autoComplete="off"
+              data-testid="admin-plus-payment-note-fr"
+            />
+            <UiInput
+              label={rtl ? "ملاحظة بالعربية (اختياري)" : "Note en arabe (facultatif)"}
+              value={form.noteAr}
+              onChange={set("noteAr")}
+              maxLength={200}
+              autoComplete="off"
+              dir="rtl"
+              data-testid="admin-plus-payment-note-ar"
+            />
+          </div>
+          <div className="mt-4">
+            <AdminDestructiveAction
+              actionKey="payment-details"
+              state={actionState}
+              dispatch={dispatchAction}
+              minimumReasonLength={PREMIUM_REASON_MIN}
+              rtl={rtl}
+              tone="primary"
+              panel="neutral"
+              disabled={!formOk}
+              triggerLabel={rtl ? "حفظ بيانات الدفع" : "Enregistrer les coordonnées"}
+              confirmPrompt={
+                rtl
+                  ? "حفظ هذه البيانات؟ يراها كل مشتري فورًا ويدفع إليها. تحقق من الرقم والـ RIB. يُسجَّل الإجراء في التدقيق."
+                  : "Enregistrer ces coordonnées ? Chaque acheteur les voit aussitôt et paie dessus : vérifiez le RIB et le numéro. L’action est consignée dans l’audit."
+              }
+              confirmLabel={rtl ? "تأكيد الحفظ" : "Confirmer l’enregistrement"}
+              onConfirm={save}
+              triggerTestId="admin-plus-payment-save"
+              testId="admin-plus-payment-action"
+            />
+          </div>
+        </UiCard>
+      )}
+    </Section>
   );
 }

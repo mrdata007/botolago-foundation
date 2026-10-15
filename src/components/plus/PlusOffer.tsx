@@ -1,22 +1,22 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
-import type { PremiumProductCode } from "@/backend/premium/contracts";
 import { useI18n } from "@/i18n/provider";
 import { usePremium } from "@/services/use-premium";
 
 import { usePlusProfile } from "./use-plus-profile";
 import { PlusLogo } from "./PlusLogo";
-import type { PlusContext, PlusStep } from "./plus-steps";
+import { PAY_PLUS_STEP, type PlusContext, type PlusStep } from "./plus-steps";
 import { PlusPaywallScreen } from "./PlusPaywallScreen";
+import { PlusPayScreen } from "./PlusPayScreen";
 import { PlusSeasonScreen } from "./PlusSeasonScreen";
 import { PlusStyleScreen } from "./PlusStyleScreen";
 import { PlusWelcomeScreen } from "./PlusWelcomeScreen";
-import { PLUS_NAME, useNow, usePlusCopy, type PlusStyle } from "./plus-copy";
+import { PLUS_NAME, usePlusCopy, type PlusStyle } from "./plus-copy";
 
-/** The story's progress segments (style, season, subscription); the welcome screen has none. */
+/** The story's progress segments (style, season, Saison); the welcome and pay screens have none. */
 const TOTAL = 3;
-/** Swipe and arrow keys cannot move past the plan screen; screen 4 comes only from a purchase. */
+/** Swipe and arrow keys cannot move past the offer; the pay screen comes only from its button. */
 const LAST_FREE_STEP: PlusStep = 3;
 const TOAST_MS = 2600;
 
@@ -34,7 +34,8 @@ const ShareCardSheet = lazy(() =>
  * so the phone's Back button is « previous step »; the close button leaves the offer.
  * `mode="flow"` is `/curva/plus`; `mode="standalone"` is `/plus` (no swipe, no arrow keys).
  *
- * Nothing here takes money: while checkout is not open the button says « Bientôt disponible ».
+ * Nothing here takes money: « Payer ma Saison » opens the pay screen (step 5), where the reader finds
+ * how to pay by hand and sends the receipt on WhatsApp; staff activate the Saison afterwards.
  */
 export function PlusOffer({
   step: requested,
@@ -67,11 +68,9 @@ export function PlusOffer({
   const premium = usePremium();
   const navigate = useNavigate();
   const { profile, example, card } = usePlusProfile();
-  const now = useNow();
   const standalone = mode === "standalone";
 
   const [style, setStyle] = useState<PlusStyle>("holo");
-  const [plan, setPlan] = useState<PremiumProductCode>("plus_yearly");
   const [duelOpen, setDuelOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareLoaded, setShareLoaded] = useState(false);
@@ -81,12 +80,15 @@ export function PlusOffer({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Screen 4 is only for a member, whatever the address says.
-  const step: PlusStep = requested === 4 && !premium.isMember ? 3 : requested;
+  // Screen 4 is only for a member, and the pay screen only for a signed-in reader (the personal code
+  // is theirs), whatever the address says.
+  const step: PlusStep =
+    (requested === 4 && !premium.isMember) || (requested === 5 && !premium.signedIn)
+      ? 3
+      : requested;
   // The story (style, season, subscription) is on while the reader is inside it: on its first two
   // screens, and on the paywall they reached through them. The paywall alone has no progress.
   const inStory = !standalone && (step < 3 || (step === 3 && within > 0));
-  const checkoutOpen = premium.checkoutEnabled;
   const prices = premium.prices;
 
   // The database (mocked for now) says the feature is not on: leave, as Curva does.
@@ -168,20 +170,14 @@ export function PlusOffer({
     else if (!forward && within > 0 && step < 4) onBack();
   };
 
-  const onBuy = async () => {
+  const onBuy = () => {
     // Not signed in: sign up first (a free account), then this same screen again.
     if (!premium.signedIn) {
       onCarry?.();
       void navigate({ to: "/auth/register", search: { next: href } });
       return;
     }
-    const result = await premium.startCheckout(plan);
-    if (result.status === "ok") go(4);
-    else showToast(t("plus.soon"), "error");
-  };
-  const onRestore = async () => {
-    const result = await premium.restore();
-    if (result.status !== "ok") showToast(t("plus.s3.restore_soon"), "error");
+    go(PAY_PLUS_STEP);
   };
   const onShare = () => {
     // A rated card goes out as its picture, through the same sheet as Curva's.
@@ -217,7 +213,7 @@ export function PlusOffer({
   // frame of the offer before the effect above sends them away.
   if (!premium.ready || !premium.enabled) return null;
 
-  const hasBack = !standalone && within > 0 && step < 4;
+  const hasBack = !standalone && within > 0 && step !== 4;
   // One small link in the corner: the preview from the paywall, the prices from inside the story.
   const sideLink: { to: PlusStep; label: string } | null =
     step === 3
@@ -351,23 +347,18 @@ export function PlusOffer({
               ) : null}
               {step === 3 ? (
                 <PlusPaywallScreen
-                  now={now}
                   prices={prices}
-                  plan={plan}
-                  onPlan={setPlan}
                   profile={profile}
                   context={via}
-                  checkoutOpen={checkoutOpen}
-                  onBuy={() => void onBuy()}
-                  onRestore={() => void onRestore()}
+                  onBuy={onBuy}
                   titleRef={titleRef}
                 />
               ) : null}
+              {step === 5 ? <PlusPayScreen prices={prices} titleRef={titleRef} /> : null}
               {step === 4 ? (
                 <PlusWelcomeScreen
                   profile={profile}
                   style={style}
-                  productCode={premium.productCode}
                   periodEnd={premium.periodEnd}
                   onOpen={onClose}
                   onManage={onManage}

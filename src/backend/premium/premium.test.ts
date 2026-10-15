@@ -5,6 +5,9 @@ import { derivePremium } from "@/services/use-premium";
 import {
   LAUNCH_PRICES,
   MY_PREMIUM_OFF,
+  PAYMENT_DETAILS_OFF,
+  payCodeSchema,
+  paymentDetailsSchema,
   PREMIUM_STATES,
   PREMIUM_STATUS_OFF,
   isMemberState,
@@ -18,6 +21,8 @@ import {
   PLUS_SCENARIOS,
   mockMine,
   scenarioFromSearch,
+  MOCK_PAY_CODE,
+  MOCK_SEASON_END,
   type PlusScenario,
 } from "./mock-repository";
 
@@ -25,15 +30,49 @@ const NOW = new Date("2026-10-13T10:00:00Z");
 const context = { actorId: "u1", requestId: "r1" };
 
 describe("contracts", () => {
-  it("carry the owner's launch prices and parse as the server's list will", () => {
-    expect(LAUNCH_PRICES.map((p) => [p.code, p.amountMad, p.periodMonths, p.renews])).toEqual([
-      ["plus_monthly", 20, 1, true],
-      ["plus_yearly", 200, 12, false],
-    ]);
+  it("carry the owner's price: one Saison, 200 MAD, no period, no renewal", () => {
+    expect(
+      LAUNCH_PRICES.map((p) => [p.code, p.amountMad, p.periodMonths, p.renews, p.validUntil]),
+    ).toEqual([["plus_season", 200, null, false, null]]);
     for (const price of LAUNCH_PRICES) expect(premiumPriceSchema.parse(price)).toEqual(price);
   });
-  it("convert the server's centimes to the dirhams the screens show", () => {
+  it("convert the server's centimes to dirhams and carry validUntil", () => {
     const wire = {
+      enabled: true,
+      checkoutEnabled: false,
+      prices: [
+        {
+          code: "plus_season",
+          periodMonths: null,
+          renews: false,
+          priceMinor: 20000,
+          currency: "MAD",
+          validUntil: "2027-05-31T20:00:00+00:00",
+        },
+      ],
+      savingMinor: null,
+      editions: [],
+    };
+    expect(premiumStatusWireSchema.parse(wire)).toEqual({
+      enabled: true,
+      checkoutEnabled: false,
+      prices: [
+        {
+          code: "plus_season",
+          amountMad: 200,
+          periodMonths: null,
+          renews: false,
+          validUntil: "2027-05-31T20:00:00+00:00",
+        },
+      ],
+    });
+    const offWire = { ...PREMIUM_STATUS_OFF, savingMinor: null, editions: [] };
+    expect(premiumStatusWireSchema.parse(offWire)).toEqual(PREMIUM_STATUS_OFF);
+    const halfDirham = { ...wire, prices: [{ ...wire.prices[0], priceMinor: 20050 }] };
+    expect(() => premiumStatusWireSchema.parse(halfDirham)).toThrow();
+  });
+  it("still parse the old monthly and yearly products, so old data cannot crash", () => {
+    const old = {
       enabled: true,
       checkoutEnabled: false,
       prices: [
@@ -46,18 +85,37 @@ describe("contracts", () => {
           currency: "MAD",
         },
       ],
-      savingMinor: 4000,
-      editions: [],
     };
-    expect(premiumStatusWireSchema.parse(wire)).toEqual({
-      enabled: true,
-      checkoutEnabled: false,
-      prices: [...LAUNCH_PRICES],
+    const parsed = premiumStatusWireSchema.parse(old);
+    expect(parsed.prices.map((p) => [p.code, p.validUntil])).toEqual([
+      ["plus_monthly", null],
+      ["plus_yearly", null],
+    ]);
+  });
+  it("read the payment details, and « not available » without a WhatsApp number", () => {
+    const wire = {
+      available: true,
+      whatsapp: "+212 6 00 00 00 00",
+      bankHolder: "BotolaGO SARL",
+      bankName: "Banque exemple",
+      rib: "000 000 0000000000000000 00",
+      cashplusName: "BotolaGO SARL",
+      noteFr: null,
+      noteAr: null,
+      amountMinor: 20000,
+      currency: "MAD",
+    };
+    expect(paymentDetailsSchema.parse(wire)).toMatchObject({
+      available: true,
+      whatsapp: "+212 6 00 00 00 00",
+      amountMad: 200,
     });
-    const offWire = { ...PREMIUM_STATUS_OFF, savingMinor: null, editions: [] };
-    expect(premiumStatusWireSchema.parse(offWire)).toEqual(PREMIUM_STATUS_OFF);
-    const halfDirham = { ...wire, prices: [{ ...wire.prices[0], priceMinor: 2050 }] };
-    expect(() => premiumStatusWireSchema.parse(halfDirham)).toThrow();
+    expect(paymentDetailsSchema.parse({ ...wire, whatsapp: null }).available).toBe(false);
+    expect(paymentDetailsSchema.parse({ available: false })).toEqual(PAYMENT_DETAILS_OFF);
+  });
+  it("read the personal code, or none while the mode is off", () => {
+    expect(payCodeSchema.parse({ code: "BG-7K4M9X" })).toEqual({ code: "BG-7K4M9X" });
+    expect(payCodeSchema.parse({ available: false })).toEqual({ code: null });
   });
   it("read « switched off » as an answer, not an error", () => {
     expect(premiumStatusSchema.parse(PREMIUM_STATUS_OFF)).toEqual(PREMIUM_STATUS_OFF);
@@ -90,26 +148,42 @@ describe("the mock repository", () => {
     );
     expect(await repo.status(context)).toEqual(PREMIUM_STATUS_OFF);
     expect(await repo.mine(context)).toEqual(MY_PREMIUM_OFF);
-    expect(await repo.receipts(context)).toHaveLength(0);
+    expect(await repo.getPaymentDetails(context)).toEqual(PAYMENT_DETAILS_OFF);
+    expect(await repo.getMyPayCode(context)).toEqual({ code: null });
   });
   it("puts dates relative to now", () => {
     const mine = mockMine("monthly", NOW);
     expect(mine.available && mine.currentPeriodEnd).toBe("2026-10-25T10:00:00.000Z");
   });
-  it("serves status, mine and receipts, and answers « soon » to every action", async () => {
-    let scenario: PlusScenario = "monthly";
+  it("serves the Saison, the reader's Saison, the example payment details and a code", async () => {
+    let scenario: PlusScenario = "season";
     const repo = new MockPremiumRepository(
       () => scenario,
       () => NOW,
     );
-    expect(premiumStatusSchema.parse(await repo.status(context)).prices).toHaveLength(2);
-    expect((await repo.mine(context)).available).toBe(true);
-    expect(await repo.receipts(context)).toHaveLength(1);
-    scenario = "none";
-    expect(await repo.receipts(context)).toHaveLength(0);
-    expect(await repo.startCheckout("plus_yearly", context)).toEqual({ status: "soon" });
-    expect(await repo.cancel(context)).toEqual({ status: "soon" });
-    expect(await repo.restore(context)).toEqual({ status: "soon" });
+    const status = premiumStatusSchema.parse(await repo.status(context));
+    expect(status.prices).toHaveLength(1);
+    expect(status.prices[0]).toMatchObject({ code: "plus_season", amountMad: 200 });
+    expect(status.prices[0]?.validUntil).toBeTruthy();
+    expect(await repo.mine(context)).toMatchObject({
+      available: true,
+      state: "active",
+      productCode: "plus_season",
+      currentPeriodEnd: MOCK_SEASON_END,
+    });
+    expect(await repo.getPaymentDetails(context)).toMatchObject({
+      available: true,
+      whatsapp: "+212 6 00 00 00 00",
+    });
+    expect(await repo.getMyPayCode(context)).toEqual({ code: MOCK_PAY_CODE });
+    scenario = "nopay";
+    expect((await repo.getPaymentDetails(context)).available).toBe(false);
+    expect(await repo.getMyPayCode(context)).toEqual({ code: null });
+  });
+  it("has an « ended » Saison: no longer a member, the end in the past", () => {
+    const mine = mockMine("ended", NOW);
+    expect(mine).toMatchObject({ available: true, state: "expired", productCode: "plus_season" });
+    expect(mine.available && Date.parse(mine.currentPeriodEnd!)).toBeLessThan(NOW.getTime());
   });
 });
 
@@ -122,23 +196,28 @@ describe("derivePremium", () => {
   it("is member-less for a signed-out reader, whatever the answer", () => {
     expect(derivePremium(status, mockMine("monthly", NOW), false).isMember).toBe(false);
   });
-  it("reads a monthly member with the renewal date", () => {
+  it("reads an old monthly member as a member with an end date", () => {
     const view = derivePremium(status, mockMine("monthly", NOW), true);
     expect(view).toMatchObject({
       enabled: true,
       isMember: true,
       state: "active",
       productCode: "plus_monthly",
-      cancelling: false,
     });
     expect(view.periodEnd?.toISOString()).toBe("2026-10-25T10:00:00.000Z");
   });
-  it("reads cancelling as a member who will not renew, expired as no member", () => {
+  it("reads a Saison with its end, and the season's end and price from the status", () => {
+    const season = { ...status, prices: [{ ...LAUNCH_PRICES[0]!, validUntil: MOCK_SEASON_END }] };
+    const view = derivePremium(season, mockMine("season", NOW), true);
+    expect(view).toMatchObject({ isMember: true, productCode: "plus_season", seasonPrice: 200 });
+    expect(view.periodEnd?.toISOString()).toBe(MOCK_SEASON_END);
+    expect(view.seasonEnd?.toISOString()).toBe(MOCK_SEASON_END);
+  });
+  it("reads cancelling as a member, an ended Saison as no member", () => {
     expect(derivePremium(status, mockMine("cancelling", NOW), true)).toMatchObject({
       isMember: true,
-      cancelling: true,
     });
-    expect(derivePremium(status, mockMine("expired", NOW), true)).toMatchObject({
+    expect(derivePremium(status, mockMine("ended", NOW), true)).toMatchObject({
       isMember: false,
       state: "expired",
     });

@@ -18,8 +18,8 @@ import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 
 /**
- * « Mon abonnement » in Profil for a complimentary grant, and the way back to Standard for a
- * former member. The two hooks the section reads are stood in; the rest is the real markup.
+ * « Ma saison » in Profil for a Saison held through a grant (staff activate it), its end, and the
+ * way back to Standard for a former holder. The two hooks the section reads are stood in; the rest is the real markup.
  */
 const realPremium = { ...(await import("@/services/use-premium")) };
 const realCard = { ...(await import("./use-plus-member-card")) };
@@ -31,11 +31,7 @@ mock.module("@/services/use-premium", () => ({
   usePremium: () => ({
     ready: true,
     ...realPremium.derivePremium({ enabled: true, checkoutEnabled: true, prices: [] }, mine, true),
-    startCheckout: async () => ({ status: "soon" }),
-    cancel: async () => ({ status: "soon" }),
-    restore: async () => ({ status: "soon" }),
   }),
-  usePremiumReceipts: () => [],
 }));
 mock.module("./use-plus-member-card", () => ({ usePlusMemberCard: () => card }));
 afterAll(() => {
@@ -65,39 +61,65 @@ const text = (html: string) =>
     .replace(/&#x27;/g, "'")
     .replace(/\s+/g, " ");
 
-const grant = (state: "active" | "expired"): MyPremium => ({
+const grant = (state: "active" | "expired" | "cancelling" | "grace"): MyPremium => ({
   available: true,
   state,
-  productCode: null,
+  productCode: "plus_season",
   source: "grant",
   currentPeriodEnd: "2026-12-31T00:00:00Z",
   cancelAtPeriodEnd: false,
 });
 const holo = (): CardProfile => ({ ...fromMyCard(FIXTURES.rated.card!), edition: "holo" });
 
-describe("a complimentary grant in Profil", () => {
-  it("reads as a member: the grant line, the status, the end date and the four rows", async () => {
+describe("a Saison in Profil", () => {
+  it("reads « Votre Saison 2026/27 est active · jusqu'au {date} » and the three rows", async () => {
     mine = grant("active");
     card = holo();
     const html = await render(<PlusProfileSection />);
     const visible = text(html);
-    expect(visible).toContain("Offert par l'équipe");
-    expect(visible).toContain("Actif");
-    expect(visible).toContain("Jusqu'au");
-    for (const id of ["season", "duels", "style", "manage"]) {
+    expect(visible).toContain("Ma saison");
+    expect(visible).toContain("Votre Saison 2026/27 est active · jusqu'au 31 décembre 2026");
+    for (const id of ["season", "duels", "style"]) {
       expect(html).toContain(`data-testid="plus-hub-${id}"`);
     }
     expect(html).not.toContain("plus-former-style");
     expect(html).not.toContain("/curva/plus");
   });
 
+  it("offers nothing to cancel, restore, pay again or receive a receipt for", async () => {
+    for (const state of ["active", "cancelling", "grace"] as const) {
+      mine = grant(state);
+      card = holo();
+      const html = await render(<PlusProfileSection />);
+      const visible = text(html);
+      expect(visible).toContain("jusqu'au 31 décembre 2026");
+      expect(html).not.toContain("plus-hub-manage");
+      expect(html).not.toContain("plus-keep");
+      expect(html).not.toContain("plus-pay-update");
+      for (const gone of ["Annuler", "Restaurer", "Reçus", "Mettre à jour", "Paiement"]) {
+        expect(visible).not.toContain(gone);
+      }
+    }
+  });
+
+  it("says « Votre Saison est terminée » once it is over, with the way to the offer", async () => {
+    mine = grant("expired");
+    card = holo();
+    const html = await render(<PlusProfileSection />);
+    const visible = text(html);
+    expect(visible).toContain("Votre Saison est terminée");
+    expect(visible).toContain("a pris fin le 31 décembre 2026");
+    expect(visible).toContain("Voir l'offre");
+    expect(html).toContain("/curva/plus");
+  });
+
   it("has the Arabic wording too", () => {
-    expect(dictionaries.ar["plus.hub.grant_name"]).toBe("هدية من الفريق");
-    expect(dictionaries.fr["plus.hub.grant_name"]).toBe("Offert par l'équipe");
+    expect(dictionaries.ar["plus.profile.ended"]).toBe("انتهى موسمك");
+    expect(dictionaries.fr["plus.profile.ended"]).toBe("Votre Saison est terminée");
   });
 });
 
-describe("a former member whose card keeps a paid style", () => {
+describe("a former Saison holder whose card keeps a paid style", () => {
   it("is offered « Style de la carte », and only for a non-standard edition", async () => {
     mine = grant("expired");
     card = holo();

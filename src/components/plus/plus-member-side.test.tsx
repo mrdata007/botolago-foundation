@@ -1,47 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
-import type { ReactElement } from "react";
-import { renderToString } from "react-dom/server";
+import { existsSync } from "node:fs";
 
-import { AuthProvider } from "@/auth/AuthProvider";
-import { I18nProvider } from "@/i18n/provider";
 import { mockLeagueContext } from "@/backend/premium/league-context-mock";
 import { toLeagueSeries } from "@/backend/premium/league-context";
 import { mockCareer } from "@/backend/premium/card-reads-mock";
 
-import { PlusGraceBanner } from "./PlusRenewal";
 import { careerToSeasonView } from "./plus-member-data";
 import { CARD_STYLES, editionLabel } from "./plus-card-style";
 import { SEASON_RAW } from "./plus-season-data";
 
-async function render(node: ReactElement): Promise<string> {
-  const router = createRouter({
-    routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),
-    history: createMemoryHistory({ initialEntries: ["/curva"] }),
-  });
-  await router.load();
-  return renderToString(
-    <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider>
-        <RouterProvider router={router} />
-      </I18nProvider>
-    </QueryClientProvider>,
-  ).replace(/<!-- -->/g, "");
-}
-
 describe("the member side", () => {
-  it("the grace banner says the payment date, the way to fix it and links to Profil", async () => {
-    const html = await render(<PlusGraceBanner dueOn={new Date("2026-10-12T00:00:00Z")} />);
-    expect(html).toContain('data-testid="plus-grace-banner"');
-    expect(html).toContain("Paiement non reçu");
-    expect(html).toContain("Mettre à jour");
-    expect(html).toContain('href="/profile"');
+  it("has no renewal or grace banner: a Saison has nothing to renew", () => {
+    expect(existsSync(new URL("./PlusRenewal.tsx", import.meta.url))).toBe(false);
   });
 
   it("the picker offers the standard card first, then the four editions", () => {
