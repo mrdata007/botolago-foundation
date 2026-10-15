@@ -455,21 +455,13 @@ export const BASELINES: Baselines = {
   // first call sites (-2); its seven new keys are all referenced. 249 -> 247
   // (measured with `bun scripts/qa/i18n-gate.ts`).
   //
-  // Audit remediation B5 (UX-001, 2026-10-15): the reading list page
-  // (/profile/saved) and the News screen's link to it give `news.section.saved`
+  // Audit remediation Phase B (2026-10-15), three lanes moved W3, each measured
+  // with `bun scripts/qa/i18n-gate.ts`: B5 (UX-001) gives `news.section.saved`
   // and `news.saved.empty`, dead since the saved rail was dropped, their first
-  // call sites (-2); its nine new keys are all referenced. 247 -> 245
-  // (measured with `bun scripts/qa/i18n-gate.ts`).
-  // Audit remediation B7 (DATA-04, 2026-10-15): the match card's spoken state
-  // was `t(`matches.a11y.status_${match.status}`)`, a template prefix that
-  // reached every `status_*` key. It is now `offStatusA11y`, four literal
-  // branches, so W4 falls 69 -> 68. `matches.a11y.status_scheduled`, which only
-  // the template reached (the card says a scheduled match's kick-off, never
-  // that word), is deleted with it, so W3 stays 247; `no_data_called_off` is
-  // replaced by three referenced keys.
-  // Audit remediation B3 (FANT-03/05, UX-003/004, 2026-10-15): the league page's
-  // "100 / 250 membres" line gives `fantasy.leagues.members` its first call site
-  // (-1); the ten new keys are all referenced. 247 -> 246 (measured).
+  // call sites (-2); B3 (FANT-03/UX-004) gives `fantasy.leagues.members` its
+  // first call site (-1); B7 (DATA-04) deletes `matches.a11y.status_scheduled`
+  // together with the template lookup that alone reached it (+-0, W4 69 -> 68).
+  // All new keys of all three lanes are referenced. 247 -> 244.
   W3: 244,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those

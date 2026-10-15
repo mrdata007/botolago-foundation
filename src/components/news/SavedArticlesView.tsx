@@ -137,7 +137,7 @@ function SavedArticlesBody({
             <UiLinkButton to="/auth/login" search={{ next: "/profile/saved" }}>
               {t("auth.prompt.login")}
             </UiLinkButton>
-            <UiLinkButton to="/auth/register" variant="soft">
+            <UiLinkButton to="/auth/register" search={{ next: "/profile/saved" }} variant="soft">
               {t("auth.prompt.register")}
             </UiLinkButton>
           </div>

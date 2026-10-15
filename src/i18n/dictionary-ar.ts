@@ -59,6 +59,7 @@ export const ar = {
   "notifications.empty_body": "هنا تظهر إشعارات حسابك.",
   "notifications.dismiss": "حذف الإشعار",
   "notifications.dismiss_failed": "تعذّر حذف الإشعار. حاول مجددًا.",
+  "notifications.mark_all_failed": "تعذّر تعليم الإشعارات كمقروءة. حاول مجددًا.",
   "notifications.load_more": "عرض المزيد",
   "notifications.unread": "غير مقروء",
   "notifications.signin_title": "سجّل الدخول لعرض إشعاراتك",
@@ -69,7 +70,7 @@ export const ar = {
   "reminders.toast.saved": "تم حفظ التذكير لهذه المباراة.",
   "reminders.toast.on":
     "تم تفعيل التذكير لهذه المباراة. التذكيرات عبر البريد الإلكتروني مفعّلة في حسابك.",
-  "reminders.toast.needs_email": "تم حفظ التذكير. لاستلامه، فعّل الإشعارات عبر البريد الإلكتروني.",
+  "reminders.toast.needs_email": "تم حفظ التذكير. إشعارات البريد الإلكتروني معطّلة في حسابك.",
   "reminders.toast.enable_email": "تفعيل",
   "reminders.toast.email_on": "تم تفعيل الإشعارات عبر البريد الإلكتروني.",
   "reminders.toast.off": "تم إيقاف التذكير.",

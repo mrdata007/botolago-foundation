@@ -63,7 +63,9 @@ begin
       ))
       order by ordinal
     )
-    from jsonb_array_elements(d -> 'players') with ordinality as lineup(player, ordinal)
+    from jsonb_array_elements(
+      case when jsonb_typeof(d -> 'players') = 'array' then d -> 'players' else '[]'::jsonb end
+    ) with ordinality as lineup(player, ordinal)
   ), '[]'::jsonb));
 end $$;
 

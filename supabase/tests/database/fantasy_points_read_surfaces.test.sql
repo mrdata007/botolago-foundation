@@ -468,6 +468,32 @@ select extensions.is(
   'a player with no ledger rows gets an empty array, never null'
 );
 
+-- Each player also carries who he is (audit finding FANT-07): name, position
+-- and club, read from his own fantasy_players row.
+select extensions.is(
+  (select count(*)
+     from jsonb_array_elements(api.get_my_fantasy_points(
+       'b0740000-0000-4000-8000-000000000041', 'b0740000-0000-4000-8000-000000000009'
+     ) -> 'players') as item
+    where item #>> '{identity,name}' is not null
+      and item #>> '{identity,position}' in ('GK', 'DEF', 'MID', 'FWD')
+      and item #>> '{identity,footballTeamId}' is not null
+      and item #>> '{identity,teamName}' is not null
+      and item #>> '{identity,teamShortName}' is not null),
+  (select count(*)
+     from jsonb_array_elements(api.get_my_fantasy_points(
+       'b0740000-0000-4000-8000-000000000041', 'b0740000-0000-4000-8000-000000000009'
+     ) -> 'players')),
+  'every player of the round carries his identity: name, position and club'
+);
+select extensions.ok(
+  (select bool_and(item ? 'identity' and jsonb_typeof(item -> 'identity') = 'object')
+     from jsonb_array_elements(api.get_my_fantasy_points(
+       'b0740000-0000-4000-8000-000000000041', 'b0740000-0000-4000-8000-000000000009'
+     ) -> 'players') as item),
+  'the identity is an object on every player, never missing'
+);
+
 -- Ownership is still asserted: the added fields did not widen the RPC.
 select set_config('request.jwt.claims',
   '{"sub":"b0740000-0000-4000-8000-000000000032","role":"authenticated"}', true);

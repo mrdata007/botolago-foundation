@@ -187,7 +187,11 @@ function Inbox() {
           size="sm"
           className="justify-self-end"
           disabled={readAll.isPending}
-          onClick={() => readAll.mutate()}
+          onClick={() =>
+            readAll.mutate(undefined, {
+              onError: () => toast.error(t("notifications.mark_all_failed")),
+            })
+          }
         >
           {t("notifications.mark_all_read")}
         </UiButton>

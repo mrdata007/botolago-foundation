@@ -62,6 +62,8 @@ export const fr = {
   "notifications.empty_body": "C’est ici que s’affichent vos notifications.",
   "notifications.dismiss": "Supprimer la notification",
   "notifications.dismiss_failed": "La notification n'a pas pu être supprimée. Réessayez.",
+  "notifications.mark_all_failed":
+    "Les notifications n'ont pas pu être marquées comme lues. Réessayez.",
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
@@ -73,7 +75,7 @@ export const fr = {
   "reminders.toast.on":
     "Rappel activé pour ce match. Les rappels par e-mail sont activés sur votre compte.",
   "reminders.toast.needs_email":
-    "Rappel enregistré. Pour le recevoir, activez les notifications par e-mail.",
+    "Rappel enregistré. Les notifications par e-mail sont désactivées sur votre compte.",
   "reminders.toast.enable_email": "Activer",
   "reminders.toast.email_on": "Notifications par e-mail activées.",
   "reminders.toast.off": "Rappel désactivé.",
@@ -631,7 +633,7 @@ export const fr = {
   "fantasy.transfers.preview.invalid": "Ce transfert n'est plus possible : vérifiez vos choix.",
   "fantasy.transfers.preview.network":
     "Connexion indisponible. Vos transferts sont conservés : réessayez.",
-  "fantasy.transfers.owned_unavailable": "Retiré",
+  "fantasy.transfers.owned_unavailable": "Hors marché",
   "fantasy.picker.title": "Choisir un joueur",
   "fantasy.picker.search": "Rechercher un joueur",
   "fantasy.picker.filter_club": "Club",
