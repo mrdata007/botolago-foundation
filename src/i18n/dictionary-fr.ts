@@ -81,7 +81,7 @@ export const fr = {
   "reminders.toast.off": "Rappel désactivé.",
   "nav.news": "Actualités",
   "nav.fantasy": "Fantasy",
-  "nav.matches": "Matches",
+  "nav.matches": "Matchs",
   "nav.profile": "Profil",
 
   "home.greeting_morning": "Bonjour",
@@ -184,7 +184,7 @@ export const fr = {
   "article.not_found_title": "Article introuvable",
   "article.not_found_desc": "Cet article a peut-être été retiré ou déplacé.",
 
-  "matches.title": "Matches",
+  "matches.title": "Matchs",
   "matches.tab.all": "Tous",
   "matches.tab.live": "En direct",
   "matches.tab.upcoming": "À venir",
@@ -663,7 +663,7 @@ export const fr = {
   "fantasy.points.raw_xi": "XI brut",
   "fantasy.points.captain_bonus": "Bonus capitaine",
   "fantasy.points.effective_captain": "Capitaine effectif",
-  "fantasy.points.vice_takeover": "Vice a pris le relais",
+  "fantasy.points.vice_takeover": "Le vice-capitaine a pris le relais",
   "fantasy.points.unknown_player": "Joueur indisponible",
   "fantasy.points.unresolved_players":
     "Certains joueurs de cette journée ne figurent plus dans la liste des joueurs : leur nom ne peut pas être affiché, mais leurs points comptent bien dans le total.",
@@ -1383,8 +1383,8 @@ export const fr = {
   // The rating rule (docs/backend/FANTASY_RATING_POINTS.md): one line per match.
   "fantasy.points.event.rating": "Note SofaScore",
   "fantasy.points.autosubs": "Remplacements automatiques",
-  "fantasy.points.autosub_reason.goalkeeper_did_not_play": "Gardien non aligné",
-  "fantasy.points.autosub_reason.outfield_did_not_play": "Joueur non aligné",
+  "fantasy.points.autosub_reason.goalkeeper_did_not_play": "Le gardien n’a pas joué",
+  "fantasy.points.autosub_reason.outfield_did_not_play": "Le joueur n’a pas joué",
   "fpl.player_info": "Informations joueur",
   "fpl.select_position_first": "Choisissez un poste sur le terrain pour ajouter un joueur.",
   "fpl.club_limit": "Maximum 3 joueurs du même club.",
@@ -1485,7 +1485,7 @@ export const fr = {
   "common.confirm": "Confirmer",
   "common.cancel": "Annuler",
 
-  "fantasy.top.title": "{accent}Top 5{/accent} joueurs de la semaine",
+  "fantasy.top.title": "{accent}Top 5{/accent} de la journée",
   "fantasy.top.subtitle":
     "Les meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.",
   "fantasy.top.gw_label": "Journée",
@@ -1499,7 +1499,7 @@ export const fr = {
   "fantasy.top.view_player": "Voir le joueur",
   "fantasy.top.add_watchlist": "Ajouter à la liste",
   "fantasy.top.transfer_in": "Recruter",
-  "fantasy.top.best_player": "Joueur de la semaine",
+  "fantasy.top.best_player": "Joueur de la journée",
   "fantasy.top.comparison": "Comparaison des points",
   "fantasy.top.entry_cta": "Voir le classement",
   "fantasy.top.empty_title": "Journée {n} pas encore comptabilisée",
@@ -1533,7 +1533,7 @@ export const fr = {
   "auth.demo_hint": "Démo : demo@botolago.ma / demo1234",
   "auth.submitting": "Un instant…",
 
-  "auth.login.title": "Bon retour",
+  "auth.login.title": "Heureux de vous revoir",
   "auth.login.subtitle": "Connectez-vous pour retrouver votre équipe Fantasy et vos clubs suivis.",
   "auth.login.cta": "Se connecter",
   "auth.login.forgot": "Mot de passe oublié ?",
@@ -1562,8 +1562,8 @@ export const fr = {
   "auth.register.login_link": "Se connecter",
   "auth.register.password_strength": "Force du mot de passe",
   "auth.register.strength_weak": "Faible",
-  "auth.register.strength_medium": "Moyen",
-  "auth.register.strength_strong": "Fort",
+  "auth.register.strength_medium": "Moyenne",
+  "auth.register.strength_strong": "Forte",
 
   "auth.verify.title": "Vérification",
   "auth.verify.subtitle": "Nous avons envoyé un code à 6 chiffres à",
@@ -1718,7 +1718,8 @@ export const fr = {
   "auth.error.password_mismatch": "Les mots de passe ne correspondent pas.",
   "auth.error.name_required": "Nom complet requis.",
   "auth.error.username_required": "Nom d'utilisateur requis.",
-  "auth.error.username_invalid": "3–20 caractères : lettres, chiffres, tirets et underscores.",
+  "auth.error.username_invalid":
+    "3 à 20 caractères : lettres latines sans accent (a–z), chiffres, tiret (-) ou tiret bas (_). Commencez par une lettre ou un chiffre.",
   "auth.error.username_taken": "Ce nom d'utilisateur est déjà pris.",
   "auth.error.email_taken": "Un compte existe déjà avec cet e-mail.",
   "auth.error.terms_required": "Vous devez accepter les conditions.",
@@ -2165,10 +2166,10 @@ export const fr = {
     "Cela arrête tous les e-mails de notification de BotolaGO. Vous pourrez les réactiver à tout moment dans votre profil.",
   "unsubscribe.confirm_action": "Me désabonner",
   "unsubscribe.loading": "Désabonnement en cours…",
-  "unsubscribe.done_title": "Vous ne recevrez plus d'e-mails de BotolaGO.",
+  "unsubscribe.done_title": "Vos e-mails de notification BotolaGO sont désactivés.",
   "unsubscribe.already_title": "Les e-mails de BotolaGO étaient déjà désactivés.",
   "unsubscribe.reenable_hint":
-    "Vous pouvez les réactiver à tout moment dans les notifications de votre profil.",
+    "Vous pouvez les réactiver à tout moment dans les notifications de votre profil. Les messages nécessaires à la sécurité de votre compte restent disponibles.",
   "unsubscribe.invalid_title": "Ce lien n'est plus valide",
   "unsubscribe.invalid_body":
     "Il a peut-être expiré ou été mal copié. Vous pouvez aussi désactiver les e-mails dans les notifications de votre profil.",
