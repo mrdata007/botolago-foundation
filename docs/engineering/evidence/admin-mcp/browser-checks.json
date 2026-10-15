@@ -1,0 +1,94 @@
+{
+  "backend": "fake; no production calls",
+  "priorServiceScreen": "none; new standalone service",
+  "results": [
+    {
+      "lang": "fr",
+      "width": 390,
+      "stage": "password",
+      "documentWidth": 390,
+      "direction": "ltr",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "stage": "mfa",
+      "documentWidth": 390,
+      "direction": "ltr",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "stage": "password",
+      "documentWidth": 1440,
+      "direction": "ltr",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "stage": "mfa",
+      "documentWidth": 1440,
+      "direction": "ltr",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "stage": "password",
+      "documentWidth": 390,
+      "direction": "rtl",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "stage": "mfa",
+      "documentWidth": 390,
+      "direction": "rtl",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "stage": "password",
+      "documentWidth": 1440,
+      "direction": "rtl",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "stage": "mfa",
+      "documentWidth": 1440,
+      "direction": "rtl",
+      "overflowing": 0,
+      "labels": true,
+      "tapTargets": true,
+      "pageErrors": []
+    }
+  ]
+}
