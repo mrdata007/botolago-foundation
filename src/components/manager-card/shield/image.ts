@@ -23,6 +23,7 @@ import {
   inset,
 } from "./geometry";
 import { uid } from "./ids";
+import { editionStill } from "./image-editions";
 import {
   fitSignature,
   initialsOf,
@@ -58,6 +59,7 @@ export function cardImage(
   const v = makeView(profile, strings);
   const { p, s, m, ar } = v;
   const id = uid();
+  const still = editionStill(v.edition, id);
   const faceScale = m.thick ? FACE_SCALE_THICK : FACE_SCALE;
   // the card's x, mirrored in Arabic (the layout is drawn left to right and mirrored as a whole)
   const mx = (x: number): number => (ar ? 100 - x : x);
@@ -83,11 +85,14 @@ export function cardImage(
   // the band under the art
   art += `<rect x="0" y="88.2" width="100" height="48.4" fill="#ffffff" fill-opacity="${m.dark ? 0.06 : 0.3}"/>`;
   art += `<rect x="0" y="88.2" width="100" height="0.35" fill="${m.dark ? "#ffffff" : "#ffffff"}" fill-opacity="${m.dark ? 0.35 : 0.85}"/>`;
+  art += still.under;
   art += `</g>`;
   // rim, bevel, inner line
   art += `<path d="${SHIELD}" fill="none" stroke="#000000" stroke-opacity=".5" stroke-width=".35"/>`;
   art += `<path d="${SHIELD}" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width=".25" transform="${inset(0.993, 0.996)}"/>`;
   art += `<path d="${SHIELD}" fill="none" stroke="${m.line}" stroke-width=".4" transform="${inset(faceScale[0], faceScale[1])}"/>`;
+
+  art += still.over;
 
   // the emblem off the side
   const ex = ar ? 100 + 2.3 - 12 : -2.3;
