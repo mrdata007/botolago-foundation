@@ -36,6 +36,8 @@ for (const language of ["fr", "ar"] as const) {
     await expect(page).toHaveURL(/[?&]date=\d{4}-\d{2}-\d{2}/);
     expect(new URL(page.url()).searchParams.get("date")).not.toBe(emptyDay);
     // The day it leads to has results on it.
-    await expect(page.locator('main a[href^="/matches/"]').first()).toBeVisible();
+    await expect(
+      page.locator('main a[href^="/matches/"]:not([data-app-strip] *)').first(),
+    ).toBeVisible();
   });
 }

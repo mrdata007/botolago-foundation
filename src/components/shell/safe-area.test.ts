@@ -492,7 +492,8 @@ describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
       surface: "ui.surface.page",
       className: "hidden md:fixed md:inset-x-0 md:block",
     });
-    expect(wide?.siblings).toEqual(["PageBackground", "StatusBarStrip", "div"]);
+    // The skip link (MOB-05) is the first stop of the screen, before the page.
+    expect(wide?.siblings).toEqual(["SkipLink", "PageBackground", "StatusBarStrip", "div"]);
     const html = renderToStaticMarkup(
       createElement(StatusBarStrip, {
         surface: ui.surface.page,

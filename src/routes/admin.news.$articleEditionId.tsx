@@ -684,6 +684,9 @@ function AdminNewsEditRoute() {
   // The prose fields follow the ARTICLE's language, not the console's, so an
   // Arabic article is typed RTL even while the UI is in French.
   const articleDir = article?.language === "ar" ? "rtl" : "ltr";
+  // The preview's `lang`, as the reader page puts it on its article: the
+  // `.editorial-body:lang()` rules (Arabic face, upright emphasis) key on it.
+  const articleLang = article?.language === "ar" ? "ar" : "fr";
 
   return (
     <AdminFunctionalRoute
@@ -1153,7 +1156,7 @@ function AdminNewsEditRoute() {
             hint={
               rtl
                 ? "الانتقال يُتحقق منه على الخادم حسب دورك الفعلي."
-                : "Chaque transition est re-vérifiée côté serveur selon votre rôle réel."
+                : "Chaque transition est revérifiée côté serveur selon votre rôle réel."
             }
             testId="admin-news-section-status"
           >
@@ -1326,7 +1329,11 @@ function AdminNewsEditRoute() {
               </h3>
               {/* The preview renders in the ARTICLE's direction, so an Arabic
                   article is proofread exactly as a reader will see it. */}
-              <div dir={articleDir} className={cn("mt-4 pt-4", ui.rule.blockStart)}>
+              <div
+                dir={articleDir}
+                lang={articleLang}
+                className={cn("mt-4 pt-4", ui.rule.blockStart)}
+              >
                 {/* The cover first, as the article page opens with it, with its
                     caption and credit under it. A plain block rather than a
                     <figure>: in the preview, `figure img` is the body's own

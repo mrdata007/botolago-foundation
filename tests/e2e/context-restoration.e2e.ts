@@ -31,7 +31,7 @@ async function pickOtherDayWithMatches(page: Page): Promise<string> {
     await next.click();
     await expect(page).toHaveURL(/[?&]date=\d{4}-\d{2}-\d{2}/);
     await page.waitForLoadState("networkidle");
-    if ((await page.locator('main a[href^="/matches/"]').count()) > 0) {
+    if ((await page.locator('main a[href^="/matches/"]:not([data-app-strip] *)').count()) > 0) {
       return new URL(page.url()).searchParams.get("date")!;
     }
   }
@@ -45,7 +45,7 @@ test.describe("calendar", () => {
     const day = await pickOtherDayWithMatches(page);
 
     // Any match row: from the list, so the entry in history is the calendar's.
-    await page.locator('main a[href^="/matches/"]').first().click();
+    await page.locator('main a[href^="/matches/"]:not([data-app-strip] *)').first().click();
     await expect(page).toHaveURL(/\/matches\/[^/?]+/);
     // The address changes before the page does, and the calendar has tabs of
     // its own (Calendrier, Classement…): wait for the match page's.
@@ -61,7 +61,9 @@ test.describe("calendar", () => {
     await back(page).click();
     await expect(page).toHaveURL(new RegExp(`/matches\\?.*date=${day}`));
     // The list itself is back, not only the URL.
-    await expect(page.locator('main a[href^="/matches/"]').first()).toBeVisible();
+    await expect(
+      page.locator('main a[href^="/matches/"]:not([data-app-strip] *)').first(),
+    ).toBeVisible();
   });
 
   test("the status chip travels with the day", async ({ page }) => {
@@ -159,7 +161,7 @@ test.describe("club", () => {
     await page.goto("/clubs/00000010-0000-4000-8000-000000000001?tab=matches", {
       waitUntil: "networkidle",
     });
-    await page.locator('main a[href^="/matches/"]').first().click();
+    await page.locator('main a[href^="/matches/"]:not([data-app-strip] *)').first().click();
     await expect(page).toHaveURL(/\/matches\/[^/?]+/);
     await back(page).click();
     await expect(page).toHaveURL(/\/clubs\/[^/?]+\?tab=matches/);

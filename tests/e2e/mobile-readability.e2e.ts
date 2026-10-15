@@ -116,7 +116,7 @@ for (const language of ["fr", "ar"] as const) {
       test("every fixture on a club's Matchs tab says its day", async ({ page }) => {
         await initializeLanguage(page, language);
         await page.goto(`${CLUB}?tab=matches`, { waitUntil: "networkidle" });
-        const rows = page.locator('main a[href^="/matches/"]');
+        const rows = page.locator('main a[href^="/matches/"]:not([data-app-strip] *)');
         const count = await rows.count();
         expect(count).toBeGreaterThan(0);
         for (let index = 0; index < count; index += 1) {

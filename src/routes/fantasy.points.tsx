@@ -578,10 +578,10 @@ function PointsBody() {
             <UiKeyValueRow
               label={t("fantasy.points.effective_captain")}
               value={
-                <span className="flex items-baseline gap-2">
-                  <span className="min-w-0 truncate">{captainName}</span>
+                <span className="flex flex-wrap items-baseline justify-end gap-x-2">
+                  <span className="min-w-0 max-w-full truncate">{captainName}</span>
                   {vm.captainTookOver ? (
-                    <span className={cn("shrink-0", ui.text.meta, ui.tone.muted)}>
+                    <span className={cn(ui.text.meta, ui.tone.muted)}>
                       {t("fantasy.points.vice_takeover")}
                     </span>
                   ) : null}
@@ -642,7 +642,7 @@ function PointsBody() {
                 <li
                   key={`${sub.outId}-${sub.inId}`}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2.5",
+                    "flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2.5",
                     ui.space.row,
                     ui.rule.block,
                     "last:border-b-0",
@@ -654,7 +654,7 @@ function PointsBody() {
                       literal "→" it replaces does not turn round in Arabic,
                       so it pointed from the player coming on to the one
                       going off. `lucide-arrow-right` is mirrored in styles.css. */}
-                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <span className="flex min-w-[9rem] flex-1 items-center gap-1.5">
                     <span className="min-w-0 truncate">{nameOf(sub.outId)}</span>
                     <ArrowRight className={cn("h-3.5 w-3.5 shrink-0", ui.tone.muted)} aria-hidden />
                     <span className="min-w-0 truncate [font-weight:var(--ui-weight-heavy)]">

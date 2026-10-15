@@ -93,7 +93,7 @@ export function LatestCarousel({
       </ul>
 
       {count > 1 && (
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-x-1">
           <UiIconButton
             variant="ghost"
             aria-label={t("news.carousel.previous")}
@@ -103,10 +103,13 @@ export function LatestCarousel({
           >
             <ChevronLeft aria-hidden />
           </UiIconButton>
-          <div className="flex items-center">
+          {/* The dots are 44px squares, so five of them do not fit between the
+              arrows on the narrowest phones: there they drop to a row of their
+              own under the arrows rather than shrink a target. */}
+          <div className="order-last flex basis-full items-center justify-center min-[360px]:order-none min-[360px]:basis-auto">
             {articles.map((dto, index) => (
-              // The dot stays small; the button around it is a 24 x 32 px
-              // target, so a thumb lands on the slide it aims at.
+              // The dot stays small; the button around it is the kit's 44px
+              // target (`ui.space.tap`), so a thumb lands on the slide it aims at.
               <button
                 key={dto.id}
                 type="button"
@@ -115,7 +118,7 @@ export function LatestCarousel({
                   .replace("{total}", String(count))}
                 aria-current={index === active ? "true" : undefined}
                 onClick={() => goTo(index)}
-                className={cn("grid h-8 min-w-6 place-items-center px-1", ui.focus)}
+                className={cn("grid place-items-center", ui.space.tap, ui.focus)}
               >
                 <span
                   aria-hidden
