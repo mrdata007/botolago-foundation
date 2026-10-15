@@ -1273,6 +1273,10 @@ export type Database = {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
+      get_my_fantasy_points_before_identity: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       get_my_fantasy_points_before_live: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
@@ -1296,6 +1300,10 @@ export type Database = {
       get_my_rivals: { Args: { p_season?: string }; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       get_rival_candidates: { Args: { p_season?: string }; Returns: Json }
+      get_round_recap: {
+        Args: { p_gameweek?: string; p_league?: string }
+        Returns: Json
+      }
       home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
         Args: {

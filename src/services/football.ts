@@ -1,4 +1,4 @@
-import type { Club, Match, MatchStatus, TableRow } from "@/types/domain";
+import type { Club, Match, MatchOffStatus, MatchStatus, TableRow } from "@/types/domain";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   CompetitionSummaryDto,
@@ -76,8 +76,23 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
   )
     return "live";
   if (status === "finished") return "finished";
-  if (["postponed", "cancelled", "suspended", "abandoned"].includes(status)) return "postponed";
+  if (offStatusOf(status) !== undefined) return "postponed";
+  // `scheduled`, `not_started` and `delayed` -- and, for a status this build
+  // does not know, the one reading that claims nothing: a fixture still to
+  // come, with no score. Never `finished`, which would invite a made-up result.
   return "scheduled";
+}
+
+/** The provider statuses that share the domain `postponed`, each by its own word. */
+const OFF_STATUSES: readonly MatchOffStatus[] = [
+  "postponed",
+  "suspended",
+  "cancelled",
+  "abandoned",
+];
+
+export function offStatusOf(status: string): MatchOffStatus | undefined {
+  return OFF_STATUSES.find((off) => off === status);
 }
 
 /**
@@ -143,6 +158,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
 
 export function toMatch(match: MatchCardDto): Match {
   const venueName = match.venue?.name ?? "";
+  const offStatus = offStatusOf(match.status);
   return {
     id: match.id,
     gameweek: match.roundNumber ?? 0,
@@ -160,6 +176,7 @@ export function toMatch(match: MatchCardDto): Match {
     venue: { fr: venueName, ar: venueName },
     dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
     calledOff: CALLED_OFF_STATUSES.includes(match.status),
+    ...(offStatus ? { offStatus } : {}),
     dataUpdatedAt: latestDataTime(match),
   };
 }
@@ -469,6 +486,53 @@ function storedTableRow(row: StandingRowDto, computed: LeagueTableRow | undefine
 const totalPlayed = (rows: readonly { readonly played: number }[]) =>
   rows.reduce((sum, row) => sum + row.played, 0);
 
+/**
+ * Whether the stored table has been overtaken by a result: for some club the
+ * two tables cover the same matches yet count them differently, and a finished
+ * fixture changed more recently than the table did.
+ *
+ * Equal played counts say the table covers as many matches, not that it counts
+ * them the same way: a result corrected from 1–0 to 0–1 leaves every club's
+ * played figure where it was and moves a win to a loss. Only the record the
+ * results decide is compared -- wins, draws, losses and goals -- never points
+ * or rank, which an official deduction or tie-break rule legitimately sets
+ * apart from the results. A table that agrees on the record stays the
+ * provider's, deductions included. A difference the table is newer than every
+ * result (a coarse test: the table's clock is the provider's, the results' is
+ * ours) stays too: it is the provider's later word. A club whose stored table
+ * covers more matches than the results are skipped, as the coverage rule above
+ * already treats that as the provider knowing more.
+ */
+function contradictedByNewerResults(
+  stored: readonly StandingRowDto[],
+  computed: readonly LeagueTableRow[],
+  fixtures: readonly MatchCardDto[],
+): boolean {
+  const byClub = new Map(computed.map((row) => [row.clubId, row]));
+  const differs = stored.some((row) => {
+    const counted = byClub.get(row.team.id);
+    return (
+      counted !== undefined &&
+      counted.played === row.played &&
+      (counted.won !== row.won ||
+        counted.drawn !== row.drawn ||
+        counted.lost !== row.lost ||
+        counted.goalsFor !== row.goalsFor ||
+        counted.goalsAgainst !== row.goalsAgainst)
+    );
+  });
+  if (!differs) return false;
+  const tableTime = Math.max(...stored.map((row) => Date.parse(row.providerUpdatedAt)));
+  const resultTime = Math.max(
+    ...fixtures
+      .filter((fixture) => toTableResult(fixture) !== null)
+      .map((fixture) => Date.parse(latestDataTime(fixture) ?? "")),
+  );
+  // Unreadable times are NaN, which compares false: the stored table is then
+  // not shown to be newer, and the results the page can verify are used.
+  return !(tableTime > resultTime);
+}
+
 /** One season's league table, three ways, and the clubs to draw it with. */
 export interface FootballStandings {
   readonly clubs: readonly Club[];
@@ -481,8 +545,9 @@ export interface FootballStandings {
   readonly rounds: number;
   /**
    * `overall` is worked out from the results, not the provider's table: it
-   * cannot know a points deduction, and clubs level on every figure share a
-   * rank instead of being separated by the league's rule. Say so with it —
+   * carries each club's points deduction only if a stored table gave one
+   * (`buildStandings`), and clubs level on every figure share a rank instead
+   * of being separated by the league's rule. Say so with it —
    * provisional while the season is played, unofficial once it is over
    * (`StandingsNotes`) — and never call it final.
    */
@@ -495,8 +560,13 @@ export interface FootballStandings {
  * season, the fixtures do.
  *
  * The stored table still wins when there is one covering at least as many
- * matches — it is the provider's, so a points deduction the results cannot
- * know about is in it. For both completed seasons the two agree row for row;
+ * matches and not overtaken by a result (`contradictedByNewerResults`) — it
+ * is the provider's, so a points deduction the results cannot know about is
+ * in it. When a result has overtaken it, the table is worked out from the
+ * results instead, but each club keeps the points the provider gave it beyond
+ * its record (a deduction); the order of clubs level on points still comes
+ * from the results, not the league's rule, so the table is labelled computed
+ * (provisional, `StandingsNotes`). For both completed seasons the two agree row for row;
  * the stored rows only lack the form guide, which the results add. Home and
  * away are always the results'. Before the first result there is no table
  * at all, rather than sixteen rows of zeros.
@@ -520,8 +590,19 @@ export function buildStandings(
     return result ? [result] : [];
   });
 
-  const computed = computeLeagueTable(clubIds, results, "overall", slugOf);
-  const useStored = stored.length > 0 && totalPlayed(stored) >= totalPlayed(computed);
+  // What the provider's table gives each club beyond what its record earns --
+  // an official deduction is negative. The results cannot show it, so it rides
+  // along when the table is worked out from them.
+  const adjustments = new Map(
+    stored
+      .map((row) => [row.team.id, row.points - (3 * row.won + row.drawn)] as const)
+      .filter(([, delta]) => delta !== 0),
+  );
+  const computed = computeLeagueTable(clubIds, results, "overall", slugOf, adjustments);
+  const useStored =
+    stored.length > 0 &&
+    totalPlayed(stored) >= totalPlayed(computed) &&
+    !contradictedByNewerResults(stored, computed, fixtures);
   const overall = useStored
     ? [...stored]
         .sort((a, b) => a.rank - b.rank)

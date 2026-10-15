@@ -89,6 +89,7 @@ import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
 import { Route as PepitesRevelationRouteImport } from './routes/pepites.revelation'
 import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
+import { Route as ProfileSavedRouteImport } from './routes/profile.saved'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -514,6 +515,11 @@ const PrizesTermsRoute = PrizesTermsRouteImport.update({
   path: '/prizes/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileSavedRoute = ProfileSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => ProfileRoute,
+} as any)
 const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -696,6 +702,7 @@ export interface FileRoutesByFullPath {
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
+  '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -793,6 +800,7 @@ export interface FileRoutesByTo {
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
+  '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
   '/curva': typeof CurvaIndexRoute
@@ -896,6 +904,7 @@ export interface FileRoutesById {
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
+  '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -1000,6 +1009,7 @@ export interface FileRouteTypes {
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
+    | '/profile/saved'
     | '/profile/security'
     | '/clubs/'
     | '/curva/'
@@ -1097,6 +1107,7 @@ export interface FileRouteTypes {
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
+    | '/profile/saved'
     | '/profile/security'
     | '/clubs'
     | '/curva'
@@ -1199,6 +1210,7 @@ export interface FileRouteTypes {
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
+    | '/profile/saved'
     | '/profile/security'
     | '/clubs/'
     | '/curva/'
@@ -1831,6 +1843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrizesTermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/saved': {
+      id: '/profile/saved'
+      path: '/saved'
+      fullPath: '/profile/saved'
+      preLoaderRoute: typeof ProfileSavedRouteImport
+      parentRoute: typeof ProfileRoute
+    }
     '/profile/security': {
       id: '/profile/security'
       path: '/security'
@@ -2197,10 +2216,12 @@ const PepitesRouteWithChildren =
   PepitesRoute._addFileChildren(PepitesRouteChildren)
 
 interface ProfileRouteChildren {
+  ProfileSavedRoute: typeof ProfileSavedRoute
   ProfileSecurityRoute: typeof ProfileSecurityRoute
 }
 
 const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileSavedRoute: ProfileSavedRoute,
   ProfileSecurityRoute: ProfileSecurityRoute,
 }
 

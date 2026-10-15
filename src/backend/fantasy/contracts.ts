@@ -304,6 +304,22 @@ export const fantasyPointsSchema = z.object({
     z.object({
       fixtureScoring: z.array(fixtureScoringSchema).optional(),
       fantasyPlayerId: postgresUuidSchema,
+      /**
+       * Who the player is, read by the server whether or not he is still in the
+       * buying pool (20261015120300). `optional()` and `nullable()` so a
+       * database without that migration still parses; the points screen then
+       * names only the players today's pool still has.
+       */
+      identity: z
+        .object({
+          name: z.string().min(1),
+          position: z.enum(FANTASY_POSITIONS),
+          footballTeamId: postgresUuidSchema,
+          teamName: z.string().min(1),
+          teamShortName: z.string().min(1),
+        })
+        .nullable()
+        .optional(),
       slot: z.enum(["starter", "bench"]),
       slotOrder: z.number().int().positive(),
       captain: z.boolean(),
@@ -699,6 +715,8 @@ export interface FantasyRepository {
     leagueId: string,
     gameweekId: string | null,
     context: RepositoryContext,
+    /** Rows after this position in the server's order; omitted for the first page. */
+    cursor?: { readonly rank: number; readonly teamId: string } | null,
   ): Promise<FantasyLeagueStandingPageDto>;
   getOverallStandings(
     input: FantasyOverallStandingsInput,

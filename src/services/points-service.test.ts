@@ -366,3 +366,89 @@ it("renders authoritative live totals without promoting the vice or inventing su
   expect(vm.autoSubs).toEqual([]);
   expect(vm.effectiveStartingIds).toEqual(["pending-captain", "vice"]);
 });
+
+describe("points-service — the roles recorded for the round (FANT-08, ASTRA-01)", () => {
+  it("the server view model reads original captain and vice from the round's own rows", () => {
+    const vm = buildServerPointsViewModel({
+      gameweek: 3,
+      totalPoints: 9,
+      benchPoints: 0,
+      autoSubs: [],
+      breakdown: [
+        {
+          playerId: "a",
+          totalPoints: 0,
+          minutesPlayed: 0,
+          isCaptain: true,
+          multiplier: 1,
+          status: "final",
+          events: [],
+        },
+        {
+          playerId: "b",
+          totalPoints: 9,
+          minutesPlayed: 90,
+          isViceCaptain: true,
+          multiplier: 2,
+          status: "final",
+          events: [],
+        },
+      ],
+      authoritative: {
+        startingIds: ["a", "b"],
+        benchIds: [],
+        effectiveCaptainId: "b",
+        captainMultiplier: 2,
+        captainPoints: 4,
+        transferHit: 0,
+        chipType: null,
+        incremental: false,
+        finalized: true,
+      },
+    } as never);
+    expect(vm.originalCaptainId).toBe("a");
+    expect(vm.viceCaptainId).toBe("b");
+    expect(vm.effectiveCaptainId).toBe("b");
+    expect(vm.captainTookOver).toBe(true);
+  });
+
+  it("the engine view model records the squad's roles", () => {
+    const { players, team } = mkFixtures({ captain: "p8", vice: "p9" });
+    const vm = buildPointsViewModel({
+      gameweek: 14,
+      team,
+      players,
+      chips: DEFAULT_CHIPS,
+      transferHitPoints: 0,
+      breakdown: mkBreakdown(team),
+    });
+    expect(vm.originalCaptainId).toBe("p8");
+    expect(vm.viceCaptainId).toBe("p9");
+  });
+
+  it("the legacy view model takes them from the stored rows", () => {
+    const vm = buildLegacyViewModel(
+      {
+        gameweek: 2,
+        totalPoints: 10,
+        benchPoints: 1,
+        captainId: "p8",
+        autoSubs: [],
+        breakdown: [
+          {
+            playerId: "p9",
+            totalPoints: 1,
+            minutesPlayed: 90,
+            isViceCaptain: true,
+            status: "final",
+            events: [],
+          },
+        ],
+      },
+      [],
+      [],
+    );
+    expect(vm.originalCaptainId).toBe("p8");
+    expect(vm.viceCaptainId).toBe("p9");
+  });
+});

@@ -22,6 +22,7 @@ import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { emailRoute } from "@/lib/delivery-promise";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { createDraftProgress } from "@/services/fantasy-create-draft";
@@ -608,6 +609,7 @@ function NotificationsSection() {
   const enabled = status === "authenticated" && !!user;
   const reminders = !!user?.notifications.fantasyDeadlines;
   const email = !!preferences?.channels.email;
+  const route = emailRoute(preferences, user?.verified, "fantasyDeadlines");
 
   // Both switches write the same preferences row, so one waits for the other.
   // Either write can be refused until the one-time code is in: that is said
@@ -647,7 +649,8 @@ function NotificationsSection() {
     <section className={cn("mt-6", ui.space.gutter)}>
       <SectionHeader title={t("fpl.notifications")} />
       <p className={cn("-mt-1 mb-2.5", ui.text.secondary, ui.tone.muted)}>
-        {t("fpl.notifications_body")}
+        {/* The e-mail promise only while this account's route is open (PRO-04). */}
+        {route === "available" ? t("fpl.notifications_body") : t("fpl.notifications_body_neutral")}
       </p>
       <UiCard padding="none">
         {/* The Fantasy reminder preference. It used to be labelled "push",

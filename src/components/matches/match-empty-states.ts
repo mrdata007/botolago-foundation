@@ -1,5 +1,6 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { isKickoffTimeUnconfirmed, matchDayKey } from "@/lib/match-kickoff";
+import { matchOffStatus } from "@/lib/match-off-status";
 import { matchRefetchInterval } from "@/lib/match-refresh";
 import type { Match } from "@/types/domain";
 
@@ -34,8 +35,10 @@ import type { Match } from "@/types/domain";
  *   unreported — kick-off long passed (at the placeholder hour, its day over)
  *                and still reported as scheduled: the page is not checking,
  *                and says nothing will come
- *   postponed  — postponed, or suspended to be resumed
- *   called_off — cancelled or abandoned: not going to be played as scheduled
+ *   postponed  — postponed: still to be played, on a date to come
+ *   suspended  — stopped for the moment, to be resumed
+ *   cancelled  — cancelled: not going to be played
+ *   abandoned  — stopped before the end and not resumed
  */
 export type MatchDataPhase =
   | "upcoming"
@@ -44,7 +47,9 @@ export type MatchDataPhase =
   | "finished"
   | "unreported"
   | "postponed"
-  | "called_off";
+  | "suspended"
+  | "cancelled"
+  | "abandoned";
 
 /**
  * `asOf` is when the page read the match — the detail query's
@@ -56,7 +61,7 @@ export type MatchDataPhase =
  * when the page stops.
  */
 export function matchDataPhase(
-  match: Pick<Match, "status" | "calledOff" | "kickoff">,
+  match: Pick<Match, "status" | "calledOff" | "offStatus" | "kickoff">,
   asOf: number,
 ): MatchDataPhase {
   switch (match.status) {
@@ -65,7 +70,9 @@ export function matchDataPhase(
     case "finished":
       return "finished";
     case "postponed":
-      return match.calledOff ? "called_off" : "postponed";
+      // Each of the four has its own words; `matchOffStatus` never answers
+      // null for a postponed domain status.
+      return matchOffStatus(match) ?? "postponed";
     case "scheduled": {
       const kickoff = Date.parse(match.kickoff);
       if (Number.isNaN(kickoff) || asOf < kickoff) return "upcoming";
@@ -92,9 +99,16 @@ type Translate = (key: TranslationKey) => string;
 // sees every key. Each panel has four things to say: that the match has not
 // started (before kick-off), that nothing has come yet and the page is
 // checking, that it is not available, and why there is none (postponed,
-// called off).
+// suspended, cancelled, abandoned).
 
-/** The Stats tab with no statistics. */
+/**
+ * The Stats tab with no statistics. While the match is on (or awaited), the
+ * copy promises only what is true on every live feed: statistics show here as
+ * soon as they exist, most often after the match. It does not say the page
+ * "updates itself" for them -- on the SofaScore feed a match in play is read
+ * for its incidents only, and team statistics are requested after full time --
+ * and it does not say they are about to arrive.
+ */
 export function noStatsMessage(phase: MatchDataPhase, t: Translate): string {
   switch (phase) {
     case "upcoming":
@@ -107,8 +121,12 @@ export function noStatsMessage(phase: MatchDataPhase, t: Translate): string {
       return t("matches.detail.no_stats_unavailable");
     case "postponed":
       return t("matches.detail.no_data_postponed");
-    case "called_off":
-      return t("matches.detail.no_data_called_off");
+    case "suspended":
+      return t("matches.detail.no_data_suspended");
+    case "cancelled":
+      return t("matches.detail.no_data_cancelled");
+    case "abandoned":
+      return t("matches.detail.no_data_abandoned");
   }
 }
 
@@ -125,8 +143,12 @@ export function noEventsMessage(phase: MatchDataPhase, t: Translate): string {
       return t("matches.detail.no_events_unavailable");
     case "postponed":
       return t("matches.detail.no_data_postponed");
-    case "called_off":
-      return t("matches.detail.no_data_called_off");
+    case "suspended":
+      return t("matches.detail.no_data_suspended");
+    case "cancelled":
+      return t("matches.detail.no_data_cancelled");
+    case "abandoned":
+      return t("matches.detail.no_data_abandoned");
   }
 }
 
@@ -143,8 +165,12 @@ export function noLineupsMessage(phase: MatchDataPhase, t: Translate): string {
       return t("matches.detail.no_lineups_unavailable");
     case "postponed":
       return t("matches.detail.no_data_postponed");
-    case "called_off":
-      return t("matches.detail.no_data_called_off");
+    case "suspended":
+      return t("matches.detail.no_data_suspended");
+    case "cancelled":
+      return t("matches.detail.no_data_cancelled");
+    case "abandoned":
+      return t("matches.detail.no_data_abandoned");
   }
 }
 
@@ -164,7 +190,9 @@ export function isDataUnavailable(phase: MatchDataPhase): boolean {
     case "finished":
     case "unreported":
     case "postponed":
-    case "called_off":
+    case "suspended":
+    case "cancelled":
+    case "abandoned":
       return true;
   }
 }

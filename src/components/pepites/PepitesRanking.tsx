@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import {
   type PositionGroup,
   type RankingQuery,
@@ -134,6 +135,8 @@ export function PepitesRanking({
   onFiltersChange: (next: RankingFilters) => void;
 }) {
   const { t, tr, lang } = useI18n();
+  // Back to the ranking with every filter it had, not only the followed list.
+  const returnSearch = useAuthReturnSearch();
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
   const pointer = pointerQuery.data;
@@ -264,7 +267,7 @@ export function PepitesRanking({
           action={
             <UiLinkButton
               to="/auth/login"
-              search={{ next: "/pepites/classement?suivis=1" }}
+              search={{ next: returnSearch.next ?? "/pepites/classement?suivis=1" }}
               variant="ink"
               size="sm"
               className="mt-4"

@@ -10,7 +10,7 @@ import { useSwapEntering } from "@/lib/motion-loader";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
-import { plateName } from "./plate-name";
+import { plateText } from "./plate-name";
 
 /**
  * The captain / vice marker, seated on the shirt's inline-end shoulder as the
@@ -124,7 +124,7 @@ export function FplPlayerCard({
   const replacing = useSwapEntering() && !prefersReducedMotion();
   const fullName = tr(player.name);
   // The surname — and in Arabic "عطية الله", not a bare "الله" (plate-name.ts).
-  const shortName = plateName(fullName);
+  const shortName = plateText(fullName, player.placeholder);
   const kit = getKitForClub(club, player.kitPattern);
   const doubtful = player.status === "doubtful";
   const flagged = player.status !== "available";

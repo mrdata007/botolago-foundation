@@ -200,12 +200,12 @@ select extensions.is(
      and p.prosrc ~* 'premium_entitlements|premium_grants|premium_settings|premium_products|billing_events|billing_customers|card_edition|has_premium'),
   'api.admin_get_premium_member,api.admin_grant_premium,api.admin_premium_overview,api.admin_revoke_premium,'
   || 'api.choose_card_design,api.get_card_duel,api.get_card_league_context,api.get_manager_cards,api.get_my_card_career,'
-  || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,'
+  || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,api.get_round_recap,'
   || 'api.premium_status,api.service_apply_billing_event,api.set_card_history_visibility,'
   || 'app_private.account_deletion_erase,app_private.card_edition_effective,app_private.card_premium_mode,'
   || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user,'
   || 'app_private.rivals_gate,app_private.rivals_tick',
-  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same), the Rivaux gate and tick (20261015130100 and 20261015130200: the tick only tells a member their own rival took the lead) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
+  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed), the league context read (20261014150000, the same), the round recap read (20261015120000, the same), the Rivaux gate and tick (20261015130100 and 20261015130200: the tick only tells a member their own rival took the lead) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('api', 'app', 'app_private')

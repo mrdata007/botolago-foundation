@@ -1,5 +1,6 @@
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/auth/AuthProvider";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { useI18n } from "@/i18n/provider";
 import { LogIn, UserPlus } from "lucide-react";
 import { UiButton, UiModal } from "@/components/ui-kit";
@@ -24,13 +25,14 @@ export function AuthPromptDialog() {
   const { prompt, closePrompt } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const returnSearch = useAuthReturnSearch();
 
-  // `next` is the return-to target after signing in. Close first, then
-  // navigate, and keep the order: the prompt is rendered above the router.
+  // `next` is the return-to target after signing in: the page with its query
+  // and hash, so the selected round or filter is still there. Close first,
+  // then navigate, and keep the order: the prompt is rendered above the router.
   const go = (to: "/auth/login" | "/auth/register") => {
     closePrompt();
-    navigate({ to, search: { next: pathname } });
+    navigate({ to, search: returnSearch });
   };
 
   const cancel = () => {

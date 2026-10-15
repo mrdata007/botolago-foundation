@@ -1,5 +1,6 @@
 import { LogIn, ShieldCheck, UserPlus, Users } from "lucide-react";
 
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,10 @@ export function FantasyAccessGate({
   compact?: boolean;
 }) {
   const { t } = useI18n();
+  // Back to the page as it is now (a selected round, a tab); the route the
+  // gate stands for is the answer only where the address has nothing to add.
+  const returnSearch = useAuthReturnSearch();
+  const resume = returnSearch.next ?? next;
 
   return (
     <section
@@ -57,11 +62,11 @@ export function FantasyAccessGate({
       </p>
 
       <div className="mx-auto mt-5 grid max-w-md gap-2 sm:grid-cols-2">
-        <UiLinkButton to="/auth/login" search={{ next }} variant="gradient">
+        <UiLinkButton to="/auth/login" search={{ next: resume }} variant="gradient">
           <LogIn className="h-4 w-4 shrink-0" aria-hidden />
           {t("auth.prompt.login")}
         </UiLinkButton>
-        <UiLinkButton to="/auth/register" search={{ next }} variant="outline">
+        <UiLinkButton to="/auth/register" search={{ next: resume }} variant="outline">
           <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
           {t("auth.prompt.register")}
         </UiLinkButton>
