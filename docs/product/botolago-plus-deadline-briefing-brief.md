@@ -4,6 +4,7 @@ Owner-approved scope, 2026-10-15. Chosen design: v3 « Feuille de match / tablea
 Branch `claude/plus-deadline-briefing`. AGENTS.md "Screen work" applies. Docs only in this commit.
 
 ## What exists today and must be preserved
+
 - The free deadline card on the Fantasy hub (`DeadlineCard`, `deadline-checklist.ts`): round, date, second
   countdown, checklist, free transfers. It stays free and unchanged.
 - Fantasy rules, scoring, rating points, the gameweek lifecycle, transfer cost (1 free per week, 4 points per
@@ -17,6 +18,7 @@ Branch `claude/plus-deadline-briefing`. AGENTS.md "Screen work" applies. Docs on
   AI-authorship notice; French « vous », « abonnement », « Découvrir »; Western digits in Arabic.
 
 ## What changes
+
 1. A new screen `/fantasy/briefing` (« Briefing J11 ») reached from the Fantasy hub, under the deadline card.
 2. Scoreboard header: LED-style countdown to the deadline (days / hours / minutes) and four tally cells
    (confirmed absences, players with no information, free transfers, league rank).
@@ -40,6 +42,7 @@ Branch `claude/plus-deadline-briefing`. AGENTS.md "Screen work" applies. Docs on
    équipe »; member: everything.
 
 ## Honest limits (shown on screen)
+
 - A rating that is missing stays « sans note » (never the fallback 5 as a number); a journée not yet
   published is « en attente ». Every past figure carries « J10 publiée le 12 oct. ».
 - Difficulty is our own estimate with a confidence level. Past points do not predict the next journée.
@@ -47,6 +50,7 @@ Branch `claude/plus-deadline-briefing`. AGENTS.md "Screen work" applies. Docs on
   there is one, and is otherwise empty with an explicit sentence.
 
 ## Acceptance criteria
+
 Functional: off → no node, no request; locked → no paid read is made and no member figure is rendered
 under the blur; member → all four cards from one read; a pending or missing rating never renders as a
 number; transfer-cost warning matches `computeTransferCost`; the screen writes nothing; FR and AR keys in one
