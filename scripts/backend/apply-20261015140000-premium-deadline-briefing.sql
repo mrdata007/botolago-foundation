@@ -332,11 +332,18 @@ begin
     v_diff := '[]'::jsonb;
   end;
 
-  select count(*)::integer into v_listed
-  from app.fixture_absences a
-  join app.fantasy_fixture_assignments fa
-    on fa.fixture_id = a.fixture_id and fa.gameweek_id = v_gw.id
-    and fa.superseded_at is null and fa.counts_points;
+  -- Whether any absence list exists for this journée: either source counts, the same two the
+  -- squad below reads, so a listed absence is never shown beside "no list available".
+  select (select count(*)::integer
+          from app.fixture_absences a
+          join app.fantasy_fixture_assignments fa
+            on fa.fixture_id = a.fixture_id and fa.gameweek_id = v_gw.id
+            and fa.superseded_at is null and fa.counts_points)
+       + (select count(*)::integer
+          from app.player_availability av
+          where av.active and av.status in ('injured', 'suspended')
+            and av.starts_on <= current_date and (av.ends_on is null or av.ends_on >= current_date))
+  into v_listed;
 
   with owned as (
     select fp.id, fp.football_player_id, fp.football_team_id, fp.price, m.current_sale_price,
@@ -601,7 +608,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261015140000, 'UTF8')), 'hex')
-    is distinct from '1922f8a0397263992bb9c92bf0decf65cd53db9ce0446bb316bfec424e09e643' then
+    is distinct from 'ff4496f9ac25fea784869d84e2e2e981d3312990c7cd18686c1891fc3a83d228' then
     raise exception 'stop: 20261015140000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
