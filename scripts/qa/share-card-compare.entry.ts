@@ -13,6 +13,9 @@ const cases: any[] = [
   { label: "fr PRO + pixel edition", lang: "fr", p: { edition: "pixel" } },
   { label: "fr PRO + chrome edition", lang: "fr", p: { edition: "chrome" } },
   { label: "ar PRO (free)", lang: "ar", p: { name: "فاطمة الزهراء" } },
+  { label: "ar PRO + holo edition", lang: "ar", p: { name: "فاطمة الزهراء", edition: "holo" } },
+  { label: "ar PRO + electric edition", lang: "ar", p: { name: "فاطمة الزهراء", edition: "electric" } },
+  { label: "ar PRO + pixel edition", lang: "ar", p: { name: "فاطمة الزهراء", edition: "pixel" } },
 ];
 (async () => {
   await ready();

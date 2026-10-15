@@ -59,7 +59,7 @@ export function cardImage(
   const v = makeView(profile, strings);
   const { p, s, m, ar } = v;
   const id = uid();
-  const still = editionStill(v.edition, id);
+  const still = editionStill(v.edition, id, ar);
   const faceScale = m.thick ? FACE_SCALE_THICK : FACE_SCALE;
   // the card's x, mirrored in Arabic (the layout is drawn left to right and mirrored as a whole)
   const mx = (x: number): number => (ar ? 100 - x : x);

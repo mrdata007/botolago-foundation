@@ -9,10 +9,14 @@ import { holoStill } from "./image-holo";
 import { pixelStill } from "./image-pixel";
 import type { PaidEdition } from "./metal";
 
-export function editionStill(edition: PaidEdition | null, id: string): { under: string; over: string } {
+export function editionStill(
+  edition: PaidEdition | null,
+  id: string,
+  rtl = false,
+): { under: string; over: string } {
   switch (edition) {
     case "holo":
-      return holoStill(id);
+      return holoStill(id, rtl);
     case "electric":
       return electricStill(id);
     case "pixel":
