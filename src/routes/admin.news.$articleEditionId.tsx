@@ -1153,7 +1153,7 @@ function AdminNewsEditRoute() {
             hint={
               rtl
                 ? "الانتقال يُتحقق منه على الخادم حسب دورك الفعلي."
-                : "Chaque transition est re-vérifiée côté serveur selon votre rôle réel."
+                : "Chaque transition est revérifiée côté serveur selon votre rôle réel."
             }
             testId="admin-news-section-status"
           >

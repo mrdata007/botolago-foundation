@@ -137,7 +137,7 @@ const FR: SofascoreQueueCopy = {
   dir: "ltr",
   title: "Joueurs SofaScore à confirmer",
   intro:
-    "Le rapprochement automatique n’a pas pu associer ces joueurs SofaScore à un joueur de l’application sans risque d’erreur. Pour chacun, choisissez le bon joueur BotolaGO : une confirmation, puis le match est ré-essayé automatiquement.",
+    "Le rapprochement automatique n’a pas pu associer ces joueurs SofaScore à un joueur de l’application sans risque d’erreur. Pour chacun, choisissez le bon joueur BotolaGO : une confirmation, puis le match est réessayé automatiquement.",
   readerNotice:
     "Vous pouvez lire cette liste, mais votre rôle ne permet pas de confirmer un joueur (permission « gérer les rapprochements » requise).",
   loading: "Chargement de la liste…",
@@ -174,7 +174,7 @@ const FR: SofascoreQueueCopy = {
     },
     no_candidate: {
       title: "Aucun joueur correspondant",
-      body: "Le joueur n’a pas pu être créé automatiquement (poste inconnu, nom trop court, saison passée ou catalogue momentanément occupé) et personne dans ce club ne porte ce numéro. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui ; la création est ré-essayée au prochain passage.",
+      body: "Le joueur n’a pas pu être créé automatiquement (poste inconnu, nom trop court, saison passée ou catalogue momentanément occupé) et personne dans ce club ne porte ce numéro. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui ; la création est réessayée au prochain passage.",
     },
     ambiguous_name: {
       title: "Plusieurs joueurs possibles (ancienne règle)",
@@ -244,7 +244,7 @@ const FR: SofascoreQueueCopy = {
     prompt: (sofascoreName, appName) =>
       `Rattacher le joueur SofaScore « ${iso(sofascoreName)} » au joueur BotolaGO « ${iso(appName)} » ?`,
     consequence:
-      "Le rapprochement est enregistré tout de suite. Le match en attente sera ré-essayé automatiquement d’ici environ 15 minutes.",
+      "Le rapprochement est enregistré tout de suite. Le match en attente sera réessayé automatiquement d’ici environ 15 minutes.",
     yes: "Oui, rattacher",
     cancel: "Annuler",
     working: "Enregistrement…",
@@ -256,7 +256,7 @@ const FR: SofascoreQueueCopy = {
     prompt: (sofascoreName, appName) =>
       `SofaScore a deux profils pour cette personne. Rattacher « ${iso(sofascoreName)} » à « ${iso(appName)} » comme second identifiant ?`,
     consequence: (mainId) =>
-      `Le joueur garde son identifiant principal ${iso(mainId)} (nom, numéro et photo en viennent toujours). Les matchs où SofaScore utilise ce second identifiant lui rapportent ses points ; le match en attente est ré-essayé d’ici environ 15 minutes.`,
+      `Le joueur garde son identifiant principal ${iso(mainId)} (nom, numéro et photo en viennent toujours). Les matchs où SofaScore utilise ce second identifiant lui rapportent ses points ; le match en attente est réessayé d’ici environ 15 minutes.`,
     yes: "Oui, rattacher comme second identifiant",
     working: "Enregistrement…",
   },
@@ -301,18 +301,18 @@ const FR: SofascoreQueueCopy = {
     position: "Poste",
     club: "Club",
     consequence:
-      "Le joueur est ajouté au club pour la saison en cours, au marché Fantasy au prix de départ, et rattaché à cet identifiant SofaScore. Le match en attente est ré-essayé d’ici environ 15 minutes.",
+      "Le joueur est ajouté au club pour la saison en cours, au marché Fantasy au prix de départ, et rattaché à cet identifiant SofaScore. Le match en attente est réessayé d’ici environ 15 minutes.",
     yes: "Créer et rattacher",
     working: "Création…",
     invalidName: "Le nom doit compter entre 2 et 200 caractères.",
     invalidShirt: "Le numéro doit être un nombre entre 0 et 99.",
   },
   done: (sofascoreName, appName) =>
-    `« ${iso(sofascoreName)} » est rattaché à « ${iso(appName)} ». Le match sera ré-essayé automatiquement d’ici environ 15 minutes.`,
+    `« ${iso(sofascoreName)} » est rattaché à « ${iso(appName)} ». Le match sera réessayé automatiquement d’ici environ 15 minutes.`,
   doneAlias: (sofascoreName, appName) =>
-    `« ${iso(sofascoreName)} » est maintenant un second identifiant de « ${iso(appName)} ». Le match sera ré-essayé automatiquement d’ici environ 15 minutes.`,
+    `« ${iso(sofascoreName)} » est maintenant un second identifiant de « ${iso(appName)} ». Le match sera réessayé automatiquement d’ici environ 15 minutes.`,
   doneCreate: (sofascoreName) =>
-    `« ${iso(sofascoreName)} » est créé et rattaché. Le match sera ré-essayé automatiquement d’ici environ 15 minutes.`,
+    `« ${iso(sofascoreName)} » est créé et rattaché. Le match sera réessayé automatiquement d’ici environ 15 minutes.`,
   alreadyDone: (sofascoreName) =>
     `« ${iso(sofascoreName)} » était déjà rattaché à ce joueur. Rien n’a changé.`,
   errors: {
