@@ -284,14 +284,14 @@ describeDb("Pépites editions with two writers", () => {
   let week15 = "";
 
   it("two ticks at once give one run: the second exits at once", async () => {
-    const held = await holdOpen((tx) => tick(tx, "2026-09-28 10:00:00+00"));
+    const held = await holdOpen((tx) => tick(tx, "2026-09-28 11:00:00+00"));
     expect((held.result as Record<string, unknown>).runs).toMatchObject({
       run: "scored",
       round: 4,
     });
 
     const started = performance.now();
-    const second = await tick(db(b), "2026-09-28 10:00:00+00");
+    const second = await tick(db(b), "2026-09-28 11:00:00+00");
     expect(second).toEqual({ outcome: "busy" });
     expect(performance.now() - started).toBeLessThan(2_000);
 
@@ -299,14 +299,14 @@ describeDb("Pépites editions with two writers", () => {
     const [row] = await db(c)`
       select count(*)::integer as n from app.pepites_runs where season_id = ${SEASON}::uuid`;
     expect(row.n).toBe(1);
-    expect((await tick(db(b), "2026-09-28 10:15:00+00")).runs).toMatchObject({ run: "unchanged" });
+    expect((await tick(db(b), "2026-09-28 11:15:00+00")).runs).toMatchObject({ run: "unchanged" });
   });
 
   it("two publishes of one edition give one publication; a reader meanwhile sees the old state", async () => {
-    const draft = await tick(db(b), "2026-09-28 11:15:00+00");
+    const draft = await tick(db(b), "2026-09-28 12:15:00+00");
     expect(draft.draft).toBe("created");
     week14 = draft.editionId as string;
-    await scheduleFor(week14, "2026-09-28 19:00:00+00");
+    await scheduleFor(week14, "2026-09-28 20:00:00+00");
 
     const held = await holdOpen((tx) => publish(tx, week14));
     expect(held.result).toMatchObject({ status: "published", alreadyPublished: false });
@@ -352,12 +352,12 @@ describeDb("Pépites editions with two writers", () => {
 
   it("a re-point holding the week makes a publish wait, which then publishes the new revision", async () => {
     await db(c).unsafe(roundSql(5));
-    const draft = await tick(db(b), "2026-10-05 11:15:00+00");
+    const draft = await tick(db(b), "2026-10-05 12:15:00+00");
     week15 = draft.editionId as string;
-    await scheduleFor(week15, "2026-10-05 19:00:00+00");
+    await scheduleFor(week15, "2026-10-05 20:00:00+00");
     await db(c).unsafe(correctionSql(5, 66));
 
-    const held = await holdOpen((tx) => tick(tx, "2026-10-05 14:00:00+00"));
+    const held = await holdOpen((tx) => tick(tx, "2026-10-05 15:00:00+00"));
     const runs = (held.result as Record<string, unknown>).runs as Record<string, unknown>;
     expect(runs.run).toBe("scored");
     expect(runs.repointed).toEqual([
@@ -385,14 +385,14 @@ describeDb("Pépites editions with two writers", () => {
 
   it("a publish holding the week makes the tick's re-point wait; the tick then leaves it and keeps its run", async () => {
     await db(c).unsafe(roundSql(6));
-    const draft = await tick(db(b), "2026-10-12 11:15:00+00");
+    const draft = await tick(db(b), "2026-10-12 12:15:00+00");
     const week16 = draft.editionId as string;
-    await scheduleFor(week16, "2026-10-12 19:00:00+00");
+    await scheduleFor(week16, "2026-10-12 20:00:00+00");
     const before = await editionState(week16);
     await db(c).unsafe(correctionSql(6, 66));
 
     const held = await holdOpen((tx) => publish(tx, week16));
-    const racing = tick(db(b), "2026-10-12 14:00:00+00");
+    const racing = tick(db(b), "2026-10-12 15:00:00+00");
     expect(await stillWaiting(racing)).toBe(true);
     await held.finish(true);
 

@@ -115,8 +115,9 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
 - **Morocco time everywhere.** Match and deadline times are shown in Morocco time (`Africa/Casablanca`)
   by an app-owned clock. That clock treats Morocco as UTC+0 all year from 2026-09-20; its legal source
   (decree n° 2.26.530) is cited only in code comments (`src/lib/morocco-time.ts` and
-  `supabase/functions/_shared/morocco-time.ts`), never in a document. **Unknown:** whether anyone has
-  checked the decree itself.
+  `supabase/functions/_shared/morocco-time.ts`), never in a document. Confirmed by the owner,
+  2026-10-15. The database follows the same rule through `app_private.morocco_local` and its
+  siblings (`docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md`).
 - **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
   are Accueil, Actualités, Fantasy, Matches and Prospects, plus Profile. Pronostics lives inside Matches.
 - **Language.**

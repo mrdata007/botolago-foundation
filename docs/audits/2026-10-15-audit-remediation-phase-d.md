@@ -90,6 +90,9 @@ pgTAP were not available there.
    `select timestamptz '2026-10-15 12:00+00' at time zone 'Africa/Casablanca'`.
    It must return 12:00. If it returns 13:00 the database holds older time-zone
    data and deadline texts and the 10:00 match-day reminders could be an hour off.
+   (Both databases return 13:00. The fix does not wait for the platform:
+   `docs/production/MOROCCO_TIME_FIX_OWNER_RUNBOOK.md` and
+   `docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md`.)
 6. **Run the measurement queries** in `ACTIVE_MANAGEMENT_MEASUREMENT.md`
    (query 0 first) and keep the first results as a dated baseline.
 7. **Answer the capacity-plan questions** (Q1 to Q8 in the plan) and name the one

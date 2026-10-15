@@ -36,10 +36,18 @@ saved setting, never a promise (`docs/backend/EMAIL_NOTIFICATIONS.md`, "Known ga
 - **Once**: one notification per event and person, one delivery per channel; a late
   moment is cancelled, never sent late.
 - **Morocco time**: the repository treats Morocco as UTC+0 all year from 2026-09-20
-  (`src/lib/morocco-time.ts`). Its legal source appears only in code comments and
-  `docs/product/PRODUCT_CONTEXT_2026-10-05.md` lists it as unconfirmed. The email
-  renderer follows the app's rule; the in-app deadline text and the 10:00 planning use the
-  database's own time-zone data, which may be older. Step 1 checks this.
+  (`src/lib/morocco-time.ts`), **confirmed by the owner on 2026-10-15**
+  (`docs/product/PRODUCT_CONTEXT_2026-10-05.md` row 149 is a dated snapshot that predates
+  the confirmation). The email renderer follows the app's rule. Both databases carry older
+  time-zone data (the raw zone answers 13:00 for 12:00 UTC), so the in-app and push deadline
+  text and the 10:00 planning were an hour off until migrations `20261016090000` to
+  `20261016090400` put the rule into the database
+  (`docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md`; applied by the scripts of
+  `docs/production/MOROCCO_TIME_FIX_OWNER_RUNBOOK.md`). Step 1 checks this: the raw zone still
+  says 13:00 after they are applied, so also read the helper (`select
+app_private.morocco_local(timestamptz '2026-10-15 12:00+00')` must say 12:00) and the
+  deadline text (`select to_char(app_private.zone_local(timestamptz '2026-10-12 18:30+00',
+'Africa/Casablanca'), 'DD/MM HH24:MI')` must say 12/10 18:30).
 
 ## Steps
 
@@ -52,8 +60,10 @@ select mode, test_user_ids, functions_base_url is not null as url_set,
 from app_private.notification_email_settings;
 select jobname, schedule, active from cron.job
 where jobname in ('notification-email-tick', 'notification-push-tick');
--- Does the database follow the app's Morocco rule? 12:00 = yes (UTC+0), 13:00 = older data
+-- Does the raw zone follow the app's Morocco rule? 12:00 = yes (UTC+0), 13:00 = older data (today)
 select timestamptz '2026-10-15 12:00+00' at time zone 'Africa/Casablanca';
+-- Does the database code (after 20261016090000..20261016090400)? Must say 12:00 whatever the line above says
+select app_private.morocco_local(timestamptz '2026-10-15 12:00+00');
 -- The test accounts' settings: notifications, email, push, match_alerts,
 -- fantasy_deadline_reminders, notification_timezone (ids to replace)
 select pr.* from app.user_preferences pr where pr.user_id = any(array['<id>']::uuid[]);

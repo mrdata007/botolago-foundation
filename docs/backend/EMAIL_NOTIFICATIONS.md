@@ -57,7 +57,7 @@ add copy that promises delivery.
 ## Free plan (owner decision, 2026-09-24)
 
 Resend's free plan allows **100 emails per UTC day** (the day resets at 00:00
-UTC, 01:00 in Morocco) and **3,000 per month**. The database enforces both
+UTC; 00:00 in Morocco since 2026-09-20, it was 01:00 before) and **3,000 per month**. The database enforces both
 before anything is sent:
 
 - Each day, 10 emails are kept back (`daily_email_reserve`) for account emails
@@ -91,7 +91,9 @@ select app_private.notification_email_configure('live', null, null, null, null,
 ```
 
 French or Arabic follows the account's language. Times are shown in the
-account's notification timezone (default `Africa/Casablanca`). A match whose
+account's notification timezone (default `Africa/Casablanca`; the database
+follows the application's Morocco rule through `app_private.zone_local`, see
+`docs/engineering/MOROCCO_TIME_IN_THE_DATABASE.md`). A match whose
 kick-off is still the provider's 00:00 UTC placeholder is listed as "time to be
 confirmed" and never decides when an email goes out. Postponed and cancelled
 matches are left out of previews and marked in results.
