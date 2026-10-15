@@ -52,6 +52,7 @@ import {
   UiPageTitle,
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
@@ -941,12 +942,18 @@ function AnonymousProfile() {
 
 function SignInLinks() {
   const { t } = useI18n();
+  const returnSearch = useAuthReturnSearch();
   return (
     <div className="mt-5 grid gap-2.5">
-      <UiLinkButton to="/auth/register">
+      <UiLinkButton to="/auth/register" search={returnSearch}>
         <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
       </UiLinkButton>
-      <UiLinkButton to="/auth/login" variant="outline" className={authOutlineClass}>
+      <UiLinkButton
+        to="/auth/login"
+        search={returnSearch}
+        variant="outline"
+        className={authOutlineClass}
+      >
         <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
       </UiLinkButton>
     </div>

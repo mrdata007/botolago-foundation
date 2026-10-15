@@ -87,6 +87,39 @@ export function authNextSearch(raw: unknown): { next?: string } {
   return { next: next && next !== "/" ? next : undefined };
 }
 
+/**
+ * The `next` a sign-in link should carry for a reader standing on `location`:
+ * the page, its query (the selected round, tab, filter) and its hash, run
+ * through the same sanitiser as every other `next`. The home page needs none.
+ *
+ * Passing only `pathname` drops the query, so a reader who opened the sign-in
+ * prompt on `/pronostics?journee=12&tab=ligues` came back to `/pronostics`.
+ */
+export function authReturnTarget(location: {
+  pathname: string;
+  searchStr?: string;
+  hash?: string;
+}): string | undefined {
+  const hash = location.hash
+    ? location.hash.startsWith("#")
+      ? location.hash
+      : `#${location.hash}`
+    : "";
+  const next = sanitizeAuthCallbackNext(`${location.pathname}${location.searchStr ?? ""}${hash}`);
+  return next === "/" ? undefined : next;
+}
+
+/**
+ * How an auth page lands on a validated `next`. The router reads a string
+ * passed as `to` as a bare path, so `/pronostics?journee=3` would be looked up
+ * as a page of that exact name; `href` parses the query and hash. `replace`
+ * keeps the sign-in screen out of the history, so Back from the destination
+ * does not return to a form that has already done its job.
+ */
+export function authLanding(next: string): { href: string; replace: true } {
+  return { href: sanitizeAuthCallbackNext(next), replace: true };
+}
+
 export function cleanAuthCallbackUrl(rawUrl: string): string {
   const clean = new URL(rawUrl);
   clean.search = "";

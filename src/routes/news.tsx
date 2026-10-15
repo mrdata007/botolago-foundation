@@ -1,8 +1,14 @@
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { unavailableHeaders } from "@/lib/page-availability";
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { getNewsRepository } from "@/services/news";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
@@ -19,6 +25,7 @@ import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
 import { newsFeedQuery } from "@/components/news/news-feed-query";
+import { newsSearchFrom, validateNewsSearch } from "@/components/news/news-search";
 import { ssrAvailability, prefetchFirstPageForSsr, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
@@ -55,6 +62,9 @@ function redirectWhileNewsIsHidden(): void {
 
 export const Route = createFileRoute("/news")({
   beforeLoad: redirectWhileNewsIsHidden,
+  // The category and club filters are the URL's, so an article read does not
+  // reset them: see `news-search.ts`.
+  validateSearch: validateNewsSearch,
   // The lead, the top stories, the club filters and the first page of the
   // feed, with a link to every article, in the server's HTML (see
   // `@/lib/ssr-prefetch`); /news showed 118 characters and no article link
@@ -114,8 +124,14 @@ function NewsRoute() {
 function NewsPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
-  const [categorySlug, setCategorySlug] = useState<string | null>(null);
-  const [clubId, setClubId] = useState<string | null>(null);
+  // The filters are the URL's, not this page's state: an article replaces
+  // this page with its own, so state held here is gone when Retour comes back.
+  // A choice replaces the entry (Retour leaves the feed rather than stepping
+  // back through every chip tapped) and keeps the scroll where it is. The
+  // router also hands on the URL's own keys beside the validated ones, so the
+  // search is validated again where its values are used.
+  const search = validateNewsSearch(Route.useSearch());
+  const navigate = useNavigate({ from: Route.fullPath });
 
   // Editorial placements (lead + top stories) come straight from the read
   // model's `home_modules` RPC — nothing here is hardcoded or picked by the
@@ -152,6 +168,34 @@ function NewsPage() {
     () => deriveCategoryOptions([lead ? [lead] : [], featured, homeQ.data?.latest ?? []]),
     [lead, featured, homeQ.data?.latest],
   );
+
+  // A category or club the page does not offer (an old link, a typed URL)
+  // would filter the feed to nothing with no chip lit to undo it: ignored
+  // once the lists it is checked against have loaded.
+  const categorySlug =
+    search.category && (!homeQ.data || categories.some((c) => c.slug === search.category))
+      ? search.category
+      : null;
+  const clubId =
+    search.club && (!clubsQ.data || clubsQ.data.some((c) => c.id === search.club))
+      ? search.club
+      : null;
+
+  const setFilters = useCallback(
+    (change: { categorySlug?: string | null; clubId?: string | null }) =>
+      void navigate({
+        search: () =>
+          newsSearchFrom({
+            categorySlug: "categorySlug" in change ? (change.categorySlug ?? null) : categorySlug,
+            clubId: "clubId" in change ? (change.clubId ?? null) : clubId,
+          }),
+        replace: true,
+        resetScroll: false,
+      }),
+    [navigate, categorySlug, clubId],
+  );
+  const setCategorySlug = (slug: string | null) => setFilters({ categorySlug: slug });
+  const setClubId = (id: string | null) => setFilters({ clubId: id });
 
   // Latest already shown as lead/featured shouldn't repeat in the default
   // (unfiltered) chronological rail below it.

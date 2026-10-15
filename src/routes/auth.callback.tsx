@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { authService, IS_MOCK_AUTH, type AuthStatus } from "@/services/auth";
 import { AssuranceRetry } from "@/auth/AssuranceRetry";
 import { secondFactorStep } from "@/auth/second-factor";
-import { cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authLanding, cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -62,7 +62,7 @@ function CallbackPage() {
             return;
           }
       }
-      navigate({ to });
+      navigate(authLanding(to));
     },
     [navigate],
   );
@@ -92,7 +92,7 @@ function CallbackPage() {
     if (IS_MOCK_AUTH) {
       const next = sanitizeAuthCallbackNext(new URL(window.location.href).searchParams.get("next"));
       scrubUrl();
-      navigate({ to: next });
+      navigate(authLanding(next));
       return;
     }
     let cancelled = false;

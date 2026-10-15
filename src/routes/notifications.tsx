@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
@@ -72,6 +73,8 @@ function NotificationsPage() {
 
 function SignInPrompt() {
   const { t } = useI18n();
+  // Back to the inbox after signing in, not to Home.
+  const returnSearch = useAuthReturnSearch();
   return (
     <UiCard padding="lg" className="text-center">
       <Bell className={cn("mx-auto h-8 w-8", ui.tone.ink)} aria-hidden />
@@ -82,10 +85,15 @@ function SignInPrompt() {
         {t("notifications.signin_body")}
       </p>
       <div className="mt-5 grid gap-2.5">
-        <UiLinkButton to="/auth/register">
+        <UiLinkButton to="/auth/register" search={returnSearch}>
           <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
         </UiLinkButton>
-        <UiLinkButton to="/auth/login" variant="outline" className={authOutlineClass}>
+        <UiLinkButton
+          to="/auth/login"
+          search={returnSearch}
+          variant="outline"
+          className={authOutlineClass}
+        >
           <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
         </UiLinkButton>
       </div>
