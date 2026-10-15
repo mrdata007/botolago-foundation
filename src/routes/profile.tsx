@@ -625,11 +625,11 @@ function IdentityCard({
  * the line under it says what it does not change. A signed-in reader is told
  * that notifications follow the language saved on the account (the
  * `preferred_language` the e-mail and push fanouts read), which this row never
- * writes; it is set at sign-up and whenever the profile editor is saved (its
- * language step, reached from the Notifications row below, starts from the
- * language this device shows and says what saving does). The line describes the
- * stored setting; it does not claim any screen displays it. A visitor with no
- * account has no such language to mention.
+ * writes. That language is French for a new account (owner decision,
+ * 2026-10-15) and is changed only by the language step of the profile editor,
+ * reached from the Notifications row below, which shows the stored value and
+ * never changes this device's language. A visitor with no account has no such
+ * language to mention.
  */
 function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: boolean }) {
   const { t, lang } = useI18n();

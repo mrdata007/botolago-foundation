@@ -134,7 +134,7 @@ describe("authService (local mock)", () => {
   });
 
   it("a social sign-up starts in French even when the device was left in Arabic", async () => {
-    window.localStorage.setItem("botolago.language", JSON.stringify({ lang: "ar" }));
+    window.localStorage.setItem("botolago.language", "ar");
     const result = await authService.signInWithGoogle();
     expect(result.ok).toBe(true);
     expect(authService.getSession().user?.language).toBe("fr");

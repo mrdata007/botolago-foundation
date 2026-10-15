@@ -164,7 +164,9 @@ function ProfileSetupPage() {
       favoriteClubId,
       notifications: prefs,
       // Only a language the person pressed, and only when it differs from the
-      // stored one: any other save leaves the account's language untouched.
+      // stored one; otherwise none is sent and the stored language stays. The
+      // service refuses the whole save when the profile was never read, so
+      // defaults are never written over the account.
       language: notificationLanguageToSave(user?.language, pickedLang),
     });
     if (!res.ok) {
@@ -175,12 +177,15 @@ function ProfileSetupPage() {
         showStepUpNotice(t);
         return;
       }
+      // "network" also answers a save refused because the profile was never read.
       const key =
         res.errorCode === "username_taken"
           ? "auth.error.username_taken"
-          : res.errorCode === "invalid_username" || res.errorCode === "reserved_username"
-            ? "auth.error.username_invalid"
-            : "auth.error.generic";
+          : res.errorCode === "network"
+            ? "auth.error.network"
+            : res.errorCode === "invalid_username" || res.errorCode === "reserved_username"
+              ? "auth.error.username_invalid"
+              : "auth.error.generic";
       toast.error(t(key));
       return;
     }
@@ -507,8 +512,10 @@ function ProfileSetupPage() {
                   key={l}
                   lang={l}
                   selected={chosenLang === l}
+                  // Until the account has loaded, the stored language is not known.
+                  disabled={!user}
                   onClick={() => setPickedLang(l)}
-                  className={cn("w-full justify-center", ui.text.bodyStrong)}
+                  className={cn("w-full justify-center disabled:opacity-60", ui.text.bodyStrong)}
                 >
                   {l === "fr" ? "Français" : "العربية"}
                 </UiChip>

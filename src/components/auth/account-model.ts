@@ -100,8 +100,9 @@ export function shownNotificationLanguage(
 /**
  * What saving the editor sends as the account language: the person's own
  * choice when it differs from what is stored, otherwise nothing at all, so a
- * save that is about match alerts or a favourite club leaves the stored value
- * exactly as it is.
+ * save that is about match alerts or a favourite club asks for no change of
+ * language. (The stored value is kept only because the service also refuses a
+ * save whose profile was never read; see `completeProfile`.)
  */
 export function notificationLanguageToSave(
   stored: Language | undefined,

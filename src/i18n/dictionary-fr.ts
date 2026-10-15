@@ -1712,7 +1712,7 @@ export const fr = {
     "Impossible d’activer les alertes pour le moment. Vérifiez votre connexion et réessayez.",
   "auth.setup.language_confirm": "Langue des notifications",
   "auth.setup.language_hint":
-    "Langue de vos e-mails et de vos alertes. Français par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
+    "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
   "auth.setup.skip": "Passer",
   "auth.setup.next": "Suivant",
   "auth.setup.previous": "Précédent",
@@ -1786,7 +1786,7 @@ export const fr = {
   "profile.section.preferences": "Préférences",
   "profile.language.device": "Langue sur cet appareil",
   "profile.language.help":
-    "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte.",
+    "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
   "profile.language.help_guest": "Ce choix change l’application sur cet appareil.",
   "profile.section.security": "Sécurité du compte",
   "profile.section.account": "Compte",

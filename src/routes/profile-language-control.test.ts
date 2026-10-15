@@ -36,10 +36,10 @@ describe("profile language control: wording", () => {
 
   it("says what the row changes and what notifications follow", () => {
     expect(fr["profile.language.help"]).toBe(
-      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte.",
+      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
     );
     expect(ar["profile.language.help"]).toBe(
-      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك.",
+      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك. يمكن تغييرها من الإشعارات.",
     );
   });
 
@@ -58,10 +58,10 @@ describe("profile language control: wording", () => {
     expect(fr["auth.setup.language_confirm"]).toBe("Langue des notifications");
     expect(ar["auth.setup.language_confirm"]).toBe("لغة الإشعارات");
     expect(fr["auth.setup.language_hint"]).toBe(
-      "Langue de vos e-mails et de vos alertes. Français par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
+      "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
     );
     expect(ar["auth.setup.language_hint"]).toBe(
-      "لغة رسائل البريد الإلكتروني والتنبيهات. الفرنسية افتراضيًا. تُضبط لغة التطبيق على هذا الجهاز من الملف الشخصي.",
+      "لغة رسائل البريد الإلكتروني والتنبيهات والإشعارات. الفرنسية هي اللغة الافتراضية. تُضبط لغة التطبيق على هذا الجهاز من الملف الشخصي.",
     );
     // The old hint promised the opposite: that saving also switched the app.
     expect(fr["auth.setup.language_hint"]).not.toMatch(/devient celle/);
@@ -113,6 +113,11 @@ describe("profile language control: the wording is true", () => {
     expect(setup).not.toMatch(/setChosenLang|useState<Language>\(lang\)/);
     expect(setup).not.toMatch(/setLanguage/);
     expect(setup).not.toMatch(/language: chosenLang/);
+  });
+
+  it("the chips wait for the account, and a refused save shows the connection message", () => {
+    expect(setup).toContain("disabled={!user}");
+    expect(setup).toMatch(/res\.errorCode === "network"\s*\?\s*"auth\.error\.network"/);
   });
 
   it("sign-up does not send the device's language as the notification language", () => {

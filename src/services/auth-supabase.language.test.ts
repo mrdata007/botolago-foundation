@@ -149,4 +149,33 @@ describe("saving the profile does not overwrite the stored notification language
     expect(await saveWith("fr", { language: "ar" })).toBe("ar");
     expect(await saveWith("ar", { language: "fr" })).toBe("fr");
   });
+
+  it("refuses the save when the profile was never read, and writes nothing", async () => {
+    // A failed read publishes a user of defaults (French, nothing complete):
+    // saving from it would overwrite an Arabic account's stored data.
+    const saved: CompleteOnboardingInput[] = [];
+    const service = new SupabaseAuthService({
+      auth: () =>
+        ({
+          getSession: async () => ({ data: { session }, error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+        }) as unknown as AuthClient,
+      profiles: {
+        getMe: async () => {
+          throw new Error("profile read failed");
+        },
+        completeOnboarding: async (profile: CompleteOnboardingInput) => {
+          saved.push(profile);
+          return profileOf(profile.preferredLanguage);
+        },
+      },
+    });
+    service.subscribeToSession(() => undefined);
+    await settle();
+    expect(service.getSession().status).toBe("authenticated");
+    expect(service.getSession().user?.language).toBe("fr");
+    const result = await service.completeProfile({});
+    expect(result).toEqual({ ok: false, errorCode: "network" });
+    expect(saved).toHaveLength(0);
+  });
 });
