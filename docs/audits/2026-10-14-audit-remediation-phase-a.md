@@ -20,31 +20,31 @@ status below.
 
 ## Status of each finding
 
-| ID       | Priority | Status                     | What changed (short)                                                                                                                                                                                                                                |
-| -------- | -------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FANT-06  | P1       | Closed                     | Landing, FAQ and onboarding no longer promise rating points; neutral wording plus a link to the rules page.                                                                                                                                         |
-| LOC-01   | P2       | Closed                     | Rules page names which rounds each scoring rule covers (FR/AR), and keeps the still-true safeguards.                                                                                                                                                |
-| FANT-04  | P1       | Closed                     | Round tab reads the server's round board in the server's order; unknown previous rank shows a dash, never an invented arrow. League boards follow the same rule.                                                                                    |
-| FANT-01  | P1       | Closed                     | Transfers use the owner's real sale value (from the server's `salePrice`) in the bank, picker, replacement budget, selling column and confirm screen. Audit case (bought 7.0, now 7.4) credits 7.2.                                                 |
-| FANT-02  | P1       | Closed                     | A failed transfer preview now shows why (budget shortfall, stale version, code needed, network, deadline, not allowed) with a retry that keeps the draft. Next is never grey without a reason.                                                      |
-| QA-01    | P1       | Closed                     | Saved Pronostics are not shown as empty or editable while loading, failed, or while auth is still loading; a retry is offered.                                                                                                                      |
-| QA-05    | P1       | Closed                     | Guest picks import is visible, retried a few times, then offers a manual retry; local copies stay until the server answers; picks past kickoff are reported, never sent late.                                                                       |
-| UX-009   | P1       | Closed                     | The guest squad draft reports whether it was really saved; "kept on this device" is shown only when true; leaving with an unsaved squad warns.                                                                                                      |
-| DATA-01  | P1       | Closed on the match page   | Freshness uses the data's age, not the last successful fetch. Past 3 h after kickoff a live match with quiet data is "score to confirm". Limits are generous where the backend writes nothing by design (added time, no clock).                     |
-| DATA-02  | P1       | Closed                     | A failing optional section (pressure, head-to-head, etc.) no longer hides the score page; each shows its own "could not load" with a retry, separate from "no data"; a failed refresh keeps the last good copy.                                     |
-| DATA-03  | P2       | Closed                     | Unknown scores show a dash and are announced as "score unavailable" (FR/AR); a real 0-0 is unchanged.                                                                                                                                               |
-| UX-010   | P2       | Closed                     | League "last updated" uses the standings' own calculation time, else says "data loaded" with the load time, else nothing. It no longer reads the clock.                                                                                             |
-| SEC-01   | P1       | Partly closed              | Scheduled Edge worker: a timed-out or unconfirmed write now stops the pass and keeps the lease (extended, released only on a real answer, else it expires). The GitHub orchestrator and the manual runner still have the old behaviour (see below). |
-| ASTRA-04 | P1       | Closed                     | Scheduled pass refuses to run unmanaged when the lease function is missing. The legacy path is kept behind an opt-in nothing sets.                                                                                                                  |
-| ASTRA-03 | P2       | Closed (visibility)        | A failed or blocked prize evaluation is shown as `prizeAttention` in the response, run record and log. The pass stays `ok` (so no false alert or fallback takeover); nothing alerts on a prize failure that keeps happening.                        |
-| ASTRA-02 | P2       | Closed in code, unverified | New migration `20261014180100` makes the worker health check cover the scheduler's full backlog. It has not been run: the database tests need Docker.                                                                                               |
+| ID       | Priority | Status                     | What changed (short)                                                                                                                                                                                                                                                                                                               |
+| -------- | -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FANT-06  | P1       | Closed                     | Landing, FAQ and onboarding no longer promise rating points; neutral wording plus a link to the rules page.                                                                                                                                                                                                                        |
+| LOC-01   | P2       | Closed                     | Rules page names which rounds each scoring rule covers (FR/AR), and keeps the still-true safeguards.                                                                                                                                                                                                                               |
+| FANT-04  | P1       | Closed                     | Round tab reads the server's round board in the server's order; unknown previous rank shows a dash, never an invented arrow. League boards follow the same rule.                                                                                                                                                                   |
+| FANT-01  | P1       | Closed                     | Transfers use the owner's real sale value (from the server's `salePrice`) in the bank, picker, replacement budget, selling column and confirm screen. Audit case (bought 7.0, now 7.4) credits 7.2.                                                                                                                                |
+| FANT-02  | P1       | Closed                     | A failed transfer preview now shows why (budget shortfall, stale version, code needed, network, deadline, not allowed) with a retry that keeps the draft. Next is never grey without a reason.                                                                                                                                     |
+| QA-01    | P1       | Closed                     | Saved Pronostics are not shown as empty or editable while loading, failed, or while auth is still loading; a retry is offered.                                                                                                                                                                                                     |
+| QA-05    | P1       | Closed                     | Guest picks import is visible, retried a few times, then offers a manual retry; local copies stay until the server answers; picks past kickoff are reported, never sent late.                                                                                                                                                      |
+| UX-009   | P1       | Closed                     | The guest squad draft reports whether it was really saved; "kept on this device" is shown only when true; leaving with an unsaved squad warns.                                                                                                                                                                                     |
+| DATA-01  | P1       | Closed on the match page   | Freshness uses the data's age, not the last successful fetch. Past 3 h after kickoff a live match with quiet data is "score to confirm". Limits are generous where the backend writes nothing by design (added time, no clock).                                                                                                    |
+| DATA-02  | P1       | Closed                     | A failing optional section (pressure, head-to-head, etc.) no longer hides the score page; each shows its own "could not load" with a retry, separate from "no data"; a failed refresh keeps the last good copy.                                                                                                                    |
+| DATA-03  | P2       | Closed                     | Unknown scores show a dash and are announced as "score unavailable" (FR/AR); a real 0-0 is unchanged.                                                                                                                                                                                                                              |
+| UX-010   | P2       | Closed                     | League "last updated" uses the standings' own calculation time, else says "data loaded" with the load time, else nothing. It no longer reads the clock.                                                                                                                                                                            |
+| SEC-01   | P1       | Mostly closed              | Scheduled Edge worker, GitHub orchestrator and manual runner: a timed-out or unconfirmed write now stops the pass and keeps the lease (extended, released only on a real answer, else it expires); the alert names the write in doubt. Still open: the calendar syncs, ingestion and prize call run outside the lease (see risks). |
+| ASTRA-04 | P1       | Closed                     | Scheduled pass refuses to run unmanaged when the lease function is missing. The legacy path is kept behind an opt-in nothing sets.                                                                                                                                                                                                 |
+| ASTRA-03 | P2       | Closed (visibility)        | A failed or blocked prize evaluation is shown as `prizeAttention` in the response, run record and log. The pass stays `ok` (so no false alert or fallback takeover); nothing alerts on a prize failure that keeps happening.                                                                                                       |
+| ASTRA-02 | P2       | Closed in code, unverified | New migration `20261014180100` makes the worker health check cover the scheduler's full backlog. It has not been run: the database tests need Docker.                                                                                                                                                                              |
 
 Not part of this work: SEC-02 and FANT-11 (A8, needs staging evidence), and all
 Phase B, C and D items.
 
 ## What was run
 
-On the final tree: `bun run typecheck` clean; full `bun test` 9469 pass, 23 skip,
+On the final tree: `bun run typecheck` clean; full `bun test` 9492 pass, 23 skip,
 1 fail; i18n gate pass; `backend:migrations:check` pass (228); config integrity
 and secret scans pass; eslint 0 errors on the 84 touched files; prettier clean.
 The one failing test is "Morocco's Ramadan clock change" (a time-zone format
@@ -75,11 +75,13 @@ committed to the repository.
 
 ## Remaining risks
 
-1. **SEC-01 residual.** The GitHub orchestrator (`scripts/backend/fantasy-season-orchestrator.ts`)
-   and the manual runner still stop at 60 s, treat it as an ordinary failure and
-   release the shared lease. They are the fallback and the owner's manual paths;
-   fixing them needs a test seam first. Until then: do not start a manual worker
-   or manual orchestrator run right after an Edge pass reported `ambiguous`.
+1. **SEC-01 residual (smaller).** The orchestrator's lease covers only its lifecycle
+   loop. Its first calendar sync (before the lease is taken), the performance
+   ingestion, the prize call and the second sync run outside any lease, so they
+   can overlap an Edge pass's own calendar sync and prize evaluation, including
+   when a scheduled run defers to the database worker. Whether that overlap is
+   harmless has not been checked against the SQL. Closing it means holding the
+   lease across the whole orchestrator run.
 2. **Lease is not a database fence.** The 420 s extension only protects if the
    database cannot run one statement longer. Owner check (read-only):
    `select rolname, rolconfig from pg_roles where rolname in ('service_role','authenticator');`
@@ -119,15 +121,15 @@ Still blocking:
   frontend, database and Edge match; backend-quality CI with pgTAP green; a real
   lifecycle failure drill.
 - **CI `database-quality` must pass** for the new migration and test edits.
-- **SEC-01 residual** (orchestrator and manual runner) fixed, or a documented
-  and tested pilot limit that avoids those paths.
+- **SEC-01 residual:** the work outside the lease (risk 1) checked against the SQL
+  or put under the lease, or a documented pilot limit.
 - **Owner check of the database statement limit** (risk 2).
 - **Screen-work evidence before the draft PR leaves draft:** the states mock
   mode cannot show, on staging or a real signed-in account, in French and Arabic.
 
 No longer blocking from the audit's Phase A list: FANT-06, LOC-01, FANT-04,
 FANT-01, FANT-02, QA-01, QA-05, UX-009, DATA-01 (match page), DATA-02, DATA-03,
-UX-010, ASTRA-04, ASTRA-03. ASTRA-02 awaits its database tests.
+UX-010, ASTRA-04, ASTRA-03, and the SEC-01 timeout race on all three workers. ASTRA-02 awaits its database tests.
 
 Phase B to D (including SOL-01/02, FANT-03/05/07/08, the error-recovery group,
 reading list, football semantics DATA-04 to 07, and Phase C polish) is untouched.
