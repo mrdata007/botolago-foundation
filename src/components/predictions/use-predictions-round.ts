@@ -212,6 +212,22 @@ export function fixturePersonalState(
   return held.has(fixtureId) && canEditPicks(state) ? "loading" : state;
 }
 
+/**
+ * Whether the counts of the round ("N left", "N of M done") can be believed:
+ * the reader's own picks are read and no fixture still waits on a guest import
+ * that may change what the account holds for it. The cards say "not loaded
+ * yet" for such a fixture, so the header and the bar must not count it as empty.
+ */
+export function picksAreKnown(
+  state: PersonalReadState,
+  fixtureStates: readonly PersonalReadState[],
+): boolean {
+  return (
+    (state === "not_needed" || state === "ready") &&
+    fixtureStates.every((fixtureState) => fixtureState === "not_needed" || fixtureState === "ready")
+  );
+}
+
 /** A missing pick that cannot be called absent while the read is open or failed. */
 export function pickIsUnknown(state: PersonalReadState, pick: Pick | null): boolean {
   return pick === null && (state === "loading" || state === "failed");

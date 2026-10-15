@@ -23,6 +23,7 @@ import {
   barFor,
   canEditPicks,
   fixturePersonalState,
+  picksAreKnown,
   nextPick,
   nextSaveBar,
   personalReadState,
@@ -528,5 +529,21 @@ describe("a match the guest import may still change is unknown (QA-01/QA-05 revi
     expect(writable("loading", "fx-other")).toBe(false);
     expect(writable("ready", "fx-other")).toBe(true);
     expect(writable("not_needed", "fx-other")).toBe(true);
+  });
+});
+
+describe("picksAreKnown: the counts of the round", () => {
+  test("known when the read is done and no fixture waits on a guest import", () => {
+    expect(picksAreKnown("ready", ["ready", "ready"])).toBe(true);
+    expect(picksAreKnown("not_needed", ["not_needed"])).toBe(true);
+  });
+  test("not known while a fixture is held by a pending guest import", () => {
+    const held = new Set(["fx-held"]);
+    const states = ["fx-held", "fx-other"].map((id) => fixturePersonalState("ready", held, id));
+    expect(picksAreKnown("ready", states)).toBe(false);
+  });
+  test("not known while the read is loading or failed", () => {
+    expect(picksAreKnown("loading", [])).toBe(false);
+    expect(picksAreKnown("failed", ["failed"])).toBe(false);
   });
 });

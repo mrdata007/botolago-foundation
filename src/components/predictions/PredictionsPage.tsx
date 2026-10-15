@@ -40,6 +40,7 @@ import { RoundSwitcher } from "./RoundSwitcher";
 import { ScoringRulesSheet } from "./ScoringRulesSheet";
 import {
   isFixtureOpen,
+  picksAreKnown,
   readFailure,
   stepPick,
   usePredictionsRound,
@@ -145,7 +146,10 @@ export function PredictionsPage({
   // The reader's own picks, read separately from the journée: until they are
   // known, counts and "no prediction" would be guesses.
   const personal = model.personal.state;
-  const picksKnown = personal === "not_needed" || personal === "ready";
+  const picksKnown = picksAreKnown(
+    personal,
+    countable.map((fixture) => model.personalFor(fixture.id)),
+  );
   const done = countable.filter((fixture) => picks.get(fixture.id)).length;
   const openWithoutPick = countable.filter(
     (fixture) => isFixtureOpen(fixture, now) && !picks.get(fixture.id),

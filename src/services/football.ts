@@ -215,8 +215,24 @@ export type MatchSectionKey = (typeof MATCH_SECTIONS)[number];
  * the browser and must not carry internals.
  */
 export type MatchSectionOutcome =
-  | { readonly status: "ok"; readonly error: null }
+  | {
+      readonly status: "ok";
+      readonly error: null;
+      /**
+       * How many refreshes in a row reused the earlier copy of this section
+       * because their own read failed (absent when the copy is fresh).
+       */
+      readonly carried?: number;
+    }
   | { readonly status: "failed"; readonly error: string };
+
+/**
+ * How many refreshes in a row may reuse an earlier copy of a section whose read
+ * keeps failing. At the page's 30-second refresh that is about a minute and a
+ * half: one hiccup is hidden, a lasting outage ends in the error card instead
+ * of a copy that looks fresh.
+ */
+export const MAX_CARRIED_REFRESHES = 3;
 export type MatchSections = Readonly<Record<MatchSectionKey, MatchSectionOutcome>>;
 
 /**
@@ -249,7 +265,10 @@ export type FootballMatchDetailPage = Awaited<
  * must not replace good lineups or a good timeline with an error card (before
  * sections were separate, a failed refresh rejected and the page kept all of
  * its last read). The error card is for a section with no earlier good copy.
- * The restored section reports `ok`, as the copy it holds is a good read.
+ * The restored section reports `ok` (the copy it holds was a good read) and
+ * counts how many refreshes in a row it has been reused, up to
+ * `MAX_CARRIED_REFRESHES`: past that the failure shows, so an outage that lasts
+ * is never hidden behind an old copy.
  *
  * `previous` must be the page of the same match and language (the query key's
  * own). The header, the one thing that is always read, is never carried over.
@@ -259,13 +278,26 @@ export function keepLastGoodSections(
   previous: FootballMatchDetailPage | undefined,
 ): FootballMatchDetailPage {
   if (!previous || previous.match.id !== next.match.id) return next;
-  const restore = (section: MatchSectionKey) =>
-    next.sections[section].status === "failed" && previous.sections[section].status === "ok";
+  const restore = (section: MatchSectionKey) => {
+    const earlier = previous.sections[section];
+    return (
+      next.sections[section].status === "failed" &&
+      earlier.status === "ok" &&
+      (earlier.carried ?? 0) < MAX_CARRIED_REFRESHES
+    );
+  };
   if (!MATCH_SECTIONS.some(restore)) return next;
 
   const headToHead = restore("headToHead") ? previous.headToHead : next.headToHead;
-  const outcome = (section: MatchSectionKey) =>
-    restore(section) ? previous.sections[section] : next.sections[section];
+  const outcome = (section: MatchSectionKey): MatchSectionOutcome => {
+    if (!restore(section)) return next.sections[section];
+    const earlier = previous.sections[section];
+    return {
+      status: "ok",
+      error: null,
+      carried: (earlier.status === "ok" ? (earlier.carried ?? 0) : 0) + 1,
+    };
+  };
   return {
     ...next,
     headToHead,

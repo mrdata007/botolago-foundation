@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
-import { MATCH_SECTIONS, footballService, keepLastGoodSections, toMatch } from "./football";
+import {
+  MATCH_SECTIONS,
+  MAX_CARRIED_REFRESHES,
+  footballService,
+  keepLastGoodSections,
+  toMatch,
+} from "./football";
 
 /**
  * Audit 2026-10-14, DATA-02: the score page was one all-or-nothing read. One
@@ -34,10 +40,11 @@ function failing(...names: (keyof typeof READS)[]) {
     };
   }
 }
-afterEach(() => {
+function mend() {
   for (const [method, original] of stored) (repository as never)[method] = original;
   stored.clear();
-});
+}
+afterEach(mend);
 
 async function fixtureId() {
   const [fixture] = await new MockFootballRepository().getHomeMatches("fr", 1, context);
@@ -203,7 +210,7 @@ describe("a refresh in which a section fails keeps the earlier good copy", () =>
 
     const kept = keepLastGoodSections(refreshed, earlier);
     expect(kept.pressure).toEqual(earlier.pressure);
-    expect(kept.sections.pressure).toEqual(OK);
+    expect(kept.sections.pressure).toEqual({ ...OK, carried: 1 });
     // The rest is the refresh's own.
     expect(kept.match).toBe(refreshed.match);
     expect(kept.lineups).toBe(refreshed.lineups);
@@ -216,12 +223,12 @@ describe("a refresh in which a section fails keeps the earlier good copy", () =>
     const kept = keepLastGoodSections(refreshed, earlier);
 
     expect(kept.sections).toEqual({
-      headToHead: OK,
-      timeline: OK,
-      statistics: OK,
-      lineups: OK,
-      pressure: OK,
-      absences: OK,
+      headToHead: { ...OK, carried: 1 },
+      timeline: { ...OK, carried: 1 },
+      statistics: { ...OK, carried: 1 },
+      lineups: { ...OK, carried: 1 },
+      pressure: { ...OK, carried: 1 },
+      absences: { ...OK, carried: 1 },
     });
     expect(kept.live.events).toEqual(earlier.live.events);
     expect(kept.live.stats).toEqual(earlier.live.stats);
@@ -257,6 +264,37 @@ describe("a refresh in which a section fails keeps the earlier good copy", () =>
       "failed",
     );
     expect(keepLastGoodSections(refreshed, undefined)).toBe(refreshed);
+  });
+
+  test("a lasting failure is not hidden: after the allowed refreshes the error card shows", async () => {
+    const first = await goodPage();
+    failing("pressure");
+    let page = first;
+    for (let refresh = 1; refresh <= MAX_CARRIED_REFRESHES; refresh++) {
+      const refreshed = await footballService.getMatchDetailPage(first.match.id, "fr");
+      page = keepLastGoodSections(refreshed, page);
+      expect(page.sections.pressure).toEqual({ ...OK, carried: refresh });
+      expect(page.pressure).toEqual(first.pressure);
+    }
+    const refreshed = await footballService.getMatchDetailPage(first.match.id, "fr");
+    page = keepLastGoodSections(refreshed, page);
+    expect(page.sections.pressure.status).toBe("failed");
+  });
+
+  test("a section that loads again starts the count over", async () => {
+    const first = await goodPage();
+    failing("pressure");
+    const hiccup = keepLastGoodSections(
+      await footballService.getMatchDetailPage(first.match.id, "fr"),
+      first,
+    );
+    expect(hiccup.sections.pressure).toEqual({ ...OK, carried: 1 });
+    mend();
+    const fresh = keepLastGoodSections(
+      await footballService.getMatchDetailPage(first.match.id, "fr"),
+      hiccup,
+    );
+    expect(fresh.sections.pressure.carried).toBeUndefined();
   });
 
   test("a page of another match is never carried over", async () => {
