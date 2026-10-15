@@ -85,7 +85,9 @@ export function PepitesAdminData({
   const [player, setPlayer] = useState<{ id: string; name: string; field?: string } | null>(null);
   return (
     <div className="grid gap-4">
-      <p className={ADMIN_LABEL_CLASS}>{rtl ? "جواهر / مكتب البيانات" : "Pépites / Data desk"}</p>
+      <p className={ADMIN_LABEL_CLASS}>
+        {rtl ? "المواهب / مكتب البيانات" : "Prospects / Data desk"}
+      </p>
       <UiSegmented<DataTab>
         value={tab}
         onChange={onTabChange}

@@ -252,7 +252,7 @@ sender answer `BadDeviceToken` and turn that phone off.)
 
 ## Saving and sharing pictures
 
-The share sheet of the Pépites cards and of the Fantasy recap makes a picture.
+The share sheet of the Prospects cards and of the Fantasy recap makes a picture.
 A web page cannot save a file inside the app, and Android's web view cannot
 share one. So the app uses three plugins:
 
@@ -304,7 +304,7 @@ Nothing below has been done. In this order, on a test account:
     white GO in the status bar when an alert arrives, the screen staying upright
     when the phone turns, and, in the profile, the photo button: "Take Photo" asks
     for the camera with the French text (Arabic on a phone set to Arabic).
-11. Pictures (an app build made after 2026-10-06): open Pépites, the share
+11. Pictures (an app build made after 2026-10-06): open Prospects, the share
     button, then "Enregistrer dans la galerie". iPhone: allow "add photos";
     the picture is in Photos. Android: no prompt; the picture is in the
     gallery's BotolaGO album. Then "Partager l'image": the phone's share sheet
@@ -378,7 +378,7 @@ What pads itself by the insets:
   (`--topbar-h`, `--bottomnav-h`);
 - the bottom bars that do not sit above the navigation (the Fantasy player
   page's actions, the bars that drop to the bottom edge from 768px wide, the
-  Landing page's button), the Pépites reveal, toasts, the reading-progress bar,
+  Landing page's button), the Prospects reveal, toasts, the reading-progress bar,
   side and top sheets, and centred dialogs;
 - on Fantasy inner screens, the sign-in screens and the Landing page (`/jouer`),
   a strip exactly as tall as the status bar (`StatusBarStrip`), so scrolled

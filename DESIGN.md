@@ -1,6 +1,6 @@
 ---
 name: BotolaGO
-description: Moroccan football in French and Arabic (matches, news, Fantasy and Pépites), built for the phone first.
+description: Moroccan football in French and Arabic (matches, news, Fantasy and Prospects), built for the phone first.
 colors:
   floodlight-navy: "oklch(0.32 0.1 258)"
   tunnel-navy: "oklch(0.24 0.09 258)"
@@ -369,7 +369,7 @@ This file describes the system in the code on `main`: Design System V2, look "Op
 
 **Which source wins.** The code is the authority: `src/styles.css`, `src/components/ui-kit/tokens.ts` and `src/components/ui-kit/primitives.tsx`, held together by the ui-kit contract test (`src/components/ui-kit/ui-kit.contract.test.ts`). This file comes next. [docs/engineering/DESIGN_SYSTEM_V2.md](docs/engineering/DESIGN_SYSTEM_V2.md) stays the detailed technical reference, with the drift noted below. Product context, voice and terminology are in [PRODUCT.md](PRODUCT.md) and are not repeated here.
 
-**Still authoritative in DESIGN_SYSTEM_V2.md:** §1 (rules 1 to 6); §2.1 to §2.2 (they lack the 400 prose step, and §2.1 still lists the meta step for tab labels, which are now Changa 16px); the §2.3 colour tables, including the toast, selected-state, ink-edge and rating tokens (the values match the code, except that the scrim is mixed from the text colour rather than the navy fill); §2.3a; §2.4 (it lacks the 672px and 1320px widths given under Layout); §2.5, including its safe-area rules; §4's Frame (it lacks the desktop screen width and the wide header option), Controls, Overlays, Data, Fantasy, Badge and States tables; §5; §6 (its test count, 175, predates the dark-mode, icon and safe-area contract tests; 199 run today). From §2.6 only the duration values and the reduced-motion clamp still hold; those same passages also say there is no animated route change and ban stagger, which are out of date. From §4 Shell, only the AppShell, PageBackground, ClubCrest, LiveStrip, SectionHeader and States entries still hold. For Pépites, follow the section "Pépites is built on the kit". The Pépites Figma spec ([docs/engineering/pepites-v1.1-figma-notes/figma-spec.md](docs/engineering/pepites-v1.1-figma-notes/figma-spec.md)) is marked superseded: only the screens' content and order, the copy, the Arabic terms and the digit rules (§9) still apply; its visual tokens are retired, from the share images too.
+**Still authoritative in DESIGN_SYSTEM_V2.md:** §1 (rules 1 to 6); §2.1 to §2.2 (they lack the 400 prose step, and §2.1 still lists the meta step for tab labels, which are now Changa 16px); the §2.3 colour tables, including the toast, selected-state, ink-edge and rating tokens (the values match the code, except that the scrim is mixed from the text colour rather than the navy fill); §2.3a; §2.4 (it lacks the 672px and 1320px widths given under Layout); §2.5, including its safe-area rules; §4's Frame (it lacks the desktop screen width and the wide header option), Controls, Overlays, Data, Fantasy, Badge and States tables; §5; §6 (its test count, 175, predates the dark-mode, icon and safe-area contract tests; 199 run today). From §2.6 only the duration values and the reduced-motion clamp still hold; those same passages also say there is no animated route change and ban stagger, which are out of date. From §4 Shell, only the AppShell, PageBackground, ClubCrest, LiveStrip, SectionHeader and States entries still hold. For Prospects, follow the section "Prospects is built on the kit". The Prospects Figma spec ([docs/engineering/pepites-v1.1-figma-notes/figma-spec.md](docs/engineering/pepites-v1.1-figma-notes/figma-spec.md)) is marked superseded: only the screens' content and order, the copy, the Arabic terms (except the section's name, now المواهب, not the spec's جواهر) and the digit rules (§9) still apply; its visual tokens are retired, from the share images too.
 
 **Out of date in DESIGN_SYSTEM_V2.md (do not follow):**
 
@@ -383,7 +383,7 @@ Also out of date: the status lines of `MOTION_PLAN.md` and `MOTION_PLAN_2.md`, `
 **Evidence for this file.**
 
 - **Code.** Read at `be51444d` on `main`. This file was first written against `42be166`, then updated after PRs #353 to #358 merged; every changed statement was checked against `be51444d`.
-- **Screens.** Captured from the public site, botolago.com, on 2026-10-05. That covers 18 signed-out pages at 390×844 and 1440×900, each in French and in Arabic, with reduced motion on. The captures predate dark mode, the Pépites restyle, the icon mirroring and `viewport-fit=cover`; none of those was rendered for this file.
+- **Screens.** Captured from the public site, botolago.com, on 2026-10-05. That covers 18 signed-out pages at 390×844 and 1440×900, each in French and in Arabic, with reduced motion on. The captures predate dark mode, the Prospects restyle, the icon mirroring and `viewport-fit=cover`; none of those was rendered for this file.
   - The site was then serving `236afae`. Between that commit and `42be166`, nothing changed in `src/styles.css`, `src/fonts.css`, `src/components/ui-kit/` or `src/components/shell/`.
   - Two newer surfaces were not live and were not rendered: the home "Mes clubs" row and the public Fantasy recap page (`/journee/...`).
   - Signed-in surfaces were not rendered: My team and its pitch, transfers, profile, notifications and admin.
@@ -396,8 +396,8 @@ Also out of date: the status lines of `MOTION_PLAN.md` and `MOTION_PLAN_2.md`, `
 The owner settled the questions this file first recorded as open. Every resulting change is merged into `main`, and the sections below describe each as it is in the code.
 
 - **Dark mode: on, following the phone's setting.** Anyone whose phone is set to dark sees dark at once, and Profile > Apparence offers Clair, Sombre and Système. The same change turned the logo white on dark, put the toasts on kit colours and fixed the remaining dark-mode defects. Merged ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)).
-- **Pépites: looks like the rest of the app.** Its night bands, energy gradient, mono lines, slant and own palette are gone, and it is rebuilt on the kit. Merged ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)). Its share images, and the Fantasy recap image, were redrawn on the main look afterwards (BG-0153; see Colors).
-- **Arabic icons: directional icons mirror.** Chevrons, arrows, sign in, sign out, undo, trend, sort, the question mark and icons that draw lines of text mirror; clocks, refresh, play, checkmarks, search, slashes, swap arrows and share stay as drawn. The six icons that were flipped twice are fixed (two in this change, the four Pépites ones with the Pépites restyle). Merged ([PR #353](https://github.com/mrdata007/botolago-foundation/pull/353)).
+- **Prospects: looks like the rest of the app.** Its night bands, energy gradient, mono lines, slant and own palette are gone, and it is rebuilt on the kit. Merged ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)). Its share images, and the Fantasy recap image, were redrawn on the main look afterwards (BG-0153; see Colors).
+- **Arabic icons: directional icons mirror.** Chevrons, arrows, sign in, sign out, undo, trend, sort, the question mark and icons that draw lines of text mirror; clocks, refresh, play, checkmarks, search, slashes, swap arrows and share stay as drawn. The six icons that were flipped twice are fixed (two in this change, the four Prospects ones with the Prospects restyle). Merged ([PR #353](https://github.com/mrdata007/botolago-foundation/pull/353)).
 - **App screen edges: `viewport-fit=cover`.** In the phone app the site reaches the screen edges, with safe-area padding wherever a bar would otherwise sit under the status bar or the home indicator. The viewport tag and most of the safe-area padding (toasts, the reading-progress bar, the modal height cap, the bottom-edge bars) came with the store-readiness work ([PR #358](https://github.com/mrdata007/botolago-foundation/pull/358)); the side letterbox for the website on a notched phone held sideways, the status-bar strip on Fantasy inner screens and the Landing sticky button followed in [PR #354](https://github.com/mrdata007/botolago-foundation/pull/354). Both merged. The phone app itself is held upright.
 - **Fantasy menu lists: removed.** There is no Fantasy sub-navigation; the hub-and-back pattern stays. Merged ([PR #355](https://github.com/mrdata007/botolago-foundation/pull/355)).
 - **Brand blue: two blues with two jobs.** The owner confirmed this recommendation. Logo Blue stays the colour of the brand assets and never becomes an interface colour, and Floodlight Navy stays the interface brand. In dark mode the logo uses its all-white files (merged with [PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)). The evidence is under Colors.
@@ -441,7 +441,7 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 - **Yellow-Card Amber**: a fill only, because amber text fails contrast (about 1.78:1 per the source **[Unverified]**). Text on it is Tunnel Navy. It marks postponed and delayed matches, a doubtful Fantasy player and the yellow-card glyph.
 - **Live-Match Red**: the breathing live dot, the elapsed-minute bar and the red-card glyph. Also a fill only. A separate live text colour exists in the tokens but nothing uses it.
 - **Mown Grass Light / Dark**: the real-grass green of the match lineup pitch. The Fantasy pitch uses the pastel gradient turf instead. The Fantasy fixture difficulty scale (FDR 1 to 5, green to deep magenta) is tabulated in DESIGN_SYSTEM_V2 §2.3.
-- **Pépites ratings** reuse that scale read backwards (`--ui-rating-1` to `--ui-rating-5`): the best band (7.5 and over) is FDR 1 green and the lowest (under 6) is FDR 5 deep magenta, in both themes. Pépites has no other colours of its own; it is built on the kit like every section.
+- **Prospects ratings** reuse that scale read backwards (`--ui-rating-1` to `--ui-rating-5`): the best band (7.5 and over) is FDR 1 green and the lowest (under 6) is FDR 5 deep magenta, in both themes. Prospects has no other colours of its own; it is built on the kit like every section.
 - News carries its own category plates (Latest, Transfers, Analysis, Interviews, For you) and photo gradients, used only inside News. Their values are in `src/styles.css`.
 
 ### Dark theme
@@ -470,7 +470,7 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 - **[Inconsistent]** Option A moved selected and ink-filled controls from cyan text to white text. Cyan on navy survives in the banner strip, the notification badge, the Fantasy shirt marker, the admin icon tile and the landing hero (its kicker, second title line and timer icon).
 - **[Inconsistent]** The legacy V1 layer is still declared, and three of its values still render: the browser focus outline on anything not built on the kit uses the V1 electric blue (oklch(0.62 0.19 256)), not the brand focus ring; the Home Fantasy deadline strip fills with the V1 `--surface-selected`; and the light column shadow is the V1 `--shadow-floating`.
-- **Share images** (BG-0153). The Pépites Top 10 post and the player story card (`src/components/pepites/share-image.ts`) and the Fantasy "Ma journée" recap image (`src/components/fantasy/recap-image.ts`) are drawn on a canvas in the app's night colours: a Tunnel Navy ground, Floodlight Navy panels, white type with `--ui-on-ink-muted` for the quieter lines, the approved white wordmark, club colour through the club palette, and the action gradient once per picture with Tunnel Navy text on it (the week pill, the story wheel's values, the recap total's plate). Their colours are kit tokens written as sRGB hex read from Chromium's pixels (`SHARE_PALETTE`); `src/components/pepites/share-image.draw.test.ts` pins the palette, the faces and the Arabic mirror.
+- **Share images** (BG-0153). The Prospects Top 10 post and the player story card (`src/components/pepites/share-image.ts`) and the Fantasy "Ma journée" recap image (`src/components/fantasy/recap-image.ts`) are drawn on a canvas in the app's night colours: a Tunnel Navy ground, Floodlight Navy panels, white type with `--ui-on-ink-muted` for the quieter lines, the approved white wordmark, club colour through the club palette, and the action gradient once per picture with Tunnel Navy text on it (the week pill, the story wheel's values, the recap total's plate). Their colours are kit tokens written as sRGB hex read from Chromium's pixels (`SHARE_PALETTE`); `src/components/pepites/share-image.draw.test.ts` pins the palette, the faces and the Arabic mirror.
 - **Brand blue: decided (owner, 2026-10-05).** Both colour logo files fill Logo Blue (#0151fc, about oklch(0.524 0.26 263), also a stop in the News gradients), and so do the new app and home-screen icons (`store-assets/app-icon/`, generated by `scripts/brand/make-app-icons.py`). The interface brand is Floodlight Navy.
   - **Two blues, two jobs.** Logo Blue stays the colour of the logo, the app and home-screen icons, the favicon, store and marketing art, and the News gradient stop. It never becomes an interface token for text, fills or controls. Floodlight Navy stays the interface brand. In dark mode the logo shows its all-white files: the logo's default tone renders both files and the `.dark` class picks one, so nothing swaps after load.
   - **Why.** Each blue already passes in its own job: Logo Blue measures 5.86:1 on white, and the navy 12.81:1, which is what lets one token serve as both text and fill. The two read as a bright and a deep member of one family, not as a mistake (a perceptual difference of 26, against the app's clash threshold of 10). Moving the interface to Logo Blue would drop the cyan-on-navy pairs to 4.25:1 and crowd the blue club colours. Recolouring the logo navy would change the owner's mark and leave it at 1.35:1 on the dark surface. Figures are computed from the colour values, not measured on screen.
@@ -486,7 +486,7 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Hierarchy
 
-The kit's sizes are fixed pixel steps at every width. Two places scale with the viewport: the landing headline grows 1.4× from 1024px, and the Pépites player-page name grows from 22px to 34px at 768px and 46px at 1024px.
+The kit's sizes are fixed pixel steps at every width. Two places scale with the viewport: the landing headline grows 1.4× from 1024px, and the Prospects player-page name grows from 22px to 34px at 768px and 46px at 1024px.
 
 - **Display** (Changa 800): the hero headline, such as "JOURNÉE 2" over the stadium band, or a player's surname. A 112px "mega" step exists for the goal takeover's "BUT !" only.
 - **Headline** (Changa 800): the hub page title under the top bar (Matches, Actualités, Fantasy, Clubs, Pronostics).
@@ -629,7 +629,7 @@ A soft, rounded geometry with a strict, named radius set:
 
 **Edges carry club colour.** 4px bars sit on the inline start and end edges: club colours on match rows, a club or category colour on the start edge of news row cards, and zone colours on the start edge of standings rows.
 
-**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip, the sign-in header and the Pépites featured N°1 (the top of the Top 10 and of the ranking). The date strip and the Pépites band run full-bleed on phones and become a 16px panel from 640px.
+**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip, the sign-in header and the Prospects featured N°1 (the top of the Top 10 and of the ranking). The date strip and the Prospects band run full-bleed on phones and become a 16px panel from 640px.
 
 **[Inconsistent]** Some radii fall off the scale: the Pronostics score box (18px) and the search-match highlight (2px). The legacy V1 radius scale is still declared beside the kit scale.
 
@@ -694,13 +694,13 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
   - From 1024px on wide screens, search becomes a field inside the bar.
   - Detail screens replace the bar with their own header: a back pill, a centred kicker over the title, and actions.
 - **Bottom nav (phones only):** a fixed white bar with a hairline and the raised shadow.
-  - Five equal tabs: Accueil, Actualités, Fantasy, Matches and Pépites (الرئيسية, الأخبار, فانتازي, المباريات, جواهر). Matches is also active on Pronostics.
+  - Five equal tabs: Accueil, Actualités, Fantasy, Matches and Prospects (الرئيسية, الأخبار, فانتازي, المباريات, المواهب). Matches is also active on Pronostics.
   - One gradient capsule (56×32px) slides behind the active icon over 320ms, and the new icon pops.
   - The active label turns Scoreboard Black at 800. Weight, colour and the current-page marker carry the state, because the pill alone is too faint: about 1.34:1 per the source **[Unverified]**.
   - The bar is about 76px tall in French and 82px in Arabic **[Unverified]**. It holds still during page transitions.
 - **Page transitions:** pages slide in from the reading side and cross-fade over 260ms. They are off under reduced motion.
 - **Fantasy:** no persistent Fantasy sub-navigation renders. The Fantasy hub leads on through cards, a 2×2 grid of shortcut tiles and icon rows. Inner screens use a header with a "Fantasy" kicker and a back link.
-- **Pépites:** the same top bar and bottom nav as every section, with a kit title band (hub pages) or a header with the back pill (detail pages) under the bar.
+- **Prospects:** the same top bar and bottom nav as every section, with a kit title band (hub pages) or a header with the back pill (detail pages) under the bar.
 
 ### Lists and tables
 
@@ -805,5 +805,5 @@ The Manager Card is a collectible object, drawn by the `eclat-v1` renderer (`src
 - **Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.
 - **Don't** build a screen that only works in light. Dark mode is on and follows the phone; use kit tokens, which all carry dark values, and the selected-state tokens for chosen controls.
 - **Don't** change the logo or paint interface elements in Logo Blue (The Two Blues Rule).
-- **Don't** bring back Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is built on the kit, and `src/components/pepites/pepites.option-a.test.tsx` keeps the old layer deleted.
+- **Don't** bring back Prospects-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Prospects is built on the kit, and `src/components/pepites/pepites.option-a.test.tsx` keeps the old layer deleted.
 - **Don't** add a right-to-left flip to an icon. The global rule already mirrors the directional ones, and a second flip turns them back.

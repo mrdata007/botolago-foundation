@@ -432,7 +432,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
           testId: "admin-nav-pepites",
           group: "content",
           icon: "pepites",
-          labels: { fr: "Pépites", ar: "Pépites" },
+          labels: { fr: "Prospects", ar: "المواهب" },
           hint: { fr: "Les jeunes joueurs à suivre", ar: "اللاعبون الشباب المتابَعون" },
         },
       ] as const)

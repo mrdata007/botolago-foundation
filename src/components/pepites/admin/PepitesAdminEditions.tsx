@@ -125,7 +125,7 @@ export function PepitesAdminEditions({
   return (
     <div className="grid gap-6">
       <p className={ADMIN_LABEL_CLASS}>
-        {rtl ? "جواهر / الاختيار الأسبوعي" : "Pépites / Sélection hebdo"}
+        {rtl ? "المواهب / الاختيار الأسبوعي" : "Prospects / Sélection hebdo"}
       </p>
       {selected ? (
         <EditionEditor
@@ -255,7 +255,7 @@ export function PepitesAdminEditions({
 function OverviewCards({ data, rtl }: { data: AdminOverview; rtl: boolean }) {
   const mode = data.settings?.mode ?? "off";
   const modeText: Record<typeof mode, [string, string]> = {
-    off: ["Fermé (personne ne voit Pépites)", "مغلق (لا أحد يرى Pépites)"],
+    off: ["Fermé (personne ne voit Prospects)", "مغلق (لا أحد يرى المواهب)"],
     staff: ["Aperçu équipe (staff seulement)", "معاينة الفريق (للطاقم فقط)"],
     public: ["Public", "عام"],
   };
