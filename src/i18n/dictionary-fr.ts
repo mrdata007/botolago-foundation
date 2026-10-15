@@ -2516,10 +2516,10 @@ export const fr = {
   "pepites.meta_description":
     "Les meilleurs joueurs de moins de 23 ans de Botola Pro : le Top 10 de la semaine, le classement complet et la méthode.",
   "pepites.tab.top": "Top 10",
-  "pepites.state.coming_soon": "Prospects arrive bientôt",
+  "pepites.state.coming_soon": "Bientôt sur BotolaGO : Prospects",
   "pepites.state.coming_soon_body":
     "Le classement des meilleurs jeunes de Botola Pro n'est pas encore ouvert.",
-  "pepites.state.error": "Impossible de charger les Prospects",
+  "pepites.state.error": "Impossible de charger Prospects",
   "pepites.state.no_ranking": "Pas encore de classement",
   "pepites.state.no_ranking_body":
     "Le premier classement de la saison sera publié après les premières journées.",
@@ -2553,7 +2553,7 @@ export const fr = {
   "pepites.home.full_ranking": "Voir le classement complet",
   "pepites.home.no_match": "Aucun joueur du Top 10 ne correspond à ce filtre.",
   "pepites.home.about":
-    "Prospects classe les joueurs de Botola Pro de moins de 23 ans à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
+    "Prospects, c'est le classement des joueurs de Botola Pro de moins de 23 ans, établi à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
   "pepites.email.title": "Le Top 10 par e-mail",
   "pepites.email.body":
     "Un e-mail par semaine avec le nouveau Top 10. Désactivé tant que vous ne l'activez pas.",
@@ -2692,7 +2692,7 @@ export const fr = {
   "pepites.edition.is_correction": "Version corrigée de ce Top 10.",
   "pepites.method.meta_title": "Méthode Prospects — comment le classement est calculé | BotolaGO",
   "pepites.method.meta_description":
-    "Comment Prospects classe les joueurs de moins de 23 ans de Botola Pro, et la couverture des données.",
+    "Comment est établi le classement Prospects des moins de 23 ans de Botola Pro, et la couverture des données.",
   "pepites.method.who_title": "Qui est classé",
   "pepites.method.who_body":
     "Les joueurs de Botola Pro de moins de {age} ans dont la date de naissance est connue, qui ont joué au moins {minutes} minutes, ou {share} du temps de jeu de leur équipe si c'est plus.",

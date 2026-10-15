@@ -77,10 +77,18 @@ describe("the sub-brand name, French and Arabic", () => {
     }
   });
 
-  test("the new Arabic name is never glued to a preposition it cannot take", () => {
-    // « ال » is part of the name: no « بالمواهب » / « للمواهب » rewrites of the old bare name.
-    for (const key of BRAND_KEYS) {
-      expect(ar[key], `ar ${key}`).not.toMatch(/بالمواهب|للمواهب|والمواهب/);
+  test("المواهب ('the talents') is never the subject of a ranking verb: the section is", () => {
+    for (const key of ["pepites.home.about", "pepites.method.meta_description"]) {
+      expect(ar[key], key).toContain("قسم المواهب");
+      expect(ar[key], key).not.toMatch(/ترتّب المواهب/);
+    }
+    expect(ar["pepites.player.not_found"]).toContain("ترتيب المواهب");
+  });
+
+  test("the French name is not the subject of a singular verb either", () => {
+    expect(fr["pepites.state.coming_soon"]).toBe("Bientôt sur BotolaGO : Prospects");
+    for (const key of ["pepites.home.about", "pepites.method.meta_description"]) {
+      expect(fr[key], key).not.toMatch(/Prospects (classe|arrive)/);
     }
   });
 
@@ -93,11 +101,10 @@ describe("the sub-brand name, French and Arabic", () => {
 
   test("the staff console names the section with the new names", () => {
     const item = ADMIN_CONSOLE_NAV_ITEMS.find((entry) => entry.route === "/admin/pepites");
-    // The item exists only in a build where the section is on; when it does, it uses the new names.
-    if (item) {
-      expect(item.labels.fr).toBe("Prospects");
-      expect(item.labels.ar).toBe("المواهب");
-    }
+    // PEPITES_ENABLED is a constant, true today: the item must exist, so this cannot pass vacuously.
+    expect(item).toBeDefined();
+    expect(item!.labels.fr).toBe("Prospects");
+    expect(item!.labels.ar).toBe("المواهب");
   });
 });
 
@@ -117,5 +124,10 @@ describe("code-side text that readers see", () => {
   ])("%s writes neither Pépites nor جواهر in a string", (path) => {
     const hits = visibleLines(path).filter((line) => /Pépites|pépites|PÉPITES|جواهر/.test(line));
     expect(hits).toEqual([]);
+  });
+
+  test("the link-preview title carries both names", () => {
+    const source = readFileSync("src/routes/pepites.index.tsx", "utf8");
+    expect(source).toContain('const OG_TITLE = "Prospects · المواهب — توب 10 | BotolaGO";');
   });
 });

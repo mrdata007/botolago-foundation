@@ -1419,7 +1419,7 @@ export function renderNotificationEmail(
       ? t(
           ctx,
           "Vous désabonner de Prospects ne change pas vos autres e-mails BotolaGO.",
-          "إلغاء الاشتراك في المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+          "إلغاء الاشتراك في رسالة المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
         )
       : null,
     home: pepites ? { label: t(ctx, "Prospects", "المواهب"), url: routes.pepites } : null,
@@ -1431,7 +1431,7 @@ export function renderNotificationEmail(
     },
     unsubscribe: {
       label: pepites
-        ? t(ctx, "Se désabonner de Prospects", "إلغاء الاشتراك في المواهب")
+        ? t(ctx, "Se désabonner de Prospects", "إلغاء الاشتراك في رسالة المواهب")
         : t(ctx, "Se désabonner", "إلغاء الاشتراك"),
       url: unsubscribeUrl(delivery, links),
     },

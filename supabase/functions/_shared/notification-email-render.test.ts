@@ -205,7 +205,7 @@ describe("renderNotificationEmail: every type in both languages", () => {
         const unsubscribe = pepites
           ? language === "fr"
             ? "Se désabonner de Prospects"
-            : "إلغاء الاشتراك في المواهب"
+            : "إلغاء الاشتراك في رسالة المواهب"
           : language === "fr"
             ? "Se désabonner"
             : "إلغاء الاشتراك";
@@ -715,7 +715,7 @@ describe("pepites_weekly", () => {
     expect(email.text).not.toMatch(/[0-9][ \u00a0\u202f][0-9]/);
     expect(email.text).toContain("1. Ilias Akhomach · الرجاء الرياضي · 88/100");
     expect(email.text).toContain(
-      "إلغاء الاشتراك في المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+      "إلغاء الاشتراك في رسالة المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
     );
   });
 

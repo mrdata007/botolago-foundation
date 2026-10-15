@@ -2402,7 +2402,7 @@ export const ar = {
   "pepites.home.full_ranking": "عرض الترتيب الكامل",
   "pepites.home.no_match": "لا يوجد لاعب في أفضل 10 يطابق هذا الاختيار.",
   "pepites.home.about":
-    "ترتّب المواهب لاعبي البطولة الاحترافية دون 23 سنة انطلاقًا من مبارياتهم. تختار هيئة التحرير أفضل 10 كل أسبوع.",
+    "يرتّب قسم المواهب لاعبي البطولة الاحترافية دون 23 سنة انطلاقًا من مبارياتهم. تختار هيئة التحرير أفضل 10 كل أسبوع.",
   "pepites.email.title": "توب 10 عبر البريد الإلكتروني",
   "pepites.email.body": "رسالة واحدة في الأسبوع مع توب 10 الجديد. معطّلة ما لم تفعّلها بنفسك.",
   "pepites.email.sign_in": "سجّل الدخول لتفعيلها",
@@ -2429,7 +2429,7 @@ export const ar = {
   "pepites.ranking.meta_description":
     "الترتيب الكامل للاعبي البطولة الاحترافية دون 23 سنة، حسب المركز والسن.",
   "pepites.player.meta_title": "{name} — ترتيب المواهب | BotolaGO",
-  "pepites.player.not_found": "هذا اللاعب غير موجود في المواهب.",
+  "pepites.player.not_found": "هذا اللاعب غير موجود في ترتيب المواهب.",
   "pepites.player.tabs": "أقسام اللاعب",
   "pepites.player.tab_overview": "نظرة عامة",
   "pepites.player.tab_matches": "المباريات",
@@ -2535,9 +2535,9 @@ export const ar = {
   "pepites.edition.corrected_body": "صُحّح خطأ بعد النشر. النسخة المصحّحة هي المعتمدة.",
   "pepites.edition.see_correction": "عرض النسخة المصحّحة",
   "pepites.edition.is_correction": "نسخة مصحّحة من قائمة أفضل 10 هذه.",
-  "pepites.method.meta_title": "طريقة المواهب — كيف يُحسب الترتيب | BotolaGO",
+  "pepites.method.meta_title": "منهجية المواهب — كيف يُحسب الترتيب | BotolaGO",
   "pepites.method.meta_description":
-    "كيف ترتّب المواهب لاعبي البطولة الاحترافية دون 23 سنة، ومدى اكتمال البيانات.",
+    "كيف يرتّب قسم المواهب لاعبي البطولة الاحترافية دون 23 سنة، ومدى اكتمال البيانات.",
   "pepites.method.who_title": "من يُصنَّف",
   "pepites.method.who_body":
     "لاعبو البطولة الاحترافية دون {age} سنة المعروف تاريخ ميلادهم، الذين لعبوا {minutes} دقيقة على الأقل، أو {share} من دقائق فريقهم إن كان ذلك أكثر.",
