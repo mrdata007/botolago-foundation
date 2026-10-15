@@ -129,6 +129,7 @@ export async function databaseHealth(
   const checks: Check[] = [];
   let unnamed = 0;
   let unrecognised = 0;
+  const unrecognisedNames = new Set<string>();
   const withoutDetail: string[] = [];
   for (const entry of report.checks) {
     const fields = (typeof entry === "object" && entry !== null ? entry : {}) as Record<
@@ -151,6 +152,7 @@ export async function databaseHealth(
     // A status this script does not know fails under the check's own name
     // rather than being dropped: it may well mean something worse than fail.
     unrecognised += 1;
+    unrecognisedNames.add(name);
     checks.push({
       name,
       status: "fail",
@@ -192,7 +194,30 @@ export async function databaseHealth(
       detail: `health RPC ${problems.join("; ")}`,
     });
   }
-  return checks;
+  // Held only now, so the comparison above saw what the database stated. Only
+  // a status the script recognises is held: an unrecognised one is the health
+  // function drifting from its contract, not visitors, and stays a failure.
+  return checks.map((check) =>
+    unrecognisedNames.has(check.name) ? check : holdBrowserReported(check),
+  );
+}
+
+/**
+ * Checks fed by what visitors' browsers report to a public endpoint. Anyone
+ * can send those reports, so they can warn but never fail: a flood of invented
+ * errors must not open an `ops-alert` issue as if the backend were down
+ * (audit SEC-06). The database check already stops at "warn"; this keeps the
+ * watchdog from paging on it even if a later migration lets it say "fail".
+ */
+export const BROWSER_REPORTED_CHECKS: readonly string[] = ["browser_errors"];
+
+export function holdBrowserReported(check: Check): Check {
+  if (check.status !== "fail" || !BROWSER_REPORTED_CHECKS.includes(check.name)) return check;
+  return {
+    ...check,
+    status: "warn",
+    detail: `browser-reported, held at warn: ${check.detail}`.slice(0, 200),
+  };
 }
 
 function isCheckStatus(value: unknown): value is CheckStatus {
