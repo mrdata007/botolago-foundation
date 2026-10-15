@@ -10,7 +10,14 @@ import { savedArticlePageSchema } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
 import { MockNewsRepository } from "@/backend/news/mock-repository";
 import { encodeSavedCursor } from "@/backend/news/supabase-repository";
-import { collectSavedIds, getSavedEntriesPage, resolveSavedIds, SAVED_PAGE_SIZE } from "./news";
+import {
+  collectSavedIds,
+  getSavedEntriesPage,
+  readArticleSavedState,
+  resolveSavedIds,
+  SAVED_IDS_LIMIT,
+  SAVED_PAGE_SIZE,
+} from "./news";
 
 /**
  * Audit UX-001, the data side of the reading list: every saved story is
@@ -76,7 +83,8 @@ function savedRepository(total: number) {
 describe("the saved ids behind every bookmark and the Profile count", () => {
   test("a reader with more than one page of saves gets all of them", async () => {
     const { repository, calls } = savedRepository(120);
-    const ids = await collectSavedIds(repository, context);
+    const { ids, complete } = await collectSavedIds(repository, context);
+    expect(complete).toBe(true);
     expect(ids).toHaveLength(120);
     expect(new Set(ids).size).toBe(120);
     expect(calls).toHaveLength(3);
@@ -85,13 +93,13 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
 
   test("a short list is one request", async () => {
     const { repository, calls } = savedRepository(3);
-    expect(await collectSavedIds(repository, context)).toHaveLength(3);
+    expect((await collectSavedIds(repository, context)).ids).toHaveLength(3);
     expect(calls).toHaveLength(1);
   });
 
   test("an empty list is an empty list", async () => {
     const { repository } = savedRepository(0);
-    expect(await collectSavedIds(repository, context)).toEqual([]);
+    expect(await collectSavedIds(repository, context)).toEqual({ ids: [], complete: true });
   });
 
   test("stops when the server repeats a cursor, and counts each id once", async () => {
@@ -105,7 +113,7 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
         };
       },
     };
-    const ids = await collectSavedIds(repeating, context);
+    const { ids } = await collectSavedIds(repeating, context);
     expect(ids).toEqual([uuid(1), uuid(2)]);
     expect(calls).toBe(2);
   });
@@ -125,14 +133,39 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
     const original = console.warn;
     console.warn = (message: string) => void warnings.push(message);
     try {
-      const ids = await collectSavedIds(endless, context);
+      const { ids, complete } = await collectSavedIds(endless, context);
       expect(ids).toHaveLength(40);
+      expect(complete).toBe(false);
       expect(calls).toBe(40);
     } finally {
       console.warn = original;
     }
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("40 pages");
+  });
+
+  test("more than 2,000 saves: the ids are the newest 2,000 and the answer says it is partial", async () => {
+    const { repository, calls } = savedRepository(2_100);
+    const warnings: string[] = [];
+    const original = console.warn;
+    console.warn = (message: string) => void warnings.push(message);
+    try {
+      const result = await collectSavedIds(repository, context);
+      expect(SAVED_IDS_LIMIT).toBe(2_000);
+      expect(result.ids).toHaveLength(SAVED_IDS_LIMIT);
+      expect(result.complete).toBe(false);
+      expect(calls).toHaveLength(40);
+    } finally {
+      console.warn = original;
+    }
+    expect(warnings).toHaveLength(1);
+  });
+
+  test("exactly 2,000 saves is still the whole list", async () => {
+    const { repository } = savedRepository(2_000);
+    const result = await collectSavedIds(repository, context);
+    expect(result.ids).toHaveLength(2_000);
+    expect(result.complete).toBe(true);
   });
 
   test("a failed read throws instead of answering with a shorter list", async () => {
@@ -142,6 +175,31 @@ describe("the saved ids behind every bookmark and the Profile count", () => {
       },
     };
     await expect(collectSavedIds(repository, context)).rejects.toThrow();
+  });
+});
+
+describe("one story's saved state, from the server", () => {
+  const detail = (isSaved: boolean) =>
+    ({ ...card(1), isSaved, bodyHtml: "<p>x</p>" }) as unknown as ArticleDetailDto;
+
+  test("is the isSaved the server sent with the article", async () => {
+    for (const isSaved of [true, false]) {
+      const repository: Pick<NewsRepository, "getArticle"> = {
+        async getArticle() {
+          return detail(isSaved);
+        },
+      };
+      expect(await readArticleSavedState(repository, uuid(1), "fr", context)).toBe(isSaved);
+    }
+  });
+
+  test("a failed read throws, so no save or removal is guessed", async () => {
+    const repository: Pick<NewsRepository, "getArticle"> = {
+      async getArticle(): Promise<ArticleDetailDto> {
+        throw new NewsError("data_unavailable", "timeout");
+      },
+    };
+    await expect(readArticleSavedState(repository, uuid(1), "fr", context)).rejects.toThrow();
   });
 });
 

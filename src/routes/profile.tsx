@@ -60,6 +60,8 @@ import { findClub } from "@/components/fantasy/club-identity";
 import { ACCOUNT_DELETION_DONE_PATH, ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { formatCount } from "@/components/pepites/pepites-format";
+import { SAVED_IDS_LIMIT } from "@/services/news";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/report-content";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
@@ -697,8 +699,17 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
  * "0", which would tell a reader with saved stories that they have none.
  */
 function SavedArticlesCount() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const saved = useSavedArticles();
+  // More saves than the app counts (2,000): "plus de 2 000", not a number that
+  // stops at the cap and looks exact.
+  if (saved.idsKnown && !saved.complete) {
+    return (
+      <span className={ui.stat.sm}>
+        {t("news.saved.count_over").replace("{count}", formatCount(SAVED_IDS_LIMIT, lang))}
+      </span>
+    );
+  }
   if (saved.idsKnown) return <span className={ui.stat.sm}>{saved.ids.length}</span>;
   return (
     <span className={ui.stat.sm}>

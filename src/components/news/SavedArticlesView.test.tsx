@@ -54,6 +54,7 @@ interface Props {
   hasMore: boolean;
   loadingMore: boolean;
   moreFailed: boolean;
+  overLimit?: boolean;
 }
 
 async function render(overrides: Partial<Props> = {}): Promise<string> {
@@ -183,5 +184,19 @@ describe("the reading list", () => {
     const button = html.match(/<button[^>]*>[^<]*Retirer de la liste/)?.[0] ?? "";
     expect(button).toContain("min-h-[var(--ui-tap-min)]");
     expect(button).toContain("min-w-[var(--ui-tap-min)]");
+  });
+});
+
+describe("an account with more than 2,000 saved articles", () => {
+  test("the page says so, with the cap, and still lists the stories", async () => {
+    const html = await render({ overLimit: true });
+    // French groups thousands with a narrow no-break space; `text` folds it to a space.
+    expect(text(html)).toContain(fr["news.saved.over_limit"].replace("{count}", "2 000"));
+    expect(html).toContain('data-testid="saved-over-limit"');
+    expect(html).toContain(`href="/news/${ID_A}"`);
+  });
+
+  test("an ordinary list carries no such note", async () => {
+    expect(await render()).not.toContain("saved-over-limit");
   });
 });

@@ -57,8 +57,12 @@ export function useSavedCollection() {
     [query.data],
   );
   const entries = useMemo(
-    () => visibleSavedEntries(fetched, saved.ids, saved.idsKnown),
-    [fetched, saved.ids, saved.idsKnown],
+    () =>
+      visibleSavedEntries(fetched, saved.ids, saved.idsKnown, {
+        complete: saved.complete,
+        removed: saved.removed ?? [],
+      }),
+    [fetched, saved.ids, saved.idsKnown, saved.complete, saved.removed],
   );
 
   const phase = savedCollectionPhase({
@@ -72,6 +76,9 @@ export function useSavedCollection() {
   return {
     phase,
     entries,
+    // The account has more saves than the app counts (2,000): the page says
+    // so instead of implying the list it shows is all of it.
+    overLimit: saved.idsKnown && !saved.complete,
     hasMore: query.hasNextPage,
     loadingMore: query.isFetchingNextPage,
     moreFailed: query.isFetchNextPageError,

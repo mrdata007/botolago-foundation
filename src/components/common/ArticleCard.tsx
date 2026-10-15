@@ -254,6 +254,7 @@ export function ArticleCard({
         {isLead && (
           <SavedButton
             articleId={article.id}
+            serverSaved={article.isSaved}
             variant="overlay"
             className="absolute end-3 top-3 z-10"
           />
@@ -324,7 +325,12 @@ export function ArticleCard({
         />
       </Link>
       {!dense && (
-        <SavedButton articleId={article.id} variant="thumb" className="absolute end-4 top-4 z-10" />
+        <SavedButton
+          articleId={article.id}
+          serverSaved={article.isSaved}
+          variant="thumb"
+          className="absolute end-4 top-4 z-10"
+        />
       )}
     </div>
   );

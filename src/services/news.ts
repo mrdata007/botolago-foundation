@@ -410,6 +410,7 @@ export function presentArticle(
     isLead: safe.placement === "home_lead" || safe.placement === "news_lead",
     tag: safe.tags[0] ? localized(safe.tags[0].name) : undefined,
     bodyHtml: "bodyHtml" in safe ? safe.bodyHtml : undefined,
+    isSaved: safe.isSaved,
   };
 }
 
@@ -541,17 +542,33 @@ export async function getArticleWithLanguageFallback(
 export const SAVED_PAGE_SIZE = 50;
 /** A runaway guard for `collectSavedIds`: 40 pages is 2,000 saved stories. */
 const SAVED_IDS_MAX_PAGES = 40;
+/** The most saved ids the app reads (2,000); a longer list is reported as incomplete. */
+export const SAVED_IDS_LIMIT = SAVED_PAGE_SIZE * SAVED_IDS_MAX_PAGES;
 
 /**
- * Every story id the reader has saved, across all pages. The save toggles and
- * the Profile count read this; it used to ask for one page of "100" that the
- * server cut to 50, so the 51st saved story looked unsaved (its bookmark
- * offered "Enregistrer" again) and was missing from the count.
+ * The saved story ids and whether they are all of them. `complete: false`
+ * means the reader has more saves than the app reads: `ids` is then the newest
+ * `SAVED_IDS_LIMIT`, and no caller may treat a missing id as "not saved".
+ */
+export interface SavedIds {
+  ids: string[];
+  complete: boolean;
+}
+
+/**
+ * Every story id the reader has saved, across all pages, up to
+ * `SAVED_IDS_LIMIT`. The save toggles and the Profile count read this; it used
+ * to ask for one page of "100" that the server cut to 50, so the 51st saved
+ * story looked unsaved (its bookmark offered "Enregistrer" again) and was
+ * missing from the count.
+ *
+ * Past the limit it says so (`complete: false`) rather than returning the
+ * first 2,000 as if they were the whole list.
  */
 export async function collectSavedIds(
   repository: Pick<NewsRepository, "getSaved">,
   requestContext: RepositoryContext,
-): Promise<string[]> {
+): Promise<SavedIds> {
   const ids = new Set<string>();
   const seenCursors = new Set<string>();
   let cursor: string | null = null;
@@ -560,13 +577,33 @@ export async function collectSavedIds(
     for (const item of result.items) ids.add(item.id);
     cursor = encodeSavedCursor(result.nextCursor);
     // A cursor seen before would loop forever on the same page.
-    if (!cursor || seenCursors.has(cursor)) return [...ids];
+    if (!cursor || seenCursors.has(cursor)) return { ids: [...ids], complete: true };
     seenCursors.add(cursor);
   }
   console.warn(
     `[news] saved ids stopped at ${SAVED_IDS_MAX_PAGES} pages (${ids.size} ids); the list is longer.`,
   );
-  return [...ids];
+  return { ids: [...ids], complete: false };
+}
+
+/**
+ * Whether the signed-in reader has saved one story, asked of the server (every
+ * article the News API returns carries `isSaved` for the caller). Used when the
+ * saved ids are only the newest 2,000 and so cannot answer.
+ */
+export async function readArticleSavedState(
+  repository: Pick<NewsRepository, "getArticle">,
+  articleId: string,
+  language: NewsLanguage,
+  requestContext: RepositoryContext,
+): Promise<boolean> {
+  const article = await getArticleWithLanguageFallback(
+    repository,
+    articleId,
+    language,
+    requestContext,
+  );
+  return article.isSaved;
 }
 
 /** One page of the saved collection, as rows, plus the cursor of the next. */
@@ -671,8 +708,13 @@ export const newsService = {
     return page.items.map((article) => presentArticle(article));
   },
 
-  async getSavedIds(): Promise<string[]> {
+  async getSavedIds(): Promise<SavedIds> {
     return collectSavedIds(getNewsRepository(), context());
+  },
+
+  /** Whether one story is saved, per the server (see `readArticleSavedState`). */
+  async isArticleSaved(articleId: string, language: NewsLanguage): Promise<boolean> {
+    return readArticleSavedState(getNewsRepository(), articleId, language, context());
   },
 
   /** A page of the signed-in reader's collection (production). */

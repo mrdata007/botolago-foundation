@@ -177,6 +177,9 @@ export const fr = {
   "news.saved.save_error": "Impossible d'enregistrer cet article pour le moment. Réessayez.",
   "news.saved.removed_announce": "Article retiré de vos articles enregistrés.",
   "news.saved.count_unknown": "nombre inconnu",
+  "news.saved.count_over": "plus de {count}",
+  "news.saved.over_limit":
+    "Vous avez plus de {count} articles enregistrés. Les plus récents s'affichent en premier.",
   "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
   "news.view_all": "Tout voir",
   "news.breaking": "Dernière minute",

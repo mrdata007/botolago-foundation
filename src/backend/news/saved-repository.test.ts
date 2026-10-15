@@ -107,7 +107,8 @@ const { collectSavedIds, getSavedEntriesPage, SAVED_PAGE_SIZE } = await import("
 describe("the saved list through the real repository", () => {
   test("a reader with 120 saves gets all 120, once each, in three requests", async () => {
     calls.length = 0;
-    const ids = await collectSavedIds(new SupabaseNewsRepository(), context);
+    const { ids, complete } = await collectSavedIds(new SupabaseNewsRepository(), context);
+    expect(complete).toBe(true);
     expect(ids).toEqual(rows.map((row) => row.id));
     expect(new Set(ids).size).toBe(TOTAL);
     expect(calls.map((call) => call.name)).toEqual(Array(3).fill("news_saved_articles"));
