@@ -92,6 +92,61 @@ describe("production watchdog", () => {
     expect(healthy).toHaveLength(REQUIRED_DATABASE_CHECKS.length + 1);
   });
 
+  test("browser-reported checks never fail the watchdog, whatever the database says", async () => {
+    // The reports come from a public endpoint: a flood of invented ones must
+    // not look like a backend outage. A "fail" from such a check is held to
+    // "warn"; the other checks and the report's own consistency are untouched.
+    const reported = healthyChecks({
+      name: "browser_errors",
+      status: "fail",
+      detail: "9000 unhandled browser error(s); most: TypeError on /",
+    });
+    const checks = await databaseHealth(
+      async () => Response.json({ status: "fail", checks: reported }),
+      url,
+      "secret",
+    );
+    const browser = checks.find((check) => check.name === "browser_errors");
+    expect(browser?.status).toBe("warn");
+    expect(browser?.detail).toContain("9000 unhandled browser error(s)");
+    expect(browser?.detail).toContain("browser-reported");
+    expect(overall(checks)).toBe("warn");
+    expect(checks.some((check) => check.name === "database_health")).toBe(false);
+
+    // A backend failure beside it still fails.
+    const withBackend = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "fail",
+          checks: healthyChecks(
+            { name: "browser_errors", status: "fail", detail: "flood" },
+            { name: "cron_jobs", status: "fail", detail: "a job failed" },
+          ),
+        }),
+      url,
+      "secret",
+    );
+    expect(overall(withBackend)).toBe("fail");
+    expect(withBackend.find((check) => check.name === "cron_jobs")?.status).toBe("fail");
+    expect(withBackend.find((check) => check.name === "browser_errors")?.status).toBe("warn");
+
+    // A browser warning is kept as it is.
+    const warned = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "warn",
+          checks: healthyChecks({ name: "browser_errors", status: "warn", detail: "30 errors" }),
+        }),
+      url,
+      "secret",
+    );
+    expect(warned.find((check) => check.name === "browser_errors")).toEqual({
+      name: "browser_errors",
+      status: "warn",
+      detail: "30 errors",
+    });
+  });
+
   test("malformed health responses fail closed without leaking response bodies", async () => {
     for (const body of [
       "upstream secret",

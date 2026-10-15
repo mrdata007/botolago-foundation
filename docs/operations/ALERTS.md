@@ -276,8 +276,12 @@ competitions running, the three checks name the gameweek with its season
 deadline, and counts the others.
 
 `browser_errors` only ever warns: the reports come from a public endpoint,
-and a public endpoint must not be able to page anyone. Read them in the SQL
-editor:
+and a public endpoint must not be able to page anyone. The database never
+gives it a `fail`, and the watchdog holds it at `warn` even if a later
+migration did (`BROWSER_REPORTED_CHECKS` in `scripts/ops/watchdog.ts`; its
+detail then starts with `browser-reported, held at warn`). A flood of invented
+reports can therefore turn the overall status to `warn` at most, never open an
+`ops-alert` issue or send the webhook. Read them in the SQL editor:
 
 ```sql
 select bucket_hour, kind, code, route, release, reports, sample
@@ -292,7 +296,30 @@ by `:id`, the release (git commit) and the first report's redacted message.
 Never a user, an IP address, a query string, an e-mail address or a token;
 kept 30 days. The browser side is `src/lib/client-error-sink.ts`: at most 20
 reports per page visit, each kind of error once, sent without the visitor's
-sign-in token.
+sign-in token. The endpoint does not rely on that (anyone can call it
+directly): it stores at most 300 new kinds of error per hour, and since
+migration `20261015120200` that limit is exact however many callers arrive
+together (a new kind is admitted under a per-hour lock). Counting a kind that
+is already stored takes no lock and is not limited.
+
+What the endpoint refused is counted, never silent. A quiet hour and a flooded
+hour look different here:
+
+```sql
+select bucket_hour, dropped_new_kinds, dropped_malformed
+from app_private.client_error_intake
+order by bucket_hour desc
+limit 24;
+```
+
+`dropped_new_kinds` is new kinds refused because the hour already held 300
+(real new errors can be among them: if it is above zero, look at whether the
+stored kinds are one fabricated family). `dropped_malformed` is reports the
+endpoint skipped as malformed. Counters only: no report, page, user or address
+is kept, for 30 days. A call whose list is itself invalid is refused before
+anything is written and is not counted. No pg_cron job writes these tables
+(the alert tick and the watchdog only read `client_error_counts`), so a write
+to them needs no job paused; visitors' calls cannot be paused.
 
 ## The watchdog's own rows
 

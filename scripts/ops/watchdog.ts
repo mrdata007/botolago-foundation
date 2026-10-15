@@ -192,7 +192,25 @@ export async function databaseHealth(
       detail: `health RPC ${problems.join("; ")}`,
     });
   }
-  return checks;
+  return checks.map(holdBrowserReported);
+}
+
+/**
+ * Checks fed by what visitors' browsers report to a public endpoint. Anyone
+ * can send those reports, so they can warn but never fail: a flood of invented
+ * errors must not open an `ops-alert` issue as if the backend were down
+ * (audit SEC-06). The database check already stops at "warn"; this keeps the
+ * watchdog from paging on it even if a later migration lets it say "fail".
+ */
+export const BROWSER_REPORTED_CHECKS: readonly string[] = ["browser_errors"];
+
+export function holdBrowserReported(check: Check): Check {
+  if (check.status !== "fail" || !BROWSER_REPORTED_CHECKS.includes(check.name)) return check;
+  return {
+    ...check,
+    status: "warn",
+    detail: `browser-reported, held at warn: ${check.detail}`.slice(0, 200),
+  };
 }
 
 function isCheckStatus(value: unknown): value is CheckStatus {
