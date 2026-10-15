@@ -77,15 +77,39 @@ function storage(kind: "localStorage" | "sessionStorage"): Storage | null {
   }
 }
 
+/**
+ * The invite when this browser would not store it (private mode, blocked site
+ * data, some in-app browsers). The address bar is cleaned either way, so
+ * without this copy the code was simply lost, and the visitor who then signed
+ * in on this page found "no invite". It lives only as long as the page: a
+ * sign-in that reloads the page (e-mail link, Google, Apple) still loses it,
+ * and the recipient needs the link again. Set only when storing failed.
+ */
+let memoryInvite: { invite: PendingInvite; savedAt: number } | null = null;
+
 function save(invite: PendingInvite, now: number): void {
   try {
-    storage("localStorage")?.setItem(
+    const local = storage("localStorage");
+    if (!local) throw new Error("no storage");
+    local.setItem(
       PENDING_KEY,
       JSON.stringify({ v: 1, code: invite.code, game: invite.game, savedAt: now }),
     );
+    memoryInvite = null;
   } catch {
     /* blocked: the invite lives in memory for this page only */
+    memoryInvite = { invite, savedAt: now };
   }
+}
+
+function pendingInMemory(now: number): PendingInvite | null {
+  if (!memoryInvite) return null;
+  const age = now - memoryInvite.savedAt;
+  if (age < 0 || age >= INVITE_RECOVERY_MS) {
+    memoryInvite = null;
+    return null;
+  }
+  return memoryInvite.invite;
 }
 
 /** The invite kept on this device, if it is still fresh. */
@@ -115,12 +139,11 @@ export function pendingInvite(now = Date.now()): PendingInvite | null {
   }
   try {
     const legacy = storage("sessionStorage")?.getItem(LEGACY_PENDING_KEY) ?? null;
-    return legacy && isInviteCode(legacy)
-      ? { code: normalizeInviteCode(legacy), game: null }
-      : null;
+    if (legacy && isInviteCode(legacy)) return { code: normalizeInviteCode(legacy), game: null };
   } catch {
-    return null;
+    /* unreadable: nothing from the old key */
   }
+  return pendingInMemory(now);
 }
 
 /**
@@ -150,6 +173,7 @@ export function pendingInviteCode(now = Date.now()): string | null {
 }
 
 export function clearPendingInvite(): void {
+  memoryInvite = null;
   try {
     storage("localStorage")?.removeItem(PENDING_KEY);
   } catch {

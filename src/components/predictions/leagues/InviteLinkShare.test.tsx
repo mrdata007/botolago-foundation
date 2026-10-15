@@ -138,8 +138,15 @@ describe("InviteLinkShare: what pressing does", () => {
     expect(source).toContain(
       'toast.success(fantasy ? t("fantasy.hub.invite_copied") : t("article.share_copied"));',
     );
-    expect(source).toContain(
-      'toast.error(fantasy ? t("state.error") : t("predictions.save.offline"));',
-    );
+  });
+
+  it("shows the link to copy by hand when the clipboard refuses, not an unrelated error", () => {
+    // A refused clipboard used to say "Hors connexion · nouvel essai automatique"
+    // (Pronostics) or "Une erreur est survenue." (Fantasy): neither true, and the
+    // invite link is nowhere else on screen.
+    expect(source).not.toContain("predictions.save.offline");
+    expect(source).not.toContain('"state.error"');
+    expect(source).toContain("setManual(link)");
+    expect(source).toContain("<ManualCopyField value={manual} />");
   });
 });

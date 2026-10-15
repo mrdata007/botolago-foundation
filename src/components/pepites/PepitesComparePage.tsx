@@ -9,6 +9,8 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { ui, UiButton, UiCard, UiInput, UiPlayerRow, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
+import { shareLink } from "@/lib/share-link";
+import { shareablePageUrl } from "@/lib/share-url";
 import { cn } from "@/lib/utils";
 
 import {
@@ -173,21 +175,10 @@ export function PepitesComparePage({
   );
   const share = async () => {
     if (!firstId || !secondId || typeof window === "undefined") return;
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: t("pepites.compare.title"), url });
-      } catch {
-        /* User dismissed the sheet. */
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success(t("pepites.compare.copied"));
-    } catch {
-      toast.error(t("pepites.compare.copy_failed"));
-    }
+    const url = shareablePageUrl(window.location.href);
+    const result = await shareLink({ title: t("pepites.compare.title"), url });
+    if (result === "copied") toast.success(t("pepites.compare.copied"));
+    else if (result === "failed") toast.error(t("pepites.compare.copy_failed"));
   };
   const choose = (side: Side, id: string) => {
     if (id === (side === "a" ? secondId : firstId)) return;

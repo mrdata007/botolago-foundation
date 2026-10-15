@@ -2,12 +2,14 @@ import { Copy, Download, ImageDown, MessageCircle, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { useNativeImageActions } from "@/components/native/use-native-image-actions";
 import { WebOnly } from "@/components/native/WebOnly";
 import { whatsappUrl } from "@/components/predictions/leagues/invite-link";
 import { ui, UiButton, UiIconButton, UiSheet, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { copyText } from "@/lib/copy-text";
 import { saveImageToGallery, shareImageFile } from "@/lib/native-share-image";
 import { cn } from "@/lib/utils";
 
@@ -73,12 +75,15 @@ export function ShareImageSheet({
   const [failed, setFailed] = useState(false);
   const native = useNativeImageActions();
   const [busy, setBusy] = useState<"save" | "share" | null>(null);
+  // What to copy by hand when the clipboard refused.
+  const [manual, setManual] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     let url: string | null = null;
     setFailed(false);
+    setManual(null);
     render().then(
       (blob) => {
         if (cancelled) return;
@@ -94,6 +99,7 @@ export function ShareImageSheet({
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
       setImage(null);
+      setManual(null);
     };
     // `render` is rebuilt each render; `renderKey` is what it draws.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,8 +191,12 @@ export function ShareImageSheet({
                   await navigator.share({ files: [file], text: `${message} ${link("native")}` });
                   onEvent?.("native");
                   setOpen(false);
-                } catch {
-                  // Declined, not failed.
+                } catch (error) {
+                  // Closing the share sheet is the person's answer; any other
+                  // failure is said, and WhatsApp and the link are still here.
+                  if ((error as { name?: unknown } | null)?.name !== "AbortError") {
+                    toast.error(t("pepites.share.native_failed"));
+                  }
                 }
               }}
             >
@@ -257,19 +267,23 @@ export function ShareImageSheet({
           <UiButton
             variant="soft"
             onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(`${message} ${link("copy")}`);
+              const text = `${message} ${link("copy")}`;
+              if (await copyText(text)) {
                 toast.success(t("article.share_copied"));
                 onEvent?.("copy");
                 setOpen(false);
-              } catch {
+              } else {
+                // Said, and the text shown to copy by hand: never a silent
+                // failure, never a "copied" that did not happen.
                 toast.error(t("pepites.share.copy_failed"));
+                setManual(text);
               }
             }}
           >
             <Copy className="h-4 w-4" aria-hidden />
             {t("pepites.share.copy")}
           </UiButton>
+          {manual ? <ManualCopyField value={manual} /> : null}
         </div>
       </UiSheet>
     </>
