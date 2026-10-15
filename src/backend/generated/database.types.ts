@@ -1261,8 +1261,16 @@ export type Database = {
       get_league_member_trophies: { Args: { p_league: string }; Returns: Json }
       get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
+      get_my_briefing_alternatives: {
+        Args: { p_limit?: number; p_player_out: string }
+        Returns: Json
+      }
       get_my_card_career: { Args: { p_season?: string }; Returns: Json }
       get_my_card_history_visibility: { Args: never; Returns: Json }
+      get_my_deadline_briefing: {
+        Args: { p_season_id?: string }
+        Returns: Json
+      }
       get_my_fantasy_history: {
         Args: {
           p_before_gameweek_sequence?: number
@@ -1272,6 +1280,10 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_points: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_before_identity: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
@@ -1295,8 +1307,14 @@ export type Database = {
       }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_premium: { Args: never; Returns: Json }
+      get_my_rivals: { Args: { p_season?: string }; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       get_my_trophies: { Args: { p_season?: string }; Returns: Json }
+      get_rival_candidates: { Args: { p_season?: string }; Returns: Json }
+      get_round_recap: {
+        Args: { p_gameweek?: string; p_league?: string }
+        Returns: Json
+      }
       get_trophy_card_frames: { Args: { p_team_ids: string[] }; Returns: Json }
       home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
@@ -1648,6 +1666,10 @@ export type Database = {
         Returns: Json
       }
       pepites_version: { Args: never; Returns: Json }
+      pin_rival: {
+        Args: { p_rival_team: string; p_season?: string }
+        Returns: Json
+      }
       predictions_leaderboard: {
         Args: {
           p_after_id?: string
@@ -2437,12 +2459,17 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: Json
       }
+      set_rivals_notify: { Args: { p_enabled: boolean }; Returns: Json }
       set_trophies_visibility: { Args: { p_visible: boolean }; Returns: Json }
       unfollow_competition: {
         Args: { p_competition_id: string }
         Returns: boolean
       }
       unfollow_team: { Args: { p_team_id: string }; Returns: boolean }
+      unpin_rival: {
+        Args: { p_rival_team: string; p_season?: string }
+        Returns: Json
+      }
       unregister_my_notification_device: {
         Args: { p_device_id: string }
         Returns: boolean
@@ -7334,6 +7361,52 @@ export type Database = {
           },
         ]
       }
+      pinned_rivals: {
+        Row: {
+          created_at: string
+          fantasy_season_id: string
+          rival_user_id: string
+          slot: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_season_id: string
+          rival_user_id: string
+          slot: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_season_id?: string
+          rival_user_id?: string
+          slot?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_rivals_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinned_rivals_rival_user_id_fkey"
+            columns: ["rival_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinned_rivals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_availability: {
         Row: {
           active: boolean
@@ -8057,6 +8130,35 @@ export type Database = {
             columns: ["logo_asset_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rival_preferences: {
+        Row: {
+          notify_changed_at: string
+          notify_lead_change: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          notify_changed_at?: string
+          notify_lead_change?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          notify_changed_at?: string
+          notify_lead_change?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rival_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -9328,6 +9430,7 @@ export type Database = {
         | "pepites_weekly"
         | "goal_cancelled"
         | "manager_card_ovr_change"
+        | "rival_lead_change"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -9753,6 +9856,7 @@ export const Constants = {
         "pepites_weekly",
         "goal_cancelled",
         "manager_card_ovr_change",
+        "rival_lead_change",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

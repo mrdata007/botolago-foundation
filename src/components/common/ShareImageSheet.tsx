@@ -67,7 +67,7 @@ export function ShareImageSheet({
   testIdPrefix?: string;
   /** Called for each share step; never given any content of the share. */
   onEvent?: (event: ShareSheetEvent) => void;
-  /** Draws the button that opens the sheet (default: a share icon button labelled `label`). */
+  /** Replaces the round share button: the caller draws its own and calls `open` to show the sheet. */
   trigger?: (open: () => void) => ReactNode;
 }) {
   const { t } = useI18n();

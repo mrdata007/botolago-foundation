@@ -9,6 +9,7 @@ import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
+import { LeagueReadNotice } from "@/components/fantasy/LeagueReadNotice";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -20,6 +21,7 @@ import {
   UiButton,
   UiCard,
   UiEmptyState,
+  UiErrorState,
   UiHeader,
   UiInput,
   UiLinkButton,
@@ -30,6 +32,7 @@ import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { listReadView } from "@/services/fantasy-read-state";
 import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues")({
@@ -90,6 +93,9 @@ function LeaguesBody() {
     queryFn: () => fantasyService.getLeagues("public"),
     enabled: screen.phase === "ready",
   });
+
+  const privateView = listReadView(privateQ);
+  const publicView = listReadView(publicQ);
 
   const createLeague = async () => {
     if (createName.trim().length < 3 || busy) return;
@@ -228,29 +234,58 @@ function LeaguesBody() {
                     })),
                   ]}
                 />
+                {/* UX-003: a public list that could not be read is not "no public league". */}
+                {publicView === "failed" || publicView === "stale" ? (
+                  <LeagueReadNotice
+                    className="mt-3"
+                    message={
+                      publicView === "failed"
+                        ? t("fantasy.leagues.public_read_failed")
+                        : t("fantasy.leagues.stale")
+                    }
+                    onRetry={() => void publicQ.refetch()}
+                  />
+                ) : null}
               </section>
 
               <section className="mt-6">
                 <SectionHeader title={t("fpl.private_leagues")} />
-                {privateQ.isPending ? (
+                {privateView === "loading" ? (
                   <UiSkeleton className={cn("h-14", ui.radius.card)} />
-                ) : (privateQ.data ?? []).length === 0 ? (
+                ) : privateView === "failed" ? (
+                  // A failed read says so and offers the retry: it is not an empty list.
+                  <UiErrorState
+                    body={t("fantasy.leagues.read_failed")}
+                    onRetry={() => void privateQ.refetch()}
+                  />
+                ) : privateView === "empty" ? (
                   <UiEmptyState
                     illustration={emptyLeaguesArt}
                     title={t("fantasy.leagues.empty_title")}
                     body={t("fpl.no_leagues")}
                   />
                 ) : (
-                  <LeagueList
-                    label={t("fpl.private_leagues")}
-                    rows={(privateQ.data ?? []).map((l) => ({
-                      key: l.id,
-                      name: l.name,
-                      to: `/fantasy/leagues/${l.id}`,
-                      rank: l.rank,
-                      members: l.members,
-                    }))}
-                  />
+                  <>
+                    {(privateQ.data ?? []).length > 0 ? (
+                      <LeagueList
+                        label={t("fpl.private_leagues")}
+                        rows={(privateQ.data ?? []).map((l) => ({
+                          key: l.id,
+                          name: l.name,
+                          to: `/fantasy/leagues/${l.id}`,
+                          rank: l.rank,
+                          members: l.members,
+                        }))}
+                      />
+                    ) : null}
+                    {privateView === "stale" ? (
+                      <LeagueReadNotice
+                        className="mt-3"
+                        message={t("fantasy.leagues.stale")}
+                        onRetry={() => void privateQ.refetch()}
+                      />
+                    ) : null}
+                  </>
                 )}
               </section>
             </>

@@ -77,6 +77,15 @@ const PlusSeasonSlot = PREMIUM_SURFACES
     )
   : null;
 
+/** « Votre journée expliquée » (BotolaGO+), under « Votre saison »: the same switches, its own chunk. */
+const PlusRecapSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusRecapSlot").then((module) => ({
+        default: module.PlusRecapSlot,
+      })),
+    )
+  : null;
+
 /** « Trophées » (BotolaGO+): the lit cabinet for members, the earned list and a blur for the rest. */
 const PlusTrophiesSlot = PREMIUM_SURFACES
   ? lazy(() =>
@@ -180,6 +189,11 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         {PlusSeasonSlot ? (
           <Suspense fallback={null}>
             <PlusSeasonSlot />
+          </Suspense>
+        ) : null}
+        {PlusRecapSlot ? (
+          <Suspense fallback={null}>
+            <PlusRecapSlot />
           </Suspense>
         ) : null}
         {PlusTrophiesSlot ? (

@@ -65,6 +65,9 @@ const PlusHomeSeasonSlot = PREMIUM_SURFACES
 const PlusHomeDuelSlot = PREMIUM_SURFACES
   ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeDuelSlot })))
   : null;
+const PlusHomeRivalsSlot = PREMIUM_SURFACES
+  ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeRivalsSlot })))
+  : null;
 const PlusHomeMemberSlot = PREMIUM_SURFACES
   ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeMemberSlot })))
   : null;
@@ -328,6 +331,12 @@ export function OwnerHome({
         {PlusHomeDuelSlot ? (
           <Suspense fallback={null}>
             <PlusHomeDuelSlot people={people} />
+          </Suspense>
+        ) : null}
+        {/* « Vos rivaux » under it: up to three friends, one poster each. */}
+        {PlusHomeRivalsSlot ? (
+          <Suspense fallback={null}>
+            <PlusHomeRivalsSlot people={people} />
           </Suspense>
         ) : null}
         <ClubBlock

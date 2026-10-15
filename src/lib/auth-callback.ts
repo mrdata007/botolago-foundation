@@ -87,6 +87,116 @@ export function authNextSearch(raw: unknown): { next?: string } {
   return { next: next && next !== "/" ? next : undefined };
 }
 
+/**
+ * Query keys that hold a credential or a one-time code, never carried into a
+ * return target: an auth callback, a provider error, an unsubscribe link.
+ */
+const SENSITIVE_QUERY_KEYS = new Set([
+  "access_token",
+  "refresh_token",
+  "provider_token",
+  "provider_refresh_token",
+  "token",
+  "token_hash",
+  "code",
+  "type",
+  "authorization_id",
+  "error",
+  "error_code",
+  "error_description",
+]);
+
+/** A hash worth keeping is an anchor (`#security`); `#code=…` and `#access_token=…` are not. */
+const PLAIN_ANCHOR = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** Pages a reader is never sent back to after signing in. */
+const NEVER_RETURN_TO = ["/auth", "/unsubscribe"] as const;
+
+/** Longer than any real page address; past it only the path is kept. */
+const MAX_RETURN_TARGET_LENGTH = 2000;
+
+function isNeverReturnTo(pathname: string): boolean {
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    // An undecodable path is judged as written.
+  }
+  const lower = decoded.toLowerCase();
+  return NEVER_RETURN_TO.some((base) => lower === base || lower.startsWith(`${base}/`));
+}
+
+/** The query without credential keys, in the form it was written (no re-encoding). */
+function withoutSensitiveQuery(searchStr: string): string {
+  const pairs = searchStr
+    .replace(/^\?/, "")
+    .split("&")
+    .filter((pair) => {
+      if (!pair) return false;
+      const rawKey = pair.split("=", 1)[0] ?? "";
+      try {
+        return !SENSITIVE_QUERY_KEYS.has(
+          decodeURIComponent(rawKey.replace(/\+/g, " ")).toLowerCase(),
+        );
+      } catch {
+        // A key that cannot be read cannot be shown to be harmless.
+        return false;
+      }
+    });
+  return pairs.length > 0 ? `?${pairs.join("&")}` : "";
+}
+
+/**
+ * The `next` a sign-in link should carry for a reader standing on `location`:
+ * the page, its query (the selected round, tab, filter) and a plain anchor,
+ * run through the same sanitiser as every other `next`. The home page needs
+ * none.
+ *
+ * Passing only `pathname` drops the query, so a reader who opened the sign-in
+ * prompt on `/pronostics?journee=12&tab=ligues` came back to `/pronostics`.
+ *
+ * The address bar can hold more than a place. A hash such as the invite's
+ * `#code=<secret>` or an OAuth `#access_token=…`, a `?code=`, `?token=` or
+ * `?error_description=` query, would be copied into the sign-in page's own
+ * address and the e-mail callback link, so none is carried: a hash only if it
+ * is a plain anchor, and the credential keys above are removed from the
+ * query. The auth pages and the unsubscribe link are not places to return to.
+ * The whole target stays under 2,000 characters; past that only the path is
+ * kept, and a path that long is dropped.
+ */
+export function authReturnTarget(location: {
+  pathname: string;
+  searchStr?: string;
+  hash?: string;
+}): string | undefined {
+  if (isNeverReturnTo(location.pathname)) return undefined;
+  const anchor = (location.hash ?? "").replace(/^#/, "");
+  const hash = PLAIN_ANCHOR.test(anchor) ? `#${anchor}` : "";
+  const query = withoutSensitiveQuery(location.searchStr ?? "");
+  const full = `${location.pathname}${query}${hash}`;
+  const candidate =
+    full.length <= MAX_RETURN_TARGET_LENGTH
+      ? full
+      : location.pathname.length <= MAX_RETURN_TARGET_LENGTH
+        ? location.pathname
+        : "/";
+  const next = sanitizeAuthCallbackNext(candidate);
+  // Resolving can turn a path into a protected one (`/a/../auth/login`).
+  if (next === "/" || isNeverReturnTo(next.split(/[?#]/, 1)[0] ?? next)) return undefined;
+  return next;
+}
+
+/**
+ * How an auth page lands on a validated `next`. The router reads a string
+ * passed as `to` as a bare path, so `/pronostics?journee=3` would be looked up
+ * as a page of that exact name; `href` parses the query and hash. `replace`
+ * keeps the sign-in screen out of the history, so Back from the destination
+ * does not return to a form that has already done its job.
+ */
+export function authLanding(next: string): { href: string; replace: true } {
+  return { href: sanitizeAuthCallbackNext(next), replace: true };
+}
+
 export function cleanAuthCallbackUrl(rawUrl: string): string {
   const clean = new URL(rawUrl);
   clean.search = "";

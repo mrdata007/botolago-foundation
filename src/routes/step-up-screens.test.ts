@@ -160,18 +160,19 @@ describe("Fantasy, the leagues (/fantasy/leagues and below)", () => {
     );
   });
 
-  it("joining, with a code or a public one: a code owed is the notice, and nothing is marked invalid", () => {
-    // `invalid` reads "Code invalide…" under the code field, and "Une erreur
-    // est survenue" in the public tab's alert.
+  it("joining, with a code or a public one: a code owed is the notice, and nothing is marked as a failure", () => {
+    // `failure` reads "Code invalide…" under the code field when the server
+    // refused the code, and a connection or service message otherwise (UX-004).
     const source = code("src/routes/fantasy.leagues.join.tsx");
     expect(source).toContain(IMPORT);
     expect(source).toContain(TEST);
-    const joinPrivate = handler(source, "const joinPrivate = async", "const joinPublic = async");
-    expect(joinPrivate).toContain(stepUpThen("isMfaStepUpError(error)", "setInvalid(true);"));
+    const arm = stepUpThen("isMfaStepUpError(error)", "setFailure(joinFailureKind(error));");
+    const joinPrivate = handler(source, "const joinPrivate = async", "const refreshJoined = async");
+    expect(joinPrivate).toContain(arm);
     const joinPublic = handler(source, "const joinPublic = async", "if (joined)");
-    expect(joinPublic).toContain(stepUpThen("isMfaStepUpError(error)", "setInvalid(true);"));
-    // Every other refusal still marks it, and only through those two arms.
-    expect(source.match(/setInvalid\(true\)/g)).toHaveLength(2);
+    expect(joinPublic).toContain(arm);
+    // Every other refusal is classified, and only through those two arms.
+    expect(source.match(/setFailure\(joinFailureKind\(error\)\)/g)).toHaveLength(2);
   });
 });
 

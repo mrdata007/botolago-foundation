@@ -21,9 +21,15 @@ export interface RankingsQuery {
 export interface RankingsPage {
   rows: LeagueStanding[];
   total: number;
-  /** Top 3 of the board as ordered, independent of paging/search. */
+  /** Top 3 of the board as ordered, independent of paging/search (cloud: while the first block is held). */
   podium: LeagueStanding[];
   myRank?: LeagueStanding;
+  /**
+   * Set only for a cloud search over a board larger than the search can look
+   * through (the server cannot search): the search covered the first
+   * `scanned` of `total` managers, and the screen must say so.
+   */
+  searchLimit?: { scanned: number; total: number };
 }
 
 const FIRST_NAMES = [

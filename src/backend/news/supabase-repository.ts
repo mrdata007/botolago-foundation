@@ -8,11 +8,15 @@ import {
   articleEditorialDetailSchema,
   articlePageSchema,
   editorialRevisionSchema,
+  savedArticlePageSchema,
+  savedCursorSchema,
   editorialStoryPageSchema,
   homeModulesSchema,
   newsTeamFilterSchema,
   scheduleHealthSchema,
   type ArticlePageDto,
+  type SavedArticlePageDto,
+  type SavedCursor,
   type CreateDraftInput,
   type CreateDraftResult,
   type EditorialRevisionDto,
@@ -112,6 +116,19 @@ function decodeCursor(
   }
 }
 
+function decodeSavedCursor(value: string | null | undefined): SavedCursor | null {
+  if (!value) return null;
+  try {
+    return savedCursorSchema.parse(JSON.parse(decodeURIComponent(value)));
+  } catch (error) {
+    throw new NewsError("invalid_cursor", "Invalid saved-list pagination cursor.", error);
+  }
+}
+
+export function encodeSavedCursor(cursor: SavedArticlePageDto["nextCursor"]): string | null {
+  return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
+}
+
 export function encodeNewsCursor(cursor: ArticlePageDto["nextCursor"]): string | null {
   return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
 }
@@ -194,12 +211,15 @@ export class SupabaseNewsRepository implements NewsRepository {
     return parse(articlePageSchema, data);
   }
 
-  async getSaved(limit: number, _context: RepositoryContext) {
+  async getSaved(limit: number, _context: RepositoryContext, cursor?: string | null) {
+    const after = decodeSavedCursor(cursor);
     const { data, error } = await getNewsApi().rpc("news_saved_articles", {
       p_limit: limit,
+      p_after_created_at: after?.createdAt,
+      p_after_article_id: after?.articleId,
     });
     throwIfReaderListError(error);
-    return parse(articlePageSchema, data);
+    return parse(savedArticlePageSchema, data);
   }
 
   async save(articleId: string, _context: RepositoryContext): Promise<void> {

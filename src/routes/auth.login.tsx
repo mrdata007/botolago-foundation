@@ -91,7 +91,7 @@ function LoginPage() {
     if (next && profileComplete) {
       // Sanitised again where it is used: a full navigation is the step that
       // would leave the site.
-      window.location.href = sanitizeAuthCallbackNext(next);
+      window.location.replace(sanitizeAuthCallbackNext(next));
       return;
     }
     if (profileComplete) {

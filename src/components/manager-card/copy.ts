@@ -325,6 +325,10 @@ export function cardCopy(t: Translate, lang: Language) {
     serial: t("card.serial"),
     provisional: t("card.provisional"),
     sample: t("card.sample"),
+    /** What a card says when its renderer could not be loaded (the retry button is « Réessayer »). */
+    loadFailed: t("card.load_failed"),
+    /** The button once a retry has failed too: the page itself is reloaded. */
+    reload: t("card.reload"),
     founderLine: t("card.founder_line"),
     stat: {
       cap: t("card.stat.cap"),

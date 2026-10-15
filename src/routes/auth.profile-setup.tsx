@@ -33,7 +33,7 @@ import { useNativePushSwitch } from "@/services/use-native-push";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { authNextSearch } from "@/lib/auth-callback";
+import { authLanding, authNextSearch } from "@/lib/auth-callback";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/profile-setup")({
@@ -199,7 +199,7 @@ function ProfileSetupPage() {
     refresh();
     if (firstSetup) track("profile_setup_complete");
     toast.success(t("auth.setup.success"));
-    navigate({ to: next });
+    navigate(authLanding(next));
   };
 
   const canNext = useMemo(() => {

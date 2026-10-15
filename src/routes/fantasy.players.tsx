@@ -2,12 +2,21 @@ import noPlayersArt from "@/assets/illustrations/empty-watchlist.webp";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Plus, Scale } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { ListPager } from "@/components/fantasy-lists/ListPager";
 import { PlayerKitDisc } from "@/components/fantasy-lists/PlayerKitDisc";
+import {
+  PLAYER_POSITIONS,
+  PLAYER_SORT_KEYS,
+  playersSearchWith,
+  validatePlayersSearch,
+  type PlayerSortDir,
+  type PlayerSortKey,
+  type PlayersSearch,
+} from "@/components/fantasy-lists/players-search";
 import { SearchField } from "@/components/fantasy-lists/SearchField";
 import { clubLabel, findClub, isClubKey } from "@/components/fantasy/club-identity";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
@@ -40,9 +49,12 @@ export const Route = createFileRoute("/fantasy/players")({
    * `?compare=<playerId>` — "Comparer" on a player page lands here with that
    * player already picked and compare mode on. Optional, and read once: the
    * list works exactly as before without it.
+   *
+   * The rest of the search is the list's own state (`players-search.ts`): the
+   * search text, position, club, price cap, sort and page live in the URL so a
+   * player opened from the list and Retour land on the list as it was left.
    */
-  validateSearch: (search: Record<string, unknown>): { compare?: string } =>
-    typeof search.compare === "string" && search.compare ? { compare: search.compare } : {},
+  validateSearch: (search: Record<string, unknown>): PlayersSearch => validatePlayersSearch(search),
   // The player pages render beneath this one: its canonical only while the
   // list itself is shown (a `?compare=` view included).
   head: (context) => fantasyHead("players", context),
@@ -89,11 +101,13 @@ function PlayersRoute() {
   );
 }
 
-type SortKey = "points" | "form" | "price" | "ownership";
-type SortDir = "asc" | "desc";
-const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
+type SortKey = PlayerSortKey;
+type SortDir = PlayerSortDir;
+const positions: readonly Position[] = PLAYER_POSITIONS;
 const PAGE_SIZE = 25;
-const SORT_KEYS: readonly SortKey[] = ["points", "form", "price", "ownership"];
+const SORT_KEYS: readonly SortKey[] = PLAYER_SORT_KEYS;
+/** How long the search box waits after a keystroke before it writes the URL. */
+const SEARCH_URL_DELAY_MS = 300;
 
 /**
  * BG-0071 — form ordering, with "no value yet" (`null`) always sorted below
@@ -113,8 +127,11 @@ const compareNumber = (a: number, b: number, dir: SortDir) => (dir === "desc" ? 
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
-  const { compare: compareFrom } = Route.useSearch();
-  const navigate = useNavigate();
+  // The router hands on the URL's own keys beside the validated ones, so the
+  // search is validated again where its values are used.
+  const search = validatePlayersSearch(Route.useSearch());
+  const { compare: compareFrom } = search;
+  const navigate = useNavigate({ from: Route.fullPath });
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   // Prices read "8,0", like the picker and the pitch plates, never "8".
@@ -132,22 +149,59 @@ function PlayersPage() {
     queryFn: () => footballService.getClubs(lang),
   });
 
-  const [q, setQ] = useState("");
-  const [pos, setPos] = useState<Position | "">("");
-  const [clubId, setClubId] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [sort, setSort] = useState<SortKey>("points");
-  const [dir, setDir] = useState<SortDir>("desc");
-  const [page, setPage] = useState(1);
+  // The chips, the price cap, the sort and the page are the URL's, not this
+  // page's state: a player page replaces this one, so state held here is gone
+  // when Retour comes back. A choice replaces the entry (Retour leaves the list
+  // rather than stepping back through every chip tapped) and keeps the scroll
+  // where it is. What is only a default stays out of the URL.
+  const pos: Position | "" = search.pos ?? "";
+  const clubId = search.club === undefined ? "" : String(search.club);
+  const maxPrice = search.max === undefined ? "" : String(search.max);
+  const sort: SortKey = search.sort ?? "points";
+  const dir: SortDir = search.dir ?? "desc";
+  const page = search.page ?? 1;
+  const updateSearch = useCallback(
+    (change: Partial<Record<keyof PlayersSearch, unknown>>) =>
+      void navigate({
+        search: (previous) =>
+          // Any change to the filters or the ordering puts the reader back on
+          // page 1 (holding page 7 of a board that just shrank to two pages
+          // shows nothing); a change of page says so itself.
+          playersSearchWith(previous, { page: undefined, ...change }),
+        replace: true,
+        resetScroll: false,
+      }),
+    [navigate],
+  );
+  // The search box keeps what is typed and writes the URL once typing pauses,
+  // so a keystroke is never a navigation. It starts from the URL's text.
+  const [q, setQ] = useState(search.q ?? "");
+  // Compared as the URL would hold it: blank text and over-long text are not
+  // kept, and must not leave the write below repeating itself forever.
+  const qPending = (validatePlayersSearch({ q }).q ?? "") !== (search.q ?? "");
+  useEffect(() => {
+    if (!qPending) return;
+    const timer = setTimeout(() => updateSearch({ q }), SEARCH_URL_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [q, qPending, updateSearch]);
+  // A player opened within the pause would take the typed text with it. The
+  // text is written as the player's link is pressed, before the page changes:
+  // writing it on unmount would rewrite the player page's own address.
+  const flushSearchText = () => {
+    if (qPending) updateSearch({ q });
+  };
+  const setPos = (next: Position | "") => updateSearch({ pos: next || undefined });
+  const setClubId = (next: string) => updateSearch({ club: next || undefined });
+  const setMaxPrice = (next: string) => updateSearch({ max: next || undefined });
   const [compare, setCompare] = useState<string[]>(() => (compareFrom ? [compareFrom] : [])); // up to 2
   const [compareMode, setCompareMode] = useState(() => !!compareFrom);
   const watchlist = useWatchlist();
 
   // The player it came with is now in state; drop it from the URL so a reload
-  // or a shared link is the plain list again.
+  // or a shared link is the plain list again (the filters stay).
   useEffect(() => {
-    if (compareFrom) void navigate({ to: "/fantasy/players", search: {}, replace: true });
-  }, [compareFrom, navigate]);
+    if (compareFrom) updateSearch({ page: search.page });
+  }, [compareFrom, updateSearch, search.page]);
 
   const toggleCompare = (id: string) => {
     setCompare((prev) => {
@@ -159,8 +213,7 @@ function PlayersPage() {
   /** A new sort key starts at the direction that reads as "best first". */
   const pickSort = (key: SortKey) => {
     if (key === sort) return;
-    setSort(key);
-    setDir("desc");
+    updateSearch({ sort: key, dir: undefined });
   };
 
   const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
@@ -211,12 +264,6 @@ function PlayersPage() {
     return l;
   }, [players, clubs, pos, clubId, maxPrice, q, sort, dir]);
 
-  // Any change to the filters or the ordering puts the reader back on page 1;
-  // holding page 7 of a board that just shrank to two pages shows nothing.
-  useEffect(() => {
-    setPage(1);
-  }, [q, pos, clubId, maxPrice, sort, dir]);
-
   const pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visible = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -224,9 +271,7 @@ function PlayersPage() {
   const hasFilters = !!(q.trim() || pos || clubId || maxPrice);
   const resetFilters = () => {
     setQ("");
-    setPos("");
-    setClubId("");
-    setMaxPrice("");
+    updateSearch({ q: undefined, pos: undefined, club: undefined, max: undefined });
   };
 
   const header = (trailing?: React.ReactNode) => (
@@ -297,7 +342,16 @@ function PlayersPage() {
         </UiIconButton>,
       )}
       <div className={cn("space-y-3 px-4 pb-8 pt-4", ui.surface.page)}>
-        <SearchField value={q} onChange={setQ} label={t("fantasy.picker.search")} />
+        <SearchField
+          value={q}
+          onChange={(next) => {
+            setQ(next);
+            // The list narrows as the reader types; the page goes with it
+            // rather than waiting for the URL to catch up.
+            if (page > 1) updateSearch({ page: undefined });
+          }}
+          label={t("fantasy.picker.search")}
+        />
 
         <div
           className="grid grid-cols-5 gap-2"
@@ -313,7 +367,7 @@ function PlayersPage() {
               className="justify-center px-1"
               selected={pos === p}
               // Tapping the selected chip clears it.
-              onClick={() => setPos((current) => (current === p ? "" : p))}
+              onClick={() => setPos(pos === p ? "" : p)}
             >
               {t(`player.pos.${p}` as TranslationKey)}
             </UiChip>
@@ -337,7 +391,7 @@ function PlayersPage() {
               key={c.id}
               data-club-chip=""
               selected={clubId === c.id}
-              onClick={() => setClubId((current) => (current === c.id ? "" : c.id))}
+              onClick={() => setClubId(clubId === c.id ? "" : c.id)}
             >
               {/* No margin: `UiChip` spaces its children (gap-1.5). */}
               <ClubCrest club={c} size="xs" />
@@ -401,7 +455,7 @@ function PlayersPage() {
             <UiIconButton
               variant="ghost"
               aria-label={dirLabel}
-              onClick={() => setDir((d) => (d === "desc" ? "asc" : "desc"))}
+              onClick={() => updateSearch({ dir: dir === "desc" ? "asc" : undefined })}
             >
               <DirGlyph aria-hidden />
             </UiIconButton>
@@ -503,7 +557,7 @@ function PlayersPage() {
           />
         ) : (
           <>
-            <ul className={cn(ui.surface.card, "overflow-hidden")}>
+            <ul className={cn(ui.surface.card, "overflow-hidden")} onClickCapture={flushSearchText}>
               {visible.map((p, index) => (
                 <PlayerListRow
                   key={p.id}
@@ -526,8 +580,8 @@ function PlayersPage() {
               <ListPager
                 page={currentPage}
                 pageCount={pageCount}
-                onPrevious={() => setPage((c) => Math.max(1, c - 1))}
-                onNext={() => setPage((c) => Math.min(pageCount, c + 1))}
+                onPrevious={() => updateSearch({ page: Math.max(1, currentPage - 1) })}
+                onNext={() => updateSearch({ page: Math.min(pageCount, currentPage + 1) })}
               />
             </div>
           </>

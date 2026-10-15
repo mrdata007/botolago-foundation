@@ -12,8 +12,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
@@ -34,6 +36,7 @@ import { notificationDestination } from "@/lib/notification-link";
 import { prefersReducedMotion, staggerStyle, tokenMs, useArrivals } from "@/lib/motion";
 import { ExitCollapse, ExitPresence } from "@/lib/motion-exit";
 import { motionLoaded } from "@/lib/motion-loader";
+import { dismissOptimistically, restoreHidden, withHidden } from "@/lib/notification-dismissal";
 import { moveFocusAfterDismiss } from "@/lib/notification-focus";
 import { cn } from "@/lib/utils";
 import {
@@ -60,18 +63,22 @@ const CATEGORY_ICON: Record<NotificationCategory, LucideIcon> = {
 
 function NotificationsPage() {
   const { t } = useI18n();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const signedIn = status === "authenticated";
 
   return (
     <AppShell pageHeader={<UiPageTitle title={t("notifications.title")} />}>
-      {signedIn ? <Inbox /> : status === "loading" ? null : <SignInPrompt />}
+      {/* Keyed by account: the locally hidden cards are one account's, and a
+          different account signing in on this page starts with none. */}
+      {signedIn ? <Inbox key={user?.id ?? "me"} /> : status === "loading" ? null : <SignInPrompt />}
     </AppShell>
   );
 }
 
 function SignInPrompt() {
   const { t } = useI18n();
+  // Back to the inbox after signing in, not to Home.
+  const returnSearch = useAuthReturnSearch();
   return (
     <UiCard padding="lg" className="text-center">
       <Bell className={cn("mx-auto h-8 w-8", ui.tone.ink)} aria-hidden />
@@ -82,10 +89,15 @@ function SignInPrompt() {
         {t("notifications.signin_body")}
       </p>
       <div className="mt-5 grid gap-2.5">
-        <UiLinkButton to="/auth/register">
+        <UiLinkButton to="/auth/register" search={returnSearch}>
           <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
         </UiLinkButton>
-        <UiLinkButton to="/auth/login" variant="outline" className={authOutlineClass}>
+        <UiLinkButton
+          to="/auth/login"
+          search={returnSearch}
+          variant="outline"
+          className={authOutlineClass}
+        >
           <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
         </UiLinkButton>
       </div>
@@ -140,8 +152,14 @@ function Inbox() {
         card.id,
       );
     }
-    setHidden((current) => new Set(current).add(card.id));
-    dismiss.mutate(card.id);
+    // The card leaves at once; if the server refuses it comes back, with a
+    // message (audit UX-002) — its own dismiss button is the retry.
+    void dismissOptimistically(card.id, {
+      hide: (id) => setHidden((current) => withHidden(current, id)),
+      commit: (id) => dismiss.mutateAsync(id),
+      restore: (id) => setHidden((current) => restoreHidden(current, id)),
+      onFailure: () => toast.error(t("notifications.dismiss_failed")),
+    });
   };
 
   return (
@@ -169,7 +187,11 @@ function Inbox() {
           size="sm"
           className="justify-self-end"
           disabled={readAll.isPending}
-          onClick={() => readAll.mutate()}
+          onClick={() =>
+            readAll.mutate(undefined, {
+              onError: () => toast.error(t("notifications.mark_all_failed")),
+            })
+          }
         >
           {t("notifications.mark_all_read")}
         </UiButton>
