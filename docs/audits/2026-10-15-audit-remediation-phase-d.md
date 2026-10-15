@@ -56,6 +56,12 @@ wrong language edition, a copy helper that could report success inside a dialog
 without copying, a profile save that could reset language, club and alerts after
 a failed profile load, and an unreadable-cursor case reported as a complete list.
 
+The final review of the combined branch also ran, on a copy: full `bun test`
+10256 pass and 1 known fail, typecheck, language-text check, migration check,
+`bun run build`, the built-page browser test (3 of 3), seven CI browser suites
+(105 pass, 1 skip), and the Pépites browser spec (26 of 26). It found one
+privacy regression (see risk 2), fixed before this report.
+
 Local rehearsal of the three database scripts on a throwaway local PostgreSQL 16
 (never a shared database): each script passed its rehearsal, committed, and
 refused a second run; 29 deliberately broken starting states and 3 tampered
@@ -113,9 +119,15 @@ pgTAP were not available there.
    Profile → Notifications and press العربية (owner option a). Existing accounts
    written from the device language cannot be told apart from real choices; a
    backfill is an owner decision.
-2. **Public News caches** can carry a stale or signed-out "saved" mark for
-   readers with more than 2,000 saves; per-account cache handling is a separate
-   change.
+2. **Public News caches** are not kept per account and carry the `isSaved` of
+   whoever requested them. The final review found that the saved-articles work
+   would have shown a previous account's saved marks to a signed-out visitor
+   (a regression, fixed before this report: with no saved ids for the reader, a
+   cached server answer is no longer trusted, and the hook answers "saved" only
+   for a signed-in account; two new tests fail on the old code). What remains:
+   an account with more than 2,000 saves can still see a different account's
+   cached mark on a card it has not tapped, until the card is re-read; per-account
+   cache handling is a separate change.
 3. **Latent invite-code leak:** if the leagues read ever exposes invite codes, the
    Curva card's share text would include the first private league's join link.
    Joining needs only the code (no approval, cap or expiry). Remove or make opt-in
@@ -132,7 +144,33 @@ pgTAP were not available there.
 
 ## Arabic strings that most need a native reader
 
-(Final ranked list from the combined-branch review: see the end of this file.)
+Ranked by risk, from the final combined-branch review:
+
+1. The e-mail "why you get this" line: «تتلقى هذه الرسالة لأنك اشتركت في المواهب…»
+   ("subscribed to the talents").
+2. `pepites.share.player_message`: «{name} في المواهب، ترتيب…».
+3. `unsubscribe.pepites_confirm_title`, `pepites_done_title` and
+   `pepites_reenable_hint` («رسالة المواهب», «إعادة الاشتراك في المواهب»).
+4. `auth.setup.language_hint` (the explanation of the French default).
+5. `auth.setup.language_confirm`: «لغة الإشعارات».
+6. `news.saved.over_limit`: «لديك أكثر من {count} مقال محفوظ…» (number
+   agreement with a formatted number).
+7. `landing.cta_matches` «تابع المباريات والنتائج» and `landing.browse_cta`
+   «تابع المباريات» ("follow", against the French "voir"; e-mails still say
+   «عرض المباريات»).
+8. `fpl.copy_failed`: «تعذّر النسخ. حدّد الرمز لنسخه.»
+9. `pepites.share.copy_manual` and `copy_manual_label`.
+10. Brand titles: `pepites.state.coming_soon` «المواهب قريبًا», the e-mail
+    subject «المواهب · …: توب 10 بعد التصحيح», `pepites.home.about` and
+    `pepites.method.meta_description` («قسم المواهب»).
+
+Small inconsistencies noted, not fixed: the Arabic e-mail "why" line says
+«اشتركت في المواهب» while the unsubscribe lines say «رسالة المواهب»; a failed
+copy on the match and news share pages shows only a toast (the link is not on
+screen there, so the manual-copy field could be shown); the old name "Pépites"
+remains in prose in the sharing audit, the depth backlog and the capacity plan.
+The end-to-end spec `tests/e2e/curva-off.e2e.ts` assumes Curva is switched off
+while the build has it on; it looks out of date and is not run in CI.
 
 ## Launch blockers, updated
 

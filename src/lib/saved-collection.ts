@@ -89,7 +89,12 @@ export function savedStateOf(
   id: string,
   serverSaved?: boolean,
 ): boolean | null {
-  if (!snapshot) return serverSaved ?? null;
+  // No snapshot means the saved ids are not known for this reader (signed out,
+  // not read yet, or the read failed). The server's per-story answer in the
+  // shared news caches is NOT trusted then: those caches are not kept per
+  // account, so it may be another account's answer. Only a partial set of
+  // THIS account's ids may fall back to it, below.
+  if (!snapshot) return null;
   if (snapshot.ids.includes(id)) return true;
   if (snapshot.complete) return false;
   if (snapshot.removed.includes(id)) return false;

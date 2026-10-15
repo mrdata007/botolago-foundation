@@ -249,6 +249,14 @@ describe("a reader with more than 2,000 saves", () => {
     expect(savedStateOf(partial(), "new-1", false)).toBe(true);
   });
 
+  test("with no saved ids for this reader, a cached server answer is never trusted", () => {
+    // The shared news caches are not kept per account: a card's isSaved may be
+    // another account's answer, so a signed-out visitor must never see it.
+    expect(savedStateOf(undefined, "story-1", true)).toBeNull();
+    expect(savedStateOf(undefined, "story-1", false)).toBeNull();
+    expect(savedStateOf(undefined, "story-1")).toBeNull();
+  });
+
   test("a complete set answers for every story", () => {
     const whole: SavedIdsSnapshot = { ids: ["a"], complete: true, removed: [] };
     expect(savedStateOf(whole, "a")).toBe(true);

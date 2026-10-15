@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { dictionaries } from "@/i18n/dictionaries";
@@ -51,5 +52,17 @@ describe("a failed save or unsave", () => {
     reportSavedMutationFailure({ code: "PT403", message: "mfa_required" }, true, tFr, h.notify);
     expect(h.stepUps).toEqual([1]);
     expect(h.said).toEqual([]);
+  });
+});
+
+describe("a signed-out visitor", () => {
+  test("never sees a saved mark: the hook answers saved only for a signed-in account", () => {
+    // The shared news caches carry the isSaved of whoever made the request and
+    // are not kept per account, so a previous account's marks could otherwise
+    // show to the next visitor of a shared phone.
+    const source = readFileSync(new URL("./saved-articles.ts", import.meta.url), "utf8");
+    expect(source).toMatch(
+      /status === "authenticated" && savedStateOf\(snapshot, id, serverSaved\) === true/,
+    );
   });
 });

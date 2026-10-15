@@ -158,8 +158,10 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
    */
   const isSaved = useCallback(
     (id: string, serverSaved?: boolean) =>
-      mode === "mock" ? ids.includes(id) : savedStateOf(snapshot, id, serverSaved) === true,
-    [ids, mode, snapshot],
+      mode === "mock"
+        ? ids.includes(id)
+        : status === "authenticated" && savedStateOf(snapshot, id, serverSaved) === true,
+    [ids, mode, snapshot, status],
   );
   /**
    * A tap on a story's bookmark. `shown` is the state the bookmark displayed
