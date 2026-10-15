@@ -130,6 +130,27 @@ describe("production watchdog", () => {
     expect(withBackend.find((check) => check.name === "cron_jobs")?.status).toBe("fail");
     expect(withBackend.find((check) => check.name === "browser_errors")?.status).toBe("warn");
 
+    // A status the script does not know is the health function drifting from
+    // its contract, not visitors: it stays a failure, as before.
+    const drifted = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "fail",
+          checks: healthyChecks({
+            name: "browser_errors",
+            status: "critical" as never,
+            detail: "d",
+          }),
+        }),
+      url,
+      "secret",
+    );
+    expect(drifted.find((check) => check.name === "browser_errors")?.status).toBe("fail");
+    expect(drifted.find((check) => check.name === "browser_errors")?.detail).toContain(
+      "unrecognised status",
+    );
+    expect(overall(drifted)).toBe("fail");
+
     // A browser warning is kept as it is.
     const warned = await databaseHealth(
       async () =>

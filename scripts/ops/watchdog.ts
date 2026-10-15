@@ -129,6 +129,7 @@ export async function databaseHealth(
   const checks: Check[] = [];
   let unnamed = 0;
   let unrecognised = 0;
+  const unrecognisedNames = new Set<string>();
   const withoutDetail: string[] = [];
   for (const entry of report.checks) {
     const fields = (typeof entry === "object" && entry !== null ? entry : {}) as Record<
@@ -151,6 +152,7 @@ export async function databaseHealth(
     // A status this script does not know fails under the check's own name
     // rather than being dropped: it may well mean something worse than fail.
     unrecognised += 1;
+    unrecognisedNames.add(name);
     checks.push({
       name,
       status: "fail",
@@ -192,7 +194,12 @@ export async function databaseHealth(
       detail: `health RPC ${problems.join("; ")}`,
     });
   }
-  return checks.map(holdBrowserReported);
+  // Held only now, so the comparison above saw what the database stated. Only
+  // a status the script recognises is held: an unrecognised one is the health
+  // function drifting from its contract, not visitors, and stays a failure.
+  return checks.map((check) =>
+    unrecognisedNames.has(check.name) ? check : holdBrowserReported(check),
+  );
 }
 
 /**
