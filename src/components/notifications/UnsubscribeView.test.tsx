@@ -154,18 +154,18 @@ describe("/unsubscribe route", () => {
   });
 });
 
-describe("UnsubscribeView for a Pépites link", () => {
+describe("UnsubscribeView for a Prospects link", () => {
   const pepitesView = (state: UnsubscribeViewState) =>
     render(<UnsubscribeView state={state} topic="pepites_weekly" onUnsubscribe={() => {}} />);
 
-  it("asks about Pépites only, and says the other e-mails stay on", async () => {
+  it("asks about Prospects only, and says the other e-mails stay on", async () => {
     const html = await pepitesView("confirm");
     expect(html).toContain(escapeHtml(fr["unsubscribe.pepites_confirm_title"]));
     expect(html).toContain(escapeHtml(fr["unsubscribe.pepites_confirm_body"]));
     expect(html).not.toContain(escapeHtml(fr["unsubscribe.confirm_body"]));
   });
 
-  it("confirms Pépites is off and nothing else", async () => {
+  it("confirms Prospects is off and nothing else", async () => {
     const done = await pepitesView("unsubscribed");
     expect(done).toContain(escapeHtml(fr["unsubscribe.pepites_done_title"]));
     expect(done).toContain(escapeHtml(fr["unsubscribe.pepites_reenable_hint"]));

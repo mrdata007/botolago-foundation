@@ -190,8 +190,8 @@ describe("renderNotificationEmail: every type in both languages", () => {
         const pepites = type === "pepites_weekly";
         const why = pepites
           ? language === "fr"
-            ? "Vous recevez cet e-mail car vous vous êtes abonné à Pépites, le Top 10 hebdomadaire des jeunes de Botola Pro."
-            : "تتلقى هذه الرسالة لأنك اشتركت في Pépites، توب 10 الأسبوعي لشباب البطولة الاحترافية."
+            ? "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro."
+            : "تتلقى هذه الرسالة لأنك اشتركت في المواهب، توب 10 الأسبوعي لشباب البطولة الاحترافية."
           : language === "fr"
             ? "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO."
             : "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.";
@@ -204,8 +204,8 @@ describe("renderNotificationEmail: every type in both languages", () => {
             : "إدارة الإشعارات";
         const unsubscribe = pepites
           ? language === "fr"
-            ? "Se désabonner de Pépites"
-            : "إلغاء الاشتراك في Pépites"
+            ? "Se désabonner de Prospects"
+            : "إلغاء الاشتراك في المواهب"
           : language === "fr"
             ? "Se désabonner"
             : "إلغاء الاشتراك";
@@ -691,7 +691,7 @@ describe("links", () => {
 describe("pepites_weekly", () => {
   it("lists the ten in order, in French, with the week, the round and the scores", () => {
     const email = render(delivery("pepites_weekly", { language: "fr" }));
-    expect(email.subject).toBe("Pépites · Semaine 16 : le Top 10 des jeunes");
+    expect(email.subject).toBe("Prospects · Semaine 16 : le Top 10 des jeunes");
     expect(email.preheader).toBe("N° 1 : Ilias Akhomach (Raja Casablanca) · 88/100");
     const lines = email.text.split("\n").filter((line) => /^[0-9]+\. /.test(line));
     expect(lines).toHaveLength(10);
@@ -699,14 +699,14 @@ describe("pepites_weekly", () => {
     expect(lines[9]).toBe("10. Joueur 10 · 61/100");
     expect(email.text).toContain("Journée 5 · Botola Pro");
     expect(email.text).toContain(
-      "Vous désabonner de Pépites ne change pas vos autres e-mails BotolaGO.",
+      "Vous désabonner de Prospects ne change pas vos autres e-mails BotolaGO.",
     );
     expect(email.html).toContain(`href="${APP}/pepites"`);
   });
 
   it("reads right to left in Arabic, with each number kept whole", () => {
     const email = render(delivery("pepites_weekly", { language: "ar" }));
-    expect(email.subject).toBe("Pépites · الأسبوع 16: توب 10 للشباب");
+    expect(email.subject).toBe("المواهب · الأسبوع 16: توب 10 للشباب");
     expect(email.html).toContain('<html lang="ar" dir="rtl">');
     // Ranks and scores are isolated left-to-right runs, never split.
     expect(email.html).toContain('<span dir="ltr">88</span>');
@@ -715,15 +715,15 @@ describe("pepites_weekly", () => {
     expect(email.text).not.toMatch(/[0-9][ \u00a0\u202f][0-9]/);
     expect(email.text).toContain("1. Ilias Akhomach · الرجاء الرياضي · 88/100");
     expect(email.text).toContain(
-      "إلغاء الاشتراك في Pépites لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+      "إلغاء الاشتراك في المواهب لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
     );
   });
 
   it("says when an edition corrects an earlier one", () => {
     const payload = pepitesPayload({ correctsEditionId: "edition-15" });
     for (const [language, subject, note] of [
-      ["fr", "Pépites · Semaine 16 : le Top 10 corrigé", "Cette édition remplace le Top 10"],
-      ["ar", "Pépites · الأسبوع 16: توب 10 بعد التصحيح", "هذا العدد يعوّض توب 10"],
+      ["fr", "Prospects · Semaine 16 : le Top 10 corrigé", "Cette édition remplace le Top 10"],
+      ["ar", "المواهب · الأسبوع 16: توب 10 بعد التصحيح", "هذا العدد يعوّض توب 10"],
     ] as const) {
       const email = render(delivery("pepites_weekly", { language, payload }));
       expect(email.subject).toBe(subject);

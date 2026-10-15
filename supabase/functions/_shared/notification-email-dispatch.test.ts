@@ -574,8 +574,8 @@ describe("pepites_weekly through the dispatcher", () => {
   }
 
   for (const [language, subject, unsubscribeLabel] of [
-    ["fr", "Pépites · Semaine 16 : le Top 10 des jeunes", "Se désabonner de Pépites"],
-    ["ar", "Pépites · الأسبوع 16: توب 10 للشباب", "إلغاء الاشتراك في Pépites"],
+    ["fr", "Prospects · Semaine 16 : le Top 10 des jeunes", "Se désabonner de Prospects"],
+    ["ar", "المواهب · الأسبوع 16: توب 10 للشباب", "إلغاء الاشتراك في المواهب"],
   ] as const) {
     it(`sends a claimed Pépites email in ${language} and records it with its body hash`, async () => {
       const { client, calls } = fakeClient([[pepitesDelivery(language)]]);

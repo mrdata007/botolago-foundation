@@ -12,7 +12,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 
 /** A link preview cannot know its reader's language: the shared title carries both. */
-const OG_TITLE = "Pépites · توب 10 — BotolaGO";
+const OG_TITLE = "Prospects · توب 10 — BotolaGO";
 const CANONICAL = `${PUBLIC_SITE_ORIGIN}/pepites`;
 
 export const Route = createFileRoute("/pepites/")({

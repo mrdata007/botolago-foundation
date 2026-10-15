@@ -28,7 +28,7 @@ function AdminPepitesRoute() {
     <AdminFunctionalRoute
       access={access}
       layout="hub"
-      title={rtl ? "Pépites — توب 10 الأسبوعي" : "Pépites — le Top 10 de la semaine"}
+      title={rtl ? "المواهب — توب 10 الأسبوعي" : "Prospects — le Top 10 de la semaine"}
       description={
         rtl
           ? "المسودات، البرمجة، النشر، التصحيحات والسحب. كل خطوة تُسجَّل."
