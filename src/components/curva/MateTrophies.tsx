@@ -81,9 +81,6 @@ export function MateTrophiesSheet({
     >
       {mate ? (
         <div className="flex flex-col gap-4 px-4 pb-4 pt-5" data-testid="curva-mate-trophies-sheet">
-          <p className={cn("text-pretty", ui.text.secondary, ui.tone.muted)}>
-            {t("plus.tr.mate_sub")}
-          </p>
           <ul className="flex flex-col">
             {mate.trophies.map((trophy, index) => (
               <li
