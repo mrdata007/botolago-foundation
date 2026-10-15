@@ -98,6 +98,7 @@ export function MatchPredictionCard({
           scored={scored}
           saved={model.uid ? (saved ?? null) : undefined}
           savedReady={!model.uid || model.mineQuery.isSuccess}
+          stepsDisabled={!model.picksOpen}
           className="justify-center"
           onStep={(side, delta) => {
             const next = nextPick(pick, side, delta);
