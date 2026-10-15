@@ -261,8 +261,16 @@ export function LandingPage({
 
             <div ref={heroCtaRef} className="mt-7 flex flex-col gap-3 sm:max-w-sm">
               <PrimaryAction cta={cta} event="landing_cta_hero" onLeave={onLeave} />
-              <a
-                href={`#${howId}`}
+              {/* Today's football without an account (audit UX-011): the
+                  visitor who came for the matches does not have to scroll
+                  past the game to find them. A plain link to the match list,
+                  which opens on the current match day. It is not a step of
+                  the sign-up funnel, so it sends no event, and the game
+                  button above stays the only filled one. */}
+              <Link
+                to="/matches"
+                onClick={onLeave}
+                data-testid="landing-cta-matches"
                 className={cn(
                   "inline-flex items-center justify-center gap-1.5",
                   ui.space.tap,
@@ -270,6 +278,21 @@ export function LandingPage({
                   ui.text.bodyStrong,
                   ui.tone.onMesh,
                   "ring-1 ring-[color:var(--ui-mesh-rule)] hover:bg-[color:var(--ui-mesh-glass)]",
+                  ui.focusOnMesh,
+                )}
+              >
+                {t("landing.cta_matches")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <a
+                href={`#${howId}`}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5",
+                  ui.space.tap,
+                  ui.radius.full,
+                  ui.text.bodyStrong,
+                  ui.tone.onMeshMuted,
+                  "hover:underline underline-offset-4",
                   ui.focusOnMesh,
                 )}
               >

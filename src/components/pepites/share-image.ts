@@ -485,7 +485,7 @@ const WORDMARK_BASELINE = 0.912;
 
 /**
  * The brand lock-up: the approved white BotolaGO wordmark, a hairline and the
- * section's name ("Pépites" / "جواهر"), `h` tall, from the inline start `x`
+ * section's name ("Prospects" / "المواهب"), `h` tall, from the inline start `x`
  * (the left edge in French, the right edge in Arabic, where the wordmark
  * still leads). Without the wordmark (it failed to load) the name stands alone.
  */

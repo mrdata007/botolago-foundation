@@ -150,6 +150,10 @@ export const BASELINES: Baselines = {
   // label are translated after all and both findings are gone. W1 9 -> 7,
   // W2 9 -> 7.
   //
+  // Renamed, owner decision 2026-10-15 (LOC-09): the section is « Prospects »
+  // in French and « المواهب » in Arabic. The two names differ in script, so
+  // the baselines do not move.
+  //
   // Curva (the Manager Card section, 2026-10-08): two keys read the same in
   // both languages on purpose. `card.ovr` is the unit printed after a rating
   // (« 84 OVR »), the same three letters in French and Arabic; `card.serial`

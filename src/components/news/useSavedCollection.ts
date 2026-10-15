@@ -11,7 +11,7 @@ import {
   visibleSavedEntries,
   type SavedEntry,
 } from "@/lib/saved-collection";
-import { getNewsDataMode, newsService } from "@/services/news";
+import { getNewsDataMode, newsService, SAVED_IDS_LIMIT } from "@/services/news";
 
 /**
  * The reader's saved-articles collection, ready for `SavedArticlesView`.
@@ -57,8 +57,12 @@ export function useSavedCollection() {
     [query.data],
   );
   const entries = useMemo(
-    () => visibleSavedEntries(fetched, saved.ids, saved.idsKnown),
-    [fetched, saved.ids, saved.idsKnown],
+    () =>
+      visibleSavedEntries(fetched, saved.ids, saved.idsKnown, {
+        complete: saved.complete,
+        removed: saved.removed ?? [],
+      }),
+    [fetched, saved.ids, saved.idsKnown, saved.complete, saved.removed],
   );
 
   const phase = savedCollectionPhase({
@@ -72,11 +76,15 @@ export function useSavedCollection() {
   return {
     phase,
     entries,
+    // The account has more saves than the app counts (2,000): the page says
+    // so instead of implying the list it shows is all of it.
+    overCount:
+      saved.idsKnown && !saved.complete ? Math.min(saved.ids.length, SAVED_IDS_LIMIT) : null,
     hasMore: query.hasNextPage,
     loadingMore: query.isFetchingNextPage,
     moreFailed: query.isFetchNextPageError,
     retry: () => void query.refetch(),
     loadMore: () => void query.fetchNextPage(),
-    remove: (id: string) => saved.toggle(id),
+    remove: (id: string) => saved.unsave(id),
   };
 }

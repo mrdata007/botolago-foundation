@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { useNativeImageActions } from "@/components/native/use-native-image-actions";
 import { WebOnly } from "@/components/native/WebOnly";
 import { ui, UiButton, UiSheet, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { copyText } from "@/lib/copy-text";
 import { leagueInviteLink, whatsappUrl } from "@/lib/league-invite";
 import { saveImageToGallery, shareImageFile } from "@/lib/native-share-image";
 import { cn } from "@/lib/utils";
@@ -71,6 +73,8 @@ export function ShareCardSheet({
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<"save" | "share" | null>(null);
+  // What to copy by hand when the clipboard refused.
+  const [manual, setManual] = useState<string | null>(null);
 
   // The picture is drawn when the sheet opens, once per card state; the fonts and the art are the
   // browser's, so this never runs on the server.
@@ -82,6 +86,7 @@ export function ShareCardSheet({
   useEffect(() => {
     if (!shown) {
       counted.current = null;
+      setManual(null);
       return;
     }
     let cancelled = false;
@@ -236,8 +241,12 @@ export function ShareCardSheet({
               await navigator.share({ files: [file], text: messageFor("native") });
               track("card_share_native");
               onOpenChange(false);
-            } catch {
-              // Declined, not failed.
+            } catch (error) {
+              // Closing the share sheet is the person's answer; any other
+              // failure is said.
+              if ((error as { name?: unknown } | null)?.name !== "AbortError") {
+                toast.error(t("pepites.share.native_failed"));
+              }
             }
           }}
         >
@@ -249,13 +258,14 @@ export function ShareCardSheet({
         variant="soft"
         data-testid="card-share-copy"
         onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(messageFor("copy"));
+          const text = messageFor("copy");
+          if (await copyText(text)) {
             toast.success(t("article.share_copied"));
             track("card_share_copy");
             onOpenChange(false);
-          } catch {
-            toast.error(t("pepites.share.copy_failed"));
+          } else {
+            // The field's own sentence says it; no second message beside it.
+            setManual(text);
           }
         }}
       >
@@ -330,6 +340,7 @@ export function ShareCardSheet({
         >
           {visible}
         </p>
+        {manual ? <ManualCopyField value={manual} className="w-full max-w-[20rem]" /> : null}
       </div>
     </UiSheet>
   );

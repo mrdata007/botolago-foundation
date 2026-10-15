@@ -392,7 +392,7 @@ const edition: Pick<PepitesEdition, "week" | "status" | "entries"> = {
 
 /** The same strings in both languages, so a mirrored layout is an exact mirror. */
 const COPY = {
-  brand: "Pepites",
+  brand: "Prospects",
   kicker: "U23 BOTOLA PRO",
   title: "TOP 10",
   subtitle: "SEMAINE {n} RISING SCORE",
@@ -403,7 +403,7 @@ const COPY = {
 };
 
 const STORY_COPY = {
-  brand: "Pepites",
+  brand: "Prospects",
   kicker: "U23 BOTOLA PRO",
   meta: "WYDAD AC ATTAQUANT",
   legend: ["Note", "Forme", "Contribution", "Progression", "Temps"],
@@ -746,7 +746,7 @@ describe("the share pictures mirror in Arabic", () => {
 });
 
 describe("the share pictures' vertical rhythm", () => {
-  const SECTION = { fr: "PEPITES", ar: "جواهر" } as const;
+  const SECTION = { fr: "PROSPECTS", ar: "المواهب" } as const;
 
   for (const lang of ["fr", "ar"] as const) {
     it(`the Top 10 week line sits inside its pill, its ink centred (${lang})`, async () => {

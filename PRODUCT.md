@@ -36,7 +36,7 @@ worker. The shell shows the same website, so its design language is the web's, a
 **Primary (owner, 2026-10-05): fans first, and Fantasy grows from there.** The core user is a Moroccan
 football supporter, at home or abroad, who follows the Botola Pro and checks scores, results and the
 table. The product also serves them fixtures and club news. Fantasy is the main thing BotolaGO wants
-these fans to sign up for. The free games (Fantasy and Pronostics) and the Pépites under-23 ranking
+these fans to sign up for. The free games (Fantasy and Pronostics) and the Prospects under-23 ranking
 are built on the same match data the fans already come to read.
 
 - **Language:** French and Arabic readers in roughly equal numbers (owner's estimate, 2026-10-05). The
@@ -47,9 +47,9 @@ are built on the same match data the fans already come to read.
   2. Read Botola news and follow a club.
   3. Build a Fantasy squad, pick a captain, make transfers before each deadline, and compare against
      friends in private leagues.
-  4. Predict scores (Pronostics) and follow young players (Pépites).
+  4. Predict scores (Pronostics) and follow young players (Prospects).
 - **Secondary audiences (inferred from the code, not confirmed by the owner):**
-  - BotolaGO staff use the `/admin` console (MFA-protected): news CMS, user moderation, prizes, Pépites
+  - BotolaGO staff use the `/admin` console (MFA-protected): news CMS, user moderation, prizes, Prospects
     data and player mapping. In practice this is the owner.
   - Partners and sponsors see the pitch demo at `/demo`, which runs on sample data.
 - **Unknown:**
@@ -68,11 +68,11 @@ BotolaGO puts the Botola Pro in one place, in French and Arabic:
 - live scores, results, fixtures and the table;
 - clubs and licensed news;
 - free games built on the same data, Fantasy and Pronostics (score predictions);
-- Pépites, an under-23 player ranking.
+- Prospects, an under-23 player ranking.
 
 Success means supporters come back every _journée_, both to follow the matches and to play. The main
 conversion is creating a Fantasy team and managing it actively. This purpose is stated in
-`docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md` (Outcome and Module 2; Pépites was added later) and was
+`docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md` (Outcome and Module 2; Prospects was added later) and was
 confirmed by the owner on 2026-10-05.
 
 ## Positioning
@@ -118,7 +118,7 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
   `supabase/functions/_shared/morocco-time.ts`), never in a document. **Unknown:** whether anyone has
   checked the decree itself.
 - **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
-  are Accueil, Actualités, Fantasy, Matches and Pépites, plus Profile. Pronostics lives inside Matches.
+  are Accueil, Actualités, Fantasy, Matches and Prospects, plus Profile. Pronostics lives inside Matches.
 - **Language.**
   - A first visit asks the reader to choose French or Arabic.
   - The interface language is stored on that device only (browser storage). An account also records
@@ -132,7 +132,7 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
   - Saving, ranking and leagues need a free account: email and password, confirmed by an emailed code.
   - The Terms limit accounts to adults (18+), but sign-up does not check age.
 - **WhatsApp is the named share channel.**
-  - The invite, Pronostics, Pépites and gameweek-recap share sheets offer the phone's share sheet, a
+  - The invite, Pronostics, Prospects and gameweek-recap share sheets offer the phone's share sheet, a
     WhatsApp button and copy link.
   - Image sheets add a download when the phone cannot share a file.
   - Article, match, club and Fantasy player pages offer only the phone's share sheet or copy link.
@@ -185,7 +185,7 @@ the snapshot) was not checked against the live site.
   - a season prize.
 - **Pronostics:** free score predictions scoring 3 points for the exact score and 1 for the right
   outcome. It has round and season boards, and mini-leagues that share Fantasy league codes.
-- **Pépites:** an under-23 Botola Pro ranking, with player pages, a method page and a comparison page.
+- **Prospects:** an under-23 Botola Pro ranking, with player pages, a method page and a comparison page.
   - On 2026-10-05 it shows the 2025/26 final ranking.
   - The weekly Top 10, chosen by the editors, is built. The first 2026/27 edition comes only after
     round 3, and none had been published at the last record.
@@ -198,7 +198,7 @@ the snapshot) was not checked against the live site.
 **Built, but switched off or not delivering.** Do not design as if these work.
 
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
-  bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
+  bell, the Fantasy deadline and recap emails, and the Prospects weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
 - **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
@@ -259,7 +259,7 @@ the snapshot) was not checked against the live site.
   - Share images show a player's photo only when its release allows social use; any other player
     gets a club disc and initials (`src/components/pepites/share-image.ts`). Provider player images
     are internal placeholders only.
-  - BSD, a candidate second data source for Pépites (measured 2026-09-26 in
+  - BSD, a candidate second data source for Prospects (measured 2026-09-26 in
     `docs/engineering/PEPITES_PLAN.md` §10; not chosen or connected), licenses its photos and logos
     only to identify players inside the app, never in promotion or share images, and its data may not
     be presented as official. These terms apply if it is adopted.
@@ -277,7 +277,7 @@ the snapshot) was not checked against the live site.
   in English. Arabic translates all four: الورقة الحرة, القائد الثلاثي, الضربة الحرة, تعزيز الاحتياط.
 - _Lots à gagner_: prizes.
 - _Pronostics_ / التوقعات.
-- _Pépites_ / جواهر; the Arabic Top 10 label is not settled (أفضل 10 vs توب 10).
+- _Prospects_ (FR) / المواهب (AR): the under-23 ranking section. Renamed from Pépites / جواهر by the owner, settled 2026-10-15. Addresses (`/pepites`), file names, code identifiers, analytics events, i18n keys and database names keep `pepites`. The Arabic Top 10 label is not settled (أفضل 10 vs توب 10).
 - _Botola Pro_ in running copy. _Botola Pro Inwi_ / البطولة الاحترافية إنوي appears only as the
   competition label on match, club and standings headers.
 - _Provisoire_: provisional.
@@ -309,8 +309,8 @@ the snapshot) was not checked against the live site.
 - **Sub-brands:**
   - BotolaGO Fantasy;
   - Pronostics;
-  - Pépites, which uses the main BotolaGO look like every other screen (owner, 2026-10-05: its own
-    night bands, energy gradient, mono meta lines and slant are retired; BG-0152). The Pépites plan
+  - Prospects, which uses the main BotolaGO look like every other screen (owner, 2026-10-05: its own
+    night bands, energy gradient, mono meta lines and slant are retired; BG-0152). The Pépites plan (the section's former name)
     names it the first "BotolaGO Data" product; that label exists only in plan documents, not in
     the product.
 - **Taglines in use:**
@@ -367,7 +367,7 @@ the snapshot) was not checked against the live site.
   - published prize winners. None were verified at the last record.
 - **Stale sources to treat with care.** Several plans predate what shipped, notably
   `docs/engineering/LAUNCH_LEDGER.yaml` (its `updated:` header reads 2026-09-21, though entries run to
-  2026-09-26), the Pépites plan documents and `.lovable/plan.md`. The snapshot lists the conflicts
+  2026-09-26), the Pépites plan documents (the section's former name) and `.lovable/plan.md`. The snapshot lists the conflicts
   found. The latest dated `APPLIED_*` record and the code win over plans.
 
 ## Product Principles

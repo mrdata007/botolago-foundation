@@ -75,7 +75,7 @@ const RESERVED_ERROR_LINE = cn(
 );
 
 function RegisterPage() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const navigate = useNavigate();
   // The manager card (plan M1c): while Curva is live, « Nom complet » says what the name is for.
   const live = useManagerCardLive();
@@ -130,7 +130,8 @@ function RegisterPage() {
       username: normalizeUsername(username),
       email,
       password,
-      language: lang,
+      // No `language`: the form does not ask, and a new account's notification
+      // language is French unless the person picks another in the profile editor.
       next,
     });
     setSubmitting(false);

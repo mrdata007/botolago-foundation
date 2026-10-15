@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { ui, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { copyText } from "@/lib/copy-text";
 import { cn } from "@/lib/utils";
 
 /**
@@ -65,9 +66,12 @@ export function LeagueInviteCode({
           variant="soft"
           aria-label={t("fantasy.leagues.copy_code")}
           className="shrink-0"
-          onClick={() => {
-            void navigator.clipboard?.writeText(code);
-            toast.success(t("fpl.copied"));
+          onClick={async () => {
+            // "Copié" only when the clipboard took it: it is missing in some
+            // in-app browsers and refuses in others, and the code is on screen
+            // to select by hand.
+            if (await copyText(code)) toast.success(t("fpl.copied"));
+            else toast.error(t("fpl.copy_failed"));
           }}
         >
           <Copy className="h-4 w-4" aria-hidden />

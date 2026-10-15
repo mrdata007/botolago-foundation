@@ -243,6 +243,15 @@ export class SupabaseAuthService implements AuthService {
    */
   private revision = 0;
 
+  /**
+   * The account whose profile the published session was built from, when that
+   * read succeeded; `null` when it failed or has not happened. A user built
+   * without a profile carries defaults (French, nothing complete, no avatar or
+   * club), and saving from it would overwrite what the account really holds,
+   * so `completeProfile` refuses until the profile has been read.
+   */
+  private profileReadFor: string | null = null;
+
   constructor(private readonly deps: SupabaseAuthDependencies = {}) {}
 
   private get auth(): SupabaseAuthClient {
@@ -321,7 +330,7 @@ export class SupabaseAuthService implements AuthService {
   private async resolveSignedIn(
     session: Session,
     knownProfile?: ProfileDto | null,
-  ): Promise<{ authUser: AuthUser; session: AuthSession }> {
+  ): Promise<{ authUser: AuthUser; session: AuthSession; profileRead: boolean }> {
     const { user } = session;
     let assurance: SessionAssurance = sessionAssuranceOf(session);
     let profile: ProfileDto | null = null;
@@ -331,7 +340,11 @@ export class SupabaseAuthService implements AuthService {
       else profile = read?.id === user.id ? read : null;
     }
     const authUser = await buildAuthUser(user, profile, this.avatars.signedUrl);
-    return { authUser, session: sessionForAssurance(authUser, assurance) };
+    return {
+      authUser,
+      session: sessionForAssurance(authUser, assurance),
+      profileRead: profile !== null,
+    };
   }
 
   /**
@@ -355,7 +368,10 @@ export class SupabaseAuthService implements AuthService {
     if (shown && shown !== session.user.id) this.emit({ user: null, status: "loading" });
     const revision = ++this.revision;
     const resolved = await this.resolveSignedIn(session, knownProfile);
-    if (revision === this.revision) this.emit(resolved.session);
+    if (revision === this.revision) {
+      this.profileReadFor = resolved.profileRead ? session.user.id : null;
+      this.emit(resolved.session);
+    }
     return resolved;
   }
 
@@ -418,7 +434,9 @@ export class SupabaseAuthService implements AuthService {
         data: {
           display_name: input.fullName.trim(),
           username: input.username.trim(),
-          preferred_language: input.language,
+          // Only an explicit choice is sent; without one the database starts
+          // the account in French (the column default and the sign-up trigger).
+          ...(input.language ? { preferred_language: input.language } : {}),
         },
       },
     });
@@ -526,6 +544,10 @@ export class SupabaseAuthService implements AuthService {
     const current = this.cachedSession.user;
     if (this.cachedSession.status !== "authenticated" || !current)
       return { ok: false, errorCode: "unauthorized" };
+    // The profile was never read (the read failed): this user holds defaults,
+    // not the account's data, and a save would overwrite the stored language,
+    // avatar, club and alerts with them. Ask the person to try again.
+    if (this.profileReadFor !== current.id) return { ok: false, errorCode: "network" };
     const username = input.username?.trim() || current.username.trim();
     if (!username) return { ok: false, errorCode: "invalid_username" };
 

@@ -113,7 +113,7 @@ describe("the player's story card", () => {
     percentiles: { rating: 65, form: 77, contribution: 90, progression: 62, minutes: null },
   };
   const copy = {
-    brand: "Pépites",
+    brand: "Prospects",
     kicker: "U23 · BOTOLA PRO",
     meta: "M",
     legend: ["a", "b", "c", "d", "e"],

@@ -5,9 +5,12 @@ import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
+import { ManualCopyField } from "@/components/common/ManualCopyField";
 import { ui, UiButton, UiInput, UiSheet, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { inviteMessage, leagueInviteLink, whatsappUrl } from "@/lib/league-invite";
+import { copyText } from "@/lib/copy-text";
+import { fillInvite, inviteMessage, leagueInviteLink, whatsappUrl } from "@/lib/league-invite";
+import { shareLink } from "@/lib/share-link";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -80,6 +83,9 @@ function InviteSheet({
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<{ name: string; code: string } | null>(null);
+  // The link, shown to copy by hand when neither the share sheet nor the
+  // clipboard took it.
+  const [manual, setManual] = useState<string | null>(null);
 
   const existing = leagues.data?.find((league) => league.code);
   const target = created ?? (existing?.code ? { name: existing.name, code: existing.code } : null);
@@ -108,23 +114,17 @@ function InviteSheet({
   };
 
   const share = async () => {
-    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
-    if (typeof nav.share === "function") {
-      try {
-        await nav.share({ text: message });
-      } catch {
-        // Declined, not failed.
-      }
-      return;
-    }
-    await copy();
+    const result = await shareLink({ text: message }, link);
+    if (result === "copied") toast.success(t("fantasy.hub.invite_copied"));
+    else if (result === "failed") setManual(link);
+    else setManual(null);
   };
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(link);
+    if (await copyText(link)) {
+      setManual(null);
       toast.success(t("fantasy.hub.invite_copied"));
-    } catch {
-      toast.error(t("state.error"));
+    } else {
+      setManual(link);
     }
   };
 
@@ -146,7 +146,7 @@ function InviteSheet({
         ) : target ? (
           <>
             <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
-              {t("fantasy.hub.invite_ready").replace("{name}", target.name)}
+              {fillInvite(t("fantasy.hub.invite_ready"), { name: target.name })}
             </p>
             <a
               href={whatsappUrl(message)}
@@ -173,6 +173,7 @@ function InviteSheet({
               <Link2 className="h-4 w-4" aria-hidden />
               {t("fantasy.hub.invite_copy")}
             </button>
+            {manual ? <ManualCopyField value={manual} /> : null}
           </>
         ) : (
           <form

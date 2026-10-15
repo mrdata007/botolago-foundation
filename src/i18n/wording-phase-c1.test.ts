@@ -180,8 +180,8 @@ describe("LOC-10: unsubscribe confirms notification e-mails, not all corresponde
   });
 
   test("the Pépites-only lines are untouched", () => {
-    expect(fr["unsubscribe.pepites_done_title"]).toBe("Vous ne recevrez plus l'e-mail Pépites.");
-    expect(ar["unsubscribe.pepites_done_title"]).toBe("لن تصلك بعد الآن رسالة Pépites.");
+    expect(fr["unsubscribe.pepites_done_title"]).toBe("Vous ne recevrez plus l'e-mail Prospects.");
+    expect(ar["unsubscribe.pepites_done_title"]).toBe("لن تصلك بعد الآن رسالة المواهب.");
   });
 });
 
