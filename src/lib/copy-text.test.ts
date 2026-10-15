@@ -28,41 +28,60 @@ afterEach(() => {
   }
 });
 
-/** A document whose `execCommand("copy")` answers `ok`, recording what was selected. */
-function fakeDocument(ok: boolean | "throws") {
-  const log: { value: string; removed: boolean; copied: number } = {
+/**
+ * A document whose `execCommand("copy")` answers `ok`, recording what was
+ * selected and where the text area went. `stealFocus` is a dialog's focus trap:
+ * focusing the area outside the dialog leaves the focus where it was, yet
+ * `execCommand` still answers true. `dialog` is an open `[role="dialog"]`.
+ */
+function fakeDocument(
+  ok: boolean | "throws",
+  options: { stealFocus?: boolean; dialog?: boolean; focusedDialog?: boolean } = {},
+) {
+  const log: { value: string; removed: boolean; copied: number; host: string } = {
     value: "",
     removed: false,
     copied: 0,
+    host: "",
   };
+  const doc: Record<string, unknown> = { activeElement: null };
+  let trapped = Boolean(options.stealFocus);
   const area = {
     value: "",
     style: { cssText: "" },
     tabIndex: 0,
     setAttribute() {},
-    focus() {},
+    focus() {
+      if (!trapped) doc.activeElement = area;
+    },
     select() {},
     setSelectionRange() {},
     remove() {
       log.removed = true;
     },
   };
-  const host = {
+  const hostOf = (name: string) => ({
     appendChild(node: typeof area) {
       log.value = node.value;
-    },
-  };
-  setGlobal("document", {
-    body: host,
-    activeElement: null,
-    createElement: () => area,
-    execCommand: (command: string) => {
-      if (command !== "copy") return false;
-      log.copied += 1;
-      if (ok === "throws") throw new Error("not allowed");
-      return ok;
+      log.host = name;
+      // A trap lets the focus in only when the area is inside the dialog.
+      if (name === "dialog") trapped = false;
     },
   });
+  const dialog = hostOf("dialog");
+  doc.body = hostOf("body");
+  doc.querySelectorAll = () => (options.dialog ? [dialog] : []);
+  if (options.focusedDialog) {
+    doc.activeElement = { closest: () => dialog, focus() {} };
+  }
+  doc.createElement = () => area;
+  doc.execCommand = (command: string) => {
+    if (command !== "copy") return false;
+    log.copied += 1;
+    if (ok === "throws") throw new Error("not allowed");
+    return ok;
+  };
+  setGlobal("document", doc);
   return log;
 }
 
@@ -95,6 +114,36 @@ describe("copyText", () => {
     const log = fakeDocument(true);
     expect(await copyText("le lien")).toBe(true);
     expect(log.copied).toBe(1);
+  });
+
+  it("is false when a dialog's focus trap took the focus away, though execCommand says true", async () => {
+    // Reproduced in the Pronostics journée sheet: the area sat in the body,
+    // outside the dialog, the trap kept the focus, `execCommand("copy")` still
+    // answered true and the toast said "Lien copié" over an unchanged clipboard.
+    setGlobal("navigator", {});
+    const log = fakeDocument(true, { stealFocus: true });
+    expect(await copyText("le lien")).toBe(false);
+    expect(log.removed).toBe(true);
+  });
+
+  it("puts the area inside the open dialog even when the focus is on the body", async () => {
+    setGlobal("navigator", {});
+    const log = fakeDocument(true, { stealFocus: true, dialog: true });
+    expect(await copyText("le lien")).toBe(true);
+    expect(log.host).toBe("dialog");
+    expect(log.removed).toBe(true);
+    const focused = fakeDocument(true, { focusedDialog: true });
+    expect(await copyText("le lien")).toBe(true);
+    expect(focused.host).toBe("dialog");
+  });
+
+  it("removes the temporary area on every path", async () => {
+    setGlobal("navigator", {});
+    for (const ok of [true, false, "throws"] as const) {
+      const log = fakeDocument(ok);
+      await copyText("x");
+      expect(log.removed).toBe(true);
+    }
   });
 
   it("is false, never a pretend success, when nothing could copy", async () => {
@@ -178,6 +227,17 @@ describe("shareablePageUrl", () => {
     const url = "https://botolago.com/pepites/comparer?a=1&b=2";
     expect(shareablePageUrl(url)).toBe(url);
     expect(shareablePageUrl(shareablePageUrl(url))).toBe(url);
+  });
+
+  it("also drops click identifiers and credential or one-time-code keys", () => {
+    expect(
+      shareablePageUrl(
+        "https://botolago.com/news/1?fbclid=abc&gclid=def&code=123&token=t&access_token=x&tab=a",
+      ),
+    ).toBe("https://botolago.com/news/1?tab=a");
+    expect(shareablePageUrl("https://botolago.com/news/1?code=123&utm_source=x")).toBe(
+      "https://botolago.com/news/1",
+    );
   });
 
   it("never throws on a bad address", () => {

@@ -273,9 +273,9 @@ export function ShareImageSheet({
                 onEvent?.("copy");
                 setOpen(false);
               } else {
-                // Said, and the text shown to copy by hand: never a silent
-                // failure, never a "copied" that did not happen.
-                toast.error(t("pepites.share.copy_failed"));
+                // Said by the field's own sentence, with the text to copy by
+                // hand: never a silent failure, never a "copied" that did not
+                // happen, and no second message beside it.
                 setManual(text);
               }
             }}

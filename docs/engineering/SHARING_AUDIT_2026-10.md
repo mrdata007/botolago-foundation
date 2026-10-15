@@ -10,21 +10,21 @@ do share images carry only photos and crests we are allowed to use?
 
 ## Share paths found
 
-| #   | Where                                                                          | Channels                                                    | Link it produces                                                                             |
-| --- | ------------------------------------------------------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| 1   | News article (`routes/news.$articleId.tsx`)                                    | share sheet, else copy                                      | the article's canonical address (`buildCanonicalArticleUrl`)                                 |
-| 2   | Match page (`routes/matches.$matchId.tsx`)                                     | share sheet, else copy                                      | the page address                                                                             |
-| 3   | Pronostics journée (`PredictionsShareButton`)                                  | share sheet, WhatsApp, copy                                 | `/pronostics?journee=N` + `utm_source=share&utm_medium=<channel>&utm_campaign=pronostics`    |
-| 4   | League invite, Pronostics and Fantasy league pages (`InviteLinkShare`)         | share sheet, WhatsApp, copy                                 | `/pronostics/ligues/rejoindre#code=<code>&game=<game>`                                       |
-| 5   | "Créer une ligue et inviter" (`CreateLeagueInvite`, Fantasy hub, Curva people) | share sheet, WhatsApp, copy                                 | same invite link, `game=fantasy`                                                             |
-| 6   | Curva "Inviter des amis" (`InviteFriends`)                                     | WhatsApp, share sheet, copy                                 | same invite link                                                                             |
-| 7   | Curva card picture (`ShareCardSheet`)                                          | WhatsApp, share sheet (file), copy, download, gallery (app) | the manager's first private league's invite link, else `/jouer`; utm tags sit before the `#` |
-| 8   | Fantasy gameweek recap picture (`GameweekRecapCard` + `ShareImageSheet`)       | WhatsApp, share sheet (file), copy, download, gallery       | `/fantasy`, or `/journee/<publicId>[?lang=ar]` once the manager published, + utm             |
-| 9   | Public recap link (`RecapPublication`)                                         | copy (address also printed on screen)                       | `/journee/<publicId>[?lang=ar]`                                                              |
-| 10  | Pépites edition and player pictures (`PepitesShareSheet`)                      | same as 8                                                   | `/pepites/semaine/N`, `/pepites/joueur/<id>` + utm                                           |
-| 11  | Pépites compare (`PepitesComparePage`)                                         | share sheet, else copy                                      | the page address                                                                             |
-| 12  | Fantasy list header (`fantasy-lists/ShareButton`)                              | share sheet, else copy                                      | the page address                                                                             |
-| 13  | League invite code (`LeagueInviteCode`)                                        | copy the code                                               | the code itself                                                                              |
+| #   | Where                                                                          | Channels                                                    | Link it produces                                                                                                                           |
+| --- | ------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | News article (`routes/news.$articleId.tsx`)                                    | share sheet, else copy                                      | the article's canonical address (`buildCanonicalArticleUrl`)                                                                               |
+| 2   | Match page (`routes/matches.$matchId.tsx`)                                     | share sheet, else copy                                      | the page address                                                                                                                           |
+| 3   | Pronostics journée (`PredictionsShareButton`)                                  | share sheet, WhatsApp, copy                                 | `/pronostics?journee=N` + `utm_source=share&utm_medium=<channel>&utm_campaign=pronostics`                                                  |
+| 4   | League invite, Pronostics and Fantasy league pages (`InviteLinkShare`)         | share sheet, WhatsApp, copy                                 | `/pronostics/ligues/rejoindre#code=<code>&game=<game>`                                                                                     |
+| 5   | "Créer une ligue et inviter" (`CreateLeagueInvite`, Fantasy hub, Curva people) | share sheet, WhatsApp, copy                                 | same invite link, `game=fantasy`                                                                                                           |
+| 6   | Curva "Inviter des amis" (`InviteFriends`)                                     | WhatsApp, share sheet, copy                                 | same invite link                                                                                                                           |
+| 7   | Curva card picture (`ShareCardSheet`)                                          | WhatsApp, share sheet (file), copy, download, gallery (app) | in production the plain `/jouer` link (see the latent leak below); with mock data a mock league's invite link; utm tags sit before the `#` |
+| 8   | Fantasy gameweek recap picture (`GameweekRecapCard` + `ShareImageSheet`)       | WhatsApp, share sheet (file), copy, download, gallery       | `/fantasy`, or `/journee/<publicId>[?lang=ar]` once the manager published, + utm                                                           |
+| 9   | Public recap link (`RecapPublication`)                                         | copy (address also printed on screen)                       | `/journee/<publicId>[?lang=ar]`                                                                                                            |
+| 10  | Pépites edition and player pictures (`PepitesShareSheet`)                      | same as 8                                                   | `/pepites/semaine/N`, `/pepites/joueur/<id>` + utm                                                                                         |
+| 11  | Pépites compare (`PepitesComparePage`)                                         | share sheet, else copy                                      | the page address                                                                                                                           |
+| 12  | Fantasy list header (`fantasy-lists/ShareButton`)                              | share sheet, else copy                                      | the page address                                                                                                                           |
+| 13  | League invite code (`LeagueInviteCode`)                                        | copy the code                                               | the code itself                                                                                                                            |
 
 Not a share, but a clipboard use: the 2FA secret on `profile.security`. Its
 field stays on screen and "copied" shows only after success; left as is.
@@ -128,14 +128,30 @@ is 44 x 44. Overflow was measured from element bounds, not `scrollWidth`.
 
 ## Observations not changed
 
-- **The Curva card message carries the manager's first private league's
-  invite link** (with its secret code) whenever they have one; the sheet shows
-  the league's name but prints the link without the code (`visibleLink`).
-  Whoever receives the picture can join that league. If the picture is posted
-  publicly rather than sent to a friend, the league's code goes with it. A small
-  choice ("Inclure l'invitation à ma ligue") or choosing which league would
-  fix it; it changes product behaviour, so it is described, not built. The
-  owner can reset a code from the league page.
+- **Latent leak, mock-only today: the Curva card message can carry a private
+  league's invite link.** `ShareCardSheet.tsx` (about line 134) picks
+  `leagues.data?.find((entry) => entry.code)` and, when it finds one, puts that
+  league's name and join link (with the secret code) in the message. In
+  production (cloud mode) this cannot happen: `fantasy-runtime.ts` (lines
+  552 to 568) builds leagues without a code, because the read contract carries
+  only `inviteCodeHint` (`contracts.ts` lines 175 to 186) and the database keeps
+  only `invite_code_digest`. So `league` is always null there and the message
+  carries the plain `/jouer` link. The leak shows only with mock data (the
+  sample leagues CASA-24 and WYDAD-12). Its severity if it ever went live is
+  real: `api.join_fantasy_league` (migration 20260926003100, around line 2829)
+  joins on a digest match alone, with no approval, no member cap, no expiry
+  and no way to remove a member, so a code posted with a picture cannot be
+  taken back; the only remedy is the owner resetting the code. The approved
+  design (`MANAGER_CARD_SECTION_PLAN.md` section 4.7, around line 690) does put
+  the join link in the message, so the behaviour is by design; the risk is only
+  that a picture is posted publicly instead of sent to a friend.
+  **Precondition:** before any change exposes invite codes in the leagues read,
+  either drop the league branch in `ShareCardSheet.tsx` (lines 134 to 156) or
+  make it an explicit opt-in ("Inclure l'invitation à ma ligue", with the
+  league chosen, not "the first one"). No code change for this in this phase.
+  The same holds for Curva's "Inviter des amis" (`InviteFriends.tsx`,
+  `existing?.code`): in production it cannot reuse an existing league, so it
+  always offers to create one.
 - **Arabic recipients.** Links carry no language (the language plan in
   `LANGUAGE_URLS.md` is not built). A recipient sees their stored language, or
   the first-visit language choice (seen on `/pronostics` at 390 px); an Arabic

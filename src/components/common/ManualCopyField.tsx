@@ -25,6 +25,8 @@ export function ManualCopyField({ value, className }: { value: string; className
     if (!field) return;
     field.focus({ preventScroll: true });
     field.select();
+    // In a sheet that scrolls, the field may have appeared below the fold.
+    field.scrollIntoView?.({ block: "nearest" });
   }, [value]);
   return (
     <div className={cn("flex flex-col gap-1", className)} data-testid="manual-copy">

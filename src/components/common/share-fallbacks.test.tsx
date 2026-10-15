@@ -1,12 +1,34 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it, mock } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { dictionaries } from "@/i18n/dictionaries";
-import { I18nProvider } from "@/i18n/provider";
+import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
+import type { Language } from "@/types/domain";
 
-import { ManualCopyField } from "./ManualCopyField";
+// `useI18n` answers in the language under test (the way the ranking's render
+// test does it), so the Arabic render is really Arabic. The module is put back
+// once the file is done (src/test-isolation.test.ts).
+const realI18n = { ...(await import("@/i18n/provider")) };
+let language: Language = "fr";
+mock.module("@/i18n/provider", () => ({
+  ...realI18n,
+  useI18n: () => {
+    const real = realI18n.useI18n();
+    return {
+      ...real,
+      lang: language,
+      dir: language === "ar" ? "rtl" : "ltr",
+      t: (key: TranslationKey) => dictionaries[language][key],
+    };
+  },
+}));
+afterAll(() => {
+  mock.module("@/i18n/provider", () => realI18n);
+});
+
+const { ManualCopyField } = await import("./ManualCopyField");
+const { I18nProvider } = realI18n;
 
 /**
  * D5 — every way of sharing says what happened. The tests have no DOM, so the
@@ -69,6 +91,15 @@ describe("a copy that fails is said, with the text to copy by hand where it is n
     });
   }
 
+  it("the picture sheets show the field's own sentence, not a toast as well", () => {
+    for (const path of [
+      "src/components/common/ShareImageSheet.tsx",
+      "src/components/manager-card/moments/ShareCardSheet.tsx",
+    ]) {
+      expect(code(path)).not.toContain('toast.error(t("pepites.share.copy_failed"))');
+    }
+  });
+
   it("the page-level share buttons no longer swallow a failed copy", () => {
     for (const path of [
       "src/routes/news.$articleId.tsx",
@@ -110,21 +141,42 @@ describe("the gameweek recap picture", () => {
 });
 
 describe("ManualCopyField", () => {
-  const html = (lang: "fr" | "ar", value: string) =>
-    renderToStaticMarkup(
-      <I18nProvider>
-        <ManualCopyField value={value} />
-      </I18nProvider>,
-    ).replace(/<!-- -->/g, "") + lang;
+  const html = (lang: Language, value: string) => {
+    language = lang;
+    try {
+      return renderToStaticMarkup(
+        <I18nProvider>
+          <ManualCopyField value={value} />
+        </I18nProvider>,
+      ).replace(/<!-- -->/g, "");
+    } finally {
+      language = "fr";
+    }
+  };
+  const LINK = "https://botolago.com/pronostics/ligues/rejoindre#code=ABC";
 
   it("shows the sentence and a read-only field (direction follows the text) holding the text", () => {
-    const out = html("fr", "https://botolago.com/pronostics/ligues/rejoindre#code=ABC");
+    const out = html("fr", LINK);
     expect(out).toContain('data-testid="manual-copy"');
     expect(out).toContain(dictionaries.fr["pepites.share.copy_manual"]);
     expect(out).toMatch(/<input[^>]*readOnly=""|<input[^>]*readonly=""/);
     expect(out).toContain('dir="auto"');
-    expect(out).toContain("https://botolago.com/pronostics/ligues/rejoindre#code=ABC");
+    expect(out).toContain(LINK);
     expect(out).toContain(`aria-label="${dictionaries.fr["pepites.share.copy_manual_label"]}"`);
+  });
+
+  it("renders in Arabic: the Arabic sentence and label, not the French ones", () => {
+    const out = html("ar", LINK);
+    expect(out).toContain(dictionaries.ar["pepites.share.copy_manual"]);
+    expect(out).toContain(`aria-label="${dictionaries.ar["pepites.share.copy_manual_label"]}"`);
+    expect(out).not.toContain(dictionaries.fr["pepites.share.copy_manual"]);
+    expect(out).toContain(LINK);
+  });
+
+  it("scrolls itself into view in a sheet that scrolls", () => {
+    expect(code("src/components/common/ManualCopyField.tsx")).toContain(
+      'field.scrollIntoView?.({ block: "nearest" })',
+    );
   });
 
   it("has Arabic for every string it shows", () => {

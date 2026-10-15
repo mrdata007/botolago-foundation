@@ -264,7 +264,7 @@ export function ShareCardSheet({
             track("card_share_copy");
             onOpenChange(false);
           } else {
-            toast.error(t("pepites.share.copy_failed"));
+            // The field's own sentence says it; no second message beside it.
             setManual(text);
           }
         }}

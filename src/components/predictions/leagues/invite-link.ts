@@ -114,6 +114,10 @@ function pendingInMemory(now: number): PendingInvite | null {
 
 /** The invite kept on this device, if it is still fresh. */
 export function pendingInvite(now = Date.now()): PendingInvite | null {
+  // The page's own copy first: it exists only because storing the newest link
+  // failed, so an older invite still in storage must not replace it.
+  const inMemory = pendingInMemory(now);
+  if (inMemory) return inMemory;
   try {
     const raw = storage("localStorage")?.getItem(PENDING_KEY) ?? null;
     if (raw) {
@@ -143,7 +147,7 @@ export function pendingInvite(now = Date.now()): PendingInvite | null {
   } catch {
     /* unreadable: nothing from the old key */
   }
-  return pendingInMemory(now);
+  return null;
 }
 
 /**

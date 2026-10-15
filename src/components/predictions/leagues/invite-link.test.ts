@@ -160,6 +160,29 @@ describe("the invite a device holds", () => {
     expect(pendingInvite(NOW)).toBeNull();
   });
 
+  it("keeps a fresh link in front of an older stored one when storing the new one failed", () => {
+    const OLD = "0A1B2C3D4E5F60718293A4B5C6D7E8F9";
+    globals.window = fakeWindow(`#code=${OLD}`);
+    expect(takeInviteFromLocation(NOW)).toEqual({ code: OLD, game: null });
+    // The same browser now refuses the write for link B: A is still in storage.
+    const refusing = (hash: string) => ({
+      ...fakeWindow(hash),
+      localStorage: {
+        ...store(local),
+        setItem: () => {
+          throw new DOMException("full", "QuotaExceededError");
+        },
+      },
+    });
+    globals.window = refusing(`#code=${CODE}&game=fantasy`);
+    expect(takeInviteFromLocation(NOW + 1000)).toEqual({ code: CODE, game: "fantasy" });
+    globals.window = refusing("");
+    expect(pendingInvite(NOW + 2000)).toEqual({ code: CODE, game: "fantasy" });
+    expect(pendingInviteCode(NOW + 2000)).toBe(CODE);
+    clearPendingInvite();
+    expect(pendingInvite(NOW + 3000)).toBeNull();
+  });
+
   it("ignores anything that is not a code, a malformed record, and a server render", () => {
     globals.window = fakeWindow();
     local.set("botolago.league-invite.v1", JSON.stringify({ v: 1, code: "nope", savedAt: NOW }));
