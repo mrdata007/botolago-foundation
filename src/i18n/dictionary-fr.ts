@@ -2790,6 +2790,7 @@ export const fr = {
     "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.",
   "landing.cta_discover": "Découvrir le jeu",
   "landing.cta_how": "Comment ça marche",
+  "landing.cta_matches": "Voir les matchs et résultats",
   "landing.cta_note":
     "Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
   "landing.join_by": "Pour jouer dès la Journée {n}, enregistrez votre équipe avant le",
