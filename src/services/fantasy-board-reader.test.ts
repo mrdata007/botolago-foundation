@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import type { LeagueStanding } from "@/types/fantasy";
 import {
   BOARD_BLOCK_SIZE,
+  BOARD_AFTER_ANY_TEAM,
   BOARD_TTL_MS,
   BoardReader,
   SEARCH_SCAN_ROWS,
@@ -123,7 +124,7 @@ describe("BoardReader", () => {
     // Page 5 is the next block: exactly one more read, from the position the first gave.
     await reader.page(5, 25);
     expect(server.calls).toHaveLength(2);
-    expect(server.calls[1]?.cursor).toEqual({ rank: 100, teamId: teamId(100) });
+    expect(server.calls[1]?.cursor).toEqual({ rank: 100, teamId: BOARD_AFTER_ANY_TEAM });
   });
 
   it("never reads more than one block per page turn on a long walk", async () => {

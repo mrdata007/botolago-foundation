@@ -416,7 +416,9 @@ function LeagueDetailBody() {
                 />
               ) : null}
               {/* FANT-03: members beyond the pages read are one tap away, never missing. */}
-              {merged && (merged.nextCursor || standingsQ.isFetchNextPageError) ? (
+              {merged &&
+              ((merged.nextCursor && rows.length < merged.memberCount) ||
+                standingsQ.isFetchNextPageError) ? (
                 <div className="mt-3 space-y-2 text-center">
                   <p className={cn(ui.text.meta, ui.tone.muted)}>
                     <bdi>{nf.format(rows.length)}</bdi> / <bdi>{nf.format(merged.memberCount)}</bdi>{" "}

@@ -647,7 +647,7 @@ export const ar = {
   "fantasy.leagues.name": "اسم الدوري",
   "fantasy.leagues.share": "مشاركة الرمز",
   "fantasy.leagues.invite": "دعوة",
-  "fantasy.leagues.members": "عضواً",
+  "fantasy.leagues.members": "عضو",
   "fantasy.leagues.leader": "المتصدر",
   "fantasy.leagues.standings": "الترتيب",
   "fantasy.leagues.manager": "المدير",

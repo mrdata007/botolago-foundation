@@ -16,7 +16,7 @@ import {
   type RankingsPage,
   type RankingsQuery,
 } from "./fantasy-rankings";
-import { BoardReader, SEARCH_SCAN_ROWS } from "./fantasy-board-reader";
+import { BoardReader, boardReaders, SEARCH_SCAN_ROWS } from "./fantasy-board-reader";
 import {
   nextLeagueCursor,
   type LeagueStandingCursor,
@@ -312,13 +312,11 @@ async function readAllPlayers(current: FantasyHubDto): Promise<FantasyPlayer[]> 
  * Readers are kept per account (the rows carry the caller's `myRank` and, for a
  * signed-in caller, display names), season and board, a few at a time.
  */
-const boardReaders = new Map<string, BoardReader>();
 const KEEP_BOARD_READERS = 8;
 
-/** Drops every held board read (tests; an account switch is covered by the key). */
-export function forgetBoardReaders(): void {
-  boardReaders.clear();
-}
+// Also cleared with the shared hub read (`forgetSharedFantasyHub`): on a write, an
+// account switch and a sign-out. Re-exported for the tests.
+export { forgetBoardReaders } from "./fantasy-board-reader";
 
 function boardReader(identity: string, seasonId: string, gameweekId: string | null): BoardReader {
   const key = `${identity}|${seasonId}|${gameweekId ?? "season"}`;

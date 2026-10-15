@@ -13,6 +13,9 @@
 // next page starts a little early and repeats a few rows: they are dropped
 // here by team id (`mergeLeagueStandingsPages`), and a page that adds nothing
 // new ends the list rather than looping. Rows are never skipped.
+// Known limit: when 100 or more hidden accounts sit above a page, a whole page is
+// repeats, adds nothing new, and the list ends early (the member count above it
+// stays the server's, so the shortfall shows).
 
 import type { LeagueStanding } from "@/types/fantasy";
 
