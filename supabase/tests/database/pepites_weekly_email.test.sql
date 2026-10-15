@@ -235,8 +235,14 @@ select extensions.is(
 select extensions.is(
   (select title from app.notifications
    where user_id = pg_temp.user_id(2) and source_entity_id = (select id from ids where name = 'edition')),
-  'Pépites: توب 10 للأسبوع 16',
-  'the Arabic reader''s in-app copy is in Arabic'
+  'المواهب: توب 10 للأسبوع 16',
+  'the Arabic reader''s in-app copy is in Arabic and names the section المواهب (20261016100000)'
+);
+select extensions.is(
+  (select title from app.notifications
+   where user_id = pg_temp.user_id(1) and source_entity_id = (select id from ids where name = 'edition')),
+  'Prospects : le Top 10 de la semaine 16',
+  'the French reader''s in-app copy names the section Prospects (20261016100000)'
 );
 select pg_temp.fanout();
 select extensions.is(
