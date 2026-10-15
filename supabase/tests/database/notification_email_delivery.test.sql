@@ -33,9 +33,11 @@ values ('e0400000-0000-4000-8000-000000000001', 'ar', 'نادي البريد', '
 create temporary table email_clock on commit drop as
 select (current_date - 10) as day;
 
+-- Morocco's clock is the application's rule (app_private.morocco_instant, 20261016090000), not
+-- this server's own Africa/Casablanca data, so the test means the same on any tz release.
 create function pg_temp.local_at(p_day_offset integer, p_time time) returns timestamptz
 language sql stable as $$
-  select ((select day from email_clock) + p_day_offset + p_time) at time zone 'Africa/Casablanca'
+  select app_private.morocco_instant((select day from email_clock) + p_day_offset + p_time)
 $$;
 
 create function pg_temp.add_fixture(
@@ -316,8 +318,8 @@ select app_private.notification_email_plan(statement_timestamp());
 -- claims below expect it only when it is due: the test runs at any hour.
 create temporary table email_real_clock on commit drop as
 select local_now::time >= time '07:00'
-   and (kickoff at time zone 'Africa/Casablanca')::date = local_now::date as matchday_due
-from (select statement_timestamp() at time zone 'Africa/Casablanca' as local_now,
+   and app_private.morocco_local_date(kickoff) = local_now::date as matchday_due
+from (select app_private.morocco_local(statement_timestamp()) as local_now,
         (select kickoff_at from app.fixtures
          where id = 'e0500000-0000-4000-8000-000000000021') as kickoff) clock;
 select extensions.is(

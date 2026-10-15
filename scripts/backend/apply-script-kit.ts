@@ -93,6 +93,8 @@ export type ApplySpec = {
   scriptPath: string;
   /** Strings that must appear in the script before its first write (the history insert). */
   guards: string[];
+  /** The owner runbook the header points to (default: the Phase A/B runbook). */
+  runbook?: string;
 };
 
 export function commonApplyScriptTests(spec: ApplySpec) {
@@ -128,7 +130,9 @@ export function commonApplyScriptTests(spec: ApplySpec) {
     expect(header).toContain("Nothing needs pausing");
     expect(header).toContain("REHEARSAL");
     expect(header).toContain("Change the line `rollback;`");
-    expect(header).toContain("docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md");
+    expect(header).toContain(
+      spec.runbook ?? "docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md",
+    );
     // Never aimed at the staging or legacy projects.
     expect(script).not.toContain("srdrflfrfpwixsllveid");
     expect(script).not.toContain("kxpaudvntwxpahyjtxbk");

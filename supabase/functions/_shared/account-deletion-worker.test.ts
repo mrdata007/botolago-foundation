@@ -240,11 +240,21 @@ describe("confirmationEmail", () => {
       new Date("2026-10-13T12:00:00Z"),
     );
     expect(message.subject).toBe("Votre compte BotolaGO a été supprimé");
-    // 23:30 UTC on the 6th is already the 7th in Casablanca (UTC+1).
-    expect(message.text).toContain("le 7 octobre 2026");
+    // Morocco is UTC+0 from 2026-09-20 (_shared/morocco-time.ts): 23:30 UTC on 6 October is still the
+    // 6th there, whatever time-zone data the runtime carries (older data say UTC+1 and the 7th).
+    expect(message.text).toContain("le 6 octobre 2026");
     expect(message.text).toContain("le 13 octobre 2026");
     expect(message.text).toContain("support@botolago.com");
     expect(message.html).toContain('lang="fr" dir="ltr"');
+  });
+
+  it("keeps UTC+1 for a request made before the change of 2026-09-20", () => {
+    const message = confirmationEmail(
+      { requestedAt: "2026-09-12T23:30:00+00:00", language: "fr" },
+      new Date("2026-10-13T12:00:00Z"),
+    );
+    // 23:30 UTC on 12 September is 00:30 on the 13th in Casablanca (UTC+1 then).
+    expect(message.text).toContain("le 13 septembre 2026");
   });
 
   it("writes the Arabic one right to left, with the same facts", () => {

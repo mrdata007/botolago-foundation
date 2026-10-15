@@ -22,14 +22,19 @@
 --
 -- THE INPUTS (the three lines marked INPUT, in both parts below, kept equal)
 --   INPUT 1  season label   '2026/27'
---   INPUT 2  cut-off        '2026-11-01 00:00:00 Africa/Casablanca'
+--   INPUT 2  cut-off        '2026-11-01 00:00:00+00'
 --                           Teams created before this moment qualify, so this
---                           is midnight starting 1 November, Moroccan time. The
---                           zone name is resolved by the database's own
---                           time-zone data; the rehearsal prints the instant it
---                           resolved to in UTC (expected 2026-10-31 23:00:00
---                           UTC while Morocco is on UTC+1). If that is not the
---                           instant you mean, stop and say so.
+--                           is midnight starting 1 November, Moroccan time.
+--                           Morocco is UTC+0 all year from 2026-09-20 (owner
+--                           confirmed 2026-10-15), so that midnight is
+--                           2026-11-01 00:00:00 UTC. It is written as a UTC
+--                           instant on purpose: a zone NAME would be resolved
+--                           by the database's own time-zone data, which are
+--                           older than that rule on Production V2 and would
+--                           give 2026-10-31 23:00:00 UTC, an hour early. The
+--                           rehearsal prints the instant in UTC (expected
+--                           2026-11-01 00:00:00). If that is not the instant
+--                           you mean, stop and say so.
 --   INPUT 3  cohort         2026
 --   INPUT 4  excluded users optional list of extra user ids to leave out
 --                           (test accounts, friends of the house), default none
@@ -69,7 +74,7 @@
 do $founder_dry_run$
 declare
   season_label constant text := '2026/27';                                              -- INPUT 1
-  cutoff constant timestamptz := '2026-11-01 00:00:00 Africa/Casablanca'::timestamptz;  -- INPUT 2
+  cutoff constant timestamptz := '2026-11-01 00:00:00+00'::timestamptz;  -- INPUT 2
   cohort constant smallint := 2026;                                                     -- INPUT 3
   excluded constant uuid[] := '{}'::uuid[];                                             -- INPUT 4
   season_ids uuid[];
@@ -87,7 +92,7 @@ begin
   end if;
   if now() < cutoff then
     raise exception 'stop: the founder offer is still open until % (Moroccan time) -- run this on or after that moment',
-      to_char(cutoff at time zone 'Africa/Casablanca', 'YYYY-MM-DD HH24:MI');
+      to_char(cutoff at time zone 'UTC', 'YYYY-MM-DD HH24:MI');
   end if;
   if cohort is null or cohort < 1 then
     raise exception 'stop: the cohort must be a whole number from 1';
@@ -131,7 +136,7 @@ $founder_dry_run$;
 -- do $founder_real$
 -- declare
 --   season_label constant text := '2026/27';                                              -- INPUT 1
---   cutoff constant timestamptz := '2026-11-01 00:00:00 Africa/Casablanca'::timestamptz;  -- INPUT 2
+--   cutoff constant timestamptz := '2026-11-01 00:00:00+00'::timestamptz;  -- INPUT 2
 --   cohort constant smallint := 2026;                                                     -- INPUT 3
 --   excluded constant uuid[] := '{}'::uuid[];                                             -- INPUT 4
 --   expected constant integer := NULL;     -- EXPECTED: replace NULL with N from the rehearsal
@@ -147,7 +152,7 @@ $founder_dry_run$;
 --   end if;
 --   if now() < cutoff then
 --     raise exception 'stop: the founder offer is still open until % (Moroccan time) -- run this on or after that moment',
---       to_char(cutoff at time zone 'Africa/Casablanca', 'YYYY-MM-DD HH24:MI');
+--       to_char(cutoff at time zone 'UTC', 'YYYY-MM-DD HH24:MI');
 --   end if;
 --   if cohort is null or cohort < 1 then
 --     raise exception 'stop: the cohort must be a whole number from 1';

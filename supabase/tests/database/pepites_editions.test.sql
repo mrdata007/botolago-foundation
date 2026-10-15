@@ -4,7 +4,8 @@ select extensions.no_plan();
 
 -- Pépites weekly editions and the tick (20260926100000).
 -- A generated league plays week by week; the tick is driven with explicit
--- times (Africa/Casablanca is UTC+1 in autumn 2026). Concurrency with two
+-- times (Morocco is UTC+0 from 2026-09-20, so a local time is the UTC time;
+-- app_private.morocco_local, 20261016090000). Concurrency with two
 -- connections is in scripts/backend/pepites-editions-concurrency.test.ts.
 
 create function pg_temp.uid(p_prefix text, p_n integer)
@@ -142,7 +143,7 @@ select extensions.throws_ok(
   $$select app_private.pepites_configure('on')$$,
   '22023', 'PEPITES_MODE_INVALID', 'an unknown mode is refused'
 );
-insert into ticks values ('off', app_private.pepites_tick('2026-09-28 11:30:00+00'));
+insert into ticks values ('off', app_private.pepites_tick('2026-09-28 12:30:00+00'));
 select extensions.is((select result ->> 'outcome' from ticks where name = 'off'), 'off',
   'mode off: the tick does nothing');
 select extensions.is(
@@ -175,10 +176,10 @@ select extensions.is(
 -- ===========================================================================
 -- Week 14: run, draft, re-point, edit, schedule, re-point again, publish
 -- ===========================================================================
-insert into ticks values ('mon-10:00', app_private.pepites_tick('2026-09-28 10:00:00+00'));
+insert into ticks values ('mon-11:00', app_private.pepites_tick('2026-09-28 11:00:00+00'));
 select extensions.is(
   (select result #>> '{runs,run}' || '/' || (result ->> 'draft') || '/' || (result ->> 'daily')
-   from ticks where name = 'mon-10:00'),
+   from ticks where name = 'mon-11:00'),
   'scored/not_now/ran',
   'Monday 11:00 local: round 4 is scored; too early for the draft; the daily checks run'
 );
@@ -190,21 +191,21 @@ select extensions.ok(
   'the round 4 run succeeded, revision 1, with at least 10 ranked'
 );
 
-insert into ticks values ('mon-10:15', app_private.pepites_tick('2026-09-28 10:15:00+00'));
+insert into ticks values ('mon-11:15', app_private.pepites_tick('2026-09-28 11:15:00+00'));
 select extensions.is(
-  (select result #>> '{runs,run}' || '/' || (result ->> 'daily') from ticks where name = 'mon-10:15'),
+  (select result #>> '{runs,run}' || '/' || (result ->> 'daily') from ticks where name = 'mon-11:15'),
   'unchanged/done_today',
   'the next tick finds the same inputs: no new run, and the daily checks already ran'
 );
 
-insert into ticks values ('mon-11:15', app_private.pepites_tick('2026-09-28 11:15:00+00'));
-select extensions.is((select result ->> 'draft' from ticks where name = 'mon-11:15'), 'created',
+insert into ticks values ('mon-12:15', app_private.pepites_tick('2026-09-28 12:15:00+00'));
+select extensions.is((select result ->> 'draft' from ticks where name = 'mon-12:15'), 'created',
   'Monday 12:15 local: the week''s draft is made');
-insert into ids select 'e14', (result ->> 'editionId')::uuid from ticks where name = 'mon-11:15';
+insert into ids select 'e14', (result ->> 'editionId')::uuid from ticks where name = 'mon-12:15';
 select extensions.ok(
   (select status = 'draft' and week_number = 14 and round_number = 4
      and run_id = (select id from ids where name = 'r4a')
-     and scheduled_for = '2026-09-28 19:00:00+00' and published_at is null
+     and scheduled_for = '2026-09-28 20:00:00+00' and published_at is null
    from app.pepites_editions where id = (select id from ids where name = 'e14')),
   'a draft of week 14, round 4, from that run, due at 20:00 local'
 );
@@ -225,8 +226,8 @@ select extensions.ok(
   exists (select 1 from app_private.pepites_notices where key = 'draft:' || (select id from ids where name = 'e14')),
   'and the editor is told'
 );
-insert into ticks values ('mon-11:30', app_private.pepites_tick('2026-09-28 11:30:00+00'));
-select extensions.is((select result ->> 'draft' from ticks where name = 'mon-11:30'), 'exists',
+insert into ticks values ('mon-12:30', app_private.pepites_tick('2026-09-28 12:30:00+00'));
+select extensions.is((select result ->> 'draft' from ticks where name = 'mon-12:30'), 'exists',
   'a second Monday tick makes no second draft');
 
 -- The postponed match is played on Monday afternoon: a new revision, and the
@@ -235,12 +236,12 @@ update app.fixtures set status = 'finished', home_score = 2, away_score = 0,
   finalized_at = '2026-09-28 13:00:00+00', provider_updated_at = '2026-09-28 13:00:00+00'
 where id = pg_temp.uid('f4000000-0000-4000-8000-', 44);
 select pg_temp.play(pg_temp.uid('f4000000-0000-4000-8000-', 44));
-insert into ticks values ('mon-13:30', app_private.pepites_tick('2026-09-28 13:30:00+00'));
-insert into ids select 'r4b', (result #>> '{runs,runId}')::uuid from ticks where name = 'mon-13:30';
+insert into ticks values ('mon-14:30', app_private.pepites_tick('2026-09-28 14:30:00+00'));
+insert into ids select 'r4b', (result #>> '{runs,runId}')::uuid from ticks where name = 'mon-14:30';
 select extensions.ok(
   (select result #>> '{runs,run}' = 'scored' and revision = 2
    from ticks, app.pepites_runs run
-   where name = 'mon-13:30' and run.id = (select id from ids where name = 'r4b')),
+   where name = 'mon-14:30' and run.id = (select id from ids where name = 'r4b')),
   'postponed match played after its round: revision 2 of round 4'
 );
 select extensions.is(
@@ -311,7 +312,7 @@ select extensions.is(
 
 -- Schedule for 20:00 local.
 select extensions.lives_ok(
-  format($$select app_private.pepites_schedule(%L, '2026-09-28 19:00:00+00', %L)$$,
+  format($$select app_private.pepites_schedule(%L, '2026-09-28 20:00:00+00', %L)$$,
     (select id from ids where name = 'e14'), (select id from ids where name = 'staff')),
   'the editor schedules it'
 );
@@ -391,15 +392,15 @@ select set_config('botolago.pepites_actor', '', true);
 update app.player_fixture_performances set goals = goals + 1
 where fixture_id = pg_temp.uid('f4000000-0000-4000-8000-', 41)
   and player_id = (select player_id from top where editorial_rank = 3);
-insert into ticks values ('mon-14:00', app_private.pepites_tick('2026-09-28 14:00:00+00'));
-insert into ids select 'r4c', (result #>> '{runs,runId}')::uuid from ticks where name = 'mon-14:00';
+insert into ticks values ('mon-15:00', app_private.pepites_tick('2026-09-28 15:00:00+00'));
+insert into ids select 'r4c', (result #>> '{runs,runId}')::uuid from ticks where name = 'mon-15:00';
 select extensions.is(
-  (select result #>> '{runs,repointed,0,status}' from ticks where name = 'mon-14:00'),
+  (select result #>> '{runs,repointed,0,status}' from ticks where name = 'mon-15:00'),
   'scheduled',
   'a corrected appearance: revision 3, and the scheduled edition is scheduled again'
 );
 select extensions.ok(
-  (select status = 'scheduled' and scheduled_for = '2026-09-28 19:00:00+00'
+  (select status = 'scheduled' and scheduled_for = '2026-09-28 20:00:00+00'
      and run_id = (select id from ids where name = 'r4c')
    from app.pepites_editions where id = (select id from ids where name = 'e14')),
   'on the new run, for the same time'
@@ -421,7 +422,7 @@ select extensions.is(
 );
 
 -- Before its time nothing is published.
-insert into ticks values ('mon-18:45', app_private.pepites_tick('2026-09-28 18:45:00+00'));
+insert into ticks values ('mon-19:45', app_private.pepites_tick('2026-09-28 19:45:00+00'));
 select extensions.is(
   (select status from app.pepites_editions where id = (select id from ids where name = 'e14')),
   'scheduled', '19:45 local: not yet'
@@ -431,7 +432,7 @@ select extensions.is(
 create temporary table entries_before on commit drop as
 select editorial_rank, xmin::text as row_version, player_id, computed_rank, computed_score, reason_fr
 from app.pepites_edition_entries where edition_id = (select id from ids where name = 'e14');
-insert into ticks values ('mon-19:05', app_private.pepites_tick('2026-09-28 19:05:00+00'));
+insert into ticks values ('mon-20:05', app_private.pepites_tick('2026-09-28 20:05:00+00'));
 select extensions.ok(
   (select status = 'published' and published_at is not null and published_by is null
      and previous_edition_id is null
@@ -567,14 +568,14 @@ select set_config('botolago.pepites_actor', '', true);
 -- ===========================================================================
 select pg_temp.add_round(5);
 select app_private.pepites_configure('staff', true);
-insert into ticks values ('w15-draft', app_private.pepites_tick('2026-10-05 11:15:00+00'));
+insert into ticks values ('w15-draft', app_private.pepites_tick('2026-10-05 12:15:00+00'));
 insert into ids select 'e15', (result ->> 'editionId')::uuid from ticks where name = 'w15-draft';
 select extensions.ok(
   (select round_number = 5 and week_number = 15 and status = 'draft'
    from app.pepites_editions where id = (select id from ids where name = 'e15')),
   'round 5 is scored and week 15''s draft made'
 );
-insert into ticks values ('w15-publish', app_private.pepites_tick('2026-10-05 19:05:00+00'));
+insert into ticks values ('w15-publish', app_private.pepites_tick('2026-10-05 20:05:00+00'));
 select extensions.is(
   (select array_agg(coalesce(from_status, '-') || '>' || to_status || '/' || actor_kind order by id)
    from app_private.pepites_edition_moves where edition_id = (select id from ids where name = 'e15')),
@@ -623,25 +624,25 @@ select extensions.is(
 -- ===========================================================================
 select pg_temp.add_round(6);
 select app_private.pepites_configure('staff', false);
-insert into ticks values ('w16-draft', app_private.pepites_tick('2026-10-12 11:15:00+00'));
+insert into ticks values ('w16-draft', app_private.pepites_tick('2026-10-12 12:15:00+00'));
 insert into ids select 'e16', (result ->> 'editionId')::uuid from ticks where name = 'w16-draft';
 select extensions.ok(
   (select round_number = 6 and status = 'draft' from app.pepites_editions
    where id = (select id from ids where name = 'e16')),
   'week 16: a draft for round 6 (a withdrawn edition''s round counts as used)'
 );
-insert into ticks values ('w16-late', app_private.pepites_tick('2026-10-12 19:05:00+00'));
+insert into ticks values ('w16-late', app_private.pepites_tick('2026-10-12 20:05:00+00'));
 select extensions.ok(
   (select status = 'draft' from app.pepites_editions where id = (select id from ids where name = 'e16'))
   and exists (select 1 from app_private.pepites_notices where key = 'delayed:' || (select id from ids where name = 'e16')),
   'without auto-publish, past its time the draft stays a draft and ops is told it is late'
 );
-insert into ticks values ('w16-late-2', app_private.pepites_tick('2026-10-12 19:20:00+00'));
+insert into ticks values ('w16-late-2', app_private.pepites_tick('2026-10-12 20:20:00+00'));
 select extensions.is(
   (select count(*) from app_private.pepites_notices where key like '%' || (select id from ids where name = 'e16')::text),
   2::bigint, 'once (the draft notice and one delay notice)'
 );
-insert into ticks values ('w16-abandoned', app_private.pepites_tick('2026-10-13 19:10:00+00'));
+insert into ticks values ('w16-abandoned', app_private.pepites_tick('2026-10-13 20:10:00+00'));
 select extensions.ok(
   (select status = 'draft' from app.pepites_editions where id = (select id from ids where name = 'e16'))
   and exists (select 1 from app_private.pepites_notices where key = 'abandoned:' || (select id from ids where name = 'e16')),
@@ -688,10 +689,10 @@ $$;
 update app.player_fixture_performances set assists = assists + 1
 where fixture_id = pg_temp.uid('f4000000-0000-4000-8000-', 61)
   and player_id = pg_temp.uid('f2000000-0000-4000-8000-', 2);
-insert into ticks values ('fail-1', app_private.pepites_tick('2026-10-13 20:00:00+00'));
-insert into ticks values ('fail-2', app_private.pepites_tick('2026-10-13 20:15:00+00'));
-insert into ticks values ('fail-3', app_private.pepites_tick('2026-10-13 20:30:00+00'));
-insert into ticks values ('fail-4', app_private.pepites_tick('2026-10-13 20:45:00+00'));
+insert into ticks values ('fail-1', app_private.pepites_tick('2026-10-13 21:00:00+00'));
+insert into ticks values ('fail-2', app_private.pepites_tick('2026-10-13 21:15:00+00'));
+insert into ticks values ('fail-3', app_private.pepites_tick('2026-10-13 21:30:00+00'));
+insert into ticks values ('fail-4', app_private.pepites_tick('2026-10-13 21:45:00+00'));
 select extensions.is(
   (select array_agg(result #>> '{runs,run}' order by name) from ticks where name like 'fail-%'),
   array['failed', 'failed', 'failed', 'gave_up'],
@@ -710,7 +711,7 @@ do $$ begin execute (select source from saved_gather); end $$;
 update app.player_fixture_performances set assists = assists + 1
 where fixture_id = pg_temp.uid('f4000000-0000-4000-8000-', 61)
   and player_id = pg_temp.uid('f2000000-0000-4000-8000-', 4);
-insert into ticks values ('fail-fixed', app_private.pepites_tick('2026-10-13 21:00:00+00'));
+insert into ticks values ('fail-fixed', app_private.pepites_tick('2026-10-13 22:00:00+00'));
 select extensions.is((select result #>> '{runs,run}' from ticks where name = 'fail-fixed'), 'scored',
   'new inputs are tried again');
 

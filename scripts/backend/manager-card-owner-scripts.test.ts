@@ -170,7 +170,7 @@ describe("manager-card-founder-grant.sql", () => {
   test("names its inputs clearly: season label, cut-off, cohort, exclusions", () => {
     expect(founder).toContain("season_label constant text := '2026/27'");
     expect(founder).toContain(
-      "cutoff constant timestamptz := '2026-11-01 00:00:00 Africa/Casablanca'::timestamptz",
+      "cutoff constant timestamptz := '2026-11-01 00:00:00+00'::timestamptz",
     );
     expect(founder).toContain("cohort constant smallint := 2026");
     expect(founder).toContain("excluded constant uuid[] := '{}'::uuid[]");

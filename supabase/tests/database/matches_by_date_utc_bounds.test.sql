@@ -69,6 +69,21 @@ select extensions.throws_ok(
   $$select api.football_matches_by_date('2030-01-02', p_timezone => 'Mars/Olympus_Mons')$$,
   '22023', 'INVALID_TIMEZONE', 'without bounds an unknown zone is still refused');
 
+-- Morocco's day without bounds (20261016090400): from 2026-09-20 Morocco is UTC+0, so
+-- 2030-01-02 in Africa/Casablanca is the UTC day, whatever time-zone data the server carries
+-- (older data would put the day at 23:00Z to 23:00Z and lose the 23:30Z kickoff). Another
+-- zone is the database's own answer: Paris is UTC+1 in January.
+select extensions.is(
+  jsonb_array_length(api.football_matches_by_date(
+    '2030-01-02', p_timezone => 'Africa/Casablanca', p_season_id => '42000000-0000-4000-8000-0000000000b1'
+  ) -> 'items'), 2,
+  'a date and Africa/Casablanca give the Moroccan day: the 22:30Z and the 23:30Z kickoff');
+select extensions.is(
+  jsonb_array_length(api.football_matches_by_date(
+    '2030-01-02', p_timezone => 'Europe/Paris', p_season_id => '42000000-0000-4000-8000-0000000000b1'
+  ) -> 'items'), 1,
+  'a date and another zone give that zone''s day: Paris keeps only the 22:30Z kickoff');
+
 -- Bad bounds are refused.
 select extensions.throws_ok(
   $$select api.football_matches_by_date('2030-01-02', p_range_start => '2030-01-02T00:00:00Z')$$,
