@@ -565,7 +565,8 @@ select extensions.is(
   'the explanation: +10 on the league = captain +2.2 (7 against 4.8), transfers +2, the rest 5.8, named a remainder');
 select extensions.is(
   current_setting('test.a3')::jsonb #> '{explain,transfers}',
-  jsonb_build_array(jsonb_build_object('playerOut', 'MCP 14', 'playerIn', 'MCP 18', 'outPoints', 6, 'inPoints', 8,
+  jsonb_build_array(jsonb_build_object('playerOutId', pg_temp.fp(14), 'playerInId', pg_temp.fp(18),
+    'playerOut', 'MCP 14', 'playerIn', 'MCP 18', 'outPoints', 6, 'inPoints', 8,
     'hitShare', 0.0, 'pending', false, 'gain', 2, 'net', 2.0)),
   'the transfer of the journée: MCP 14 (6) out, MCP 18 (8) in, +2, no hit');
 select extensions.is(

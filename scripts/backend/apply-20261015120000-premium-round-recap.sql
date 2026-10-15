@@ -524,6 +524,8 @@ begin
   from (
     select tr.sequence_number,
       jsonb_build_object(
+        'playerOutId', tr.player_out_id,
+        'playerInId', tr.player_in_id,
         'playerOut', pout.display_name,
         'playerIn', pin.display_name,
         'outPoints', case when po.final_points is null and not v_final then null
@@ -642,7 +644,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261015120000, 'UTF8')), 'hex')
-    is distinct from '950c3911d375abf66f3ae126c1e48095066433793df08084149bdace36a0b8fd' then
+    is distinct from 'b9a0a77fd8af3fbd729833996bdc6d2348636c28266b1054fbb498dc22ffe767' then
     raise exception 'stop: 20261015120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

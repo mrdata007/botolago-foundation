@@ -371,6 +371,8 @@ begin
   from (
     select tr.sequence_number,
       jsonb_build_object(
+        'playerOutId', tr.player_out_id,
+        'playerInId', tr.player_in_id,
         'playerOut', pout.display_name,
         'playerIn', pin.display_name,
         'outPoints', case when po.final_points is null and not v_final then null

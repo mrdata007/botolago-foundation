@@ -76,6 +76,15 @@ const PlusSeasonSlot = PREMIUM_SURFACES
     )
   : null;
 
+/** « Votre journée expliquée » (BotolaGO+), under « Votre saison »: the same switches, its own chunk. */
+const PlusRecapSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusRecapSlot").then((module) => ({
+        default: module.PlusRecapSlot,
+      })),
+    )
+  : null;
+
 /** The one line of state the card page asks WP4 for. */
 const TIER_DOWN: readonly LineSpec["kind"][] = ["tier_down"];
 
@@ -168,6 +177,11 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         {PlusSeasonSlot ? (
           <Suspense fallback={null}>
             <PlusSeasonSlot />
+          </Suspense>
+        ) : null}
+        {PlusRecapSlot ? (
+          <Suspense fallback={null}>
+            <PlusRecapSlot />
           </Suspense>
         ) : null}
         {PREMIUM_SURFACES ? <PlusMemberRows /> : null}
