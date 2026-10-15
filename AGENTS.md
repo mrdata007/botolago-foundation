@@ -242,6 +242,59 @@ null, false);` before a write that touches fixtures or notifications, and
    the minutes between passes; restore the previous value afterwards). It adds
    no second cron job to pause: its log rows are pruned by the write that adds
    them.
+   Where migration 20261015130200 is applied, pg_cron also runs `rivals-tick`
+   at minutes 7, 22, 37 and 52. It creates the optional BotolaGO+ Rivaux
+   lead-change notification. Each pass it compares, for every pinned rival, who
+   leads on the current published totals with the leader it last recorded for
+   that pin in `app_private.rival_lead_notices` (one row per pin): the first
+   sight of a pin only records, and a change creates one notification (in-app,
+   plus a pending push delivery per working phone for members with push and
+   Fantasy reminders on; no email) for members who switched it on before the
+   journée that produced the change was published. A correction of an older
+   journée that flips the lead is told, in the corrected wording. It records
+   every pin's leader, eligible or not. It writes
+   `app_private.notification_events`, `app.notifications`,
+   `app.notification_deliveries` (in-app and push rows; the push is sent only
+   while `app_private.notification_push_settings.mode` allows) and `app_private.rival_lead_notices`, and only
+   while switched on in `app_private.rivals_settings` (it ships off, and the
+   member's own switch in `app.rival_preferences` is off until they turn it on).
+   Pause it before a write that touches those tables, the pins
+   (`app.pinned_rivals`) or the Fantasy results it reads, and restore the
+   previous setting afterwards: `select app_private.rivals_configure(false);`
+   then `select app_private.rivals_configure(true);` (only if it was on). Its
+   companion `rivals-history-prune` runs daily at 03:59 UTC whatever the
+   switch says: it deletes the tick's `cron.job_run_details` rows older than 7
+   days and `app_private.rival_lead_notices` rows of unpinned pairs older than 365 days. Pause it
+   by name for a write that touches those tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'rivals-history-prune'), active := false);`
+   Members pinning, unpinning and switching the notification
+   (`api.pin_rival`, `api.unpin_rival`, `api.set_rivals_notify`) is ordinary app
+   traffic, each member writing only their own rows.
+   Where migration 20261015150100 is applied, pg_cron also runs `trophies-tick`
+   at minutes 10 and 40 of every hour. It evaluates the Trophées rules over the
+   final results of every active team of the current Fantasy season and writes
+   only `app.trophies_earned` and its own bookkeeping
+   (`app_private.trophy_settings.last_run_at` and `last_result`). It writes only
+   while switched on in `app_private.trophy_settings` (it ships off) and a usable
+   Manager Card ruleset exists
+   ([TROPHIES_OPERATIONS_RUNBOOK.md](docs/backend/TROPHIES_OPERATIONS_RUNBOOK.md)).
+   Pause it before a write that touches `app.trophies_earned`, `app.trophy_catalog`
+   or the Manager Card, Fantasy result or league tables it reads, and switch it
+   back on afterwards if it was on:
+   `select app_private.trophy_configure(false);`
+   `select app_private.trophy_configure(true);`
+   Pausing does not stop a pass that has already started (it holds an advisory
+   lock and runs for at most ten minutes): check
+   `select last_run_at, last_result from app_private.trophy_settings;` and wait
+   for it. A trophy is never taken back, so a pause never undoes one. Its
+   companion `trophies-history-prune` runs daily at 03:31 UTC whatever the
+   switch says: it deletes the tick's `cron.job_run_details` rows older than 7
+   days and nothing else. Pause it by name for a write that touches that table,
+   then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'trophies-history-prune'), active := false);`
+   Signed-in members also write `app.card_frame_choices` (through
+   `api.choose_card_frame`); that is ordinary app traffic, each user writing only
+   their own row.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

@@ -103,7 +103,7 @@ describe("the paywall (screen 3)", () => {
 
 describe("the paywall, the short door every entry opens", () => {
   const paywall = (props: {
-    context?: "season" | "duel" | "career" | "editions";
+    context?: "season" | "duel" | "career" | "editions" | "rivals" | "briefing";
     open?: boolean;
   }) =>
     render(
@@ -125,7 +125,7 @@ describe("the paywall, the short door every entry opens", () => {
     const general = paywall({});
     expect(text(general)).toContain(fr["plus.s3.title"]);
     expect(general).toMatch(/<h1 class="plus-h plus-s3-h"/);
-    for (const context of ["season", "duel", "career", "editions"] as const) {
+    for (const context of ["season", "duel", "career", "editions", "rivals", "briefing"] as const) {
       const html = paywall({ context });
       expect(text(html)).toContain(fr[`plus.ctx.${context}`]);
       expect(text(html)).not.toContain(fr["plus.s3.title"]);

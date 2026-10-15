@@ -130,6 +130,12 @@ export const FANTASY_PAGE_HEADS = {
     canonicalPath: null,
     personal: true,
   },
+  briefing: {
+    title: (t) => t("plus.brief.meta"),
+    description: (t) => t("plus.brief.meta_description"),
+    canonicalPath: null,
+    personal: true,
+  },
   transfers: {
     title: (t) => t("fantasy.meta.transfers_title"),
     description: (t) => t("fantasy.meta.transfers_description"),
@@ -195,6 +201,7 @@ export const FANTASY_ROUTE_PAGES = {
   "/fantasy/leagues/join": "joinLeague",
   "/fantasy/create": "create",
   "/fantasy/team": "team",
+  "/fantasy/briefing": "briefing",
   "/fantasy/transfers": "transfers",
   "/fantasy/points": "points",
   "/fantasy/profile": "profile",
