@@ -270,6 +270,31 @@ null, false);` before a write that touches fixtures or notifications, and
    Members pinning, unpinning and switching the notification
    (`api.pin_rival`, `api.unpin_rival`, `api.set_rivals_notify`) is ordinary app
    traffic, each member writing only their own rows.
+   Where migration 20261015150100 is applied, pg_cron also runs `trophies-tick`
+   at minutes 10 and 40 of every hour. It evaluates the Trophées rules over the
+   final results of every active team of the current Fantasy season and writes
+   only `app.trophies_earned` and its own bookkeeping
+   (`app_private.trophy_settings.last_run_at` and `last_result`). It writes only
+   while switched on in `app_private.trophy_settings` (it ships off) and a usable
+   Manager Card ruleset exists
+   ([TROPHIES_OPERATIONS_RUNBOOK.md](docs/backend/TROPHIES_OPERATIONS_RUNBOOK.md)).
+   Pause it before a write that touches `app.trophies_earned`, `app.trophy_catalog`
+   or the Manager Card, Fantasy result or league tables it reads, and switch it
+   back on afterwards if it was on:
+   `select app_private.trophy_configure(false);`
+   `select app_private.trophy_configure(true);`
+   Pausing does not stop a pass that has already started (it holds an advisory
+   lock and runs for at most ten minutes): check
+   `select last_run_at, last_result from app_private.trophy_settings;` and wait
+   for it. A trophy is never taken back, so a pause never undoes one. Its
+   companion `trophies-history-prune` runs daily at 03:31 UTC whatever the
+   switch says: it deletes the tick's `cron.job_run_details` rows older than 7
+   days and nothing else. Pause it by name for a write that touches that table,
+   then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'trophies-history-prune'), active := false);`
+   Signed-in members also write `app.card_frame_choices` (through
+   `api.choose_card_frame`); that is ordinary app traffic, each user writing only
+   their own row.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

@@ -1,8 +1,19 @@
 import { inviteLink, type InviteGame } from "@/components/predictions/leagues/invite-link";
 
+/**
+ * A template with its `{placeholders}` filled in ONE pass. A league's name is
+ * typed by a person, so it is never read as a replacement pattern (`$&`, `$$`
+ * and `$'` mean something to `String.replace`: "Mo$$ Squad" lost a dollar) and
+ * never searched for a placeholder (a league called "{link}" took the link's
+ * place in the sentence and left the real `{link}` unfilled).
+ */
+export function fillInvite(template: string, values: Record<string, string>): string {
+  return template.replace(/\{([A-Za-z0-9_]+)\}/g, (whole, name: string) => values[name] ?? whole);
+}
+
 /** The message a manager sends with a league's invite link. */
 export function inviteMessage(template: string, name: string, link: string): string {
-  return template.replace("{name}", name).replace("{link}", link);
+  return fillInvite(template, { name, link });
 }
 
 /** The WhatsApp share URL for a message: opens the app on a phone, WhatsApp Web elsewhere. */

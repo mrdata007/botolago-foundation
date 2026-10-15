@@ -389,6 +389,58 @@ must say `true`. It is rebuilt by
 the two helpers; nothing depends on them. Switching BotolaGO+ off already hides
 the read.
 
+## Premium deadline briefing: « Briefing avant la deadline »
+
+Migration `20261015140000_premium_deadline_briefing.sql`, applied by
+`scripts/backend/apply-20261015140000-premium-deadline-briefing.sql` **after**
+the premium card reads and the Fantasy rating points (20261014090000). It adds
+two api functions and two helpers, no table, no column, no job and no row, and
+replaces nothing. Both reads are `STABLE` and write nothing, so they need no
+entry in `AGENTS.md`; there is no new scheduled job. **Applying the migration is
+a database write**, the rollback-only rehearsal included: follow `AGENTS.md`,
+"One writer at a time, per database".
+
+| Function                                                           | Who     | Answers                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.get_my_deadline_briefing(p_season_id uuid)`                   | Members | The caller's team and the gameweek open for changes: bank, free transfers, hit cost, club limit; per player the provider's absence, the last three journées' published points, the next opponent with our difficulty estimate; the league rank |
+| `api.get_my_briefing_alternatives(p_player_out uuid, p_limit int)` | Members | Same-position players within sale price plus bank, not in the squad, not over the club limit, by price, with their last three journées' published points                                                                                       |
+
+Like the other premium reads they answer `{"available": false}` while BotolaGO+
+is `off` (and in `preview` to a non-member), `{"available": true, "locked":
+true}` to a non-member once `on`, and need the MFA step-up.
+
+**What is true, and what is not.** The app has no injury or suspension feed. An
+"absence" is exactly a row of `app.fixture_absences` (for a fixture of the open
+gameweek) or an active injured/suspended row of `app.player_availability`, with
+the provider's date; today only the SportsMonks importer writes them, and the
+SofaScore source writes none. `absenceFeed.listed` says how many the provider
+listed for the gameweek: zero means "no list available", never "nobody is
+absent", and the screen says so. `app.fantasy_players.status` is not read: nothing
+writes it.
+
+**A rating-less 5.** Under the rating rule a player who appeared without a rating
+scores 5, and a rating of 4.5 to 5.49 also rounds to 5; the stored result does not
+say which. A 5 after an appearance, while the rating rule is on for that
+gameweek, is therefore returned as `no_rating` with no number and shown as
+« sans note ». A real 5.0 is shown the same way until the save records the missing
+rating explicitly (owner decision: see the pull request).
+
+**« Depuis votre visite »** is kept on the reader's device (`localStorage`,
+labelled « sur cet appareil »): nothing is stored about visits in the database.
+
+**Applying.** Rehearsal, then `'apply'` in the `bg.deadline_briefing_mode` line.
+Re-read after the rehearsal:
+`select to_regprocedure('api.get_my_deadline_briefing(uuid)') is null;` must say
+`true`. Rebuild the script with
+`bun scripts/backend/build-apply-premium-deadline-briefing.ts`;
+`apply-premium-deadline-briefing-script.test.ts` fails if they drift.
+`supabase/tests/database/premium_deadline_briefing.test.sql` is the alarm for the
+reads' behaviour; CI's `database-quality` job is the authority.
+
+**Rolling back.** Not expected: a forward migration that drops the two functions
+and the two helpers; nothing depends on them. Switching BotolaGO+ off already
+hides the reads.
+
 ## Account deletion
 
 `app_private.account_deletion_erase` now:

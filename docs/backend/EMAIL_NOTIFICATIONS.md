@@ -14,13 +14,13 @@ is how it gets switched on, watched and paused.
 | Kick-off alert      | one hour before kick-off                                                                                     | fans of a club playing (favourite club, followed team or subscription) | Match alerts         |
 | Fantasy deadline    | 24 h before each gameweek deadline, only if that deadline is confirmed                                       | everyone with Fantasy reminders on                                     | Fantasy reminders    |
 | Fantasy round recap | when the gameweek's points are final                                                                         | every Fantasy manager with Fantasy reminders on                        | Fantasy reminders    |
-| Pépites weekly      | when a weekly Top 10 is published while Pépites is public (Monday 20:00 by default); stale after 36 h        | only readers who opted in (off for everyone by default)                | Pépites weekly       |
+| Prospects weekly    | when a weekly Top 10 is published while Prospects is public (Monday 20:00 by default); stale after 36 h      | only readers who opted in (off for everyone by default)                | Prospects weekly     |
 
-**Pépites weekly** (migrations `20260926110000`–`20260926110100`,
+**Prospects weekly** (migrations `20260926110000`–`20260926110100`,
 [PEPITES_ARCHITECTURE.md §5.4](../engineering/PEPITES_ARCHITECTURE.md)) is an
 explicit opt-in: `app.user_preferences.pepites_weekly_email` is false for every
-account, and only `api.set_my_pepites_weekly_email` or the Pépites unsubscribe
-link change it. Its unsubscribe link turns off Pépites only (the token carries
+account, and only `api.set_my_pepites_weekly_email` or the Prospects unsubscribe
+link change it. Its unsubscribe link turns off Prospects only (the token carries
 `topic = 'pepites_weekly'`); every other email stays on. A staff preview never
 emails anyone, a withdrawn or corrected edition's unsent emails are cancelled,
 and a correction goes only to readers who had no email for that week.
@@ -66,9 +66,9 @@ before anything is sent:
 - Everything Resend has accepted counts, plus anything being sent right now.
 - When the allowance is short, the most time-critical emails go first:
   kick-off alert, Fantasy deadline, match-day preview, match-day results,
-  Fantasy recap, round preview, and Pépites weekly last. Within one kind the
+  Fantasy recap, round preview, and Prospects weekly last. Within one kind the
   order is shuffled, so the same readers are not always the ones left
-  waiting. No type, Pépites included, can spend the daily reserve.
+  waiting. No type, Prospects included, can spend the daily reserve.
 - Mail that is still waiting when its moment passes is cancelled, never sent
   late. Mail that fits when the quota resets goes out then.
 - If Resend still answers "daily/monthly quota exceeded" (for example because

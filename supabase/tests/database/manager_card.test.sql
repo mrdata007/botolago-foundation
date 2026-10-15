@@ -1681,7 +1681,13 @@ select extensions.ok(
         'get_card_league_context', 'card_league_context', 'get_round_recap',
         -- BotolaGO+ Rivaux (20261015130100, 20261015130200): the head-to-head read, its season
         -- helper and the lead-change tick read the card's season and label only, never a card table.
-        'get_my_rivals', 'rivals_season', 'rivals_tick'])
+        'get_my_rivals', 'rivals_season', 'rivals_tick',
+        -- The BotolaGO+ trophies (20261015150100, 20261015150200) read the card's rating and tier to
+        -- award and show the « Paliers » trophies: they only read the card, write only their own
+        -- trophy tables, and no prize, ranking or Fantasy rule reads a trophy. The league mates'
+        -- trophies read only needs the card's current season.
+        'trophies_evaluate_season', 'trophies_evaluate_user', 'trophies_tick',
+        'get_my_trophies', 'get_league_member_trophies'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(

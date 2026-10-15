@@ -52,6 +52,7 @@ function SavedArticlesPage() {
       <SavedArticlesView
         phase={collection.phase}
         entries={collection.entries}
+        overCount={collection.overCount}
         hasMore={collection.hasMore}
         loadingMore={collection.loadingMore}
         moreFailed={collection.moreFailed}

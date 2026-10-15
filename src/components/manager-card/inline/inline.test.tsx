@@ -423,11 +423,11 @@ describe("FirstTransferLineView", () => {
 });
 
 describe("PepitesHubTile", () => {
-  it("is a plain link to /pepites with Pépites' own name and the hub's line", async () => {
+  it("is a plain link to /pepites with Prospects' own name and the hub's line", async () => {
     const html = await render(<PepitesHubTile className="mt-2" />);
     expect(html).toContain('href="/pepites"');
     expect(html).toContain('data-testid="fantasy-hub-pepites-tile"');
-    expect(text(html)).toContain("Pépites");
+    expect(text(html)).toContain("Prospects");
     expect(text(html)).toContain(escapeHtml(dictionaries.fr["fantasy.hub.pepites_body"]));
     expect(html).toContain("min-h-16");
     language = "ar";

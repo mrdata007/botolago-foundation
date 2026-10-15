@@ -60,6 +60,8 @@ import { findClub } from "@/components/fantasy/club-identity";
 import { ACCOUNT_DELETION_DONE_PATH, ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { formatCount } from "@/components/pepites/pepites-format";
+import { SAVED_IDS_LIMIT } from "@/services/news";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/report-content";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
@@ -625,11 +627,11 @@ function IdentityCard({
  * the line under it says what it does not change. A signed-in reader is told
  * that notifications follow the language saved on the account (the
  * `preferred_language` the e-mail and push fanouts read), which this row never
- * writes; it is set at sign-up and whenever the profile editor is saved (its
- * language step, reached from the Notifications row below, starts from the
- * language this device shows and says what saving does). The line describes the
- * stored setting; it does not claim any screen displays it. A visitor with no
- * account has no such language to mention.
+ * writes. That language is French for a new account (owner decision,
+ * 2026-10-15) and is changed only by the language step of the profile editor,
+ * reached from the Notifications row below, which shows the stored value and
+ * never changes this device's language. A visitor with no account has no such
+ * language to mention.
  */
 function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: boolean }) {
   const { t, lang } = useI18n();
@@ -697,9 +699,23 @@ function ThemeRow({ ruled = false }: { ruled?: boolean }) {
  * "0", which would tell a reader with saved stories that they have none.
  */
 function SavedArticlesCount() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const saved = useSavedArticles();
-  if (saved.idsKnown) return <span className={ui.stat.sm}>{saved.ids.length}</span>;
+  // More saves than the app counts (2,000): "plus de 2 000", not a number that
+  // stops at the cap and looks exact.
+  if (saved.idsKnown && !saved.complete) {
+    return (
+      <span className={ui.stat.sm}>
+        {t("news.saved.count_over").replace(
+          "{count}",
+          formatCount(Math.min(saved.ids.length, SAVED_IDS_LIMIT), lang),
+        )}
+      </span>
+    );
+  }
+  if (saved.idsKnown) {
+    return <span className={ui.stat.sm}>{formatCount(saved.ids.length, lang)}</span>;
+  }
   return (
     <span className={ui.stat.sm}>
       <span aria-hidden>–</span>

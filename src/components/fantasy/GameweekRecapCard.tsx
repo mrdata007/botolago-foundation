@@ -129,7 +129,8 @@ export function GameweekRecapCard({
 
   // Once the manager has made the recap public, sharing sends that page;
   // until then, the link is BotolaGO's Fantasy page and the message says so.
-  const [publicId, setPublicId] = useState<string | null>(null);
+  const [publication, setPublication] = useState<{ publicId: string; alias: string } | null>(null);
+  const publicId = publication?.publicId ?? null;
   const message = (
     publicId ? t("fantasy.recap.public.share_message") : t("fantasy.recap.share_message")
   )
@@ -157,7 +158,7 @@ export function GameweekRecapCard({
           aspect="post"
           fileName={`botolago-journee-${recap.gameweek}.png`}
           imageAlt={t("fantasy.recap.image_alt").replace("{n}", nf.format(recap.gameweek))}
-          renderKey={`${recap.gameweek}:${recap.calculationVersion}:${lang}`}
+          renderKey={`${recap.gameweek}:${recap.calculationVersion}:${lang}:${publication?.alias ?? ""}`}
           message={message}
           path={sharePath}
           onEvent={(event) => track(SHARE_EVENTS[event])}
@@ -166,7 +167,9 @@ export function GameweekRecapCard({
               lang,
               kicker: t("fantasy.recap.title"),
               heading,
-              teamName: recap.teamName,
+              // Once the recap is public, the picture carries the alias the
+              // manager chose to show, not the team name it stands in for.
+              teamName: publication?.alias ?? recap.teamName,
               total: nf.format(recap.total),
               unit: pointsUnit(recap.total, t),
               lines,
@@ -212,7 +215,7 @@ export function GameweekRecapCard({
         <RecapPublication
           gameweek={recap.gameweek}
           defaultAlias={recap.teamName}
-          onPublication={setPublicId}
+          onPublication={setPublication}
         />
       ) : null}
 

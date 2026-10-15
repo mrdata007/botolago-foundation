@@ -69,6 +69,12 @@ export interface Article {
   bodyHtml?: string;
   isLead?: boolean;
   tag?: LocalizedString;
+  /**
+   * Whether the signed-in reader had saved this story when the server sent it.
+   * A snapshot: the live answer is `useSavedArticles`, which falls back to this
+   * only when the reader has more saves than the app lists (2,000).
+   */
+  isSaved?: boolean;
 }
 
 export type MatchStatus = "scheduled" | "live" | "finished" | "postponed";

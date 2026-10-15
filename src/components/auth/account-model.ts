@@ -1,4 +1,5 @@
 import type { ClubColourSource } from "@/lib/club-palette";
+import type { Language } from "@/types/domain";
 
 /**
  * The pure decisions behind the account screens — Profile, the profile-setup
@@ -74,6 +75,42 @@ export function profileClubs<C extends { id: string }>(
 export function setupStepFromSearch(raw: unknown): 2 | 3 | undefined {
   const step = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
   return step === 2 || step === 3 ? step : undefined;
+}
+
+/**
+ * The language of an account's notifications (e-mail and push) is the one
+ * stored on the account, and a new account starts in French (owner decision,
+ * 2026-10-15). The profile editor's language step therefore shows THAT value,
+ * never the language the device happens to display, and changes it only when
+ * the person presses the other language themselves.
+ *
+ * `stored` is the signed-in user's account language (`undefined` until the
+ * profile has loaded); `picked` is what the person pressed in the step, or
+ * `null` while they have not touched it.
+ */
+export const DEFAULT_NOTIFICATION_LANGUAGE: Language = "fr";
+
+export function shownNotificationLanguage(
+  stored: Language | undefined,
+  picked: Language | null,
+): Language {
+  return picked ?? stored ?? DEFAULT_NOTIFICATION_LANGUAGE;
+}
+
+/**
+ * What saving the editor sends as the account language: the person's own
+ * choice when it differs from what is stored, otherwise nothing at all, so a
+ * save that is about match alerts or a favourite club asks for no change of
+ * language. (The stored value is kept only because the service also refuses a
+ * save whose profile was never read; see `completeProfile`.)
+ */
+export function notificationLanguageToSave(
+  stored: Language | undefined,
+  picked: Language | null,
+): Language | undefined {
+  return picked !== null && picked !== (stored ?? DEFAULT_NOTIFICATION_LANGUAGE)
+    ? picked
+    : undefined;
 }
 
 /**

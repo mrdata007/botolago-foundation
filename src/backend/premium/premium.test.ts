@@ -82,6 +82,16 @@ describe("the mock repository", () => {
     expect(scenarioFromSearch("?plus=free-money")).toBe("none");
     expect(scenarioFromSearch("")).toBe("none");
   });
+  it("has an « off » scenario: the status and the reader's answer both say switched off", async () => {
+    expect(scenarioFromSearch("?plus=off")).toBe("off");
+    const repo = new MockPremiumRepository(
+      () => "off",
+      () => NOW,
+    );
+    expect(await repo.status(context)).toEqual(PREMIUM_STATUS_OFF);
+    expect(await repo.mine(context)).toEqual(MY_PREMIUM_OFF);
+    expect(await repo.receipts(context)).toHaveLength(0);
+  });
   it("puts dates relative to now", () => {
     const mine = mockMine("monthly", NOW);
     expect(mine.available && mine.currentPeriodEnd).toBe("2026-10-25T10:00:00.000Z");
