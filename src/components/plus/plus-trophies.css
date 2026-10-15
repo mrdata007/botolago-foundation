@@ -291,6 +291,7 @@ button.tr-plaque:focus-visible,
 .tr-rule ul {
   margin: 0;
   padding-inline-start: var(--po-space-5);
+  list-style: disc;
   color: var(--po-tr-muted);
 }
 .tr-rule p {
