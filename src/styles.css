@@ -2592,6 +2592,40 @@ html[dir="rtl"]
   font-style: italic;
 }
 
+/* The article's own language, not the shell's (audit 2026-10-14, LOC-08).
+   The body face comes down from `body`, which follows the SHELL: an Arabic
+   edition read from the French shell inherited Manrope, which has no Arabic,
+   so its letters were drawn by whatever Arabic face the device falls back to,
+   not by Noto Sans Arabic as in an Arabic shell. `:lang()` follows the
+   `lang` the page puts on the article (and on any element inside the body),
+   so each edition is set in its own face; a French edition read from the
+   Arabic shell gets the French face for the same reason. */
+.editorial-body:lang(ar) {
+  font-family: var(--font-arabic);
+  /* The Arabic face ships upright only (`src/fonts.css`); never fake a slant. */
+  font-synthesis-style: none;
+}
+.editorial-body:lang(fr) {
+  font-family: var(--font-sans);
+}
+
+/* Arabic has no italic: a slanted Arabic line is a convention foreign to the
+   script, and without a real italic face the browser would shear the upright
+   letters. Emphasis (`<em>`, and `<i>`) stays real emphasis for assistive
+   technology and is drawn upright and one step heavier instead. Scoped to Arabic text
+   in the body: Latin italics are untouched. A quote keeps its edge and muted
+   colour, upright. */
+.editorial-body em:lang(ar),
+.editorial-body i:lang(ar) {
+  font-style: normal;
+  /* Relative, so it also stands out of a lead paragraph set at 800. */
+  font-weight: bolder;
+  font-synthesis-style: none;
+}
+.editorial-body blockquote:lang(ar) {
+  font-style: normal;
+}
+
 /* The UA default is `margin: 1em 40px`, which eats 80px of a 390px
    phone viewport and is physical rather than logical. */
 .editorial-body figure {
