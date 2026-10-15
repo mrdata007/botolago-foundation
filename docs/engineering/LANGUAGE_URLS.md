@@ -5,6 +5,10 @@ Status: **plan, not built.** Audit 2026-09-24, P1-6. Written with the
 touches every public route and every indexed URL, and it deserves its own
 reviewed pull request and a rehearsal on a preview deployment.
 
+See also [`ARABIC_FIRST_PAINT.md`](ARABIC_FIRST_PAINT.md): what an Arabic
+reader sees before the language is applied today (measured on the development
+server), the options compared, and the recommendation.
+
 ## Where it stands
 
 - The server renders every page in French: `<html lang="fr" dir="ltr">` in
