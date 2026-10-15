@@ -1676,7 +1676,10 @@ select extensions.ok(
       and p.proname <> all (array[
         'get_my_card_career', 'get_card_duel', 'card_week_rows', 'card_captain_rows',
         'card_transfer_rows', 'card_reads_mode', 'card_resolve_season',
-        'get_card_league_context', 'card_league_context'])
+        'get_card_league_context', 'card_league_context',
+        -- BotolaGO+ Rivaux (20261015130100, 20261015130200): the head-to-head read, its season
+        -- helper and the lead-change tick read the card's season and label only, never a card table.
+        'get_my_rivals', 'rivals_season', 'rivals_tick'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(
