@@ -71,6 +71,55 @@ export function committableEntry(
   return active >= 0 && active < results.length ? results[active] : undefined;
 }
 
+/**
+ * The DOM id of one option, for `aria-activedescendant`. Built from the
+ * option's own kind and id, not its position, so it stays the same while the
+ * list reorders under the visitor's typing. Anything that is not safe in an
+ * id reference (a space ends the reference) is made an underscore.
+ */
+export function searchOptionId(listId: string, entry: Pick<SearchEntry, "kind" | "id">): string {
+  return `${listId}-${entry.kind}-${entry.id}`.replace(/\s/g, "_");
+}
+
+/**
+ * What the field's `aria-activedescendant` names: the active option's id,
+ * and nothing when no option is on screen (closed panel, empty or loading
+ * list, nothing active). An id that points at nothing is worse than none.
+ */
+export function activeDescendantId(input: {
+  listId: string;
+  results: readonly SearchEntry[];
+  active: number;
+  panelVisible: boolean;
+}): string | undefined {
+  const entry = committableEntry(input.results, input.active, input.panelVisible);
+  return entry ? searchOptionId(input.listId, entry) : undefined;
+}
+
+/**
+ * What a screen reader is told as the list changes (a polite live region that
+ * stays in the page): the number of results, that it is loading, or that
+ * there is none. Nothing while the panel is closed, and nothing when a
+ * catalog failed with nothing to show, because that note announces itself.
+ */
+export type SearchAnnouncement =
+  | { kind: "results"; count: number }
+  | { kind: "loading" }
+  | { kind: "empty" }
+  | null;
+
+export function searchAnnouncement(input: {
+  panelVisible: boolean;
+  panel: SearchPanelState;
+  resultCount: number;
+}): SearchAnnouncement {
+  if (!input.panelVisible) return null;
+  if (input.panel.kind === "results") return { kind: "results", count: input.resultCount };
+  if (input.panel.kind === "loading") return { kind: "loading" };
+  if (input.panel.kind === "empty") return { kind: "empty" };
+  return null;
+}
+
 /** How one catalog (clubs, players) is doing, as the search panel needs it. */
 export interface SearchSourceHealth {
   pending: boolean;

@@ -42,6 +42,7 @@ import type {
 } from "react";
 import { isValidElement, useId, useRef } from "react";
 import { useJustChanged } from "@/lib/motion";
+import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -93,8 +94,11 @@ export function UiScreen({
 }) {
   return (
     <main
+      // The skip link's target (`SkipLink`): focusable by script, not by Tab.
+      id={MAIN_CONTENT_ID}
+      tabIndex={-1}
       className={cn(
-        "relative mx-auto w-full",
+        "relative mx-auto w-full scroll-mt-[var(--topbar-h)] outline-none",
         ui.space.gutter,
         width === "column" && "max-w-[var(--ui-column-max)]",
         width === "content" && "max-w-2xl",

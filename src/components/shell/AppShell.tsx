@@ -22,6 +22,7 @@ import { MatchdayStrip } from "@/components/matches/MatchdayStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { playTabSlide } from "@/lib/tab-slide";
 import { cn } from "@/lib/utils";
+import { SkipLink } from "./SkipLink";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
 import { PageBackground, type BackgroundVariant } from "./PageBackground";
@@ -76,6 +77,7 @@ export function AppShell({
 
   return (
     <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
+      <SkipLink />
       <PageBackground variant={backgroundVariant} />
       {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
       <div ref={pageRef} className="relative">

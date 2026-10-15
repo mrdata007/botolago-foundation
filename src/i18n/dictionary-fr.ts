@@ -43,6 +43,8 @@ export const fr = {
 
   "nav.home": "Accueil",
   "nav.primary": "Navigation principale",
+  // The first stop of the Tab order: skips the bar to the page's content.
+  "nav.skip_to_content": "Aller au contenu",
   "nav.search.label": "Rechercher",
   "matches.matchday_strip": "Matchs du jour",
   "nav.search.placeholder": "Club, joueur…",
@@ -52,6 +54,11 @@ export const fr = {
   "nav.search.partial": "Certains résultats sont indisponibles pour le moment.",
   "nav.search.club": "Club",
   "nav.search.player": "Joueur",
+  // Read out by the search's live region as the list changes (plural forms).
+  "nav.search.results_one": "1 résultat",
+  "nav.search.results_two": "2 résultats",
+  "nav.search.results_few": "{n} résultats",
+  "nav.search.results_other": "{n} résultats",
   "notifications.title": "Notifications",
   "notifications.mark_all_read": "Tout marquer comme lu",
   "notifications.filter.all": "Toutes",
@@ -2377,6 +2384,10 @@ export const fr = {
   "predictions.match.round_link": "Voir la journée",
   "predictions.votes.deck": "Pronostics du match",
   "predictions.votes.slide": "Carte {n} sur {total}",
+  // What a screen reader calls the deck and each of its cards
+  // (`aria-roledescription`), in place of the role's own name.
+  "predictions.votes.role": "carrousel",
+  "predictions.votes.slide_role": "diapositive",
   "predictions.votes.cta": "Votez\u00a0!",
   "predictions.votes.total": "Total des votes\u00a0: {n}",
   "predictions.votes.closed": "Votes clos",

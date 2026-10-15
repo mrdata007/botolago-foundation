@@ -40,6 +40,8 @@ export const ar = {
 
   "nav.home": "الرئيسية",
   "nav.primary": "التنقل الرئيسي",
+  // The first stop of the Tab order: skips the bar to the page's content.
+  "nav.skip_to_content": "انتقل إلى المحتوى",
   "nav.search.label": "بحث",
   "matches.matchday_strip": "مباريات اليوم",
   "nav.search.placeholder": "نادٍ، لاعب…",
@@ -49,6 +51,11 @@ export const ar = {
   "nav.search.partial": "بعض النتائج غير متاحة حاليًا.",
   "nav.search.club": "نادٍ",
   "nav.search.player": "لاعب",
+  // Read out by the search's live region as the list changes (plural forms).
+  "nav.search.results_one": "نتيجة واحدة",
+  "nav.search.results_two": "نتيجتان",
+  "nav.search.results_few": "{n} نتائج",
+  "nav.search.results_other": "{n} نتيجة",
   "notifications.title": "الإشعارات",
   "notifications.mark_all_read": "تحديد الكل كمقروء",
   "notifications.filter.all": "الكل",
@@ -2232,6 +2239,10 @@ export const ar = {
   "predictions.match.round_link": "عرض الجولة",
   "predictions.votes.deck": "توقعات المباراة",
   "predictions.votes.slide": "البطاقة {n} من {total}",
+  // What a screen reader calls the deck and each of its cards
+  // (`aria-roledescription`), in place of the role's own name.
+  "predictions.votes.role": "عرض دوّار",
+  "predictions.votes.slide_role": "شريحة",
   "predictions.votes.cta": "صوّت!",
   "predictions.votes.total": "عدد الأصوات: {n}",
   "predictions.votes.closed": "انتهى التصويت",
