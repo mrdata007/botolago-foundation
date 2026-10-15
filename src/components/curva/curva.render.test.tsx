@@ -125,45 +125,23 @@ const BANNED = [
 ];
 
 describe("G1 for a visitor", () => {
-  it("shows the guest's proposition and the way in", async () => {
+  it("is the lock screen: one headline, create an account first, sign in second", async () => {
     const html = await view({ kind: "guest", closed: false });
-    expect(headings(html)).toEqual(["Curva", fr["curva.guest.headline"]]);
-    expect(html).toContain('data-testid="curva-guest"');
-    expect(text(html)).toContain(fr["curva.guest.body"].slice(0, 40));
-    expect(html).toContain('href="/fantasy/create"');
-    expect(html).toContain(fr["fantasy.next.create"]);
-    expect(html).toContain(fr["curva.guest.sign_in"]);
-    expect(html).toContain(fr["curva.guest.free"]);
+    expect(html).toContain('data-testid="curva-lock"');
+    expect(headings(html)).toEqual(["Curva", fr["lock.curva.title.home"]]);
+    expect(html).toContain('href="/auth/register?next=%2Fcurva"');
     expect(html).toContain('href="/auth/login?next=%2Fcurva"');
+    expect(html.indexOf(fr["lock.curva.create"])).toBeLessThan(
+      html.indexOf(fr["lock.curva.signin"]),
+    );
   });
 
-  it("draws the four points, and no serial and no number", async () => {
+  it("draws nothing of the real Curva: the preview is example data, blurred and inert", async () => {
     const html = await view({ kind: "guest", closed: false });
-    for (const key of [
-      "curva.guest.point.name.title",
-      "curva.guest.point.club.title",
-      "curva.guest.point.rating.title",
-      "curva.guest.point.people.title",
-    ] as const) {
-      expect(html).toContain(fr[key]);
-    }
-    // The rating point says after how many journées, from the server's status (3 in the test).
-    expect(text(html)).toContain("3 journées terminées");
-    expect(html).not.toContain("BOT #");
-    expect(html).not.toMatch(/\d+ OVR/);
-  });
-
-  it("says registration is closed in the hub's words, and offers no team", async () => {
-    const html = await view({ kind: "guest", closed: true });
-    expect(headings(html)).toContain(fr["fantasy.availability.registration_closed.title"]);
+    expect(html).toMatch(/aria-hidden="true" inert="" class="[^"]*blur\(/);
+    expect(html).not.toContain('data-testid="curva-owner"');
     expect(html).not.toContain('href="/fantasy/create"');
-    expect(html).not.toContain(fr["fantasy.next.create"]);
-  });
-
-  it("holds the button's place while the Fantasy screen has not answered", async () => {
-    const html = await view({ kind: "guest", closed: false }, { loadingAction: true });
-    expect(html).toContain("curva-guest-action-loading");
-    expect(html).not.toContain('href="/fantasy/create"');
+    expect(html).not.toContain("curva-guest-points");
   });
 
   it("offers an account with no team its own proposition, without a sign-in", async () => {
@@ -401,7 +379,6 @@ describe("G1 for a manager", () => {
 describe("every Curva home", () => {
   const states: Array<[string, () => Promise<string>]> = [
     ["guest", () => view({ kind: "guest", closed: false })],
-    ["guest closed", () => view({ kind: "guest", closed: true })],
     ["no team", () => view({ kind: "no_team", closed: false })],
     ["rated", () => owner("rated")],
     ["forming", () => owner("forming1")],
