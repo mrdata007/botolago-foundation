@@ -49,6 +49,8 @@ function VerifyPage() {
       setError("auth.error.otp_required");
       return;
     }
+    // Cleared first, so the same failure twice in a row is announced twice.
+    setError(null);
     setSubmitting(true);
     const res = await authService.verifyCode(email, code);
     setSubmitting(false);

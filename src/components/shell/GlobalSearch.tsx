@@ -42,6 +42,7 @@ export function GlobalSearch({
   const [open, setOpen] = useState(false);
   const [activeStored, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Back from a result this field was left through: the same query, with its
   // results showing. After mount rather than in the initial state, so a page
@@ -104,35 +105,29 @@ export function GlobalSearch({
   const resultsKey = results.map((entry) => `${entry.kind}:${entry.id}`).join("|");
   useEffect(() => setActive(0), [resultsKey]);
   // A failed catalog is not "no result" (audit UX-007). A query that is off
-  // (not armed yet) is not pending.
+  // (not armed yet) is not pending. Only a read that failed with nothing to
+  // show counts: a list already loaded stays good if a later refresh fails.
   const panel = searchPanelState({
     resultCount: results.length,
     sources: [clubsQ, playersQ].map((query) => ({
-      pending: armed && query.isPending && !query.isError,
-      failed: query.isError,
+      pending: armed && query.isPending && !query.isLoadingError,
+      failed: query.isLoadingError,
     })),
   });
+  const hasList = panel.kind === "results" || panel.kind === "loading" || panel.kind === "empty";
+  // "none": no catalog could be read; "partial": at least one could not.
+  const note =
+    panel.kind === "unavailable"
+      ? panel.coverage
+      : panel.kind === "results" && panel.partial
+        ? "partial"
+        : null;
   const retryFailed = () => {
-    if (clubsQ.isError) void clubsQ.refetch();
-    if (playersQ.isError) void playersQ.refetch();
+    if (clubsQ.isLoadingError) void clubsQ.refetch();
+    if (playersQ.isLoadingError) void playersQ.refetch();
+    // The button leaves with the note; the keyboard stays in the field.
+    inputRef.current?.focus();
   };
-
-  // What a failed catalog says, with the way to ask again. mousedown is held
-  // back, like the options': the field's blur would otherwise close the list
-  // first.
-  const unavailableNote = (message: string) => (
-    <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2", ui.text.meta)}>
-      <span className={cn("min-w-0 flex-1", ui.tone.muted)}>{message}</span>
-      <UiButton
-        variant="ghost"
-        size="sm"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={retryFailed}
-      >
-        {t("state.retry")}
-      </UiButton>
-    </div>
-  );
 
   const go = (entry: SearchEntry) => {
     // Written to the entry being left, so Retour brings the query back.
@@ -160,10 +155,11 @@ export function GlobalSearch({
         className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ui-on-surface-muted)]"
       />
       <input
+        ref={inputRef}
         type="search"
         role="combobox"
         aria-expanded={showPanel}
-        aria-controls={listId}
+        aria-controls={hasList ? listId : undefined}
         aria-autocomplete="list"
         aria-label={t("nav.search.label")}
         placeholder={t("nav.search.placeholder")}
@@ -207,10 +203,7 @@ export function GlobalSearch({
       <ExitPresence idleOnly>
         {showPanel ? (
           <ExitFade
-            as="ul"
             key="panel"
-            id={listId}
-            role="listbox"
             className={cn(
               "absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-auto p-1",
               "bg-[color:var(--ui-surface)] shadow-[var(--ui-shadow-column)]",
@@ -218,75 +211,88 @@ export function GlobalSearch({
               ui.radius.card,
             )}
           >
-            {/* Rows that drop out while typing fade where they stand (out of
+            {hasList ? (
+              <ul id={listId} role="listbox">
+                {/* Rows that drop out while typing fade where they stand (out of
                 the flow), so the ones that stay do not jump. */}
-            <ExitPresence mode="popLayout" idleOnly>
-              {panel.kind === "loading" || panel.kind === "empty" ? (
-                <ExitFade
-                  as="li"
-                  key="empty"
-                  className={cn("px-3 py-3", ui.text.meta, ui.tone.muted)}
+                <ExitPresence mode="popLayout" idleOnly>
+                  {panel.kind === "loading" || panel.kind === "empty" ? (
+                    <ExitFade
+                      as="li"
+                      key="empty"
+                      className={cn("px-3 py-3", ui.text.meta, ui.tone.muted)}
+                    >
+                      {panel.kind === "loading" ? t("nav.search.loading") : t("nav.search.empty")}
+                    </ExitFade>
+                  ) : null}
+                  {results.map((entry, index) => (
+                    <ExitFade
+                      as="li"
+                      key={`${entry.kind}:${entry.id}`}
+                      role="option"
+                      aria-selected={index === active}
+                      // mousedown, not click: the field's blur would close the
+                      // list before a click lands.
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        go(entry);
+                      }}
+                      onMouseEnter={() => setActive(index)}
+                    >
+                      <div
+                        className={cn(
+                          // The name first, on its own lines, and what it is under it:
+                          // beside the name, the metadata took the width and the
+                          // player's name was the part that got cut.
+                          "flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
+                          ui.radius.control,
+                          ui.text.meta,
+                          index === active && "bg-[color:var(--ui-surface-sunken)]",
+                        )}
+                      >
+                        <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
+                          {highlightParts(entry.label, text).map((part, position) =>
+                            part.match ? (
+                              <mark
+                                key={position}
+                                className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
+                              >
+                                {part.text}
+                              </mark>
+                            ) : (
+                              <span key={position}>{part.text}</span>
+                            ),
+                          )}
+                        </span>
+                        <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
+                          {entry.hint ? `${entry.hint} · ` : ""}
+                          {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
+                        </span>
+                      </div>
+                    </ExitFade>
+                  ))}
+                </ExitPresence>
+              </ul>
+            ) : null}
+            {/* A failed catalog and the way to ask again: beside the list, not
+                in it (a listbox holds options). mousedown is held back, like
+                the options': the field's blur would otherwise close the panel
+                first. */}
+            {note ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                <p role="status" className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
+                  {note === "none" ? t("nav.search.unavailable") : t("nav.search.partial")}
+                </p>
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={retryFailed}
                 >
-                  {panel.kind === "loading" ? t("nav.search.loading") : t("nav.search.empty")}
-                </ExitFade>
-              ) : null}
-              {panel.kind === "unavailable" ? (
-                <ExitFade as="li" key="unavailable">
-                  {unavailableNote(t("nav.search.unavailable"))}
-                </ExitFade>
-              ) : null}
-              {results.map((entry, index) => (
-                <ExitFade
-                  as="li"
-                  key={`${entry.kind}:${entry.id}`}
-                  role="option"
-                  aria-selected={index === active}
-                  // mousedown, not click: the field's blur would close the
-                  // list before a click lands.
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    go(entry);
-                  }}
-                  onMouseEnter={() => setActive(index)}
-                >
-                  <div
-                    className={cn(
-                      // The name first, on its own lines, and what it is under it:
-                      // beside the name, the metadata took the width and the
-                      // player's name was the part that got cut.
-                      "flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
-                      ui.radius.control,
-                      ui.text.meta,
-                      index === active && "bg-[color:var(--ui-surface-sunken)]",
-                    )}
-                  >
-                    <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
-                      {highlightParts(entry.label, text).map((part, position) =>
-                        part.match ? (
-                          <mark
-                            key={position}
-                            className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
-                          >
-                            {part.text}
-                          </mark>
-                        ) : (
-                          <span key={position}>{part.text}</span>
-                        ),
-                      )}
-                    </span>
-                    <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
-                      {entry.hint ? `${entry.hint} · ` : ""}
-                      {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
-                    </span>
-                  </div>
-                </ExitFade>
-              ))}
-              {panel.kind === "results" && panel.partial ? (
-                <ExitFade as="li" key="partial">
-                  {unavailableNote(t("nav.search.partial"))}
-                </ExitFade>
-              ) : null}
-            </ExitPresence>
+                  {t("state.retry")}
+                </UiButton>
+              </div>
+            ) : null}
           </ExitFade>
         ) : null}
       </ExitPresence>

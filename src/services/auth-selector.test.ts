@@ -49,13 +49,27 @@ describe("Supabase error mapping", () => {
       expect(mapError(err as any)).toBe(expected);
     });
   }
-  it("returns 'network' for the client's own retryable-fetch error, whatever its message says (QA-04)", () => {
-    expect(
-      mapError({ name: "AuthRetryableFetchError", message: "Unexpected end", status: 0 } as any),
-    ).toBe("network");
-    expect(mapError({ name: "AuthRetryableFetchError", message: "{}", status: 502 } as any)).toBe(
-      "network",
-    );
+  it("returns 'network' for the client's retryable-fetch error only when the request really did not get through (QA-04)", () => {
+    // auth-js also throws this error for a plain 500/501 (a mailer that failed,
+    // for one): that is the server answering, not the network.
+    for (const status of [0, 502, 503, 504, 520, 524, 530]) {
+      expect(
+        mapError({ name: "AuthRetryableFetchError", message: "Unexpected end", status } as any),
+      ).toBe("network");
+    }
+    for (const status of [500, 501]) {
+      expect(
+        mapError({
+          name: "AuthRetryableFetchError",
+          message: "Error sending recovery email",
+          status,
+        } as any),
+      ).toBe("generic");
+    }
+  });
+  it("does not read 'upload failed' as a lost connection", () => {
+    expect(mapError({ message: "Upload failed", status: 400 } as any)).toBe("generic");
+    expect(mapError({ message: "Load failed", status: undefined } as any)).toBe("network");
   });
   it("returns 'rate_limited' for HTTP 429", () => {
     expect(mapError({ message: "too many", status: 429 } as any)).toBe("rate_limited");

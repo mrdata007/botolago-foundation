@@ -80,7 +80,8 @@ export interface SearchSourceHealth {
 export type SearchPanelState =
   | { kind: "results"; partial: boolean }
   | { kind: "loading" }
-  | { kind: "unavailable" }
+  /** Nothing to show and a catalog failed; `coverage` says whether any catalog did load. */
+  | { kind: "unavailable"; coverage: "none" | "partial" }
   | { kind: "empty" };
 
 /**
@@ -95,7 +96,9 @@ export function searchPanelState(input: {
   const failed = input.sources.some((source) => source.failed);
   if (input.resultCount > 0) return { kind: "results", partial: failed };
   if (input.sources.some((source) => source.pending)) return { kind: "loading" };
-  return failed ? { kind: "unavailable" } : { kind: "empty" };
+  if (!failed) return { kind: "empty" };
+  const allFailed = input.sources.every((source) => source.failed);
+  return { kind: "unavailable", coverage: allFailed ? "none" : "partial" };
 }
 
 /** One character with capitals and accents folded away; may be empty or longer than one. */

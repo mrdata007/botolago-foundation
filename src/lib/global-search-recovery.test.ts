@@ -63,11 +63,13 @@ describe("search tells a failed catalog from no match (UX-007)", () => {
   test("both catalogs failed: unavailable, never 'no result'", () => {
     expect(searchPanelState({ resultCount: 0, sources: [failed, failed] })).toEqual({
       kind: "unavailable",
+      coverage: "none",
     });
   });
-  test("only the players failed and no club matches: unavailable, not empty", () => {
+  test("only the players failed and no club matches: not empty, and the clubs did load", () => {
     expect(searchPanelState({ resultCount: 0, sources: [ok, failed] })).toEqual({
       kind: "unavailable",
+      coverage: "partial",
     });
   });
   test("a catalog still loading: loading, even if the other one failed", () => {
