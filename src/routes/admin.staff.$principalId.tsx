@@ -148,7 +148,7 @@ function AdminStaffDetailRoute() {
       description={
         rtl
           ? "الأدوار النشطة، وسجل التعيينات، وعمليات الوصول الإداري لهذه الهوية."
-          : "Rôles actifs, historique des affectations et opérations d’accès de ce principal."
+          : "Rôles actifs, historique des affectations et opérations d’accès de ce membre du personnel."
       }
       testId="admin-staff-detail"
     >
@@ -171,7 +171,7 @@ function AdminStaffDetailRoute() {
             <>
               <section aria-labelledby="admin-principal-heading">
                 <AdminSectionHeading id="admin-principal-heading">
-                  {rtl ? "حالة الهوية" : "État du principal"}
+                  {rtl ? "حالة الهوية" : "État de l’identité du personnel"}
                 </AdminSectionHeading>
                 <dl className={`mt-3 grid gap-4 sm:grid-cols-2 ${ADMIN_PANEL_CLASS} p-4`}>
                   <AdminField label={rtl ? "الحالة" : "Statut"}>
@@ -179,10 +179,16 @@ function AdminStaffDetailRoute() {
                       <AdminDatum mono={false}>{principal.status}</AdminDatum>
                     </UiBadge>
                   </AdminField>
-                  <AdminField label={rtl ? "سياسة المصادقة" : "Politique AAL"}>
+                  <AdminField label={rtl ? "سياسة المصادقة" : "Vérification en deux étapes"}>
                     <UiBadge tone={principal.mfaRequired ? "positive" : "negative"}>
                       <AdminDatum mono={false}>
-                        {principal.mfaRequired ? "MFA required" : "invalid policy"}
+                        {principal.mfaRequired
+                          ? rtl
+                            ? "مطلوبة"
+                            : "Requise"
+                          : rtl
+                            ? "إعداد غير صالح"
+                            : "Configuration invalide"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>

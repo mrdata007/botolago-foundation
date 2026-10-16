@@ -114,8 +114,8 @@ const MESSAGES: Record<string, { fr: string; ar: string }> = {
     ar: "أعد تسجيل الدخول (مطلوب تسجيل دخول حديث) ثم حاول مجددًا.",
   },
   mfa_required: {
-    fr: "Confirmez d'abord votre second facteur.",
-    ar: "أكّد أولًا عاملك الثاني.",
+    fr: "Saisissez votre code de vérification en deux étapes.",
+    ar: "أدخل رمز التحقق بخطوتين.",
   },
   permission_missing: {
     fr: "Votre rôle ne permet pas cette action.",
@@ -151,7 +151,7 @@ const MESSAGES: Record<string, { fr: string; ar: string }> = {
   },
   PEPITES_ENTRY_PLAYER_NOT_RANKED: {
     fr: "Un joueur choisi n'est pas classé dans ce calcul.",
-    ar: "أحد اللاعبين المختارين غير مصنّف في هذا الحساب.",
+    ar: "أحد اللاعبين المختارين غير مصنّف في عملية الاحتساب هذه.",
   },
   PEPITES_REASON_INVALID: {
     fr: "Donnez un motif (8 à 500 caractères).",
@@ -205,7 +205,7 @@ const PROBLEMS: Record<string, { fr: string; ar: string }> = {
   entries_not_ten: { fr: "Il faut exactement dix joueurs", ar: "يجب عشرة لاعبين بالضبط" },
   entries_stale: {
     fr: "Des joueurs ne sont plus classés dans ce calcul",
-    ar: "بعض اللاعبين لم يعودوا مصنّفين في هذا الحساب",
+    ar: "لم يعد بعض اللاعبين مصنّفين في عملية الاحتساب هذه",
   },
   corrected_not_published: {
     fr: "L'édition corrigée n'est plus publiée",

@@ -66,8 +66,8 @@ function AdminAuditRoute() {
       title={rtl ? "سجل الأمان للقراءة فقط" : "Journal de sécurité en lecture seule"}
       description={
         rtl
-          ? "لا تُعرض الأسرار أو حمولات المصادقة الخاصة."
-          : "Aucun secret ni payload Auth privé n’est exposé."
+          ? "اطّلع على الإجراءات وتواريخها. تبقى بيانات تسجيل الدخول السرية مخفية."
+          : "Consultez les actions et leurs dates. Les données de connexion confidentielles restent masquées."
       }
       testId="admin-audit-log"
     >

@@ -12,10 +12,10 @@
  */
 export function renderErrorPage(): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>This page didn't load</title>
+    <title>Page indisponible — BotolaGO</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <style>
@@ -23,23 +23,25 @@ export function renderErrorPage(): string {
       @media (prefers-color-scheme: dark) {
         :root { --paper: #0d1526; --ink: #eef1f8; --on-ink: #0d1526; --muted: #aab3c5; --card: #17213a; --edge: #5b6780; }
       }
+      *, *::before, *::after { box-sizing: border-box; }
       body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
-      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
+      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem 0; }
       h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+      h1 span { display: block; }
       p { color: var(--muted); margin: 0 0 1.5rem; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-      a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
+      a, button { min-height: 44px; padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
       .primary { background: var(--ink); color: var(--on-ink); }
       .secondary { background: var(--card); color: var(--ink); border-color: var(--edge); }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1>This page didn't load</h1>
-      <p>Something went wrong on our end. You can try refreshing or head back home.</p>
+      <h1>Cette page n’a pas pu être chargée<span lang="ar" dir="rtl">تعذّر تحميل هذه الصفحة</span></h1>
+      <p>Réessayez ou revenez à l’accueil.<br /><span lang="ar" dir="rtl">أعد المحاولة أو ارجع إلى الرئيسية.</span></p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
-        <a class="secondary" href="/">Go home</a>
+        <button class="primary" onclick="location.reload()">Réessayer · <span lang="ar" dir="rtl">إعادة المحاولة</span></button>
+        <a class="secondary" href="/">Accueil · <span lang="ar" dir="rtl">الرئيسية</span></a>
       </div>
     </div>
   </body>

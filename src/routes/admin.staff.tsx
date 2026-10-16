@@ -118,11 +118,11 @@ function AdminStaffRoute() {
       setMessage(
         created.created
           ? rtl
-            ? "تم إنشاء هوية الطاقم دون منح أي دور."
-            : "Identité staff créée sans rôle implicite."
+            ? "تم إنشاء هوية الطاقم. لم يُمنح أي دور."
+            : "Identité du personnel créée. Aucun rôle n’a été accordé."
           : rtl
             ? "هوية الطاقم موجودة بالفعل؛ لم يُمنح أي دور."
-            : "L’identité staff existe déjà; aucun rôle n’a été accordé.",
+            : "L’identité du personnel existe déjà. Aucun rôle n’a été accordé.",
       );
       setResult({
         ...result,
@@ -156,7 +156,7 @@ function AdminStaffRoute() {
         `${rtl ? "تم منح الدور" : "Rôle accordé"}: ${assignment.role}. ${
           rtl
             ? "طُلب إبطال الجلسة حيثما كان مدعوماً."
-            : "Invalidation de session demandée si supportée."
+            : "La fermeture des sessions a été demandée lorsque ce service le permet."
         }`,
       );
     } catch (error) {
@@ -192,8 +192,8 @@ function AdminStaffRoute() {
       title={rtl ? "إدارة طاقم الإدارة" : "Administration du personnel"}
       description={
         rtl
-          ? "بحث مطابق ومدقّق فقط. لا توجد قائمة عامة لمستخدمي المصادقة."
-          : "Recherche exacte et auditée uniquement. Aucun annuaire Auth n’est exposé."
+          ? "ابحث عن حساب بعنوان بريده الإلكتروني الكامل. تُسجّل كل عملية بحث."
+          : "Recherchez un compte avec son adresse e-mail complète. Chaque recherche est consignée."
       }
       testId="admin-staff-list"
     >
@@ -226,7 +226,7 @@ function AdminStaffRoute() {
                   under an armed confirm step would leave that step naming one
                   person and acting on another. */}
               <UiButton className="sm:w-auto" disabled={busy || isBusy(action)} type="submit">
-                {rtl ? "بحث آمن" : "Résoudre"}
+                {rtl ? "بحث آمن" : "Rechercher"}
               </UiButton>
             </form>
           </section>
@@ -256,7 +256,7 @@ function AdminStaffRoute() {
                   <AdminField label={rtl ? "البريد الإلكتروني" : "E-mail"}>
                     <AdminDatum className={ui.tone.default}>{result.maskedEmail}</AdminDatum>
                   </AdminField>
-                  <AdminField label="MFA">
+                  <AdminField label={rtl ? "التحقق بخطوتين" : "Vérification en deux étapes"}>
                     {/* "MFA required" is the amber state, and amber is a FILL
                         here, never a foreground: `--ui-caution` measured
                         1.78:1 as text, so `UiBadge tone="caution"` paints it
@@ -267,16 +267,22 @@ function AdminStaffRoute() {
                         principal" below depends on. */}
                     <UiBadge tone={result.mfaVerified ? "positive" : "caution"}>
                       <AdminDatum mono={false}>
-                        {result.mfaVerified ? "AAL2 eligible" : "required"}
+                        {result.mfaVerified
+                          ? rtl
+                            ? "مؤكّد"
+                            : "Vérifiée"
+                          : rtl
+                            ? "مطلوب"
+                            : "Requise"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>
-                  <AdminField label={rtl ? "معرّف المصادقة" : "UUID Auth"}>
+                  <AdminField label={rtl ? "معرّف المصادقة" : "Identifiant du compte"}>
                     <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
                       {result.authUserId}
                     </AdminDatum>
                   </AdminField>
-                  <AdminField label={rtl ? "هوية الطاقم" : "Principal"}>
+                  <AdminField label={rtl ? "هوية الطاقم" : "Identité du personnel"}>
                     <UiBadge tone={result.staffPrincipal ? "positive" : "neutral"}>
                       <AdminDatum mono={false}>
                         {result.staffPrincipal?.status ?? "none"}
@@ -300,7 +306,7 @@ function AdminStaffRoute() {
                       testId="admin-create-principal"
                       triggerTestId="admin-create-principal"
                       disabled={!result.emailVerified || !result.mfaVerified}
-                      triggerLabel={rtl ? "إنشاء الهوية" : "Créer le principal"}
+                      triggerLabel={rtl ? "إنشاء الهوية" : "Créer l’identité du personnel"}
                       confirmLabel={rtl ? "تأكيد الإنشاء" : "Confirmer la création"}
                       confirmPrompt={
                         <>

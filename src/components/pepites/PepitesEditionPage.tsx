@@ -93,7 +93,7 @@ export function PepitesEditionPage({ week }: { week: number }) {
           title={t("pepites.edition.withdrawn_title")}
           testId="pepites-edition-withdrawn"
         >
-          {edition.withdrawnReason ?? t("pepites.edition.withdrawn_body")}
+          {edition.withdrawnReason}
         </UiAlert>
       ) : null}
       {edition.status === "superseded" ? (

@@ -107,7 +107,6 @@ export function TierLadder({
                 })}
               </p>
             ) : null}
-            <p>{curva.cardTierExplain}</p>
           </>
         )}
       </div>

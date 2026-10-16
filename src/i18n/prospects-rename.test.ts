@@ -30,7 +30,6 @@ const BRAND_KEYS = [
   "pepites.state.coming_soon",
   "pepites.state.error",
   "pepites.reveal.meta_title",
-  "pepites.home.about",
   "pepites.email.sign_in_reason",
   "pepites.ranking.meta_title",
   "pepites.player.meta_title",
@@ -78,10 +77,13 @@ describe("the sub-brand name, French and Arabic", () => {
   });
 
   test("المواهب ('the talents') is never the subject of a ranking verb: the section is", () => {
-    for (const key of ["pepites.home.about", "pepites.method.meta_description"]) {
+    for (const key of ["pepites.method.meta_description"]) {
       expect(ar[key], key).toContain("قسم المواهب");
       expect(ar[key], key).not.toMatch(/ترتّب المواهب/);
     }
+    // The home footer now explains the score/editorial distinction without
+    // naming the section again. It must still avoid treating talents as a verb subject.
+    expect(ar["pepites.home.about"]).not.toMatch(/ترتّب المواهب/);
     expect(ar["pepites.player.not_found"]).toContain("ترتيب المواهب");
   });
 
@@ -128,6 +130,6 @@ describe("code-side text that readers see", () => {
 
   test("the link-preview title carries both names", () => {
     const source = readFileSync("src/routes/pepites.index.tsx", "utf8");
-    expect(source).toContain('const OG_TITLE = "Prospects · المواهب — توب 10 | BotolaGO";');
+    expect(source).toContain('const OG_TITLE = "Prospects · المواهب — أفضل 10 | BotolaGO";');
   });
 });

@@ -79,7 +79,7 @@ function AdminSecurityRoute() {
       .then(setHealth)
       .catch((error) =>
         setMessage(
-          `${rtl ? "تعذّر تحميل حالة العامل" : "État du worker indisponible"}: ${mapAdminError(error).code}`,
+          `${rtl ? "تعذّر التحقق من معالجة صلاحيات الدخول" : "Impossible de vérifier le traitement des accès"}: ${mapAdminError(error).code}`,
         ),
       );
   }, [access, repository, rtl]);
@@ -106,8 +106,8 @@ function AdminSecurityRoute() {
       title={rtl ? "حالة إبطال الوصول المميّز" : "État d’invalidation des accès privilégiés"}
       description={
         rtl
-          ? "رفض صلاحيات Admin فوري. إبطال جلسات المزود مطلوب فقط حيثما كان مدعوماً."
-          : "Le refus d’accès Admin est immédiat. L’invalidation fournisseur est seulement demandée lorsqu’elle est supportée."
+          ? "يُحظر الدخول إلى الإدارة فورًا. ويُطلب إغلاق الجلسات عندما تتيح خدمة تسجيل الدخول ذلك."
+          : "L’accès à l’administration est bloqué immédiatement. La fermeture des sessions est demandée lorsque le service de connexion le permet."
       }
       testId="admin-security-status"
     >
@@ -122,10 +122,23 @@ function AdminSecurityRoute() {
                 className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
                 data-testid="admin-worker-health"
               >
-                <QueueStat label="Queued" value={health.queue.pending} />
-                <QueueStat label="Processing" value={health.queue.processing} />
-                <QueueStat label="Retry" value={health.queue.retrying} />
-                <QueueStat label="Dead-letter" value={health.queue.deadLetter} alarming />
+                <QueueStat
+                  label={rtl ? "قيد الانتظار" : "En attente"}
+                  value={health.queue.pending}
+                />
+                <QueueStat
+                  label={rtl ? "قيد المعالجة" : "En cours"}
+                  value={health.queue.processing}
+                />
+                <QueueStat
+                  label={rtl ? "إعادة المحاولة مقررة" : "Nouvel essai prévu"}
+                  value={health.queue.retrying}
+                />
+                <QueueStat
+                  label={rtl ? "فشل نهائي" : "Échec définitif"}
+                  value={health.queue.deadLetter}
+                  alarming
+                />
               </dl>
             ) : (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
@@ -138,7 +151,7 @@ function AdminSecurityRoute() {
 
           <section aria-labelledby="admin-revocation-lookup-heading">
             <AdminSectionHeading id="admin-revocation-lookup-heading">
-              {rtl ? "فحص عضو الطاقم" : "Vérifier un principal"}
+              {rtl ? "فحص عضو الطاقم" : "Vérifier un membre du personnel"}
             </AdminSectionHeading>
             <form
               className={`mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end ${ADMIN_PANEL_CLASS} p-4`}
@@ -149,7 +162,7 @@ function AdminSecurityRoute() {
                   `dir` is forced on the field; `UiInput` renders and wires the
                   label itself, so the hand-built label/span/input trio goes. */}
               <UiInput
-                label={rtl ? "معرّف عضو الطاقم" : "Identifiant du principal"}
+                label={rtl ? "معرّف عضو الطاقم" : "Identifiant du membre du personnel"}
                 value={principalId}
                 onChange={(event) => setPrincipalId(event.target.value)}
                 fieldClassName="font-mono"
@@ -200,8 +213,8 @@ function AdminSecurityRoute() {
             <AdminIconTile icon={ShieldAlert} />
             <p className={`min-w-0 flex-1 ${ui.text.secondary} ${ui.tone.muted}`}>
               {rtl
-                ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
-                : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
+                ? "لا تُشغّل المعالجة اليدوية لصلاحيات الدخول إلا من الأدوات التقنية المصرّح بها."
+                : "Le traitement manuel des accès se lance uniquement depuis les outils techniques autorisés."}
             </p>
           </section>
 

@@ -194,8 +194,8 @@ export const MODE_LABELS: Record<PremiumMode, Pair> = {
 
 export const MODE_HINTS: Record<PremiumMode, Pair> = {
   off: {
-    fr: "Personne n’est membre et toutes les lectures répondent « indisponible ».",
-    ar: "لا أحد عضو، وكل القراءات تجيب « غير متاح ».",
+    fr: "L’accès à la Saison est désactivé pour tous les comptes.",
+    ar: "الوصول إلى الموسم معطّل لجميع الحسابات.",
   },
   preview: {
     fr: "Le propriétaire et le personnel : l’abonnement compte comme en production, achats de test du personnel compris, mais rien n’est public.",

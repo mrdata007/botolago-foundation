@@ -101,11 +101,7 @@ function UpdatePasswordPage() {
 
   if (done) {
     return (
-      <AuthShell
-        compact
-        title={t("auth.update.success_title")}
-        subtitle={t("auth.update.success_body")}
-      >
+      <AuthShell compact title={t("auth.update.success_title")}>
         <div className="flex flex-col items-center gap-5 py-2 text-center">
           {/* A round positive disc, like every glyph plate in Option A. */}
           <div

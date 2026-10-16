@@ -91,8 +91,8 @@ const USER_ERROR_MESSAGES: Record<UserAdminErrorCode, Record<Lang, string>> = {
     ar: "الطلب غير صالح.",
   },
   users_admin_unavailable: {
-    fr: "Cette page attend la mise à jour de la base de données (migration 20260924160000). Elle fonctionnera dès qu’elle sera appliquée.",
-    ar: "هذه الصفحة بانتظار تحديث قاعدة البيانات (الترحيل 20260924160000). ستعمل بمجرد تطبيقه.",
+    fr: "La gestion des comptes n’est pas disponible pour le moment. Contactez le responsable technique.",
+    ar: "إدارة الحسابات غير متاحة حاليًا. تواصل مع المسؤول التقني.",
   },
 };
 

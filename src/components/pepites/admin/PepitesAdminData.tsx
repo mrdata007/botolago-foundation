@@ -783,7 +783,7 @@ function PhotoUploadForm({ player, rtl }: { player: { id: string; name: string }
       </p>
       <p className={cn(ui.text.meta, ui.tone.muted)}>
         {rtl
-          ? "تُحفظ الصورة والإذن الموقّع في مساحة خاصة. لا يظهر أي شيء قبل الموافقة، ويُستعمل الظل ما دامت الصورة غير معتمدة."
+          ? "تُحفظ الصورة والإذن الموقّع في مساحة خاصة. لا تُنشر الصورة قبل الموافقة؛ وتبقى الصورة البديلة ظاهرة إلى ذلك الحين."
           : "La photo et l'autorisation signée vont dans un espace privé. Rien n'est visible avant l'approbation ; la silhouette reste affichée d'ici là."}
       </p>
       <label className="grid gap-1">

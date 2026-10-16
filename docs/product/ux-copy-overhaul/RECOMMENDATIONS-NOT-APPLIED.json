@@ -1,0 +1,74 @@
+[
+  {
+    "key": "pepites.compare.picker_description",
+    "reason": "Keep accessible sheet description and U23 selection scope."
+  },
+  {
+    "key": "auth.mfa.subtitle",
+    "reason": "Remove generic lead; mechanism remains in the setup/enabled state."
+  },
+  {
+    "key": "fantasy.rules.intro",
+    "reason": "Remove duplicate overview; preserve all detailed rules and value tiles."
+  },
+  {
+    "key": "fantasy.cloud.mapping_unavailable",
+    "reason": "Use precise synchronization failure rather than invent a catalog refresh."
+  },
+  {
+    "key": "fpl.team_name_help",
+    "reason": "Retain validated ASCII punctuation and existing bidi isolation."
+  },
+  {
+    "key": "matches.detail.no_events",
+    "reason": "Keep pre-kickoff state without promising feed coverage."
+  },
+  {
+    "key": "matches.detail.no_stats",
+    "reason": "Keep pre-kickoff state without promising feed coverage."
+  },
+  {
+    "key": "fantasy.fixtures.subtitle",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "fantasy.scoring.policy",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "fantasy.scoring.estimatesPolicy",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "plus.rv.privacy",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "plus.rv.foot_live",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "plus.recap.league_note",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "plus.tr.rule",
+    "reason": "Keep existing contextual placement; scoring policy is already in rules, FDR in its legend, and privacy/timing facts belong at these decisions."
+  },
+  {
+    "key": "fantasy.points.active_chip",
+    "reason": "Keep the established generic chip glossary; a neutral new term would fragment terminology."
+  },
+  {
+    "key": "fantasy.points.no_active_chip",
+    "reason": "Keep the established generic chip glossary; a neutral new term would fragment terminology."
+  },
+  {
+    "key": "fantasy.transfers.chip_active",
+    "reason": "Keep the established generic chip glossary; a neutral new term would fragment terminology."
+  },
+  {
+    "key": "fantasy.transfers.no_hit_chip",
+    "reason": "Keep the established generic chip glossary; a neutral new term would fragment terminology."
+  }
+]

@@ -36,10 +36,10 @@ describe("profile language control: wording", () => {
 
   it("says what the row changes and what notifications follow", () => {
     expect(fr["profile.language.help"]).toBe(
-      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
+      "Pour cet appareil uniquement. Les e-mails et alertes suivent la langue du compte, réglable dans Notifications.",
     );
     expect(ar["profile.language.help"]).toBe(
-      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك. يمكن تغييرها من الإشعارات.",
+      "لهذا الجهاز فقط. تستخدم الرسائل والتنبيهات لغة الحساب، ويمكن تغييرها من الإشعارات.",
     );
   });
 
@@ -58,10 +58,10 @@ describe("profile language control: wording", () => {
     expect(fr["auth.setup.language_confirm"]).toBe("Langue des notifications");
     expect(ar["auth.setup.language_confirm"]).toBe("لغة الإشعارات");
     expect(fr["auth.setup.language_hint"]).toBe(
-      "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
+      "Pour vos e-mails et notifications (français par défaut). La langue de l’application se règle dans Profil.",
     );
     expect(ar["auth.setup.language_hint"]).toBe(
-      "لغة رسائل البريد الإلكتروني والتنبيهات والإشعارات. الفرنسية هي اللغة الافتراضية. تُضبط لغة التطبيق على هذا الجهاز من الملف الشخصي.",
+      "للرسائل والتنبيهات؛ الفرنسية هي الافتراضية. غيّر لغة التطبيق من الملف الشخصي.",
     );
     // The old hint promised the opposite: that saving also switched the app.
     expect(fr["auth.setup.language_hint"]).not.toMatch(/devient celle/);

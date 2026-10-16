@@ -1,0 +1,262 @@
+[
+  {
+    "file": "scripts/qa/i18n-gate.ts",
+    "before_sha256": "504dc25c197d2c239f1b60244ea8d4666c35980bfdd50ead179cfc6d76822c0c",
+    "after_sha256": "6611d24225a580628846c8b828215158f0a4c887ddfdb73a77c0f2092a720037"
+  },
+  {
+    "file": "src/backend/admin/route-access.ts",
+    "before_sha256": "27c0b7d4166738e21e3a0f8fe72cd63500cc8a6a4a99387a5a231c4f6fded408",
+    "after_sha256": "1fdf3098e6a1d2defa949dca72ccc4f2532633037883e22882ee1850f1b16c2c"
+  },
+  {
+    "file": "src/components/admin/player-mappings/PlayerMappingsView.ssr.test.tsx",
+    "before_sha256": "b6ace9804cad870cb1e6fdfa1e3bf7b4ea9366396e0bdac6081478f92796445f",
+    "after_sha256": "c70ca1da4fd1e059671d5bd599a42a46c496eb40fd054d69c13449f90b4a0e77"
+  },
+  {
+    "file": "src/components/admin/player-mappings/copy.ts",
+    "before_sha256": "877f0d5b1b5cb64206261263debc8d40186288fb2d6cef921309398f8b6dec05",
+    "after_sha256": "c54aa9c1d643b34ed06c738f87b47a7125d48bbc81dbb9ebd8e56305e6fd2c34"
+  },
+  {
+    "file": "src/components/admin/plus/PlusAdminScreen.tsx",
+    "before_sha256": "3a1330370b53abe7032afa055f28339ba0420e0819435834a294e43ce6b16127",
+    "after_sha256": "984c973d698416b360231de72ac3372593903d78d2671d3a7465348548ca375c"
+  },
+  {
+    "file": "src/components/admin/plus/plus-presentation.ts",
+    "before_sha256": "3339e63850ad832394e559cebc169999b39aa84949fb2f7f1c07c988aaa4d16e",
+    "after_sha256": "03708bb87f2b3c4f72df92de6fc9ab2f96aaa76fa28a35873181262de6f19521"
+  },
+  {
+    "file": "src/components/admin/sofascore-player-queue/copy.ts",
+    "before_sha256": "24c5586bff5e4051f599d25784abeb0330a74aee6af259733079062d6d7d55c6",
+    "after_sha256": "8c8bb9f9cd63a94b0d4426f6aac154312b5653f5af20962d6421267408b6a2c4"
+  },
+  {
+    "file": "src/components/admin/users/user-presentation.test.ts",
+    "before_sha256": "51b72ea6f37f9199f8d74ba4fe524d122864e70d9deb28a76726ea09916dc36d",
+    "after_sha256": "050d27134daf8d7045769b5ee98f6284a378829a47063e1eff5b4ddc84147105"
+  },
+  {
+    "file": "src/components/admin/users/user-presentation.ts",
+    "before_sha256": "d0a033aa1eac05fd319009c39f410fd386e53f03b50fad2981248683f995588f",
+    "after_sha256": "292a2969f99de5be0ec6a4d54ac01472ac65d5e27916fb26bcc5da7588ab60c2"
+  },
+  {
+    "file": "src/components/curva/CurvaCardPage.tsx",
+    "before_sha256": "bd8b257ba58504de71289f653e9143c808b4e281f8fe62dc33bb72cf0b85094b",
+    "after_sha256": "c714281f9c7d8bc358ea06827c43254599545101f93e8e36c8c9b42973ebed22"
+  },
+  {
+    "file": "src/components/curva/TierLadder.tsx",
+    "before_sha256": "5769d05658fe5c0a9b7fa43366de82d7e376f59ccce9b44bf28b55c09dbff303",
+    "after_sha256": "02450d32c938715814d5e9387f2874c791c29d9f1a0b2d34a1d88fc685b53f41"
+  },
+  {
+    "file": "src/components/curva/curva.blocks.render.test.tsx",
+    "before_sha256": "f1541119c493642e8fab316167e1a600c42ba874ebf18806da04856a9ca9934b",
+    "after_sha256": "f8506eaea8f7294cfea58da6a723cfb3dc75d8fd0e9443063f0530ea5e163a1d"
+  },
+  {
+    "file": "src/components/landing/LandingLive.test.tsx",
+    "before_sha256": "ac6fe5e2beb6a9fbda45d8ce03f44823ed0d55659def407d58733e3e272e1b90",
+    "after_sha256": "3b5e58ae164b4224a1c04897b17e11a3fb0972263ff426dca7d2f92123dda6de"
+  },
+  {
+    "file": "src/components/landing/LandingPage.tsx",
+    "before_sha256": "4c667835bb774d836fced34c868e103a491da6aa062d4c0515e0ccb1f80b75c1",
+    "after_sha256": "086a9717174f1a42eb8305d5cfd763d399a3c0a26c1f3d2b7f9d6d740950d9e4"
+  },
+  {
+    "file": "src/components/manager-card/copy.test.ts",
+    "before_sha256": "0f732f37d4a18970b48f2daaa5c74684e16479b0ec6678b9f10a9edffe7bf584",
+    "after_sha256": "10c65f7cff257a135366d33de36c9f434a163cf343e01af54a78cbe63f63644f"
+  },
+  {
+    "file": "src/components/manager-card/copy.ts",
+    "before_sha256": "86db5138e532f85eec1578ac71647e75926b19c7ed9bcfeca68dcfc1975931ab",
+    "after_sha256": "f1a8a6e01c9de98e315f9d6bdd40418ba42fded893aba9d3ca60ba860e64e6db"
+  },
+  {
+    "file": "src/components/manager-card/moments/moment-text.test.tsx",
+    "before_sha256": "55167671b453150022f39224fc9580f077577c9fae8babb48c8ccf9d375b4370",
+    "after_sha256": "f0d3af1ea05e64375945fc837546907ebfb333cbb60c39d9079bce154e698f7e"
+  },
+  {
+    "file": "src/components/news/SavedArticlesView.tsx",
+    "before_sha256": "55cccf52dc14125ffe181b735fda6b5ef1f63373e1e3b4d4f9b51a66e49e619e",
+    "after_sha256": "4ce98f35d8ea041f8895742e0fde08c6c7ad880978d4d36408e02766833135ac"
+  },
+  {
+    "file": "src/components/pepites/PepitesEditionPage.tsx",
+    "before_sha256": "7040a2965866130a74e0eaf4b53bb2a400f794f476c528c96274a59aed2d4492",
+    "after_sha256": "6e4c0574bde61aa86bcd0ba628373ed293934cb72e6505b3fad90dbed99ba10a"
+  },
+  {
+    "file": "src/components/pepites/admin/PepitesAdminData.tsx",
+    "before_sha256": "a5d4b7583a6fa50461a748a1ec14dd24fbcfa166ab805966a08d18987216c654",
+    "after_sha256": "580473008817fdb8bafb708b011ec9890ae08777cb5666f6697c2bb785cd2fef"
+  },
+  {
+    "file": "src/components/pepites/admin/PepitesAdminEditions.tsx",
+    "before_sha256": "4fac1c51458489c28ef231e4a5beb6277a9203de8bc7b1439df97dcd3ff71254",
+    "after_sha256": "f1a501f9bfedf80815dd872a45e22ef82b8e4c401a92cefaf35fc056594a0da4"
+  },
+  {
+    "file": "src/components/pepites/admin/admin-format.ts",
+    "before_sha256": "76b62ab4c9a75775db9b4aca4705644cab283697735a1fa679ad4748ee6b53f4",
+    "after_sha256": "2d538e8f0861fdd7e3b03c4b9cb88beba927cf6c1cea9c1fa8272855a74d1ab6"
+  },
+  {
+    "file": "src/components/plus/plus-briefing.render.test.tsx",
+    "before_sha256": "10138b3f56ecb1357507aef66d1a694eeb392a3e661130d51ce9238cfd768dd7",
+    "after_sha256": "9be4d94bda776813bdc25dd33a8900fa6bc9a3fecbcdac5ddcad19ff3524bfa9"
+  },
+  {
+    "file": "src/components/plus/plus.render.test.tsx",
+    "before_sha256": "f15d5af3d90ac210eb12a78c2fa3fc57270e960b7d8531d3c858d80fbff3bbda",
+    "after_sha256": "ba90b402569aa7a61bb2a51fd93d82868bd03cdd1dac4bcfa04a9be5c246a0d1"
+  },
+  {
+    "file": "src/content/legal/documents.ts",
+    "before_sha256": "7a65a26e634c2c829c4e0b073d1ffe1be3bc509bb1ae8b012cbfea3578a7b064",
+    "after_sha256": "145e96538183a43f73e5f5c56080efd76f46f3750548b92ca1f58ca03c1f8f90"
+  },
+  {
+    "file": "src/content/legal/prize-terms.ts",
+    "before_sha256": "689124c6a7a9f68935725b2a640fbe188bc17a77d82bd1ce999c41882af707a8",
+    "after_sha256": "2ee86e705c78fc81d7a6a863b2215dce05aef1551907ec93cd714fc051734e8c"
+  },
+  {
+    "file": "src/i18n/dictionary-ar.ts",
+    "before_sha256": "1ecdc2f9ce44f8d5b3a0a0badd70d9ca81c12aa12d956f42ef82d9fed7729e24",
+    "after_sha256": "5f4d6c31c0b3b10d3d52650f4daca8e9bb44089c5c4325b779e987b3fe43766c"
+  },
+  {
+    "file": "src/i18n/dictionary-fr.ts",
+    "before_sha256": "ab99d00d1f1347bbadfd77d75f81227288660e682639033f4d095c2d4f56e8b7",
+    "after_sha256": "e2f7e10475d3c3ea0ffe261eae0b58a0885e2cbe0e58c8b049ea5b1142340f22"
+  },
+  {
+    "file": "src/i18n/prospects-rename.test.ts",
+    "before_sha256": "79f8d33a16cf9b4873a0693a41b4d40543854ca275932dd1e1ad91bdb30af965",
+    "after_sha256": "561c2fcd67264a3c78bd4131cb59c91acb033712310a6c9ce7bc412f89c9b417"
+  },
+  {
+    "file": "src/lib/delivery-promise.test.ts",
+    "before_sha256": "37f905315581356ad1186082776040591591990a35ad6764b5aadd9d9dee9e3a",
+    "after_sha256": "209d1e18ddfde8c9f469af3bd46cc99e2181abde1329a393f519b0dbc3b139a1"
+  },
+  {
+    "file": "src/lib/error-page.ts",
+    "before_sha256": "c8aa4eef1e85b7c18bdd50bb0a5afb1c1e2c7dde08e39d52d2265883ba936fbf",
+    "after_sha256": "d64d26355315b8b7d6d88d5fd6e6c6b8ab6096ae18be34840786d31b2c052764"
+  },
+  {
+    "file": "src/routes/[.]lovable.oauth.consent.tsx",
+    "before_sha256": "b76b9b3c868bd3cfc4a5289aa33ee29227b3a51617be8e7c8e782a8263ccd90c",
+    "after_sha256": "b030e723c9320621380a6db6c0e0d95e8c11f21ad9a74c1346c1ae1067cacfc7"
+  },
+  {
+    "file": "src/routes/admin.audit.tsx",
+    "before_sha256": "7ec73e4dbe99a735065d0fc11adbc1fabc18e5900ac5be8cff7717b0c34ff79b",
+    "after_sha256": "45c5d7ef7aa715d21767995e0e8df0bfa63cbc3bb91cca38eea39db231faf51a"
+  },
+  {
+    "file": "src/routes/admin.news.$articleEditionId.tsx",
+    "before_sha256": "a998a56e5e62b6181b16e5b4b0ec78104e8d676acb33d5f8271ea9c683626848",
+    "after_sha256": "7a3f5fa43322bc35727a148620a05672f6aa1a34c2f9b274e5340d9edc38bb4e"
+  },
+  {
+    "file": "src/routes/admin.news.new.tsx",
+    "before_sha256": "d3af48af33fa6f04600d3f9b02b0540809db09e5f1d6e51353088fb1d21a471b",
+    "after_sha256": "00b0cb93e1344a605a63e3ab09804d1df758013263359298cf72ccd2a95cb680"
+  },
+  {
+    "file": "src/routes/admin.plus.tsx",
+    "before_sha256": "2ac830c4bb3933687d39bf4cf4001b4a53258e86c173d375679fcc56353886c4",
+    "after_sha256": "916a5443beb64b4544ead1303fcad22a85c17a0f802ac52e8e4f9e5d37e802b7"
+  },
+  {
+    "file": "src/routes/admin.security.tsx",
+    "before_sha256": "30e298ce81852941ef625d2d701408c586a8205f9630d707d8160cdcf77b2f54",
+    "after_sha256": "15d521fe184ee2203219adb8244e5382fcec868f842707e6af520ea951c9a81b"
+  },
+  {
+    "file": "src/routes/admin.staff.$principalId.tsx",
+    "before_sha256": "7a8d6779bf45815e23f0b10c3996c37f741a34327d81e057832096a9d289c469",
+    "after_sha256": "c0683a2a7deed65a27c771ef9939b59ce48393f50a89602c3f848bcd2d9e4e30"
+  },
+  {
+    "file": "src/routes/admin.staff.tsx",
+    "before_sha256": "6ae62647f0a4c8733c57c44f0a5205b5b656aa86ab65f8d3edf0f762d4cdaf23",
+    "after_sha256": "7bd1d3a42b9be03c9c0884487f82f348d3d6108835a99f9527fd0d96728339e8"
+  },
+  {
+    "file": "src/routes/auth.callback.tsx",
+    "before_sha256": "495d8b738234d8d70f568846bfacbe4decfae85d38f50fab59f09d8eb5dcb292",
+    "after_sha256": "dd84199bad6c5b050ed4d4eff0a75b82c35fac37182ab4fd272d8f05e6361e5d"
+  },
+  {
+    "file": "src/routes/auth.profile-setup.tsx",
+    "before_sha256": "a27c7c086a2733a86c0be6644c1bb484f189bff4ce9a12e833819013ac630cc6",
+    "after_sha256": "287886a7cff736d9d02fad43461d782cecf6bdcc72076fe261a4a2b871724ea3"
+  },
+  {
+    "file": "src/routes/auth.register.tsx",
+    "before_sha256": "5ccbabb7cc1f20ecbbff2da73c10acda6f32c01d42360cc4f38398d4d3ee6502",
+    "after_sha256": "47e4a6b58faa3136b7b6b21aa2e407b063913a6cb915a6da9afdd3d9a8349fcc"
+  },
+  {
+    "file": "src/routes/auth.update-password.tsx",
+    "before_sha256": "e4ae32e7a46fc8c33ba879793b8e09c432dfad929ff901a8249db0257399044f",
+    "after_sha256": "6fe7e0f17ccba23d37420b489df6667fb1f644328d290fff18e841a40617663f"
+  },
+  {
+    "file": "src/routes/fantasy.players.$playerId.tsx",
+    "before_sha256": "b6306820f0ea5af6cbedde6079d81164fac47673131dfbfce30d667ff55aa548",
+    "after_sha256": "ef073d3c6d2abc4fa0ba6ade7279831e7aadf4bba28b8c8267c9462e08f8f858"
+  },
+  {
+    "file": "src/routes/fantasy.rules.tsx",
+    "before_sha256": "b04a586fe19bddf06a51c22ea333c92a8e3298ca09e944550b991b3867a8467b",
+    "after_sha256": "5bc0008b60ca08c9b4d8c4f648d42f8f0f6be49b5aba442e287eb78c5d252d3f"
+  },
+  {
+    "file": "src/routes/fantasy.top-players.tsx",
+    "before_sha256": "744fc468fa7ba64bb59a081df3be9262d805d1519d66d093e40042e184c2ce68",
+    "after_sha256": "cc7d20833628d9d443a682f6c5d2a2f62693a2e96a5c6d900c864d9221b91662"
+  },
+  {
+    "file": "src/routes/news.tsx",
+    "before_sha256": "6aabb9398d29b98948499858426e114759c69a27866b1bf82510de4d6f61de1b",
+    "after_sha256": "549cf4b85471654527c696b319809a1293ef5efd8f64b8f28c0f907adf2e6d04"
+  },
+  {
+    "file": "src/routes/notifications.tsx",
+    "before_sha256": "b8dfcc98ba5ed6fa2707fd289dda27705d463a53d14cb9f10579b9aef88ff7cf",
+    "after_sha256": "c02cbec14b21a43c2b42b99e4171aa5a4a2c8de8ec59f1226d9d4708f705b9d8"
+  },
+  {
+    "file": "src/routes/pepites.index.tsx",
+    "before_sha256": "385b9155f95e31eeb471ca11ea5a0bf244bc25efebb10f7e40b0e64f8fdf121d",
+    "after_sha256": "17b3ef65898d0d3644f84befcbc512284f1a10cfc117b14f60f2bcf2169b2970"
+  },
+  {
+    "file": "src/routes/profile-language-control.test.ts",
+    "before_sha256": "68df2ab60df4e31eefde036b77d5b80dd0a8e7db4fe780c26db6b39bb054203e",
+    "after_sha256": "8f4b642939629f28a1ff9d4a04dd3044d04672e0b3d75a19871405998e895b22"
+  },
+  {
+    "file": "src/routes/profile.saved.test.ts",
+    "before_sha256": "49efe93745b95cf0cbd94813c2fade59956f471d30c34d6b059fc18380e2911a",
+    "after_sha256": "5cb4ab2cbf6e60d9fc4fa95404df6eb1fd1633c519914bde820f8220c38218dd"
+  },
+  {
+    "file": "src/routes/profile.security.tsx",
+    "before_sha256": "9cbefc81625aa7ca50c5dcbe1ebba65b3601c79c9920596d8baf5acf17d9137b",
+    "after_sha256": "15f7752a79f9ac8ef24e68036c8f62733127473460695f5c458f60d357158811"
+  }
+]

@@ -245,7 +245,7 @@ const fr: PlayerMappingCopy = {
   writesDisabled:
     "La création de propositions n’est pas encore activée. Cet écran est en lecture seule jusqu’à l’approbation de la première proposition.",
   noPermission:
-    "Votre rôle permet de lire cette file, pas de proposer ni d’approuver (football.manage_mappings requis).",
+    "Votre rôle permet de consulter cette liste. La création et l’approbation des rapprochements demandent une autorisation supplémentaire.",
   singleOperator: {
     title: "MODE RELECTURE PAR UN SEUL OPÉRATEUR",
     points: [
@@ -465,10 +465,10 @@ const fr: PlayerMappingCopy = {
       "Vous êtes l’auteur de cette proposition et vous pouvez l’approuver vous-même : personne d’autre ne la vérifie. Relisez l’empreinte et les preuves avant d’approuver.",
     selfApprovedNote: "Approuvée par son auteur, sans second relecteur.",
     expired: "Cette proposition a expiré. Elle ne peut plus être décidée.",
-    held: "Cette proposition est bloquée : le monde a changé depuis qu’elle a été faite.",
+    held: "Cette proposition est bloquée : les données ont changé depuis sa création.",
     notPending: "Cette proposition n’attend plus de décision.",
     executionSeparate:
-      "L’approbation ne rapproche rien. L’exécution est une étape distincte, plus bas : rien n’est écrit tant que vous ne l’avez pas confirmée.",
+      "L’approbation est enregistrée sans créer de rapprochement. Pour appliquer le rapprochement, confirmez ensuite son exécution ci-dessous.",
     execute: {
       title: "Exécuter cette proposition approuvée",
       intro:
@@ -537,7 +537,8 @@ const fr: PlayerMappingCopy = {
   errors: {
     staff_access_denied: "Accès réservé au personnel.",
     permission_missing: "Votre rôle n’a pas cette permission.",
-    mfa_assurance_insufficient: "Une seconde vérification (AAL2) est requise.",
+    mfa_assurance_insufficient:
+      "Saisissez votre code de vérification en deux étapes, puis réessayez.",
     recent_auth_required: "Reconnectez-vous : une authentification récente est requise.",
     self_approval_denied: "Vous ne pouvez pas approuver votre propre proposition.",
     self_approval_no_longer_allowed:
@@ -600,7 +601,7 @@ const ar: PlayerMappingCopy = {
   writesDisabled:
     "إنشاء الاقتراحات غير مفعَّل بعد. هذه الشاشة للقراءة فقط إلى حين الموافقة على أول اقتراح.",
   noPermission:
-    "دورك يسمح بقراءة هذه القائمة فقط، لا بالاقتراح ولا بالموافقة (يلزم football.manage_mappings).",
+    "يسمح دورك بالاطلاع على هذه القائمة. إنشاء اقتراحات المطابقة والموافقة عليها يتطلبان صلاحية إضافية.",
   singleOperator: {
     title: "وضع المراجعة بمشغِّل واحد",
     points: [
@@ -813,10 +814,9 @@ const ar: PlayerMappingCopy = {
       "أنت من اقترح هذا ويمكنك الموافقة عليه بنفسك: لا يراجعه أحد غيرك. راجع البصمة والأدلة جيدًا قبل الموافقة.",
     selfApprovedNote: "وافق عليه صاحب الاقتراح نفسه، دون مراجع ثانٍ.",
     expired: "انتهت صلاحية هذا الاقتراح، ولم يعد ممكنًا البتّ فيه.",
-    held: "هذا الاقتراح متوقف: تغيّر الوضع منذ تقديمه.",
+    held: "هذا الاقتراح متوقف: تغيّرت البيانات منذ تقديمه.",
     notPending: "لم يعد هذا الاقتراح ينتظر قرارًا.",
-    executionSeparate:
-      "الموافقة لا تطابق شيئًا. التنفيذ خطوة منفصلة أدناه: لا يُكتب شيء حتى تؤكّدها.",
+    executionSeparate: "تُحفظ الموافقة دون إنشاء المطابقة. لتطبيق المطابقة، أكّد تنفيذها أدناه.",
     execute: {
       title: "تنفيذ هذا الاقتراح المعتمَد",
       intro:
@@ -883,7 +883,7 @@ const ar: PlayerMappingCopy = {
   errors: {
     staff_access_denied: "الوصول مقتصر على طاقم الإدارة.",
     permission_missing: "دورك لا يملك هذه الصلاحية.",
-    mfa_assurance_insufficient: "يلزم تحقق ثانٍ (AAL2).",
+    mfa_assurance_insufficient: "أدخل رمز التحقق بخطوتين، ثم أعد المحاولة.",
     recent_auth_required: "أعد تسجيل الدخول: يلزم توثيق حديث.",
     self_approval_denied: "لا يمكنك الموافقة على اقتراحك أنت.",
     self_approval_no_longer_allowed: "لم تعد موافقة صاحب الاقتراح مسموحًا بها: يلزم شخص آخر.",
