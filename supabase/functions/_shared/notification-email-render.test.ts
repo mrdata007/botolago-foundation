@@ -723,7 +723,7 @@ describe("pepites_weekly", () => {
     const payload = pepitesPayload({ correctsEditionId: "edition-15" });
     for (const [language, subject, note] of [
       ["fr", "Prospects · Semaine 16 : le Top 10 corrigé", "Cette édition remplace le Top 10"],
-      ["ar", "المواهب · الأسبوع 16: توب 10 بعد التصحيح", "هذا العدد يعوّض توب 10"],
+      ["ar", "المواهب · الأسبوع 16: توب 10 بعد التصحيح", "هذا العدد يعوّض قائمة توب 10"],
     ] as const) {
       const email = render(delivery("pepites_weekly", { language, payload }));
       expect(email.subject).toBe(subject);

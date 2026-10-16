@@ -328,13 +328,16 @@ describe("the plus.* dictionary", () => {
   it("carries no subscription vocabulary in Arabic either, and Western digits", () => {
     // Owner decision (native Arabic reader), 2026-10-16: the offer is called «اشتراك» in Arabic, so
     // that word is no longer ruled out here. The rest of the subscription vocabulary still is.
-    const ruledOut = /مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
+    const RULED_OUT = ["مشترك", "بريميوم", "تجديد", "شهري", "سنوي", "استعاد", "عضو"];
+    const banFor = (words: string[]) => new RegExp(words.join("|"));
+    const ruledOut = banFor(RULED_OUT);
     for (const key of keys) {
       const value = ar[key as keyof typeof ar] as string;
       // The one exception: the owner approved «لا تجديد تلقائي» (2026-10-16, row SE-34) for the
       // "nothing renews" line. It names renewal only to deny it, so تجديد stays banned everywhere
       // else, and this key is still held to the rest of the list.
-      const ban = key === "plus.terms.norenew" ? /مشترك|بريميوم|شهري|سنوي|استعاد|عضو/ : ruledOut;
+      const ban =
+        key === "plus.terms.norenew" ? banFor(RULED_OUT.filter((w) => w !== "تجديد")) : ruledOut;
       if (/^plus\.(s3|terms|season|pay|profile|hub|page|meta|lock|in\.member)/.test(key)) {
         expect(value, key).not.toMatch(ban);
       }

@@ -161,7 +161,7 @@ export const STATE_NAMES: Record<PremiumState, Pair> = {
 };
 
 export const STATE_HINTS: Record<PremiumState, Pair> = {
-  active: { fr: "Abonnement en cours.", ar: "اشتراك ساري." },
+  active: { fr: "Abonnement en cours.", ar: "اشتراك سارٍ." },
   cancelling: {
     fr: "Résilié, reste membre jusqu’à la fin de la période payée.",
     ar: "أُلغي، ويبقى عضواً حتى نهاية الفترة المدفوعة.",

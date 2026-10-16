@@ -1050,7 +1050,7 @@ function MemberPanel({
                   "Calcul de la date de fin…"
                 )
               ) : rtl ? (
-                "تاريخ نهاية الموسم غير معروف: سيحسبه الخادم عند التفعيل."
+                "تاريخ نهاية الاشتراك غير معروف: سيحسبه الخادم عند التفعيل."
               ) : (
                 "Date de fin non connue ici : le serveur la calcule à l’activation."
               )}
@@ -1383,7 +1383,7 @@ function GrantRow({
           triggerLabel={rtl ? "سحب المنحة" : "Retirer l’accès"}
           confirmPrompt={
             rtl
-              ? "سحب هذه المنحة الآن؟ يفقد الحساب عضويته إن لم يكن له اشتراك ساري. يُسجَّل الإجراء في التدقيق."
+              ? "سحب هذه المنحة الآن؟ يفقد الحساب عضويته إن لم يكن له اشتراك سارٍ. يُسجَّل الإجراء في التدقيق."
               : "Retirer cet accès maintenant ? Le compte perd l’accès s’il n’a pas de Saison en cours. L’action est consignée dans l’audit."
           }
           confirmLabel={rtl ? "تأكيد السحب" : "Confirmer le retrait"}

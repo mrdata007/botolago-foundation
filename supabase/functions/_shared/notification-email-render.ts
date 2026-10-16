@@ -995,7 +995,7 @@ function pepitesWeekly(
           t(
             ctx,
             "Cette édition remplace le Top 10 publié plus tôt pour cette semaine.",
-            "هذا العدد يعوّض توب 10 المنشور سابقًا لهذا الأسبوع.",
+            "هذا العدد يعوّض قائمة توب 10 المنشورة سابقًا لهذا الأسبوع.",
           ),
         ),
       ],
