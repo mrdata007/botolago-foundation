@@ -224,7 +224,7 @@ Still blocking:
   the staging run, version check and failure drill are not done.
 - **SEC-01 outside the lease:** the orchestrator's calendar syncs, ingestion and
   prize call run outside any lease; their overlap with an Edge pass is unchecked
-  against the SQL.
+  against the SQL. Update 2026-10-16: the calendar sync and the prize call were read against the SQL and found safe, and the player-list hole found in the live refresh is covered by the guard applied on Production V2 (migration `20261016110000`); two gaps stay tracked in `docs/production/2026-10-16-launch-blockers-owner-plan.md`.
 - **Real-state checks** on staging or a real signed-in account, French and
   Arabic, for states mock mode cannot show.
 - **Native Arabic review** of the Phase A to D wording.
