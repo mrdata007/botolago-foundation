@@ -340,9 +340,17 @@ text that a later patch might have changed the calendar function.
   (1,000 users, 65 requests a second sustained) was added in the PR for the
   launch-sized profile; it exists in the repository only once that PR is merged,
   and has not been run. It is run-sheet step 8L (RUN:46-196).
-- **What remains for Q6:** the owner's decision on what is counted and whether to
-  build; then a migration, tests, an Arabic read of the new message, and two
-  authorised production operations. Until then no cap exists.
+- **Update, once merged: the cap exists in the repository, NOT applied.** The
+  owner decided on 2026-10-16: a pilot capped at 1,000 managers, counting Fantasy
+  teams. The migration `20261016170000_pilot_cap.sql`, its guarded owner script,
+  tests and runbook (`docs/production/PILOT_CAP_OWNER_RUNBOOK.md`) are in the
+  repository. Nothing has been applied to Production V2 or Staging V2 and the cap
+  is OFF by default: until the owner authorises the two operations in that
+  runbook (apply, then `select app_private.pilot_configure(true, 1000);`), no cap
+  is in force. The pgTAP file has not been run (CI does that).
+- **What remains for Q6:** the two authorised production operations, CI's
+  database test passing, and an Arabic read of the new message ("Owner to confirm
+  Arabic"). Until the cap is applied and switched on, no cap exists.
 
 #### D. ARABIC: the pre-read is done
 

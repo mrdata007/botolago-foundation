@@ -5,6 +5,8 @@ export const FANTASY_ERROR_CODES = [
   "fantasy_team_not_found",
   "fantasy_team_already_exists",
   "fantasy_season_closed",
+  // The pilot cap: the season already has its maximum number of managers (a new team only).
+  "fantasy_pilot_full",
   "fantasy_gameweek_locked",
   "fantasy_gameweek_not_found",
   "invalid_team_name",
@@ -69,7 +71,8 @@ export function fantasyErrorToBackend(error: unknown): BackendError {
     ? 404
     : mapped.code.includes("conflict") ||
         mapped.code.includes("locked") ||
-        mapped.code.includes("already")
+        mapped.code.includes("already") ||
+        mapped.code === "fantasy_pilot_full"
       ? 409
       : 400;
   return new BackendError(mapped.code, mapped.message, { status, cause: error });
@@ -87,6 +90,8 @@ function publicMessage(code: FantasyErrorCode): string {
       return "This squad exceeds the per-club player limit.";
     case "invite_code_invalid":
       return "The league invite code is invalid.";
+    case "fantasy_pilot_full":
+      return "Registrations are full for now.";
     default:
       return "The Fantasy operation could not be completed.";
   }
