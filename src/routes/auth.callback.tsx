@@ -183,7 +183,7 @@ function CallbackPage() {
   }, [navigate, land]);
 
   return (
-    <AuthShell compact title={t("auth.callback.title")} subtitle={t("auth.callback.subtitle")}>
+    <AuthShell compact title={t("auth.callback.title")}>
       {busy && !error ? (
         // The spinner in the brand foreground, as the shared `LoadingState`
         // draws it, rather than muted: it is the one thing on the sheet.

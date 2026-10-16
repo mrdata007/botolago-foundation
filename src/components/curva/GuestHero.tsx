@@ -67,7 +67,8 @@ export function GuestHero({
   const body = closed
     ? t("fantasy.availability.registration_closed.body")
     : minRated === null
-      ? copy.guestBody
+      ? // The four points below say what the card is made of: no sentence over them.
+        null
       : fill(moments.m1.introBody, { final: card.finalRounds(minRated) });
 
   return (
@@ -87,7 +88,9 @@ export function GuestHero({
         <h2 className={cn("text-balance text-center", ui.display.section, ui.tone.default)}>
           {headline}
         </h2>
-        <p className={cn("text-pretty text-center", ui.text.secondary, ui.tone.muted)}>{body}</p>
+        {body ? (
+          <p className={cn("text-pretty text-center", ui.text.secondary, ui.tone.muted)}>{body}</p>
+        ) : null}
         {closed ? null : loadingAction ? (
           <UiSkeleton className="h-12 rounded-full" testId="curva-guest-action-loading" />
         ) : canCreate ? (

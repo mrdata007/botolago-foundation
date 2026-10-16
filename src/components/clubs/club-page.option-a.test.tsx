@@ -270,6 +270,35 @@ describe("club page — the figures", () => {
     expect(html).not.toContain(dictionaries.fr["club.recent_results"]);
   });
 
+  it("heads a match being played 'En direct', and a match to come 'Prochain match'", async () => {
+    const stats = clubSeasonStats([], WYDAD.id);
+    const overview = (match: Match) =>
+      withRouter(
+        <ClubOverview
+          club={WYDAD}
+          matches={{ data: [match], isPending: false, isError: false, refetch: () => undefined }}
+          news={{ data: [], isPending: false, isError: false, refetch: () => undefined }}
+          clubs={[WYDAD, RAJA]}
+          clubById={clubById}
+          standings={[]}
+          standingsComputed={false}
+          seasonStatus="active"
+          stats={stats}
+          record={officialRecord(undefined, stats.overall)}
+          seasonLabel="2026/2027"
+          seasonAbsent={false}
+          previousSeason={undefined}
+          standingsLink={{ to: "/", params: {}, search: {} }}
+        />,
+      );
+    const base = result("m9", 20, WYDAD, RAJA, 0, 0);
+    const live = await overview({ ...base, status: "live" });
+    expect(live).toMatch(/<h2[^>]*><span>En direct<\/span><\/h2>/);
+    expect(live).not.toContain(dictionaries.fr["club.next_match"]);
+    const upcoming = await overview({ ...base, status: "scheduled", homeScore: undefined });
+    expect(upcoming).toMatch(/<h2[^>]*><span>Prochain match<\/span><\/h2>/);
+  });
+
   it("a finished season the club was not in says so, not 'nothing played yet'", async () => {
     const empty = clubSeasonStats([], WYDAD.id);
     const html = await withRouter(

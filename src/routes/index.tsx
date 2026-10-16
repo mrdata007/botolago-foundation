@@ -77,7 +77,6 @@ import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
-import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
 import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
@@ -811,8 +810,6 @@ function HomeContent() {
             ) : (
               <HeroSkeleton />
             )}
-
-            {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
 
             {/* Only when there is something to show: an empty wrapper still
             carried its margin, a stray gap above the Pronostics card. */}

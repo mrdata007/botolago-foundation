@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
 import { authOtpSlotClass } from "@/components/auth/auth-classes";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -54,8 +53,6 @@ function MfaChallengePage() {
   const [rechecking, setRechecking] = useState(false);
   // Bumped to list the factors again after a recheck that still owes a code.
   const [factorsAsked, setFactorsAsked] = useState(0);
-  // A code was accepted on this page, so leaving it announces the sign-in.
-  const verifiedHere = useRef(false);
   const leaving = useRef(false);
 
   useEffect(() => {
@@ -72,7 +69,6 @@ function MfaChallengePage() {
       if (leaving.current) return;
       leaving.current = true;
       markWelcomeDone();
-      if (verifiedHere.current) toast.success(t("auth.success.login"));
       // A verified recovery callback must finish the password reset even when
       // the account has not completed profile setup yet. The code is already
       // accepted here; update-password still requires the authenticated session.
@@ -86,7 +82,7 @@ function MfaChallengePage() {
       }
       navigate({ to: "/auth/profile-setup", search: { next } });
     },
-    [navigate, next, t],
+    [navigate, next],
   );
 
   useEffect(() => {
@@ -162,7 +158,6 @@ function MfaChallengePage() {
     }
     setSubmitting(true);
     setError(null);
-    verifiedHere.current = true;
     try {
       await verifyTotpFactor(supabase.auth.mfa, factorId, code);
       // The accepted code upgrades the session to AAL2. Read it back rather
@@ -171,7 +166,6 @@ function MfaChallengePage() {
       if (session.status === "authenticated") leave(session.user);
       else if (session.status === "mfa_required") setError("auth.mfa_challenge.error_generic");
     } catch (err) {
-      verifiedHere.current = false;
       setError(errorKey(err instanceof MfaError ? err.code : "internal"));
     } finally {
       setSubmitting(false);

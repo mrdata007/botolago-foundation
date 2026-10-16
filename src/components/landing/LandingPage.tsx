@@ -117,6 +117,8 @@ export function LandingPage({
     staleTime: 5 * 60_000,
   });
 
+  const hasPrizes = !!prizes.data && prizes.data.length > 0;
+
   // The funnel counts visitors without an account, the audience that can
   // go on to sign up: once the session says so, once per mount. A manager
   // opening `/jouer` is not a landing view (the events carry no audience to
@@ -304,7 +306,7 @@ export function LandingPage({
                 gameweek; below `lg` the pitch sits under them, so their room
                 is kept from the first paint rather than pushing it down
                 twice (measured CLS 0.11 without this). */}
-            <div className="min-h-[8.5rem] lg:min-h-0">
+            <div className={cn(cta.kind !== "team" && "min-h-[8.5rem] lg:min-h-0")}>
               <HeroStateLine cta={cta} joinBy={joinBy} />
             </div>
           </div>
@@ -341,17 +343,7 @@ export function LandingPage({
               .replace("{budget}", nf.format(SQUAD_RULES.budget))
               .replace("{max}", nf.format(SQUAD_RULES.maxPerClub))}
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <Fact>
-                {t("home.fantasy_chip_players").replace("{n}", nf.format(SQUAD_RULES.totalSize))}
-              </Fact>
-              <Fact>
-                {t("home.fantasy_chip_budget").replace("{n}", nf.format(SQUAD_RULES.budget))}
-              </Fact>
-            </div>
-            <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
-              {t("landing.step1_positions")}
-            </p>
+            <p className={cn(ui.text.meta, ui.tone.muted)}>{t("landing.step1_positions")}</p>
           </Step>
           <Step
             n={2}
@@ -360,11 +352,12 @@ export function LandingPage({
             title={t("landing.step2_title")}
             body={t("landing.step2_body")}
           >
-            <div className="flex items-center gap-2">
+            {/* The rule, worked through once: what the armband does to a score. */}
+            <div className="flex items-center gap-3">
               <span
                 aria-hidden
                 className={cn(
-                  "grid h-9 w-9 place-items-center",
+                  "grid h-9 w-9 shrink-0 place-items-center",
                   ui.radius.full,
                   ui.text.bodyStrong,
                   "text-[color:var(--ui-ink-deep)]",
@@ -373,14 +366,12 @@ export function LandingPage({
               >
                 {t("fantasy.captain")}
               </span>
-              <Fact>{t("home.fantasy_chip_captain")}</Fact>
+              <p className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>
+                {t("landing.step2_example")
+                  .replace("{n}", nf.format(6))
+                  .replace("{double}", nf.format(12))}
+              </p>
             </div>
-            {/* The rule, worked through once: what the armband does to a score. */}
-            <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
-              {t("landing.step2_example")
-                .replace("{n}", nf.format(6))
-                .replace("{double}", nf.format(12))}
-            </p>
           </Step>
           <Step
             n={3}
@@ -427,11 +418,14 @@ export function LandingPage({
       >
         <div
           className={cn(
-            "mx-auto grid w-full max-w-6xl gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:py-16",
+            "mx-auto grid w-full max-w-6xl gap-10 py-12 lg:py-16",
+            // The prizes' column only exists with an open prize: without it the
+            // reasons keep a readable measure rather than leaving the column empty.
+            hasPrizes && "lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]",
             ui.space.gutter,
           )}
         >
-          <div className="min-w-0">
+          <div className={cn("min-w-0", !hasPrizes && "max-w-3xl")}>
             <Sub id={`${howId}-why`} className={cn("text-balance", ui.display.title)}>
               {t("landing.why_title")}
             </Sub>
@@ -440,14 +434,9 @@ export function LandingPage({
               <Reason icon={Trophy} title={t("landing.why2_title")} body={t("landing.why2_body")} />
               <Reason icon={Repeat} title={t("landing.why3_title")} body={t("landing.why3_body")} />
             </ul>
-            {/* With the prizes in the column beside it, the guest way in sits
-                under the reasons: the column is not left half empty. */}
-            {prizes.data && prizes.data.length > 0 ? (
-              <BrowseInvite heading={SubSub} onLeave={onLeave} className="mt-8" />
-            ) : null}
           </div>
 
-          {prizes.data && prizes.data.length > 0 ? (
+          {hasPrizes ? (
             <aside
               aria-labelledby={`${howId}-prizes`}
               className={cn("self-start p-5", ui.radius.sheet, "text-[color:var(--ui-ink-deep)]")}
@@ -460,7 +449,7 @@ export function LandingPage({
               </SubSub>
               <p className={cn("mt-2", ui.text.secondary)}>{t("landing.prizes_body")}</p>
               <ul className="mt-3 grid gap-2">
-                {prizes.data.map((prize) => (
+                {(prizes.data ?? []).map((prize) => (
                   <li key={prize.id} className={cn("flex flex-col", ui.text.secondary)}>
                     <span
                       className={cn(
@@ -491,10 +480,7 @@ export function LandingPage({
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </aside>
-          ) : (
-            // No open prize: the guest way in takes the column instead.
-            <BrowseInvite heading={SubSub} onLeave={onLeave} />
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -514,7 +500,6 @@ export function LandingPage({
           <Sub id={faqId} className={cn("text-balance", ui.display.title)}>
             {t("landing.faq_title")}
           </Sub>
-          <p className={cn("mt-2", ui.text.prose, ui.tone.muted)}>{t("landing.faq_body")}</p>
         </div>
         <div className="min-w-0">
           <div className="mt-6 divide-y divide-[color:var(--ui-rule)] border-y border-[color:var(--ui-rule)] lg:mt-0">
@@ -586,13 +571,9 @@ export function LandingPage({
           <Sub id={`${faqId}-final`} className={cn("text-balance", ui.display.hero)}>
             {t("landing.final_title")}
           </Sub>
-          <p className={cn("mt-3 max-w-[40ch]", ui.text.subtitle, ui.tone.onMeshMuted)}>
-            {t("landing.final_body")}
-          </p>
           <div className="mt-7 w-full sm:max-w-sm">
             <PrimaryAction cta={cta} event="landing_cta_final" onLeave={onLeave} />
           </div>
-          <HeroStateLine cta={cta} joinBy={joinBy} />
         </div>
       </section>
 
@@ -726,20 +707,8 @@ function HeroStateLine({
       </div>
     );
   }
-  if (cta.kind === "team") {
-    return (
-      <p
-        className={cn(
-          "mt-4 flex max-w-md items-start gap-2",
-          ui.text.secondary,
-          ui.tone.onMeshMuted,
-        )}
-      >
-        <Trophy className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-        <span>{t("landing.team_note")}</span>
-      </p>
-    );
-  }
+  // A manager already has the team: the button says so, nothing more is needed.
+  if (cta.kind === "team") return null;
   if (cta.kind === "discover") {
     return (
       <p
@@ -762,7 +731,7 @@ function HeroStateLine({
           <Timer className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--ui-on-ink)]" aria-hidden />
           <span>
             {t("landing.join_by").replace("{n}", nf.format(joinBy.number))}{" "}
-            <bdi className={cn(ui.text.bodyStrong, ui.tone.onMesh)}>
+            <bdi className={cn("whitespace-nowrap", ui.text.bodyStrong, ui.tone.onMesh)}>
               {formatDeadline(joinBy.deadline, lang, { weekday: "short" })}
             </bdi>
           </span>
@@ -821,22 +790,6 @@ function Step({
   );
 }
 
-function Fact({ children }: { children: ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "px-3 py-1",
-        ui.radius.full,
-        ui.surface.card,
-        ui.text.meta,
-        "[font-weight:var(--ui-weight-heavy)]",
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 function Reason({
   icon: Icon,
   title,
@@ -880,35 +833,5 @@ function Faq({ q, a }: { q: string; a: string }) {
       </summary>
       <p className={cn("pb-4", ui.text.prose, ui.tone.muted)}>{a}</p>
     </details>
-  );
-}
-
-/** Guest access stays open: matches, results and the table need no account. */
-function BrowseInvite({
-  heading: H,
-  onLeave,
-  className,
-}: {
-  heading: "h3" | "h4";
-  onLeave?: () => void;
-  className?: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className={cn("self-start p-5", ui.radius.sheet, ui.surface.sunken, className)}>
-      <H className={cn(ui.display.teamSm)}>{t("landing.browse_title")}</H>
-      <p className={cn("mt-2", ui.text.prose, ui.tone.muted)}>{t("landing.browse_body")}</p>
-      <UiLinkButton
-        to="/matches"
-        variant="outline"
-        size="sm"
-        className="mt-4"
-        onClick={onLeave}
-        data-testid="landing-browse"
-      >
-        {t("landing.browse_cta")}
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </UiLinkButton>
-    </div>
   );
 }

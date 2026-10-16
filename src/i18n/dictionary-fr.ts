@@ -66,7 +66,6 @@ export const fr = {
   "notifications.filter.fantasy": "Fantasy",
   "notifications.filter.news": "Actualités",
   "notifications.empty_title": "Rien de nouveau pour l'instant",
-  "notifications.empty_body": "C’est ici que s’affichent vos notifications.",
   "notifications.dismiss": "Supprimer la notification",
   "notifications.dismiss_failed": "La notification n'a pas pu être supprimée. Réessayez.",
   "notifications.mark_all_failed":
@@ -74,7 +73,6 @@ export const fr = {
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
-  "notifications.signin_body": "Elles sont rattachées à votre compte BotolaGO.",
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
   "reminders.sign_in_reason": "Connectez-vous pour ajouter ce match à vos rappels.",
@@ -98,10 +96,6 @@ export const fr = {
   "home.deadline": "Date limite",
   "home.deadline_fantasy": "Date limite Fantasy",
   "home.deadline_strip": "Fantasy J{gw} : plus que {time} · {when}",
-  "home.fantasy_chip_players": "{n} joueurs",
-  "home.fantasy_chip_budget": "{n} M",
-  "home.fantasy_chip_captain": "Capitaine ×2",
-  "home.fantasy_chip_deadline": "Date limite : {when}",
   "home.deadline_in": "dans",
   "home.days": "j",
   "home.hours": "h",
@@ -165,7 +159,6 @@ export const fr = {
   "news.saved.empty_title": "Aucun article enregistré",
   "news.saved.browse": "Parcourir les actualités",
   "news.saved.signin_title": "Connectez-vous pour retrouver vos articles",
-  "news.saved.signin_body": "Vos articles enregistrés sont liés à votre compte.",
   "news.saved.error":
     "Vos articles enregistrés n'ont pas pu être chargés. Vérifiez votre connexion et réessayez.",
   "news.saved.unavailable": "Cet article n'est plus disponible.",
@@ -174,6 +167,7 @@ export const fr = {
   "news.saved.more_error": "La suite n'a pas pu être chargée.",
   "news.saved.remove_error": "Impossible de retirer cet article pour le moment. Réessayez.",
   "news.saved.save_error": "Impossible d'enregistrer cet article pour le moment. Réessayez.",
+  "news.saved.sign_in_reason": "Connectez-vous pour enregistrer cet article.",
   "news.saved.removed_announce": "Article retiré de vos articles enregistrés.",
   "news.saved.count_unknown": "nombre inconnu",
   "news.saved.count_over": "plus de {count}",
@@ -326,7 +320,6 @@ export const fr = {
   "club.season_empty": "Aucun match joué cette saison pour l'instant.",
   "club.season_absent": "Le club ne fait pas partie de la Botola Pro pour cette saison.",
   "club.view_season": "Voir la saison {season}",
-  "club.news_empty": "Aucune actualité sur ce club pour le moment.",
   "club.matches_empty": "Aucun match pour cette saison.",
   "club.squad_empty": "L'effectif n'est pas encore disponible.",
   "club.squad.number": "Numéro {n}",
@@ -1534,7 +1527,6 @@ export const fr = {
   "auth.submitting": "Un instant…",
 
   "auth.login.title": "Heureux de vous revoir",
-  "auth.login.subtitle": "Connectez-vous pour retrouver votre équipe Fantasy et vos clubs suivis.",
   "auth.login.cta": "Se connecter",
   "auth.login.forgot": "Mot de passe oublié ?",
   "auth.login.no_account": "Pas encore de compte ?",
@@ -1570,12 +1562,12 @@ export const fr = {
   "auth.verify.code_label": "Code de vérification",
   "auth.verify.cta": "Vérifier",
   "auth.verify.resend": "Renvoyer le code",
+  "auth.verify.resend_done": "Code renvoyé.",
   "auth.verify.resend_in": "Renvoyer dans",
   "auth.verify.change_email": "Changer d'adresse",
   "auth.verify.demo_hint": "Démo : le code est 123456",
 
   "auth.mfa.title": "Authentification à deux facteurs",
-  "auth.mfa.subtitle": "Ajoutez une couche de sécurité supplémentaire à votre compte BotolaGO.",
   "auth.mfa.loading": "Chargement…",
   "auth.mfa.enabled_title": "Authentification à deux facteurs activée",
   "auth.mfa.enabled_body":
@@ -1641,7 +1633,6 @@ export const fr = {
   "auth.forgot.back_to_login": "Retour à la connexion",
 
   "auth.callback.title": "Connexion en cours",
-  "auth.callback.subtitle": "Nous finalisons votre authentification.",
   "auth.callback.error": "Le lien est invalide ou a expiré. Réessayez.",
 
   "auth.consent.title": "Connecter {client} à BotolaGO",
@@ -1660,9 +1651,7 @@ export const fr = {
   "auth.update.new_password": "Nouveau mot de passe",
   "auth.update.confirm_password": "Confirmer le mot de passe",
   "auth.update.cta": "Mettre à jour",
-  "auth.update.success": "Mot de passe mis à jour",
   "auth.update.success_title": "Mot de passe mis à jour",
-  "auth.update.success_body": "Vous pouvez maintenant continuer avec votre nouveau mot de passe.",
   "auth.update.continue": "Continuer",
   "auth.update.no_session": "Le lien de réinitialisation a expiré. Demandez-en un nouveau.",
   "auth.update.request_new_link": "Demander un nouveau lien",
@@ -1671,7 +1660,6 @@ export const fr = {
   "auth.error.provider_unavailable": "Ce fournisseur n'est pas disponible pour le moment.",
 
   "auth.setup.title": "Personnalisez votre profil",
-  "auth.setup.subtitle": "Quelques choix rapides pour adapter BotolaGO à vos préférences.",
   "auth.setup.step": "Étape",
   "auth.setup.of": "sur",
   "auth.setup.avatar": "Photo de profil",
@@ -1737,7 +1725,6 @@ export const fr = {
   "auth.error.otp_invalid": "Code invalide.",
   "auth.error.otp_expired": "Code expiré. Demandez-en un nouveau.",
 
-  "auth.success.login": "Connexion réussie",
   "auth.success.register": "Compte créé. Vérifiez votre e-mail.",
   "auth.success.verify": "Compte vérifié",
   "auth.success.signed_out": "Déconnexion réussie",
@@ -1771,7 +1758,6 @@ export const fr = {
   "profile.language.device": "Langue sur cet appareil",
   "profile.language.help":
     "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
-  "profile.language.help_guest": "Ce choix change l’application sur cet appareil.",
   "profile.section.security": "Sécurité du compte",
   "profile.section.account": "Compte",
   "profile.section.legal": "Informations légales",
@@ -2021,7 +2007,6 @@ export const fr = {
   "prizes.period.season": "Saison {season}",
   "prizes.terms_link": "Règlement des lots",
   "prizes.empty.title": "Les lots arrivent bientôt",
-  "prizes.empty.body": "Aucun lot n'est encore ouvert. Revenez très vite !",
   "prizes.terms.meta_title": "Règlement des lots — BotolaGO Fantasy",
   "prizes.terms.meta_description":
     "Le règlement des lots de BotolaGO Fantasy : désignation des gagnants, vérification et remise.",
@@ -2794,10 +2779,6 @@ export const fr = {
   "landing.prizes_title": "Des lots pour les meilleurs managers",
   "landing.prizes_body": "Les lots en jeu cette saison, attribués selon le règlement :",
   "landing.prizes_link": "Voir les lots et le règlement",
-  "landing.browse_title": "Pas encore prêt ?",
-  "landing.browse_body": "Matchs, résultats et classement restent ouverts à tous, sans compte.",
-  "landing.browse_cta": "Voir les matchs",
-  "landing.now_kicker": "En ce moment",
   "landing.now_title": "La Botola Pro, journée après journée",
   "landing.now_matches": "Les matchs",
   "landing.now_matches_link": "Tout le calendrier",
@@ -2808,8 +2789,6 @@ export const fr = {
   "landing.players_body_owned": "Les plus choisis par les managers.",
   "landing.players_owned": "{n} % des équipes",
   "landing.players_link": "Tous les joueurs",
-  "landing.faq_body": "Tout ce qu'il faut savoir avant de composer votre équipe.",
-  "landing.team_note": "Votre équipe est en jeu : suivez ses points journée après journée.",
   "landing.faq_title": "Questions fréquentes",
   "landing.faq_free_q": "C’est vraiment gratuit ?",
   "landing.faq_free_a": "Oui. BotolaGO Fantasy est un jeu gratuit : aucun achat, aucun pari.",
@@ -2828,8 +2807,6 @@ export const fr = {
   "landing.faq_rules": "Lire les règles complètes",
   "landing.faq_help": "Centre d’aide",
   "landing.final_title": "Votre équipe vous attend.",
-  "landing.final_body":
-    "Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.",
   "landing.cta_pending": "Chargement",
 
   /* ------------------------------------------------------------------ */
@@ -2849,8 +2826,6 @@ export const fr = {
 
   /* Curva G1: guest and signed-in without a team. */
   "curva.guest.headline": "Votre place dans la Curva",
-  "curva.guest.body":
-    "Votre carte de manager démarre avec votre équipe : votre nom, les couleurs de votre club, et une note qui vient de vos choix, journée après journée.",
   "curva.guest.sign_in": "Se connecter",
   "curva.guest.try_title": "Essayer les couleurs d’un club",
   "curva.guest.try_hint":
@@ -2933,14 +2908,12 @@ export const fr = {
   /* Curva G2, G3, G4, G6 and the share sheet; the Fantasy hub's two new lines. */
   "curva.card.title": "Votre carte",
   "curva.card.where": "D’où vient votre note",
-  "curva.card.intro": "Votre note vient de vos décisions, journée après journée.",
   "curva.card.intro_forming":
     "Pas encore de note. Les quatre statistiques se remplissent avec vos journées terminées.",
   "curva.card.tier": "Votre palier",
   "curva.card.tier_now": "Actuel",
   "curva.card.tier_best": "Meilleur cette saison",
   "curva.card.tier_none": "Le palier arrive avec votre première note.",
-  "curva.card.tier_explain": "Le palier suit votre note, journée après journée.",
   "curva.card.serial": "Numéro {serial} : il ne changera jamais.",
   "curva.h2h.title": "Face à face",
   "curva.seasons.counted_zero": "Aucune journée comptée",
@@ -3127,7 +3100,7 @@ export const fr = {
   "plus.step_of": "Écran {n} sur {total}",
   "plus.prices": "Voir les prix",
   "plus.note.guest": "Exemple · créez votre compte gratuit",
-  "plus.note.example": "Exemple · une illustration de ce que vous verrez",
+  "plus.note.example": "Exemple",
   "plus.with": "Avec {logo}",
   "plus.s1.title": "Votre carte, à votre style",
   "plus.s1.cta": "Voir les avantages",
@@ -3278,7 +3251,6 @@ export const fr = {
   "plus.pay.wa_message":
     "Bonjour, voici mon reçu de paiement pour la Saison 2026/27. Mon code : {code}",
   "plus.pay.soon": "Les coordonnées de paiement arrivent bientôt.",
-  "plus.pay.soon_d": "Revenez dans quelques jours : le paiement n'est pas encore ouvert.",
   "plus.pay.loading": "Chargement des coordonnées de paiement",
   "plus.s3.cta": "Payer ma Saison",
   "plus.s3.terms_link": "Conditions de la Saison",
@@ -3301,7 +3273,7 @@ export const fr = {
   "plus.s4.share_text": "Voilà ma carte BotolaGO.",
   "plus.s4.shared": "Partage prêt",
   "plus.page.member_title": "Ma saison",
-  "plus.page.member_body": "Votre Saison est active. Vous la retrouvez dans Profil.",
+  "plus.page.member_body": "Votre Saison est active.",
   "plus.page.back": "Retour à Curva",
   // plus offer flow (lane 1)
   "plus.s3.preview": "Voir l'aperçu",
@@ -3501,7 +3473,6 @@ export const fr = {
     "Sans ligue privée, pas de comparaison : rejoignez-en une pour voir l'écart.",
   "plus.recap.small_league":
     "Moins de trois managers dans votre ligue : la moyenne n'est pas affichée.",
-  "plus.recap.calc": "Calcul v{n}",
   "plus.recap.corrected": "Résultat corrigé",
   "plus.recap.absences": "Aucune liste d'absents n'est disponible pour l'instant.",
   "plus.recap.share": "Partager ma journée",

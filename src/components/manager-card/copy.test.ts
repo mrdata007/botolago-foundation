@@ -336,14 +336,16 @@ describe("the dictionary of the section", () => {
       key === "fantasy.hub.card_view",
   );
 
-  // 207: the sentence a card shows when its renderer could not load and the reload button after a
-  // failed retry (audit 2026-10-14, SEC-04).
+  // 204: the three sentences that only repeated a title or the four points under it left (the
+  // guest card's intro, « D'où vient votre note » and the tier ladder's explanation; subtext audit
+  // 2026-10-16). 207: the sentence a card shows when its renderer could not load and the reload
+  // button after a failed retry (audit 2026-10-14, SEC-04).
   // 205: the 18 keys of the strip under a pending card (statistic words, short reasons, panel).
   // 184: Appendix A's 183 and « Vos moments » (finish review). 187: the waiting box's
   // « Statistiques remplies » title and its accessible sentence, and the league row's
   // « statistiques remplies 2/4 » (the card that waits for a statistic, 2026-10-10).
-  it("has the 207 keys of Appendix A (183, « Vos moments », the three of the statistics wait, the 18 of the pending strip and the two failed-renderer words), in both languages", () => {
-    expect(sectionKeys).toHaveLength(207);
+  it("has the 204 keys of Appendix A (183, « Vos moments », the three of the statistics wait, the 18 of the pending strip and the two failed-renderer words), in both languages", () => {
+    expect(sectionKeys).toHaveLength(204);
     for (const key of sectionKeys) {
       expect(dictionaries.ar[key as keyof typeof dictionaries.ar]).toBeDefined();
     }

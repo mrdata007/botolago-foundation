@@ -50,7 +50,7 @@ const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " "
 const card = (id: keyof typeof FIXTURES) => FIXTURES[id].card!;
 
 describe("« Votre palier »", () => {
-  it("marks the tier the card holds, once, and says the next one and what the tier follows", async () => {
+  it("marks the tier the card holds, once, and says the next one", async () => {
     const html = await render(<TierLadder card={card("rated")} />);
     expect(html.match(/aria-current="true"/g)).toHaveLength(1);
     const current = html.match(/<li[^>]*aria-current="true"[\s\S]*?<\/li>/)![0];
@@ -60,7 +60,6 @@ describe("« Votre palier »", () => {
       expect(text(html)).toContain(tier);
     }
     expect(text(html)).toContain("CHAMPION à partir de 88.");
-    expect(text(html)).toContain(fr["curva.card.tier_explain"]);
   });
 
   it("marks no tier before the first note, and says the tier comes with it", async () => {

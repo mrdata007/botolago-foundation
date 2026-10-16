@@ -108,7 +108,10 @@ export function ClubOverview({
         </Section>
       ) : next ? (
         <Section>
-          <SectionHeader title={t("club.next_match")} />
+          {/* A match being played is not "next": the header says so. */}
+          <SectionHeader
+            title={next.status === "live" ? t("matches.status.live") : t("club.next_match")}
+          />
           <MatchRow match={next} clubById={clubById} variant="row" />
         </Section>
       ) : null}
@@ -116,16 +119,15 @@ export function ClubOverview({
       {/* 2. News — hidden at launch (NEWS_ENABLED). Its fetch is gated on the
           same flag by the page, so with the flag off a club page makes no
           News request at all; the cards link to /news/$articleId, which
-          redirects Home while the flag is off. */}
-      {NEWS_ENABLED && (
+          redirects Home while the flag is off. A club with no article shows no
+          News section rather than a heading over an apology. */}
+      {NEWS_ENABLED && (news.isPending || news.isError || (news.data ?? []).length > 0) && (
         <Section>
           <SectionHeader title={t("news.title")} />
           {news.isPending ? (
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
           ) : news.isError ? (
             <ErrorState onRetry={() => void news.refetch()} />
-          ) : (news.data ?? []).length === 0 ? (
-            <EmptyState compact>{t("club.news_empty")}</EmptyState>
           ) : (
             <div className="grid gap-2.5">
               {(news.data ?? []).map((article) => (

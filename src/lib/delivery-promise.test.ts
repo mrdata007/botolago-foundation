@@ -100,8 +100,6 @@ describe("the words", () => {
     "fpl.notifications_body",
     "fpl.notifications_body_neutral",
     "reminders.sign_in_reason",
-    "notifications.empty_body",
-    "notifications.signin_body",
     "pepites.email.on_toast",
   ] as const;
 
@@ -125,8 +123,6 @@ describe("the words", () => {
   });
 
   test("the sign-in prompt does not repeat the title above it", () => {
-    expect(dictionaries.fr["notifications.signin_body"]).not.toContain("Connectez-vous");
-    expect(dictionaries.ar["notifications.signin_body"]).not.toContain("سجّل الدخول");
     expect(dictionaries.fr["reminders.sign_in_reason"].match(/ pour /g)?.length ?? 0).toBeLessThan(
       2,
     );

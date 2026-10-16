@@ -58,11 +58,7 @@ export function PrizesPage() {
       ) : prizes.isError ? (
         <UiErrorState onRetry={() => void prizes.refetch()} />
       ) : prizes.data.length === 0 ? (
-        <UiEmptyState
-          title={t("prizes.empty.title")}
-          body={t("prizes.empty.body")}
-          testId="prizes-empty"
-        />
+        <UiEmptyState title={t("prizes.empty.title")} testId="prizes-empty" />
       ) : (
         <section aria-label={t("prizes.title")} className="flex min-w-0 flex-col gap-3">
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">

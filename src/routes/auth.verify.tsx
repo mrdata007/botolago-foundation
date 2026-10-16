@@ -82,7 +82,7 @@ function VerifyPage() {
       if (!sent.ran) return;
       if (sent.value.ok) {
         setCooldown(30);
-        toast.success(t("auth.verify.resend"));
+        toast.success(t("auth.verify.resend_done"));
       } else {
         // Never pretend a mail went out; the cooldown and the server's rate
         // limit are unchanged, and the button is free to try again. Shown in

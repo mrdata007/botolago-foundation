@@ -558,10 +558,7 @@ function RecapBody({
                 : text("plus.recap.league_note", { n: view.league.members })
               : t("plus.recap.no_league")}
           </p>
-          <p className="pr__meta">
-            {text("plus.recap.calc", { n: view.calculationVersion })}
-            {view.corrected ? ` · ${t("plus.recap.corrected")}` : ""}
-          </p>
+          {view.corrected ? <p className="pr__meta">{t("plus.recap.corrected")}</p> : null}
           {!example ? (
             <div className="pr__share">
               <ShareImageSheet

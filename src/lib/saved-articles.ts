@@ -214,7 +214,7 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
             .catch((error: unknown) => reportSavedMutationFailure(error, false, t))
             .finally(() => checking.current.delete(id));
         },
-        { reason: "Connectez-vous pour enregistrer cet article." },
+        { reason: t("news.saved.sign_in_reason") },
       );
     },
     [accountKey, lang, mode, mutation, queryClient, queryKey, requireAuth, t],
@@ -231,10 +231,10 @@ export function useSavedArticles(options: { fresh?: boolean } = {}) {
         return;
       }
       requireAuth(() => mutation.mutate({ id, saved: true }), {
-        reason: "Connectez-vous pour enregistrer cet article.",
+        reason: t("news.saved.sign_in_reason"),
       });
     },
-    [mode, mutation, requireAuth],
+    [mode, mutation, requireAuth, t],
   );
 
   return {

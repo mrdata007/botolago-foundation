@@ -59,7 +59,6 @@ export function PlusPayScreen({
         {ready && !showDetails ? (
           <div className="plus-panel plus-pay-soon" data-testid="plus-pay-soon">
             <p className="plus-pay-soon-t">{t("plus.pay.soon")}</p>
-            <p className="plus-small">{t("plus.pay.soon_d")}</p>
           </div>
         ) : null}
         {showDetails ? (

@@ -631,7 +631,7 @@ function IdentityCard({
  * 2026-10-15) and is changed only by the language step of the profile editor,
  * reached from the Notifications row below, which shows the stored value and
  * never changes this device's language. A visitor with no account has no such
- * language to mention.
+ * language to mention, so the row stands alone for them.
  */
 function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: boolean }) {
   const { t, lang } = useI18n();
@@ -643,7 +643,7 @@ function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: b
         trigger={
           <button
             type="button"
-            aria-describedby={helpId}
+            aria-describedby={signedIn ? helpId : undefined}
             className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}
           >
             <RowInner
@@ -656,9 +656,11 @@ function LanguageRow({ ruled = false, signedIn }: { ruled?: boolean; signedIn: b
       >
         <LanguageMenuChoices />
       </UiMenu>
-      <p id={helpId} className={cn("px-4 pb-3 text-pretty", ui.text.meta, ui.tone.muted)}>
-        {signedIn ? t("profile.language.help") : t("profile.language.help_guest")}
-      </p>
+      {signedIn ? (
+        <p id={helpId} className={cn("px-4 pb-3 text-pretty", ui.text.meta, ui.tone.muted)}>
+          {t("profile.language.help")}
+        </p>
+      ) : null}
     </>
   );
 }

@@ -91,14 +91,7 @@ export function LandingBotolaNow({
       className={cn("mx-auto w-full max-w-6xl pb-2 pt-12 lg:pb-4 lg:pt-16", ui.space.gutter)}
       data-testid="landing-now"
     >
-      <p className={cn("flex items-center gap-2", ui.text.label, ui.tone.ink)}>
-        <span
-          aria-hidden
-          className={cn("live-breathe h-2 w-2 bg-[color:var(--ui-live)]", ui.radius.full)}
-        />
-        {t("landing.now_kicker")}
-      </p>
-      <H id="landing-now" className={cn("mt-2 text-balance", ui.display.title)}>
+      <H id="landing-now" className={cn("text-balance", ui.display.title)}>
         {t("landing.now_title")}
       </H>
 

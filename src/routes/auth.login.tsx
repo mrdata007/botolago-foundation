@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useId } from "react";
 import { Loader2, Lock, Mail } from "lucide-react";
-import { toast } from "sonner";
 import {
   AuthShell,
   AuthPrimaryButton,
@@ -126,7 +125,6 @@ function LoginPage() {
       case "proceed":
         setUnconfirmed(false);
         markWelcomeDone();
-        toast.success(t("auth.success.login"));
         goAfterLogin(profileComplete);
         return;
       default:
@@ -214,7 +212,6 @@ function LoginPage() {
   return (
     <AuthShell
       title={t("auth.login.title")}
-      subtitle={t("auth.login.subtitle")}
       footer={
         <>
           <p

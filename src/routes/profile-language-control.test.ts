@@ -43,14 +43,6 @@ describe("profile language control: wording", () => {
     );
   });
 
-  it("does not mention an account to a visitor who has none", () => {
-    expect(fr["profile.language.help_guest"]).toBe(
-      "Ce choix change l’application sur cet appareil.",
-    );
-    expect(fr["profile.language.help_guest"]).not.toMatch(/compte/);
-    expect(ar["profile.language.help_guest"]).not.toContain("حساب");
-  });
-
   it("the editor's language step is named for notifications and says French is the default", () => {
     // It shows the account's stored value (French for a new account), so the
     // label may name the notifications, and the hint says what the step does
@@ -85,9 +77,11 @@ describe("profile language control: the wording is true", () => {
     );
     expect(row).toContain('t("profile.language.device")');
     expect(row).not.toContain('t("language.switch")');
-    expect(row).toContain("aria-describedby={helpId}");
+    // The line is the button's description whenever it is drawn (a signed-in reader only).
+    expect(row).toContain("aria-describedby={signedIn ? helpId : undefined}");
     expect(row).toContain('t("profile.language.help")');
-    expect(row).toContain('t("profile.language.help_guest")');
+    // A visitor with no account gets no line under the row: the row's own label says it.
+    expect(row).not.toContain("help_guest");
   });
 
   it("only a signed-in reader is told about the account", () => {

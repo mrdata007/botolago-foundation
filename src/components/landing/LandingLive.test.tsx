@@ -231,7 +231,6 @@ describe("LandingPlayersToWatch", () => {
 describe("the new copy exists in both languages", () => {
   it("has every key in French and Arabic", () => {
     for (const key of [
-      "landing.now_kicker",
       "landing.now_title",
       "landing.now_matches",
       "landing.now_matches_link",
@@ -242,9 +241,7 @@ describe("the new copy exists in both languages", () => {
       "landing.players_body_owned",
       "landing.players_owned",
       "landing.players_link",
-      "landing.faq_body",
       "landing.step2_example",
-      "landing.team_note",
     ] as const) {
       expect(dictionaries.fr[key]).toBeTruthy();
       expect(dictionaries.ar[key]).toMatch(/[؀-ۿ]/);

@@ -216,12 +216,7 @@ function ProfileSetupPage() {
   }, [step, displayName, username]);
 
   return (
-    <AuthShell
-      compact
-      title={t("auth.setup.title")}
-      subtitle={t("auth.setup.subtitle")}
-      showBack={false}
-    >
+    <AuthShell compact title={t("auth.setup.title")} showBack={false}>
       <div className="mb-5">
         <div className="flex items-center justify-between">
           {/* The label type stays on the counter, which is what it is for —
