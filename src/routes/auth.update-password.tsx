@@ -5,6 +5,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useId, useState } from "react";
 import { Loader2, CheckCircle2, Lock } from "lucide-react";
+import { toast } from "sonner";
 import {
   AuthShell,
   AuthPrimaryButton,
@@ -85,6 +86,7 @@ function UpdatePasswordPage() {
       return;
     }
     setDone(true);
+    toast.success(t("auth.update.success"));
   };
 
   if (hasSession === false) {

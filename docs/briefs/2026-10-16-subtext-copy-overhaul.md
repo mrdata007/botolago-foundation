@@ -60,6 +60,32 @@ independent critic). One writer applies the result.
   Clôturée, Définitive), "Saison" versus "accès", the "gratuit" claim next to a
   paid Saison, the account-deletion retention sentence.
 
+## Changes beyond text (declared, each small)
+
+Found while removing text; kept because the screen was wrong without them.
+Each one is listed here so the reviewer can ask for any to be reverted.
+
+- Positive badge text colour (`UiBadge` tone `positive`, `ui-kit/primitives.tsx`):
+  the "Score exact · 3 pts" chip measured 3.64:1 (light theme); it now reads
+  5.69:1 (dark: 7.26:1 to 8.52:1). The same tone is used by the fixture
+  "double" badge, the fixture prediction card and the Curva rating-change chip.
+- League join screen: the disabled "Classique / Face à face" control is gone,
+  because it advertised a mode that does not exist.
+- Club page: a live match is labelled "En direct", not "Prochain match"; the
+  News section is hidden for a club with no article.
+- Prospects title and Pronostics header: the separator no longer dangles at a
+  line end (`PepitesSplitTitle`, a stacked layout under 640 px).
+- Landing: the hero keeps a reserved height only where it needs one, and the
+  Arabic deadline date and time stay in one unit.
+- Copy bugs: resending a verification code confirms with its own message
+  (new key `auth.verify.resend_done`); the saved-articles sign-in reason goes
+  through the dictionary (new key `news.saved.sign_in_reason`) so Arabic readers
+  no longer see French; one Prospects compare prompt has a new key.
+
+Reverted after the final review because they changed behaviour: the success
+toasts after sign-in and password update, and the error handling of four
+components that are not mounted anywhere.
+
 ## Acceptance criteria
 
 Functional: no behaviour change; `tsc`, ESLint, the i18n gate and the existing

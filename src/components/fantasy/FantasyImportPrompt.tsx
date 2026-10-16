@@ -65,6 +65,7 @@ export function FantasyImportPrompt() {
   const [local, setLocal] = useState<LocalPayload | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [missingIds, setMissingIds] = useState<string[] | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
   // Preview the local team for eligibility gating only. The authoritative
@@ -109,6 +110,7 @@ export function FantasyImportPrompt() {
   const importNow = async () => {
     setPhase("saving");
     setErrorMessage(null);
+    setMissingIds(null);
 
     // Fresh repositories: injected here so runOwnedMutation's `action` is a
     // pure closure the service can be stubbed against in tests.
@@ -158,12 +160,19 @@ export function FantasyImportPrompt() {
     // Failure: NO marker persisted; local state untouched.
     const c = classifyRepoError(res.error);
     setPhase("error");
-    if (c.isNetwork) {
+    if (c.isMapping && res.error.missingIds?.players?.length) {
+      setMissingIds(res.error.missingIds.players);
+      setErrorMessage(null);
+    } else if (c.isNetwork) {
       setErrorMessage(t("fantasy.error.network"));
     } else if (c.isPermission) {
       setErrorMessage(t("fantasy.error.permission"));
     } else if (c.isConflict) {
       setErrorMessage(t("fantasy.error.version_conflict"));
+    } else if (c.isValidation) {
+      setErrorMessage(t("fantasy.error.import_validation"));
+    } else if (res.error.code === "gameweek_unresolved") {
+      setErrorMessage(t("fantasy.error.gameweek_unresolved"));
     } else {
       setErrorMessage(t("fantasy.error.import_generic"));
     }
@@ -202,6 +211,9 @@ export function FantasyImportPrompt() {
           <h2 id="botolago-import-title" className={cn(ui.text.bodyStrong, ui.tone.ink)}>
             {t("fantasy.import.title")}
           </h2>
+          <p className={cn("mt-1 whitespace-normal break-words", ui.text.meta, ui.tone.muted)}>
+            {t("fantasy.import.subtitle")}
+          </p>
         </div>
         <button
           type="button"
@@ -229,6 +241,11 @@ export function FantasyImportPrompt() {
         {phase === "error" && errorMessage && (
           <span className={cn("whitespace-normal break-words", ui.tone.negative)}>
             {errorMessage}
+          </span>
+        )}
+        {phase === "error" && missingIds && missingIds.length > 0 && (
+          <span className={cn("whitespace-normal break-words", ui.tone.negative)}>
+            {t("fantasy.import.mapping_gaps").replace("{ids}", missingIds.join(", "))}
           </span>
         )}
       </div>

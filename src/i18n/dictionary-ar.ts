@@ -99,7 +99,7 @@ export const ar = {
   "home.fantasy_hub": "فريقك في {accent}فانتازي{/accent}",
   "home.fantasy_alerts": "تنبيهات {accent}فانتازي{/accent}",
   "home.news_preview": "أخبار {accent}البطولة{/accent}",
-  "home.explore": "استكشف {accent}بوتولاجو{/accent}",
+  "home.explore": "أقسام أخرى",
   "home.highlights": "أبرز ما في BotolaGO",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
@@ -524,7 +524,7 @@ export const ar = {
   "fantasy.rankings.no_team": "لا يوجد فريق بعد",
   "fantasy.rankings.no_team_desc": "أنشئ فريقك للدخول إلى الترتيب.",
   "fantasy.next.create": "إنشاء فريقي",
-  "fantasy.next.explore": "استكشف اللاعبين",
+  "fantasy.next.explore": "تصفّح اللاعبين",
   "fantasy.next.prepare": "جهّز فريقي",
   "fantasy.next.view_team": "عرض فريقي",
   "fantasy.next.follow_points": "تابع نقاطي",
@@ -889,7 +889,7 @@ export const ar = {
   "fantasy.create.guest_unsaved":
     "لا يستطيع هذا الجهاز حفظ مسودتك: إذا أعدت تحميل الصفحة أو أغلقتها ضاعت التشكيلة.",
   "fantasy.create.sign_in_reason_unsaved":
-    "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك. هذا الجهاز لا يحفظ مسودتك: لا تُعد تحميل الصفحة، ولا تفتح رابط التأكيد في تبويب آخر، وتجنّب الدخول عبر Google.",
+    "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك. هذا الجهاز لا يحفظ مسودتك: لا تُعد تحميل الصفحة، ولا تفتح رابط التأكيد في تبويب آخر، وتجنّب الدخول عبر Google لأنه يغادر الصفحة.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",
@@ -1183,9 +1183,9 @@ export const ar = {
   "fpl.join_a_league": "الانضمام إلى دوري",
   "fpl.private": "خاصة",
   "fpl.public": "عامة",
-  "fpl.private_code_help": "أدخل الرمز الذي حصلت عليه من مسؤول الدوري.",
+  "fpl.private_code_help": "أدخل الرمز الذي أعطاك إياه منشئ الدوري.",
   "fpl.private_league_code": "رمز الدوري الخاص",
-  "fpl.invalid_code": "رمز غير صالح. تأكد منه لدى مسؤول الدوري.",
+  "fpl.invalid_code": "رمز غير صالح. تأكد منه لدى منشئ الدوري.",
   "fpl.public_help": "الحد الأقصى: 15 دوريًا خاصًا و3 دوريات عامة.",
   "fpl.public_help2": "انضم إلى دوري عام لمنافسة مجموعة صغيرة من اللاعبين يتم اختيارهم عشوائيًا.",
   "fpl.players_to_be_added": "اللاعبون الذين ستتم إضافتهم بعد التحديث القادم للنقاط",
@@ -1521,7 +1521,7 @@ export const ar = {
   "auth.mfa_challenge.error_no_factor": "لا يوجد تطبيق مصادقة مرتبط بهذا الحساب.",
   "auth.mfa_challenge.recheck": "إعادة التحقق",
   "auth.mfa_challenge.error_still_owed":
-    "لا يزال هذا الحساب يطلب رمزًا، لكن لا يوجد تطبيق مصادقة مرتبط به. سجّل الخروج ثم تواصل مع الدعم.",
+    "لا يزال هذا الحساب يطلب رمزًا، لكن لا يوجد تطبيق مصادقة مرتبط به. سجّل الخروج ثم راسل support@botolago.com.",
 
   "auth.assurance.error_title": "لم يتم تأكيد تسجيل الدخول",
   "auth.assurance.error_body":
@@ -1554,6 +1554,7 @@ export const ar = {
   "auth.update.new_password": "كلمة المرور الجديدة",
   "auth.update.confirm_password": "تأكيد كلمة المرور",
   "auth.update.cta": "تحديث",
+  "auth.update.success": "تم تحديث كلمة المرور",
   "auth.update.success_title": "تم تحديث كلمة المرور",
   "auth.update.continue": "متابعة",
   "auth.update.no_session": "انتهت صلاحية رابط إعادة التعيين. اطلب رابطًا جديدًا.",
@@ -1627,6 +1628,7 @@ export const ar = {
   "auth.error.otp_required": "أدخل الرمز المكوَّن من 6 أرقام.",
   "auth.error.otp_invalid": "رمز غير صالح.",
   "auth.error.otp_expired": "انتهت صلاحية الرمز. اطلب رمزًا جديدًا.",
+  "auth.success.login": "تم تسجيل الدخول",
 
   "auth.success.register": "تم إنشاء الحساب. تحقق من بريدك.",
   "auth.success.verify": "تم التحقق من الحساب",
@@ -1755,18 +1757,24 @@ export const ar = {
   "fantasy.cloud.loading": "جارٍ تحميل فريقك…",
   "fantasy.cloud.saving": "جارٍ الحفظ…",
   "fantasy.cloud.saved": "تم الحفظ",
+  "fantasy.cloud.conflict": "توجد نسخة أحدث. أعد التحميل للمتابعة.",
   "fantasy.cloud.permission_denied": "تم رفض الوصول. يرجى تسجيل الدخول من جديد.",
+  "fantasy.cloud.offline":
+    "غير متصل. تعديلاتك محفوظة محليًا فقط ولم تُزامَن — أعد المحاولة للمزامنة.",
+  "fantasy.cloud.mapping_unavailable": "مزامنة اللاعبين غير متاحة حاليًا.",
   "fantasy.cloud.error": "خطأ في المزامنة.",
   "fantasy.cloud.retry": "إعادة المحاولة",
   "fantasy.cloud.reload_latest": "إعادة التحميل",
 
   // Pass 3 — import prompt
   "fantasy.import.title": "تم اكتشاف فريق محلي",
+  "fantasy.import.subtitle": "احفظ فريقك في حسابك لاستعادته على جميع أجهزتك.",
   "fantasy.import.cta_save": "حفظ فريقي",
   "fantasy.import.cta_start_new": "بدء فريق جديد",
   "fantasy.import.cta_later": "لاحقًا",
   "fantasy.import.success": "تم حفظ فريقك.",
   "fantasy.import.failure": "فشل الحفظ. بياناتك لا تزال سليمة.",
+  "fantasy.import.mapping_gaps": "بعض اللاعبين لا يمكن مزامنتهم بعد: {ids}",
   // Pass 3 — empty cloud state
   "fantasy.empty.title": "لا يوجد فريق محفوظ",
   "fantasy.empty.cta_build": "إنشاء فريقي",
@@ -1789,6 +1797,7 @@ export const ar = {
   "fantasy.freehit.restored": "تمت استعادة الفريق الأصلي بعد الـ Free Hit.",
   // Pass 3 — ranking placeholder
   "fantasy.rank.unavailable": "الترتيب سيتوفر قريبًا",
+  "fantasy.status.draft_restored": "تم استرجاع المسودة. احفظ للمزامنة.",
   // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
   "fantasy.status.finalized": "تم إنهاء الجولة.",
   "fantasy.status.saved_short": "تم الحفظ",
@@ -1796,6 +1805,8 @@ export const ar = {
   "fantasy.action.save_draft": "الاحتفاظ بالمسودة",
   "fantasy.action.cancel": "إلغاء",
   "fantasy.conflict.title": "توجد نسخة أحدث",
+  "fantasy.conflict.explain":
+    "قام أحدهم — أنت من جهاز آخر أو تحديث تلقائي — بحفظ نسخة أحدث من فريقك. اختر كيف تريد المتابعة.",
   "fantasy.conflict.reload_latest": "تحميل أحدث نسخة",
   "fantasy.conflict.keep_working": "المتابعة بتعديلاتي",
   "fantasy.default.team_name": "فريقي",
@@ -1808,6 +1819,9 @@ export const ar = {
     "لم تُؤكَّد تغييراتك ولن تُحتسب في هذه الجولة. هل تريد المغادرة رغم ذلك؟",
   "fantasy.empty.subtitle": "قم ببناء فريقك المكوّن من 15 لاعبًا للبدء.",
   "fantasy.empty.builder_open": "فتح منشئ الفريق",
+  "fantasy.error.import_validation":
+    "فريقك المحلي لا يستوفي القواعد (15 لاعبًا، تشكيلة قانونية، قائد ونائبه).",
+  "fantasy.error.gameweek_unresolved": "تعذّر تحديد الجولة الحالية في الخدمة السحابية.",
   "fantasy.error.import_generic": "فشلت عملية الاستيراد. لم يتم حفظ أي تعديل.",
   "fantasy.result.cloud_stable": "نتيجة رسمية محفوظة.",
 
@@ -1897,7 +1911,7 @@ export const ar = {
   "prizes.empty.title": "الجوائز قريباً",
   "prizes.terms.meta_title": "نظام الجوائز — BotolaGO Fantasy",
   "prizes.terms.meta_description": "نظام جوائز BotolaGO Fantasy: تحديد الفائزين والتحقق والتسليم.",
-  "prizes.welcome.title": "العب مجاناً واربح جوائز!",
+  "prizes.welcome.title": "جوائز هذا الموسم",
   "prizes.welcome.body":
     "شكّل فريقك واجمع النقاط في كل جولة، وتقدّم في الترتيب لتنافس على الجوائز.",
   "prizes.welcome.go": "لنبدأ",
@@ -2261,7 +2275,7 @@ export const ar = {
   "nav.pepites": "المواهب",
   "pepites.brand": "المواهب",
   "pepites.hero.kicker": "دون 23 سنة · البطولة الاحترافية · موسم {season}",
-  "pepites.hero.kicker_short": "أقل من 23 · البطولة الاحترافية",
+  "pepites.hero.kicker_short": "دون 23 · البطولة الاحترافية",
   "pepites.hero.rank_line": "رقم {n} · مؤشر الصعود",
   "pepites.score_name": "صعود",
   "pepites.fact.goals": "أهداف",
@@ -2287,7 +2301,7 @@ export const ar = {
   "pepites.ranking.followed_empty": "لا تتابع أي لاعب في هذا الترتيب.",
   "pepites.ranking.desktop_title": "ترتيب دون 23 سنة",
   "pepites.ranking.desktop_lede":
-    "مرتّبون حسب مؤشر Rising: التقييم والمستوى والمساهمة والتطور ووقت اللعب.",
+    "لاعبو دون 23 سنة مرتّبون حسب مؤشر Rising: التقييم والمستوى والمساهمة والتطور ووقت اللعب.",
   "pepites.ranking.club": "النادي",
   "pepites.ranking.min_minutes": "الحد الأدنى للدقائق",
   "pepites.ranking.second_half": "النصف الثاني",
@@ -2313,7 +2327,7 @@ export const ar = {
   "pepites.player.not_set_short": "غير محددة",
   "pepites.player.rank_line": "رقم {n} · دون 23",
   "pepites.player.percentiles": "النسب المئوية",
-  "pepites.player.percentiles_scope": "مقارنة مع المصنَّفين أقل من 23 سنة",
+  "pepites.player.percentiles_scope": "مقارنة مع المصنَّفين دون 23 سنة",
   "pepites.player.profile": "الملف",
   "pepites.player.goals_assists": "أهداف / تمريرات حاسمة",
   "pepites.matches.trend_title": "التنقيط · آخر 10 مباريات",
@@ -2505,12 +2519,12 @@ export const ar = {
   "pepites.method.who_title": "من يُصنَّف",
   "pepites.method.who_body":
     "لاعبو البطولة الاحترافية دون {age} سنة المعروف تاريخ ميلادهم، الذين لعبوا {minutes} دقيقة على الأقل، أو {share} من دقائق فريقهم إن كان ذلك أكثر.",
-  "pepites.method.score_title": "التنقيط من 0 إلى 100",
+  "pepites.method.score_title": "مؤشر Rising من 0 إلى 100",
   "pepites.method.score_body":
     "خمسة عناصر، يُحوَّل كل منها إلى نسبة مئوية (100 = أفضل من كل اللاعبين الذين قورن بهم)، ثم تُرجَّح: متوسط التقييم {rating}، المستوى {form}، المساهمة {contribution}، التطور {progression}، وقت اللعب {minutes}.",
   "pepites.method.inputs_title": "التقييم والمستوى",
   "pepites.method.inputs_body":
-    "يُحتسب متوسط التقييم ابتداءً من {rated} مباريات مُقيَّمة. المستوى الأخير هو متوسط آخر {window} مباريات مُقيَّمة. إذا غاب عنصر، تزداد أهمية العناصر الأخرى، ويُشترط أن تمثّل العناصر المتوفرة نصف المؤشر على الأقل ليُصنَّف اللاعب.",
+    "يُحتسب متوسط التقييم ابتداءً من {rated} مباريات مُقيَّمة. الأداء الأخير هو متوسط آخر {window} مباريات مُقيَّمة. إذا غاب عنصر، تزداد أهمية العناصر الأخرى، ويُشترط أن تمثّل العناصر المتوفرة نصف المؤشر على الأقل ليُصنَّف اللاعب.",
   "pepites.method.contribution_title": "المساهمة والتطور",
   "pepites.method.contribution_body":
     "المهاجمون ولاعبو الوسط: الأهداف والتمريرات الحاسمة لكل 90 دقيقة. المدافعون: الشباك النظيفة لكل 90 دقيقة. حراس المرمى: التصديات والشباك النظيفة لكل 90 دقيقة. تُقارَن المساهمة بلاعبي نفس المركز من كل الأعمار. ويقيس التطور ما إذا كانت دقائق اللعب تزداد في الجولات الثلاث الأخيرة.",
@@ -2657,7 +2671,7 @@ export const ar = {
     "لكل جولة موعد نهائي، قبل 90 دقيقة من أول مباراة. بعده يُقفل فريقك حتى نهاية الجولة.",
   "landing.faq_rules": "اقرأ القواعد كاملة",
   "landing.faq_help": "مركز المساعدة",
-  "landing.final_title": "فريقك في انتظارك.",
+  "landing.final_title": "كوّن فريقك.",
   "landing.cta_pending": "جارٍ التحميل",
 
   /* ------------------------------------------------------------------ */
@@ -2937,7 +2951,7 @@ export const ar = {
   "plus.note.example": "مثال",
   "plus.with": "مع {logo}",
   "plus.s1.title": "بطاقتك، بأسلوبك",
-  "plus.s1.cta": "اكتشف المزايا",
+  "plus.s1.cta": "عرض المزايا",
   "plus.s1.live": "الأسلوب: {style}",
   "plus.rule": "تقييمك لا يتغيّر أبدًا، الأسلوب وحده يتغيّر.",
   "plus.style.label": "أسلوب بطاقتك",
@@ -3080,7 +3094,7 @@ export const ar = {
   "plus.pay.wa_cta": "أرسل الإيصال عبر واتساب",
   "plus.pay.wa_hint": "يصلنا إيصالك ورمزك معًا: نجد حسابك بسهولة.",
   "plus.pay.wa_message": "مرحبًا، هذا إيصال دفعي لموسم 2026/27. رمزي: {code}",
-  "plus.pay.soon": "بيانات الدفع ستتوفر قريبًا.",
+  "plus.pay.soon": "الدفع غير متاح بعد.",
   "plus.pay.loading": "جارٍ تحميل بيانات الدفع",
   "plus.s3.cta": "ادفع موسمي",
   "plus.s3.terms_link": "شروط الموسم",

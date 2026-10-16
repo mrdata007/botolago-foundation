@@ -104,7 +104,7 @@ export const fr = {
   "home.fantasy_hub": "Votre {accent}Fantasy{/accent}",
   "home.fantasy_alerts": "Alertes {accent}Fantasy{/accent}",
   "home.news_preview": "Actualités {accent}Botola{/accent}",
-  "home.explore": "Explorer {accent}BotolaGO{/accent}",
+  "home.explore": "Autres sections",
   "home.highlights": "À la une sur BotolaGO",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
@@ -371,7 +371,7 @@ export const fr = {
   "matches.detail.no_events":
     "Le match n'a pas encore commencé : pas de faits marquants à afficher.",
   "matches.detail.no_events_updating":
-    "Aucun moment fort pour l’instant. La page se met à jour automatiquement.",
+    "Aucun événement pour l’instant. La page se met à jour automatiquement.",
   "matches.detail.no_events_unavailable": "Moments forts indisponibles pour ce match.",
   "matches.detail.no_stats": "Le match n'a pas encore commencé : pas de statistiques à afficher.",
   "matches.detail.no_stats_updating":
@@ -613,8 +613,8 @@ export const fr = {
   "fantasy.transfers.success": "Transferts confirmés",
   "fantasy.transfers.transfers_total": "Transferts",
   "fantasy.transfers.projected_bank": "Banque projetée",
-  "fantasy.transfers.chip_active": "Chip actif",
-  "fantasy.transfers.no_hit_chip": "Aucune pénalité — chip actif",
+  "fantasy.transfers.chip_active": "Jeton actif",
+  "fantasy.transfers.no_hit_chip": "Aucune pénalité — jeton actif",
   "fantasy.transfers.deadline_locked": "Date limite dépassée — transferts indisponibles.",
   "fantasy.transfers.free_hit_snapshot_taken":
     "Sauvegarde de l'équipe Free Hit effectuée. Elle sera restaurée à la fin de la journée.",
@@ -1651,6 +1651,7 @@ export const fr = {
   "auth.update.new_password": "Nouveau mot de passe",
   "auth.update.confirm_password": "Confirmer le mot de passe",
   "auth.update.cta": "Mettre à jour",
+  "auth.update.success": "Mot de passe mis à jour",
   "auth.update.success_title": "Mot de passe mis à jour",
   "auth.update.continue": "Continuer",
   "auth.update.no_session": "Le lien de réinitialisation a expiré. Demandez-en un nouveau.",
@@ -1724,6 +1725,7 @@ export const fr = {
   "auth.error.otp_required": "Entrez le code à 6 chiffres.",
   "auth.error.otp_invalid": "Code invalide.",
   "auth.error.otp_expired": "Code expiré. Demandez-en un nouveau.",
+  "auth.success.login": "Connexion réussie",
 
   "auth.success.register": "Compte créé. Vérifiez votre e-mail.",
   "auth.success.verify": "Compte vérifié",
@@ -1859,18 +1861,25 @@ export const fr = {
   "fantasy.cloud.loading": "Chargement de votre équipe…",
   "fantasy.cloud.saving": "Enregistrement…",
   "fantasy.cloud.saved": "Enregistré",
+  "fantasy.cloud.conflict": "Une version plus récente existe. Rechargez pour continuer.",
   "fantasy.cloud.permission_denied": "Accès refusé. Reconnectez-vous.",
+  "fantasy.cloud.offline":
+    "Hors ligne. Vos modifications restent locales et ne sont pas enregistrées — réessayez pour synchroniser.",
+  "fantasy.cloud.mapping_unavailable": "Synchronisation des joueurs indisponible pour le moment.",
   "fantasy.cloud.error": "Erreur de synchronisation.",
   "fantasy.cloud.retry": "Réessayer",
   "fantasy.cloud.reload_latest": "Recharger",
 
   // Pass 3 — import prompt
   "fantasy.import.title": "Équipe locale détectée",
+  "fantasy.import.subtitle":
+    "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
   "fantasy.import.cta_save": "Enregistrer mon équipe",
   "fantasy.import.cta_start_new": "Commencer une nouvelle équipe",
   "fantasy.import.cta_later": "Plus tard",
   "fantasy.import.success": "Votre équipe a été enregistrée.",
   "fantasy.import.failure": "L'enregistrement a échoué. Vos données restent intactes.",
+  "fantasy.import.mapping_gaps": "Certains joueurs ne sont pas encore synchronisables : {ids}",
   // Pass 3 — empty cloud state
   "fantasy.empty.title": "Aucune équipe enregistrée",
   "fantasy.empty.cta_build": "Construire mon équipe",
@@ -1893,6 +1902,7 @@ export const fr = {
   "fantasy.freehit.restored": "Équipe initiale restaurée après le Free Hit.",
   // Pass 3 — ranking placeholder
   "fantasy.rank.unavailable": "Classement bientôt disponible",
+  "fantasy.status.draft_restored": "Brouillon restauré. Enregistrez pour synchroniser.",
   // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
   "fantasy.status.finalized": "Journée finalisée.",
   "fantasy.status.saved_short": "Enregistré",
@@ -1900,6 +1910,8 @@ export const fr = {
   "fantasy.action.save_draft": "Conserver le brouillon",
   "fantasy.action.cancel": "Annuler",
   "fantasy.conflict.title": "Version plus récente disponible",
+  "fantasy.conflict.explain":
+    "Quelqu'un — vous sur un autre appareil, ou une mise à jour automatique — a enregistré une version plus récente de votre équipe. Choisissez comment continuer.",
   "fantasy.conflict.reload_latest": "Recharger la dernière version",
   "fantasy.conflict.keep_working": "Continuer avec mes modifications",
   "fantasy.default.team_name": "Mon équipe",
@@ -1913,6 +1925,10 @@ export const fr = {
     "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
   "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
+  "fantasy.error.import_validation":
+    "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
+  "fantasy.error.gameweek_unresolved":
+    "La journée en cours n'a pas pu être identifiée dans le cloud.",
   "fantasy.error.import_generic":
     "L'importation a échoué. Aucune modification n'a été enregistrée.",
   "fantasy.result.cloud_stable": "Résultat officiel enregistré.",
@@ -2010,7 +2026,7 @@ export const fr = {
   "prizes.terms.meta_title": "Règlement des lots — BotolaGO Fantasy",
   "prizes.terms.meta_description":
     "Le règlement des lots de BotolaGO Fantasy : désignation des gagnants, vérification et remise.",
-  "prizes.welcome.title": "Jouez gratuitement, gagnez des lots !",
+  "prizes.welcome.title": "Des lots à gagner cette saison",
   "prizes.welcome.body":
     "Composez votre équipe, marquez des points à chaque journée et grimpez au classement pour tenter de remporter des lots.",
   "prizes.welcome.go": "C'est parti",
@@ -2422,7 +2438,7 @@ export const fr = {
   "pepites.ranking.followed_empty": "Vous ne suivez aucun joueur de ce classement.",
   "pepites.ranking.desktop_title": "Classement U23",
   "pepites.ranking.desktop_lede":
-    "Classés par score Rising : note, forme, contribution, progression et temps de jeu.",
+    "Les joueurs de moins de 23 ans, classés par score Rising : note, forme, contribution, progression et temps de jeu.",
   "pepites.ranking.club": "Club",
   "pepites.ranking.min_minutes": "Minutes min.",
   "pepites.ranking.second_half": "2de moitié",
@@ -2806,7 +2822,7 @@ export const fr = {
     "Chaque journée a une date limite, 90 minutes avant le premier coup d’envoi. Ensuite, l’équipe est verrouillée jusqu’à la fin de la journée.",
   "landing.faq_rules": "Lire les règles complètes",
   "landing.faq_help": "Centre d’aide",
-  "landing.final_title": "Votre équipe vous attend.",
+  "landing.final_title": "Composez votre équipe.",
   "landing.cta_pending": "Chargement",
 
   /* ------------------------------------------------------------------ */
@@ -3250,7 +3266,7 @@ export const fr = {
   "plus.pay.wa_hint": "Votre reçu et votre code partent ensemble : nous retrouvons votre compte.",
   "plus.pay.wa_message":
     "Bonjour, voici mon reçu de paiement pour la Saison 2026/27. Mon code : {code}",
-  "plus.pay.soon": "Les coordonnées de paiement arrivent bientôt.",
+  "plus.pay.soon": "Le paiement n’est pas encore ouvert.",
   "plus.pay.loading": "Chargement des coordonnées de paiement",
   "plus.s3.cta": "Payer ma Saison",
   "plus.s3.terms_link": "Conditions de la Saison",
