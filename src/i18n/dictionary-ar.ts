@@ -2301,7 +2301,7 @@ export const ar = {
   "pepites.ranking.followed_empty": "لا تتابع أي لاعب في هذا الترتيب.",
   "pepites.ranking.desktop_title": "ترتيب دون 23 سنة",
   "pepites.ranking.desktop_lede":
-    "لاعبو دون 23 سنة مرتّبون حسب مؤشر Rising: التقييم والمستوى والمساهمة والتطور ووقت اللعب.",
+    "لاعبو دون 23 سنة مرتّبون حسب مؤشر الصعود: التقييم والمستوى والمساهمة والتطور ووقت اللعب.",
   "pepites.ranking.club": "النادي",
   "pepites.ranking.min_minutes": "الحد الأدنى للدقائق",
   "pepites.ranking.second_half": "النصف الثاني",
@@ -2519,7 +2519,7 @@ export const ar = {
   "pepites.method.who_title": "من يُصنَّف",
   "pepites.method.who_body":
     "لاعبو البطولة الاحترافية دون {age} سنة المعروف تاريخ ميلادهم، الذين لعبوا {minutes} دقيقة على الأقل، أو {share} من دقائق فريقهم إن كان ذلك أكثر.",
-  "pepites.method.score_title": "مؤشر Rising من 0 إلى 100",
+  "pepites.method.score_title": "مؤشر الصعود من 0 إلى 100",
   "pepites.method.score_body":
     "خمسة عناصر، يُحوَّل كل منها إلى نسبة مئوية (100 = أفضل من كل اللاعبين الذين قورن بهم)، ثم تُرجَّح: متوسط التقييم {rating}، المستوى {form}، المساهمة {contribution}، التطور {progression}، وقت اللعب {minutes}.",
   "pepites.method.inputs_title": "التقييم والمستوى",
