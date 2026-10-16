@@ -299,7 +299,7 @@ describe("a finished match with no detail data", () => {
         phase="finished"
       />,
     );
-    expect(html).toContain("Les faits marquants de ce match ne sont pas disponibles.");
+    expect(html).toContain("Moments forts indisponibles pour ce match.");
     expect(html).not.toContain("pour le moment");
   });
 
@@ -353,10 +353,10 @@ describe("the other phases on screen", () => {
       inFrench(
         <LineupsView lineups={[]} home={home} away={away} palettes={palettes} phase="postponed" />,
       ),
-    ).toContain("Match reporté : pas de données à afficher.");
-    expect(panel("suspended")).toContain("Match interrompu : pas de données à afficher.");
-    expect(panel("cancelled")).toContain("Match annulé : pas de données à afficher.");
-    expect(panel("abandoned")).toContain("Match arrêté : pas de données à afficher.");
+    ).toContain("Match reporté.");
+    expect(panel("suspended")).toContain("Match interrompu.");
+    expect(panel("cancelled")).toContain("Match annulé.");
+    expect(panel("abandoned")).toContain("Match arrêté avant la fin.");
   });
 });
 

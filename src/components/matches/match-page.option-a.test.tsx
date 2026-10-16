@@ -159,9 +159,9 @@ describe("match page — copy", () => {
     for (const tab of MATCH_TABS) expect(dictionaries.ar[tab.label]).toMatch(/[؀-ۿ]/);
   });
 
-  it("the goal moment's word is BUT ! in French and هدف! in Arabic", () => {
-    expect(dictionaries.fr["matches.detail.goal_title"]).toBe("BUT !");
-    expect(dictionaries.ar["matches.detail.goal_title"]).toBe("هدف!");
+  it("the goal moment's word is BUT in French and هدف in Arabic", () => {
+    expect(dictionaries.fr["matches.detail.goal_title"]).toBe("BUT");
+    expect(dictionaries.ar["matches.detail.goal_title"]).toBe("هدف");
   });
 
   it("form letters are translated: V/N/D and ف/ت/خ, never the data's W/D/L", () => {

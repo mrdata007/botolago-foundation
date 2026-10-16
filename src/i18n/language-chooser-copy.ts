@@ -8,7 +8,7 @@
 // the ones that must never depend on it: the news that the Arabic dictionary
 // did not arrive cannot come from the Arabic dictionary.
 export const CHOOSER_ARABIC = {
-  "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
+  "app.tagline": "نتائج وأخبار وفانتازي البطولة الاحترافية",
   "language.choose_title": "اختر لغتك",
   "language.continue": "متابعة",
   "language.arabic_loading": "جارٍ تحميل العربية…",

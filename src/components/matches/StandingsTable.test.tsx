@@ -273,7 +273,7 @@ describe("a table with clubs level on every figure", () => {
   test("a table still being played has no note of its own, only that a shared rank decides nothing", () => {
     const notes = inFrench(<StandingsNotes rows={firstDay} computed seasonStatus="active" />);
     expect(notes).not.toMatch(/provisoire|calculé/);
-    expect(notes).toContain("Un même rang signale des clubs à égalité");
+    expect(notes).toContain("Même rang : égalité de points");
     // The provider's final table, one club a position: nothing to say.
     expect(
       inFrench(<StandingsNotes rows={overall} computed={false} seasonStatus="completed" />),
@@ -282,7 +282,7 @@ describe("a table with clubs level on every figure", () => {
 
   test("a table worked out from a finished season's results is unofficial, not provisional", () => {
     const notes = inFrench(<StandingsNotes rows={overall} computed seasonStatus="completed" />);
-    expect(notes).toContain("Classement non officiel, calculé à partir des résultats des matchs.");
+    expect(notes).toContain("Classement non officiel, calculé d’après les résultats.");
     expect(notes).not.toContain("provisoire");
   });
 
@@ -309,7 +309,7 @@ describe("a table with clubs level on every figure", () => {
         seasonStatus="active"
       />,
     );
-    expect(top).toContain("Un même rang signale des clubs à égalité");
+    expect(top).toContain("Même rang : égalité de points");
     // The leader alone: no tie on screen, however many there are below.
     const leader = inFrench(
       <StandingsNotes
@@ -389,10 +389,10 @@ describe("a table with clubs level on every figure", () => {
     // Two clubs sharing 2nd on the first day, in a table worked out from the results.
     const early = faceToFace(first, second, firstDay, true, "active");
     expect(early).not.toContain("provisoire");
-    expect(early).toContain("Un même rang signale des clubs à égalité");
+    expect(early).toContain("Même rang : égalité de points");
     // The same results, the season over: unofficial, never final.
     expect(faceToFace(first, second, firstDay, true, "completed")).toContain(
-      "Classement non officiel, calculé à partir des résultats des matchs.",
+      "Classement non officiel, calculé d’après les résultats.",
     );
     // The provider's final table, each club on a rank of its own: nothing to say.
     const final = faceToFace("raja-casablanca", "wydad-casablanca", overall, false, "completed");
