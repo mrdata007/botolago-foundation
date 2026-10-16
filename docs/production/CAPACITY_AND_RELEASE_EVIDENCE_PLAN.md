@@ -224,7 +224,7 @@ Pass, from `scripts/backend/fantasy-load-test.py` and
   every squad 15 players;
 - cleanup counted back to zero.
 
-Any miss is a fail. The July run failed at about 65 actions a second.
+Any miss is a fail. The July run failed at about 65 actions a second. A `launch-sized` scope also exists (1,000 accounts); it is not this step and is never its pass: see `docs/production/2026-10-16-capacity-test-run-sheet.md`, section 1 and step 8L.
 
 **Step 9. Signed-in journeys.** Developer. **Fantasy authenticated E2E**,
 target `staging`, confirmation `RUN_FANTASY_E2E`, **after** step 8 is finished.

@@ -86,6 +86,19 @@ def scan_artifacts(root: Path) -> list[dict[str, str]]:
     return violations
 
 
+LAUNCH_SIZED_LABEL = "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate"
+
+
+def evidence_label(scope: str, passed: bool) -> str:
+    """Label what a result is. A run that did not pass never reads as a pass."""
+
+    if scope == "launch-sized":
+        return LAUNCH_SIZED_LABEL if passed else f"{LAUNCH_SIZED_LABEL} (run NOT PASSED)"
+    if scope == "full":
+        return "full gate" if passed else "full gate attempt, NOT PASSED"
+    return "setup rehearsal" if passed else "setup rehearsal, NOT PASSED"
+
+
 def render(args: argparse.Namespace) -> int:
     root = args.evidence_root.resolve()
     rehearsal = latest_summary(root, "setup_rehearsal")
@@ -164,10 +177,14 @@ def render(args: argparse.Namespace) -> int:
             if launch_scope
             else f"- Exact 2,500-user gate and soak: {'pass' if full and full.get('passed') else 'not passed'}"
         ),
-        (
-            f"- Launch-sized run (1,000 users): {'pass' if launch and launch.get('passed') else 'not passed'}"
+        # Only a launch-sized report carries this line; the full-scope and
+        # rehearsal reports are line for line what they were before it existed.
+        *(
+            [
+                f"- Launch-sized run (1,000 users): {'pass' if launch and launch.get('passed') else 'not passed'}"
+            ]
             if launch_scope
-            else "- Launch-sized run: not part of this scope"
+            else []
         ),
         f"- Independent exact-zero cleanup: {'pass' if recovery_passed else 'not passed'}",
         f"- Evidence sanitizer: {'pass' if sanitized else 'failed; artifacts suppressed'}",
@@ -228,11 +245,9 @@ def render(args: argparse.Namespace) -> int:
         # always false for a launch-sized scope.
         "fullGatePassed": bool(not launch_scope and full and full.get("passed")),
         "launchSizedPassed": bool(launch_scope and launch and launch.get("passed")),
-        "evidenceLabel": (
-            "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate"
-            if launch_scope
-            else "full gate" if args.scope == "full" else "setup rehearsal"
-        ),
+        # Describes what this evidence is, and says so when the run did not pass:
+        # "full gate" only ever labels a full-scope run that passed.
+        "evidenceLabel": evidence_label(args.scope, gate_passed),
         "violations": violations,
     }
     private_write(

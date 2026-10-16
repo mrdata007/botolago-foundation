@@ -1,5 +1,8 @@
 name: Fantasy load test
 
+# The scope is in the run name, so a launch-sized run is never mistaken for a full one.
+run-name: Fantasy load test (${{ inputs.scope }} scope)
+
 # The Phase 6 Fantasy capacity gate on BotolaGO Staging V2: 2,500 temporary
 # managers on five temporary AWS machines rehearse the minute before a Fantasy
 # deadline (docs/backend/FANTASY_CAPACITY_REPORT.md). Rebuilt from the retired
@@ -174,8 +177,9 @@ jobs:
           set +e
           case "$SCOPE" in
             rehearsal) mode="--setup-rehearsal" ;;
+            full) mode="--rehearsal-then-full" ;;
             launch-sized) mode="--rehearsal-then-launch-sized" ;;
-            *) mode="--rehearsal-then-full" ;;
+            *) exit 2 ;;
           esac
           timeout --signal=INT --kill-after=120s 90m \
             python scripts/backend/fantasy-capacity-orchestrator.py "$mode"
@@ -251,7 +255,7 @@ jobs:
         if: always() && steps.report.outputs.sanitized == 'true' && steps.staging_ready.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: fantasy-load-test-${{ github.run_id }}-${{ github.run_attempt }}
+          name: fantasy-load-test-${{ inputs.scope }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/botolago-phase6/evidence
             ${{ runner.temp }}/phase6-summary.md
