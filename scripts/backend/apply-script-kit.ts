@@ -95,6 +95,12 @@ export type ApplySpec = {
   guards: string[];
   /** The owner runbook the header points to (default: the Phase A/B runbook). */
   runbook?: string;
+  /**
+   * What the header's WHAT TO PAUSE section says (default "Nothing needs pausing"). A script that
+   * changes objects the scheduled jobs write says which jobs to pause here instead, and its
+   * preflight refuses to run while they are on.
+   */
+  pauseText?: string;
 };
 
 export function commonApplyScriptTests(spec: ApplySpec) {
@@ -127,7 +133,7 @@ export function commonApplyScriptTests(spec: ApplySpec) {
     for (const heading of ["WHEN", "WHAT TO PAUSE", "HOW TO RUN", "WHAT IT DOES"]) {
       expect(header).toContain(`-- ${heading}`);
     }
-    expect(header).toContain("Nothing needs pausing");
+    expect(header).toContain(spec.pauseText ?? "Nothing needs pausing");
     expect(header).toContain("REHEARSAL");
     expect(header).toContain("Change the line `rollback;`");
     expect(header).toContain(
