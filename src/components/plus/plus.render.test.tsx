@@ -326,7 +326,9 @@ describe("the plus.* dictionary", () => {
     expect(fr["lock.curva.title.plus"]).not.toMatch(ruledOut);
   });
   it("carries no subscription vocabulary in Arabic either, and Western digits", () => {
-    const ruledOut = /اشتراك|مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
+    // Owner decision (native Arabic reader), 2026-10-16: the offer is called «اشتراك» in Arabic, so
+    // that word is no longer ruled out here. The rest of the subscription vocabulary still is.
+    const ruledOut = /مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
     for (const key of keys) {
       const value = ar[key as keyof typeof ar] as string;
       if (/^plus\.(s3|terms|season|pay|profile|hub|page|meta|lock|in\.member)/.test(key)) {

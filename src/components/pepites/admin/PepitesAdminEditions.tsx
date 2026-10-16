@@ -509,7 +509,7 @@ function EditionEditor({
                 {rtl ? "مقترحات الحساب" : "Proposés par le calcul"}
               </h4>
               <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
-                {rtl ? "حدّد للإضافة إلى أفضل 10" : "Cochez pour ajouter au Top 10"}
+                {rtl ? "حدّد للإضافة إلى توب 10" : "Cochez pour ajouter au Top 10"}
               </p>
             </div>
             <ul className="grid gap-1" data-testid="admin-pepites-shortlist">
@@ -592,7 +592,7 @@ function EditionEditor({
         >
           <div>
             <h4 id="admin-pepites-top-title" className={ADMIN_LABEL_CLASS}>
-              {rtl ? "أفضل 10" : "Top 10"}
+              {rtl ? "توب 10" : "Top 10"}
               {scheduleTime ? ` · ${scheduleTime}` : ""}
             </h4>
             {isDraft ? (

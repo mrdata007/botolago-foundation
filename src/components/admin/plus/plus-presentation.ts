@@ -311,7 +311,7 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
   },
   season_already_active: {
     fr: "Ce compte a déjà une Saison valable jusqu’à la fin de la saison : rien à activer.",
-    ar: "لهذا الحساب موسم ساري حتى نهاية الموسم: لا شيء لتفعيله.",
+    ar: "لهذا الحساب موسم سارٍ حتى نهاية الموسم: لا شيء لتفعيله.",
   },
   premium_season_unavailable: {
     fr: "Aucune saison Fantasy n’est en cours : la Saison ne peut pas être activée.",
@@ -319,7 +319,7 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
   },
   premium_season_ended: {
     fr: "La saison Fantasy est déjà terminée : la Saison ne peut plus être activée.",
-    ar: "انتهى الموسم الفانتازي: لا يمكن تفعيل الموسم.",
+    ar: "انتهى موسم الفانتازي: لم يعد ممكنًا تفعيل الموسم.",
   },
   premium_payment_reference_invalid: {
     fr: "La référence du paiement doit faire entre 1 et 80 caractères.",
@@ -339,7 +339,7 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
   },
   premium_payment_details_invalid: {
     fr: "Les coordonnées ne sont pas valides. Le numéro WhatsApp compte 8 à 16 chiffres, avec un « + » possible au début ; le RIB, 10 à 40 caractères (chiffres, lettres, espaces, points, tirets).",
-    ar: "البيانات غير صالحة. رقم واتساب من 8 إلى 16 رقمًا، ويمكن أن يبدأ بـ «+».",
+    ar: "البيانات غير صالحة. رقم واتساب من 8 إلى 16 رقمًا، ويمكن أن يبدأ بـ «+»؛ والـ RIB من 10 إلى 40 حرفًا (أرقام وحروف ومسافات ونقاط وشرطات).",
   },
   premium_code_invalid: {
     fr: "Ce code n’a pas le bon format : « BG- » suivi de six caractères.",

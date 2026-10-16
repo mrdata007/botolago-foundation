@@ -1,6 +1,7 @@
 import { ArrowLeftRight, Clock, Flag, Info, Users } from "lucide-react";
 import { useId, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
+import { pluralCategory } from "@/components/manager-card/copy";
 import { ShareImageSheet } from "@/components/common/ShareImageSheet";
 import { renderRecapImage } from "@/components/fantasy/recap-image";
 import type { CareerMember } from "@/backend/premium/card-reads";
@@ -280,7 +281,14 @@ function RecapBody({
             ),
             gap: n(captain.vsLeague, true),
           })
-        : text("plus.recap.captain_plain", { name: nm(captain.name), formula: n(captain.counted) })
+        : text(
+            // RC-31: a captain total of 3 to 10 takes the Arabic plural (نقاط).
+            Number.isInteger(captain.counted) &&
+              pluralCategory(captain.counted, lang === "ar" ? "ar" : "fr") === "few"
+              ? "plus.recap.captain_plain_few"
+              : "plus.recap.captain_plain",
+            { name: nm(captain.name), formula: n(captain.counted) },
+          )
     : null;
   const transferLine = (item: RoundRecapView["transfers"][number]) =>
     item.pending || item.gain === null || item.net === null
