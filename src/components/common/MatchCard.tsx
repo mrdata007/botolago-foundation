@@ -369,9 +369,28 @@ export function MatchCard({
     // (or the state of a match under way) and the round; the teams sit one
     // above the other, each with its full name, so no name is ever cut. A
     // match under way or over has its two scores at the end of each line.
-    <div className="grid grid-cols-[4px_6.25rem_minmax(0,1fr)_4px] items-stretch gap-x-3">
-      <span {...clubStyle(pair.home)} className={ui.club.edgeFill} />
-      <div className="flex min-w-0 flex-col items-center justify-center gap-1 py-3 text-center">
+    //
+    // Where the card is narrower than 14rem (a phone at about 160% text size
+    // or more: `rem` grows with the text, the card does not) the time column,
+    // 6.25rem of it, would leave the teams less room than their own end
+    // padding for the reminder bell and run off the screen. There the time
+    // moves to a line above the two clubs (`@max-[14rem]`, a container query on
+    // the wrapper below, so it follows the card, not the screen). At 100% a
+    // 320px phone's card is 18rem wide and is not affected.
+    <div className="grid grid-cols-[4px_6.25rem_minmax(0,1fr)_4px] items-stretch gap-x-3 @max-[14rem]:grid-cols-[4px_minmax(0,1fr)_4px]">
+      <span
+        {...clubStyle(pair.home)}
+        className={cn(
+          ui.club.edgeFill,
+          "@max-[14rem]:col-start-1 @max-[14rem]:row-span-2 @max-[14rem]:row-start-1",
+        )}
+      />
+      <div
+        className={cn(
+          "flex min-w-0 flex-col items-center justify-center gap-1 py-3 text-center",
+          "@max-[14rem]:col-start-2 @max-[14rem]:row-start-1 @max-[14rem]:flex-row @max-[14rem]:flex-wrap @max-[14rem]:justify-start @max-[14rem]:gap-x-2 @max-[14rem]:pb-0 @max-[14rem]:text-start",
+        )}
+      >
         {dated ? (
           <span
             className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
@@ -386,6 +405,7 @@ export function MatchCard({
       <div
         className={cn(
           "grid min-w-0 items-center gap-x-3 gap-y-2 py-3",
+          "@max-[14rem]:col-start-2 @max-[14rem]:row-start-2 @max-[14rem]:pt-1",
           showReminder ? "pe-14" : "pe-1",
           hasScore ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
         )}
@@ -401,7 +421,13 @@ export function MatchCard({
         </div>
         {hasScore ? <FlipScore value={result.away} className={scoreClass(awayLost)} /> : null}
       </div>
-      <span {...clubStyle(pair.away)} className={ui.club.edgeFill} />
+      <span
+        {...clubStyle(pair.away)}
+        className={cn(
+          ui.club.edgeFill,
+          "@max-[14rem]:col-start-3 @max-[14rem]:row-span-2 @max-[14rem]:row-start-1",
+        )}
+      />
     </div>
   );
 
@@ -423,7 +449,18 @@ export function MatchCard({
       )}
     >
       {/* The label above states all of this. */}
-      <div aria-hidden className={cn(isLive && "relative", isHero && "h-full") || undefined}>
+      <div
+        aria-hidden
+        className={
+          cn(
+            isLive && "relative",
+            isHero && "h-full",
+            // The container the stacked rows' `@max-[14rem]` reads; the hero is
+            // a fixed split, not a row, and is left as it was.
+            !isHero && "@container",
+          ) || undefined
+        }
+      >
         {content}
         {isLive ? (
           <LiveProgress

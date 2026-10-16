@@ -109,7 +109,7 @@ describe("MatchCard (Option A) — the list row", () => {
     expect(html).toContain('href="/matches/m1"');
     expect(html).toContain(`aria-label="${score} — ${fr["matches.a11y.status_finished"]}"`);
     // The label says it all; the drawing under it is not read twice.
-    expect(html).toContain('<div aria-hidden="true">');
+    expect(html).toContain('<div aria-hidden="true"');
   });
 
   it("puts home first, with a club edge bar at each end and a crest disc per side", async () => {

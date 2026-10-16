@@ -1581,7 +1581,8 @@ export const ar = {
   "auth.update.request_new_link": "طلب رابط جديد",
 
   "auth.mode.mock": "وضع تجريبي",
-  "auth.error.provider_unavailable": "هذا المزود غير متاح حاليًا.",
+  "auth.error.provider_unavailable":
+    "طريقة الدخول هذه غير متاحة حاليًا. تابع باستخدام بريدك الإلكتروني.",
 
   "auth.setup.title": "خصّص ملفك الشخصي",
   "auth.setup.subtitle": "بعض الخيارات السريعة لتكييف BotolaGO حسب تفضيلاتك.",

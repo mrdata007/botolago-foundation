@@ -48,7 +48,7 @@ import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
  * so the server (which shares this module between requests) never reads it
  * and the first client render matches the server's.
  */
-let lastPlacement: { to: string; x: number; y: number } | null = null;
+let lastPlacement: { to: string; x: number; y: number; w: number; h: number } | null = null;
 
 /** When the last pop began, so a bar drawn again part-way through carries on. */
 let lastPop: { to: string; at: number } | null = null;
@@ -74,8 +74,13 @@ export function BottomNav() {
   const rowRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef(new Map<string, HTMLSpanElement>());
   // Where the sliding pill sits, from the active icon. Null until measured.
-  const [slide, setSlide] = useState<{ x: number; y: number } | null>(() =>
-    lastPlacement ? { x: lastPlacement.x, y: lastPlacement.y } : null,
+  // `w` and `h` are the active icon's own size: it is `rem`-sized, so it grows with
+  // the reader's text size, and the pill follows it (at 200% text it is capped to its
+  // tab, see the icon's `max-w-full`).
+  const [slide, setSlide] = useState<{ x: number; y: number; w: number; h: number } | null>(() =>
+    lastPlacement
+      ? { x: lastPlacement.x, y: lastPlacement.y, w: lastPlacement.w, h: lastPlacement.h }
+      : null,
   );
   // Slides are switched on only once the pill has somewhere to slide from, so
   // it is never seen travelling in from the corner.
@@ -98,10 +103,14 @@ export function BottomNav() {
     }
     const x = icon.offsetLeft;
     const y = icon.offsetTop;
+    const w = icon.offsetWidth;
+    const h = icon.offsetHeight;
     // Let the pill's current spot be computed before it is given the new one,
     // or a bar that has just mounted would jump instead of slide.
     pillRef.current?.getBoundingClientRect();
-    setSlide((was) => (was && was.x === x && was.y === y ? was : { x, y }));
+    setSlide((was) =>
+      was && was.x === x && was.y === y && was.w === w && was.h === h ? was : { x, y, w, h },
+    );
   }, [activeTo]);
 
   // `lang` is a dependency: the Arabic micro line is taller, which moves the pill.
@@ -124,7 +133,9 @@ export function BottomNav() {
   // `undefined` until this bar's first look, so that look can pick up a
   // stretch the previous bar began (each page draws its own bar, and the old
   // one starts the move a moment before the new page replaces it).
-  const shownSlide = useRef<{ x: number; y: number } | null | undefined>(undefined);
+  const shownSlide = useRef<{ x: number; y: number; w: number; h: number } | null | undefined>(
+    undefined,
+  );
   useLayoutEffect(() => {
     const from = shownSlide.current;
     shownSlide.current = slide;
@@ -132,7 +143,7 @@ export function BottomNav() {
     if (!pill || !slide || prefersReducedMotion() || typeof pill.animate !== "function") return;
     const run = (start: { x: number; y: number }, end: { x: number; y: number }, at: number) => {
       pill.getAnimations().forEach((running) => running.cancel());
-      const animation = pill.animate(stretchKeyframes(start, end), {
+      const animation = pill.animate(stretchKeyframes(start, end, { w: slide.w, h: slide.h }), {
         duration: STRETCH_MS,
         easing: "cubic-bezier(0.3, 0.7, 0.2, 1)",
       });
@@ -166,7 +177,9 @@ export function BottomNav() {
   }, [activeTo]);
 
   useEffect(() => {
-    if (activeTo && slide) lastPlacement = { to: activeTo, x: slide.x, y: slide.y };
+    if (activeTo && slide) {
+      lastPlacement = { to: activeTo, x: slide.x, y: slide.y, w: slide.w, h: slide.h };
+    }
   }, [activeTo, slide]);
 
   return (
@@ -198,6 +211,8 @@ export function BottomNav() {
             style={{
               left: 0,
               top: 0,
+              width: slide.w,
+              height: slide.h,
               transform: `translate(${slide.x}px, ${slide.y}px)`,
               backgroundImage: "var(--ui-grad-action)",
             }}
@@ -215,6 +230,13 @@ export function BottomNav() {
               className={cn(
                 "group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1 max-[359px]:px-0",
                 ui.space.tap,
+                // The tap floor above is `rem` (44px at 100%): at 200% text it
+                // is 88px a tab, five of them need 440px and the bar has about
+                // 360, so Curva (or the last two tabs at 320px) left the screen.
+                // Its height stays; the width floor is dropped, because the tabs
+                // share the bar and each is still 62px or wider at 320px, past
+                // the 44 CSS px the guideline asks for.
+                "min-w-0",
                 ui.radius.card,
                 ui.text.micro,
                 ui.focus,
@@ -244,7 +266,11 @@ export function BottomNav() {
                   else iconRefs.current.delete(item.to);
                 }}
                 className={cn(
-                  "relative grid h-8 w-14 shrink-0 place-items-center",
+                  // `max-w-full`: the pill is `rem`-sized, and at 200% text it
+                  // is 112px, wider than the 70px tab it sits in, so it ran over
+                  // its neighbours' icons. Capped to the tab at large sizes; at
+                  // 100% the tab is wider than 56px and nothing changes.
+                  "relative grid h-8 w-14 max-w-full shrink-0 place-items-center",
                   ui.radius.full,
                   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
                   active

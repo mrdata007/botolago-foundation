@@ -1686,7 +1686,8 @@ export const fr = {
   "auth.update.request_new_link": "Demander un nouveau lien",
 
   "auth.mode.mock": "MODE DÉMO",
-  "auth.error.provider_unavailable": "Ce fournisseur n'est pas disponible pour le moment.",
+  "auth.error.provider_unavailable":
+    "Cette connexion n'est pas disponible pour le moment. Continuez avec votre adresse e-mail.",
 
   "auth.setup.title": "Personnalisez votre profil",
   "auth.setup.subtitle": "Quelques choix rapides pour adapter BotolaGO à vos préférences.",

@@ -36,6 +36,7 @@ import {
 } from "./profiles-repo";
 import type { AuthError, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { probeOAuthAuthorizeUrl } from "./auth-oauth-probe";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
@@ -67,6 +68,10 @@ export interface SupabaseAuthDependencies {
   readonly profiles?: Pick<ProfileRepository, "getMe" | "completeOnboarding">;
   readonly accountSecurity?: AccountSecurityRepository;
   readonly avatars?: AvatarStorage;
+  /** Asks the Google / Apple address before leaving; see `auth-oauth-probe.ts`. */
+  readonly probeOAuth?: (url: string) => Promise<AuthErrorCode | null>;
+  /** Sends the browser to the provider; defaults to `window.location.assign`. */
+  readonly goTo?: (url: string) => void;
 }
 
 /**
@@ -519,11 +524,22 @@ export class SupabaseAuthService implements AuthService {
     next?: string,
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
-    const { error } = await this.auth.signInWithOAuth({
+    // The client is asked for the address but not to navigate (`skipBrowserRedirect`):
+    // a provider that is switched off in Supabase answers that address with a
+    // raw JSON error, and a page that has already navigated cannot show anything
+    // better. So the address is asked first and only a go-ahead is followed.
+    const { data, error } = await this.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: getCallbackUrl(next) },
+      options: { redirectTo: getCallbackUrl(next), skipBrowserRedirect: true },
     });
-    return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
+    if (error) return { ok: false, errorCode: mapAuthError(error) };
+    const url = data?.url;
+    if (!url) return { ok: false, errorCode: "generic" };
+    const refused = await (this.deps.probeOAuth ?? probeOAuthAuthorizeUrl)(url);
+    if (refused) return { ok: false, errorCode: refused };
+    // What the client does itself when it is not told to skip the redirect.
+    (this.deps.goTo ?? ((target) => window.location.assign(target)))(url);
+    return { ok: true };
   }
 
   signInWithGoogle(next?: string) {
