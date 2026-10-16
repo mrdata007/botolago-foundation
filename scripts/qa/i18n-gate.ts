@@ -173,8 +173,14 @@ export const BASELINES: Baselines = {
   // `src/i18n/i18n-allowlist.ts`, which never removes a count. The Arabic UI
   // keeps the word in Latin script inside a left-to-right isolate
   // (`TierWord`). W1 9 -> 10, W2 9 -> 10.
-  W1: 10,
-  W2: 10,
+  //
+  // Arabic wording pass, owner "approve all" 2026-10-16 (row SE-18): the
+  // payment-agency label `plus.pay.cash_t` moved from the phonetic Arabic
+  // spelling to the agencies' own Latin names, "CashPlus / Wafacash", the same
+  // in fr and ar. One new W1 finding and one new W2 finding, annotated in
+  // `src/i18n/i18n-allowlist.ts`. W1 10 -> 11, W2 10 -> 11.
+  W1: 11,
+  W2: 11,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and

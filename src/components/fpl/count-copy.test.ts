@@ -49,7 +49,7 @@ describe("the picker's apply button", () => {
     const label = (value: number) => plain(pickerApplyLabel(value, "ar", ar, n));
     expect(label(0)).toBe("لا يوجد لاعب مطابق");
     expect(label(1)).toBe("عرض لاعب واحد");
-    expect(label(2)).toBe("عرض لاعبين");
+    expect(label(2)).toBe("عرض اللاعبَيْن");
     expect(label(3)).toBe("عرض 3 لاعبين");
     expect(label(10)).toBe("عرض 10 لاعبين");
     // 11 to 99: the accusative singular; 100, 101, 102, 200: the genitive singular.

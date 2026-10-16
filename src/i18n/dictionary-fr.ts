@@ -3522,6 +3522,7 @@ export const fr = {
   "plus.recap.cause_captain": "Capitaine",
   "plus.recap.captain_line": "{name} : {formula} pts, {gap} vs les capitaines de la ligue",
   "plus.recap.captain_plain": "{name} : {formula} pts",
+  "plus.recap.captain_plain_few": "{name} : {formula} pts",
   "plus.recap.captain_vice": "Brassard repris par le vice-capitaine",
   "plus.recap.cause_transfer": "Transfert",
   "plus.recap.transfer_line": "{out} → {in} : {gain} pts, pénalité {hit} = {net}",

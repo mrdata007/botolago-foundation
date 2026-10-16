@@ -114,7 +114,7 @@ describe("a Saison in Profil", () => {
   });
 
   it("has the Arabic wording too", () => {
-    expect(dictionaries.ar["plus.profile.ended"]).toBe("انتهى موسمك");
+    expect(dictionaries.ar["plus.profile.ended"]).toBe("انتهى اشتراكك");
     expect(dictionaries.fr["plus.profile.ended"]).toBe("Votre Saison est terminée");
   });
 });
