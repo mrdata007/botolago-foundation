@@ -1091,7 +1091,7 @@ declare
   premium_mode text;
   pay_answer jsonb;
   code_answer jsonb;
-  state jsonb;
+  v_result jsonb;
 begin
   -- Nothing lost: the same grants, entitlements, events and products, and the old products intact.
   if (select count(*) || ':' || coalesce(md5(string_agg(id::text, ',' order by id)), '')
@@ -1238,7 +1238,7 @@ begin
     raise exception 'stop: the update did not check out: %', problems;
   end if;
 
-  state := jsonb_build_object(
+  v_result := jsonb_build_object(
     'premiumMode', premium_mode,
     'products', (select jsonb_object_agg(code, active) from app_private.premium_products),
     'newApiFunctions', 6,
@@ -1248,7 +1248,7 @@ begin
     'readsWhileOff', case when premium_mode = 'off' then jsonb_build_array(pay_answer, code_answer) end,
     'historyRows', 2
   );
-  perform set_config('bg.premium_season_state', state::text, true);
+  perform set_config('bg.premium_season_state', v_result::text, true);
 end
 $postflight$;
 
