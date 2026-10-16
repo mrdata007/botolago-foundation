@@ -48,8 +48,12 @@ applies (a position change during `finalizing` still gets `fantasy_gameweek_lock
 ### The lock: no writer can commit after the seal
 
 Each trigger first takes `FOR KEY SHARE` on the season's **current gameweek row** (status `open`,
-`locked`, `live`, `provisional` or `finalizing`: at most one per season, by
-`fantasy_gameweeks_one_current_idx`) and only then reads the status that lock returns.
+`locked`, `live`, `provisional` or `finalizing`, in id order) and only then reads the status those
+locks return. That is normally one row per season, but not always: since `20261013160000` the
+index `fantasy_gameweeks_one_current_idx` only counts rows with `closed_at` null, so while staged
+stats are on, a closed `provisional` gameweek and its open successor can both be non-terminal, and
+the closed one can still go on to `finalizing`. The guard's `WHERE` has no `closed_at` filter, so
+it locks and checks both rows.
 `api.service_begin_fantasy_finalization`, the only function that moves a gameweek to `finalizing`,
 locks that row `FOR UPDATE`, recomputes the scoring input document and moves the status in one
 transaction, and `FOR UPDATE` conflicts with `FOR KEY SHARE`. So, for any two overlapping
@@ -65,12 +69,30 @@ Lock order: a writer takes its table lock (at statement start), then this row. T
 the calendar advisory lock, then gameweek rows, then assignments and fixtures. The price batches
 (`service_run_fantasy_price_batch`, `service_run_fantasy_close_price_batch`) take their table lock
 on `app.fantasy_players` **before** the gameweek row, so a writer queues behind a batch before it
-holds the row, and a batch queues behind a writer that already holds it. The one cycle left: a long
-catalog write that holds pool-row locks (the player-list update, which already requires the
-lifecycle tick paused) against a lifecycle step that holds the gameweek row and updates the same
-rows. PostgreSQL detects a deadlock and ends one side; the matcher holds the player and retries,
-the worker retries. Account erasure can meet the lifecycle the same way on lineup rows; its worker
-retries hourly.
+holds the row, and a batch queues behind a writer that already holds it.
+
+Two deadlock cycles remain. PostgreSQL's detector ends each one (after `deadlock_timeout`, one
+second by default) and each clears itself:
+
+1. A long catalog write that holds pool-row locks (the player-list update, which already requires
+   the lifecycle tick paused) against a lifecycle step that holds the gameweek row and updates the
+   same rows. The matcher holds the player and retries; the worker retries. Account erasure can
+   meet the lifecycle the same way on lineup rows; its worker retries hourly.
+2. The matcher against the observation recorders. The matcher takes `KEY SHARE` on `app.fixtures`
+   early (the queue insert and the match log foreign keys), then, when it creates a player,
+   `KEY SHARE` on the gameweek through this guard. `api.service_record_fantasy_observation` (the
+   SofaScore, reconciled and SportsMonks observation paths) and
+   `api.service_select_fantasy_scoring_modes` lock the gameweek `FOR UPDATE` and then the fixture
+   `FOR UPDATE`: the opposite order. It needs two overlapping calls for the **same fixture** (the
+   live refresh has no lease). It was reproduced locally. The victim is either the matcher's
+   creation (the player is held and retried on the next call) or the recorder (it marks the
+   fixture for retry and uses one retry attempt). Seen in the logs as `deadlock detected` on one
+   of those calls, once; a repeating one on the same fixture is worth a look.
+
+A lifecycle step that takes gameweek rows in an order other than id (re-running
+`service_prepare_next_fantasy_gameweek` while the next gameweek is already open locks the previous
+one, then the next) can in theory meet a guard that takes them by id in the same way; it is the
+same kind of cycle and is resolved the same way.
 
 ### What happens to the things that were writing
 
@@ -88,9 +110,22 @@ retries hourly.
   refused by the triggers.
 - **Account erasure** (`account-deletion-tick`, hourly at minute 23): the refusal rolls back the
   whole erasure (one transaction). `account-deletion-worker` already releases a request whose
-  erasure was refused (`service_release_account_deletion`, which keeps the message as
-  `last_error`) and the next hourly pass tries again. The account was already disabled at the
+  erasure was refused (`service_release_account_deletion`) and the next hourly pass tries again.
+  The worker passes on only messages that start with `account_deletion_` (its `ERROR_CODE`
+  pattern), so the request's `last_error` reads `database_unavailable`, not
+  `fantasy_scoring_inputs_frozen`: a due request with that `last_error` during a finalization is
+  this refusal. The account was already disabled at the
   request; only the erasure waits, for the length of a finalization (minutes).
+- **The daily current-season recovery** (`.github/workflows/football-current-season-recovery.yml`,
+  cron `43 7 * * *`, when `FOOTBALL_CURRENT_SCHEDULE_ENABLED` is `true`; `AGENTS.md` lists it with
+  the scheduled writers) calls the database through the same tables. If it writes a pool row or
+  a membership of a pooled player while a gameweek is `finalizing`, that call is refused with
+  `fantasy_scoring_inputs_frozen` and the run fails; each call is one transaction, so nothing
+  partial is left. If a run fails inside the window, nothing is urgent: wait until the gameweek is
+  finalized and re-run the workflow (`workflow_dispatch`, mode `refresh`, with the reviewed commit
+  and `RUN_CURRENT_SEASON_RECOVERY`); the next daily run would do the same. Around the apply
+  script: avoid 07:43 UTC. A run that overlaps the script's short trigger lock waits, the script
+  gives up after its 5 second lock timeout and fails safe, and is simply run again.
 - **The weekly SofaScore catalog** (`service_sofascore_catalog_apply`) changes names, the
   `app.players` position and shirt numbers. None of those is in the document; it is not blocked.
 

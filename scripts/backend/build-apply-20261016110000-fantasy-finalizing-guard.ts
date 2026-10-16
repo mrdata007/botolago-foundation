@@ -531,7 +531,7 @@ rollback;
 
 select case
   when exists (select 1 from supabase_migrations.schema_migrations where version = '${VERSION}')
-    then 'Applied. While a gameweek of a Fantasy season is finalizing, its player pool, the club memberships of its players and its lineups can no longer change (fantasy_scoring_inputs_frozen). Restore what you paused: select app_private.fantasy_automation_configure(true); and the e-mail and live refresh switch as the first query showed.'
+    then 'Applied. While a gameweek of a Fantasy season is finalizing, its player pool, the club memberships of its players and its lineups can no longer change (fantasy_scoring_inputs_frozen). Restore what you paused: select app_private.fantasy_automation_configure(true); select app_private.account_deletion_configure(true); and the e-mail and live refresh switch as the first query showed.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
 `;

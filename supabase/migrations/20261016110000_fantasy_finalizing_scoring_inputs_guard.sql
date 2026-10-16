@@ -47,8 +47,9 @@
 --      is app_private.account_deletion_erase (an account erased in the middle of a finalization would
 --      change lineupCount and the digest, the same way). The erasure runs in one transaction, so the
 --      refusal undoes all of it, and account-deletion-worker already releases a request whose erasure
---      is refused and tries again at the next hourly pass (api.service_release_account_deletion keeps
---      the message as the request's last_error). INSERT and UPDATE of lineups are not touched:
+--      is refused and tries again at the next hourly pass (the worker passes on only messages that
+--      start with account_deletion_, so the request's last_error reads database_unavailable, not the
+--      message below). INSERT and UPDATE of lineups are not touched:
 --      managers' lineups are locked at the deadline, long before 'finalizing'.
 -- It adds no column, table, index, setting or grant, and changes no existing function or trigger.
 --
@@ -71,9 +72,12 @@
 --
 -- THE RACE, AND THE LOCK THAT CLOSES IT. A check that only read the status would leave a window: a writer
 -- that saw 'provisional' could still commit after the gameweek turned 'finalizing'. So each trigger first
--- takes FOR KEY SHARE on the season's current gameweek row (status open, locked, live, provisional or
--- finalizing: at most one per season, fantasy_gameweeks_one_current_idx) and only then looks at the status
--- that lock returns. api.service_begin_fantasy_finalization, the only function that moves a gameweek to
+-- takes FOR KEY SHARE on the season's non-terminal gameweek rows (status open, locked, live, provisional or
+-- finalizing, ordered by id) and only then looks at the status those locks return. Normally that is one row
+-- per season, but not always: since 20261013160000 fantasy_gameweeks_one_current_idx only counts rows with
+-- closed_at null, so while staged stats are on a closed provisional gameweek and its open successor can both
+-- be non-terminal, and the closed one can still go on to 'finalizing'. The WHERE has no closed_at filter, so
+-- both rows are locked and both are checked. api.service_begin_fantasy_finalization, the only function that moves a gameweek to
 -- 'finalizing', locks that row FOR UPDATE, then recomputes the scoring input document and moves the status
 -- in the same transaction, and FOR UPDATE conflicts with FOR KEY SHARE. So either the writer holds the lock
 -- first (the finalization waits for the writer's commit and then recomputes the document with the writer's
@@ -87,11 +91,23 @@
 -- calendar advisory lock, then gameweek rows, then assignments and fixtures; the price batches take their
 -- lock on app.fantasy_players before the gameweek row, so a writer queues behind a batch before it holds
 -- the gameweek row, and a batch queues behind a writer that already holds it (checked with two sessions on
--- PostgreSQL 16: no deadlock). The one cycle left is a long catalog write that holds pool-row locks
--- against a lifecycle step that holds the gameweek row and updates the same pool rows (the player-list
--- update, which requires the lifecycle tick paused): PostgreSQL detects it and ends one side, and the
--- matcher holds the player and retries, the worker retries. The membership trigger takes the lock only for a
--- player who is in a pool (one lookup for every other membership).
+-- PostgreSQL 16: no deadlock). Two cycles are left, both ended by PostgreSQL's deadlock detector, which
+-- picks a victim after deadlock_timeout; each clears itself:
+--   * a long catalog write that holds pool-row locks against a lifecycle step that holds the gameweek row
+--     and updates the same pool rows (the player-list update, which requires the lifecycle tick paused):
+--     the matcher holds the player and retries, the worker retries;
+--   * the matcher against the observation recorders. The matcher takes KEY SHARE on app.fixtures early (the
+--     queue insert and the match log foreign keys), then, when it creates a player, KEY SHARE on the
+--     gameweek through this guard. api.service_record_fantasy_observation (the SofaScore, reconciled and
+--     SportsMonks observation paths) and api.service_select_fantasy_scoring_modes lock the gameweek FOR
+--     UPDATE and then the fixture FOR UPDATE: the opposite order. It needs two overlapping calls for the
+--     same fixture (the live refresh has no lease), was reproduced locally, and the victim is either the
+--     matcher's creation (held, retried on the next call) or the recorder (marks the fixture for retry and
+--     uses one retry attempt).
+-- A lifecycle step that takes the gameweek rows in another order than id (re-running
+-- service_prepare_next_fantasy_gameweek while the next gameweek is already open locks the previous one, then
+-- the next) can in theory meet a guard that takes them by id the same way. The membership trigger takes the
+-- lock only for a player who is in a pool (one lookup for every other membership).
 --
 -- Applying it writes no data. Forward-only; roll back with a migration that drops the three triggers
 -- and three functions.

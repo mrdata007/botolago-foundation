@@ -375,6 +375,9 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
       "case when p_error ~ '^[a-z0-9_]{1,80}$' then p_error else 'worker_failed' end",
     );
     expect("fantasy_scoring_inputs_frozen").toMatch(/^[a-z0-9_]{1,80}$/);
+    // The worker passes on only account_deletion_* messages, so last_error reads database_unavailable.
+    expect(worker).toContain("const ERROR_CODE = /^account_deletion_[a-z_]{1,60}$/;");
+    expect("fantasy_scoring_inputs_frozen").not.toMatch(/^account_deletion_[a-z_]{1,60}$/);
   });
 
   test("pauses what writes these tables, copied from AGENTS.md, and the script refuses while they are on", () => {
@@ -398,6 +401,10 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
       expect(header).toContain(command);
     }
     expect(header).toContain("select app_private.account_deletion_configure(true);");
+    // The final "Applied" row tells the owner to restore all three switches.
+    const applied = script.slice(script.indexOf("then 'Applied."), script.indexOf("as result;"));
+    expect(applied).toContain("select app_private.fantasy_automation_configure(true);");
+    expect(applied).toContain("select app_private.account_deletion_configure(true);");
     expect(header).toContain("they need not be paused");
     expect(preflight).toContain("from app_private.account_deletion_settings s where s.enabled");
     expect(header).toContain("select app_private.fantasy_automation_configure(true);");
