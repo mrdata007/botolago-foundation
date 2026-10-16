@@ -43,6 +43,18 @@ EXPECTED_ERRORS = {
     "chip_conflict",
     "idempotency_conflict",
 }
+# Launch-sized profile: a separate, explicitly named, NOT-the-full-gate mode.
+# The approved merge gate (merge_gate / telemetry_soak: 2,500 users, 600 then
+# 250 RPS) is enforced by its own branch in FantasyLoadRunner.__init__ and is
+# untouched by these constants. A launch-sized run uses its own two profile
+# names, so it can never be mistaken for, or pass as, the full gate.
+# Derivation: docs/production/2026-10-16-capacity-test-run-sheet.md section 1.
+LAUNCH_SIZED_GATE_PROFILE = "launch_sized_gate"
+LAUNCH_SIZED_SOAK_PROFILE = "launch_sized_soak"
+LAUNCH_SIZED_PROFILES = frozenset({LAUNCH_SIZED_GATE_PROFILE, LAUNCH_SIZED_SOAK_PROFILE})
+LAUNCH_SIZED_USERS = 1000
+LAUNCH_SIZED_SUSTAINED_RPS = 65
+LAUNCH_SIZED_BURST_RPS = 175
 PREPARATION_CONCURRENCY = 10
 PREPARATION_RETRY_BASE_SECONDS = 0.5
 NON_JSON_SNIPPET_BYTES = 200
@@ -235,6 +247,19 @@ class FantasyLoadRunner:
                 raise SystemExit(
                     "setup rehearsal requires five shards with 25 to 50 users each"
                 )
+        elif self.load_profile in LAUNCH_SIZED_PROFILES:
+            # Added beside, not inside, the merge-gate lock below: the lock that
+            # follows is unchanged and still decides merge_gate/telemetry_soak.
+            if (
+                self.total_users != LAUNCH_SIZED_USERS
+                or self.global_sustained_rps != LAUNCH_SIZED_SUSTAINED_RPS
+                or self.global_burst_rps != LAUNCH_SIZED_BURST_RPS
+            ):
+                raise SystemExit(
+                    "launch-sized load dimensions are fixed at "
+                    f"{LAUNCH_SIZED_USERS} users, {LAUNCH_SIZED_BURST_RPS} then "
+                    f"{LAUNCH_SIZED_SUSTAINED_RPS} RPS"
+                )
         elif (
             self.total_users != 2500
             or self.global_sustained_rps != 250
@@ -268,9 +293,20 @@ class FantasyLoadRunner:
                 raise SystemExit(
                     "telemetry_soak requires no burst and a 5-to-10-minute duration"
                 )
+        elif self.load_profile == LAUNCH_SIZED_GATE_PROFILE:
+            if self.burst_seconds != 10 or self.total_seconds != 60:
+                raise SystemExit(
+                    "launch_sized_gate requires a 10-second burst and 60-second duration"
+                )
+        elif self.load_profile == LAUNCH_SIZED_SOAK_PROFILE:
+            if self.burst_seconds != 0 or self.total_seconds not in range(300, 601):
+                raise SystemExit(
+                    "launch_sized_soak requires no burst and a 5-to-10-minute duration"
+                )
         else:
             raise SystemExit(
-                "BOTOLAGO_LOAD_PROFILE must be setup_rehearsal, merge_gate, or telemetry_soak"
+                "BOTOLAGO_LOAD_PROFILE must be setup_rehearsal, merge_gate, "
+                "telemetry_soak, launch_sized_gate, or launch_sized_soak"
             )
         self.observations: list[Observation] = []
         self.response_diagnostics: list[ResponseDiagnostic] = []

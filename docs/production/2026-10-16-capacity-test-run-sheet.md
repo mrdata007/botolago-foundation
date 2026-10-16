@@ -40,134 +40,134 @@ database: a script, a workflow, a person in the SQL editor, a scheduled job (AG:
 **RPS** is requests per second. **est.** marks my own estimate, not a figure from the
 repository.
 
-## 1. Decision: run the existing test profile as it is
+## 1. Decision: two profiles; the full gate stays, a launch-sized run is added beside it
 
 ### The decision
 
-**Run the existing profile exactly as it stands. Do not edit it.** The repository does
-not show a reason to switch to a smaller profile first. It does show one reason to
-expect a FAIL at the owner's server size, and that is handled by agreeing in advance
-what a FAIL means (the list at the end of this section), not by shrinking the test.
+Owner, 2026-10-16: "do it how standard people launching an app do". The usual practice is
+to size the test to the expected peak times a safety factor of 5 to 10, not to a far larger
+number, and to keep a separate stretch run for information. The plan is therefore:
 
-### What the existing profile is
+1. **Launch-sized run (new, separate mode `launch_sized`).** 1,000 users on five machines,
+   175 RPS for 10 s, 65 RPS for 50 s, then a 10-minute soak at 65 RPS. About 10 times the
+   declared deadline traffic. It is the run that informs the launch decision.
+2. **The full gate is NOT replaced; its numbers are NOT edited.** The 2,500-user, 600/250 profile is
+   still locked in code (section "How the lock works" below) and is still what the
+   repository calls "the gate" (CAPR:62-63, CAPR:187). The audit's A8 item asks for "a
+   current gate and soak on the declared traffic" (`docs/audits/2026-10-14-audit-remediation-phase-a.md:118-119`);
+   this page does not close A8 on a launch-sized pass. Accepting launch-sized evidence as
+   the A8 evidence is a deviation the owner records by name.
+3. **Stretch run: informational only, not built yet** (numbers below). It never passes or
+   fails anything.
+4. The setup rehearsal (25 users a machine, no traffic) is unchanged and runs first in both.
 
-- 2,500 temporary managers on five temporary Amazon machines, 500 each (LOAD:20-25,
-  GATE:52-53). A 60-second gate: 600 requests a second for 10 seconds, then 250 a
-  second for 50 seconds. Then a 10-minute soak at 250 a second (GATE:2430-2432).
-- Mix: 60% save a lineup, 30% transfer (check, then confirm), 5% Bench Boost, 5% open
-  the team (LOAD:24).
-- Database it plays against: 50,000 fake teams, 750,000 squad rows, a 10,000-member
-  league and 1,000 other leagues (CAPR:76-88).
-- **It is locked.** The load runner refuses lower numbers: "approved merge-gate load
-  dimensions may not be weakened" (LT:239-243). The report says the full gate is
-  "hard-locked to 2,500 users and the approved 600/250 RPS profile" (CAPR:187). The
-  runbook says to stop rather than "weaken the user count" when Auth objects
-  (FDR:156-157), and the activation condition is "the unchanged five-runner,
-  2,500-user gate plus soak" (CAPR:62-63).
+Code status: the launch-sized mode is in the repository on its own branch, unit-tested, and
+**never run end to end** (no staging window, no Amazon machines). Every number below is NOT
+RUN.
 
-### Declared traffic against the profile
+### Where the numbers come from (arithmetic; est. = my assumption, to be challenged)
 
-Declared figures are the owner's answers of 2026-10-16 (OWNER:121-130).
+| Step                           | Arithmetic                                                                                                                                    | Result          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Requests per action            | mix 60/30/5/5 (LOAD:24), a transfer is 2 requests: (60 + 30 x 2 + 5 + 5) / 100                                                                | 1.3 (est.)      |
+| Saves in the last 10 minutes   | 200 managers (Q3 high) x 3 actions (est.) x 1.3                                                                                               | 780 requests    |
+| Average rate                   | 780 / 600 s                                                                                                                                   | 1.3 RPS         |
+| Peak minute                    | half arrive in the last minute (est.): 390 / 60 s                                                                                             | 6.5 RPS         |
+| Last 10 seconds                | the profile's own burst ratio 600 / 250 = 2.4 (est.): 6.5 x 2.4                                                                               | 15.6 RPS        |
+| Safety factor 10               | sustained 6.5 x 10; burst 15.6 x 10 = 156, rounded up to 175 so each machine gets whole numbers (35 and 13 a second)                          | 65 and 175 RPS  |
+| Users                          | the season-end cap, all active (Q1, Q6): 1,000 = 5 x the 200 high-case savers; 10 x would be 2,000, more than the cap                         | 1,000 (5 x 200) |
+| Browsing, not made by the tool | 300 people (Q2 high) x 2 live refreshes every 30 s (`src/lib/match-refresh.ts:36-41`; 2 per viewer est.) = 20; plus opens 300 x 5 / 600 = 2.5 | 22.5 RPS (est.) |
+| Declared all-in peak           | 6.5 + 22.5                                                                                                                                    | about 29 RPS    |
 
-| Quantity                                              | Declared                                                                                                  | Existing profile                                            | Profile is about           |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------- |
-| Managers saving or transferring near a lock (Q3 high) | 200 in the last 10 minutes                                                                                | 2,500 accounts                                              | 12 times larger            |
-| Managers in the whole game (Q1, Q6 cap)               | 500 at launch, 1,000 at season end                                                                        | 2,500 test teams on top of 50,000 seeded teams              | 2.5 to 50 times            |
-| Biggest league (Q5)                                   | 1,000 members                                                                                             | 10,000 members                                              | 10 times                   |
-| Number of leagues (Q5)                                | about 100                                                                                                 | about 1,001                                                 | 10 times                   |
-| Request rate at the deadline                          | **est. 1.5 RPS** averaged over the last 10 minutes; **est. 8 RPS** if half of it lands in the last minute | 600 RPS for 10 s, 250 RPS for 50 s, then 250 RPS for 10 min | about 30 times at the peak |
+Assumptions to challenge:
 
-How I got the request rate (my arithmetic, to be challenged): 200 managers, each doing a
-generous 3 actions, is 600 actions. The mix averages about 1.4 requests per action
-(a transfer is two requests), so about 850 requests. Spread over 10 minutes that is
-about 1.5 a second. If half of them arrive in the final minute it is about 7 to 8 a
-second. The profile asks for 250 sustained, so it is far above the declaration. That is
-the case for running it: **passing it would be much stronger evidence than the
-declaration needs.** It also means the profile does **not** test the declared crowd
-shape (a short rush); it tests a much larger sustained load.
+- The earlier text of this section used 1.4 requests per action (850 requests, 1.5 RPS
+  average). The 1.3 above comes straight from the mix and replaces it. The code mix is per
+  request (60/15/15/5/5, `pick_operation` in `fantasy-load-test.py`), which gives 1.18; I used the larger.
+- 3 actions per manager, half of them in the last minute, and 2 live refreshes per viewer
+  are my guesses, not measurements. Change one and the profile scales in proportion.
+- The deadline and the biggest kick-off are taken as the same moment (conservative).
+- Q4's 250 new accounts an hour is a sign-up load. It is not in these figures.
+- Staging holds 50,000 fake teams, launch holds up to 1,000: conservative for the database.
 
-What it still does not cover, whatever its size: match-day browsing (Q2: 50 / 150 /
-300 people), sign-up bursts (Q4: 250 new accounts an hour), the website host and
-real phones on Moroccan networks (LOAD:126-131, CAP:357-371).
+| Profile                 | Full gate (locked)                          | Launch-sized (new)                                       | Stretch (not built)        |
+| ----------------------- | ------------------------------------------- | -------------------------------------------------------- | -------------------------- |
+| Mode / profile names    | `full_gate`: `merge_gate`, `telemetry_soak` | `launch_sized`: `launch_sized_gate`, `launch_sized_soak` | none yet                   |
+| Users                   | 2,500 (5 x 500)                             | 1,000 (5 x 200)                                          | 1,000                      |
+| Burst, then sustained   | 600 RPS 10 s, 250 RPS 50 s                  | 175 RPS 10 s, 65 RPS 50 s                                | 350 RPS 10 s, 150 RPS 50 s |
+| Soak                    | 250 RPS, 10 min                             | 65 RPS, 10 min                                           | 150 RPS, 10 min            |
+| Requests (gate + soak)  | 18,500 + 150,000                            | 5,000 + 39,000                                           | 11,000 + 90,000            |
+| Against peak minute 6.5 | 38 x                                        | 10 x                                                     | 23 x                       |
+| Against all-in 29       | 8.6 x                                       | 2.2 x                                                    | 5.2 x                      |
+| Evidence label          | mode `full_gate`                            | mode `launch_sized`, "NOT the full 2,500-user gate"      | would need its own label   |
 
-### The repository's reason to expect a FAIL
+Read the last two rows plainly. On the saves alone the launch-sized run is 10 times the
+declared peak. But the July bottleneck was CPU in the layer in front of the database, not
+the queries (CAPR:21-27), and it is shared by every request. If browsing reaches the same
+server, total request volume at the launch-sized rate is only 2.2 times the all-in peak,
+and a 5 times margin on it would be 145 RPS (the stretch run is that, 150). By the same
+arithmetic the existing gate (250) is 8.6 times the all-in peak, close to the usual 10.
+Nobody has measured how much cheaper a browsing request is than a save. That is why the
+browsing test (step 10, not built) is still needed beside either profile.
 
-- The last real measurement, on a **Medium** server, topped out at about **65 RPS**
-  (CAPR:10-17). The profile asks for 250 sustained: about 3.8 times that.
-- The report says to certify on **XL or 2XL**, and that no size has passed
-  (CAPR:47-56).
-- The owner's answer to Q7 is "we start with lowest" and no big budget (OWNER:129).
-  So if production is at or below Medium, then on the July evidence a FAIL on the
-  existing profile is the expected result. If it is Large (as LOAD:65-67 said on
-  2026-09-25), nobody has measured that size. OWNER:129 already says what to do then: say so plainly, claim no
-  pass, and do not buy a bigger server to get one.
+### How the lock works, and what was added
 
-This is **not** a reason to edit the profile. A fail still measures where the system
-broke (achieved rate, error rate, latency per operation, CPU), which is exactly what the
-owner needs to compare with the declared 8 RPS.
+- `fantasy-load-test.py`: each runner refuses `merge_gate` and `telemetry_soak` unless users
+  are 2,500, sustained 250 and burst 600 (`!= 2500 ... may not be weakened`, LT:239-243 at
+  `9e7056ad`). That branch is untouched. The launch-sized profiles got their own branch above it with
+  their own fixed numbers, so `merge_gate` with launch numbers, or `launch_sized_*` with gate
+  numbers, exits with an error.
+- `fantasy-capacity-orchestrator.py`: a mode can only run its own profile pair
+  (`measured_profile_names`), and the two gate profiles keep their commands byte for byte.
+- `fantasy-session-provisioner.py` demands exactly 500 users a machine in `full_gate` mode and
+  exactly 200 in `launch_sized`. The report script (`fantasy-capacity-report.py`) and the
+  workflow scope `launch-sized` print a different heading, never the plain word PASS, and
+  `fullGatePassed` stays false.
+- One CI test pinned the whole orchestrator file by SHA-256. It was re-pinned on purpose
+  (comment in `test_fantasy_capacity_orchestrator_diagnostic.py`); a reviewer must accept that.
+- Tests: `scripts/backend/tests/test_fantasy_launch_sized_profile.py` (merge gate still
+  refuses every weakening, commands unchanged, labels, the two cannot stand in for each other).
 
-### What each option costs, on the smallest compute size
+### PASS criteria (reused, none invented)
 
-Option 1 is the existing profile, unedited. Option 2 is a smaller profile, which would
-need new code.
+The launch-sized run is judged by the same code as the full gate: one shared branch in
+`CapacityGate.run` and one `aggregate_profile` (GATE:1547-1551 and 2447-2457 at `9e7056ad`).
+Every one must hold, for the 60 s part and for the soak: read p95 at most 500 ms; save and
+transfer p95 at most 1,500 ms and p99 at most 3,000 ms; unexpected-error rate under 0.5%;
+lock-timeout rate under 0.1%; integrity checks all zero; metrics complete; connection use,
+server CPU and pool use each under 80%; zero deadlocks and conflicts; cleanup back to zero.
 
-- **Time to get started.**
-  - Option 1: nothing to build. Rehearsal about 20 minutes (LOAD:85); full run up to 2
-    hours (LOAD:96). The workflow stops at 120 minutes and the test itself at 90
-    (`.github/workflows/fantasy-load-test.yml:47,173`).
-  - Option 2: edit the lock (LT:213-243), the hard-coded numbers (GATE:52-53, 1280,
-    1409-1411) and the Python tests (`scripts/backend/tests/test_fantasy_capacity_orchestrator.py`),
-    then get review and merge approval. Days, not hours (est.).
-- **Time inside the run.**
-  - Option 1: the measured part is only about 11 minutes (60 s gate, 10 min soak). Setup
-    and cleanup are most of the 2 hours: creating 2,500 users at 5 a second is about 8
-    minutes, and signing them in at 0.4 a second per machine is about 21 minutes
-    (FDR:104-108; est.).
-  - Option 2: saves about 25 minutes of setup if cut to 250 users (est.). Nothing else.
-- **Amazon (AWS).**
-  - Option 1: 5 small machines for at most 105 minutes; they switch themselves off
-    (GATE:83). The script's own worst case is $18.75 (5 machines at $1 an hour for 105
-    minutes, plus a $10 buffer) and it refuses to start above $50 (GATE:85-96,
-    LOAD:35-37). LOAD says "a few dollars" for the full run and "cents" for the
-    rehearsal (LOAD:85,96).
-  - Option 2: the same 5 machines for fewer minutes, so cents less. Not a real saving.
-- **Supabase staging compute.** The same for both. Staging runs at production's size for
-  the window. If production is the smallest size, staging may already be that size (LOAD:110
-  says Micro on 2026-09-25) and only the disk grows. The resize screen shows the price;
-  write it in the evidence file before confirming.
-- **Disk.** The same for both: at least 20 GB, once. A disk can grow but never shrink, and
-  Supabase allows four disk changes a day (LOAD:71-75). A small, permanent monthly cost;
-  the dashboard shows it.
-- **What the result is worth.**
-  - Option 1: the only result the report accepts as "the gate" (CAPR:62-63).
-  - Option 2: a different, weaker claim. It could pass on a server that would fail the
-    real gate, and nobody would learn the margin.
+### What a launch-sized PASS does and does not prove
 
-Whether the Amazon cost counts as the owner's "no extra spending" was never settled
-(OWNER:159-161). It is owner action O2 in section 5, to be answered before the run.
+- Proves: at 1,000 accounts, deadline-style saves and transfers at 10 times the declared
+  rate stay inside the gate's own latency, error, CPU and integrity limits, on staging at
+  the stated compute size, on that date and commit.
+- Does not prove: the full gate (2,500 accounts, 250 RPS).
+- Does not prove: a margin on total traffic above 2.2 times, if browsing shares the server.
+- Does not prove: browsing, sign-up bursts, real phones, the website host, or A8's other
+  parts (version manifest, failure drills).
+- It is weaker evidence than the full gate: about a quarter of the sustained rate and 40% of
+  the users (65 RPS against 250). A pass can come on a server that would fail the full gate.
+  Say "launch-sized", never "the gate".
+- On Medium, expect a close call: the soak rate (65) equals the rate where July topped out
+  (about 65). A FAIL there is plausible and is itself the answer to "is Medium enough".
 
 ### How to read the verdict in advance
 
-- **PASS** (every criterion in step 8 met, cleanup counted back to zero).
-  - Meaning: the gate passed on staging at production's size, on the run's date and commit.
-  - May be said: "the deadline-save load passed at 2,500 users". Still not covered:
-    browsing, sign-up bursts, real phones, the website host (section 6).
-  - Next: the owner reads the evidence form and decides.
-- **FAIL** (some criterion missed, setup fine, measured numbers exist).
-  - Meaning: the gate is **not** passed. No capacity threshold is claimed (CAPR:333-335).
-  - May be said: quote the achieved rate and where it broke. If it broke above the
-    declared peak (est. 8 RPS), say "the gate failed; the declared crowd is not shown to be
-    unsafe, but it is not proven" and nothing stronger.
-  - Next: the owner chooses (a) a bigger server, outside the stated budget; (b) ask a
-    developer for a **new, separately named, reviewed** "declared-traffic" profile (for
-    example 250 users, 25 RPS for 60 s, then 10 RPS for 10 minutes; my suggestion only); or
-    (c) a lower cap. Never edit the locked profile, and never call a declared-traffic
-    result "the gate".
-- **BLOCKED** (user creation, Auth 429, an Amazon refusal, a runner that exited, a metrics
-  gap).
-  - Meaning: nothing was measured. This is **not** a fail (CAPR:148-153; FDR:156-168).
-  - May be said: "setup failed at X; no capacity result".
-  - Next: fix the named cause, repeat only the failed step, and do not weaken anything.
+- **PASS (launch-sized):** every criterion above met, cleanup zero. May be said: "the
+  deadline-save load passed at 1,000 users and 65 RPS (10 times the declared peak)". Not "the gate".
+- **FAIL:** setup fine, some criterion missed. Quote the achieved rate and what broke. If it
+  broke above 6.5 RPS say "launch-sized failed; the declared crowd is not shown to be unsafe,
+  but not proven". Next: the owner picks a bigger server, a lower cap, or accepts the risk.
+- **BLOCKED** (user creation, Auth 429, Amazon refusal, runner exit, metrics gap): nothing was
+  measured; not a fail (CAPR:148-153; FDR:156-168). Fix the cause, repeat the failed step.
+- **Stretch:** run only after a launch-sized PASS; informational, no verdict. It needs a small
+  code addition first (one more named mode, its label and an "informational" verdict).
+- **Cost (est.):** the same five machines and the same worst case ($18.75, cap $50,
+  GATE:85-96). The staging resize and disk (LOAD:71-75) cost the same as for the full gate.
+- **Time (est.):** fewer users to create and sign in (200 a machine, not 500), so well under
+  the 2 hours of the full run. The measured part is the same 11 minutes.
+- **Run it:** Actions, Fantasy load test, scope `launch-sized` (rehearsal first, then the run).
 
 ## 2. Q6: how a 1,000-manager pilot cap could be enforced
 

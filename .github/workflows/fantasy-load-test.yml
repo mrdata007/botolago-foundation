@@ -4,19 +4,22 @@ name: Fantasy load test
 # managers on five temporary AWS machines rehearse the minute before a Fantasy
 # deadline (docs/backend/FANTASY_CAPACITY_REPORT.md). Rebuilt from the retired
 # PR #6 workflow (phase6-capacity-gate.yml, removed in #26) to run from main.
+# Scope "launch-sized" is a separate, smaller run (1,000 users) with its own
+# evidence label; it never replaces or relabels the full 2,500-user gate.
 # Order of operations for the owner: docs/operations/LOAD_TEST.md.
 
 on:
   workflow_dispatch:
     inputs:
       scope:
-        description: "rehearsal (25 users per machine, no traffic) or full (rehearsal, then the 2,500-user test and soak)"
+        description: "rehearsal (25 users per machine, no traffic), full (rehearsal, then the 2,500-user test and soak: the capacity gate), or launch-sized (rehearsal, then 1,000 users at 175 then 65 RPS and a soak: launch evidence, NOT the full gate)"
         required: true
         type: choice
         default: full
         options:
           - rehearsal
           - full
+          - launch-sized
       staging_compute:
         description: "Staging's compute size; must equal production's (e.g. Large)"
         required: true
@@ -75,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$CONFIRMATION" = "RUN_FANTASY_LOAD_TEST"
-          case "$SCOPE" in rehearsal|full) ;; *) exit 2 ;; esac
+          case "$SCOPE" in rehearsal|full|launch-sized) ;; *) exit 2 ;; esac
 
       - name: Check out the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -156,7 +159,7 @@ jobs:
         shell: bash
         run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
 
-      - name: Run setup rehearsal, then the unchanged full gate
+      - name: Run setup rehearsal, then the unchanged full gate (or the separate launch-sized run)
         id: capacity
         if: steps.aws_oidc.outcome == 'success'
         continue-on-error: true
@@ -169,7 +172,11 @@ jobs:
           SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
         run: |
           set +e
-          if [ "$SCOPE" = "rehearsal" ]; then mode="--setup-rehearsal"; else mode="--rehearsal-then-full"; fi
+          case "$SCOPE" in
+            rehearsal) mode="--setup-rehearsal" ;;
+            launch-sized) mode="--rehearsal-then-launch-sized" ;;
+            *) mode="--rehearsal-then-full" ;;
+          esac
           timeout --signal=INT --kill-after=120s 90m \
             python scripts/backend/fantasy-capacity-orchestrator.py "$mode"
           status=$?

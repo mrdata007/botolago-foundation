@@ -28,7 +28,7 @@ import uuid
 from collections import Counter, defaultdict
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import boto3
 from botocore.config import Config
@@ -59,6 +59,23 @@ FIRST_USER_NUMBER = 50_001
 REHEARSAL_USERS_PER_RUNNER = 25
 SESSION_REHEARSAL_USERS_PER_RUNNER = 1
 FULL_GATE_MODE = "full_gate"
+# Launch-sized mode: a separate, explicitly named run that is NOT the full gate.
+# It uses its own profile names, its own summary "mode" and its own evidence
+# label, so a launch-sized result can never be read as the full-gate result.
+# The full-gate dimensions above and in load_profile_dimensions() are unchanged.
+# Derivation of the numbers: docs/production/2026-10-16-capacity-test-run-sheet.md
+# section 1. Pass thresholds are not defined here: the run goes through the same
+# aggregate_profile() and run() criteria as the full gate.
+LAUNCH_SIZED_MODE = "launch_sized"
+LAUNCH_SIZED_USERS_PER_RUNNER = 200
+LAUNCH_SIZED_TOTAL_USERS = RUNNER_COUNT * LAUNCH_SIZED_USERS_PER_RUNNER
+LAUNCH_SIZED_SUSTAINED_RPS = 65
+LAUNCH_SIZED_BURST_RPS = 175
+LAUNCH_SIZED_GATE_PROFILE = "launch_sized_gate"
+LAUNCH_SIZED_SOAK_PROFILE = "launch_sized_soak"
+LAUNCH_SIZED_EVIDENCE_LABEL = (
+    "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate"
+)
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
 SESSION_PROVISIONING_REHEARSAL_MODE = "session_provisioning_rehearsal"
 CLEANUP_RECOVERY_MODE = "cleanup_recovery"
@@ -136,6 +153,56 @@ def synchronized_preparation_lead_seconds() -> int:
     return PREPARATION_SYNCHRONIZATION_LEAD_SECONDS + runner_preparation_delay(
         RUNNER_COUNT - 1
     )
+
+
+class LoadDimensions(NamedTuple):
+    users: int
+    sustained_rps: int
+    burst_rps: int
+    requests: int
+
+
+def load_profile_dimensions(profile: str) -> LoadDimensions:
+    """Return the fixed users, RPS and request count of one measured profile.
+
+    The two full-gate profiles keep the approved numbers (2,500 users; 600 RPS
+    for 10 s then 250 RPS; 18,500 and 150,000 requests). The launch-sized
+    profiles are a separate pair with their own names.
+    """
+
+    if profile == "merge_gate":
+        return LoadDimensions(2500, 250, 600, 18_500)
+    if profile == "telemetry_soak":
+        return LoadDimensions(2500, 250, 600, 150_000)
+    if profile == LAUNCH_SIZED_GATE_PROFILE:
+        return LoadDimensions(
+            LAUNCH_SIZED_TOTAL_USERS,
+            LAUNCH_SIZED_SUSTAINED_RPS,
+            LAUNCH_SIZED_BURST_RPS,
+            10 * LAUNCH_SIZED_BURST_RPS + 50 * LAUNCH_SIZED_SUSTAINED_RPS,
+        )
+    if profile == LAUNCH_SIZED_SOAK_PROFILE:
+        return LoadDimensions(
+            LAUNCH_SIZED_TOTAL_USERS,
+            LAUNCH_SIZED_SUSTAINED_RPS,
+            LAUNCH_SIZED_BURST_RPS,
+            600 * LAUNCH_SIZED_SUSTAINED_RPS,
+        )
+    raise RuntimeError("unsupported load profile")
+
+
+def measured_profile_names(mode: str) -> tuple[str, str]:
+    """Return the (60-second gate, 10-minute soak) profile names of a mode.
+
+    A mode can only run its own pair, so a launch-sized run can never execute
+    the full-gate profiles and the full gate can never execute the launch pair.
+    """
+
+    if mode == FULL_GATE_MODE:
+        return "merge_gate", "telemetry_soak"
+    if mode == LAUNCH_SIZED_MODE:
+        return LAUNCH_SIZED_GATE_PROFILE, LAUNCH_SIZED_SOAK_PROFILE
+    raise RuntimeError("mode does not run measured traffic")
 
 
 def read_runtime_environment() -> dict[str, str]:
@@ -299,6 +366,7 @@ class CapacityGate:
     ) -> None:
         if mode not in {
             FULL_GATE_MODE,
+            LAUNCH_SIZED_MODE,
             SETUP_REHEARSAL_MODE,
             SESSION_PROVISIONING_REHEARSAL_MODE,
             CLEANUP_RECOVERY_MODE,
@@ -309,6 +377,8 @@ class CapacityGate:
             self.users_per_runner = REHEARSAL_USERS_PER_RUNNER
         elif mode == SESSION_PROVISIONING_REHEARSAL_MODE:
             self.users_per_runner = SESSION_REHEARSAL_USERS_PER_RUNNER
+        elif mode == LAUNCH_SIZED_MODE:
+            self.users_per_runner = LAUNCH_SIZED_USERS_PER_RUNNER
         else:
             self.users_per_runner = USERS_PER_RUNNER
         self.total_users = RUNNER_COUNT * self.users_per_runner
@@ -1397,8 +1467,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         return result
 
     def run_profile(self, profile: str, duration: int, burst_seconds: int) -> dict[str, Any]:
-        if profile not in {"merge_gate", "telemetry_soak"}:
+        if profile not in measured_profile_names(self.mode):
             raise RuntimeError("unsupported load profile")
+        dimensions = load_profile_dimensions(profile)
         # Preparation reads are outside the measured workload. Give all five
         # runners enough time to complete bounded retries before the shared
         # start instant instead of treating a transient setup response as load.
@@ -1406,9 +1477,10 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         command = (
             "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
             f"BOTOLAGO_LOAD_PROFILE={profile} "
-            "BOTOLAGO_LOAD_USERS=2500 BOTOLAGO_LOAD_SHARD_COUNT=5 "
-            "BOTOLAGO_LOAD_FIRST_USER=50001 BOTOLAGO_LOAD_SUSTAINED_RPS=250 "
-            "BOTOLAGO_LOAD_BURST_RPS=600 "
+            f"BOTOLAGO_LOAD_USERS={dimensions.users} BOTOLAGO_LOAD_SHARD_COUNT=5 "
+            "BOTOLAGO_LOAD_FIRST_USER=50001 "
+            f"BOTOLAGO_LOAD_SUSTAINED_RPS={dimensions.sustained_rps} "
+            f"BOTOLAGO_LOAD_BURST_RPS={dimensions.burst_rps} "
             f"BOTOLAGO_LOAD_BURST_SECONDS={burst_seconds} "
             f"BOTOLAGO_LOAD_DURATION_SECONDS={duration} "
             f"BOTOLAGO_LOAD_START_AT={start_at:.3f} "
@@ -1488,7 +1560,8 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 operation_counts[operation] += int(summary["count"])
         reads = samples["team_read"] + samples["transfer_preview"]
         mutations = samples["lineup"] + samples["transfer_confirm"] + samples["chip"]
-        expected_requests = 18_500 if profile == "merge_gate" else 150_000
+        dimensions = load_profile_dimensions(profile)
+        expected_requests = dimensions.requests
         if requests != expected_requests:
             raise RuntimeError(f"{profile} scheduled {requests}, expected {expected_requests}")
         traffic = {
@@ -1524,14 +1597,18 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "lockTimeoutErrors": lock_timeout_errors,
             "lockTimeoutRate": round(lock_timeout_rate, 6),
         }
+        profile_summary: dict[str, Any] = {
+            "name": profile,
+            "users": dimensions.users,
+            "runners": RUNNER_COUNT,
+            "requests": requests,
+            "traffic": traffic,
+        }
+        if profile in {LAUNCH_SIZED_GATE_PROFILE, LAUNCH_SIZED_SOAK_PROFILE}:
+            profile_summary["evidenceLabel"] = LAUNCH_SIZED_EVIDENCE_LABEL
+            profile_summary["fullGate"] = False
         return {
-            "profile": {
-                "name": profile,
-                "users": TOTAL_USERS,
-                "runners": RUNNER_COUNT,
-                "requests": requests,
-                "traffic": traffic,
-            },
+            "profile": profile_summary,
             "overall": overall,
             "operations": {
                 name: {
@@ -2381,6 +2458,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             "mode": self.mode,
             "passed": False,
         }
+        if self.mode == LAUNCH_SIZED_MODE:
+            outcome["evidenceLabel"] = LAUNCH_SIZED_EVIDENCE_LABEL
+            outcome["fullGate"] = False
         try:
             self.preflight()
             self.start_database_observer()
@@ -2426,10 +2506,14 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                         "passed": all(criteria.values()),
                     }
                 )
-            elif self.mode == FULL_GATE_MODE:
-                merge = self.run_profile("merge_gate", 60, 10)
+            elif self.mode in {FULL_GATE_MODE, LAUNCH_SIZED_MODE}:
+                # One shared branch on purpose: the launch-sized run is judged
+                # by exactly the criteria below, the full gate's own, with
+                # only the profile pair and the evidence label differing.
+                gate_profile, soak_profile = measured_profile_names(self.mode)
+                merge = self.run_profile(gate_profile, 60, 10)
                 self.sample_database()
-                soak = self.run_profile("telemetry_soak", 600, 0)
+                soak = self.run_profile(soak_profile, 600, 0)
                 self.sample_database()
                 metrics_summary = self.await_metrics()
                 self.sample_database()
@@ -2499,6 +2583,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             SETUP_REHEARSAL_MODE: "setup rehearsal",
             SESSION_PROVISIONING_REHEARSAL_MODE: "session provisioning rehearsal",
             FULL_GATE_MODE: "external gate",
+            LAUNCH_SIZED_MODE: "LAUNCH-SIZED run (NOT the full gate)",
         }
         label = labels.get(self.mode, "cleanup")
         event(f"Phase 6 {label} verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
@@ -2553,9 +2638,24 @@ if __name__ == "__main__":
                 raise SystemExit(full_gate.run())
             finally:
                 secure_runtime.clear()
+        if arguments == ["--launch-sized"]:
+            raise SystemExit(CapacityGate(LAUNCH_SIZED_MODE).run())
+        if arguments == ["--rehearsal-then-launch-sized"]:
+            rehearsal = CapacityGate(SETUP_REHEARSAL_MODE)
+            secure_runtime = dict(rehearsal.runtime)
+            rehearsal_result = rehearsal.run()
+            if rehearsal_result != 0:
+                secure_runtime.clear()
+                raise SystemExit(rehearsal_result)
+            launch_sized = CapacityGate(LAUNCH_SIZED_MODE, runtime=secure_runtime)
+            try:
+                raise SystemExit(launch_sized.run())
+            finally:
+                secure_runtime.clear()
         raise RuntimeError(
             "use --session-provisioning-rehearsal, --setup-rehearsal, "
-            "--full-gate, --rehearsal-then-full, or --cleanup-only"
+            "--full-gate, --rehearsal-then-full, --launch-sized, "
+            "--rehearsal-then-launch-sized, or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")

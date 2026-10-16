@@ -19,8 +19,13 @@ SCRIPT = (
     / "fantasy-capacity-orchestrator-diagnostic.py"
 )
 PRODUCTION_ORCHESTRATOR = SCRIPT.with_name("fantasy-capacity-orchestrator.py")
+# Deliberately re-pinned when the separate launch-sized mode was added to the
+# production orchestrator (was 4c7e836a...a797f). The full-gate path is held
+# to its old behaviour by test_fantasy_launch_sized_profile.py, which asserts
+# the merge_gate and telemetry_soak commands byte for byte and the 2,500-user
+# lock in fantasy-load-test.py. Any further change to the file needs a new pin.
 PRODUCTION_ORCHESTRATOR_SHA256 = (
-    "4c7e836ac01beb5891fef6323cf3ff28ada7e356688bbfd1bc51265d703a797f"
+    "e1c6d60c777b14b50ee9f47f003c6b6f600041bdadd30318cde8675df1a883ac"
 )
 SPEC = importlib.util.spec_from_file_location("fantasy_capacity_diagnostic", SCRIPT)
 assert SPEC and SPEC.loader

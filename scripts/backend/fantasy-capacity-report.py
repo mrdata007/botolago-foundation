@@ -90,6 +90,8 @@ def render(args: argparse.Namespace) -> int:
     root = args.evidence_root.resolve()
     rehearsal = latest_summary(root, "setup_rehearsal")
     full = latest_summary(root, "full_gate")
+    launch = latest_summary(root, "launch_sized")
+    launch_scope = args.scope == "launch-sized"
     recovery_candidates = sorted(
         root.glob("*/recovery-cleanup-summary.json"),
         key=lambda path: path.stat().st_mtime_ns,
@@ -100,7 +102,16 @@ def render(args: argparse.Namespace) -> int:
     sanitized = not violations
     recovery_passed = bool(recovery and recovery.get("passed"))
     # A rehearsal-only run (--scope rehearsal) passes on the rehearsal and the
-    # cleanup; the full run also needs the 2,500-user gate and soak.
+    # cleanup; the full run also needs the 2,500-user gate and soak. A
+    # launch-sized run (--scope launch-sized) needs the launch-sized summary
+    # and never counts the full-gate summary, nor the reverse: the two are
+    # separate evidence and one cannot stand in for the other.
+    if args.scope == "rehearsal":
+        measured_passed = True
+    elif launch_scope:
+        measured_passed = bool(launch and launch.get("passed"))
+    else:
+        measured_passed = bool(full and full.get("passed"))
     gate_passed = bool(
         sanitized
         and args.oidc_outcome == "success"
@@ -108,39 +119,73 @@ def render(args: argparse.Namespace) -> int:
         and args.cleanup_exit == 0
         and rehearsal
         and rehearsal.get("passed")
-        and (args.scope == "rehearsal" or (full and full.get("passed")))
+        and measured_passed
         and recovery_passed
     )
 
+    if launch_scope:
+        heading = "## Fantasy load test (LAUNCH-SIZED run, staging): NOT the full capacity gate"
+        scope_text = (
+            "rehearsal, then the LAUNCH-SIZED run (1,000 users, 175 then 65 RPS, "
+            "60 s plus a 10-minute soak). This is NOT the full 2,500-user gate."
+        )
+        verdict_text = (
+            "LAUNCH-SIZED PASS (not the full gate)" if gate_passed else "FAIL/BLOCKED"
+        )
+        measured = launch
+    else:
+        heading = "## Fantasy load test (Phase 6 capacity gate, staging)"
+        scope_text = (
+            "setup rehearsal only"
+            if args.scope == "rehearsal"
+            else "rehearsal, then the 2,500-user gate and soak"
+        )
+        verdict_text = "PASS" if gate_passed else "FAIL/BLOCKED"
+        measured = full
+
     lines = [
         "<!-- phase6-capacity-evidence:start -->",
-        "## Fantasy load test (Phase 6 capacity gate, staging)",
+        heading,
         "",
         f"Workflow run: [{args.run_label}]({args.run_url})",
         "",
-        f"Scope: {'setup rehearsal only' if args.scope == 'rehearsal' else 'rehearsal, then the 2,500-user gate and soak'}",
+        f"Scope: {scope_text}",
         "",
-        f"Verdict: **{'PASS' if gate_passed else 'FAIL/BLOCKED'}**",
+        f"Verdict: **{verdict_text}**",
         "",
         "- Execution: protected `staging-load-test` environment with owner approval",
         "- AWS authentication: GitHub OIDC assumed-role session; no long-lived AWS keys",
         "- Region: `eu-west-3`",
         "- Cost/lifetime guards: conservative estimate under `$50`; two-hour job limit; 105-minute runner self-termination",
         f"- Setup rehearsal: {'pass' if rehearsal and rehearsal.get('passed') else 'not passed'}",
-        f"- Exact 2,500-user gate and soak: {'pass' if full and full.get('passed') else 'not passed'}",
+        (
+            "- Exact 2,500-user gate and soak: NOT RUN in this scope; "
+            "this result does not count as the full gate"
+            if launch_scope
+            else f"- Exact 2,500-user gate and soak: {'pass' if full and full.get('passed') else 'not passed'}"
+        ),
+        (
+            f"- Launch-sized run (1,000 users): {'pass' if launch and launch.get('passed') else 'not passed'}"
+            if launch_scope
+            else "- Launch-sized run: not part of this scope"
+        ),
         f"- Independent exact-zero cleanup: {'pass' if recovery_passed else 'not passed'}",
         f"- Evidence sanitizer: {'pass' if sanitized else 'failed; artifacts suppressed'}",
     ]
 
-    if full:
-        merge = full.get("mergeGate", {}).get("overall", {})
-        soak = full.get("soak", {}).get("overall", {})
-        metrics = full.get("metrics", {})
-        integrity = full.get("integrity", {})
+    if measured:
+        merge = measured.get("mergeGate", {}).get("overall", {})
+        soak = measured.get("soak", {}).get("overall", {})
+        metrics = measured.get("metrics", {})
+        integrity = measured.get("integrity", {})
         lines.extend(
             [
                 "",
-                "Measured evidence:",
+                (
+                    "Measured evidence (LAUNCH-SIZED: 1,000 users, 175 then 65 RPS; NOT the full gate):"
+                    if launch_scope
+                    else "Measured evidence:"
+                ),
                 "",
                 f"- merge read p95: `{merge.get('readP95Ms', 'n/a')} ms`",
                 f"- merge mutation p95/p99: `{merge.get('mutationP95Ms', 'n/a')} / {merge.get('mutationP99Ms', 'n/a')} ms`",
@@ -179,7 +224,15 @@ def render(args: argparse.Namespace) -> int:
         "oidcOutcome": args.oidc_outcome,
         "rehearsalPassed": bool(rehearsal and rehearsal.get("passed")),
         "scope": args.scope,
-        "fullGatePassed": bool(full and full.get("passed")),
+        # The full-gate flag can only come from the full-gate summary, and is
+        # always false for a launch-sized scope.
+        "fullGatePassed": bool(not launch_scope and full and full.get("passed")),
+        "launchSizedPassed": bool(launch_scope and launch and launch.get("passed")),
+        "evidenceLabel": (
+            "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate"
+            if launch_scope
+            else "full gate" if args.scope == "full" else "setup rehearsal"
+        ),
         "violations": violations,
     }
     private_write(
@@ -199,7 +252,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--oidc-outcome", required=True)
     parser.add_argument("--capacity-exit", required=True, type=int)
     parser.add_argument("--cleanup-exit", required=True, type=int)
-    parser.add_argument("--scope", choices=("rehearsal", "full"), default="full")
+    parser.add_argument(
+        "--scope", choices=("rehearsal", "full", "launch-sized"), default="full"
+    )
     return parser.parse_args()
 
 
