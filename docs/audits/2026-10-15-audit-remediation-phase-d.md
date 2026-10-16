@@ -152,9 +152,12 @@ pgTAP were not available there.
    an account with more than 2,000 saves can still see a different account's
    cached mark on a card it has not tapped, until the card is re-read; per-account
    cache handling is a separate change. Follow-up (this branch): on sign-out or
-   a switch, the outgoing account's `isSaved: true` marks are now cleared from
+   a switch, the outgoing account's `isSaved: true` marks are now removed from
    the public News caches (`forgetViewerSavedMarks`), so the next reader no
-   longer inherits them. Still open: a News answer for the outgoing account
+   longer inherits them. The mark is removed, not set to false: a missing mark
+   is "unknown" (`savedStateOf` returns null and a tap asks the server), whereas
+   a false would be trusted by an account with over 2,000 saves for a story
+   outside its newest 2,000 and wrongly show a story it did save as unsaved. Still open: a News answer for the outgoing account
    that is in flight at the moment it leaves, and an account with over 2,000
    saves whose cards were read before it signed in (those carry no mark).
 3. **Latent invite-code leak:** if the leagues read ever exposes invite codes, the

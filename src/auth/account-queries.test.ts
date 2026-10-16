@@ -379,6 +379,27 @@ describe("public News caches across an account switch", () => {
     expect(planSavedToggle(bobIds, STORY)).toBe("ask");
   });
 
+  it("clears a mark to unknown, not to a confirmed false: both accounts saved the story, B's ids are partial", () => {
+    const qc = client();
+    // A and B both saved STORY; the feed was read as A, so it says isSaved: true.
+    newsReadAs(qc);
+    const watch = watchAccountSwitch((uid) => forgetAccount(qc, uid));
+    watch(signedIn(A));
+    watch(signedIn(B));
+
+    // B has more than 2,000 saves: the ids are partial and do not hold STORY.
+    const bobIds: SavedIdsSnapshot = { ids: [OTHER], complete: false, removed: [] };
+    const feed = qc.getQueryData<{ pages: { items: Record<string, unknown>[] }[] }>(FEED_KEY);
+    const cleaned = feed?.pages[0]?.items.find((item) => item.id === STORY);
+    expect(cleaned).toBeDefined();
+    expect("isSaved" in (cleaned ?? {})).toBe(false);
+
+    // Unknown (null), so the bookmark asks the server; a rewritten false would
+    // be trusted here and show a story B did save as unsaved.
+    expect(savedStateOf(bobIds, STORY, cleaned?.isSaved as boolean | undefined)).toBeNull();
+    expect(planSavedToggle(bobIds, STORY)).toBe("ask");
+  });
+
   it("keeps everything else about the cached answers, and leaves other keys alone", () => {
     const qc = client();
     newsReadAs(qc);
@@ -428,7 +449,9 @@ describe("public News caches across an account switch", () => {
     forgetAccount(qc, A);
     await settle();
     expect(seen.every((data) => data !== undefined)).toBe(true);
-    expect(observer.getCurrentResult().data).toMatchObject({ id: STORY, isSaved: false });
+    const shown = observer.getCurrentResult().data as Record<string, unknown>;
+    expect(shown).toMatchObject({ id: STORY });
+    expect("isSaved" in shown).toBe(false);
     unsubscribe();
   });
 
@@ -466,7 +489,7 @@ describe("public News caches across an account switch", () => {
     expect(qc.getQueryData(keys.collectionB)).toBe(held.collectionB);
     expect(qc.getQueryData(keys.idsB)).toBe(held.idsB);
     expect(marked(qc)).toEqual([keys.collectionA, keys.collectionB]);
-    expect(qc.getQueryData<{ isSaved: boolean }>(DETAIL_KEY)?.isSaved).toBe(false);
+    expect(qc.getQueryData<{ isSaved?: boolean }>(DETAIL_KEY)?.isSaved).toBeUndefined();
 
     // The outgoing account's entries go by their account id, whole; the
     // account that stays keeps its own, still marked.

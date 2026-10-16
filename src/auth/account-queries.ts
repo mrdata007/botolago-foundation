@@ -69,7 +69,13 @@ export function forgetAccount(queryClient: QueryClient, uid: string): void {
 /** The News entries that are keyed by an account and so are removed, not rewritten. */
 const ACCOUNT_KEYED_NEWS = new Set(["saved-collection", "saved-article-ids"]);
 
-/** `value` with every `isSaved: true` set to false; the same object if there is none. */
+/**
+ * `value` with every `isSaved: true` removed, not set to false; the same object
+ * if there is none. A missing mark reads as "the server has not said"
+ * (`savedStateOf` returns null and the bookmark asks); a `false` would read as
+ * the server saying "not saved", which is wrong for a story the next account
+ * also saved.
+ */
 function withoutSavedMarks(value: unknown): unknown {
   if (Array.isArray(value)) {
     let changed = false;
@@ -84,7 +90,11 @@ function withoutSavedMarks(value: unknown): unknown {
   let changed = false;
   const next: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
-    const rewritten = key === "isSaved" && item === true ? false : withoutSavedMarks(item);
+    if (key === "isSaved" && item === true) {
+      changed = true;
+      continue;
+    }
+    const rewritten = withoutSavedMarks(item);
     if (rewritten !== item) changed = true;
     next[key] = rewritten;
   }
@@ -100,8 +110,12 @@ function withoutSavedMarks(value: unknown): unknown {
  * next reader of the same browser (`savedStateOf` falls back to the story's
  * own answer for an account with more than 2,000 saves).
  *
- * The outgoing account's marks are set back to "not saved", which is what a
- * visitor with no account is given. The entries stay where they are, so a
+ * The outgoing account's marks are removed, so the answer is "unknown" rather
+ * than a confirmed "not saved": `savedStateOf` returns null for a story with no
+ * mark, and the bookmark shows it unsaved but asks the server on a tap. Setting
+ * them to false would be trusted by an account with more than 2,000 saves for
+ * a story outside its newest 2,000, wrongly hiding a save both accounts made.
+ * The entries stay where they are, so a
  * mounted screen keeps its articles (nothing refetches, nothing blinks) and
  * an entry with no mark in it is not touched at all. The data keeps its age.
  * An answer for the outgoing account that is still in flight when it leaves

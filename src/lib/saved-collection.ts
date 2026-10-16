@@ -94,7 +94,8 @@ export function savedStateOf(
   // shared news caches is NOT trusted then: those caches are not kept per
   // account, so it may be another account's answer. Only a partial set of
   // THIS account's ids may fall back to it, below. (On sign-out or a switch
-  // the outgoing account's marks are also cleared from those caches:
+  // the outgoing account's marks are also removed from those caches, so the
+  // answer there is "unknown" (undefined), never a rewritten false:
   // `forgetViewerSavedMarks` in `@/auth/account-queries`.)
   if (!snapshot) return null;
   if (snapshot.ids.includes(id)) return true;
