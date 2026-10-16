@@ -69,12 +69,29 @@
 -- error and can be repeated after the gameweek is finalized. The current player-list update keeps its
 -- own earlier refusal (fantasy_gameweek_finalizing).
 --
--- NOT COVERED, ON PURPOSE. A concurrent writer that has already passed the check when the gameweek turns
--- 'finalizing' (a window of the length of one transaction) is not stopped: closing it needs a lock that
--- api.service_begin_fantasy_finalization would have to take too, and the lifecycle functions are not
--- touched here. api.service_begin_fantasy_finalization recomputes and compares the document in the same
--- transaction that moves the status, so a change that committed earlier is refused there and one that
--- commits later is the case above.
+-- THE RACE, AND THE LOCK THAT CLOSES IT. A check that only read the status would leave a window: a writer
+-- that saw 'provisional' could still commit after the gameweek turned 'finalizing'. So each trigger first
+-- takes FOR KEY SHARE on the season's current gameweek row (status open, locked, live, provisional or
+-- finalizing: at most one per season, fantasy_gameweeks_one_current_idx) and only then looks at the status
+-- that lock returns. api.service_begin_fantasy_finalization, the only function that moves a gameweek to
+-- 'finalizing', locks that row FOR UPDATE, then recomputes the scoring input document and moves the status
+-- in the same transaction, and FOR UPDATE conflicts with FOR KEY SHARE. So either the writer holds the lock
+-- first (the finalization waits for the writer's commit and then recomputes the document with the writer's
+-- row in it: the seal is right, or refused cleanly with fantasy_scoring_input_changed while the gameweek is
+-- still provisional), or the finalization holds it first (the writer waits, then reads 'finalizing' and
+-- refuses). FOR KEY SHARE does not block readers, other KEY SHARE holders, or a plain UPDATE of the row (the
+-- lifecycle's ordinary status and counter updates); only a FOR UPDATE waits, and only for the writer's
+-- transaction. A matcher block that is refused releases it with its savepoint.
+--
+-- LOCK ORDER. A writer takes its table lock (at statement start), then this row. The lifecycle takes the
+-- calendar advisory lock, then gameweek rows, then assignments and fixtures; the price batches take their
+-- lock on app.fantasy_players before the gameweek row, so a writer queues behind a batch before it holds
+-- the gameweek row, and a batch queues behind a writer that already holds it (checked with two sessions on
+-- PostgreSQL 16: no deadlock). The one cycle left is a long catalog write that holds pool-row locks
+-- against a lifecycle step that holds the gameweek row and updates the same pool rows (the player-list
+-- update, which requires the lifecycle tick paused): PostgreSQL detects it and ends one side, and the
+-- matcher holds the player and retries, the worker retries. The membership trigger takes the lock only for a
+-- player who is in a pool (one lookup for every other membership).
 --
 -- Applying it writes no data. Forward-only; roll back with a migration that drops the three triggers
 -- and three functions.
@@ -110,6 +127,7 @@ returns trigger language plpgsql security definer set search_path = '' as $$
 declare
   old_season uuid;
   new_season uuid;
+  week_status app.fantasy_gameweek_status;
 begin
   if TG_OP = 'UPDATE' and row(old.id, old.fantasy_season_id, old.football_player_id,
       old.football_team_id, old.position_id) is not distinct from
@@ -118,15 +136,20 @@ begin
   end if;
   if TG_OP <> 'INSERT' then old_season := old.fantasy_season_id; end if;
   if TG_OP <> 'DELETE' then new_season := new.fantasy_season_id; end if;
-  if exists (
-    select 1 from app.fantasy_gameweeks gw
-    where gw.status = 'finalizing'
-      and gw.fantasy_season_id in (old_season, new_season)
-  ) then
-    raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
-      detail = 'app.fantasy_players: a gameweek of this Fantasy season is finalizing and its scoring snapshot is sealed',
-      hint = 'Retry once the gameweek is finalized.';
-  end if;
+  -- Lock the current gameweek row(s) of the season(s) first, then read the status the lock returns.
+  for week_status in
+    select gw.status from app.fantasy_gameweeks gw
+    where gw.fantasy_season_id in (old_season, new_season)
+      and gw.status in ('open', 'locked', 'live', 'provisional', 'finalizing')
+    order by gw.id
+    for key share
+  loop
+    if week_status = 'finalizing' then
+      raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
+        detail = 'app.fantasy_players: a gameweek of this Fantasy season is finalizing and its scoring snapshot is sealed',
+        hint = 'Retry once the gameweek is finalized.';
+    end if;
+  end loop;
   if TG_OP = 'DELETE' then return old; end if;
   return new;
 end;
@@ -149,6 +172,9 @@ declare
   old_season uuid;
   new_player uuid;
   new_season uuid;
+  pool_seasons uuid[];
+  pool_season uuid;
+  week_status app.fantasy_gameweek_status;
 begin
   if TG_OP = 'UPDATE' and row(old.player_id, old.team_id, old.season_id, old.valid_from, old.valid_to)
       is not distinct from row(new.player_id, new.team_id, new.season_id, new.valid_from, new.valid_to) then
@@ -156,18 +182,36 @@ begin
   end if;
   if TG_OP <> 'INSERT' then old_player := old.player_id; old_season := old.season_id; end if;
   if TG_OP <> 'DELETE' then new_player := new.player_id; new_season := new.season_id; end if;
-  if exists (
-    select 1
-    from app.fantasy_gameweeks gw
-    join app.fantasy_seasons fs on fs.id = gw.fantasy_season_id
-    join app.fantasy_players fp on fp.fantasy_season_id = fs.id
-    where gw.status = 'finalizing'
-      and ((fs.football_season_id = old_season and fp.football_player_id = old_player)
-        or (fs.football_season_id = new_season and fp.football_player_id = new_player))
-  ) then
-    raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
-      detail = 'app.team_memberships: the player is in the pool of a Fantasy season with a finalizing gameweek and its scoring snapshot is sealed',
-      hint = 'Retry once the gameweek is finalized.';
+  -- Only a player who is in a pool matters, and almost every membership is not: one cheap lookup finds
+  -- the Fantasy seasons of the old and of the new row whose pool holds him (none: nothing more to do).
+  select array_agg(x.id order by x.id) into pool_seasons from (
+    select fs.id from app.fantasy_seasons fs
+    where fs.football_season_id = old_season
+      and exists (select 1 from app.fantasy_players fp
+                  where fp.fantasy_season_id = fs.id and fp.football_player_id = old_player)
+    union
+    select fs.id from app.fantasy_seasons fs
+    where fs.football_season_id = new_season
+      and exists (select 1 from app.fantasy_players fp
+                  where fp.fantasy_season_id = fs.id and fp.football_player_id = new_player)
+  ) x;
+  if pool_seasons is not null then
+    -- In a fixed order: lock each one's current gameweek row, then read the status the lock returns.
+    foreach pool_season in array pool_seasons loop
+      for week_status in
+        select gw.status from app.fantasy_gameweeks gw
+        where gw.fantasy_season_id = pool_season
+          and gw.status in ('open', 'locked', 'live', 'provisional', 'finalizing')
+        order by gw.id
+        for key share
+      loop
+        if week_status = 'finalizing' then
+          raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
+            detail = 'app.team_memberships: the player is in the pool of a Fantasy season with a finalizing gameweek and its scoring snapshot is sealed',
+            hint = 'Retry once the gameweek is finalized.';
+        end if;
+      end loop;
+    end loop;
   end if;
   if TG_OP = 'DELETE' then return old; end if;
   return new;
@@ -186,15 +230,21 @@ on app.team_memberships for each row execute function app_private.fantasy_guard_
 -- ---------------------------------------------------------------------------
 create function app_private.fantasy_guard_finalizing_lineups()
 returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  week_status app.fantasy_gameweek_status;
 begin
-  if exists (
-    select 1 from app.fantasy_gameweeks gw
-    where gw.id = old.gameweek_id and gw.status = 'finalizing'
-  ) then
-    raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
-      detail = 'app.fantasy_lineups: the gameweek is finalizing and its scoring snapshot is sealed',
-      hint = 'Retry once the gameweek is finalized.';
-  end if;
+  for week_status in
+    select gw.status from app.fantasy_gameweeks gw
+    where gw.id = old.gameweek_id
+      and gw.status in ('open', 'locked', 'live', 'provisional', 'finalizing')
+    for key share
+  loop
+    if week_status = 'finalizing' then
+      raise exception using errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen',
+        detail = 'app.fantasy_lineups: the gameweek is finalizing and its scoring snapshot is sealed',
+        hint = 'Retry once the gameweek is finalized.';
+    end if;
+  end loop;
   return old;
 end;
 $$;

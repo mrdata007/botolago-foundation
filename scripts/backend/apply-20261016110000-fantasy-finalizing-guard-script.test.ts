@@ -76,10 +76,11 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
     name: NAME,
     scriptPath: SCRIPT_PATH,
     runbook: RUNBOOK,
-    pauseText: "So the script STOPS, before writing anything, unless these are paused",
+    pauseText: "So the script STOPS, before writing anything, unless these three are paused",
     guards: [
       "the Fantasy lifecycle tick is on -- pause it first",
       "the football live refresh is on -- pause it first",
+      "the account-deletion tick is on -- pause it first",
       "the Fantasy worker holds its lease",
       "the finalizing guard already exists",
       "the database is missing the Fantasy tables or functions this update needs",
@@ -263,6 +264,50 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
     }
   });
 
+  test("each trigger takes FOR KEY SHARE on the season's current gameweek row before it reads the status", () => {
+    const code = migration.replace(/--[^\n]*/g, "");
+    expect(occurrences(code, "for key share")).toBe(3);
+    expect(
+      occurrences(code, "gw.status in ('open', 'locked', 'live', 'provisional', 'finalizing')"),
+    ).toBe(3);
+    // The lock is taken first and the status is read from the locked row, never by a separate EXISTS.
+    expect(code).not.toMatch(/exists\s*\(\s*select[^;]*status\s*=\s*'finalizing'/i);
+    for (const fn of NEW_FUNCTIONS) {
+      const body = bodyOf(migration, fn.header);
+      expect(body.indexOf("for key share")).toBeGreaterThan(-1);
+      expect(body.indexOf("for key share")).toBeLessThan(body.indexOf("raise exception"));
+      expect(body).toContain("if week_status = 'finalizing' then");
+    }
+    // The membership guard looks the pool up first and takes the lock only for a pooled player.
+    const membership = bodyOf(migration, NEW_FUNCTIONS[1].header);
+    expect(membership.indexOf("pool_seasons")).toBeLessThan(membership.indexOf("for key share"));
+    expect(membership).toContain("if pool_seasons is not null then");
+    // Only the finalization moves a gameweek to finalizing, and it locks the row FOR UPDATE first.
+    const begin = read("supabase/migrations/20260914200719_fantasy_scoring_worker_contracts.sql");
+    const at = begin.indexOf("create function api.service_begin_fantasy_finalization(");
+    expect(at).toBeGreaterThan(-1);
+    const fn = begin.slice(at, begin.indexOf("revoke all", at));
+    expect(
+      fn.indexOf("from app.fantasy_gameweeks where id=p_gameweek_id for update"),
+    ).toBeGreaterThan(-1);
+    expect(fn.indexOf("for update")).toBeLessThan(fn.indexOf("set status='finalizing'"));
+    // One current gameweek per season, so the lock is one row.
+    expect(read("supabase/migrations/20260720141826_fantasy_catalog_rules.sql")).toContain(
+      "where status in ('open', 'locked', 'live', 'provisional', 'finalizing')",
+    );
+    for (const file of migrationFiles()) {
+      if (file.startsWith(VERSION)) continue;
+      const text = read(`supabase/migrations/${file}`).replace(/--[^\n]*/g, "");
+      expect({ file, flips: /set\s+status\s*=\s*'finalizing'/i.test(text) }).toEqual({
+        file,
+        flips: [
+          "20260720163222_fantasy_ruleset_v1.sql",
+          "20260914200719_fantasy_scoring_worker_contracts.sql",
+        ].includes(file),
+      });
+    }
+  });
+
   test("the guard fires after every existing guard of the pool, so each keeps its own answer", () => {
     // Triggers of one kind fire in name order (C collation).
     const mine = "fantasy_players_guard_finalizing_inputs";
@@ -342,6 +387,19 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
       expect(agents).toContain(command);
       expect(header).toContain(command);
     }
+    // Account erasure is a required pause; Pépites and the Manager Card are explained, with AGENTS.md's commands.
+    for (const command of [
+      "select app_private.account_deletion_configure(false);",
+      "select app_private.pepites_configure('off', null);",
+      "select app_private.manager_card_configure(false, null);",
+      "select app_private.manager_card_configure(true, null);",
+    ]) {
+      expect(agents).toContain(command);
+      expect(header).toContain(command);
+    }
+    expect(header).toContain("select app_private.account_deletion_configure(true);");
+    expect(header).toContain("they need not be paused");
+    expect(preflight).toContain("from app_private.account_deletion_settings s where s.enabled");
     expect(header).toContain("select app_private.fantasy_automation_configure(true);");
     expect(header).toContain("fantasy-lifecycle-tick");
     expect(header).toContain("fantasy-worker-tick");

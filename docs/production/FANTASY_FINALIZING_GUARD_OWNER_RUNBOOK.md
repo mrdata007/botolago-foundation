@@ -45,6 +45,33 @@ scoring rules, lifecycle states and every existing guard are unchanged: the new 
 sort **after** the existing pool triggers, so each existing guard still answers first where it
 applies (a position change during `finalizing` still gets `fantasy_gameweek_locked`).
 
+### The lock: no writer can commit after the seal
+
+Each trigger first takes `FOR KEY SHARE` on the season's **current gameweek row** (status `open`,
+`locked`, `live`, `provisional` or `finalizing`: at most one per season, by
+`fantasy_gameweeks_one_current_idx`) and only then reads the status that lock returns.
+`api.service_begin_fantasy_finalization`, the only function that moves a gameweek to `finalizing`,
+locks that row `FOR UPDATE`, recomputes the scoring input document and moves the status in one
+transaction, and `FOR UPDATE` conflicts with `FOR KEY SHARE`. So, for any two overlapping
+transactions, either the writer holds the lock first (the finalization waits for its commit, then
+recomputes the document with the writer's row in it: the seal is right, or is refused cleanly with
+`fantasy_scoring_input_changed` while the gameweek is still `provisional`) or the finalization
+holds it first (the writer waits, then reads `finalizing` and is refused). Readers, other
+`KEY SHARE` holders and a plain `UPDATE` of the gameweek row (the lifecycle's status and counter
+updates) are not blocked; only a `FOR UPDATE` waits, and only for the writer's transaction. The
+membership trigger takes the lock only for a player who is in a pool (one lookup otherwise).
+
+Lock order: a writer takes its table lock (at statement start), then this row. The lifecycle takes
+the calendar advisory lock, then gameweek rows, then assignments and fixtures. The price batches
+(`service_run_fantasy_price_batch`, `service_run_fantasy_close_price_batch`) take their table lock
+on `app.fantasy_players` **before** the gameweek row, so a writer queues behind a batch before it
+holds the row, and a batch queues behind a writer that already holds it. The one cycle left: a long
+catalog write that holds pool-row locks (the player-list update, which already requires the
+lifecycle tick paused) against a lifecycle step that holds the gameweek row and updates the same
+rows. PostgreSQL detects a deadlock and ends one side; the matcher holds the player and retries,
+the worker retries. Account erasure can meet the lifecycle the same way on lineup rows; its worker
+retries hourly.
+
 ### What happens to the things that were writing
 
 - **The SofaScore matcher** is not changed and does not fail. It creates each player inside a
@@ -69,9 +96,9 @@ applies (a position change during `finalizing` still gets `fantasy_gameweek_lock
 
 ## What to pause (AGENTS.md, "One writer at a time, per database")
 
-The script changes the guards on tables the Fantasy lifecycle and the live refresh write.
-Creating a trigger takes a short lock that waits for those writers (the script stops after 5
-seconds instead of queueing). So the script **refuses to run** unless these two are paused, and
+The script changes the guards on tables the Fantasy lifecycle, the live refresh and account erasure
+write. Creating a trigger takes a short lock that waits for those writers (the script stops after 5
+seconds instead of queueing). So the script **refuses to run** unless these three are paused, and
 refuses while the Fantasy worker holds its lease:
 
 1. **The Fantasy lifecycle tick** (and with it the Fantasy worker tick: they score, lock, finalize
@@ -99,15 +126,39 @@ refuses while the Fantasy worker holds its lease:
 
    This also stands down the e-mail and results jobs and the season refresh while it is off.
 
-Not needed: the account-deletion tick (a few accounts an hour; if the script times out on the
-lineups table, run it again), managers' own lineup edits (ordinary traffic, a moment's lock), the
-Manager Card, Pépites, Trophées and Rivaux ticks (they read these tables; a new trigger does not
-block a reader), and the news and prediction jobs (other tables).
+3. **The account-deletion tick** (hourly at minute 23): its erasure deletes lineups, which the new
+   lineup trigger guards. Look first, then pause:
+
+   ```sql
+   select enabled from app_private.account_deletion_settings;
+   select app_private.account_deletion_configure(false);
+   ```
+
+   A request that falls due meanwhile simply waits; asking to delete still closes the account at
+   once.
+
+**Pépites and the Manager Card: not required, and why.** `AGENTS.md` lists them for "a write that
+touches ... team memberships" (Pépites) and "... lineups" (Manager Card). This script writes no row
+of any of these tables: it adds triggers and function definitions. Both jobs only **read** the
+guarded tables (they write their own tables), and creating a trigger takes a lock that does not
+block a reader, so they cannot collide with it. If you prefer the strict reading anyway, with the
+commands copied from `AGENTS.md`:
+
+```sql
+select mode from app_private.pepites_settings;          -- write it down
+select app_private.pepites_configure('off', null);      -- restore: the mode it showed
+select app_private.manager_card_configure(false, null);
+select app_private.manager_card_configure(true, null);  -- afterwards, only if compute was on
+```
+
+Also not needed: managers' own lineup edits (ordinary traffic, a moment's lock), the Trophées and
+Rivaux ticks (they read these tables), and the news and prediction jobs (other tables).
 
 **After the commit, restore only what was on:**
 
 ```sql
 select app_private.fantasy_automation_configure(true);
+select app_private.account_deletion_configure(true);
 select app_private.notification_email_configure('<mode it showed>', null, <test_user_ids it showed, or null>, <football_live_refresh_enabled it showed>);
 ```
 
@@ -134,15 +185,15 @@ select version from supabase_migrations.schema_migrations
 Same way as the other guarded scripts (`docs/production/PHASE_A_B_MIGRATIONS_OWNER_RUNBOOK.md`):
 
 1. Supabase dashboard, project "BotolaGO Production V2" (the address contains
-   `tkewgajrljbwgwedqsxn`), SQL Editor, New query. Pause the two writers above.
+   `tkewgajrljbwgwedqsxn`), SQL Editor, New query. Pause the three writers above.
 2. Paste the whole script and press Run. As shipped it ends in `rollback;`: a **rehearsal**. The
    result row says "Rehearsal passed".
 3. Change the line `rollback;` to `commit;` and press Run again. The result row says "Applied".
 4. Restore what you paused.
 
 The script refuses to run twice; refuses unless `20260927094823`, `20261009091728`,
-`20261013160200` and `20261014170000` are recorded; refuses while the lifecycle tick or the live
-refresh is on or the worker holds its lease; refuses unless the six functions it relies on are
+`20261013160200` and `20261014170000` are recorded; refuses while the lifecycle tick, the live
+refresh or the account-deletion tick is on or the worker holds its lease; refuses unless the six functions it relies on are
 **byte for byte** the repository's latest definitions (md5 of their source): the two
 price-processing guards, the pool rule trigger, the snapshot check, the catalog-player creation
 and the SofaScore matcher; and refuses if the scoring input document functions no longer read the
@@ -188,14 +239,26 @@ Nothing else depends on them. Rolling back restores the defect.
 
 ## Not covered, and why
 
-- **A concurrent writer already past the check when the gameweek turns `finalizing`** (a window of
-  one transaction) is not stopped. Closing it needs a lock that
-  `api.service_begin_fantasy_finalization` would also have to take, and the lifecycle functions
-  are not touched here. That function recomputes and compares the document in the same transaction
-  that moves the status, so a change that committed earlier is refused there. Follow-up if wanted:
-  have it take `fantasy:catalog:<football season>` shared, the lock catalog writers already take.
-- **Other inputs of the document** (fixtures, assignments, performance rows, observations,
-  scoring rules) have their own controls and are not part of this change.
+- **Known gap, follow-up: a score correction on an already finished fixture.** A SofaScore score
+  or status correction written through `api.ingest_football_fixture`
+  (`20260922200000_fixture_finalization_preserved.sql`, the `update app.fixtures` branch) can
+  still change a fixture row that is part of the sealed document (`fixtures[]`: status, scores,
+  `finalizedAt`, `sourceSequence`, `sourceVersion`), so it could strand a `finalizing` gameweek in
+  the same way. It is **not guarded here**: fixtures are written by the football ingestion, not
+  by the catalog writers this change is about, and a score change after the seal is a different
+  decision (refuse, hold, or reopen the gameweek) that belongs to the owner and the fixture
+  rules; this change does not touch fixture handling. **How to detect a stuck gameweek:** a
+  gameweek in `finalizing` for much longer than a finalization pass, and
+  `service_finalize_fantasy_team_results` / `service_complete_fantasy_gameweek` failing on
+  **every** pass with `fantasy_scoring_input_changed` (see `app_private.fantasy_worker_runs`, the
+  Fantasy worker ops health check and the worker logs). **What the owner does:** do not edit the
+  sealed rows; find what changed (compare the sealed `payload` in
+  `app_private.fantasy_scoring_snapshots` with
+  `app_private.fantasy_scoring_input_document(<gameweek id>)`), then decide with the rules owner:
+  put the fixture back by a reviewed correction, or reopen the gameweek by the documented
+  correction path to re-seal. Do not weaken a guard.
+- **Other inputs of the document** (assignments, performance rows, observations, scoring rules)
+  have their own controls and are not part of this change.
 - **The matcher's log label** does not show `createFailed`
   (`mapped=..,queued=..,conflicts=..`). Optional follow-up in
   `supabase/functions/_shared/sofascore-fantasy-auto.ts` if you want a held player visible in the
@@ -203,15 +266,28 @@ Nothing else depends on them. Rolling back restores the defect.
 
 ## What was and was not run
 
-Run in this session: the migration and a stub copy of the affected tables on a throwaway local
-PostgreSQL 16 (unix socket only, deleted afterwards): every guard rule, the no-op and
-non-input writes, the matcher's `BEGIN ... EXCEPTION WHEN OTHERS` shape, and the apply script
-itself (rehearsal, commit, a second run, and seven refusals) with the real function bodies from the
-repository. `bun run backend:migrations:check`, `bun run typecheck`, the script test and
+Run in this session, on a throwaway local PostgreSQL 16 (unix socket only, deleted afterwards)
+with stub copies of the affected tables:
+
+- the migration and every guard rule (refusals, pass-throughs, the existing position guard
+  answering first), including the matcher's `BEGIN ... EXCEPTION WHEN OTHERS` shape;
+- the lock, with two sessions: a writer first makes the finalization's `FOR UPDATE` wait about 2 s
+  and the finalizer then sees the writer's row; a finalizer first makes the writer wait about 2 s
+  and then refuse; readers, a second writer and a plain `UPDATE` of the gameweek are not blocked;
+  a price-batch-ordered session and a writer queue behind each other in either order with no
+  deadlock; a pool player's membership writer makes the finalization wait;
+- the apply script with the real function bodies from the repository (rehearsal, commit, a
+  second run, and refusals, including the account-deletion switch);
+- the membership trigger on 50,000 inserted rows, nothing finalizing: players outside every pool
+  0.29 s without the guard, 0.99 s with it (about 14 microseconds a row; an earlier version without
+  the early lookup cost about 126); players in a pool (the lock path) 0.24 s and 1.40 s; 50,000
+  pool inserts 0.92 s and 1.48 s. A bulk load of memberships is not slowed noticeably.
+
+`bun run backend:migrations:check`, `bun run typecheck`, the script test and
 `bun test scripts/backend` (see the pull request for the results).
 
 **Not run:** the pgTAP file (`supabase/tests/database/fantasy_finalizing_scoring_inputs_guard.test.sql`):
-Docker and the Supabase stack are not available here, so it has never executed; CI's
-`database-quality` job is the authority. It exercises the real matcher, the real scoring input
-document and the real triggers on the repository's schema. Nothing was run against Staging or
-Production.
+Docker and the Supabase stack are not available here, so it has never executed in this
+environment; CI's `database-quality` job is the authority. It exercises the real matcher, the real
+scoring input document and the real triggers on the repository's schema. Nothing was run against
+Staging or Production.

@@ -188,6 +188,9 @@ export function build(): string {
 -- with his pool entry; that is one more row in the sealed document, so every later finalization pass
 -- fails with fantasy_scoring_input_changed and the gameweek can never complete. Price, status, eligible,
 -- active, shirt numbers, names, photos, and every write while no gameweek is finalizing, stay as they are.
+-- Each trigger first takes FOR KEY SHARE on the season's current gameweek row, which the finalization's
+-- FOR UPDATE on the same row conflicts with, so a writer cannot commit after the gameweek has been sealed:
+-- it either commits first (the finalization then sees its row) or waits and is refused.
 -- The matcher is not changed: it creates a player inside a BEGIN ... EXCEPTION WHEN OTHERS block, so the
 -- refusal undoes that one player, counts createFailed, leaves him queued, and the rest of the batch and
 -- of the live refresh go on; the next call creates him once the gameweek is no longer finalizing.
@@ -203,9 +206,9 @@ export function build(): string {
 --
 -- WHAT TO PAUSE (AGENTS.md, "One writer at a time, per database")
 --   This changes the guards on app.fantasy_players, app.team_memberships and app.fantasy_lineups, which the
---   Fantasy lifecycle and the SofaScore live refresh write. Creating a trigger takes a short lock that
+--   Fantasy lifecycle, the SofaScore live refresh and account erasure write. Creating a trigger takes a short lock that
 --   waits for them, and the 5 second lock timeout below stops the script instead of queueing behind them.
---   So the script STOPS, before writing anything, unless these are paused:
+--   So the script STOPS, before writing anything, unless these three are paused:
 --   * the Fantasy lifecycle tick and, with it, the Fantasy worker tick (fantasy-lifecycle-tick,
 --     fantasy-worker-tick; they score, lock, finalize and write prices and lineups). First look at
 --     select lifecycle_tick_enabled from app_private.fantasy_automation_settings;
@@ -219,12 +222,23 @@ export function build(): string {
 --     select app_private.notification_email_configure('off', null, null, false);
 --     (this also stands down the e-mail and results jobs and the season refresh; write down what the
 --     first query showed, it is what you restore).
---   Not needed: the account-deletion tick (hourly, a few accounts; if the script times out on the
---   lineups table, run it again), managers' own lineup edits (ordinary traffic, a moment's lock), the
---   Manager Card, Pépites, Trophées and Rivaux ticks (they read these tables and a new trigger does not
---   block a reader), and the news and prediction jobs (other tables).
+--   * the account-deletion tick (hourly at minute 23; its erasure deletes lineups, which the new lineup
+--     trigger guards, and its lineup deletes would queue behind the trigger's lock). First look at
+--     select enabled from app_private.account_deletion_settings;
+--     then pause: select app_private.account_deletion_configure(false);
+--     (the script checks the switch; a request that falls due meanwhile simply waits).
+--   Optional, and why: AGENTS.md also lists Pépites ("a write that touches ... team memberships") and the
+--   Manager Card ("a write that touches ... lineups"). This script writes no row of any table: it adds
+--   triggers, and both jobs only READ these tables (their own tables are written elsewhere); a new trigger
+--   takes a lock that does not block a reader. So they need not be paused. If you prefer the strict
+--   reading, the commands are: look at select mode from app_private.pepites_settings; then
+--   select app_private.pepites_configure('off', null); and select app_private.manager_card_configure(false, null);
+--   and restore the previous Pépites mode and select app_private.manager_card_configure(true, null); only
+--   if compute was on. Not needed either: managers' own lineup edits (ordinary traffic, a moment's lock),
+--   the Trophées and Rivaux ticks (they read these tables), and the news and prediction jobs (other tables).
 --   Restore AFTER the commit, and only what was on: select app_private.fantasy_automation_configure(true);
---   and select app_private.notification_email_configure('<mode it showed>', null, <test_user_ids it
+--   select app_private.account_deletion_configure(true); and
+--   select app_private.notification_email_configure('<mode it showed>', null, <test_user_ids it
 --   showed, or null>, <football_live_refresh_enabled it showed>);
 --   While paused nothing is scored or finalized and no match is recorded; a few minutes is harmless.
 --   Still make sure no other schema change (another apply script, a migration, a deploy) is running right
@@ -235,7 +249,7 @@ export function build(): string {
 -- HOW TO RUN
 --   0. Supabase dashboard -> project "BotolaGO Production V2" (the address contains
 --      tkewgajrljbwgwedqsxn; the database holds no project name this script could check, so look
---      at the address) -> SQL Editor -> New query. Pause the two writers above first.
+--      at the address) -> SQL Editor -> New query. Pause the three writers above first.
 --   1. Paste this WHOLE file and press Run.
 --      As shipped it is a REHEARSAL: everything is applied inside one transaction, checked, and
 --      then ROLLED BACK. The result row should say "Rehearsal passed".
@@ -249,9 +263,9 @@ export function build(): string {
 --
 -- WHAT IT DOES
 --   * refuses to run twice (history row, or any of the three functions or triggers already there), before
---     the four migrations above are recorded, while the Fantasy lifecycle tick or the live refresh is on
---     or the Fantasy worker holds its lease, and where any of the six functions it relies on is not
---     byte for byte the text the repository's latest migration defines (md5 of its source): the two
+--     the four migrations above are recorded, while the Fantasy lifecycle tick, the live refresh or the
+--     account-deletion tick is on or the Fantasy worker holds its lease, and where any of the six
+--     functions it relies on is not byte for byte the text the repository's latest migration defines (md5 of its source): the two
 --     price-processing guards, the pool rule trigger, the snapshot check, the catalog-player creation
 --     and the SofaScore matcher;
 --   * refuses to run where the scoring input document functions no longer read the Fantasy pool, the
@@ -316,6 +330,10 @@ begin
   end if;
   if exists (select 1 from app_private.notification_email_settings s where s.football_live_refresh_enabled) then
     raise exception 'stop: the football live refresh is on -- pause it first: select app_private.notification_email_configure(''off'', null, null, false); (see the header)';
+  end if;
+  if to_regclass('app_private.account_deletion_settings') is not null
+    and exists (select 1 from app_private.account_deletion_settings s where s.enabled) then
+    raise exception 'stop: the account-deletion tick is on -- pause it first: select app_private.account_deletion_configure(false); (see the header)';
   end if;
   if to_regclass('app_private.fantasy_worker_lease') is not null
     and exists (select 1 from app_private.fantasy_worker_lease l

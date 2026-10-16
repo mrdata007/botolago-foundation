@@ -172,7 +172,8 @@ select extensions.lives_ok(format($$update app.fantasy_players set football_team
   pg_temp.id('d1', 6)), '2.8 and an update that leaves the watched columns as they are');
 select extensions.lives_ok(format($$update app.players set display_name = 'Yassine B.' where id = %L$$, pg_temp.id('a1', 6)),
   '2.9 a player''s name changes');
-select extensions.lives_ok(format($$update app.team_memberships set shirt_number = 22 where player_id = %L$$, pg_temp.id('a1', 1)),
+-- Player 6, not player 1: the matcher below must still find player 1 by his shirt (2).
+select extensions.lives_ok(format($$update app.team_memberships set shirt_number = 22 where player_id = %L$$, pg_temp.id('a1', 6)),
   '2.10 a pool player''s shirt number changes');
 select extensions.lives_ok(format($$update app.team_memberships set active = false where player_id = %L$$, pg_temp.id('a1', 1)),
   '2.11 and his active flag');
@@ -269,11 +270,17 @@ select extensions.ok(
     where n.nspname = 'app_private' and p.proname in ('fantasy_guard_finalizing_player_catalog',
       'fantasy_guard_finalizing_squad_membership', 'fantasy_guard_finalizing_lineups')),
   '4.5 the three guard functions are security definer with an empty search path and callable by no API role');
+select extensions.ok(
+  (select bool_and(p.prosrc ~* 'for key share' and p.prosrc ~* 'status in \(''open'', ''locked'', ''live'', ''provisional'', ''finalizing''\)')
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'app_private' and p.proname in ('fantasy_guard_finalizing_player_catalog',
+      'fantasy_guard_finalizing_squad_membership', 'fantasy_guard_finalizing_lineups')),
+  '4.6 each guard takes FOR KEY SHARE on the season''s current gameweek row before it reads the status (the lock the finalization''s FOR UPDATE conflicts with)');
 select extensions.is(
   (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'app_private' and p.proname in ('fantasy_guard_finalizing_player_catalog',
       'fantasy_guard_finalizing_squad_membership', 'fantasy_guard_finalizing_lineups')), 3,
-  '4.6 and there are exactly three');
+  '4.7 and there are exactly three');
 
 select * from extensions.finish();
 rollback;
