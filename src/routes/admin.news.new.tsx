@@ -141,8 +141,8 @@ function AdminNewsNewRoute() {
       title={rtl ? "مقال جديد" : "Nouvel article"}
       description={
         rtl
-          ? "المحتوى يُطهَّر على الخادم قبل أي حفظ. سيُنشأ المقال كمسودة خاصة."
-          : "Le contenu est assaini côté serveur avant tout enregistrement. L’article est créé en brouillon privé."
+          ? "يُنشأ المقال كمسودة خاصة. احفظه، ثم أضف صورته وجهّزه للنشر."
+          : "L’article est créé en brouillon privé. Enregistrez-le, puis ajoutez son image et préparez sa publication."
       }
       testId="admin-news-new"
       layout="detail"

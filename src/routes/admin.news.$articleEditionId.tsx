@@ -694,8 +694,8 @@ function AdminNewsEditRoute() {
       title={rtl ? "تحرير المقال" : "Modifier l’article"}
       description={
         rtl
-          ? "الحفظ صريح دائماً. الانتقالات بين الحالات محكومة بصلاحيتك الفعلية على الخادم."
-          : "L’enregistrement est toujours explicite. Les transitions de statut sont arbitrées côté serveur selon votre rôle réel."
+          ? "احفظ تعديلاتك قبل المغادرة. تعتمد إجراءات النشر المتاحة على دورك."
+          : "Enregistrez vos modifications avant de quitter. Les actions de publication dépendent de votre rôle."
       }
       testId="admin-news-edit"
       layout="detail"

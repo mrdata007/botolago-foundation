@@ -213,7 +213,7 @@ export function PepitesAdminEditions({
         </AdminSectionHeading>
         {data.runs.length === 0 ? (
           <AdminEmptyState testId="admin-pepites-no-run">
-            {rtl ? "لا يوجد حساب بعد." : "Aucun calcul pour l'instant."}
+            {rtl ? "لا توجد عملية احتساب بعد." : "Aucun calcul pour l'instant."}
           </AdminEmptyState>
         ) : (
           <ul className="grid gap-1" data-testid="admin-pepites-runs">
@@ -783,8 +783,8 @@ function EditionEditor({
             label={rtl ? "النشر الآن" : "Publier maintenant"}
             prompt={
               rtl
-                ? "سيراه كل القراء فورًا، وتنطلق الرسالة الأسبوعية للمشتركين."
-                : "Tous les lecteurs le verront tout de suite, et l'e-mail part aux abonnés."
+                ? "ستظهر قائمة أفضل 10 لجميع القراء. وتُرسل الرسائل إلى المشتركين إذا كان الإرسال مفعّلًا."
+                : "Le Top 10 sera visible par tous. Les e-mails seront envoyés aux abonnés si leur envoi est activé."
             }
             testId="admin-pepites-publish"
           />

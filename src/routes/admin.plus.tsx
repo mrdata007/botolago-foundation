@@ -38,8 +38,8 @@ function AdminPlusRoute() {
       title={rtl ? "الاشتراكات" : "Abonnements"}
       description={
         rtl
-          ? "أعداد الأعضاء، والبحث عن عضو، ومنح العضوية أو سحبها. يُسجَّل كل اطلاع وكل قرار في التدقيق."
-          : "Les chiffres des membres, la consultation d’un membre, l’offre ou le retrait d’un abonnement. Chaque consultation et chaque décision est consignée dans l’audit."
+          ? "اطّلع على الأعضاء وأدِر وصولهم إلى الموسم. يُسجّل كل اطلاع وكل قرار."
+          : "Consultez les membres et gérez leurs accès à la Saison. Chaque consultation et chaque décision est consignée."
       }
       testId="admin-plus"
     >

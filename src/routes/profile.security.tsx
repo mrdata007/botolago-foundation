@@ -183,19 +183,17 @@ function SecurityPage() {
         />
       }
     >
-      <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("auth.mfa.subtitle")}</p>
-
       {IS_MOCK_AUTH ? (
-        <UiCard padding="lg" className={cn("mt-5", ui.text.body, ui.tone.muted)}>
+        <UiCard padding="lg" className={cn(ui.text.body, ui.tone.muted)}>
           {t("auth.mfa.demo_unavailable")}
         </UiCard>
       ) : loading ? (
-        <div className={cn("mt-5 flex items-center gap-2", ui.text.body, ui.tone.muted)}>
+        <div className={cn("flex items-center gap-2", ui.text.body, ui.tone.muted)}>
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           {t("auth.mfa.loading")}
         </div>
       ) : enrollment ? (
-        <UiCard as="section" padding="lg" className="mt-5 overflow-hidden">
+        <UiCard as="section" padding="lg" className="overflow-hidden">
           <h2 className={cn(ui.display.header, ui.tone.default)}>{t("auth.mfa.scan_title")}</h2>
           <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.mfa.scan_body")}</p>
 
@@ -314,7 +312,7 @@ function SecurityPage() {
           </form>
         </UiCard>
       ) : (
-        <UiCard as="section" padding="lg" className="mt-5 overflow-hidden">
+        <UiCard as="section" padding="lg" className="overflow-hidden">
           <div className="flex items-start gap-3">
             {/* The status disc: round, like every glyph plate in Option A. */}
             <span

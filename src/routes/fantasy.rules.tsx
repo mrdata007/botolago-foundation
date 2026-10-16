@@ -190,16 +190,12 @@ function RulesPage() {
         decoding="async"
         className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
       />
-      {/* An h2: the header above already renders the page's h1. */}
-      <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
-
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />
       ) : rulesQ.isError || !rulesQ.data ? (
         <UiErrorState onRetry={() => void rulesQ.refetch()} />
       ) : (
-        <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <RuleValue label={t("fantasy.rules.squad")} value={nf.format(rulesQ.data.squadSize)} />
           <RuleValue label={t("fantasy.rules.budget")} value={nf.format(rulesQ.data.budget)} />
           <RuleValue

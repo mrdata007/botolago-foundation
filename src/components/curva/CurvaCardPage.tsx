@@ -206,10 +206,17 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         <section data-testid="curva-where" aria-label={copy.cardWhere}>
           <SectionHeader title={copy.cardWhere} />
           <UiCard padding="none" className="overflow-hidden">
-            <p className={cn("px-4 pt-4 text-pretty", ui.text.secondary, ui.tone.muted)}>
-              {rated ? copy.cardIntro : copy.cardIntroForming}
-            </p>
-            <ul className="mt-2 grid grid-cols-2 border-t border-[color:var(--ui-rule)]">
+            {!rated ? (
+              <p className={cn("px-4 pt-4 text-pretty", ui.text.secondary, ui.tone.muted)}>
+                {copy.cardIntroForming}
+              </p>
+            ) : null}
+            <ul
+              className={cn(
+                "grid grid-cols-2",
+                !rated && "mt-2 border-t border-[color:var(--ui-rule)]",
+              )}
+            >
               {STAT_CODES.map((code, index) => (
                 <StatTile
                   key={code}

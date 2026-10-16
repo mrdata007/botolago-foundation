@@ -242,7 +242,6 @@ describe("the new copy exists in both languages", () => {
       "landing.players_body_owned",
       "landing.players_owned",
       "landing.players_link",
-      "landing.faq_body",
       "landing.step2_example",
       "landing.team_note",
     ] as const) {

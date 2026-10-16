@@ -514,7 +514,6 @@ export function LandingPage({
           <Sub id={faqId} className={cn("text-balance", ui.display.title)}>
             {t("landing.faq_title")}
           </Sub>
-          <p className={cn("mt-2", ui.text.prose, ui.tone.muted)}>{t("landing.faq_body")}</p>
         </div>
         <div className="min-w-0">
           <div className="mt-6 divide-y divide-[color:var(--ui-rule)] border-y border-[color:var(--ui-rule)] lg:mt-0">
@@ -586,9 +585,6 @@ export function LandingPage({
           <Sub id={`${faqId}-final`} className={cn("text-balance", ui.display.hero)}>
             {t("landing.final_title")}
           </Sub>
-          <p className={cn("mt-3 max-w-[40ch]", ui.text.subtitle, ui.tone.onMeshMuted)}>
-            {t("landing.final_body")}
-          </p>
           <div className="mt-7 w-full sm:max-w-sm">
             <PrimaryAction cta={cta} event="landing_cta_final" onLeave={onLeave} />
           </div>

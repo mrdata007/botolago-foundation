@@ -55,14 +55,14 @@ describe("« Briefing avant la deadline »: a member", () => {
       expect(html).toContain(`data-card="${card}"`);
     }
     // The scoreboard: one confirmed absence, two players with no information, one free transfer.
-    expect(visible).toContain("Absences confirmées");
+    expect(visible).toContain("Absences signalées");
     expect(visible).toContain("Karim B. · KACM");
     // Absent means the provider listed it, with its date; the others are facts about minutes.
     expect(visible).toContain("Abdelilah Hafidi");
     expect(visible).toContain("Absent · blessure");
-    expect(visible).toContain("liste du fournisseur");
+    expect(visible).toContain("Données du");
     expect(visible).toContain("Aucune information confirmée · 0 min en J10");
-    expect(visible).toContain("aucune information ne veut pas dire disponible");
+    expect(visible).toContain("la disponibilité d’un joueur reste à confirmer");
     // Replacement: the budget is sale price plus bank, pending ratings are words.
     expect(visible).toContain("Remplacer Abdelilah Hafidi");
     expect(visible).toContain("Budget : 7,0 M à la vente + 0,8 M en banque = 7,8 M");
@@ -77,7 +77,8 @@ describe("« Briefing avant la deadline »: a member", () => {
     // Nothing is saved here: the buttons open the existing screens.
     expect(html).toContain('href="/fantasy/transfers"');
     expect(html).toContain('href="/fantasy/team"');
-    expect(visible).toContain("rien n’est enregistré ici");
+    expect(visible).toContain("À confirmer dans Transferts.");
+    expect(visible).toContain("À confirmer dans Équipe.");
   });
 
   it("never prints the words the owner removed, a card serial, or a fallback 5 as a rating", async () => {
@@ -111,8 +112,10 @@ describe("« Briefing avant la deadline »: a member", () => {
     };
     const html = await render(<MemberView view={quiet} userId={null} displayName={null} />);
     const visible = text(html);
-    expect(visible).toContain("Aucune liste d’absences n’est disponible");
-    expect(visible).toContain("pas de liste d’absences disponible");
+    expect(visible).toContain("Aucune information sur les absences n’est disponible");
+    expect(visible).toContain(
+      "Sans liste d’absences, la disponibilité des joueurs reste à confirmer",
+    );
     expect(visible).not.toContain("aucune absence signalée");
   });
 });

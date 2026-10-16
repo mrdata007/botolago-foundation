@@ -397,10 +397,7 @@ function PlayerDetailPage() {
               <UiSkeleton className={cn("h-28", ui.radius.card)} />
             </div>
           ) : playerFixtures.length === 0 ? (
-            <UiEmptyState
-              title={t("fantasy.players.no_fixtures")}
-              body={t("fantasy.players.no_fixtures_desc")}
-            />
+            <UiEmptyState title={t("fantasy.players.no_fixtures")} />
           ) : (
             <ul className="grid grid-cols-3 gap-2">
               {playerFixtures.map((f) => (

@@ -353,7 +353,7 @@ function StatesBlock({ data, lang }: { data: PremiumAdminOverview; lang: Lang })
       </div>
       <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="admin-plus-total">
         {rtl
-          ? "عدد الحسابات التي لها اشتراك: "
+          ? "الحسابات التي سبق أن امتلكت موسمًا أو اشتراكًا قديمًا: "
           : "Comptes ayant eu une Saison ou un ancien abonnement : "}
         <span className={cn(ui.stat.sm, ui.tone.default)}>{total}</span>
         {" · "}
@@ -1560,8 +1560,8 @@ function PaymentDetailsSection({
       heading={rtl ? "بيانات الدفع" : "Coordonnées de paiement"}
       intro={
         rtl
-          ? "ما يراه المشتري في شاشة «ادفع موسمي». يدخلها المالك هنا فقط، دون مس بالشيفرة."
-          : "Ce que l’acheteur voit sur l’écran « Payer ma Saison ». Le propriétaire les saisit ici, jamais dans le code."
+          ? "تظهر هذه البيانات في شاشة «ادفع ثمن موسمي». يُدخلها المالك هنا."
+          : "Ces coordonnées s’affichent sur l’écran « Payer ma Saison ». Le propriétaire les renseigne ici."
       }
     >
       {state.status === "loading" && (

@@ -60,7 +60,6 @@ describe("« Votre palier »", () => {
       expect(text(html)).toContain(tier);
     }
     expect(text(html)).toContain("CHAMPION à partir de 88.");
-    expect(text(html)).toContain(fr["curva.card.tier_explain"]);
   });
 
   it("marks no tier before the first note, and says the tier comes with it", async () => {

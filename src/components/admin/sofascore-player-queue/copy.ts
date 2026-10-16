@@ -144,7 +144,7 @@ const FR: SofascoreQueueCopy = {
   loadFailed: "La liste n’a pas pu être chargée.",
   retry: "Réessayer",
   refresh: "Actualiser",
-  empty: "Aucun joueur à confirmer pour le moment. Tout est à jour.",
+  empty: "Aucun joueur à confirmer pour le moment.",
   count: (n) => (n === 1 ? "1 joueur à confirmer" : `${n} joueurs à confirmer`),
   skipped: (n) =>
     n === 1
@@ -327,7 +327,8 @@ const FR: SofascoreQueueCopy = {
     staff_access_denied: "Accès réservé au personnel autorisé.",
     staff_suspended: "Votre accès au personnel est suspendu.",
     permission_missing: "Votre rôle n’a pas la permission de confirmer un joueur.",
-    mfa_assurance_insufficient: "Une seconde vérification (AAL2) est requise.",
+    mfa_assurance_insufficient:
+      "Saisissez votre code de vérification en deux étapes, puis réessayez.",
     recent_auth_required: "Reconnectez-vous : une authentification récente est requise.",
     sofascore_alias_needs_primary:
       "Ce joueur n’a pas d’identifiant SofaScore principal actif : rattachez-le normalement. Rien n’a été changé.",
@@ -351,14 +352,14 @@ const AR: SofascoreQueueCopy = {
   dir: "rtl",
   title: "لاعبو SofaScore بانتظار التأكيد",
   intro:
-    "لم تتمكن المطابقة التلقائية من ربط هؤلاء اللاعبين من SofaScore بلاعب في التطبيق دون خطر الخطأ. اختر لكل واحد منهم لاعب BotolaGO الصحيح: تأكيد واحد، ثم تُعاد محاولة المباراة تلقائيًا.",
+    "لم تتمكن المطابقة التلقائية من ربط هؤلاء اللاعبين من SofaScore بلاعب في التطبيق دون خطر الخطأ. اختر لكل واحد منهم لاعب BotolaGO الصحيح: تأكيد واحد، ثم تُعاد معالجة المباراة تلقائيًا.",
   readerNotice:
     "يمكنك الاطلاع على هذه القائمة، لكن دورك لا يسمح بتأكيد لاعب (يلزم إذن «إدارة المطابقات»).",
   loading: "جارٍ تحميل القائمة…",
   loadFailed: "تعذّر تحميل القائمة.",
   retry: "إعادة المحاولة",
   refresh: "تحديث",
-  empty: "لا يوجد لاعبون بانتظار التأكيد حاليًا. كل شيء محدَّث.",
+  empty: "لا يوجد لاعبون بانتظار التأكيد حاليًا.",
   count: (n) => (n === 1 ? "لاعب واحد بانتظار التأكيد" : `${n} لاعبين بانتظار التأكيد`),
   skipped: (n) =>
     n === 1
@@ -456,7 +457,7 @@ const AR: SofascoreQueueCopy = {
     prompt: (sofascoreName, appName) =>
       `ربط لاعب SofaScore «${iso(sofascoreName)}» بلاعب BotolaGO «${iso(appName)}»؟`,
     consequence:
-      "تُسجَّل المطابقة فورًا، وتُعاد محاولة المباراة المعلّقة تلقائيًا خلال نحو 15 دقيقة.",
+      "تُسجَّل المطابقة فورًا، وتُعاد معالجة المباراة المعلّقة تلقائيًا خلال نحو 15 دقيقة.",
     yes: "نعم، اربطه",
     cancel: "إلغاء",
     working: "جارٍ الحفظ…",
@@ -468,7 +469,7 @@ const AR: SofascoreQueueCopy = {
     prompt: (sofascoreName, appName) =>
       `لدى SofaScore ملفّان لهذا الشخص. ربط «${iso(sofascoreName)}» بـ«${iso(appName)}» كمعرّف ثانٍ؟`,
     consequence: (mainId) =>
-      `يحتفظ اللاعب بمعرّفه الرئيسي ${iso(mainId)} (ومنه يبقى الاسم والرقم والصورة). المباريات التي يستعمل فيها SofaScore هذا المعرّف الثاني تُحتسب نقاطها له، وتُعاد محاولة المباراة المعلّقة خلال نحو 15 دقيقة.`,
+      `يحتفظ اللاعب بمعرّفه الرئيسي ${iso(mainId)} (ومنه يبقى الاسم والرقم والصورة). المباريات التي يستعمل فيها SofaScore هذا المعرّف الثاني تُحتسب نقاطها له، وتُعاد معالجة المباراة المعلّقة خلال نحو 15 دقيقة.`,
     yes: "نعم، اربطه كمعرّف ثانٍ",
     working: "جارٍ الحفظ…",
   },
@@ -511,18 +512,18 @@ const AR: SofascoreQueueCopy = {
     position: "المركز",
     club: "النادي",
     consequence:
-      "يُضاف اللاعب إلى النادي للموسم الحالي، وإلى سوق Fantasy بسعر البداية، ويُربط بمعرّف SofaScore هذا. وتُعاد محاولة المباراة المعلّقة خلال نحو 15 دقيقة.",
+      "يُضاف اللاعب إلى النادي للموسم الحالي، وإلى سوق Fantasy بسعر البداية، ويُربط بمعرّف SofaScore هذا. وتُعاد معالجة المباراة المعلّقة خلال نحو 15 دقيقة.",
     yes: "إنشاء وربط",
     working: "جارٍ الإنشاء…",
     invalidName: "يجب أن يتراوح طول الاسم بين حرفين و200 حرف.",
     invalidShirt: "يجب أن يكون الرقم بين 0 و99.",
   },
   done: (sofascoreName, appName) =>
-    `تم ربط «${iso(sofascoreName)}» بـ«${iso(appName)}». ستُعاد محاولة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
+    `تم ربط «${iso(sofascoreName)}» بـ«${iso(appName)}». ستُعاد معالجة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
   doneAlias: (sofascoreName, appName) =>
-    `أصبح «${iso(sofascoreName)}» معرّفًا ثانيًا لـ«${iso(appName)}». ستُعاد محاولة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
+    `أصبح «${iso(sofascoreName)}» معرّفًا ثانيًا لـ«${iso(appName)}». ستُعاد معالجة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
   doneCreate: (sofascoreName) =>
-    `تم إنشاء «${iso(sofascoreName)}» وربطه. ستُعاد محاولة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
+    `تم إنشاء «${iso(sofascoreName)}» وربطه. ستُعاد معالجة المباراة تلقائيًا خلال نحو 15 دقيقة.`,
   alreadyDone: (sofascoreName) =>
     `«${iso(sofascoreName)}» كان مرتبطًا أصلًا بهذا اللاعب. لم يتغير شيء.`,
   errors: {
@@ -536,7 +537,7 @@ const AR: SofascoreQueueCopy = {
     staff_access_denied: "الوصول مقتصر على الطاقم المخوَّل.",
     staff_suspended: "وصولك إلى الإدارة معلَّق.",
     permission_missing: "دورك لا يملك إذن تأكيد لاعب.",
-    mfa_assurance_insufficient: "يلزم تحقق ثانٍ (AAL2).",
+    mfa_assurance_insufficient: "أدخل رمز التحقق بخطوتين، ثم أعد المحاولة.",
     recent_auth_required: "أعد تسجيل الدخول: يلزم توثيق حديث.",
     sofascore_alias_needs_primary:
       "لا يملك هذا اللاعب معرّف SofaScore رئيسيًا نشطًا: اربطه بالطريقة العادية. لم يتغير شيء.",

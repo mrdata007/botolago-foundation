@@ -99,7 +99,7 @@ describe("the offer (screen 3)", () => {
   it("states the terms: one payment, the end date, nothing renews, access once checked", () => {
     expect(visible).toContain("Paiement unique de 200 MAD");
     expect(visible).toContain("court jusqu'au 31 mai 2027");
-    expect(visible).toContain("aucun prélèvement automatique");
+    expect(visible).toContain("sans prélèvement automatique");
     expect(visible).toContain("dès que l'équipe a vérifié votre paiement");
   });
   it("never types the product name as text on screen", () => {
@@ -340,8 +340,10 @@ describe("the plus.* dictionary", () => {
     expect(ar["plus.s3.f1.d"]).toContain("كهربائية");
     expect(ar["plus.s3.f1.d"]).not.toMatch(/كهربائي(?!ة)/);
   });
-  it("says « Sans publicité » as a promise about the future, not as a claim about today", () => {
-    expect(fr["plus.s3.f0.d"]).toContain("ne verrez jamais");
-    expect(ar["plus.s3.f0.d"]).toContain("أبدًا");
+  it("limits the ad-free promise to the purchased season", () => {
+    expect(fr["plus.s3.f0.d"]).toContain("pendant votre Saison");
+    expect(ar["plus.s3.f0.d"]).toContain("طوال موسمك");
+    expect(fr["plus.s3.f0.d"]).not.toContain("jamais");
+    expect(ar["plus.s3.f0.d"]).not.toContain("أبدًا");
   });
 });

@@ -37,7 +37,8 @@ describe("user presentation", () => {
   test("words every refusal the directory can meet, and names an unknown one", () => {
     expect(userAdminErrorMessage("staff_account_protected", "fr")).toContain("Personnel");
     expect(userAdminErrorMessage("recent_auth_required", "fr")).toContain("15 minutes");
-    expect(userAdminErrorMessage("users_admin_unavailable", "ar")).toContain("20260924160000");
+    expect(userAdminErrorMessage("users_admin_unavailable", "ar")).toContain("المسؤول التقني");
+    expect(userAdminErrorMessage("users_admin_unavailable", "ar")).not.toContain("20260924160000");
     expect(userAdminErrorMessage("something_new", "fr")).toContain("something_new");
   });
 });

@@ -138,9 +138,7 @@ function TopPlayersPage() {
 
   return (
     <div className={cn("px-4 pb-10 pt-4", ui.surface.page)}>
-      <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("fantasy.top.subtitle")}</p>
-
-      <div className="mt-3 flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <span className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.top.gw_label")}</span>
         <GameweekSelector value={currentGw} min={gwMin} max={gwMax} onChange={setGw} />
       </div>

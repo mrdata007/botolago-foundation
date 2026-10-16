@@ -256,7 +256,10 @@ describe("read-only until the first proposal is approved", () => {
       repository: world.repository,
       initial: { selection: { kind: "candidate", id: target.id }, options },
     });
-    has(html, "football.manage_mappings requis");
+    has(
+      html,
+      "La création et l’approbation des rapprochements demandent une autorisation supplémentaire",
+    );
     lacks(html, 'data-testid="mapping-option-select"');
     lacks(html, 'data-testid="mapping-propose-trigger"');
   });
@@ -695,7 +698,7 @@ describe("dual control, as drawn", () => {
       initial: { selection: { kind: "proposal", id: w.id } },
     });
     has(html, 'data-testid="mapping-execution-separate"');
-    has(html, "L’approbation ne rapproche rien");
+    has(html, "L’approbation est enregistrée sans créer de rapprochement");
     has(html, "Approuvée");
     lacks(html, 'data-testid="mapping-approve"');
     has(html, 'data-testid="mapping-execute-panel"');
@@ -718,7 +721,7 @@ describe("dual control, as drawn", () => {
       initial: { selection: { kind: "proposal", id: w.id } },
     });
     has(held, "Conflit d’identité");
-    has(held, "le monde a changé");
+    has(held, "les données ont changé");
     lacks(held, 'data-testid="mapping-approve"');
     const heldList = render({ state: ready(await w.seenBy(approver)), initial: { view: "held" } });
     has(heldList, 'data-testid="mapping-proposal-row"');

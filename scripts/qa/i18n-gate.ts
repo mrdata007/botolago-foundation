@@ -466,7 +466,10 @@ export const BASELINES: Baselines = {
   // first call site (-1); B7 (DATA-04) deletes `matches.a11y.status_scheduled`
   // together with the template lookup that alone reached it (+-0, W4 69 -> 68).
   // All new keys of all three lanes are referenced. 247 -> 244.
-  W3: 244,
+  // Full-app copy overhaul: remove redundant support at its consumers and
+  // delete the retired key pairs. The measured unused-key count falls by two;
+  // no empty translations or inert lookup calls are retained to hold the baseline.
+  W3: 242,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

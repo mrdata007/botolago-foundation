@@ -249,7 +249,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
     states: {
       loading: {
         title: "Vérification de l’accès",
-        description: "La session et les autorisations sont vérifiées côté serveur.",
+        description: "Vérification de votre session et de vos autorisations…",
       },
       unauthenticated: {
         title: "Authentification requise",
@@ -261,11 +261,12 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       mfa_required: {
         title: "Authentification multifacteur requise",
-        description: "Enregistrez ou validez votre second facteur pour continuer.",
+        description:
+          "Activez la vérification en deux étapes ou saisissez votre code pour continuer.",
       },
       recent_auth_required: {
         title: "Réauthentification requise",
-        description: "Authentifiez-vous à nouveau, puis soumettez de nouveau l’opération sensible.",
+        description: "Reconnectez-vous, puis réessayez cette action.",
       },
       suspended: {
         title: "Accès suspendu",
@@ -277,11 +278,11 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       backend_unavailable: {
         title: "Service indisponible",
-        description: "Le contexte administrateur ne peut pas être vérifié en toute sécurité.",
+        description: "Impossible de vérifier votre accès à l’administration. Réessayez.",
       },
       authorized: {
         title: "Accès autorisé",
-        description: "Le contexte affiché provient du backend sécurisé.",
+        description: "Vous pouvez ouvrir les sections autorisées pour votre rôle.",
       },
     },
     invalidToken: {
@@ -318,7 +319,7 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
     states: {
       loading: {
         title: "التحقق من الصلاحية",
-        description: "يتم التحقق من الجلسة والصلاحيات على الخادم.",
+        description: "جارٍ التحقق من جلستك وصلاحياتك…",
       },
       unauthenticated: {
         title: "تسجيل الدخول مطلوب",
@@ -330,11 +331,11 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       mfa_required: {
         title: "المصادقة متعددة العوامل مطلوبة",
-        description: "سجّل أو أكّد عامل المصادقة الثاني للمتابعة.",
+        description: "فعّل التحقق بخطوتين أو أدخل رمز التحقق للمتابعة.",
       },
       recent_auth_required: {
         title: "إعادة المصادقة مطلوبة",
-        description: "سجّل الدخول من جديد، ثم أرسل العملية الحساسة مرة أخرى.",
+        description: "سجّل الدخول من جديد، ثم أعد محاولة هذا الإجراء.",
       },
       suspended: {
         title: "الصلاحية معلّقة",
@@ -346,11 +347,11 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
       },
       backend_unavailable: {
         title: "الخدمة غير متاحة",
-        description: "تعذّر التحقق الآمن من السياق الإداري.",
+        description: "تعذّر التحقق من صلاحية دخولك إلى الإدارة. أعد المحاولة.",
       },
       authorized: {
         title: "الدخول مسموح",
-        description: "السياق المعروض صادر عن الخلفية الآمنة.",
+        description: "يمكنك فتح الأقسام التي يسمح بها دورك.",
       },
     },
     invalidToken: {

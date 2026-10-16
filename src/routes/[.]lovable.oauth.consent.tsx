@@ -113,11 +113,9 @@ function ConsentError({ error }: { error: unknown }) {
       <h1 className={cn("mt-5 text-balance", ui.display.section, ui.tone.default)}>
         {t("auth.consent.error_title")}
       </h1>
-      {/* The server's own message: it names the failure, and there is no
-          translated copy for every case it can report. Isolated, so an
-          English sentence keeps its full stop at its own end in Arabic. */}
+      {/* The raw exception may contain implementation details or English-only text. */}
       <UiAlert tone="negative" className="mt-4">
-        <bdi>{(error as Error)?.message ?? String(error)}</bdi>
+        <p>{t("auth.error.generic")}</p>
       </UiAlert>
     </ConsentFrame>
   );

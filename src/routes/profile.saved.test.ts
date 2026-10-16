@@ -56,7 +56,6 @@ describe("copy and layout", () => {
     "news.saved.empty_title",
     "news.saved.browse",
     "news.saved.signin_title",
-    "news.saved.signin_body",
     "news.saved.error",
     "news.saved.unavailable",
     "news.saved.remove",

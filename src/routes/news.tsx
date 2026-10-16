@@ -104,14 +104,12 @@ export const Route = createFileRoute("/news")({
       { title: "Actualités — BotolaGO" },
       {
         name: "description",
-        content:
-          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+        content: "Actualités du football marocain : Botola Pro, mercato, analyses et interviews.",
       },
       { property: "og:title", content: "Actualités — BotolaGO" },
       {
         property: "og:description",
-        content:
-          "Toute l'actualité du football marocain : Botola Pro, mercato, analyses et interviews.",
+        content: "Actualités du football marocain : Botola Pro, mercato, analyses et interviews.",
       },
     ],
   }),
