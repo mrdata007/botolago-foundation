@@ -70,7 +70,7 @@ one edit away from not rolling back.
    news ingestion schedules are stood down but still dispatchable by hand.
    Inside the database, pg_cron runs `news-publish-due-editions` every minute,
    `notification-email-tick` every 5 minutes, `fantasy-lifecycle-tick`
-   every 5 minutes and `football-live-refresh` every 15 minutes
+   every 5 minutes and `football-live-refresh` every minute
    (`select jobname, schedule, active from cron.job`). Where migration
    20260926113100 is applied, `football-season-refresh` runs every 10
    minutes and has SportsMonks refresh the season's fixtures (yesterday to
@@ -85,7 +85,32 @@ null, false);` before a write that touches fixtures or notifications, and
    `app_private.fantasy_automation_settings`; pause it with
    `select app_private.fantasy_automation_configure(false);` before a write
    that touches Fantasy or fixture tables, and switch it back on afterwards.
-   Where the Pronostics migrations are applied, pg_cron also runs
+   `news-publish-due-editions` has no switch: every minute it publishes the
+   scheduled editions that are due (`app.article_editions`) and records its
+   heartbeat and runs (`app_private.news_schedule_heartbeat`,
+   `app_private.news_schedule_runs`). Pause it by name for a write that
+   touches those tables or scheduled editions, and set it back to `true`
+   afterwards; the ops health check `news_publication` fails, paging, after
+   ten minutes without a heartbeat, so resume it promptly:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'news-publish-due-editions'), active := false);`
+   Two prune jobs delete `cron.job_run_details` rows older than 7 days
+   whatever any switch says: `news-publish-due-editions-history-prune` daily
+   at 03:17 UTC (that job's rows) and `notification-email-history-prune`
+   daily at 03:37 UTC (the rows of `notification-email-tick` and
+   `football-live-refresh`). Pause them by name for a write that touches
+   `cron.job_run_details`, then set both back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'news-publish-due-editions-history-prune'), active := false);`
+   `select cron.alter_job((select jobid from cron.job where jobname = 'notification-email-history-prune'), active := false);`
+   pg_cron runs `ops-alert-tick` every 5 minutes. It reads the production
+   health checks and, only while `app_private.ops_alert_state.enabled` is
+   true, writes `app_private.ops_alert_state` and
+   `app_private.ops_alert_channels` and sends the alert through the webhook
+   and email channels ([ALERTS.md](docs/operations/ALERTS.md)). Pausing it
+   stops paging, so pause it only for a write to those tables: read
+   `select enabled from app_private.ops_alert_state;` first, pause with
+   `select app_private.ops_alert_configure(false);`, and afterwards run
+   `select app_private.ops_alert_configure(true);` only if it was on.
+   Where migration 20260925090400 is applied, pg_cron also runs
    `predictions-score-tick` every 5 minutes.
    It writes predictions' points, `app.prediction_standings` and its own
    records, and only while `app_private.prediction_settings` has a mode other
@@ -134,6 +159,43 @@ null, false);` before a write that touches fixtures or notifications, and
    schedule; it runs only when someone runs it, and it writes to the
    database (published photos, deletions) and to storage. Treat a run as a
    write.
+   Where migration 20261003150000 is applied, pg_cron also runs
+   `ai-content-generate` every 30 minutes. It wakes the Edge Function
+   `ai-content-generate`, which publishes articles (`app.stories`,
+   `app.story_taxonomies`, `app.article_editions`), records them in
+   `app_private.ai_content_articles` and emails the owner about each. It
+   publishes only while switched on in `app_private.ai_content_settings` (it
+   ships off), but it still wakes the function while an email is owed for an
+   article already live
+   ([AI_CONTENT_GENERATION.md](docs/backend/AI_CONTENT_GENERATION.md)). Before
+   a write that touches those tables or the News tables, read
+   `select enabled, competition_id, max_articles_per_day from app_private.ai_content_settings;`
+   and pause with `select app_private.ai_content_configure(false);`; the
+   publish step re-checks the switch in the database, so a run already
+   started cannot publish after the pause. Restore with
+   `select app_private.ai_content_configure(true);` only if it was on (the
+   competition and the daily cap are kept).
+   Where migration 20261005110000 is applied, pg_cron also runs
+   `notification-push-tick` every minute. Each pass it plans the kick-off,
+   deadline, goal and result moments (when email is off it plans the shared
+   ones in the email tick's place, so pausing email does not stop that),
+   queues push deliveries and wakes the Edge Function
+   `notification-push-dispatch` when something can be sent. It writes
+   `app_private.notification_events`, `app.notifications`,
+   `app.notification_deliveries` and, even while off,
+   `app_private.notification_push_settings` (`last_tick_at`,
+   `last_outcome`); it sends only while `notification_push_settings.mode` is
+   `testers` or `live` (it ships `off`)
+   ([PUSH_NOTIFICATIONS.md](docs/backend/PUSH_NOTIFICATIONS.md)). Before a
+   write that touches those tables, read
+   `select mode, test_user_ids from app_private.notification_push_settings;`
+   and pause with `select app_private.notification_push_configure('off');`
+   (it clears the tester list, which is why you read it first). Restore with
+   `select app_private.notification_push_configure('<mode>', array['<user id>'::uuid]);`
+   for `testers`, or `select app_private.notification_push_configure('live');`.
+   Pausing does not stop a dispatch already woken, which can still be
+   claiming and sending deliveries: wait for it to finish before writing
+   them.
    Where migration 20261006143700 is applied, pg_cron also runs
    `account-deletion-tick` every hour at minute 23. It wakes the Edge
    Function `account-deletion-worker`, which erases accounts whose deletion

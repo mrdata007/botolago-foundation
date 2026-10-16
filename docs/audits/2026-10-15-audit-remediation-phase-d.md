@@ -84,17 +84,17 @@ pgTAP were not available there.
 2. **Deploy the e-mail functions** (`supabase functions deploy` for the e-mail
    dispatch functions) so the Prospects / المواهب wording reaches e-mails. Until
    then e-mails keep the old name.
-3. **Notification-bell text** for the weekly list still says "Pépites" in both
+3. **Notification-bell text** for the weekly list said "Pépites" in both
    languages because it is stored in the database (`20260926110100`, template
-   `pepites_weekly`, `in_app`). **Written, not applied anywhere:** migration
-   `20261016100000_prospects_weekly_notification_text` retires version 1 of the
-   two template rows and adds version 2 ("Prospects : le Top 10 de la semaine
-   {{week}}", "المواهب: توب 10 للأسبوع {{week}}"; bodies unchanged), and the
-   guarded owner script `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`
-   puts it on production (ships as a rehearsal, one rollback to change to a
-   commit). Nothing needs pausing. Notifications already in readers' bells keep
-   the old word; only a list published after the script is committed gets the
-   new one.
+   `pepites_weekly`, `in_app`). **Applied on Production V2 (2026-10-16), not on
+   Staging V2:** migration
+   `20261016100000_prospects_weekly_notification_text` retired version 1 of the
+   two template rows and added version 2 ("Prospects : le Top 10 de la semaine
+   {{week}}", "المواهب: توب 10 للأسبوع {{week}}"; bodies unchanged). The owner ran
+   the guarded script `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`;
+   an independent read-only check passed and pull request 504 is merged. Nothing
+   needed pausing. Notifications already in readers' bells keep the old word;
+   only a list published after the apply gets the new one.
 4. **Refresh the demo page** `public/demo/app.html` (build script
    `demo/scripts/build.ts`) to drop the old wording.
 5. **Morocco time in the database: applied (2026-10-15).** The owner confirmed
@@ -151,7 +151,15 @@ pgTAP were not available there.
    for a signed-in account; two new tests fail on the old code). What remains:
    an account with more than 2,000 saves can still see a different account's
    cached mark on a card it has not tapped, until the card is re-read; per-account
-   cache handling is a separate change.
+   cache handling is a separate change. Follow-up (this branch): on sign-out or
+   a switch, the outgoing account's `isSaved: true` marks are now removed from
+   the public News caches (`forgetViewerSavedMarks`), so the next reader no
+   longer inherits them. The mark is removed, not set to false: a missing mark
+   is "unknown" (`savedStateOf` returns null and a tap asks the server), whereas
+   a false would be trusted by an account with over 2,000 saves for a story
+   outside its newest 2,000 and wrongly show a story it did save as unsaved. Still open: a News answer for the outgoing account
+   that is in flight at the moment it leaves, and an account with over 2,000
+   saves whose cards were read before it signed in (those carry no mark).
 3. **Latent invite-code leak:** if the leagues read ever exposes invite codes, the
    Curva card's share text would include the first private league's join link.
    Joining needs only the code (no approval, cap or expiry). Remove or make opt-in

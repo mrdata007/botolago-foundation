@@ -63,6 +63,73 @@ export function forgetAccount(queryClient: QueryClient, uid: string): void {
   cleanupOwnedFantasyOnSignOut({ qc: queryClient, uid });
   forgetAccountPredictions(queryClient, uid);
   forgetAccountQueries(queryClient, uid);
+  forgetViewerSavedMarks(queryClient);
+}
+
+/** The News entries that are keyed by an account and so are removed, not rewritten. */
+const ACCOUNT_KEYED_NEWS = new Set(["saved-collection", "saved-article-ids"]);
+
+/**
+ * `value` with every `isSaved: true` removed, not set to false; the same object
+ * if there is none. A missing mark reads as "the server has not said"
+ * (`savedStateOf` returns null and the bookmark asks); a `false` would read as
+ * the server saying "not saved", which is wrong for a story the next account
+ * also saved.
+ */
+function withoutSavedMarks(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((item) => {
+      const rewritten = withoutSavedMarks(item);
+      if (rewritten !== item) changed = true;
+      return rewritten;
+    });
+    return changed ? next : value;
+  }
+  if (value === null || typeof value !== "object") return value;
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (key === "isSaved" && item === true) {
+      changed = true;
+      continue;
+    }
+    const rewritten = withoutSavedMarks(item);
+    if (rewritten !== item) changed = true;
+    next[key] = rewritten;
+  }
+  return changed ? next : value;
+}
+
+/**
+ * The public News caches (`["news", "feed-v2", ...]`, the article page, home
+ * modules, related, club and edition reads) name no account, yet in the
+ * browser each answer was read with the signed-in reader's session, so every
+ * article in it carries THAT reader's `isSaved`. Left in place after a
+ * sign-out or a switch, the previous account's bookmarks were served to the
+ * next reader of the same browser (`savedStateOf` falls back to the story's
+ * own answer for an account with more than 2,000 saves).
+ *
+ * The outgoing account's marks are removed, so the answer is "unknown" rather
+ * than a confirmed "not saved": `savedStateOf` returns null for a story with no
+ * mark, and the bookmark shows it unsaved but asks the server on a tap. Setting
+ * them to false would be trusted by an account with more than 2,000 saves for
+ * a story outside its newest 2,000, wrongly hiding a save both accounts made.
+ * The entries stay where they are, so a
+ * mounted screen keeps its articles (nothing refetches, nothing blinks) and
+ * an entry with no mark in it is not touched at all. The data keeps its age.
+ * An answer for the outgoing account that is still in flight when it leaves
+ * is not caught here.
+ */
+export function forgetViewerSavedMarks(queryClient: QueryClient): void {
+  for (const query of queryClient.getQueryCache().findAll({ queryKey: ["news"] })) {
+    if (ACCOUNT_KEYED_NEWS.has(String(query.queryKey[1]))) continue;
+    const data = query.state.data;
+    if (data === undefined) continue;
+    const cleaned = withoutSavedMarks(data);
+    if (cleaned === data) continue;
+    queryClient.setQueryData(query.queryKey, cleaned, { updatedAt: query.state.dataUpdatedAt });
+  }
 }
 
 /**

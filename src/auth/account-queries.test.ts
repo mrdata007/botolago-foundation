@@ -6,9 +6,11 @@ import { QueryClient, QueryObserver, hashKey } from "@tanstack/react-query";
 import {
   forgetAccount,
   forgetAccountQueries,
+  forgetViewerSavedMarks,
   queryKeyNamesAccount,
   watchAccountSwitch,
 } from "./account-queries";
+import { planSavedToggle, savedStateOf, type SavedIdsSnapshot } from "@/lib/saved-collection";
 import type { AuthSession } from "@/services/auth-types";
 import { followedTeamIdsQuery, followedTeamIdsQueryKey } from "@/services/follows";
 import { notificationPreferencesQueryKey } from "@/services/use-notification-preferences";
@@ -301,5 +303,218 @@ describe("watchAccountSwitch", () => {
 
   it("starts from nobody: the first session forgets nothing", () => {
     expect(run([{ user: null, status: "loading" }, signedIn(A)])).toEqual([]);
+  });
+});
+
+// Follow-up of audit remediation Phase D, "public News caches are not kept per
+// account". The News reads in the browser go out with the signed-in reader's
+// session, so every article they return carries THAT reader's `isSaved`; but
+// they are cached under public keys (`["news", "feed-v2", lang, ...]`) that
+// name no account. After A signed out and B signed in, B read A's marks from
+// those entries. They count only for a reader whose saved ids are partial
+// (more than 2,000 saves: `savedStateOf` falls back to the story's own answer),
+// which is the one case where B's screen showed A's bookmark.
+describe("public News caches across an account switch", () => {
+  const STORY = "30000000-0000-4000-8000-000000000001";
+  const OTHER = "30000000-0000-4000-8000-000000000002";
+  const card = (id: string, isSaved: boolean) => ({
+    id,
+    title: `Titre ${id}`,
+    isSaved,
+    tags: [{ id: "t", slug: "s", name: "S" }],
+  });
+  const FEED_KEY = ["news", "feed-v2", "fr", null, null] as const;
+  const DETAIL_KEY = ["news", "article-detail-v2", "fr", STORY] as const;
+  const HOME_KEY = ["news", "home-modules-v2", "fr"] as const;
+
+  /** A is signed in and reads News: the answers come back marked for A. */
+  function newsReadAs(qc: QueryClient) {
+    qc.setQueryData(FEED_KEY, {
+      pages: [{ items: [card(STORY, true), card(OTHER, false)], nextCursor: null }],
+      pageParams: [null],
+    });
+    qc.setQueryData(DETAIL_KEY, { ...card(STORY, true), bodyHtml: "<p>x</p>" });
+    qc.setQueryData(HOME_KEY, {
+      lead: card(STORY, true),
+      featured: [],
+      latest: [card(OTHER, false)],
+    });
+  }
+
+  const signedIn = (id: string): AuthSession => ({
+    user: { id } as AuthSession["user"],
+    status: "authenticated",
+  });
+  const marked = (qc: QueryClient) =>
+    qc
+      .getQueryCache()
+      .getAll()
+      .filter((query) => JSON.stringify(query.state.data ?? null).includes('"isSaved":true'))
+      .map((query) => query.queryKey);
+
+  it("A signs out: no cached News answer still says a story is saved", () => {
+    const qc = client();
+    newsReadAs(qc);
+    const watch = watchAccountSwitch((uid) => forgetAccount(qc, uid));
+    watch(signedIn(A));
+    watch({ user: null, status: "anonymous" });
+    expect(marked(qc)).toEqual([]);
+  });
+
+  it("B, with more than 2,000 saves, does not see A's bookmark on a card it has not read", () => {
+    const qc = client();
+    newsReadAs(qc);
+    const watch = watchAccountSwitch((uid) => forgetAccount(qc, uid));
+    watch(signedIn(A));
+    watch(signedIn(B));
+
+    // B's saved ids are the newest 2,000 and do not name STORY.
+    const bobIds: SavedIdsSnapshot = { ids: [OTHER], complete: false, removed: [] };
+    const feed = qc.getQueryData<{ pages: { items: { id: string; isSaved: boolean }[] }[] }>(
+      FEED_KEY,
+    );
+    const cachedMark = feed?.pages[0]?.items.find((item) => item.id === STORY)?.isSaved;
+    expect(savedStateOf(bobIds, STORY, cachedMark)).not.toBe(true);
+    // A tap on it asks the server rather than guessing from the cache.
+    expect(planSavedToggle(bobIds, STORY)).toBe("ask");
+  });
+
+  it("clears a mark to unknown, not to a confirmed false: both accounts saved the story, B's ids are partial", () => {
+    const qc = client();
+    // A and B both saved STORY; the feed was read as A, so it says isSaved: true.
+    newsReadAs(qc);
+    const watch = watchAccountSwitch((uid) => forgetAccount(qc, uid));
+    watch(signedIn(A));
+    watch(signedIn(B));
+
+    // B has more than 2,000 saves: the ids are partial and do not hold STORY.
+    const bobIds: SavedIdsSnapshot = { ids: [OTHER], complete: false, removed: [] };
+    const feed = qc.getQueryData<{ pages: { items: Record<string, unknown>[] }[] }>(FEED_KEY);
+    const cleaned = feed?.pages[0]?.items.find((item) => item.id === STORY);
+    expect(cleaned).toBeDefined();
+    expect("isSaved" in (cleaned ?? {})).toBe(false);
+
+    // Unknown (null), so the bookmark asks the server; a rewritten false would
+    // be trusted here and show a story B did save as unsaved.
+    expect(savedStateOf(bobIds, STORY, cleaned?.isSaved as boolean | undefined)).toBeNull();
+    expect(planSavedToggle(bobIds, STORY)).toBe("ask");
+  });
+
+  it("keeps everything else about the cached answers, and leaves other keys alone", () => {
+    const qc = client();
+    newsReadAs(qc);
+    qc.setQueryData(["football", "clubs", "fr"], [{ id: "c", isSaved: true }]);
+    forgetAccount(qc, A);
+    expect(qc.getQueryData<{ title: string; bodyHtml: string }>(DETAIL_KEY)).toMatchObject({
+      title: `Titre ${STORY}`,
+      bodyHtml: "<p>x</p>",
+    });
+    const feed = qc.getQueryData<{ pages: { items: { id: string }[] }[] }>(FEED_KEY);
+    expect(feed?.pages[0]?.items.map((item) => item.id)).toEqual([STORY, OTHER]);
+    expect(qc.getQueryData(["football", "clubs", "fr"])).toEqual([{ id: "c", isSaved: true }]);
+  });
+
+  it("does not touch what a signed-out visitor already holds, nor strand a mounted screen", async () => {
+    const qc = client();
+    const visitor = { lead: card(STORY, false), featured: [], latest: [] };
+    qc.setQueryData(HOME_KEY, visitor);
+    let fetches = 0;
+    const observer = new QueryObserver(qc, {
+      queryKey: HOME_KEY,
+      queryFn: async () => ((fetches += 1), visitor),
+      staleTime: Infinity,
+    });
+    const seen: unknown[] = [];
+    const unsubscribe = observer.subscribe((result) => seen.push(result.data));
+    forgetAccount(qc, A);
+    await settle();
+    // Same object (nothing changed, so nothing was rewritten), no refetch, no
+    // moment without data.
+    expect(qc.getQueryData(HOME_KEY)).toBe(visitor);
+    expect(fetches).toBe(0);
+    expect(seen.every((data) => data !== undefined)).toBe(true);
+    unsubscribe();
+  });
+
+  it("keeps a mounted screen on its data when it has to rewrite a mark", async () => {
+    const qc = client();
+    newsReadAs(qc);
+    const observer = new QueryObserver(qc, {
+      queryKey: DETAIL_KEY,
+      queryFn: async () => card(STORY, false),
+      staleTime: Infinity,
+    });
+    const seen: unknown[] = [];
+    const unsubscribe = observer.subscribe((result) => seen.push(result.data));
+    forgetAccount(qc, A);
+    await settle();
+    expect(seen.every((data) => data !== undefined)).toBe(true);
+    const shown = observer.getCurrentResult().data as Record<string, unknown>;
+    expect(shown).toMatchObject({ id: STORY });
+    expect("isSaved" in shown).toBe(false);
+    unsubscribe();
+  });
+
+  it("does not rewrite the saved collection or the saved ids: those are keyed by account and removed by it", () => {
+    const qc = client();
+    const collectionOf = (id: string) => [
+      { kind: "article" as const, article: card(STORY, true) },
+      { kind: "unavailable" as const, id: `${id}-gone` },
+    ];
+    const idsOf = (): SavedIdsSnapshot => ({ ids: [STORY], complete: true, removed: [] });
+    const keys = {
+      collectionA: ["news", "saved-collection", A] as const,
+      idsA: ["news", "saved-article-ids", A] as const,
+      collectionB: ["news", "saved-collection", B] as const,
+      idsB: ["news", "saved-article-ids", B] as const,
+    };
+    const held = {
+      collectionA: collectionOf("a"),
+      idsA: idsOf(),
+      collectionB: collectionOf("b"),
+      idsB: idsOf(),
+    };
+    qc.setQueryData(keys.collectionA, held.collectionA);
+    qc.setQueryData(keys.idsA, held.idsA);
+    qc.setQueryData(keys.collectionB, held.collectionB);
+    qc.setQueryData(keys.idsB, held.idsB);
+    newsReadAs(qc);
+
+    // The rewrite alone must leave all four untouched: the very same objects,
+    // still marked saved (they are those accounts' own answers, not a
+    // reader's view of public News), while the public caches are cleaned.
+    forgetViewerSavedMarks(qc);
+    expect(qc.getQueryData(keys.collectionA)).toBe(held.collectionA);
+    expect(qc.getQueryData(keys.idsA)).toBe(held.idsA);
+    expect(qc.getQueryData(keys.collectionB)).toBe(held.collectionB);
+    expect(qc.getQueryData(keys.idsB)).toBe(held.idsB);
+    expect(marked(qc)).toEqual([keys.collectionA, keys.collectionB]);
+    expect(qc.getQueryData<{ isSaved?: boolean }>(DETAIL_KEY)?.isSaved).toBeUndefined();
+
+    // The outgoing account's entries go by their account id, whole; the
+    // account that stays keeps its own, still marked.
+    forgetAccount(qc, A);
+    expect(qc.getQueryData(keys.collectionA)).toBeUndefined();
+    expect(qc.getQueryData(keys.idsA)).toBeUndefined();
+    expect(qc.getQueryData(keys.collectionB)).toBe(held.collectionB);
+    expect(qc.getQueryData(keys.idsB)).toBe(held.idsB);
+  });
+
+  it("keeps the age of every answer it rewrites", () => {
+    const qc = client();
+    newsReadAs(qc);
+    const OLD = 1_700_000_000_000;
+    for (const key of [FEED_KEY, DETAIL_KEY, HOME_KEY]) {
+      qc.setQueryData(key, qc.getQueryData(key), { updatedAt: OLD });
+    }
+    const before = marked(qc);
+    expect(before).toHaveLength(3);
+
+    forgetViewerSavedMarks(qc);
+
+    expect(marked(qc)).toEqual([]);
+    for (const key of before) {
+      expect(qc.getQueryState(key)?.dataUpdatedAt).toBe(OLD);
+    }
   });
 });
