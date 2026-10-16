@@ -1,6 +1,6 @@
 # Subtext and UX copy overhaul: report
 
-Branch `claude/clever-heisenberg-pcbpxo` (7 commits on top of `8779e75`). Nothing is merged,
+Branch `claude/clever-heisenberg-pcbpxo` (8 commits on top of `8779e75`). Nothing is merged,
 deployed or applied to a database. No pull request is open.
 
 Files next to this report:
