@@ -202,8 +202,11 @@ async def provision() -> dict[str, Any]:
         raise SystemExit("setup rehearsal requires 25 to 50 users per runner")
     if capacity_mode == "session_provisioning_rehearsal" and expected_users != 1:
         raise SystemExit("session provisioning rehearsal requires one user per runner")
+    if capacity_mode == "launch_sized" and expected_users != 200:
+        raise SystemExit("launch-sized mode requires exactly 200 users per runner")
     if capacity_mode not in {
         "full_gate",
+        "launch_sized",
         "setup_rehearsal",
         "session_provisioning_rehearsal",
     }:

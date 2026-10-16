@@ -2,8 +2,11 @@
 
 Written 2026-10-16 against `origin/main` at `9e7056ad`. This is a plan and a set of
 blank forms. **Every command, workflow and check in it is NOT RUN.** No database,
-host, workflow, setting or job was touched to write it, no test was run, and
-nothing here says the game has passed anything.
+host, workflow, setting or job was touched to write it, and nothing here says the
+game has passed anything. What did run: the Python unit tests of the capacity scripts
+(local, no network) and the repository's typecheck and lint, to check the launch-sized
+code in section 1. Nothing ran against Amazon, Supabase or GitHub Actions, and no load
+test of any size has run.
 
 **What this page is for.** The capacity plan (CAP) has 13 steps. This page turns
 them into a run order that one named writer, Claude (the owner's answer to Q8),
@@ -40,134 +43,157 @@ database: a script, a workflow, a person in the SQL editor, a scheduled job (AG:
 **RPS** is requests per second. **est.** marks my own estimate, not a figure from the
 repository.
 
-## 1. Decision: run the existing test profile as it is
+## 1. Decision: two profiles; the full gate stays, a launch-sized run is added beside it
 
 ### The decision
 
-**Run the existing profile exactly as it stands. Do not edit it.** The repository does
-not show a reason to switch to a smaller profile first. It does show one reason to
-expect a FAIL at the owner's server size, and that is handled by agreeing in advance
-what a FAIL means (the list at the end of this section), not by shrinking the test.
+Owner, 2026-10-16: "do it how standard people launching an app do". The usual practice is
+to size the test to the expected peak times a safety factor of 5 to 10, not to a far larger
+number, and to keep a separate stretch run for information. The plan is therefore:
 
-### What the existing profile is
+1. **Launch-sized run (new, separate mode `launch_sized`).** 1,000 users on five machines,
+   175 RPS for 10 s, 65 RPS for 50 s, then a 10-minute soak at 65 RPS. About 10 times the
+   declared deadline traffic. It is the run that informs the launch decision.
+2. **The full gate is NOT replaced; its numbers are NOT edited.** The 2,500-user, 600/250 profile is
+   still locked in code (section "How the lock works" below) and is still what the
+   repository calls "the gate" (CAPR:62-63, CAPR:187). The audit's A8 item asks for "a
+   current gate and soak on the declared traffic" (`docs/audits/2026-10-14-audit-remediation-phase-a.md:118-119`);
+   this page does not close A8 on a launch-sized pass. Accepting launch-sized evidence as
+   the A8 evidence is a deviation the owner records by name.
+3. **Stretch run: informational only, not built yet** (numbers below). It never passes or
+   fails anything.
+4. The setup rehearsal (25 users a machine, no traffic) is unchanged and runs first in both.
 
-- 2,500 temporary managers on five temporary Amazon machines, 500 each (LOAD:20-25,
-  GATE:52-53). A 60-second gate: 600 requests a second for 10 seconds, then 250 a
-  second for 50 seconds. Then a 10-minute soak at 250 a second (GATE:2430-2432).
-- Mix: 60% save a lineup, 30% transfer (check, then confirm), 5% Bench Boost, 5% open
-  the team (LOAD:24).
-- Database it plays against: 50,000 fake teams, 750,000 squad rows, a 10,000-member
-  league and 1,000 other leagues (CAPR:76-88).
-- **It is locked.** The load runner refuses lower numbers: "approved merge-gate load
-  dimensions may not be weakened" (LT:239-243). The report says the full gate is
-  "hard-locked to 2,500 users and the approved 600/250 RPS profile" (CAPR:187). The
-  runbook says to stop rather than "weaken the user count" when Auth objects
-  (FDR:156-157), and the activation condition is "the unchanged five-runner,
-  2,500-user gate plus soak" (CAPR:62-63).
+Code status: the launch-sized mode is in the repository on its own branch, unit-tested, and
+**never run end to end** (no staging window, no Amazon machines). Every number below is NOT
+RUN.
 
-### Declared traffic against the profile
+### Where the numbers come from (arithmetic; est. = my assumption, to be challenged)
 
-Declared figures are the owner's answers of 2026-10-16 (OWNER:121-130).
+| Step                           | Arithmetic                                                                                                                                    | Result          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Requests per action            | mix 60/30/5/5 (LOAD:24), a transfer is 2 requests: (60 + 30 x 2 + 5 + 5) / 100                                                                | 1.3 (est.)      |
+| Saves in the last 10 minutes   | 200 managers (Q3 high) x 3 actions (est.) x 1.3                                                                                               | 780 requests    |
+| Average rate                   | 780 / 600 s                                                                                                                                   | 1.3 RPS         |
+| Peak minute                    | half arrive in the last minute (est.): 390 / 60 s                                                                                             | 6.5 RPS         |
+| Last 10 seconds                | the profile's own burst ratio 600 / 250 = 2.4 (est.): 6.5 x 2.4                                                                               | 15.6 RPS        |
+| Safety factor 10               | sustained 6.5 x 10 = 65 (13 a machine); burst 15.6 x 10 = 156, rounded up to 175 (35 a machine), the first valid value (see below)            | 65 and 175 RPS  |
+| Users                          | the season-end cap, all active (Q1, Q6): 1,000 = 5 x the 200 high-case savers; 10 x would be 2,000, more than the cap                         | 1,000 (5 x 200) |
+| Browsing, not made by the tool | 300 people (Q2 high) x 2 live refreshes every 30 s (`src/lib/match-refresh.ts:36-41`; 2 per viewer est.) = 20; plus opens 300 x 5 / 600 = 2.5 | 22.5 RPS (est.) |
+| Declared all-in peak           | 6.5 + 22.5                                                                                                                                    | about 29 RPS    |
 
-| Quantity                                              | Declared                                                                                                  | Existing profile                                            | Profile is about           |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------- |
-| Managers saving or transferring near a lock (Q3 high) | 200 in the last 10 minutes                                                                                | 2,500 accounts                                              | 12 times larger            |
-| Managers in the whole game (Q1, Q6 cap)               | 500 at launch, 1,000 at season end                                                                        | 2,500 test teams on top of 50,000 seeded teams              | 2.5 to 50 times            |
-| Biggest league (Q5)                                   | 1,000 members                                                                                             | 10,000 members                                              | 10 times                   |
-| Number of leagues (Q5)                                | about 100                                                                                                 | about 1,001                                                 | 10 times                   |
-| Request rate at the deadline                          | **est. 1.5 RPS** averaged over the last 10 minutes; **est. 8 RPS** if half of it lands in the last minute | 600 RPS for 10 s, 250 RPS for 50 s, then 250 RPS for 10 min | about 30 times at the peak |
+Assumptions to challenge:
 
-How I got the request rate (my arithmetic, to be challenged): 200 managers, each doing a
-generous 3 actions, is 600 actions. The mix averages about 1.4 requests per action
-(a transfer is two requests), so about 850 requests. Spread over 10 minutes that is
-about 1.5 a second. If half of them arrive in the final minute it is about 7 to 8 a
-second. The profile asks for 250 sustained, so it is far above the declaration. That is
-the case for running it: **passing it would be much stronger evidence than the
-declaration needs.** It also means the profile does **not** test the declared crowd
-shape (a short rush); it tests a much larger sustained load.
+- The earlier text of this section used 1.4 requests per action (850 requests, 1.5 RPS
+  average). The 1.3 above comes straight from the mix and replaces it. The code mix is per
+  request (60/15/15/5/5, `pick_operation` in `fantasy-load-test.py`), which gives 1.18; I used the larger.
+- 3 actions per manager, half of them in the last minute, and 2 live refreshes per viewer
+  are my guesses, not measurements. Change one and the profile scales in proportion.
+- The deadline and the biggest kick-off are taken as the same moment (conservative).
+- Q4's 250 new accounts an hour is a sign-up load. It is not in these figures.
+- Staging holds 50,000 fake teams, launch holds up to 1,000: conservative for the database.
+- Why 175 and not 160. Whole numbers a machine are not enough: the orchestrator checks that
+  the mix is exactly 60/15/15/5/5, so each machine's 60 s request count (10 x burst + 50 x 13
+  a machine) must be a whole number of 100-request cycles. That needs burst a machine = 5
+  modulo 10. 160 (32 a machine) gives 970 requests and fails the check; 175 (35) gives 1,000.
 
-What it still does not cover, whatever its size: match-day browsing (Q2: 50 / 150 /
-300 people), sign-up bursts (Q4: 250 new accounts an hour), the website host and
-real phones on Moroccan networks (LOAD:126-131, CAP:357-371).
+| Profile                 | Full gate (locked)                          | Launch-sized (new)                                       | Stretch (not built)        |
+| ----------------------- | ------------------------------------------- | -------------------------------------------------------- | -------------------------- |
+| Mode / profile names    | `full_gate`: `merge_gate`, `telemetry_soak` | `launch_sized`: `launch_sized_gate`, `launch_sized_soak` | none yet                   |
+| Users                   | 2,500 (5 x 500)                             | 1,000 (5 x 200)                                          | 1,000                      |
+| Burst, then sustained   | 600 RPS 10 s, 250 RPS 50 s                  | 175 RPS 10 s, 65 RPS 50 s                                | 350 RPS 10 s, 150 RPS 50 s |
+| Soak                    | 250 RPS, 10 min                             | 65 RPS, 10 min                                           | 150 RPS, 10 min            |
+| Requests (gate + soak)  | 18,500 + 150,000                            | 5,000 + 39,000                                           | 11,000 + 90,000            |
+| Against peak minute 6.5 | 38 x                                        | 10 x                                                     | 23 x                       |
+| Against all-in 29       | 8.6 x                                       | 2.2 x                                                    | 5.2 x                      |
+| Evidence label          | mode `full_gate`                            | mode `launch_sized`, "NOT the full 2,500-user gate"      | would need its own label   |
 
-### The repository's reason to expect a FAIL
+Read the last two rows plainly. On the saves alone the launch-sized run is 10 times the
+declared peak. But the July bottleneck was CPU in the layer in front of the database, not
+the queries (CAPR:21-27), and it is shared by every request. If browsing reaches the same
+server, total request volume at the launch-sized rate is only 2.2 times the all-in peak,
+and a 5 times margin on it would be 145 RPS (the stretch run is that, 150). By the same
+arithmetic the existing gate (250) is 8.6 times the all-in peak, close to the usual 10.
+Nobody has measured how much cheaper a browsing request is than a save. That is why the
+browsing test (step 10, not built) is still needed beside either profile.
 
-- The last real measurement, on a **Medium** server, topped out at about **65 RPS**
-  (CAPR:10-17). The profile asks for 250 sustained: about 3.8 times that.
-- The report says to certify on **XL or 2XL**, and that no size has passed
-  (CAPR:47-56).
-- The owner's answer to Q7 is "we start with lowest" and no big budget (OWNER:129).
-  So if production is at or below Medium, then on the July evidence a FAIL on the
-  existing profile is the expected result. If it is Large (as LOAD:65-67 said on
-  2026-09-25), nobody has measured that size. OWNER:129 already says what to do then: say so plainly, claim no
-  pass, and do not buy a bigger server to get one.
+### The full gate on a Medium server: a FAIL is expected (unchanged by this plan)
 
-This is **not** a reason to edit the profile. A fail still measures where the system
-broke (achieved rate, error rate, latency per operation, CPU), which is exactly what the
-owner needs to compare with the declared 8 RPS.
+- The last real measurement, on Medium, topped out near 65 RPS (CAPR:10-17). The gate asks
+  for 250 sustained, 3.8 times that. The report says to certify on XL or 2XL; no size has
+  passed (CAPR:47-56).
+- The owner's Q7 answer is "we start with lowest" and no big budget (OWNER:129). At or below
+  Medium the expected result of the full gate is a FAIL. If production is Large (LOAD:65-67
+  said so on 2026-09-25), nobody has measured that size. OWNER:129 says what to do: say so
+  plainly, claim no pass, do not buy a bigger server to get one.
+- The declared crowd is far smaller than the gate: 6.5 RPS in the peak minute against 250
+  (38 times), 200 savers against 2,500 accounts, a 1,000-member league against 10,000. The
+  gate tests a much larger sustained load, not the shape of the declared rush.
+- A full-gate FAIL is not a reason to edit the profile; it measures where the system broke.
+  **Never edit the locked profile, and never call a launch-sized result "the gate".** After a
+  full-gate FAIL the owner chooses: a bigger server (outside the budget), the launch-sized
+  result as launch evidence with the A8 deviation recorded by name, or a lower cap.
 
-### What each option costs, on the smallest compute size
+### How the lock works, and what was added
 
-Option 1 is the existing profile, unedited. Option 2 is a smaller profile, which would
-need new code.
+- `fantasy-load-test.py`: each runner refuses `merge_gate` and `telemetry_soak` unless users
+  are 2,500, sustained 250 and burst 600 (`!= 2500 ... may not be weakened`, LT:239-243 at
+  `9e7056ad`). That branch is untouched. The launch-sized profiles got their own branch above it with
+  their own fixed numbers, so `merge_gate` with launch numbers, or `launch_sized_*` with gate
+  numbers, exits with an error.
+- `fantasy-capacity-orchestrator.py`: a mode can only run its own profile pair
+  (`measured_profile_names`), and the two gate profiles keep their commands byte for byte.
+- `fantasy-session-provisioner.py` demands exactly 500 users a machine in `full_gate` mode and
+  exactly 200 in `launch_sized`. The report script (`fantasy-capacity-report.py`) and the
+  workflow scope `launch-sized` print a different heading, never the plain word PASS, and
+  `fullGatePassed` stays false.
+- One CI test pinned the whole orchestrator file by SHA-256. It was re-pinned on purpose
+  (comment in `test_fantasy_capacity_orchestrator_diagnostic.py`); a reviewer must accept that.
+- Tests: `scripts/backend/tests/test_fantasy_launch_sized_profile.py` (merge gate still
+  refuses every weakening, commands unchanged, labels, the two cannot stand in for each other).
 
-- **Time to get started.**
-  - Option 1: nothing to build. Rehearsal about 20 minutes (LOAD:85); full run up to 2
-    hours (LOAD:96). The workflow stops at 120 minutes and the test itself at 90
-    (`.github/workflows/fantasy-load-test.yml:47,173`).
-  - Option 2: edit the lock (LT:213-243), the hard-coded numbers (GATE:52-53, 1280,
-    1409-1411) and the Python tests (`scripts/backend/tests/test_fantasy_capacity_orchestrator.py`),
-    then get review and merge approval. Days, not hours (est.).
-- **Time inside the run.**
-  - Option 1: the measured part is only about 11 minutes (60 s gate, 10 min soak). Setup
-    and cleanup are most of the 2 hours: creating 2,500 users at 5 a second is about 8
-    minutes, and signing them in at 0.4 a second per machine is about 21 minutes
-    (FDR:104-108; est.).
-  - Option 2: saves about 25 minutes of setup if cut to 250 users (est.). Nothing else.
-- **Amazon (AWS).**
-  - Option 1: 5 small machines for at most 105 minutes; they switch themselves off
-    (GATE:83). The script's own worst case is $18.75 (5 machines at $1 an hour for 105
-    minutes, plus a $10 buffer) and it refuses to start above $50 (GATE:85-96,
-    LOAD:35-37). LOAD says "a few dollars" for the full run and "cents" for the
-    rehearsal (LOAD:85,96).
-  - Option 2: the same 5 machines for fewer minutes, so cents less. Not a real saving.
-- **Supabase staging compute.** The same for both. Staging runs at production's size for
-  the window. If production is the smallest size, staging may already be that size (LOAD:110
-  says Micro on 2026-09-25) and only the disk grows. The resize screen shows the price;
-  write it in the evidence file before confirming.
-- **Disk.** The same for both: at least 20 GB, once. A disk can grow but never shrink, and
-  Supabase allows four disk changes a day (LOAD:71-75). A small, permanent monthly cost;
-  the dashboard shows it.
-- **What the result is worth.**
-  - Option 1: the only result the report accepts as "the gate" (CAPR:62-63).
-  - Option 2: a different, weaker claim. It could pass on a server that would fail the
-    real gate, and nobody would learn the margin.
+### PASS criteria (reused, none invented)
 
-Whether the Amazon cost counts as the owner's "no extra spending" was never settled
-(OWNER:159-161). It is owner action O2 in section 5, to be answered before the run.
+The launch-sized run is judged by the same code as the full gate: one shared branch in
+`CapacityGate.run` and one `aggregate_profile` (GATE:1547-1551 and 2447-2457 at `9e7056ad`).
+Every one must hold, for the 60 s part and for the soak: read p95 at most 500 ms; save and
+transfer p95 at most 1,500 ms and p99 at most 3,000 ms; unexpected-error rate under 0.5%;
+lock-timeout rate under 0.1%; integrity checks all zero; metrics complete; connection use,
+server CPU and pool use each under 80%; zero deadlocks and conflicts; cleanup back to zero.
+
+### What a launch-sized PASS does and does not prove
+
+- Proves: at 1,000 accounts, deadline-style saves and transfers at 10 times the declared
+  rate stay inside the gate's own latency, error, CPU and integrity limits, on staging at
+  the stated compute size, on that date and commit.
+- Does not prove: the full gate (2,500 accounts, 250 RPS).
+- Does not prove: a margin on total traffic above 2.2 times, if browsing shares the server.
+- Does not prove: browsing, sign-up bursts, real phones, the website host, or A8's other
+  parts (version manifest, failure drills).
+- It is weaker evidence than the full gate: about a quarter of the sustained rate and 40% of
+  the users (65 RPS against 250). A pass can come on a server that would fail the full gate.
+  Say "launch-sized", never "the gate".
+- On Medium, expect a close call: the soak rate (65) equals the rate where July topped out
+  (about 65). A FAIL there is plausible and is itself the answer to "is Medium enough".
 
 ### How to read the verdict in advance
 
-- **PASS** (every criterion in step 8 met, cleanup counted back to zero).
-  - Meaning: the gate passed on staging at production's size, on the run's date and commit.
-  - May be said: "the deadline-save load passed at 2,500 users". Still not covered:
-    browsing, sign-up bursts, real phones, the website host (section 6).
-  - Next: the owner reads the evidence form and decides.
-- **FAIL** (some criterion missed, setup fine, measured numbers exist).
-  - Meaning: the gate is **not** passed. No capacity threshold is claimed (CAPR:333-335).
-  - May be said: quote the achieved rate and where it broke. If it broke above the
-    declared peak (est. 8 RPS), say "the gate failed; the declared crowd is not shown to be
-    unsafe, but it is not proven" and nothing stronger.
-  - Next: the owner chooses (a) a bigger server, outside the stated budget; (b) ask a
-    developer for a **new, separately named, reviewed** "declared-traffic" profile (for
-    example 250 users, 25 RPS for 60 s, then 10 RPS for 10 minutes; my suggestion only); or
-    (c) a lower cap. Never edit the locked profile, and never call a declared-traffic
-    result "the gate".
-- **BLOCKED** (user creation, Auth 429, an Amazon refusal, a runner that exited, a metrics
-  gap).
-  - Meaning: nothing was measured. This is **not** a fail (CAPR:148-153; FDR:156-168).
-  - May be said: "setup failed at X; no capacity result".
-  - Next: fix the named cause, repeat only the failed step, and do not weaken anything.
+- **PASS (launch-sized):** every criterion above met, cleanup zero. May be said: "the
+  deadline-save load passed at 1,000 users and 65 RPS (10 times the declared peak)". Not "the gate".
+- **FAIL:** setup fine, some criterion missed. Quote the achieved rate and what broke. If it
+  broke above 6.5 RPS say "launch-sized failed; the declared crowd is not shown to be unsafe,
+  but not proven". Next: the owner picks a bigger server, a lower cap, or accepts the risk.
+- **BLOCKED** (user creation, Auth 429, Amazon refusal, runner exit, metrics gap): nothing was
+  measured; not a fail (CAPR:148-153; FDR:156-168). Fix the cause, repeat the failed step.
+- **Stretch:** run only after a launch-sized PASS; informational, no verdict. It needs a small
+  code addition first (one more named mode, its label and an "informational" verdict).
+- **Cost (est.):** the same five machines and the same worst case ($18.75, cap $50,
+  GATE:85-96). The staging resize and disk (LOAD:71-75) cost the same as for the full gate.
+- **Time (est.):** fewer users to create and sign in (200 a machine, not 500), so well under
+  the 2 hours of the full run. The measured part is the same 11 minutes.
+- **Run it:** Actions, Fantasy load test, scope `launch-sized` (rehearsal first, then the run).
+  It is step 8L and is recorded in form 4.IL; the full gate is step 8 and form 4.I. The run
+  page and the artifact name carry the scope: `fantasy-load-test-launch-sized-<run id>-<attempt>`.
 
 ## 2. Q6: how a 1,000-manager pilot cap could be enforced
 
@@ -287,7 +313,8 @@ it is a stopgap, not an enforcement.
 
 **The writer is Claude** (OWNER:130). Codex stays out unless Claude hands over a written
 window and then Claude stays out. Everything below is one window; nothing overlaps.
-Plan for 8 to 11 hours (est.: the failure drills alone wait about 100 minutes each, CAP:343).
+Plan for 8 to 11 hours (est.: the failure drills alone wait about 100 minutes each, CAP:343;
+step 8L adds about an hour, est.).
 If the drills would run past the agreed end, close the window after step 9 (restore
 everything, step 13) and open a second window for step 11. Never leave a half-done state
 overnight.
@@ -685,13 +712,16 @@ Supabase command line and a staging-capable login; otherwise a developer)
   confirmation `RUN_PHASE6_STAGING_CLEANUP`).
 - Record: 4.H.
 
-**Step 8. The full test.** (Claude dispatches; Claude only watches while it runs)
+**Step 8. The full test (the full gate).** (Claude dispatches; Claude only watches while it runs)
 
 - Do: same workflow, scope `full`. Up to 2 hours. While it runs Claude makes **no other
   write, no other dispatch and no resize**; it may read R1, R2 and the run status.
+- Only a `full`-scope run belongs in this step and in form 4.I. A `launch-sized` run is
+  step 8L and form 4.IL; never copy one into the other.
 - Read after: the verdict on the run page, then the evidence artifact
-  `fantasy-load-test-<run id>-<attempt>`, kept only **30 days**: copy the numbers into
-  4.I the same day. Then R5, R2, R3.
+  `fantasy-load-test-full-<run id>-<attempt>`, kept only **30 days**: copy the numbers into
+  4.I the same day. Then R5, R2, R3. If the artifact name says anything but `full`, stop:
+  it is not this step's evidence.
 - Pass requires every one of these, from `fantasy-capacity-orchestrator.py` (GATE:1547-1551,
   2447-2457), for the gate and the soak: read p95 at most 0.5 s; save and transfer p95 at
   most 1.5 s and p99 at most 3 s; unexpected-error rate under 0.5% (1 in 200); lock-timeout
@@ -703,7 +733,39 @@ Supabase command line and a staging-capable login; otherwise a developer)
   (BLOCKED, FDR:156-161); the disk fills.
 - Record: 4.I, 4.J.
 
-**Step 9. Signed-in journeys.** (Claude dispatches, **after** step 8 and its cleanup)
+**Step 8L. The launch-sized run (NOT the full gate).** (Claude dispatches; Claude only
+watches while it runs)
+
+- When: the owner's choice, after step 7 and before steps 9 to 13. It may run before step 8,
+  after it, or instead of it, but **never overlapping**: one run and its cleanup finish,
+  counted back to zero, before the other starts. Suggested: 8L first (shorter); then step 8
+  only if the owner still wants the full gate. If step 8 is skipped, A8 stays open against
+  the full gate (section 1) and the owner records the deviation in 4.N.
+- Preconditions: those of step 8 (steps 1 to 6 done, CHECK-A, the writer guard), and the
+  launch-sized code merged to `main` with the owner's approval (the scope does not exist on
+  `main` before that; section 7 item 11).
+- Do: **Actions, Fantasy load test**, scope `launch-sized`, `staging_compute` as typed in 4.A,
+  confirmation `RUN_FANTASY_LOAD_TEST`. It runs the rehearsal, then 1,000 users at 175 RPS
+  for 10 s, 65 RPS for 50 s and a 10-minute soak at 65 RPS. While it runs Claude makes no
+  other write, dispatch or resize.
+- Read after: the run page. Its heading must say "LAUNCH-SIZED run, staging: NOT the full
+  capacity gate" and the verdict "LAUNCH-SIZED PASS (not the full gate)" or "FAIL/BLOCKED".
+  Then the artifact `fantasy-load-test-launch-sized-<run id>-<attempt>` (30 days): copy the
+  numbers into **4.IL** the same day, never into 4.I. Then R5, R2, R3.
+- Pass: the same list as step 8, for the 60 s part and the soak (one shared code path, so
+  nothing here is a different threshold).
+- On FAIL: record in 4.IL the highest sustained rate reached, the first criterion to break and
+  where. Do not rerun to chase a pass without changing something and writing why. Do not edit
+  either profile. A launch-sized FAIL means the full gate, which asks for 3.8 times the rate,
+  is expected to fail too at that server size: skip it unless the size changed. The owner
+  chooses per section 1: a bigger server, a lower cap, or accept the risk. Say "launch-sized
+  failed", never "the gate failed".
+- Stop if: as step 8 (another writer appears and the run is then not evidence; a runner
+  exits; Auth 429 while preparing is BLOCKED, not a fail; the disk fills).
+- Record: 4.IL, 4.J.
+
+**Step 9. Signed-in journeys.** (Claude dispatches, **after** step 8 and step 8L, whichever
+ran, and their cleanup)
 
 - Do: **Actions, Fantasy authenticated E2E**, `target` = `staging`, confirmation
   `RUN_FANTASY_E2E`. **Never `production`** (the same dispatch offers it). It saves a
@@ -731,10 +793,10 @@ Rules are CAP:295-355. The break-and-restore sheet for Drill A and Drill B is a 
 document (OWNER:198-199, not in this change); this step lists only what the run order
 needs. These are the only steps that switch the Fantasy worker on.
 
-- Preconditions: steps 1 to 6 done; **no load test running; and step 8 is finished for
-  good.** The drills finalize the synthetic gameweek and roll teams over, which uses up
-  the seed's state; do not plan another step 8 after step 11 without asking a developer
-  how to reset it. A staging gameweek with work for the worker must exist; how to prepare
+- Preconditions: steps 1 to 6 done; **no load test running; and steps 8 and 8L are
+  finished for good.** The drills finalize the synthetic gameweek and roll teams over, which
+  uses up the seed's state; do not plan another step 8 or 8L after step 11 without asking a
+  developer how to reset it. A staging gameweek with work for the worker must exist; how to prepare
   one is not documented (CAP:306-309), so the developer confirms. The test alert
   destination is set (O9), or the alarm cannot be seen.
 - Deliberate switch changes, each written in the ledger with its old value:
@@ -912,7 +974,8 @@ Every row starts as NOT RUN. Replace it only with a run link or a pasted read.
 | 5    | Edge Functions deployed from the same commit                          | NOT RUN |              |               |             |       |
 | 6    | Seed loaded                                                           | NOT RUN |              |               |             |       |
 | 7    | Load test rehearsal                                                   | NOT RUN |              |               |             |       |
-| 8    | Full test and soak                                                    | NOT RUN |              |               |             |       |
+| 8    | Full test and soak (the full gate)                                    | NOT RUN |              |               |             |       |
+| 8L   | Launch-sized run (NOT the full gate; owner's choice)                  | NOT RUN |              |               |             |       |
 | 9    | Signed-in E2E: 6 passed, 0 skipped                                    | NOT RUN |              |               |             |       |
 | 10   | Browsing and sign-up burst: built or accepted open                    | NOT RUN |              |               |             |       |
 | 11   | Drills A and B, scale measure                                         | NOT RUN |              |               |             |       |
@@ -941,9 +1004,11 @@ Every row starts as NOT RUN. Replace it only with a run link or a pasted read.
 | Cleanup: users / sessions / refresh tokens                    |         |
 | Cleanup: metrics keys / runners / security groups / key pairs |         |
 
-### 4.I Full test (Step 8)
+### 4.I Full test (Step 8): `full`-scope runs only
 
-Run link: NOT RUN. Date, commit, staging size: **\_\_**. Evidence artifact saved to: **\_\_**.
+Only a run with scope `full` and an artifact named `fantasy-load-test-full-...` goes here. A
+launch-sized run goes in 4.IL. Run link: NOT RUN. Date, commit, staging size: **\_\_**.
+Evidence artifact saved to: **\_\_**.
 
 | Criterion (limit)                        | Gate (60 s) | Soak (10 min) | Met? |
 | ---------------------------------------- | ----------- | ------------- | ---- |
@@ -979,6 +1044,33 @@ Run link: NOT RUN. Date, commit, staging size: **\_\_**. Evidence artifact saved
 Verdict printed by the run: **\_\_** (PASS / FAIL / BLOCKED). If FAIL: highest sustained
 rate reached **\_\_** RPS; first criterion to break **\_\_**; where it broke **\_\_**.
 If BLOCKED: stage and cause **\_\_** (this is not a fail).
+
+### 4.IL Launch-sized run (Step 8L): NOT the full gate
+
+Label to keep with every number below: **LAUNCH-SIZED (1,000 users, 65 RPS sustained), NOT
+the full 2,500-user gate.** Only a run with scope `launch-sized` and an artifact named
+`fantasy-load-test-launch-sized-...` goes here. Run link: NOT RUN. Date, commit, staging
+size: **\_\_**. Evidence artifact saved to: **\_\_**. The run page heading says
+"LAUNCH-SIZED run": yes / no.
+
+| Criterion (limit, the same as 4.I)       | Gate (60 s) | Soak (10 min) | Met? |
+| ---------------------------------------- | ----------- | ------------- | ---- |
+| Requests sent (5,000 / 39,000) / RPS     |             |               | n/a  |
+| Read p95 (at most 500 ms)                |             |               |      |
+| Save and transfer p95 (at most 1,500 ms) |             |               |      |
+| Save and transfer p99 (at most 3,000 ms) |             |               |      |
+| Unexpected-error rate (under 0.005)      |             |               |      |
+| Lock-timeout rate (under 0.001)          |             |               |      |
+
+| Whole-run criterion (limit)                                                              | Measured | Met? |
+| ---------------------------------------------------------------------------------------- | -------- | ---- |
+| Metrics complete; connection, CPU and pool use each under 80%; deadlocks and conflicts 0 |          |      |
+| Integrity: the nine checks in 4.I all 0                                                  |          |      |
+| Cleanup counted back to zero                                                             |          |      |
+
+Verdict printed by the run: **\_\_** ("LAUNCH-SIZED PASS (not the full gate)" / FAIL / BLOCKED).
+If FAIL: highest sustained rate reached **\_\_** RPS; first criterion to break **\_\_**; where **\_\_**.
+This form does not close A8 and is not "the gate".
 
 ### 4.J Cost record
 
@@ -1021,12 +1113,14 @@ refusal (ASTRA-04): **\_\_**.
 
 ### 4.N Close (Step 13)
 
-| Item                                                  | Value |
-| ----------------------------------------------------- | ----- |
-| Every writer restored, confirmed by read              |       |
-| Staging size now                                      |       |
-| Manifest "after" matches "before" except as explained |       |
-| Evidence file path and pull request                   |       |
+| Item                                                         | Value |
+| ------------------------------------------------------------ | ----- |
+| Every writer restored, confirmed by read                     |       |
+| Staging size now                                             |       |
+| Manifest "after" matches "before" except as explained        |       |
+| Evidence file path and pull request                          |       |
+| Full gate (4.I) run: yes / no. Launch-sized (4.IL): yes / no |       |
+| If the full gate did not run: owner's A8 deviation, by name  |       |
 
 What this evidence does not prove (CAP:357-371): real phones; the real traffic mix; match-day
 browsing and the website host until step 10 is built; real match scoring; the Edge CPU limit;
@@ -1146,9 +1240,11 @@ The test itself:
     was cancelled halfway and left accounts or machines behind.
 11. Burstable small and medium servers can be flattered by a short run (CAPR:10-13
     says burstable compute). Read the 10-minute soak, not only the 60-second gate.
-12. The evidence was lost: the artifact is kept 30 days; copy the numbers into 4.I the
-    same day.
-13. A second step 8 after the drills, on a seed the drills finalized (step 11).
+12. The evidence was lost: the artifact is kept 30 days; copy the numbers into 4.I (or 4.IL)
+    the same day.
+13. A second step 8 or 8L after the drills, on a seed the drills finalized (step 11).
+14. A launch-sized result filed as the full gate. The scope is in the run name and the
+    artifact name, and 4.I and 4.IL are separate forms; check the name before copying.
 
 What the test never measures (so a pass cannot cover it): match-day browsing and the
 website host; sign-up bursts (Q4) and Supabase's own Auth limits and built-in-mail
@@ -1176,3 +1272,6 @@ match scoring; the Edge CPU limit; the GitHub fallback; data providers failing
 9. Whether the Amazon cost is within the owner's spending (O2).
 10. The Q3 request-rate arithmetic in section 1 is mine. If the owner has a better
     estimate of how many requests a manager makes near a deadline, replace it.
+11. Whether the launch-sized code (a branch, not yet reviewed or merged) is merged before the
+    window. Until then the `launch-sized` scope does not exist on `main` and step 8L cannot
+    be dispatched.

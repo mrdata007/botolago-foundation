@@ -96,7 +96,7 @@ connection, the keys and the cleanup all work.
 ### 5. Run the real load test (up to 2 hours, a few dollars)
 
 Same button, scope **full**. It repeats the rehearsal, then runs the
-2,500-account test and the 10-minute soak, and cleans up.
+2,500-account test and the 10-minute soak, and cleans up. (Scope **launch-sized** is a smaller 1,000-account test, not this one and never its pass: see `docs/production/2026-10-16-capacity-test-run-sheet.md`, section 1.)
 
 ### 6. Read the result
 
