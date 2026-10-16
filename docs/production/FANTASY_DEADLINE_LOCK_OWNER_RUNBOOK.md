@@ -98,11 +98,21 @@ SHARE` on the season row, then on the gameweek row, then the pilot-cap lock and 
   either. The added season lock creates no other cycle: before it the squad holds only its two advisory
   locks, which no function that locks a season row takes; the only other writers of the season row
   either do a plain update of a non-key column (no conflict with `KEY SHARE`) or are the staff catalog
-  rollback (`api.service_rollback_fantasy_catalog`, which deletes the gameweeks, then the season, of a
-  season that has no team yet): that one can meet the first squad of the season in a cycle, but the
-  team insert's foreign keys took the same two locks in the same order before this change, so it is not
-  new, and PostgreSQL's deadlock detector ends it (worked out from the code and the foreign-key trigger
-  order, not reproduced).
+  rollback (below).
+- **Known, not new: the staff catalog rollback against the first squad of a season.**
+  `api.service_rollback_fantasy_catalog` removes the Fantasy catalog of a season that has **no team
+  yet**: it deletes the pool players first, then the gameweeks, then the season. A first squad created
+  at the same moment holds `KEY SHARE` on the season and the gameweek and needs the pool rows for its
+  squad; the rollback holds the pool rows it deleted and needs the gameweek. Reproduced with the two
+  started together, no pause: `deadlock detected` in **17 of 20 rounds on `origin/main`** (no pilot cap,
+  no deadline lock) and 14 of 20 with this migration, the victim being either side. So it pre-dates this
+  branch. What this migration adds: with the pilot cap **on**, a squad that waits for the pilot lock does
+  so while holding the season and gameweek `KEY SHARE`, so a rollback in that moment always meets it
+  (reproduced: 1 deadlock with this migration, a clean refusal of the squad without it). Either way
+  PostgreSQL ends it within `deadlock_timeout` (1 s) and nothing is left half done: if the squad is the
+  victim, the manager sees an error and the season is gone (the same end as a clean refusal); if the
+  rollback is, staff run it again (it refuses once the season has a team). Rolling back a catalog is a
+  staff action on a season nobody plays yet; do not run it while sign-ups are open. Not changed here.
 - Every function that locks a gameweek row `FOR UPDATE` takes it first (after the calendar advisory
   lock, or after the season row for the three switches above). On the open gameweek, only the lock step then waits for a row a manager might hold
   (the lineups), and a manager takes a lineup only after the gameweek row. The functions that lock team
@@ -378,14 +388,20 @@ every migration up to `20261016180000` applied in order (the pilot cap included)
   three owner switches before and after the season lock, the late-chip review query, and the repair
   block with each of its refusals;
 - the preview in a read-only and a read-write transaction;
-- the apply script on copies: rehearsal, commit, a second run, and refusals (tick on, worker lease held,
-  a deadline 10 minutes away, a pinned function changed, the replaced function already changed);
+- the apply script on fresh copies of a database at `20261016170000` with the final migration file
+  (after the season lock): rehearsal (nothing kept), commit (the four functions then have the after-pins,
+  `create_fantasy_team` `0942c5db...`, `VOLATILE`, grants unchanged), a second run (refused: already
+  recorded), and refusals: tick on, worker lease held, a deadline 10 minutes away, a pinned function
+  changed, a replaced function already changed (the check; and the chip cancellation), the pilot cap not
+  recorded;
 - `supabase/tests/database/fantasy_deadline_mutation_lock.test.sql` and `pilot_cap.test.sql` with
-  `pg_prove`: both pass with the migration; without it the deadline file's shape checks and its
-  between-pages chip checks fail (the chip is written); the whole pgTAP suite was run with and
-  without the migration: the same ten files fail in this harness either way (limits of the stand-ins:
-  storage grants, the Realtime publication, the vault and pg_net stand-ins, ops alert timing), none of
-  them about Fantasy deadlines; every other Fantasy file passes;
+  `pg_prove` (pgTAP 1.3.2): both pass with the migration; without it the deadline file's shape checks and
+  its between-pages chip checks fail (the chip is written); the whole pgTAP suite (182 files, 6,752
+  tests) was run on a database at `20261016170000` and on the same with the final migration: the only
+  file whose result differs is the deadline file itself (fails without the migration, passes with it).
+  `morocco_time_helpers` fails on both (in this harness); `premium_card_league_context` failed once on
+  the final run on its 5-second timing test and passed three reruns on both, so a timing flake on a
+  loaded machine;
 - `bun run backend:migrations:check`, the script test, `bun test scripts/backend`, typecheck, ESLint and
   Prettier.
 
