@@ -6,6 +6,7 @@ import { QueryClient, QueryObserver, hashKey } from "@tanstack/react-query";
 import {
   forgetAccount,
   forgetAccountQueries,
+  forgetViewerSavedMarks,
   queryKeyNamesAccount,
   watchAccountSwitch,
 } from "./account-queries";
@@ -429,5 +430,68 @@ describe("public News caches across an account switch", () => {
     expect(seen.every((data) => data !== undefined)).toBe(true);
     expect(observer.getCurrentResult().data).toMatchObject({ id: STORY, isSaved: false });
     unsubscribe();
+  });
+
+  it("does not rewrite the saved collection or the saved ids: those are keyed by account and removed by it", () => {
+    const qc = client();
+    const collectionOf = (id: string) => [
+      { kind: "article" as const, article: card(STORY, true) },
+      { kind: "unavailable" as const, id: `${id}-gone` },
+    ];
+    const idsOf = (): SavedIdsSnapshot => ({ ids: [STORY], complete: true, removed: [] });
+    const keys = {
+      collectionA: ["news", "saved-collection", A] as const,
+      idsA: ["news", "saved-article-ids", A] as const,
+      collectionB: ["news", "saved-collection", B] as const,
+      idsB: ["news", "saved-article-ids", B] as const,
+    };
+    const held = {
+      collectionA: collectionOf("a"),
+      idsA: idsOf(),
+      collectionB: collectionOf("b"),
+      idsB: idsOf(),
+    };
+    qc.setQueryData(keys.collectionA, held.collectionA);
+    qc.setQueryData(keys.idsA, held.idsA);
+    qc.setQueryData(keys.collectionB, held.collectionB);
+    qc.setQueryData(keys.idsB, held.idsB);
+    newsReadAs(qc);
+
+    // The rewrite alone must leave all four untouched: the very same objects,
+    // still marked saved (they are those accounts' own answers, not a
+    // reader's view of public News), while the public caches are cleaned.
+    forgetViewerSavedMarks(qc);
+    expect(qc.getQueryData(keys.collectionA)).toBe(held.collectionA);
+    expect(qc.getQueryData(keys.idsA)).toBe(held.idsA);
+    expect(qc.getQueryData(keys.collectionB)).toBe(held.collectionB);
+    expect(qc.getQueryData(keys.idsB)).toBe(held.idsB);
+    expect(marked(qc)).toEqual([keys.collectionA, keys.collectionB]);
+    expect(qc.getQueryData<{ isSaved: boolean }>(DETAIL_KEY)?.isSaved).toBe(false);
+
+    // The outgoing account's entries go by their account id, whole; the
+    // account that stays keeps its own, still marked.
+    forgetAccount(qc, A);
+    expect(qc.getQueryData(keys.collectionA)).toBeUndefined();
+    expect(qc.getQueryData(keys.idsA)).toBeUndefined();
+    expect(qc.getQueryData(keys.collectionB)).toBe(held.collectionB);
+    expect(qc.getQueryData(keys.idsB)).toBe(held.idsB);
+  });
+
+  it("keeps the age of every answer it rewrites", () => {
+    const qc = client();
+    newsReadAs(qc);
+    const OLD = 1_700_000_000_000;
+    for (const key of [FEED_KEY, DETAIL_KEY, HOME_KEY]) {
+      qc.setQueryData(key, qc.getQueryData(key), { updatedAt: OLD });
+    }
+    const before = marked(qc);
+    expect(before).toHaveLength(3);
+
+    forgetViewerSavedMarks(qc);
+
+    expect(marked(qc)).toEqual([]);
+    for (const key of before) {
+      expect(qc.getQueryState(key)?.dataUpdatedAt).toBe(OLD);
+    }
   });
 });

@@ -541,7 +541,7 @@ Differences found while comparing (each is also marked in its row). Most are del
 <!-- prettier-ignore -->
 | # | French (original) | Arabic (to approve) | Where it appears, what to check | Approve | Change to: \_\_\_\_\_ |
 | --- | --- | --- | --- | --- | --- |
-| RV-01 | Suivez vos rivaux, journée après journée | <span dir="rtl">تابع منافسيك، جولة بعد جولة</span> | Curva home, teaser line for Rivals.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.ctx.rivals` | ☐ | |
+| RV-01 | Suivez vos rivaux, journée après journée | <span dir="rtl">تابع منافسيك، جولة بعد جولة</span> | Headline of the BotolaGO+ offer page when the reader arrives from Rivals.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.ctx.rivals` | ☐ | |
 | RV-02 | Vos rivaux | <span dir="rtl">منافسوك</span> | Rivals page title (member / locked preview).<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.rv.title` | ☐ | |
 | RV-03 | Vos rivaux, journée après journée | <span dir="rtl">منافسوك، جولة بعد جولة</span> | Rivals page title (member / locked preview).<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.rv.locked_title` | ☐ | |
 | RV-04 | Total | <span dir="rtl">المجموع</span> | Rivals head-to-head board: totals, lead, publication stamps.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.rv.total` | ☐ | |
@@ -616,7 +616,7 @@ Differences found while comparing (each is also marked in its row). Most are del
 <!-- prettier-ignore -->
 | # | French (original) | Arabic (to approve) | Where it appears, what to check | Approve | Change to: \_\_\_\_\_ |
 | --- | --- | --- | --- | --- | --- |
-| BR-01 | Préparez votre équipe avant la date limite, décision par décision | <span dir="rtl">حضّر فريقك قبل آخر أجل، قرارًا بعد قرار</span> | Curva home, teaser line for the briefing.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.ctx.briefing` | ☐ | |
+| BR-01 | Préparez votre équipe avant la date limite, décision par décision | <span dir="rtl">حضّر فريقك قبل آخر أجل، قرارًا بعد قرار</span> | Headline of the BotolaGO+ offer page when the reader arrives from the briefing.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.ctx.briefing` | ☐ | |
 | BR-02 | Briefing avant la date limite — BotolaGO Fantasy | <span dir="rtl">إحاطة ما قبل آخر أجل — BotolaGO Fantasy</span> | Briefing page header, browser title and entry card.<br>Latin text inside: BotolaGO, Fantasy.<br>“آخر أجل” vs “الموعد النهائي” used elsewhere.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.brief.meta` | ☐ | |
 | BR-03 | Votre briefing avant la date limite : absences listées, remplaçants dans votre budget, capitaine et coût des transferts. | <span dir="rtl">إحاطتك قبل آخر أجل: الغيابات المعلنة، البدلاء ضمن ميزانيتك، القائد وكلفة الانتقالات.</span> | Briefing page header, browser title and entry card.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.brief.meta_description` | ☐ | |
 | BR-04 | Briefing avant la date limite | <span dir="rtl">إحاطة ما قبل آخر أجل</span> | Briefing page header, browser title and entry card.<br>BotolaGO+ rivals/briefing/trophies (#494) · `plus.brief.aria` | ☐ | |

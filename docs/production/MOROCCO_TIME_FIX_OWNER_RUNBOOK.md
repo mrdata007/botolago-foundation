@@ -6,11 +6,12 @@
 > each would stop at "already recorded". Remaining: deploy the
 > `account-deletion-worker` Edge Function, and watch the first daily Pépites
 > sweep (after 00:00 UTC) and the Monday 2026-10-19 12:00Z draft gate. The
-> in-app notification template `pepites_weekly` still says "Pépites"
-> (database text, its own guarded change: migration
+> in-app notification template `pepites_weekly` said "Pépites" (database text,
+> its own guarded change: migration
 > `20261016100000_prospects_weekly_notification_text` and
-> `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`,
-> written but not yet applied).
+> `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`).
+> Update 2026-10-16: applied on Production V2 by the owner (independent
+> read-only check passed; pull request 504 merged). Not applied on Staging V2.
 
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Written 2026-10-15. **Nothing in this document has been run against any shared or production
