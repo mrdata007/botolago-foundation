@@ -353,7 +353,7 @@ function StatesBlock({ data, lang }: { data: PremiumAdminOverview; lang: Lang })
       </div>
       <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="admin-plus-total">
         {rtl
-          ? "عدد الحسابات التي لها موسم أو اشتراك سابق: "
+          ? "عدد الحسابات التي لها اشتراك 2026/27 أو اشتراك قديم: "
           : "Comptes ayant eu une Saison ou un ancien abonnement : "}
         <span className={cn(ui.stat.sm, ui.tone.default)}>{total}</span>
         {" · "}
@@ -894,7 +894,7 @@ function MemberPanel({
           {
             tone: "info",
             text: rtl
-              ? `فُعّل الموسم حتى ${formatUserDate(result.endsAt, lang)}. سُجّل الإجراء في التدقيق.`
+              ? `فُعّل الاشتراك حتى ${formatUserDate(result.endsAt, lang)}. سُجّل الإجراء في التدقيق.`
               : `Saison activée jusqu’au ${formatUserDate(result.endsAt, lang)}. L’action est consignée dans l’audit.`,
             where: grantWhereToLook(member.userId === makeContext().actorId, mode, lang),
           },
@@ -948,17 +948,17 @@ function MemberPanel({
             <span data-testid="admin-plus-member-status">
               {member.isMember
                 ? rtl
-                  ? "موسم مفعّل"
+                  ? "اشتراك مفعّل"
                   : "Saison active"
                 : rtl
-                  ? "لا موسم مفعّل"
+                  ? "لا اشتراك مفعّل"
                   : "Pas de Saison active"}
             </span>
           </StatusBadge>
         </div>
         <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
           {rtl
-            ? "يشمل الموسم والوصول الممنوح الساريين."
+            ? "يشمل الاشتراك والوصول الممنوح الساريين."
             : "Compte la Saison et les accès offerts valables aujourd’hui."}
         </p>
       </UiCard>
@@ -1003,11 +1003,11 @@ function MemberPanel({
       {canGrant && (
         <UiCard padding="md" testId="admin-plus-activate">
           <h4 className={cn(ui.display.header, ui.tone.default)}>
-            {rtl ? "تفعيل موسم 2026/27" : "Activer la Saison 2026/27"}
+            {rtl ? "تفعيل اشتراك 2026/27" : "Activer la Saison 2026/27"}
           </h4>
           <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
             {rtl
-              ? "بعد التحقق من الإيصال الذي أرسله المشتري عبر واتساب. يمتد الموسم حتى نهاية موسم الفانتازي."
+              ? "بعد التحقق من الإيصال الذي أرسله المشتري عبر واتساب. يمتد الاشتراك حتى نهاية موسم الفانتازي."
               : "Une fois le reçu envoyé sur WhatsApp vérifié. La Saison court jusqu’à la fin de la saison Fantasy."}
           </p>
           <div className="mt-4 grid grid-cols-1 gap-4">
@@ -1040,7 +1040,7 @@ function MemberPanel({
             <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="admin-plus-activate-until">
               {seasonEnd ? (
                 <>
-                  {rtl ? "ينتهي الموسم في " : "La Saison se termine le "}
+                  {rtl ? "ينتهي الاشتراك في " : "La Saison se termine le "}
                   <AdminDate>{formatUserDate(seasonEnd, lang)}</AdminDate>.
                 </>
               ) : seasonEnd === undefined ? (
@@ -1065,11 +1065,11 @@ function MemberPanel({
               panel="neutral"
               initialReason={lookupReason}
               disabled={!referenceOk}
-              triggerLabel={rtl ? "تفعيل موسم 2026/27" : "Activer la Saison 2026/27"}
+              triggerLabel={rtl ? "تفعيل اشتراك 2026/27" : "Activer la Saison 2026/27"}
               confirmPrompt={
                 rtl ? (
                   <>
-                    تفعيل الموسم للحساب <AdminDatum>{member.userId}</AdminDatum> (
+                    تفعيل الاشتراك للحساب <AdminDatum>{member.userId}</AdminDatum> (
                     {PAYMENT_METHOD_LABELS[method].ar}
                     {method !== "free" && (
                       <>
@@ -1081,7 +1081,7 @@ function MemberPanel({
                         ، حتى <AdminDate>{formatUserDate(seasonEnd, lang)}</AdminDate>
                       </>
                     ) : null}
-                    )؟ يصبح الموسم مفعّلًا فورًا، ويُسجَّل الإجراء في التدقيق.
+                    )؟ يصبح الاشتراك مفعّلًا فورًا، ويُسجَّل الإجراء في التدقيق.
                   </>
                 ) : (
                   <>
@@ -1163,7 +1163,7 @@ function MemberPanel({
         {member.grants.length === 0 ? (
           <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
             {rtl
-              ? "لا يوجد موسم ولا وصول ممنوح لهذا الحساب."
+              ? "لا يوجد اشتراك ولا وصول ممنوح لهذا الحساب."
               : "Aucune Saison ni accès offert pour ce compte."}
           </p>
         ) : (
@@ -1245,7 +1245,7 @@ function MemberPanel({
           ) : (
             <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="admin-plus-read-only">
               {rtl
-                ? "يسمح دورك بالاطلاع على الحسابات، لا بتفعيل الموسم أو منحه أو سحبه."
+                ? "يسمح دورك بالاطلاع على الحسابات، لا بتفعيل الاشتراك أو منحه أو سحبه."
                 : "Votre rôle permet de consulter les comptes, pas d’activer, d’offrir ni de retirer une Saison."}
             </p>
           )}
@@ -1571,7 +1571,7 @@ function PaymentDetailsSection({
       heading={rtl ? "بيانات الدفع" : "Coordonnées de paiement"}
       intro={
         rtl
-          ? "ما يراه المشتري في شاشة «ادفع موسمي». يدخلها المالك هنا فقط، دون مس بالشيفرة."
+          ? "ما يراه المشتري في شاشة «ادفع ثمن اشتراكي». يدخلها المالك هنا فقط، دون مس بالشيفرة."
           : "Ce que l’acheteur voit sur l’écran « Payer ma Saison ». Le propriétaire les saisit ici, jamais dans le code."
       }
     >

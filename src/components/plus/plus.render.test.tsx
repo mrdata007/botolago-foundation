@@ -331,8 +331,12 @@ describe("the plus.* dictionary", () => {
     const ruledOut = /مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
     for (const key of keys) {
       const value = ar[key as keyof typeof ar] as string;
+      // The one exception: the owner approved «لا تجديد تلقائي» (2026-10-16, row SE-34) for the
+      // "nothing renews" line. It names renewal only to deny it, so تجديد stays banned everywhere
+      // else, and this key is still held to the rest of the list.
+      const ban = key === "plus.terms.norenew" ? /مشترك|بريميوم|شهري|سنوي|استعاد|عضو/ : ruledOut;
       if (/^plus\.(s3|terms|season|pay|profile|hub|page|meta|lock|in\.member)/.test(key)) {
-        expect(value, key).not.toMatch(ruledOut);
+        expect(value, key).not.toMatch(ban);
       }
       expect(value, key).not.toMatch(/[\u0660-\u0669]/);
     }

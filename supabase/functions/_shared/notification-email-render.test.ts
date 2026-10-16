@@ -191,7 +191,7 @@ describe("renderNotificationEmail: every type in both languages", () => {
         const why = pepites
           ? language === "fr"
             ? "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro."
-            : "تتلقى هذه الرسالة لأنك اشتركت في المواهب، توب 10 الأسبوعي لشباب البطولة الاحترافية."
+            : "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع."
           : language === "fr"
             ? "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO."
             : "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.";

@@ -66,7 +66,7 @@ export function renewalLabel(product: PremiumAdminProduct, lang: Lang): string {
 }
 
 const PRODUCT_NAMES: Record<string, Pair> = {
-  plus_season: { fr: "Saison 2026/27", ar: "موسم 2026/27" },
+  plus_season: { fr: "Saison 2026/27", ar: "اشتراك 2026/27" },
   plus_monthly: { fr: "Mensuel (ancien)", ar: "شهري (قديم)" },
   plus_yearly: { fr: "Annuel (ancien)", ar: "سنوي (قديم)" },
 };
@@ -97,21 +97,21 @@ export const MODE_BANNERS: Record<PremiumMode, { tone: "info" | "alert"; text: P
     tone: "alert",
     text: {
       fr: "Éteint : personne ne voit la Saison, même avec un accès offert par le personnel.",
-      ar: "متوقف: لا أحد يرى الموسم، حتى مع وصول ممنوح من الفريق.",
+      ar: "متوقف: لا أحد يرى الاشتراك، حتى مع وصول ممنوح من الفريق.",
     },
   },
   preview: {
     tone: "info",
     text: {
       fr: "Aperçu : seuls les comptes qui ont une Saison la voient (activée par le personnel). Rien n’est public.",
-      ar: "معاينة: لا يراه إلا من لديهم موسم (يفعّله الفريق). لا شيء علني.",
+      ar: "معاينة: لا يراه إلا من لديهم اشتراك (يفعّله الفريق). لا شيء علني.",
     },
   },
   on: {
     tone: "info",
     text: {
       fr: "Ouvert : la Saison est visible par tout le monde.",
-      ar: "مفتوح: الموسم ظاهر للجميع.",
+      ar: "مفتوح: الاشتراك ظاهر للجميع.",
     },
   },
 };
@@ -125,15 +125,15 @@ export function grantWhereToLook(
   const lead =
     lang === "ar"
       ? own
-        ? "يظهر الموسم في الملف الشخصي وعلى بطاقتك:"
-        : "سجّل الدخول بهذا الحساب: يظهر الموسم في الملف الشخصي وعلى بطاقته:"
+        ? "يظهر الاشتراك في الملف الشخصي وعلى بطاقتك:"
+        : "سجّل الدخول بهذا الحساب: يظهر الاشتراك في الملف الشخصي وعلى بطاقته:"
       : own
         ? "La Saison apparaît dans Profil et sur votre carte :"
         : "Connectez-vous avec ce compte : la Saison apparaît dans Profil et sur sa carte :";
   const off =
     mode === "off"
       ? lang === "ar"
-        ? "الوضع متوقف حاليًا: لن يظهر الموسم قبل أن يفتح المالك المعاينة."
+        ? "الوضع متوقف حاليًا: لن يظهر الاشتراك قبل أن يفتح المالك المعاينة."
         : "Le mode est Éteint : rien n’apparaîtra tant que le propriétaire n’a pas ouvert l’aperçu."
       : null;
   return { lead, off };
@@ -311,15 +311,15 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
   },
   season_already_active: {
     fr: "Ce compte a déjà une Saison valable jusqu’à la fin de la saison : rien à activer.",
-    ar: "لهذا الحساب موسم سارٍ حتى نهاية الموسم: لا شيء لتفعيله.",
+    ar: "لهذا الحساب اشتراك سارٍ حتى نهاية الموسم: لا شيء لتفعيله.",
   },
   premium_season_unavailable: {
     fr: "Aucune saison Fantasy n’est en cours : la Saison ne peut pas être activée.",
-    ar: "لا يوجد موسم فانتازي جارٍ: لا يمكن تفعيل الموسم.",
+    ar: "لا يوجد موسم فانتازي جارٍ: لا يمكن تفعيل الاشتراك.",
   },
   premium_season_ended: {
     fr: "La saison Fantasy est déjà terminée : la Saison ne peut plus être activée.",
-    ar: "انتهى موسم الفانتازي: لم يعد ممكنًا تفعيل الموسم.",
+    ar: "انتهى موسم الفانتازي: لم يعد ممكنًا تفعيل الاشتراك.",
   },
   premium_payment_reference_invalid: {
     fr: "La référence du paiement doit faire entre 1 et 80 caractères.",
@@ -327,7 +327,7 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
   },
   premium_product_unavailable: {
     fr: "La Saison n'est pas en vente sur ce serveur : vérifiez que la mise à jour de la base est appliquée.",
-    ar: "الموسم غير متاح للبيع على هذا الخادم: تحقق من تطبيق تحديث قاعدة البيانات.",
+    ar: "الاشتراك غير متاح للبيع على هذا الخادم: تحقق من تطبيق تحديث قاعدة البيانات.",
   },
   premium_payment_reference_required: {
     fr: "Indiquez la référence du paiement (numéro du virement ou du reçu).",

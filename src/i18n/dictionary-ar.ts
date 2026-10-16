@@ -2076,7 +2076,7 @@ export const ar = {
   "unsubscribe.pepites_done_title": "لن تصلك بعد الآن رسالة المواهب.",
   "unsubscribe.pepites_already_title": "رسالة المواهب كانت معطّلة من قبل.",
   "unsubscribe.pepites_reenable_hint":
-    "باقي رسائل BotolaGO الإلكترونية لن تتغير. يمكنك إعادة الاشتراك في المواهب في أي وقت.",
+    "باقي رسائل BotolaGO الإلكترونية لن تتغير. يمكنك إعادة الاشتراك في رسالة المواهب في أي وقت.",
 
   /* Pronostics (BG-0146): the page, results, rankings, guest import */
   "predictions.title": "التوقعات",
@@ -2388,7 +2388,7 @@ export const ar = {
   "pepites.reveal.open_player": "عرض البطاقة",
   "pepites.reveal.next": "التالي · رقم {n}",
   "pepites.reveal.done": "عرض توب 10",
-  "pepites.reveal.delayed_title": "توب 10 الجديد في الطريق",
+  "pepites.reveal.delayed_title": "قائمة توب 10 الجديدة في الطريق",
   "pepites.reveal.delayed_body": "النشر متأخر قليلًا. هذه الصفحة تتحدّث تلقائيًا.",
   "pepites.movement.new": "جديد",
   "pepites.movement.up": "صعود",
@@ -2408,7 +2408,8 @@ export const ar = {
   "pepites.home.about":
     "يرتّب قسم المواهب لاعبي البطولة الاحترافية دون 23 سنة انطلاقًا من مبارياتهم. تختار هيئة التحرير توب 10 كل أسبوع.",
   "pepites.email.title": "توب 10 عبر البريد الإلكتروني",
-  "pepites.email.body": "رسالة واحدة في الأسبوع مع توب 10 الجديد. معطّلة ما لم تفعّلها بنفسك.",
+  "pepites.email.body":
+    "رسالة واحدة في الأسبوع مع قائمة توب 10 الجديدة. معطّلة ما لم تفعّلها بنفسك.",
   "pepites.email.sign_in": "سجّل الدخول لتفعيلها",
   "pepites.email.sign_in_reason": "سجّل الدخول لتتلقى توب 10 من المواهب عبر البريد الإلكتروني.",
   "pepites.email.on_toast": "تم حفظ الاشتراك.",
@@ -2597,7 +2598,7 @@ export const ar = {
   "pepites.share.player_title": "مشاركة البطاقة",
   "pepites.share.story_alt": "بطاقة {name} للمشاركة",
   "pepites.share.player_message":
-    "{name} في المواهب، ترتيب لاعبي البطولة الاحترافية دون 23 سنة على BotolaGO.",
+    "{name} ضمن قسم المواهب، ترتيب لاعبي البطولة الاحترافية دون 23 سنة على BotolaGO.",
   "pepites.share.story_stats": "{minutes} د · تنقيط {rating}",
   "pepites.share.image_alt": "صورة توب 10 من المواهب للأسبوع {n}",
   "pepites.share.image_failed": "تعذّر إنشاء الصورة. يمكنك مشاركة الرابط.",
@@ -3140,7 +3141,7 @@ export const ar = {
   "plus.terms.once": "دفعة واحدة بقيمة {price}، بالسعر نفسه مهما كان يوم الدفع.",
   "plus.terms.until": "يمتد وصولك إلى {logo} حتى {date}، نهاية الموسم.",
   "plus.terms.until_end": "يمتد وصولك إلى {logo} حتى نهاية الموسم.",
-  "plus.terms.norenew": "لا شيء يُعاد من تلقاء نفسه: لا خصم تلقائي ولا شيء يحتاج إلى إلغاء.",
+  "plus.terms.norenew": "لا تجديد تلقائي: لا اقتطاع تلقائي ولا شيء تحتاج إلى إلغائه.",
   "plus.terms.check": "يبدأ وصولك فور أن يتحقق الفريق من دفعتك.",
   "plus.terms.after": "في نهاية الموسم تعود بطاقتك إلى الأسلوب الأساسي.",
   "plus.terms.keep":

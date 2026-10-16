@@ -201,9 +201,28 @@ describe("owner decisions of 2026-10-16", () => {
     expect(ar["pepites.email.sign_in_reason"]).toContain("توب 10");
   });
 
-  test("the brand word المواهب and the word الجاهزية are left as they were", () => {
+  test("المواهب keeps its name and gets its noun in running text (X-05, X-23); الجاهزية is unchanged", () => {
     expect(ar["pepites.sort.form"]).toContain("الجاهزية");
-    expect(ar["unsubscribe.pepites_reenable_hint"]).toContain("إعادة الاشتراك في المواهب");
-    expect(ar["pepites.share.player_message"]).toStartWith("{name} في المواهب،");
+    expect(ar["unsubscribe.pepites_reenable_hint"]).toContain("إعادة الاشتراك في رسالة المواهب");
+    expect(ar["pepites.share.player_message"]).toStartWith("{name} ضمن قسم المواهب،");
+  });
+});
+
+describe("follow-up owner answers of 2026-10-16", () => {
+  test("SE-34: the no-renewal line is the approved text", () => {
+    expect(ar["plus.terms.norenew"]).toBe(
+      "لا تجديد تلقائي: لا اقتطاع تلقائي ولا شيء تحتاج إلى إلغائه.",
+    );
+  });
+
+  test("E-05 neighbours: توب 10 takes a feminine noun before its definite adjective", () => {
+    expect(ar["pepites.reveal.delayed_title"]).toBe("قائمة توب 10 الجديدة في الطريق");
+    expect(ar["pepites.email.body"]).toContain("مع قائمة توب 10 الجديدة.");
+    expect(ar["pepites.email.body"]).not.toMatch(/توب 10 الجديد(?!ة)/u);
+  });
+
+  test("plus.s4.title and plus.s4.cta keep their wording", () => {
+    expect(ar["plus.s4.title"]).toBe("موسمك مفتوح");
+    expect(ar["plus.s4.cta"]).toBe("افتح موسمي");
   });
 });
