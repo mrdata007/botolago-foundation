@@ -153,7 +153,11 @@ describe("the rating change chip", () => {
   it("shows « +3 ▲ » in the positive colour, in one left-to-right run, with the sentence for a screen reader", () => {
     const html = line({ delta: 3, pop: false });
     expect(html).toContain('<bdi dir="ltr" aria-hidden="true">+3 ▲</bdi>');
-    expect(html).toContain("text-[color:var(--ui-positive)]");
+    // The kit's positive badge: the status green, pulled toward the surface ink so its
+    // text clears 4.5:1 on its own tint.
+    expect(html).toMatch(
+      /text-\[color:color-mix\(in_oklab,var\(--ui-positive\)_\d+%,var\(--ui-on-surface\)\)\]/,
+    );
     expect(html).toContain(">note en hausse de 3<");
     expect(chip(html)).toContain('data-change="up"');
   });

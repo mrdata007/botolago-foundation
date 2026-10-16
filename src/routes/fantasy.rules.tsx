@@ -156,9 +156,6 @@ function RulesPage() {
     {
       icon: Trophy,
       titleKey: "fantasy.rules.scoring",
-      // "Points by position" is the category scale's line; under the rating rule
-      // the rating line below says it instead.
-      descKey: rules?.ratingScoring ? undefined : "fantasy.rules.scoring_desc",
       body: rules ? (
         rules.ratingScoring ? (
           <RatingScoring
@@ -190,9 +187,11 @@ function RulesPage() {
         decoding="async"
         className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
       />
-      {/* An h2: the header above already renders the page's h1. */}
-      <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
+      {/* Outline only: the header above is the page's h1 and the rule cards are
+          h3s, so this h2 keeps them from skipping a level. It is not drawn,
+          because it would repeat the title right above it. */}
+      <h2 className="sr-only">{t("fantasy.rules.title")}</h2>
+      <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />

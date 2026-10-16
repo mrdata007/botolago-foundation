@@ -111,11 +111,7 @@ export function PepitesMethodPage() {
 
   return (
     <PepitesShell
-      pageHeader={
-        <PepitesPageTitle backTo="/pepites" title={t("pepites.method.title")}>
-          <p className={cn(ui.text.meta, ui.tone.muted)}>{t("pepites.hero.kicker_short")}</p>
-        </PepitesPageTitle>
-      }
+      pageHeader={<PepitesPageTitle backTo="/pepites" title={t("pepites.method.title")} />}
     >
       {data.preview ? <PepitesPreviewBanner /> : null}
       <UiCard testId="pepites-method">

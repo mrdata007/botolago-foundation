@@ -24,20 +24,13 @@ import { useI18n } from "@/i18n/provider";
 export interface UnsavedBadgeProps {
   /** When false, the badge does not render (kept in DOM only when useful). */
   visible: boolean;
-  /** Announce "draft restored" once, then fall back to "unsaved". */
-  variant?: "unsaved" | "draft_restored";
   /** Optional inline Save affordance. */
   onSave?: () => void;
   /** Disable Save while a mutation is in flight. */
   saving?: boolean;
 }
 
-export function UnsavedBadge({
-  visible,
-  variant = "unsaved",
-  onSave,
-  saving = false,
-}: UnsavedBadgeProps) {
+export function UnsavedBadge({ visible, onSave, saving = false }: UnsavedBadgeProps) {
   const { t } = useI18n();
   if (!visible) {
     // Keep the live region present so subsequent state transitions are
@@ -52,8 +45,6 @@ export function UnsavedBadge({
       />
     );
   }
-  const label =
-    variant === "draft_restored" ? t("fantasy.status.draft_restored") : t("fantasy.status.unsaved");
   return (
     <UiAlert
       tone="caution"
@@ -67,7 +58,9 @@ export function UnsavedBadge({
         ) : undefined
       }
     >
-      <span className="block min-w-0 whitespace-normal break-words">{label}</span>
+      <span className="block min-w-0 whitespace-normal break-words">
+        {t("fantasy.status.unsaved")}
+      </span>
     </UiAlert>
   );
 }

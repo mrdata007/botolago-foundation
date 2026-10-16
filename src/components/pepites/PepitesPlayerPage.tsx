@@ -706,13 +706,10 @@ function PlayerOverview({
 
         <PlayerSection
           title={t("pepites.compare.title")}
-          subtitle={t("pepites.compare.scope")}
           testId="pepites-desktop-face-to-face"
           className="hidden md:block"
         >
-          <p className={cn(ui.text.secondary, ui.tone.muted)}>
-            {t("pepites.compare.choose_prompt")}
-          </p>
+          <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("pepites.compare.with_other")}</p>
           <UiLinkButton
             to="/pepites/comparer"
             search={{ a: player.id }}
@@ -832,11 +829,7 @@ function PlayerStats({
     );
   }
   return (
-    <PlayerSection
-      title={t("pepites.stats.title")}
-      subtitle={t("pepites.stats.subtitle")}
-      testId="pepites-player-stats"
-    >
+    <PlayerSection title={t("pepites.stats.title")} testId="pepites-player-stats">
       {loading ? (
         <div aria-busy="true">
           <UiSkeleton className="h-28" />

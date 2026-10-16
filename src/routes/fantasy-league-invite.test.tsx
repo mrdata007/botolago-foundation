@@ -272,11 +272,4 @@ describe("the wording (brief BG-0157, improvement 4)", () => {
       expect(ar[key]).toBe(arabic);
     });
   }
-
-  it("the join screen points to the button by its name, in both languages", () => {
-    expect(fr["fpl.create_own_league"]).toContain(`« ${fr["fpl.create_league"]} »`);
-    expect(ar["fpl.create_own_league"]).toContain(`«${ar["fpl.create_league"]}»`);
-    expect(fr["fpl.create_own_league"]).not.toContain("Gérer les ligues");
-    expect(ar["fpl.create_own_league"]).not.toContain("إدارة الدوريات");
-  });
 });

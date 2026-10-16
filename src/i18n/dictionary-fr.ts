@@ -680,7 +680,7 @@ export const fr = {
   "fantasy.points.hit": "Pénalité transferts",
   "fantasy.points.multiplier": "Multiplicateur",
   "fantasy.points.active_chip": "Jeton actif",
-  "fantasy.points.no_active_chip": "Aucun jeton actif",
+  "fantasy.points.no_active_chip": "Aucun",
   "fantasy.points.recompute": "Recalculer",
   "fantasy.points.recomputed": "Résultat recalculé",
   "fantasy.points.recompute_locked": "Recalcul indisponible avant la date limite.",
@@ -723,8 +723,6 @@ export const fr = {
   "fantasy.leagues.movement": "Mouvement",
   "fantasy.leagues.search_manager": "Rechercher un manager",
   "fantasy.leagues.me": "Moi",
-  "fantasy.leagues.invite_help":
-    "Partagez ce code avec les managers que vous voulez inviter dans la ligue.",
   "fantasy.leagues.copy_code": "Copier le code d'invitation",
   "fantasy.leagues.no_standings":
     "Le classement de cette ligue apparaîtra dès les premiers matchs comptabilisés.",
@@ -774,8 +772,6 @@ export const fr = {
   "fantasy.players.no_history_desc":
     "Les points de ce joueur apparaîtront ici dès les premiers matchs comptabilisés.",
   "fantasy.players.no_fixtures": "Aucun match à venir",
-  "fantasy.players.no_fixtures_desc":
-    "Aucune rencontre n'est programmée pour ce joueur dans les prochaines journées.",
   "fantasy.players.not_found": "Joueur introuvable",
   "fantasy.players.not_found_desc": "Ce joueur n’est pas dans la liste de la saison.",
   "fantasy.players.no_match": "Aucun joueur trouvé",
@@ -797,7 +793,7 @@ export const fr = {
   "fantasy.fixtures.blank": "Journée blanche",
   "fantasy.rules.title": "Règles",
   "fantasy.rules.intro":
-    "BotolaGO Fantasy se joue avec 15 joueurs de Botola Pro et un budget de 100 M. Alignez 11 titulaires, choisissez un capitaine dont les points comptent double, puis ajustez votre équipe avant la date limite de chaque journée. Les actions réalisées dans les vrais matchs déterminent votre score.",
+    "BotolaGO Fantasy se joue avec 15 joueurs de Botola Pro et un budget de 100 M. Alignez 11 titulaires, choisissez un capitaine dont les points comptent double, puis ajustez votre équipe avant la date limite de chaque journée.",
   "fantasy.rules.squad": "Composition d'équipe",
   "fantasy.rules.squad_desc": "15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux, 3 attaquants.",
   "fantasy.rules.budget": "Budget",
@@ -813,7 +809,6 @@ export const fr = {
   "fantasy.rules.deadlines_desc":
     "Après la date limite de chaque journée, plus aucune modification n’est acceptée.",
   "fantasy.rules.scoring": "Barème de points",
-  "fantasy.rules.scoring_desc": "Points par poste, selon le barème du jeu.",
   "fantasy.recap.public.title": "Rendre ma journée publique",
   "fantasy.recap.public.explain":
     "La page publique montre votre pseudo, la journée, le total, le capitaine et le coût des transferts. Jamais votre e-mail, votre nom, vos ligues ni votre prochaine équipe.",
@@ -1199,7 +1194,7 @@ export const fr = {
   "fpl.follow": "Suivre BotolaGO",
   "fpl.more_about": "En savoir plus sur BotolaGO Fantasy",
   "fpl.rules": "Règles du jeu",
-  "fpl.help_rules": "Aide & Règles",
+  "fpl.help_rules": "Aide",
   "fpl.free_transfers": "Transferts gratuits",
   "fpl.wildcard": "Joker",
   "fpl.cost": "Coût",
@@ -1244,7 +1239,7 @@ export const fr = {
   "fpl.edit_transfers": "Modifier",
   "fpl.confirm": "Confirmer",
   "fpl.cancel": "Annuler",
-  "fpl.done": "Terminé",
+  "fpl.done": "Fermer",
   "fpl.bench": "Remplaçants",
   "fpl.average": "Moyenne",
   "fpl.points": "Points",
@@ -1258,16 +1253,11 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code donné par le créateur de la ligue.",
-  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code": "Code invalide. Vérifiez-le auprès du créateur de la ligue.",
   "fpl.public_help": "Maximum : 15 ligues privées et 3 ligues publiques.",
   "fpl.public_help2":
     "Rejoignez une ligue publique pour affronter un petit groupe de joueurs tirés au sort.",
-  "fpl.classic": "Classique",
-  "fpl.classic_help":
-    "Score classique — dans une ligue classique, les équipes sont classées selon leur total de points.",
-  "fpl.head_to_head": "Face à face",
   "fpl.players_to_be_added": "Joueurs ajoutés après la prochaine mise à jour des points",
   "fpl.manager": "Manager",
   "fpl.cup_not_started": "La coupe démarre à la journée {n}.",
@@ -1409,7 +1399,6 @@ export const fr = {
   "fpl.discard": "Tout effacer",
   "fpl.your_team": "Votre équipe",
   "fpl.no_team_yet": "Vous n’avez pas encore d’équipe.",
-  "fpl.head_to_head_help": "Les ligues en face à face seront proposées ultérieurement.",
   "fpl.set_piece": "Tireurs de coups de pied arrêtés",
   "fpl.difficulty": "Difficulté",
   "fpl.opponent": "Adversaire",
@@ -1499,8 +1488,6 @@ export const fr = {
   "common.cancel": "Annuler",
 
   "fantasy.top.title": "{accent}Top 5{/accent} de la journée",
-  "fantasy.top.subtitle":
-    "Les meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.",
   "fantasy.top.gw_label": "Journée",
   "fantasy.top.points": "Points",
   "fantasy.top.goals": "Buts",
@@ -1886,25 +1873,18 @@ export const fr = {
   "fantasy.cloud.loading": "Chargement de votre équipe…",
   "fantasy.cloud.saving": "Enregistrement…",
   "fantasy.cloud.saved": "Enregistré",
-  "fantasy.cloud.conflict": "Une version plus récente existe. Rechargez pour continuer.",
   "fantasy.cloud.permission_denied": "Accès refusé. Reconnectez-vous.",
-  "fantasy.cloud.offline":
-    "Hors ligne. Vos modifications restent locales et ne sont pas enregistrées — réessayez pour synchroniser.",
-  "fantasy.cloud.mapping_unavailable": "Synchronisation des joueurs indisponible pour le moment.",
   "fantasy.cloud.error": "Erreur de synchronisation.",
   "fantasy.cloud.retry": "Réessayer",
   "fantasy.cloud.reload_latest": "Recharger",
 
   // Pass 3 — import prompt
   "fantasy.import.title": "Équipe locale détectée",
-  "fantasy.import.subtitle":
-    "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
   "fantasy.import.cta_save": "Enregistrer mon équipe",
   "fantasy.import.cta_start_new": "Commencer une nouvelle équipe",
   "fantasy.import.cta_later": "Plus tard",
   "fantasy.import.success": "Votre équipe a été enregistrée.",
   "fantasy.import.failure": "L'enregistrement a échoué. Vos données restent intactes.",
-  "fantasy.import.mapping_gaps": "Certains joueurs ne sont pas encore synchronisables : {ids}",
   // Pass 3 — empty cloud state
   "fantasy.empty.title": "Aucune équipe enregistrée",
   "fantasy.empty.cta_build": "Construire mon équipe",
@@ -1928,15 +1908,12 @@ export const fr = {
   // Pass 3 — ranking placeholder
   "fantasy.rank.unavailable": "Classement bientôt disponible",
   // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
-  "fantasy.status.draft_restored": "Brouillon restauré. Enregistrez pour synchroniser.",
   "fantasy.status.finalized": "Journée finalisée.",
   "fantasy.status.saved_short": "Enregistré",
   "fantasy.action.save": "Enregistrer",
   "fantasy.action.save_draft": "Conserver le brouillon",
   "fantasy.action.cancel": "Annuler",
   "fantasy.conflict.title": "Version plus récente disponible",
-  "fantasy.conflict.explain":
-    "Quelqu'un — vous sur un autre appareil, ou une mise à jour automatique — a enregistré une version plus récente de votre équipe. Choisissez comment continuer.",
   "fantasy.conflict.reload_latest": "Recharger la dernière version",
   "fantasy.conflict.keep_working": "Continuer avec mes modifications",
   "fantasy.default.team_name": "Mon équipe",
@@ -1950,10 +1927,6 @@ export const fr = {
     "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
   "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
-  "fantasy.error.import_validation":
-    "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
-  "fantasy.error.gameweek_unresolved":
-    "La journée en cours n'a pas pu être identifiée dans le cloud.",
   "fantasy.error.import_generic":
     "L'importation a échoué. Aucune modification n'a été enregistrée.",
   "fantasy.result.cloud_stable": "Résultat officiel enregistré.",
@@ -2606,7 +2579,6 @@ export const fr = {
   "pepites.follow.account_required": "Créez un compte pour suivre des joueurs.",
   "pepites.follow.failed": "Le suivi n’a pas pu être modifié. Réessayez.",
   "pepites.stats.title": "Statistiques",
-  "pepites.stats.subtitle": "Saison du classement",
   "pepites.stats.apps": "Matchs",
   "pepites.stats.starts": "Titularisations",
   "pepites.stats.minutes": "Minutes",
@@ -2623,14 +2595,11 @@ export const fr = {
   "pepites.stats.not_applicable": "N/A",
   "pepites.compare.title": "Face à face",
   "pepites.compare.action": "⇄ Comparer",
+  "pepites.compare.with_other": "Comparez-le à un autre joueur.",
   "pepites.compare.season": "Statistiques de la saison",
-  "pepites.compare.scope": "Joueurs U23",
-  "pepites.compare.choose_prompt": "Choisissez deux joueurs à comparer.",
   "pepites.compare.choose_first": "Choisir un joueur",
   "pepites.compare.choose_second": "Choisir un adversaire",
   "pepites.compare.picker_title": "Choisir un joueur",
-  "pepites.compare.picker_description":
-    "Sélectionnez un joueur du classement U23 pour le comparer.",
   "pepites.compare.search_placeholder": "Rechercher un joueur",
   "pepites.compare.share": "Partager le face à face",
   "pepites.compare.copied": "Lien de comparaison copié.",
@@ -3395,8 +3364,6 @@ export const fr = {
   "lock.curva.title.ranking": "Créez votre compte gratuit pour voir le classement de la Curva",
   "lock.curva.title.seasons": "Créez votre compte gratuit pour voir vos saisons dans la Curva",
   "lock.curva.title.plus": "Créez votre compte gratuit pour voir la Saison",
-  "lock.curva.body":
-    "Le compte est gratuit, sans achat. Votre carte, vos amis et votre classement vous y attendent.",
   "lock.curva.create": "Créer mon compte",
   "lock.curva.signin": "Se connecter",
   "plus.home.season_all": "Voir toute ma saison",

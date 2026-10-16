@@ -20,7 +20,6 @@ import {
   UiHeader,
   UiInput,
   UiLinkButton,
-  UiSegmented,
   UiSkeleton,
   UiTable,
   UiTabs,
@@ -80,7 +79,6 @@ function JoinLeagueBody() {
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [joined, setJoined] = useState<{ id: string; name: string } | null>(null);
-  const [scoring, setScoring] = useState<"classic" | "h2h">("classic");
 
   // Arriving from an invite link (one league, two games): the code this device
   // holds fills the field, so nobody has to retype it. Joining is still the
@@ -311,19 +309,14 @@ function JoinLeagueBody() {
               }}
             >
               {failure === "invalid_code" ? null : (
-                <>
-                  <p className={cn("text-center", ui.text.bodyStrong, ui.tone.default)}>
-                    {t("fpl.private_code_help")}
-                  </p>
-                  <p className={cn("mt-2 text-center", ui.text.secondary, ui.tone.muted)}>
-                    {t("fpl.create_own_league")}
-                  </p>
-                </>
+                <p className={cn("text-center", ui.text.bodyStrong, ui.tone.default)}>
+                  {t("fpl.private_code_help")}
+                </p>
               )}
               {/* The code is a hex literal: read and typed left-to-right in both
                   languages, and never letter-spaced. */}
               <UiInput
-                className="mt-6"
+                className="mt-4"
                 dir="ltr"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -359,30 +352,13 @@ function JoinLeagueBody() {
               <p className={cn("mt-3 text-center", ui.text.body, ui.tone.default)}>
                 {t("fpl.public_help2")}
               </p>
-              <p className={cn("mt-3 text-center", ui.text.secondary, ui.tone.muted)}>
-                {t("fpl.classic_help")}
-              </p>
-              <UiSegmented
-                className="mt-6"
-                variant="pill"
-                value={scoring}
-                onChange={setScoring}
-                label={t("fpl.classic")}
-                options={[
-                  { value: "classic", label: t("fpl.classic") },
-                  { value: "h2h", label: t("fpl.head_to_head"), disabled: true },
-                ]}
-              />
-              <p className={cn("mt-1.5 text-center", ui.text.micro, ui.tone.muted)}>
-                {t("fpl.head_to_head_help")}
-              </p>
               {failure ? (
                 <UiAlert tone="negative" className={cn("mt-3", ui.radius.card)}>
                   {failure === "invalid_code" ? t("state.error") : failureText}
                 </UiAlert>
               ) : null}
               <UiButton
-                className="mt-4"
+                className="mt-6"
                 onClick={() => void joinPublic()}
                 disabled={busy || publicQ.isPending || (publicQ.data ?? []).length === 0}
               >

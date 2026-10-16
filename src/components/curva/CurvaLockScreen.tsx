@@ -149,9 +149,6 @@ export function CurvaLockScreen(): JSX.Element {
             >
               {lockTitle(t, lockTitleKey(pathname))}
             </h2>
-            <p className={cn("text-pretty", ui.text.secondary, ui.tone.muted)}>
-              {t("lock.curva.body")}
-            </p>
             <div className="mt-2 flex w-full flex-col gap-3">
               <UiLinkButton
                 to="/auth/register"

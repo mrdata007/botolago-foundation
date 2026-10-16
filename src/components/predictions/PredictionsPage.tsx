@@ -203,9 +203,10 @@ export function PredictionsPage({
             className={cn("text-center", ui.text.meta, ui.tone.muted)}
             data-testid="predictions-progress"
           >
-            {/* Each half keeps to one line: a wrap falls between them, never
-                before the French " : ". */}
-            <span className="whitespace-nowrap">
+            {/* Each half keeps to one line. Under `sm` they stack, one under the
+                other, and the " · " goes: a separator left at the end of the
+                first line, or the start of the second, points at nothing. */}
+            <span className="block whitespace-nowrap sm:inline">
               {!picksKnown
                 ? null
                 : openWithoutPick > 0
@@ -216,8 +217,10 @@ export function PredictionsPage({
             </span>
             {journee.nextLockAt ? (
               <>
-                {picksKnown && (openWithoutPick > 0 || done > 0) ? " · " : null}
-                <span className="whitespace-nowrap">
+                {picksKnown && (openWithoutPick > 0 || done > 0) ? (
+                  <span className="hidden sm:inline"> · </span>
+                ) : null}
+                <span className="block whitespace-nowrap sm:inline">
                   {t("predictions.next_lock").replace(
                     "{when}",
                     formatLockMoment(journee.nextLockAt, lang),

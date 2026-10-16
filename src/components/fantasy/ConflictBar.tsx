@@ -29,7 +29,7 @@ export interface ConflictBarProps {
   onKeepWorking: () => void;
   /** Optional override for the explanation (e.g. permission_denied copy). */
   explanationKey?:
-    | "fantasy.conflict.explain"
+    | "fantasy.error.version_conflict"
     | "fantasy.error.permission"
     | "fantasy.error.network";
   /** Optional title override; defaults to conflict title. */
@@ -41,7 +41,7 @@ export function ConflictBar({
   visible,
   onReloadLatest,
   onKeepWorking,
-  explanationKey = "fantasy.conflict.explain",
+  explanationKey = "fantasy.error.version_conflict",
   titleKey = "fantasy.conflict.title",
   busy = false,
 }: ConflictBarProps) {

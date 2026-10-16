@@ -190,6 +190,25 @@ export function PepitesPageTitle({
 }
 
 /**
+ * A title made of two parts around " · " ("Top 10 · Semaine 15"), for a heading
+ * that shares its row with icon buttons. Under `sm` the parts stack, one per
+ * line, and the dot is dropped from view (kept for a screen reader's name):
+ * otherwise a wrap leaves it at the end of the first line or the start of the
+ * second. From `sm` it is the one line it was. The words are the dictionary's.
+ */
+export function PepitesSplitTitle({ text }: { text: string }) {
+  const parts = text.split(" · ");
+  if (parts.length !== 2) return <>{text}</>;
+  return (
+    <>
+      <span className="block whitespace-nowrap sm:inline">{parts[0]}</span>
+      <span className="sr-only sm:not-sr-only"> · </span>
+      <span className="block whitespace-nowrap sm:inline">{parts[1]}</span>
+    </>
+  );
+}
+
+/**
  * A detail page's header band under the global top bar: the kit's
  * `UiHeader` — back pill at the inline start, a centred kicker and title,
  * up to two `UiIconButton`s at the end, `children` under it — with the back

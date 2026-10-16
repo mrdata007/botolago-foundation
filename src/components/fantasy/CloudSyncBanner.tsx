@@ -46,14 +46,12 @@ export function CloudSyncBanner() {
         : status === "saved"
           ? t("fantasy.cloud.saved")
           : status === "conflict"
-            ? t("fantasy.cloud.conflict")
+            ? t("fantasy.error.version_conflict")
             : errorCode === "permission_denied"
               ? t("fantasy.cloud.permission_denied")
               : errorCode === "network"
-                ? t("fantasy.cloud.offline")
-                : errorCode === "mapping_incomplete"
-                  ? t("fantasy.cloud.mapping_unavailable")
-                  : t("fantasy.cloud.error");
+                ? t("fantasy.error.network")
+                : t("fantasy.cloud.error");
 
   const showRetry = status === "error" || status === "conflict";
 

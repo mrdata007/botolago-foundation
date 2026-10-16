@@ -20,7 +20,7 @@ import {
   UpdatedLine,
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
-import { PepitesChipRow, PepitesPageTitle, PepitesShell } from "./PepitesShell";
+import { PepitesChipRow, PepitesPageTitle, PepitesShell, PepitesSplitTitle } from "./PepitesShell";
 import { PepitesFeature } from "./PepitesFeature";
 import { TopTenList } from "./TopTenList";
 import {
@@ -194,7 +194,7 @@ export function PepitesHome() {
             title={
               // The Top 10 below is labelled by this heading.
               <span id="pepites-edition-title" data-testid="pepites-edition-title">
-                {title}
+                <PepitesSplitTitle text={title} />
               </span>
             }
             trailing={

@@ -1073,8 +1073,11 @@ export function UiBadge({
         tone === "neutral" && cn(ui.surface.sunken, ui.tone.muted),
         tone === "outline" && cn("bg-[color:var(--ui-surface)]", ui.rule.all, ui.tone.ink),
         tone === "action" && "text-[color:var(--ui-ink-deep)]",
+        // The text is the status green pulled toward the surface's own ink:
+        // plain `--ui-positive` clears 4.5:1 on the surface but measured 3.64:1
+        // on its own 20% tint (light theme, 12px/800).
         tone === "positive" &&
-          "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]",
+          "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:color-mix(in_oklab,var(--ui-positive)_72%,var(--ui-on-surface))]",
         tone === "negative" &&
           "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]",
         // Caution is the only status colour that cannot be a foreground: it is

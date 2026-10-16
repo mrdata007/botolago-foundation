@@ -213,7 +213,7 @@ function FdrBody() {
         </div>
       ) : rows.length === 0 ? (
         <div className="p-4">
-          <UiEmptyState title={t("fpl.no_data_yet")} body={t("fantasy.fixtures.subtitle")} />
+          <UiEmptyState title={t("fpl.no_data_yet")} />
         </div>
       ) : (
         // The one legitimate horizontal scroller on this screen: later

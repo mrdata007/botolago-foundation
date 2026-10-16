@@ -13,7 +13,7 @@ import {
   UpdatedLine,
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
-import { PepitesPageTitle, PepitesShell } from "./PepitesShell";
+import { PepitesPageTitle, PepitesShell, PepitesSplitTitle } from "./PepitesShell";
 import { PepitesFeature } from "./PepitesFeature";
 import { TopTenList, type PlayerStats } from "./TopTenList";
 import { editionQueryOptions, usePepitesViewer, useVersionPointer } from "./use-pepites";
@@ -74,7 +74,7 @@ export function PepitesEditionPage({ week }: { week: number }) {
           title={
             // The Top 10 below is labelled by this heading.
             <span id="pepites-edition-title" data-testid="pepites-edition-title">
-              {title}
+              <PepitesSplitTitle text={title} />
             </span>
           }
           trailing={

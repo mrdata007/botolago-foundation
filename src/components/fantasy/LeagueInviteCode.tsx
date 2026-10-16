@@ -90,7 +90,6 @@ export function LeagueInviteCode({
           {t("predictions.leagues.code_once")}
         </p>
       ) : null}
-      <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>{t("fantasy.leagues.invite_help")}</p>
     </div>
   );
 }

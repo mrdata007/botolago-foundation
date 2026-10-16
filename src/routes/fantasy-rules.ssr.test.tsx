@@ -180,7 +180,6 @@ describe("the rules page under the rating rule (docs/backend/FANTASY_RATING_POIN
       "À partir de la journée 5, les points d’un joueur pour un match sont sa note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Un joueur entré en jeu sans note SofaScore marque 5 points, un joueur qui n’a pas joué 0. Le capitaine double ses points.",
     );
     expect(page).toContain("Jusqu’à la journée 4, les points suivaient le barème ci-dessous.");
-    expect(page).not.toContain(fr["fantasy.rules.scoring_desc"]);
     // The earlier scale, unchanged, after the rating line.
     expect(html.match(/<th scope="row"/g)).toHaveLength(13);
     expect(page.indexOf("À partir de la journée 5")).toBeLessThan(
@@ -209,7 +208,6 @@ describe("the rules page under the rating rule (docs/backend/FANTASY_RATING_POIN
   test("the rule is off by default: the category scale alone", async () => {
     const page = text(await render(await fantasyService.getRules()));
     expect(page).not.toContain("note SofaScore arrondie");
-    expect(page).toContain(fr["fantasy.rules.scoring_desc"]);
   });
 });
 

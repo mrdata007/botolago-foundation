@@ -206,13 +206,7 @@ export function PepitesRanking({
         </p>
         <div className="hidden flex-col gap-1 md:flex">
           <p className={cn(ui.text.meta, ui.tone.muted)}>
-            {[
-              t("pepites.hero.kicker_short"),
-              countText,
-              `${isolate(`${formatCount(MINUTES_FLOORS[0], lang)}+`)} ${t("pepites.stats.minutes")}`,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            {[t("pepites.hero.kicker_short"), countText].filter(Boolean).join(" · ")}
           </p>
           <p className={cn("max-w-prose", ui.text.body, ui.tone.muted)}>
             {t("pepites.ranking.desktop_lede")}

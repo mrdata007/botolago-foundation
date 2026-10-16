@@ -235,10 +235,7 @@ export function PepitesComparePage({
         />
       ) : first && second && first.player && second.player ? (
         <UiCard testId="pepites-compare-card">
-          <SectionHeader
-            title={t("pepites.compare.season")}
-            subtitle={t("pepites.compare.scope")}
-          />
+          <SectionHeader title={t("pepites.compare.season")} />
           {/* One grid for every row (each row a subgrid), so the figures, the
               bars and the labels line up down the card. Each bar grows from
               the label in the middle towards its player's side. */}
@@ -313,9 +310,6 @@ export function PepitesComparePage({
         </UiCard>
       ) : (
         <UiCard testId="pepites-compare-empty" className="flex flex-col items-center gap-3">
-          <p className={cn("text-center", ui.text.bodyStrong, ui.tone.default)}>
-            {t("pepites.compare.choose_prompt")}
-          </p>
           <UiButton
             variant="gradient"
             size="sm"
@@ -504,7 +498,6 @@ function PlayerPicker({
       onOpenChange={onOpenChange}
       onCloseAutoFocus={onCloseAutoFocus}
       title={t("pepites.compare.picker_title")}
-      description={t("pepites.compare.picker_description")}
     >
       {/* The search field stays in view while the list scrolls under it. */}
       <div className={cn("sticky top-0 z-10 px-4 pb-3 pt-4", ui.surface.bar, ui.rule.block)}>
