@@ -127,12 +127,13 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
       ),
       "api.cancel_fantasy_chip(uuid,uuid,bigint)": md5(bodyOf(migration, cancelHeader)),
     };
-    // The review's independent merge of the pilot cap and this lock (2026-10-16).
+    // The pilot cap's result (the review computed the same), and the merge with the season and the
+    // gameweek KEY SHARE (the review's first merge, a5426f18..., had the gameweek lock only).
     expect(before["api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)"]).toBe(
       "a85ae45fe4a131f754cd98571a8e39ab",
     );
     expect(after["api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)"]).toBe(
-      "a5426f18d5a7d3f691b9e12befb79f06",
+      "0942c5db54db9eb632f5de5c08f476ed",
     );
     for (const fn of replacedPins(migration)) {
       const signature = fn.signature as keyof typeof before;
@@ -186,7 +187,8 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     const added = next.slice(at, next.length - (old.length - at));
     const code = added.replace(/^\s*--[^\n]*\n/gm, "");
     expect(code).toBe(
-      "  perform 1 from app.fantasy_gameweeks where id = gameweek.id for key share;\n" +
+      "  perform 1 from app.fantasy_seasons where id = season.id for key share;\n" +
+        "  perform 1 from app.fantasy_gameweeks where id = gameweek.id for key share;\n" +
         "  gameweek := app_private.fantasy_enrolment_gameweek(season.id);\n" +
         "  if gameweek.id is null or gameweek.id <> requested.id then\n" +
         "    raise exception using errcode = 'PT409', message = 'fantasy_gameweek_locked';\n" +
@@ -202,15 +204,66 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
       return text.slice(start, text.indexOf("$$", start));
     };
     expect(declaration(migration)).toBe(declaration(read(PILOT)));
-    // Lock order: the user lock, the player-list lock, the gameweek KEY SHARE, then the pilot lock.
+    // Lock order: the user lock, the player-list lock, the season KEY SHARE, the gameweek KEY SHARE,
+    // then the pilot lock and the inserts.
     const order = [
       "':fantasy:create:'",
       "'fantasy:squads:'",
-      "for key share",
+      "from app.fantasy_seasons where id = season.id for key share",
+      "from app.fantasy_gameweeks where id = gameweek.id for key share",
       "'fantasy:pilot-cap:'",
+      "insert into app.fantasy_teams",
     ].map((needle) => next.indexOf(needle));
     expect(order.every((at) => at > -1)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  test("the season lock comes first, as in the owner switches that lock the season and then every gameweek", () => {
+    for (const [file, header] of [
+      [
+        "20260927094823_adaptive_fantasy_scoring.sql",
+        /create function api\.service_activate_adaptive_scoring\(/,
+      ],
+      [
+        "20260927120659_adaptive_reviewed_estimates.sql",
+        /create or replace function api\.service_activate_adaptive_estimates\(/,
+      ],
+      [
+        "20261014090000_fantasy_rating_points.sql",
+        /create function app_private\.fantasy_rating_points_configure\(/,
+      ],
+    ] as const) {
+      const name = header.source.split("\\.")[1]!.replace("\\(", "");
+      // Latest definition.
+      expect({
+        name,
+        definer: lastDefinerBefore(
+          "99999999999999",
+          new RegExp(`\\bfunction\\s+[a-z_]+\\.${name}\\s*\\(`, "i"),
+        ),
+      }).toEqual({
+        name,
+        definer: file.split("_")[0],
+      });
+      const body = statementsOf(bodyOf(read(`supabase/migrations/${file}`), header)).replace(
+        /\s+/g,
+        " ",
+      );
+      const season = body.search(/from app\.fantasy_seasons where id ?= ?p_season_id for update/);
+      const weeks = body.search(
+        /from app\.fantasy_gameweeks where fantasy_season_id ?= ?p_season_id order by id for update/,
+      );
+      expect({ name, season: season > -1, weeksAfter: weeks > season }).toEqual({
+        name,
+        season: true,
+        weeksAfter: true,
+      });
+    }
+    // The team insert's foreign keys lock in the same order: the season is declared before the gameweek.
+    const teams = read("supabase/migrations/20260720141847_fantasy_teams_transfers_chips.sql");
+    expect(
+      teams.indexOf("fantasy_season_id uuid not null references app.fantasy_seasons"),
+    ).toBeLessThan(teams.indexOf("current_gameweek_id uuid references app.fantasy_gameweeks"));
   });
 
   test("the chip functions are the 20260926003100 definitions plus one check after the team lock", () => {
@@ -305,9 +358,10 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     expect(statementsOf(bodyOf(migration, assertHeader))).not.toMatch(
       /\b(insert|update|delete)\b/i,
     );
-    // The only new row lock is FOR KEY SHARE on the gameweek row, twice (the check, the squad); the
+    // The only new row locks are FOR KEY SHARE on the gameweek row (the check, the squad) and on the
+    // season row (the squad); the
     // only FOR UPDATE are the chip functions' existing team-row locks.
-    expect(occurrences(executable, "for key share")).toBe(2);
+    expect(occurrences(executable, "for key share")).toBe(3);
     const forUpdate = (text: string) => [...text.matchAll(/\bfor\s+update\b/gi)].length;
     expect(forUpdate(executable)).toBe(
       forUpdate(statementsOf(bodyOf(read(MFA), activateHeader))) +

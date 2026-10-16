@@ -53,12 +53,13 @@ and its consequence (a gameweek that cannot be scored) is severe.
    `STABLE` function). In a **read-only** transaction it takes no lock: PostgREST runs the `STABLE`
    `api.preview_fantasy_transfers` read-only, `FOR KEY SHARE` is an error there (checked), and such a
    transaction cannot write anyway.
-2. **`api.create_fantasy_team`**: right after its user lock and its shared player-list lock (where its
-   foreign keys already took `KEY SHARE` on the gameweek) and before the pilot-cap lock, `FOR KEY SHARE`
-   on the gameweek it joins, then `fantasy_enrolment_gameweek` again; a different answer is
-   `fantasy_gameweek_locked`, as at the top. Otherwise byte for byte the definition of
-   `20261016170000` (the pilot cap; the script test checks this; md5 of the source before
-   `a85ae45f...`, after `a5426f18...`, the same as the review's own merge).
+2. **`api.create_fantasy_team`**: right after its user lock and its shared player-list lock and before
+   the pilot-cap lock, `FOR KEY SHARE` on the season row and then on the gameweek it joins (the order its
+   team insert's foreign keys lock them in), then `fantasy_enrolment_gameweek` again; a different answer
+   is `fantasy_gameweek_locked`, as at the top. Otherwise byte for byte the definition of
+   `20261016170000` (the pilot cap; the script test checks this; md5 of the source before `a85ae45f...`,
+   after `0942c5db...`). The season lock was added after a review reproduced a deadlock without it (see
+   "Lock order and deadlocks").
 3. **`api.activate_fantasy_chip`, `api.cancel_fantasy_chip`**: right after the team row `FOR UPDATE`,
    refuse with `fantasy_gameweek_locked` when that team's lineup of the gameweek is already locked.
    Between two lock-step pages the gameweek is still `open`, so the check above passes; this keeps a
@@ -81,12 +82,29 @@ and no chip row is written.
 ### Lock order and deadlocks
 
 - `save_fantasy_lineup`, `activate_fantasy_chip`, `cancel_fantasy_chip`: the new lock first, then the
-  team row, then the lineup. `create_fantasy_team`: its user lock, its shared player-list lock, the new
-  lock, then the pilot-cap lock and its inserts (its foreign keys already locked the gameweek after the
-  first two). `confirm_fantasy_transfers`: the team row, then the
-  new lock (in the preview), then the lineup, the order its transfer-batch insert already had.
+  team row, then the lineup. `create_fantasy_team`: its user lock, its shared player-list lock, `KEY
+SHARE` on the season row, then on the gameweek row, then the pilot-cap lock and its inserts (the team
+  insert's foreign keys lock the season, then the gameweek, in that order, as they always did).
+  `confirm_fantasy_transfers`: the team row, then the new lock (in the preview), then the lineup, the
+  order its transfer-batch insert already had.
+- **The season before the gameweek, and why.** Three owner switches lock the season row `FOR UPDATE`
+  and then every gameweek of it `FOR UPDATE`: `api.service_activate_adaptive_scoring`,
+  `api.service_activate_adaptive_estimates` and `app_private.fantasy_rating_points_configure`. A first
+  version of this fix took the gameweek `KEY SHARE` in `create_fantasy_team` before its team insert
+  locked the season: the opposite order. Reproduced with two sessions (a squad held after its gameweek
+  lock, then one of the three switches): `deadlock detected` with each of the three, the squad being the
+  victim. With the season locked first: no deadlock with any of the three (the squad waits for the
+  switch, or the switch for the squad, and both finish). Without this migration at all: no deadlock
+  either. The added season lock creates no other cycle: before it the squad holds only its two advisory
+  locks, which no function that locks a season row takes; the only other writers of the season row
+  either do a plain update of a non-key column (no conflict with `KEY SHARE`) or are the staff catalog
+  rollback (`api.service_rollback_fantasy_catalog`, which deletes the gameweeks, then the season, of a
+  season that has no team yet): that one can meet the first squad of the season in a cycle, but the
+  team insert's foreign keys took the same two locks in the same order before this change, so it is not
+  new, and PostgreSQL's deadlock detector ends it (worked out from the code and the foreign-key trigger
+  order, not reproduced).
 - Every function that locks a gameweek row `FOR UPDATE` takes it first (after the calendar advisory
-  lock at most). On the open gameweek, only the lock step then waits for a row a manager might hold
+  lock, or after the season row for the three switches above). On the open gameweek, only the lock step then waits for a row a manager might hold
   (the lineups), and a manager takes a lineup only after the gameweek row. The functions that lock team
   rows after a gameweek row (`service_prepare_next_fantasy_gameweek`, `fantasy_open_missed_gameweek`,
   `service_roll_fantasy_free_transfers`) work on a `scheduled` or `finalized` gameweek, which the
@@ -145,6 +163,34 @@ That is roughly the longest a manager's save can now wait, once every 5 minutes 
 the deadline). If the p95 is a few hundred milliseconds, the cost is small; if it is seconds, say so
 before applying, because managers would feel it. Then **re-measure on Staging V2** after applying there
 first: the same query, and a lineup save timed during a tick.
+
+### Late chips cannot be found afterwards
+
+Before this fix, a chip activated or cancelled by a call that started just before the deadline could
+commit after the lock. **Such a chip cannot be told apart afterwards**: `activated_at`, `cancelled_at`,
+`created_at` and `updated_at` all record the moment the call **started** (checked on the throwaway
+database: the late chip's `activated_at`, `created_at` and `updated_at` are the same instant, before
+the deadline), and nothing records when it
+committed. All that can be done is a hand review of the chips whose call started in the last minutes
+before the deadline of a gameweek that has since left `open` (read-only):
+
+```sql
+select g.sequence_number as gameweek, g.status, g.deadline_at,
+       c.fantasy_team_id, c.chip_type, c.activated_at, c.cancelled_at,
+       l.locked_at as lineup_locked_at
+  from app.fantasy_chip_uses c
+  join app.fantasy_gameweeks g on g.id = c.gameweek_id
+  left join app.fantasy_lineups l on l.fantasy_team_id = c.fantasy_team_id and l.gameweek_id = c.gameweek_id
+ where g.status not in ('scheduled', 'open', 'cancelled')
+   and (c.activated_at between g.deadline_at - interval '2 minutes' and g.deadline_at
+        or c.cancelled_at between g.deadline_at - interval '2 minutes' and g.deadline_at)
+ order by g.sequence_number, coalesce(c.cancelled_at, c.activated_at);
+```
+
+On the throwaway database it listed the one chip committed after the lock (activated 3 s before the
+deadline, its lineup locked 1.6 s after it); a chip committed in time looks exactly the same. Every chip
+it lists was requested before the deadline, which the rules accept, so the list is for information, not
+for undoing anything.
 
 ### Left as it is
 
@@ -245,7 +291,10 @@ it stands**, as the lock step would have done had the call finished a few millis
 owner decides; the other choice (removing the late team) is a decision about a manager's account, not a
 repair. To lock it: pause the Fantasy lifecycle tick (as above), then run, in the SQL editor, this block
 with the gameweek id filled in. Run it first ending in `rollback;` (a rehearsal: the notice says what it
-would lock), then with `commit;`:
+would lock), then with `commit;`. It stops if the tick is on, if the id is not a gameweek, if the
+gameweek is not `locked`, `live` or `provisional`, if none of its lineups is locked or none is unlocked,
+and if any unlocked lineup was created at or after the deadline (then it is not this race: send the
+message).
 
 ```sql
 begin;
@@ -254,9 +303,17 @@ declare
   target uuid := '<gameweek id>';
   week app.fantasy_gameweeks%rowtype;
   locked_at_value timestamptz;
+  late integer;
   repaired integer;
 begin
+  -- One writer at a time: the lifecycle must be paused.
+  if exists (select 1 from app_private.fantasy_automation_settings s where s.lifecycle_tick_enabled) then
+    raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first: select app_private.fantasy_automation_configure(false);';
+  end if;
   select * into week from app.fantasy_gameweeks where id = target for update;
+  if week.id is null then
+    raise exception 'stop: no gameweek %', target;
+  end if;
   if week.status not in ('locked', 'live', 'provisional') then
     raise exception 'stop: gameweek % is %, not locked, live or provisional', target, week.status;
   end if;
@@ -266,10 +323,21 @@ begin
   if locked_at_value is null then
     raise exception 'stop: no lineup of gameweek % is locked; this is not the deadline race', target;
   end if;
+  -- The race's signature: every late lineup was created by a call that started before the deadline.
+  select count(*) into late from app.fantasy_lineups l
+   where l.gameweek_id = target and l.locked_at is null and l.finalized_at is null;
+  if late = 0 then
+    raise exception 'stop: gameweek % has no unlocked lineup; nothing to repair', target;
+  end if;
+  if exists (select 1 from app.fantasy_lineups l
+             where l.gameweek_id = target and l.locked_at is null and l.created_at >= week.deadline_at) then
+    raise exception 'stop: an unlocked lineup of gameweek % was created at or after its deadline (%); this is not the deadline race -- send this message', target, week.deadline_at;
+  end if;
   update app.fantasy_lineups set locked_at = locked_at_value
    where gameweek_id = target and locked_at is null and finalized_at is null;
   get diagnostics repaired = row_count;
-  if exists (select 1 from app.fantasy_lineups where gameweek_id = target and locked_at is null) then
+  if repaired <> late
+    or exists (select 1 from app.fantasy_lineups where gameweek_id = target and locked_at is null) then
     raise exception 'stop: a lineup of gameweek % is still unlocked', target;
   end if;
   raise notice 'locked % lineup(s) of gameweek % at %', repaired, target, locked_at_value;
@@ -279,8 +347,11 @@ rollback;  -- change to commit; after the rehearsal
 ```
 
 Then restore the tick. The next worker pass takes the snapshot as usual. Checked on the throwaway
-database after reproducing the race: the block locked the one late lineup, and the snapshot no longer
-refused with `fantasy_lineup_not_locked` (it went on to its next check). Not run on any real database.
+database after reproducing the race: with the tick on it stopped; with an unknown id it stopped; with the
+late lineup's `created_at` moved past the deadline it stopped; the rehearsal locked nothing for good; the
+commit locked the one late lineup and the detection query then returned no row; a second run stopped
+(nothing to repair); and the snapshot no longer refused with `fantasy_lineup_not_locked` (it went on to
+its next check). Not run on any real database.
 
 ## Rolling back
 
@@ -303,7 +374,9 @@ every migration up to `20261016180000` applied in order (the pilot cap included)
   (`fantasy_lineup_not_locked` from `service_get_fantasy_scoring_snapshot`, the gameweek forced to
   `provisional` in the throwaway database only to reach that check);
 - the window measurement inside the real functions, the natural-timing runs, the latency, the save
-  during an open tick, the mixed load at the deadline (numbers above), and the repair block;
+  during an open tick, the mixed load at the deadline (numbers above), the season deadlock with the
+  three owner switches before and after the season lock, the late-chip review query, and the repair
+  block with each of its refusals;
 - the preview in a read-only and a read-write transaction;
 - the apply script on copies: rehearsal, commit, a second run, and refusals (tick on, worker lease held,
   a deadline 10 minutes away, a pinned function changed, the replaced function already changed);

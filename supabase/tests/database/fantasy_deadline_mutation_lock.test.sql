@@ -7,8 +7,8 @@
 -- This file pins, in one session, what that proof rests on:
 --   1 the shape: the mutability check is VOLATILE, reads without a lock first, takes no lock in a
 --     read-only transaction, then locks the gameweek row FOR KEY SHARE and checks again;
---     create_fantasy_team locks the gameweek it joins after its advisory locks and asks again which
---     gameweek a squad joins; grants are unchanged;
+--     create_fantasy_team locks the season row, then the gameweek it joins, after its advisory locks,
+--     and asks again which gameweek a squad joins; grants are unchanged;
 --   2 before the deadline every manager write is accepted as before; once a team's lineup is locked
 --     (between two lock-step pages, the gameweek still open) its chip can no longer change;
 --   3 in a read-only transaction (how PostgREST runs the STABLE transfer preview) the preview still
@@ -117,9 +117,9 @@ select extensions.ok(
    from pg_proc where oid = 'app_private.fantasy_assert_mutable_gameweek(uuid)'::regprocedure),
   'the check refuses a late call before taking any lock, skips the lock in a read-only transaction, then locks FOR KEY SHARE and checks again');
 select extensions.ok(
-  (select prosrc ~ 'fantasy:squads:[^;]*;\s*\n(\s*--[^\n]*\n)*\s*perform 1 from app\.fantasy_gameweeks where id = gameweek\.id for key share;\s*\n\s*gameweek := app_private\.fantasy_enrolment_gameweek\(season\.id\);\s*\n\s*if gameweek\.id is null or gameweek\.id <> requested\.id then'
+  (select prosrc ~ 'fantasy:squads:[^;]*;\s*\n(\s*--[^\n]*\n)*\s*perform 1 from app\.fantasy_seasons where id = season\.id for key share;\s*\n\s*perform 1 from app\.fantasy_gameweeks where id = gameweek\.id for key share;\s*\n\s*gameweek := app_private\.fantasy_enrolment_gameweek\(season\.id\);\s*\n\s*if gameweek\.id is null or gameweek\.id <> requested\.id then'
    from pg_proc where oid = 'api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)'::regprocedure),
-  'create_fantasy_team locks the gameweek it joins after its advisory locks and asks again which gameweek a squad joins');
+  'create_fantasy_team locks the season, then the gameweek it joins, after its advisory locks, and asks again which gameweek a squad joins');
 select extensions.ok(
   has_function_privilege('authenticated', 'api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'execute')
   and has_function_privilege('service_role', 'api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'execute')

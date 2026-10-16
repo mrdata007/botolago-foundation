@@ -224,8 +224,8 @@ values (
 --      api.preview_fantasy_transfers that way) it takes no lock: such a transaction cannot write, so it
 --      cannot race the lock step, and FOR KEY SHARE would be an error there.
 --   2. api.create_fantasy_team: right after its two advisory locks (the user's, then the shared
---      player-list lock; its foreign keys already took KEY SHARE on the gameweek after them) and before the
---      pilot-cap lock of 20261016170000, FOR KEY SHARE on the gameweek it joins, then
+--      player-list lock) and before the pilot-cap lock of 20261016170000, FOR KEY SHARE on the season row
+--      and then on the gameweek it joins (the order its team insert's foreign keys take them in), then
 --      app_private.fantasy_enrolment_gameweek again; a different answer is fantasy_gameweek_locked, as at
 --      the top of the function. Otherwise byte for byte the definition of 20261016170000 (the pilot cap).
 --   3. api.activate_fantasy_chip and api.cancel_fantasy_chip: right after the team row FOR UPDATE, refuse
@@ -238,14 +238,17 @@ values (
 -- Fantasy rule are as they were. CREATE OR REPLACE keeps the four functions' owners and grants.
 --
 -- LOCK ORDER. save_fantasy_lineup, activate_fantasy_chip and cancel_fantasy_chip take the new lock before
--- anything else (then the team row, then the lineup); create_fantasy_team takes it after its user and
--- player-list advisory locks, before the pilot lock and its inserts; confirm_fantasy_transfers takes it in
--- preview, after the team row, where its transfer-batch insert already took KEY SHARE on the same row. Every
--- function that locks a gameweek row FOR UPDATE takes it first (after the calendar advisory lock at most);
+-- anything else (then the team row, then the lineup); create_fantasy_team takes, after its user and
+-- player-list advisory locks, KEY SHARE on the season row, then on the gameweek row, then the pilot lock and
+-- its inserts; confirm_fantasy_transfers takes it in preview, after the team row, where its transfer-batch
+-- insert already took KEY SHARE on the same row. Every function that locks a gameweek row FOR UPDATE takes
+-- it first (after the calendar advisory lock, or after the season row: api.service_activate_adaptive_scoring,
+-- api.service_activate_adaptive_estimates and app_private.fantasy_rating_points_configure lock the season
+-- FOR UPDATE, then every gameweek of it, which is why a new squad locks the season before the gameweek);
 -- none waits for a team or lineup row a manager holds while holding the open gameweek row except the lock
 -- step's lineup FOR UPDATE, which a manager only takes after the gameweek row. KEY SHARE does not conflict
--- with KEY SHARE, so the managers do not queue behind one another on the gameweek row, nor behind the
--- lifecycle's plain status updates (FOR NO KEY UPDATE).
+-- with KEY SHARE, so the managers do not queue behind one another on these rows, nor behind the
+-- lifecycle's plain status updates of them (FOR NO KEY UPDATE).
 --
 -- THE COST. A manager's write now waits while anything holds the open gameweek row FOR UPDATE: the lock
 -- step, and the pg_cron fantasy-lifecycle-tick, whose calendar sync locks the gameweek rows FOR UPDATE and
@@ -369,7 +372,11 @@ begin
   -- (api.service_advance_fantasy_lifecycle) takes this row FOR UPDATE, which waits for this
   -- KEY SHARE, so the squad either commits before the lock step reads the lineups (and is
   -- locked with them) or waits for it; if the gameweek is then no longer the one a squad joins
-  -- (it is 'locked'), the squad is refused here as at the top of the function.
+  -- (it is 'locked'), the squad is refused here as at the top of the function. The season row
+  -- first: the team insert's foreign keys lock the season, then the gameweek, and the owner's
+  -- season-wide switches (adaptive scoring and estimates, rating points) lock the season FOR UPDATE
+  -- before every gameweek; taking the gameweek first would wait on them in the opposite order.
+  perform 1 from app.fantasy_seasons where id = season.id for key share;
   perform 1 from app.fantasy_gameweeks where id = gameweek.id for key share;
   gameweek := app_private.fantasy_enrolment_gameweek(season.id);
   if gameweek.id is null or gameweek.id <> requested.id then
@@ -614,7 +621,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261016180000, 'UTF8')), 'hex')
-    is distinct from '2a2098125868534ffc3257244f962f6ffddab9ccf9330f7eec64fa47624b922c' then
+    is distinct from 'ce9efc38bf103a82f37c6f2fd76edf776bb3a8ddb2b97a6d470fb9b22af8b1a8' then
     raise exception 'stop: 20261016180000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -635,7 +642,7 @@ begin
   for fn in
     select * from (values
       ('app_private.fantasy_assert_mutable_gameweek(uuid)', 'f8f0e0188ed0c69b6e07c92b50d1fa75'),
-      ('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'a5426f18d5a7d3f691b9e12befb79f06'),
+      ('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', '0942c5db54db9eb632f5de5c08f476ed'),
       ('api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)', '36d2dded6fddf5b3cd49758144b26df6'),
       ('api.cancel_fantasy_chip(uuid,uuid,bigint)', 'cc491a21215e570bdf03924b649f907b')
     ) v(sig, md5_src)

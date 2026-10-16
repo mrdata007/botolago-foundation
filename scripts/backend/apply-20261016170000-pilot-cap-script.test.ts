@@ -58,7 +58,13 @@ const carriesPilotCap = (file: string, needle: string) => {
   const text = read(`supabase/migrations/${file}`);
   if (!/create or replace function api\.create_fantasy_team\(/.test(text)) return false;
   const body = bodyOf(text, /create or replace function api\.create_fantasy_team\(/);
-  return body.includes(pilotBlock) && occurrences(text, needle) === occurrences(body, needle);
+  // The text is in that function only, and there exactly as often as in the pilot block itself.
+  return (
+    body.includes(pilotBlock) &&
+    occurrences(pilotBlock, needle) > 0 &&
+    occurrences(body, needle) === occurrences(pilotBlock, needle) &&
+    occurrences(text, needle) === occurrences(body, needle)
+  );
 };
 
 /** The two fragments the migration adds to the function body. */
