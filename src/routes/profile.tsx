@@ -1,6 +1,16 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+} from "react";
 import {
   Bell,
   Bookmark,
@@ -194,10 +204,16 @@ function RowLink({
 function RowButton({
   onClick,
   ruled = false,
+  ref,
   ...content
-}: RowContent & { onClick: () => void; ruled?: boolean }) {
+}: RowContent & { onClick: () => void; ruled?: boolean; ref?: Ref<HTMLButtonElement> }) {
   return (
-    <button type="button" onClick={onClick} className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
+    <button
+      type="button"
+      ref={ref}
+      onClick={onClick}
+      className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}
+    >
       <RowInner {...content} />
     </button>
   );
@@ -239,6 +255,8 @@ function ProfilePage() {
     queryFn: () => footballService.getClubs(lang),
   });
   const [signOutOpen, setSignOutOpen] = useState(false);
+  // The dialog is opened from state, so it has no trigger to hand focus back to.
+  const signOutButton = useRef<HTMLButtonElement>(null);
 
   // By id, then by slug: the mock club list mints synthetic ids and keys
   // clubs by slug ("war"), as the Fantasy screens found.
@@ -261,6 +279,7 @@ function ProfilePage() {
           clubs={clubsQ.data}
           favoriteClub={favoriteClub}
           onSignOut={() => setSignOutOpen(true)}
+          signOutButton={signOutButton}
         />
       ) : status === "guest" ? (
         <GuestProfile />
@@ -271,6 +290,10 @@ function ProfilePage() {
       <UiModal
         open={signOutOpen}
         onOpenChange={setSignOutOpen}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          signOutButton.current?.focus();
+        }}
         title={t("profile.sign_out_title")}
         description={t("profile.sign_out_body")}
         footer={
@@ -298,11 +321,13 @@ function AuthenticatedProfile({
   clubs,
   favoriteClub,
   onSignOut,
+  signOutButton,
 }: {
   user: ProfileUser;
   clubs: readonly Club[] | undefined;
   favoriteClub: Club | undefined;
   onSignOut: () => void;
+  signOutButton: Ref<HTMLButtonElement>;
 }) {
   const { t, tr, lang } = useI18n();
 
@@ -445,6 +470,7 @@ function AuthenticatedProfile({
         />
         <RowLink to="/fantasy/help" ruled icon={<CircleHelp />} label={t("fpl.help_rules")} />
         <RowButton
+          ref={signOutButton}
           onClick={onSignOut}
           ruled
           tone="negative"
@@ -804,6 +830,8 @@ function DeleteAccountSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // The dialog is opened from state, so it has no trigger to hand focus back to.
+  const openerButton = useRef<HTMLButtonElement>(null);
 
   const closeDialog = () => {
     if (submitting) return;
@@ -848,6 +876,7 @@ function DeleteAccountSection() {
         >
           <button
             type="button"
+            ref={openerButton}
             onClick={() => setDialogOpen(true)}
             className={cn(
               ROW,
@@ -883,6 +912,10 @@ function DeleteAccountSection() {
       <UiModal
         open={dialogOpen}
         onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          openerButton.current?.focus();
+        }}
         title={t("profile.delete_confirm_title")}
         description={t("profile.delete_confirm_body")}
         footer={

@@ -138,7 +138,7 @@ for (const language of ["fr", "ar"] as const) {
         const option = page.getByRole("option").first();
         await expect(option).toBeVisible();
         const [name, meta] = await option
-          .locator("> span")
+          .locator("> div > span")
           .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect()));
         // Stacked: the metadata starts below the name, and the name has the row's width.
         expect(meta!.top).toBeGreaterThanOrEqual(name!.bottom - 1);

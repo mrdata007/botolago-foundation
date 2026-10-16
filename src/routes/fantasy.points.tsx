@@ -624,6 +624,8 @@ function PointsBody() {
             hash="scoring-policy"
             className={cn(
               "mt-2 inline-block underline underline-offset-2",
+              // The line is 21px tall: the hit area grows behind it, the text does not move.
+              ui.hitFloor,
               ui.text.meta,
               ui.tone.muted,
             )}
