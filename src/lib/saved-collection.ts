@@ -93,7 +93,9 @@ export function savedStateOf(
   // not read yet, or the read failed). The server's per-story answer in the
   // shared news caches is NOT trusted then: those caches are not kept per
   // account, so it may be another account's answer. Only a partial set of
-  // THIS account's ids may fall back to it, below.
+  // THIS account's ids may fall back to it, below. (On sign-out or a switch
+  // the outgoing account's marks are also cleared from those caches:
+  // `forgetViewerSavedMarks` in `@/auth/account-queries`.)
   if (!snapshot) return null;
   if (snapshot.ids.includes(id)) return true;
   if (snapshot.complete) return false;

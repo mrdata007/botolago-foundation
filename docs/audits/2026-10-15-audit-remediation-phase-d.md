@@ -151,7 +151,12 @@ pgTAP were not available there.
    for a signed-in account; two new tests fail on the old code). What remains:
    an account with more than 2,000 saves can still see a different account's
    cached mark on a card it has not tapped, until the card is re-read; per-account
-   cache handling is a separate change.
+   cache handling is a separate change. Follow-up (this branch): on sign-out or
+   a switch, the outgoing account's `isSaved: true` marks are now cleared from
+   the public News caches (`forgetViewerSavedMarks`), so the next reader no
+   longer inherits them. Still open: a News answer for the outgoing account
+   that is in flight at the moment it leaves, and an account with over 2,000
+   saves whose cards were read before it signed in (those carry no mark).
 3. **Latent invite-code leak:** if the leagues read ever exposes invite codes, the
    Curva card's share text would include the first private league's join link.
    Joining needs only the code (no approval, cap or expiry). Remove or make opt-in
