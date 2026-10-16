@@ -7,7 +7,10 @@
 > `account-deletion-worker` Edge Function, and watch the first daily Pépites
 > sweep (after 00:00 UTC) and the Monday 2026-10-19 12:00Z draft gate. The
 > in-app notification template `pepites_weekly` still says "Pépites"
-> (database text, needs its own guarded change).
+> (database text, its own guarded change: migration
+> `20261016100000_prospects_weekly_notification_text` and
+> `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`,
+> written but not yet applied).
 
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Written 2026-10-15. **Nothing in this document has been run against any shared or production

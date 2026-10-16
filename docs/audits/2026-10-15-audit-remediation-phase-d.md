@@ -86,8 +86,15 @@ pgTAP were not available there.
    then e-mails keep the old name.
 3. **Notification-bell text** for the weekly list still says "Pépites" in both
    languages because it is stored in the database (`20260926110100`, template
-   `pepites_weekly`, `in_app`). Changing it needs a small guarded database script;
-   ask and one can be written.
+   `pepites_weekly`, `in_app`). **Written, not applied anywhere:** migration
+   `20261016100000_prospects_weekly_notification_text` retires version 1 of the
+   two template rows and adds version 2 ("Prospects : le Top 10 de la semaine
+   {{week}}", "المواهب: توب 10 للأسبوع {{week}}"; bodies unchanged), and the
+   guarded owner script `scripts/backend/apply-20261016100000-prospects-weekly-notification-text.sql`
+   puts it on production (ships as a rehearsal, one rollback to change to a
+   commit). Nothing needs pausing. Notifications already in readers' bells keep
+   the old word; only a list published after the script is committed gets the
+   new one.
 4. **Refresh the demo page** `public/demo/app.html` (build script
    `demo/scripts/build.ts`) to drop the old wording.
 5. **Morocco time in the database: applied (2026-10-15).** The owner confirmed
