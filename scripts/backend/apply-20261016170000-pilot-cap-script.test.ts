@@ -47,6 +47,19 @@ const oldBody = bodyOf(
   /create or replace function api\.create_fantasy_team\(/,
 );
 const newBody = bodyOf(migration, /create or replace function api\.create_fantasy_team\(/);
+// A later migration that replaces api.create_fantasy_team again (20261016180000, the deadline lock)
+// carries the pilot-cap block forward byte for byte; that is the only other place it may appear.
+const pilotBlock = newBody.slice(
+  newBody.indexOf("  -- 20261016170000: the pilot cap."),
+  newBody.indexOf("  perform app_private.fantasy_validate_selection("),
+);
+const carriesPilotCap = (file: string, needle: string) => {
+  if (file.split("_")[0]! <= VERSION) return false;
+  const text = read(`supabase/migrations/${file}`);
+  if (!/create or replace function api\.create_fantasy_team\(/.test(text)) return false;
+  const body = bodyOf(text, /create or replace function api\.create_fantasy_team\(/);
+  return body.includes(pilotBlock) && occurrences(text, needle) === occurrences(body, needle);
+};
 
 /** The two fragments the migration adds to the function body. */
 const ADDED_DECLARATION = "declare pilot app_private.pilot_settings%rowtype;\n";
@@ -219,7 +232,7 @@ describe("apply-20261016170000-pilot-cap.sql", () => {
     );
     // A new typed error, used nowhere else.
     for (const file of migrationFiles()) {
-      if (file.startsWith(VERSION)) continue;
+      if (file.startsWith(VERSION) || carriesPilotCap(file, "fantasy_pilot_full")) continue;
       expect({
         file,
         uses: read(`supabase/migrations/${file}`).includes("fantasy_pilot_full"),
@@ -237,7 +250,7 @@ describe("apply-20261016170000-pilot-cap.sql", () => {
     expect(newBody.indexOf("fantasy:squads:")).toBeLessThan(newBody.indexOf("fantasy:pilot-cap:"));
     // Nothing else in the repository takes the pilot lock.
     for (const file of migrationFiles()) {
-      if (file.startsWith(VERSION)) continue;
+      if (file.startsWith(VERSION) || carriesPilotCap(file, "fantasy:pilot-cap:")) continue;
       expect({
         file,
         takes: read(`supabase/migrations/${file}`).includes("fantasy:pilot-cap:"),

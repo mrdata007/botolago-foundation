@@ -9,7 +9,8 @@
 --     read-only transaction, then locks the gameweek row FOR KEY SHARE and checks again;
 --     create_fantasy_team locks the gameweek it joins after its advisory locks and asks again which
 --     gameweek a squad joins; grants are unchanged;
---   2 before the deadline every manager write is accepted as before;
+--   2 before the deadline every manager write is accepted as before; once a team's lineup is locked
+--     (between two lock-step pages, the gameweek still open) its chip can no longer change;
 --   3 in a read-only transaction (how PostgREST runs the STABLE transfer preview) the preview still
 --     answers: FOR KEY SHARE would be an error there;
 --   4 after the deadline every write is refused with fantasy_gameweek_locked as before; the lock step
@@ -69,7 +70,7 @@ insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at, e
 select pg_temp.id('a8', n), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
   'deadline-lock-' || n || '@example.test', statement_timestamp(), 'hash', '{}',
   jsonb_build_object('username', 'deadline_lock_' || n), statement_timestamp(), statement_timestamp()
-from generate_series(1, 2) n;
+from generate_series(1, 3) n;
 
 -- A legal 15 (players 1..15, at most three per club), 4-4-2, vice-captain 13, captain as given.
 create function pg_temp.selection(p_captain integer) returns jsonb language sql as $$
@@ -157,6 +158,34 @@ select extensions.is(
      and lp.captain), pg_temp.id('a5', 9), 'and the lineup is the new one');
 select extensions.is(current_setting('test.chip'), 'bench_boost', 'a chip activated before the deadline is accepted');
 select extensions.is(current_setting('test.transfer'), '1', 'a transfer confirmed before the deadline is accepted');
+
+-- ---------------------------------------------------------------------------
+-- 2b. Between two lock-step pages: the gameweek is still open, but this team's lineup is locked
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"' || pg_temp.id('a8', 3) || '","role":"authenticated"}', true);
+select set_config('test.team3', api.create_fantasy_team(pg_temp.id('a6', 3), current_setting('test.gw1')::uuid,
+  'Lock Test Paged', current_setting('test.selection')::jsonb, pg_temp.id('aa', 5)) ->> 'id', true);
+reset role;
+-- What the first page of the lock step leaves behind: this lineup locked, the gameweek still open.
+update app.fantasy_lineups set locked_at = statement_timestamp()
+where fantasy_team_id = current_setting('test.team3')::uuid and gameweek_id = current_setting('test.gw1')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"' || pg_temp.id('a8', 3) || '","role":"authenticated"}', true);
+select extensions.throws_ok(format($$select api.save_fantasy_lineup(%L::uuid, %L::uuid, %L::jsonb, 1, %L::uuid)$$,
+  current_setting('test.team3'), current_setting('test.gw1'), current_setting('test.selection_b'), pg_temp.id('ab', 3)),
+  'PT409', 'fantasy_gameweek_locked', 'a lineup save is refused there, as it already was (its lineup check)');
+select extensions.throws_ok(format($$select api.activate_fantasy_chip(%L::uuid, %L::uuid, 'bench_boost', 1, %L::uuid)$$,
+  current_setting('test.team3'), current_setting('test.gw1'), pg_temp.id('ac', 3)),
+  'PT409', 'fantasy_gameweek_locked',
+  'and now a chip cannot be activated once the team''s lineup is locked, though the gameweek is still open');
+select extensions.throws_ok(format($$select api.cancel_fantasy_chip(%L::uuid, %L::uuid, 1)$$,
+  current_setting('test.team3'), current_setting('test.gw1')),
+  'PT409', 'fantasy_gameweek_locked',
+  'nor cancelled (it is refused before the chip is even looked up)');
+reset role;
+select extensions.is((select count(*)::integer from app.fantasy_chip_uses
+  where fantasy_team_id = current_setting('test.team3')::uuid), 0, 'and no chip was written for that team');
 
 -- ---------------------------------------------------------------------------
 -- 3. A read-only transaction: the STABLE preview still answers

@@ -21,9 +21,10 @@ import {
 /**
  * The guarded script that puts 20261016180000 (a manager's change that passed the deadline check cannot
  * commit after the gameweek is locked; audit finding SEC-01, second gap) on production. The migration
- * replaces two functions, so the pins are of three kinds: the md5 of the two as they stand before (the
- * repository's latest definitions) and after (the migration's), and the md5 of the seven existing
- * functions it relies on, all recomputed here from the repository files.
+ * replaces four functions, so the pins are of three kinds: the md5 of the four as they stand before (the
+ * repository's latest definitions; create_fantasy_team as the pilot cap 20261016170000 left it) and after
+ * (the migration's), and the md5 of the five existing functions it relies on, all recomputed here from
+ * the repository files.
  */
 
 const VERSION = "20261016180000";
@@ -38,9 +39,12 @@ const postflight = between(script, "do $postflight$", "$postflight$;");
 const executable = statementsOf(migration);
 const MFA = "supabase/migrations/20260926003100_ordinary_account_mfa_step_up.sql";
 const LIFECYCLE = "supabase/migrations/20260924200000_fantasy_postponement_and_enrolment.sql";
+const PILOT = "supabase/migrations/20261016170000_pilot_cap.sql";
 
 const assertHeader = /create or replace function app_private\.fantasy_assert_mutable_gameweek\(/;
 const createHeader = /create or replace function api\.create_fantasy_team\(/;
+const activateHeader = /create or replace function api\.activate_fantasy_chip\(/;
+const cancelHeader = /create or replace function api\.cancel_fantasy_chip\(/;
 
 const pinsByHand: Record<string, { file: string; header: RegExp }> = {
   "api.save_fantasy_lineup(uuid,uuid,jsonb,bigint,uuid)": {
@@ -54,14 +58,6 @@ const pinsByHand: Record<string, { file: string; header: RegExp }> = {
   "api.confirm_fantasy_transfers(uuid,uuid,jsonb,bigint,uuid,app.fantasy_chip_type)": {
     file: "20260926003100_ordinary_account_mfa_step_up.sql",
     header: /create or replace function api\.confirm_fantasy_transfers\(/,
-  },
-  "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)": {
-    file: "20260926003100_ordinary_account_mfa_step_up.sql",
-    header: /create or replace function api\.activate_fantasy_chip\(/,
-  },
-  "api.cancel_fantasy_chip(uuid,uuid,bigint)": {
-    file: "20260926003100_ordinary_account_mfa_step_up.sql",
-    header: /create or replace function api\.cancel_fantasy_chip\(/,
   },
   "app_private.fantasy_enrolment_gameweek(uuid)": {
     file: "20260924200000_fantasy_postponement_and_enrolment.sql",
@@ -92,6 +88,7 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
       "the Fantasy lifecycle tick is on -- pause it first",
       "the Fantasy worker holds its lease",
       "deadline is less than 30 minutes away",
+      "'20261016170000'",
       "the database is missing the Fantasy tables this update needs",
       "is not the reviewed one this update replaces",
       "is not the reviewed one (md5",
@@ -105,21 +102,38 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     expect(script).toBe(build());
   });
 
-  test("pins the two functions it replaces, before (latest definition) and after (the migration)", () => {
+  test("pins the four functions it replaces, before (latest definition) and after (the migration)", () => {
     expect(REPLACED.map((fn) => fn.signature)).toEqual([
       "app_private.fantasy_assert_mutable_gameweek(uuid)",
       "api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)",
+      "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)",
+      "api.cancel_fantasy_chip(uuid,uuid,bigint)",
     ]);
     const before = {
       "app_private.fantasy_assert_mutable_gameweek(uuid)": md5(
         bodyOf(read("supabase/migrations/20260720141854_fantasy_api_security.sql"), assertHeader),
       ),
-      "api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)": md5(bodyOf(read(MFA), createHeader)),
+      "api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)": md5(bodyOf(read(PILOT), createHeader)),
+      "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)": md5(
+        bodyOf(read(MFA), activateHeader),
+      ),
+      "api.cancel_fantasy_chip(uuid,uuid,bigint)": md5(bodyOf(read(MFA), cancelHeader)),
     };
     const after = {
       "app_private.fantasy_assert_mutable_gameweek(uuid)": md5(bodyOf(migration, assertHeader)),
       "api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)": md5(bodyOf(migration, createHeader)),
+      "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)": md5(
+        bodyOf(migration, activateHeader),
+      ),
+      "api.cancel_fantasy_chip(uuid,uuid,bigint)": md5(bodyOf(migration, cancelHeader)),
     };
+    // The review's independent merge of the pilot cap and this lock (2026-10-16).
+    expect(before["api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)"]).toBe(
+      "a85ae45fe4a131f754cd98571a8e39ab",
+    );
+    expect(after["api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)"]).toBe(
+      "a5426f18d5a7d3f691b9e12befb79f06",
+    );
     for (const fn of replacedPins(migration)) {
       const signature = fn.signature as keyof typeof before;
       expect(fn.before).toBe(before[signature]);
@@ -140,7 +154,7 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     );
   });
 
-  test("pins the seven functions it relies on to the repository's latest definitions", () => {
+  test("pins the five functions it relies on to the repository's latest definitions", () => {
     expect(PINS.map((pin) => pin.signature).sort()).toEqual(Object.keys(pinsByHand).sort());
     for (const [signature, pin] of Object.entries(pinsByHand)) {
       const sourceMd5 = md5(bodyOf(read(`supabase/migrations/${pin.file}`), pin.header));
@@ -150,7 +164,7 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
         definer: pin.file.split("_")[0],
       });
     }
-    // None of them, nor the two it replaces, is patched in place by a later migration.
+    // None of them, nor the four it replaces, is patched in place by a later migration.
     const names = [...Object.keys(pinsByHand), ...REPLACED.map((fn) => fn.signature)].map(nameOf);
     const patched = migrationFiles().filter((file) =>
       names.some((name) =>
@@ -160,8 +174,8 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     expect(patched).toEqual([]);
   });
 
-  test("create_fantasy_team is the 20260926003100 definition byte for byte plus one block", () => {
-    const old = bodyOf(read(MFA), createHeader);
+  test("create_fantasy_team is the 20261016170000 definition byte for byte plus one block", () => {
+    const old = bodyOf(read(PILOT), createHeader);
     const next = bodyOf(migration, createHeader);
     const anchor =
       "  perform pg_catalog.pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(\n    'fantasy:squads:' || season.id::text, 0));\n";
@@ -187,7 +201,46 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
       const start = createHeader.exec(text)!.index;
       return text.slice(start, text.indexOf("$$", start));
     };
-    expect(declaration(migration)).toBe(declaration(read(MFA)));
+    expect(declaration(migration)).toBe(declaration(read(PILOT)));
+    // Lock order: the user lock, the player-list lock, the gameweek KEY SHARE, then the pilot lock.
+    const order = [
+      "':fantasy:create:'",
+      "'fantasy:squads:'",
+      "for key share",
+      "'fantasy:pilot-cap:'",
+    ].map((needle) => next.indexOf(needle));
+    expect(order.every((at) => at > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  test("the chip functions are the 20260926003100 definitions plus one check after the team lock", () => {
+    const anchor =
+      "  select * into team from app.fantasy_teams\n  where id = p_team_id and user_id = current_user_id for update;\n";
+    for (const fnHeader of [activateHeader, cancelHeader]) {
+      const old = bodyOf(read(MFA), fnHeader);
+      const next = bodyOf(migration, fnHeader);
+      expect(occurrences(old, anchor)).toBe(1);
+      const at = old.indexOf(anchor) + anchor.length;
+      expect(next.startsWith(old.slice(0, at))).toBe(true);
+      expect(next.endsWith(old.slice(at))).toBe(true);
+      const added = next.slice(at, next.length - (old.length - at));
+      expect(added.replace(/^\s*--[^\n]*\n/gm, "")).toBe(
+        "  if exists (select 1 from app.fantasy_lineups lineup\n" +
+          "    where lineup.fantasy_team_id = team.id and lineup.gameweek_id = p_gameweek_id\n" +
+          "      and lineup.locked_at is not null) then\n" +
+          "    raise exception using errcode = 'PT409', message = 'fantasy_gameweek_locked';\n" +
+          "  end if;\n",
+      );
+      // The mutability check still comes first (before the team lock).
+      expect(
+        next.indexOf("app_private.fantasy_assert_mutable_gameweek(p_gameweek_id)"),
+      ).toBeLessThan(next.indexOf(anchor));
+      const declaration = (text: string) => {
+        const start = fnHeader.exec(text)!.index;
+        return text.slice(start, text.indexOf("$$", start));
+      };
+      expect(declaration(migration)).toBe(declaration(read(MFA)));
+    }
   });
 
   test("the check refuses before any lock, skips it read-only, then locks FOR KEY SHARE and checks again", () => {
@@ -229,7 +282,7 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     ).toBe(declaration(migration));
   });
 
-  test("the migration replaces only those two functions and writes no data", () => {
+  test("the migration replaces only those four functions and writes no data", () => {
     expect(
       [
         ...executable.matchAll(
@@ -239,6 +292,8 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     ).toEqual([
       "function app_private.fantasy_assert_mutable_gameweek",
       "function api.create_fantasy_team",
+      "function api.activate_fantasy_chip",
+      "function api.cancel_fantasy_chip",
     ]);
     // Outside the function bodies (and the read-only prerequisite check) nothing writes.
     const outsideBodies = executable.replace(/\$\$[\s\S]*?\$\$/g, "$$$$");
@@ -250,9 +305,16 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
     expect(statementsOf(bodyOf(migration, assertHeader))).not.toMatch(
       /\b(insert|update|delete)\b/i,
     );
-    // The only new row lock is FOR KEY SHARE on the gameweek row, twice (the check, the squad).
+    // The only new row lock is FOR KEY SHARE on the gameweek row, twice (the check, the squad); the
+    // only FOR UPDATE are the chip functions' existing team-row locks.
     expect(occurrences(executable, "for key share")).toBe(2);
-    expect(executable).not.toMatch(/\bfor\s+(update|no\s+key\s+update|share)\b/i);
+    const forUpdate = (text: string) => [...text.matchAll(/\bfor\s+update\b/gi)].length;
+    expect(forUpdate(executable)).toBe(
+      forUpdate(statementsOf(bodyOf(read(MFA), activateHeader))) +
+        forUpdate(statementsOf(bodyOf(read(MFA), cancelHeader))) +
+        forUpdate(statementsOf(bodyOf(read(PILOT), createHeader))),
+    );
+    expect(executable).not.toMatch(/\bfor\s+(no\s+key\s+update|share)\b/i);
   });
 
   test("the lock step it serialises with takes the gameweek row FOR UPDATE before the lineups", () => {
@@ -302,13 +364,20 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
         mfa.indexOf(preview),
       ),
     ).toContain("\nstable\n");
-    // Only these callers use the check, all defined last in 20260926003100.
+    // The callers of the check: defined last in 20260926003100, the chip functions again here.
     const callers = migrationFiles().filter((file) =>
       statementsOf(read(`supabase/migrations/${file}`)).includes(
         "app_private.fantasy_assert_mutable_gameweek(p_gameweek_id)",
       ),
     );
-    expect(callers.at(-1)).toBe("20260926003100_ordinary_account_mfa_step_up.sql");
+    expect(callers.slice(-2)).toEqual([
+      "20260926003100_ordinary_account_mfa_step_up.sql",
+      `${VERSION}_${NAME}.sql`,
+    ]);
+    // In this migration only the two chip functions call it.
+    expect(
+      occurrences(executable, "app_private.fantasy_assert_mutable_gameweek(p_gameweek_id)"),
+    ).toBe(2);
   });
 
   test("pauses the Fantasy lifecycle, copied from AGENTS.md, and refuses while it runs", () => {
@@ -344,7 +413,14 @@ describe("apply-20261016180000-fantasy-deadline-lock.sql", () => {
   });
 
   test("requires the migrations whose objects it replaces or pins", () => {
-    expect(REQUIRED_MIGRATIONS).toEqual(["20260720141854", "20260924200000", "20260926003100"]);
+    expect(REQUIRED_MIGRATIONS).toEqual([
+      "20260720141854",
+      "20260924200000",
+      "20260926003100",
+      "20261016170000",
+    ]);
+    // The migration's own prerequisite check knows the pilot cap.
+    expect(migration).toContain("to_regclass('app_private.pilot_settings') is null");
     for (const required of REQUIRED_MIGRATIONS) {
       expect(migrationFiles().some((file) => file.startsWith(`${required}_`))).toBe(true);
       expect(preflight).toContain(`'${required}'`);

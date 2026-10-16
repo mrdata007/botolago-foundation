@@ -7,8 +7,8 @@
  *   bun scripts/backend/build-apply-20261016180000-fantasy-deadline-lock.ts --check   fail if it differs
  *
  * Every pin is computed here from the repository files (never typed in): the sha256 of the migration,
- * the md5 of the source (pg_proc.prosrc) of the two functions it replaces as they stand before (their
- * latest definitions) and after (the migration's), and of the seven functions it relies on and does not
+ * the md5 of the source (pg_proc.prosrc) of the four functions it replaces as they stand before (their
+ * latest definitions) and after (the migration's), and of the five functions it relies on and does not
  * change. The test recomputes them independently.
  */
 import { createHash } from "node:crypto";
@@ -44,7 +44,7 @@ export interface Pin {
   header: RegExp;
 }
 
-/** The two functions the migration replaces: where their current (latest) definition is. */
+/** The four functions the migration replaces: where their current (latest) definition is. */
 export const REPLACED: (Pin & { newHeader: RegExp })[] = [
   {
     signature: "app_private.fantasy_assert_mutable_gameweek(uuid)",
@@ -55,10 +55,24 @@ export const REPLACED: (Pin & { newHeader: RegExp })[] = [
   },
   {
     signature: "api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)",
-    label: "the creation of a squad",
-    file: "20260926003100_ordinary_account_mfa_step_up.sql",
+    label: "the creation of a squad, with the pilot cap",
+    file: "20261016170000_pilot_cap.sql",
     header: /create or replace function api\.create_fantasy_team\(/,
     newHeader: /create or replace function api\.create_fantasy_team\(/,
+  },
+  {
+    signature: "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)",
+    label: "the chip activation",
+    file: "20260926003100_ordinary_account_mfa_step_up.sql",
+    header: /create or replace function api\.activate_fantasy_chip\(/,
+    newHeader: /create or replace function api\.activate_fantasy_chip\(/,
+  },
+  {
+    signature: "api.cancel_fantasy_chip(uuid,uuid,bigint)",
+    label: "the chip cancellation",
+    file: "20260926003100_ordinary_account_mfa_step_up.sql",
+    header: /create or replace function api\.cancel_fantasy_chip\(/,
+    newHeader: /create or replace function api\.cancel_fantasy_chip\(/,
   },
 ];
 
@@ -83,18 +97,6 @@ export const PINS: Pin[] = [
     header: /create or replace function api\.confirm_fantasy_transfers\(/,
   },
   {
-    signature: "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)",
-    label: "the chip activation (calls the check first)",
-    file: "20260926003100_ordinary_account_mfa_step_up.sql",
-    header: /create or replace function api\.activate_fantasy_chip\(/,
-  },
-  {
-    signature: "api.cancel_fantasy_chip(uuid,uuid,bigint)",
-    label: "the chip cancellation (calls the check first)",
-    file: "20260926003100_ordinary_account_mfa_step_up.sql",
-    header: /create or replace function api\.cancel_fantasy_chip\(/,
-  },
-  {
     signature: "app_private.fantasy_enrolment_gameweek(uuid)",
     label: "the gameweek a new squad joins",
     file: "20260924200000_fantasy_postponement_and_enrolment.sql",
@@ -109,7 +111,12 @@ export const PINS: Pin[] = [
 ];
 
 /** Migrations the update needs recorded (the ones that define what it replaces or pins). */
-export const REQUIRED_MIGRATIONS = ["20260720141854", "20260924200000", "20260926003100"];
+export const REQUIRED_MIGRATIONS = [
+  "20260720141854",
+  "20260924200000",
+  "20260926003100",
+  "20261016170000",
+];
 
 export function pinsFromRepository() {
   return PINS.map((pin) => ({
@@ -163,12 +170,18 @@ export function build(): string {
 -- step never revisits and the scoring snapshot refuses on every pass (fantasy_lineup_not_locked), so the
 -- gameweek cannot be scored; a chip activated that way is applied after the lock.
 -- What: app_private.fantasy_assert_mutable_gameweek (used by the lineup save, the transfers and the
--- chips) and api.create_fantasy_team now take FOR KEY SHARE on the gameweek row and check again; the lock
--- step's FOR UPDATE on that row waits for them, and a call that waited for the lock step is refused with
--- the usual fantasy_gameweek_locked. A call after the deadline is refused before any lock, as before. In a
--- read-only transaction (the transfer preview) no lock is taken. Same refusals, same codes, same deadline.
--- It replaces those two functions (same signatures, owners and grants) and writes no data. It changes no
--- table, trigger, setting, job, privilege, other function, Fantasy rule or deadline.
+-- chips) and api.create_fantasy_team (as the pilot cap 20261016170000 left it) now take FOR KEY SHARE on
+-- the gameweek row and check again; the lock step's FOR UPDATE on that row waits for them, and a call that
+-- waited for the lock step is refused with the usual fantasy_gameweek_locked. A call after the deadline is
+-- refused before any lock, as before. In a read-only transaction (the transfer preview) no lock is taken.
+-- api.activate_fantasy_chip and api.cancel_fantasy_chip also refuse once the team's lineup of that
+-- gameweek is locked (between two pages of the lock step the gameweek is still 'open').
+-- Same refusals, same codes, same deadline. It replaces those four functions (same signatures, owners
+-- and grants) and writes no data. It changes no table, trigger, setting, job, privilege, other function,
+-- Fantasy rule or deadline.
+-- Cost: a manager's write now waits while the gameweek row is held FOR UPDATE, including for the whole
+-- fantasy-lifecycle-tick (its calendar sync holds the gameweek rows until the tick commits). Read the
+-- tick's real duration first (${RUNBOOK}, "What it costs").
 --
 -- WHEN
 --   Any time of day EXCEPT around a deadline: the script refuses while an open gameweek's deadline is
@@ -178,7 +191,7 @@ export function build(): string {
 --   under a second.
 --
 -- WHAT TO PAUSE (AGENTS.md, "One writer at a time, per database")
---   It replaces two function definitions; it takes no table lock and writes no Fantasy row. The only
+--   It replaces four function definitions; it takes no table lock and writes no Fantasy row. The only
 --   scheduled writer that runs the code around them is the Fantasy lifecycle (the lock step at the
 --   deadline), so the script STOPS, before writing anything, unless it is paused:
 --   * the Fantasy lifecycle tick and, with it, the Fantasy worker tick (fantasy-lifecycle-tick,
@@ -191,7 +204,7 @@ export function build(): string {
 --   Not needed, and why: managers' own saves, transfers, chips and new squads are ordinary traffic and
 --   keep working throughout (each call runs the old or the new definition whole; the swap is atomic at
 --   commit). The live refresh, the e-mail, push, account-deletion, Manager Card, Trophées, Rivaux,
---   Pépites, news and prediction jobs do not call these two functions. Still make sure no other schema
+--   Pépites, news and prediction jobs do not call these four functions. Still make sure no other schema
 --   change (another apply script, a migration, a deploy) is running right now.
 --   Restore AFTER the commit, and only if it was on: select app_private.fantasy_automation_configure(true);
 --
@@ -207,21 +220,21 @@ export function build(): string {
 --   If any check fails, the script stops with a message saying what, and nothing is saved. Do not
 --   edit a check to make it pass: a check firing means the database is not in the state this
 --   script expects. Send the message.
---   To take it back: ship a forward migration that restores the two definitions it replaces
+--   To take it back: ship a forward migration that restores the four definitions it replaces
 --   (${RUNBOOK}, "Rolling back"). Never edit this migration.
 --
 -- WHAT IT DOES
 --   * refuses to run twice (history row, or the new definitions already there), before the migrations
 --     above are recorded, while the Fantasy lifecycle tick is on or the Fantasy worker holds its lease,
---     less than 30 minutes before an open gameweek's deadline, where either function it replaces is
---     not byte for byte the repository's latest definition (md5 of its source), and where any of the
---     seven functions it relies on is not: the lineup save, the transfer preview and confirmation, the
---     chip activation and cancellation, the enrolment gameweek and the lock step;
+--     less than 30 minutes before an open gameweek's deadline, where any function it replaces is not
+--     byte for byte the repository's latest definition (md5 of its source; create_fantasy_team as the
+--     pilot cap left it), and where any of the five functions it relies on is not: the lineup save, the
+--     transfer preview and confirmation, the enrolment gameweek and the lock step;
 --   * records the migration file in supabase_migrations.schema_migrations, whole as statements[1]
 --     (the form the migration promoter and the other apply scripts use), and runs it from that
 --     record once its sha256 matches the repository file;
---   * checks the result without writing anything: the two functions are the reviewed new text, security
---     definer with an empty search path, VOLATILE, with the owner and grants they had; the seven functions
+--   * checks the result without writing anything: the four functions are the reviewed new text, security
+--     definer with an empty search path, VOLATILE, with the owner and grants they had; the five functions
 --     and every other function of the api and app_private schemas are as they were; the cron job list did
 --     not move; the history row is there.
 -- ============================================================================
@@ -271,7 +284,7 @@ begin
     raise exception 'stop: an open gameweek''s deadline is less than 30 minutes away -- run this after it has been locked';
   end if;
 
-  -- The two functions it replaces are the repository's latest definitions (not yet replaced).
+  -- The four functions it replaces are the repository's latest definitions (not yet replaced).
   for fn in
     select * from (values
 ${beforeValues}
@@ -356,7 +369,7 @@ declare
   fn record;
   def record;
 begin
-  -- The two functions: the reviewed new text, security definer, empty search path, VOLATILE.
+  -- The four functions: the reviewed new text, security definer, empty search path, VOLATILE.
   for fn in
     select * from (values
 ${afterValues}
