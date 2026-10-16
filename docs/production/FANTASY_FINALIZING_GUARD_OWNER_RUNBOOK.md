@@ -1,8 +1,25 @@
 # A finalizing gameweek's scoring inputs cannot change: owner runbook
 
-> **Status, 2026-10-16:** written, **not run on any shared or production database**. The
-> migration, the guarded script and the database test are in the repository only. See "What was
-> and was not run" at the end. Do not run the script until the pull request is reviewed and merged.
+> **Status, 2026-10-16: applied on Production V2.** Pull request 509 was merged at `dfae1b9b`. An
+> executor agent, acting on the owner's instruction, ran this script on Production V2
+> (`tkewgajrljbwgwedqsxn`): rehearsal at 14:42:20 UTC, then the commit at **14:43:50 UTC**. The
+> pauses of the Fantasy lifecycle tick, the football live refresh and e-mail jobs, and the
+> account-deletion tick ran from 14:40:52 to 14:44:07 UTC and were restored to the values they had
+> before (the e-mail mode stays `off`, as it was). An independent read-only verification by a
+> separate Opus agent **passed**: the scripts it sent were byte-identical to the reviewed files
+> (rehearsal sha256 `06968cd7...53e2db`, apply sha256 `23140dd8...c7ca`); the three triggers are
+> enabled; the three functions are `security definer` and no API role can call them; the history
+> row's sha matches the repository file; row counts were unchanged (740 `fantasy_players`, 1991
+> `team_memberships`, 27 `fantasy_lineups`); the 27 cron jobs were unchanged and succeeding; no
+> `fantasy_scoring_inputs_frozen` or `PT409` log lines; and no gameweek was `finalizing` (gameweek 4
+> live, 4 of 8 matches finished, the rest on 17 and 18 October). The pgTAP file passed in CI
+> (`database-quality`) on pull request 509. **Not applied on Staging V2.** Do not run the script
+> again on production: it refuses a second run ("already recorded"). The sections below are the
+> procedure as written; "What was and was not run" at the end describes the authoring session,
+> before this apply. Still open, not fixed by this guard: see "Not covered, and why" (a score
+> correction on an already finished fixture), and a team save started just before a deadline might
+> slip in after the lock (not proven; `app_private.fantasy_assert_mutable_gameweek` takes no row
+> lock).
 
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Migration: `supabase/migrations/20261016110000_fantasy_finalizing_scoring_inputs_guard.sql`.
