@@ -121,6 +121,9 @@ deploy is running at the same time: a rehearsal takes locks too.
 2. Change the line `rollback;` to `commit;` and run again. The result row says "Applied. The pilot
    cap exists and is OFF".
 
+If it stops on "number of Fantasy teams changed", a manager created a team (or the hourly account
+erasure at minute :23 deleted one) while it ran; nothing was saved, so run it again and avoid minute :23.
+
 The script stops, saving nothing, if the live `api.create_fantasy_team` is not byte for byte the text
 in `20260926003100` (it is pinned by md5), if any of the objects already exist, if the migrations it
 depends on are not recorded, or if after the change any other function, the grants of the function,
@@ -140,7 +143,8 @@ select count(*) as hidden_accounts from app_private.public_ranking_exclusions;
 ```
 
 Hide your own test and QA accounts first (`docs/backend/PUBLIC_RANKING_EXCLUSIONS.md`) if they
-should not take places. Then:
+should not take places. Note that a hidden account is also let past the cap, so only staff who may hide accounts can
+let someone in; hide only your own test accounts. Then:
 
 ```sql
 select app_private.pilot_configure(true, 1000);
@@ -171,7 +175,12 @@ on the right key, only while the cap is on) and this proves the race. **Never on
 staging database with at least two test accounts that have no team and a cap set to the current count
 plus one (`select app_private.pilot_configure(true, <count + 1>);`):
 
-1. Session 1 (SQL editor, as the owner): `begin;`, then act as account A and create its team
+The Supabase SQL editor cannot keep a transaction open between two runs, so use two `psql` sessions
+against the staging database. This writes Fantasy teams on staging, so first follow the one-writer rule
+in `AGENTS.md`: check nothing else is writing, and pause the Manager Card, Trophées and Rivaux ticks
+(or note why they cannot touch these teams), then restore them afterwards.
+
+1. Session 1 (`psql`, as the owner): `begin;`, then act as account A and create its team
    (`set local role authenticated; select set_config('request.jwt.claims', '{"sub":"<A>","role":"authenticated","aal":"aal1"}', true); select api.create_fantasy_team(<season>, <gameweek>, 'Race A', <selection>, <key A>);`).
    Do **not** commit.
 2. Session 2: the same for account B (`Race B`, another key). It **waits** (the season lock).
