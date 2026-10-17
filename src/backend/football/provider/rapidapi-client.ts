@@ -94,6 +94,12 @@ export class RapidApiClient {
 
     const response = await withProviderResilience(
       async (timeoutSignal) => {
+        // A failed response can exhaust the reserve before the next retry.
+        if (this.lastQuota.remaining !== null && this.lastQuota.remaining < this.minRemaining)
+          throw new FootballError(
+            "provider_rate_limited",
+            "Provider quota is low: not retrying the request.",
+          );
         this.requestCount += 1;
         const result = await this.fetchImpl(url, {
           headers: { "x-rapidapi-key": this.key, "x-rapidapi-host": this.host },
