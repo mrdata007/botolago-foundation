@@ -32,6 +32,8 @@ export const IDENTICAL_ALLOWED = {
     "The Manager Card's serial format (« BOT #482913 »): a unit / an identifier format, the same in both languages.",
   "card.tier.homa":
     "LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09. The tier code stays `homa`; the Arabic UI isolates the word left to right (`TierWord`).",
+  "plus.pay.cash_t":
+    "The two payment agencies' own names, CashPlus and Wafacash, in Latin letters in both languages (owner approval 2026-10-16, Arabic wording row SE-18): the reader sees these names on the agency.",
 } as const satisfies Partial<Record<TranslationKey, string>>;
 
 /** W2 — ar values that legitimately contain no Arabic script. */
@@ -49,4 +51,6 @@ export const NO_ARABIC_SCRIPT_ALLOWED = {
     "An identifier format, Latin letters and digits in both languages (a unit / an identifier format).",
   "card.tier.homa":
     "LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09; the Arabic UI keeps it in Latin script inside a left-to-right isolate.",
+  "plus.pay.cash_t":
+    "The two payment agencies' own names, CashPlus and Wafacash, in Latin letters (owner approval 2026-10-16, Arabic wording row SE-18).",
 } as const satisfies Partial<Record<TranslationKey, string>>;

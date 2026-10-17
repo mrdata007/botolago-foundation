@@ -326,11 +326,20 @@ describe("the plus.* dictionary", () => {
     expect(fr["lock.curva.title.plus"]).not.toMatch(ruledOut);
   });
   it("carries no subscription vocabulary in Arabic either, and Western digits", () => {
-    const ruledOut = /اشتراك|مشترك|بريميوم|تجديد|شهري|سنوي|استعاد|عضو/;
+    // Owner decision (native Arabic reader), 2026-10-16: the offer is called «اشتراك» in Arabic, so
+    // that word is no longer ruled out here. The rest of the subscription vocabulary still is.
+    const RULED_OUT = ["مشترك", "بريميوم", "تجديد", "شهري", "سنوي", "استعاد", "عضو"];
+    const banFor = (words: string[]) => new RegExp(words.join("|"));
+    const ruledOut = banFor(RULED_OUT);
     for (const key of keys) {
       const value = ar[key as keyof typeof ar] as string;
+      // The one exception: the owner approved «لا تجديد تلقائي» (2026-10-16, row SE-34) for the
+      // "nothing renews" line. It names renewal only to deny it, so تجديد stays banned everywhere
+      // else, and this key is still held to the rest of the list.
+      const ban =
+        key === "plus.terms.norenew" ? banFor(RULED_OUT.filter((w) => w !== "تجديد")) : ruledOut;
       if (/^plus\.(s3|terms|season|pay|profile|hub|page|meta|lock|in\.member)/.test(key)) {
-        expect(value, key).not.toMatch(ruledOut);
+        expect(value, key).not.toMatch(ban);
       }
       expect(value, key).not.toMatch(/[\u0660-\u0669]/);
     }

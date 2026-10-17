@@ -167,7 +167,7 @@ describe("LOC-10: unsubscribe confirms notification e-mails, not all corresponde
     expect(fr["unsubscribe.reenable_hint"]).toContain(
       "Les messages nécessaires à la sécurité de votre compte restent disponibles.",
     );
-    expect(ar["unsubscribe.reenable_hint"]).toContain("تبقى رسائل أمان الحساب الضرورية متاحة.");
+    expect(ar["unsubscribe.reenable_hint"]).toContain("ستظل تصلك الرسائل الضرورية لأمان حسابك.");
   });
 
   test("the already-unsubscribed line has the same scope", () => {

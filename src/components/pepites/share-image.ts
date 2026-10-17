@@ -96,7 +96,7 @@ export interface ShareImageModel {
 export interface ShareCopy {
   readonly brand: string;
   readonly kicker: string;
-  /** "TOP 10" / "أفضل 10". */
+  /** "TOP 10" / "توب 10". */
   readonly title: string;
   /** "SEMAINE {n} · RISING SCORE". */
   readonly subtitle: string;

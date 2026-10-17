@@ -995,7 +995,7 @@ function pepitesWeekly(
           t(
             ctx,
             "Cette édition remplace le Top 10 publié plus tôt pour cette semaine.",
-            "هذا العدد يعوّض توب 10 المنشور سابقًا لهذا الأسبوع.",
+            "هذا العدد يعوّض قائمة توب 10 المنشورة سابقًا لهذا الأسبوع.",
           ),
         ),
       ],
@@ -1408,7 +1408,7 @@ export function renderNotificationEmail(
       ? t(
           ctx,
           "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro.",
-          "تتلقى هذه الرسالة لأنك اشتركت في المواهب، توب 10 الأسبوعي لشباب البطولة الاحترافية.",
+          "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع.",
         )
       : t(
           ctx,
