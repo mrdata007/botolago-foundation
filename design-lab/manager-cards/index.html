@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>BotolaGO — Manager Card Design Lab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="#" aria-label="BotolaGO design lab"
+        ><img src="../../src/assets/brand/botolago-wordmark-light.svg" alt="BotolaGO" /><span
+          >DESIGN LAB / 001</span
+        ></a
+      >
+      <div class="tools">
+        <button id="theme" aria-label="Change gallery background">
+          ◐ <span data-t="surround">Light surround</span></button
+        ><label class="sr" for="language">Language</label
+        ><select id="language">
+          <option value="en">EN</option>
+          <option value="fr">FR</option>
+          <option value="ar">العربية</option>
+        </select>
+      </div>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow" data-t="eyebrow">IDENTITY EXPLORATION · SEASON 2026/27</p>
+          <h1 data-t="title">More than a profile.<br />A place in the game.</h1>
+          <p class="intro-copy" data-t="intro">
+            Ten possible identities for the BotolaGO manager. Same player. Same ability. Ten very
+            different ways to belong.
+          </p>
+        </div>
+        <div class="edition">
+          <span>01—10</span>
+          <p data-t="edition">MANAGER CARD<br />CONCEPT COLLECTION</p>
+          <small data-t="fiction">Visual study · fictional profile</small>
+        </div>
+      </section>
+      <nav class="viewbar" aria-label="Gallery view">
+        <div role="group" aria-label="View">
+          <button class="active" data-view="gallery" data-t="gallery" aria-pressed="true">
+            The collection</button
+          ><button data-view="overview" data-t="overview" aria-pressed="false">
+            All ten at a glance</button
+          ><button data-view="ranking" data-t="ranking" aria-pressed="false">Design ranking</button>
+        </div>
+        <span class="fixed-data">ALI <i></i> 84 OVR <i></i> PRO</span>
+      </nav>
+      <div class="legend">
+        <span data-t="inspect">Select a card to explore its details.</span
+        ><span data-t="legend">CAP Captain · SEL Selection · TRF Transfers · CON Consistency</span>
+      </div>
+      <section id="gallery" class="gallery" aria-label="Manager card concepts"></section>
+      <section id="rankings" hidden></section>
+      <footer>
+        <span>BotolaGO / MANAGER CARD LAB</span>
+        <p data-t="footer">
+          Ten directions. No final selection. Materials and tier evolution are proposals.
+        </p>
+        <span>OCTOBER 2026</span>
+      </footer>
+    </main>
+    <dialog id="detail" aria-labelledby="detail-title">
+      <div class="dialog-bar">
+        <span id="detail-count"></span>
+        <div>
+          <button id="previous" aria-label="Previous concept">←</button
+          ><button id="next" aria-label="Next concept">→</button
+          ><button id="close" aria-label="Close details">✕</button>
+        </div>
+      </div>
+      <div class="dialog-content">
+        <div class="detail-visual">
+          <div id="detail-card"></div>
+          <p class="eyebrow" data-t="compact">LEADERBOARD IDENTITY</p>
+          <div id="mini"></div>
+          <p class="small-note" data-t="avatarNote">
+            One avatar slot. Photo, illustration or anonymous silhouette. No portrait required.
+          </p>
+        </div>
+        <div class="detail-copy">
+          <p class="eyebrow" id="detail-label"></p>
+          <h2 id="detail-title"></h2>
+          <p class="thesis" id="detail-thesis"></p>
+          <div id="reasoning"></div>
+        </div>
+      </div>
+    </dialog>
+    <script src="app.js"></script>
+  </body>
+</html>
