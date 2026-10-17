@@ -13,7 +13,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { authService, IS_MOCK_AUTH, type AuthStatus } from "@/services/auth";
 import { AssuranceRetry } from "@/auth/AssuranceRetry";
 import { secondFactorStep } from "@/auth/second-factor";
-import { authLanding, cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import {
+  authLanding,
+  authReturnError,
+  cleanAuthCallbackUrl,
+  sanitizeAuthCallbackNext,
+} from "@/lib/auth-callback";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/callback")({
@@ -32,7 +37,9 @@ interface Landing {
 function CallbackPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [error, setError] = useState<"callback_error" | "unconfirmed" | null>(null);
+  const [error, setError] = useState<
+    "callback_error" | "provider_unavailable" | "unconfirmed" | null
+  >(null);
   const [busy, setBusy] = useState(true);
   const landing = useRef<Landing>({ to: "/", recovery: false });
 
@@ -102,7 +109,7 @@ function CallbackPage() {
         const url = new URL(window.location.href);
         const params = url.searchParams;
         const hash = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
-        const hasProviderError = params.has("error_description") || hash.has("error_description");
+        const returnError = authReturnError(params, hash);
         const next = sanitizeAuthCallbackNext(params.get("next"));
         landing.current = { to: next, recovery: false };
         const code = params.get("code");
@@ -115,8 +122,10 @@ function CallbackPage() {
         // asynchronous work or failure branch can leave them in history.
         scrubUrl();
 
-        if (hasProviderError) {
-          setError("callback_error");
+        if (returnError) {
+          // A provider that is switched off in Supabase says so, rather than
+          // "the link is invalid or has expired".
+          setError(returnError);
           setBusy(false);
           return;
         }
@@ -199,14 +208,18 @@ function CallbackPage() {
           onSignOut={() => void signOutUnconfirmed()}
         />
       )}
-      {error === "callback_error" && (
+      {(error === "callback_error" || error === "provider_unavailable") && (
         <div className="grid gap-3">
           {/* Kept on `AuthFieldError` rather than moved to `UiAlert`: this
               message announces politely (`role="alert" aria-live="polite"`),
               and `UiAlert tone="negative"` announces as a bare `role="alert"`
               — a different interruption for the same event. This lane changes
               styling, not announcements. */}
-          <AuthFieldError id="cb-err">{t("auth.callback.error")}</AuthFieldError>
+          <AuthFieldError id="cb-err">
+            {error === "provider_unavailable"
+              ? t("auth.error.provider_unavailable")
+              : t("auth.callback.error")}
+          </AuthFieldError>
           <AuthSecondaryButton onClick={() => navigate({ to: "/auth/login" })}>
             {t("auth.forgot.back_to_login")}
           </AuthSecondaryButton>

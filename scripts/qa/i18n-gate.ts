@@ -472,7 +472,9 @@ export const BASELINES: Baselines = {
   // first call site (-1); B7 (DATA-04) deletes `matches.a11y.status_scheduled`
   // together with the template lookup that alone reached it (+-0, W4 69 -> 68).
   // All new keys of all three lanes are referenced. 247 -> 244.
-  W3: 244,
+  // Sweep fixes B (2026-10-16): `auth.error.provider_unavailable` gets its first call
+  // sites (sign-in pages and the callback), 244 -> 243.
+  W3: 243,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

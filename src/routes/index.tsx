@@ -871,9 +871,13 @@ function HomeContent() {
                   }}
                 />
               ) : (
+                // `@container`: the rows below switch to a wrapped layout when the
+                // card is narrower than 14rem, which happens on a phone at about
+                // 160% text size or more (the form chips and the points are `rem`
+                // wide and do not fit beside the name).
                 <UiCard
                   padding="none"
-                  className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                  className="@container divide-y divide-[color:var(--ui-rule)] overflow-hidden"
                 >
                   {standingsTop.map((row) => {
                     const club = clubById(row.clubId);
@@ -886,7 +890,7 @@ function HomeContent() {
                     return (
                       <div
                         key={row.clubId}
-                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]"
+                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)] @max-[14rem]:flex-wrap @max-[14rem]:gap-y-1"
                       >
                         {zone ? (
                           <span
@@ -916,7 +920,12 @@ function HomeContent() {
                         >
                           {rowClubName(tr(club.shortName), tr(club.name))}
                         </Link>
-                        <FormChips form={row.form} className="shrink-0" />
+                        {/* In a narrow card the chips drop to a line of their own under
+                            the name, after the points in the flow, not in the reading order. */}
+                        <FormChips
+                          form={row.form}
+                          className="shrink-0 @max-[14rem]:order-last @max-[14rem]:basis-full"
+                        />
                         <span
                           className={cn("w-8 shrink-0 text-end", ui.stat.md, ui.tone.default)}
                           aria-label={t("matches.table.points")}

@@ -231,11 +231,17 @@ export function PepitesFeature({
         {wheel ? (
           // On a phone under the header; from a 768px band, at the end,
           // beside the header. The legend keeps each figure near its label.
-          <div className="flex min-w-0 items-center gap-4 @3xl:col-start-2 @3xl:row-start-1 @3xl:gap-6">
+          // Under 14rem (a phone at about 170% text size or more: the wheel is
+          // `rem` wide, 264px at 200%, which pushed the legend past the screen
+          // edge) the legend goes under the wheel instead of beside it.
+          <div className="flex min-w-0 items-center gap-4 @max-[14rem]:flex-col @max-[14rem]:items-start @3xl:col-start-2 @3xl:row-start-1 @3xl:gap-6">
             <PercentileWheel percentiles={percentiles} className="size-33 @sm:size-40 @3xl:size-44">
               {disc}
             </PercentileWheel>
-            <PercentileLegend percentiles={percentiles} className="max-w-64 flex-1 @3xl:w-64" />
+            <PercentileLegend
+              percentiles={percentiles}
+              className="max-w-64 flex-1 @max-[14rem]:flex-none @3xl:w-64"
+            />
           </div>
         ) : null}
         {facts && (figures || figuresPending) ? (

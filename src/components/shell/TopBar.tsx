@@ -102,7 +102,11 @@ export function TopBar({
 
         {wide ? <GlobalSearch className="hidden w-64 lg:block" /> : null}
 
-        <div className="ms-auto flex items-center gap-2 @max-[20rem]:gap-1 md:ms-0">
+        {/* Under 10rem of bar (a 320px phone at 200% text): the buttons' 44px
+            floor is `rem`, so three of them are 264px of a 288px bar. The floor
+            drops to 44 CSS px there (1.375rem at 200%), the guideline's own
+            number, so the buttons stay on screen. */}
+        <div className="ms-auto flex items-center gap-2 @max-[10rem]:[--ui-tap-min:1.375rem] @max-[20rem]:gap-1 md:ms-0">
           {trailing}
           <UiIconButton
             className={wide ? "lg:hidden" : undefined}

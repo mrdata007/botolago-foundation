@@ -1026,6 +1026,16 @@ These live in database rows created by migrations: the weekly Top 10 bell title 
 
 ---
 
+## Part 5. Added after this sheet (branch `work/sweep-fixes-b`, owner to confirm)
+
+One line, shown when Google or Apple sign-in is tapped while that provider is switched off in Supabase (login, sign-up and the sign-in return page). It replaces the old `auth.error.provider_unavailable` line (“هذا المزود غير متاح حاليًا.”), which the app never showed.
+
+| #     | French                                                                                    | Arabic                                                                                          | Where it appears                                                          | Approve | Change to |
+| ----- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------- | --------- |
+| AU-01 | Cette connexion n'est pas disponible pour le moment. Continuez avec votre adresse e-mail. | <span dir="rtl">طريقة تسجيل الدخول هذه غير متاحة حاليًا. تابع باستخدام بريدك الإلكتروني.</span> | Form-error line under the sign-in and sign-up forms; sign-in return page. | ☐       |           |
+
+---
+
 ## What this sheet did not cover
 
 - Arabic that was not added or changed since Phase A (about 2,700 other strings) is not listed.
