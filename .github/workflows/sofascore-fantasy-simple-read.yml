@@ -95,7 +95,7 @@ jobs:
           args=(--mode report --out "$RUNNER_TEMP/sofascore-fantasy-report.json")
           if [[ -n "${ROUND:-}" ]]; then args+=(--round "$ROUND"); fi
           if [[ "${INCLUDE_OBSERVED:-}" == "true" ]]; then args+=(--include-observed); fi
-          bun scripts/backend/sofascore-fantasy-simple-ingest.ts "${args[@]}" > "$RUNNER_TEMP/run.log"
+          bun scripts/backend/sofascore-fantasy-simple-ingest.ts "${args[@]}" | tee "$RUNNER_TEMP/run.log"
           {
             echo "## SofaScore Fantasy simple report (production, read only)"
             echo
