@@ -103,8 +103,11 @@ export function BottomNav() {
     }
     const x = icon.offsetLeft;
     const y = icon.offsetTop;
-    const w = icon.offsetWidth;
-    const h = icon.offsetHeight;
+    // Fractional sizes: `offsetWidth` rounds, and a pill 0.2px wider than its
+    // tab at 320px / 200% text is a pill over its neighbour.
+    const box = icon.getBoundingClientRect();
+    const w = box.width;
+    const h = box.height;
     // Let the pill's current spot be computed before it is given the new one,
     // or a bar that has just mounted would jump instead of slide.
     pillRef.current?.getBoundingClientRect();
@@ -266,11 +269,12 @@ export function BottomNav() {
                   else iconRefs.current.delete(item.to);
                 }}
                 className={cn(
-                  // `max-w-full`: the pill is `rem`-sized, and at 200% text it
-                  // is 112px, wider than the 70px tab it sits in, so it ran over
-                  // its neighbours' icons. Capped to the tab at large sizes; at
-                  // 100% the tab is wider than 56px and nothing changes.
-                  "relative grid h-8 w-14 max-w-full shrink-0 place-items-center",
+                  // The cap: the pill is `rem`-sized, and at 200% text it is
+                  // 112px, wider than the ~70px tab it sits in, so it ran over
+                  // its neighbours' icons. It may use the tab's own side padding
+                  // (`px-0.5`, none under 360px), so at 130% text, where it
+                  // already fitted the tab, it does not move.
+                  "relative grid h-8 w-14 max-w-[calc(100%+0.25rem)] shrink-0 place-items-center max-[359px]:max-w-full",
                   ui.radius.full,
                   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
                   active

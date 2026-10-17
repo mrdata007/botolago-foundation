@@ -84,14 +84,17 @@ export function LeaderboardRow({
         ui.surface.card,
         ui.edge.start,
         ui.space.row,
-        "press-tile flex flex-col gap-2 py-3 pe-3 ps-3",
+        // `@container`: under 11rem wide (a 320px phone at 200% text: the
+        // rank plate, the photo and the score alone are 267px of a 204px row)
+        // the row wraps, the name column taking a line of its own.
+        "@container press-tile flex flex-col gap-2 py-3 pe-3 ps-3",
         ui.focus,
       )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 @max-[11rem]:flex-wrap">
         <RankPlate rank={item.rank} size="md" />
         <PepitesIdentityDisc player={player} listed={listed} size="md" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 @max-[11rem]:basis-full">
           <div className="flex min-w-0 items-center gap-2">
             {/* Wraps (two lines at most) rather than cutting the name beside
                 the movement mark. */}

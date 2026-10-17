@@ -21,8 +21,10 @@
 //     outage, and the app goes ahead and navigates, exactly as it did before
 //     this check existed. Nothing is made worse by asking.
 //
-// The check asks nothing that changes anything: `/authorize` only builds a
-// redirect to the provider (the sign-in itself starts on the provider's page).
+// The check is not free of side effects: every `/authorize` call makes the auth
+// server write a sign-in state row, which is never used and expires on its own.
+// The sign-in itself still starts on the provider's page; a tap now makes two
+// such calls (this one and the browser's) instead of one.
 
 import { isProviderOffReason } from "@/lib/auth-callback";
 import type { AuthErrorCode } from "./auth-types";
