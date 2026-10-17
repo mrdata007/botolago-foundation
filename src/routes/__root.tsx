@@ -46,6 +46,7 @@ import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { currentRelease, reportUnhandledError } from "@/lib/operational-errors";
 import { installClientErrorSink } from "@/lib/client-error-sink";
+import { retryAfterError } from "@/lib/chunk-reload";
 
 function NotFoundComponent() {
   return (
@@ -156,12 +157,12 @@ function ErrorComponent({ error: caught, reset }: { error: unknown; reset: () =>
   }, [error]);
   return (
     <I18nProvider>
-      <ErrorBody reset={reset} />
+      <ErrorBody error={error} reset={reset} />
     </I18nProvider>
   );
 }
 
-function ErrorBody({ reset }: { reset: () => void }) {
+function ErrorBody({ error, reset }: { error: Error; reset: () => void }) {
   const { t, dir } = useI18n();
   const router = useRouter();
   return (
@@ -182,9 +183,11 @@ function ErrorBody({ reset }: { reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             type="button"
+            // A page file that failed to download is not fixed by running the
+            // router again, so for that error alone this reloads the page
+            // (src/lib/chunk-reload.ts); every other error retries in place.
             onClick={() => {
-              router.invalidate();
-              reset();
+              retryAfterError(error, { invalidate: () => router.invalidate(), reset });
             }}
             aria-label={t("state.retry")}
             className={cn(stateActionClass, ui.surface.inkControl)}

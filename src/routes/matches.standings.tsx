@@ -258,7 +258,9 @@ function StandingsPage() {
                     onClick={() => setView(option.value)}
                     // Four chips share one line; narrower than 360px each gives
                     // ground and truncates rather than scrolling one away.
-                    className="min-w-0 shrink max-[359px]:px-2"
+                    // As the Matchs filter row: the chip may shrink under 44px at 320px,
+                    // its hit area may not.
+                    className={cn("min-w-0 shrink max-[359px]:px-2", ui.hitFloor)}
                   >
                     <span className="min-w-0 truncate">{option.label}</span>
                   </UiChip>

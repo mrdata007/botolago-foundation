@@ -738,6 +738,22 @@ export const ui = {
    */
   hitArea:
     "relative after:absolute after:inset-0 after:m-auto after:h-[var(--ui-tap-min)] after:w-[var(--ui-tap-min)] after:content-['']",
+  /**
+   * `hitArea` for a control whose own size varies: a transparent target at
+   * least 44px each way, centred on the control and never smaller than it.
+   *
+   * `hitArea` is a fixed 44px box, which is right for a 16px checkbox and
+   * wrong for a text link that is 210px wide (it would shrink the target) or a
+   * chip that is already wider than 44px. This one is `max(100%, 44px)` on
+   * both axes: a link 21px tall gets 44px of height and keeps its full width;
+   * a chip squeezed to 40px at 320px keeps its height and gains 4px of width,
+   * which fits in the 4px gap between chips. Painted size and layout are
+   * untouched (the pseudo-element is out of flow). Same rules as `hitArea`:
+   * the element must not clip it, and anything overlapping it needs to sit
+   * above.
+   */
+  hitFloor:
+    "relative after:absolute after:inset-0 after:m-auto after:h-[max(100%,var(--ui-tap-min))] after:w-[max(100%,var(--ui-tap-min))] after:content-['']",
 
   focus:
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink-fg)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",

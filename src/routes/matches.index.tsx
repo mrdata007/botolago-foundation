@@ -623,7 +623,9 @@ function StatusFilters({
               // (the chip still says it, for assistive tech) and under 360
               // the chips tighten; shrinking with an ellipsis is only the
               // last resort, for text zoomed past all of that.
-              className="min-w-0 shrink max-[359px]:px-2"
+              // `min-w-0` lets the chip shrink under the kit's 44px floor on a 320px
+              // Arabic screen; the hit area keeps the 44px without widening the chip.
+              className={cn("min-w-0 shrink max-[359px]:px-2", ui.hitFloor)}
             >
               {live ? (
                 <span
