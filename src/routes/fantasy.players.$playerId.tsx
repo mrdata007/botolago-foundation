@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { prefetchForSsr, ssrAvailability, isServerRender } from "@/lib/ssr-prefetch";
+import { UNAVAILABLE, unavailableHeaders } from "@/lib/page-availability";
+import type { FantasyPlayer } from "@/types/fantasy";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Star } from "lucide-react";
 import { useId, type CSSProperties, type ReactNode } from "react";
@@ -39,39 +42,48 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
-  /**
-   * Named metadata for shared player links.
-   *
-   * The loader returns the whole player, not just its name, and the component
-   * seeds its query with it. That is what fixes the hydration failure this
-   * route used to throw on every single load (React #418, the only erroring
-   * route in the product):
-   *
-   * `src/router.tsx` builds a fresh `QueryClient` on each side and wires no
-   * SSR dehydrate/hydrate bridge, so the cache this loader warms exists ONLY
-   * on the server. The server therefore rendered a fully populated player
-   * page, while the browser's very first render — same component, empty cache
-   * — rendered the loading state. Two different trees for the same HTML, so
-   * React threw away the server tree and re-rendered from scratch, losing
-   * exactly the server-rendered markup this route's metadata exists to serve.
-   *
-   * Router loader data, unlike query state, IS serialized to the client. Using
-   * it as `initialData` makes both first renders identical, which is the
-   * actual requirement; it also means the page paints from the server payload
-   * instead of re-fetching what it already has.
-   */
+  // Load public identity once, preserving it for metadata and hydration. Missing
+  // players are 404; timeouts and failed reads are temporary 503 responses.
   loader: async ({ params, context }) => {
     try {
-      const player = await context.queryClient.ensureQueryData({
+      const options = {
         queryKey: ["fantasy-player", params.playerId],
-        queryFn: () => fantasyService.getPlayer(params.playerId),
-      });
-      return player ? { player } : null;
+        queryFn: async () => (await fantasyService.getPlayer(params.playerId)) ?? null,
+      };
+      if (isServerRender()) {
+        await prefetchForSsr(context.queryClient, [options]);
+        if (ssrAvailability(context.queryClient)) return UNAVAILABLE;
+      } else {
+        await context.queryClient.ensureQueryData(options);
+      }
     } catch {
-      return null;
+      return UNAVAILABLE;
     }
+    // A successful empty read proves absence; a failed read above does not.
+    const player = context.queryClient.getQueryData<FantasyPlayer | null>([
+      "fantasy-player",
+      params.playerId,
+    ]);
+    if (!player) throw notFound();
+    await prefetchForSsr(context.queryClient, [
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+      { queryKey: ["fixture-difficulty"], queryFn: () => fantasyService.getFixtureDifficulty() },
+      {
+        queryKey: ["fantasy-player-history", params.playerId],
+        queryFn: () => fantasyService.getPlayerGameweekHistory(params.playerId),
+      },
+    ]);
+    return { player, unavailable: !!ssrAvailability(context.queryClient) };
   },
-  head: ({ params, loaderData }) => fantasyPlayerHead(params.playerId, loaderData?.player.name.fr),
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
+  head: ({ params, loaderData }) =>
+    fantasyPlayerHead(
+      params.playerId,
+      loaderData && "player" in loaderData ? loaderData.player.name.fr : undefined,
+    ),
   component: PlayerDetailFramed,
 });
 
@@ -102,14 +114,13 @@ function PlayerDetailFramed() {
  * dot on the current gameweek: `FantasyPlayer` carries none of them, so none
  * of them is drawn.
  *
- * The per-gameweek history used to load only when its tab was opened. The
- * chart is on the page now, so it loads with the page — one read per player.
- * It is a client-only query: the server and the browser's first render both
- * show its skeleton, so the loader's hydration fix above is unaffected.
+ * Public history, club identity and upcoming fixtures are prefetched alongside
+ * the player and handed to the browser in the same query-cache snapshot.
  */
 function PlayerDetailPage() {
   const { playerId } = Route.useParams();
-  const loaderData = Route.useLoaderData();
+  const loaded = Route.useLoaderData();
+  const loaderData = loaded && "player" in loaded ? loaded : undefined;
   const { t, tr, lang } = useI18n();
   // A player is reached from the header search, a club's squad, the players
   // list, a Fantasy screen or a shared link: Retour goes back to whichever of

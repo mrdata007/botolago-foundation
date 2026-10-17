@@ -116,13 +116,19 @@ export function useFantasyScreen(
     }
     if (needsAuth && authStatus === "loading") return { ...base, phase: "loading" };
     if (needsAuth && isGuest) return { ...base, phase: "guest" };
-    if ((needsPlayers && playersQ.isError) || clubsQ.isError || gwQ.isError || owned.loadError) {
+    if (
+      (needsPlayers && playersQ.isError) ||
+      clubsQ.isError ||
+      gwQ.isError ||
+      (needsTeam && owned.loadError)
+    ) {
       return { ...base, phase: "error" };
     }
     if ((needsPlayers && !playersQ.data) || !clubsQ.data || !gwQ.data) {
       return { ...base, phase: "loading" };
     }
-    if (isCloud && owned.isLoading && !owned.snapshot) return { ...base, phase: "loading" };
+    if (needsTeam && isCloud && owned.isLoading && !owned.snapshot)
+      return { ...base, phase: "loading" };
     if (needsTeam && !base.team) return { ...base, phase: "no_team" };
     return { ...base, phase: "ready" };
     // eslint-disable-next-line react-hooks/exhaustive-deps

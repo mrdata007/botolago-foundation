@@ -1,0 +1,164 @@
+[
+  {
+    "phase": "before",
+    "name": "players",
+    "path": "/fantasy/players",
+    "status": 200,
+    "mainText": "RetourFantasyJoueursChargement…",
+    "recordSelector": "a[href^=\"/fantasy/players/\"]",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "player",
+    "path": "/fantasy/players/fp_rca_7",
+    "status": 200,
+    "mainText": "RetourFantasyJoueurATTAyoubEl KaabiPrix9,5MPoints118Forme8,6Minutes–Sélection51,2 %Dernières journéesPointsProchains matchsDifficulté 1–5ComparerRecruter · 9,5 M",
+    "recordSelector": "[data-fdr-fixture]",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "top",
+    "path": "/fantasy/top-players",
+    "status": 200,
+    "mainText": "RetourFantasyMeilleurs joueursLes meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.Journée1Chargement…",
+    "recordSelector": null,
+    "records": null
+  },
+  {
+    "phase": "before",
+    "name": "fixtures",
+    "path": "/fantasy/fixtures",
+    "status": 200,
+    "mainText": "RetourFantasyDifficulté des matchsChargement…Difficulté12345",
+    "recordSelector": "[data-fdr-fixture]",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "rankings",
+    "path": "/fantasy/rankings",
+    "status": 200,
+    "mainText": "RetourFantasyClassementGénéralJournéeMes liguesChargement…",
+    "recordSelector": "tbody tr",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "status": 200,
+    "mainText": "WACBotola Pro InwiWydad ACSuivre Wydad ACChargementAperçuMatchsClassementEffectifProchain matchActualitésStatistiques",
+    "recordSelector": "a[href^=\"/matches/\"]",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "squad",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001?tab=squad",
+    "status": 200,
+    "mainText": "WACBotola Pro InwiWydad ACSuivre Wydad ACChargementAperçuMatchsClassementEffectif",
+    "recordSelector": null,
+    "records": null
+  },
+  {
+    "phase": "before",
+    "name": "pepites",
+    "path": "/pepites/classement",
+    "status": 200,
+    "mainText": "TousSuivisClubMinutes min.600+ Minutes900+ Minutes1 200+ MinutesTri : RisingChargement…",
+    "recordSelector": "[data-testid=\"pepites-ranking-row\"]",
+    "records": 0
+  },
+  {
+    "phase": "before",
+    "name": "help",
+    "path": "/fantasy/help",
+    "status": 200,
+    "mainText": "RetourFantasyAide et règlesComment pouvons-nous vous aider ?Votre compte BotolaGOJe n’arrive pas à me connecter. Que faire ?J’ai créé une équipe mais je ne vois pas mon historique. Pouvez-vous lier mon compte ?Choisir votre effectifPuis-je avoir plusieurs équipes ?Puis-je modifier mon effectif après être entré dans le jeu ?Quel est le budget et quelles sont les contraintes de l’effectif ?Gérer votre équipeQuelles formations puis-je utiliser ?Comment changer mon capitaine ?Comment changer le nom de mon équipe ?Puis-je modifier mon équipe pendant une journée ?Comment fonctionnent les jetons (Joker, Free Hit, Bench Boost, Triple Capitaine) ?",
+    "recordSelector": "details",
+    "records": 0
+  },
+  {
+    "phase": "after",
+    "name": "players",
+    "path": "/fantasy/players",
+    "status": 200,
+    "mainText": "RetourFantasyJoueursTousGBDEFMILATTTousWACWydad ACRCARaja CAFARAS FARFUSFUS RabatRSBRS BerkaneMATMaghreb TétouanHUSHUSAMCOMouloudia OujdaPrix maximumTous les prix567891025 joueurs sur 47Trier parPointsFormePrixSélectionAyoub El KaabiATT · Raja CAForme 8,6 · Sél. 51,2 %9,5M118 ptsBen MalangoATT · Raja CAForme 7,9 · Sél. 38,4 %8,9M104 ptsSabir BougrineATT · AS FARForme 7,6 · Sél. 29,1 %7,8M98 ptsBouly SambouATT · Wydad ACForme 7,2 · Sél. 31,5 %8,0M96 ptsZouhair El MoutarajiMIL · Wydad ACForme 7,1 · Sél. 33,2 %7,4M95 ptsOussama LamlaouiMIL · AS FARForme 7,4 · Sél. 27,9 %7,0M92 ptsAchraf DariDEF · AS FARForme 6,6 · Sél. 39,2 %6,0M91 ptsYoussoupha MbodjiATT · RS BerkaneForme 7 · Sél. 24,4 %7,5M90 ptsAnas BachGB · AS FARForme 6 · Sél. 34,5 %5,2M89 ptsReda JaadiMIL · Wydad ACForme 6,9 · Sél. 24,6 %6,8M88 ptsYahya Attiat-AllahDEF · Wydad ACForme 6,4 · Sél. 42,1 %6,2M87 ptsIlias HaddadATT · FUS RabatForme 6,9 · Sél. 18,3 %7,2M85 ptsNassim BoujellabMIL · Raja CAForme 6,4 · Sél. 22 %6,9M84 ptsAhmed Reda TagnaoutiGB · Wydad ACForme 5,2 · Sél. 28,4 %5,0M82 ptsCassius MailulaATT · Wydad ACForme 6,5 · Sél. 18,9 %7,6M82 ptsAbdelilah HafidiBlesséMIL · Raja CAForme 6,2 · Sél. 24,3 %7,1M82 ptsKarim El BerkaouiATT · HUSAForme 6,6 · Sél. 16,1 %7,0M82 ptsBakr El HelaliMIL · RS BerkaneForme 6,5 · Sél. 20,5 %6,5M81 ptsReda SlimMIL · FUS RabatForme 6,3 · Sél. 15,4 %6,4M80 ptsAnass Salah-EddineDEF · AS FARForme 6,1 · Sél. 22,7 %5,7M79 ptsMohamed Rabie HrimatMIL · AS FARForme 6,8 · Sél. 19,5 %6,7M78 ptsAnas ZnitiGB · Raja CAForme 4,9 · Sél. 19,7 %4,8M76 ptsIssoufou DayoDEF · RS BerkaneForme 5,7 · Sél. 17,8 %5,4M76 ptsMohamed Ali BemammerMIL · HUSAForme 6 · Sél. 14,2 %6,1M76 ptsAdam AznouDEF · Wydad ACForme 5,6 · Sél. 15,1 %4,9M74 ptsPage 1 / 2",
+    "recordSelector": "a[href^=\"/fantasy/players/\"]",
+    "records": 25
+  },
+  {
+    "phase": "after",
+    "name": "player",
+    "path": "/fantasy/players/fp_rca_7",
+    "status": 200,
+    "mainText": "RetourFantasyJoueurATT · Raja CAAyoubEl KaabiPrix9,5MRCAPoints118Forme8,6Minutes–Sélection51,2 %Prochain matchFARvs AS FARExtérieurPoints attendus 8,4Difficulté 4Dernières journéesPointsAucune journée jouéeLes points de ce joueur apparaîtront ici dès les premiers matchs comptabilisés.Prochains matchsDifficulté 1–5J.14 · ExtérieurFARAS FARDifficulté 4J.15 · DomicileFUSFUS RabatDifficulté 1J.16 · ExtérieurRSBRS BerkaneJournée doubleDifficulté 3J.17 · DomicileMATMaghreb TétouanDifficulté 5J.18 · ExtérieurHUSHUSADifficulté 2ComparerRecruter · 9,5 M",
+    "recordSelector": "[data-fdr-fixture]",
+    "records": 0
+  },
+  {
+    "phase": "after",
+    "name": "top",
+    "path": "/fantasy/top-players",
+    "status": 200,
+    "mainText": "RetourFantasyMeilleurs joueursLes meilleurs joueurs de la journée selon leurs performances et leurs points Fantasy.Journée14Joueur de la semaineAyoubEl KaabiATT · Raja CARCA17PointsButs2Passes décisives1Cages inviolées0Minutes90Prix9,5Sélectionné par51,2 %Forme8,6Voir le joueurAjouter à la listeRecruter#2 – #5Ben MalangoATT · Raja CA1 Buts2 Passes décisives0 Cages inviolées90 minForme 7,9Sélectionné par 38,4 %15PointsSabir BougrineATT · AS FAR1 Buts1 Passes décisives0 Cages inviolées90 minForme 7,6Sélectionné par 29,1 %14Points#4Oussama LamlaouiMIL · AS FAR0 Buts2 Passes décisives0 Cages inviolées88 minForme 7,4Sélectionné par 27,9 %13Points#5Bouly SambouATT · Wydad AC1 Buts0 Passes décisives0 Cages inviolées84 minForme 7,2Sélectionné par 31,5 %12PointsComparaison des points#1 Kaabi17#2 Malango15#3 Bougrine14#4 Lamlaoui13#5 Sambou12",
+    "recordSelector": null,
+    "records": null
+  },
+  {
+    "phase": "after",
+    "name": "fixtures",
+    "path": "/fantasy/fixtures",
+    "status": 200,
+    "mainText": "RetourFantasyDifficulté des matchsDifficulté des matchsÉquipeJ.14J.15J.16J.17J.18J.19FARAS FARFUS (D)2FUS Rabat (Domicile), difficulté 2 sur 5RSB (E)4RS Berkane (Extérieur), difficulté 4 sur 5MAT (D)1Maghreb Tétouan (Domicile), difficulté 1 sur 5HUS (E)3Hassania Agadir (Extérieur), difficulté 3 sur 5MCO (D)5Mouloudia Oujda (Domicile), difficulté 5 sur 5WAC (E)2Wydad AC (Extérieur), difficulté 2 sur 5FUSFUS RabatRSB (E)5RS Berkane (Extérieur), difficulté 5 sur 5MAT (D)2Maghreb Tétouan (Domicile), difficulté 2 sur 5HUS (E)4Hassania Agadir (Extérieur), difficulté 4 sur 5MCO (D)1Mouloudia Oujda (Domicile), difficulté 1 sur 5WAC (E)3Wydad AC (Extérieur), difficulté 3 sur 5RCA (D)5Raja CA (Domicile), difficulté 5 sur 5HUSHUSAMCO (D)4Mouloudia Oujda (Domicile), difficulté 4 sur 5WAC (E)1Wydad AC (Extérieur), difficulté 1 sur 5RCA (D)3Raja CA (Domicile), difficulté 3 sur 5FAR (E)5AS FAR (Extérieur), difficulté 5 sur 5FUS (D)2FUS Rabat (Domicile), difficulté 2 sur 5RSB (E)4RS Berkane (Extérieur), difficulté 4 sur 5MATMaghreb TétouanHUS (E)1Hassania Agadir (Extérieur), difficulté 1 sur 5MCO (D)3Mouloudia Oujda (Domicile), difficulté 3 sur 5WAC (E)5Wydad AC (Extérieur), difficulté 5 sur 5RCA (D)2Raja CA (Domicile), difficulté 2 sur 5FAR (E)4AS FAR (Extérieur), difficulté 4 sur 5FUS (D)1FUS Rabat (Domicile), difficulté 1 sur 5MCOMouloudia OujdaWAC (E)2Wydad AC (Extérieur), difficulté 2 sur 5RCA (D)4Raja CA (Domicile), difficulté 4 sur 5FAR (E)1AS FAR (Extérieur), difficulté 1 sur 5FUS (D)3FUS Rabat (Domicile), difficulté 3 sur 5RSB (E)5RS Berkane (Extérieur), difficulté 5 sur 5MAT (D)2Maghreb Tétouan (Domicile), difficulté 2 sur 5RCARaja CAFAR (E)4AS FAR (Extérieur), difficulté 4 sur 5FUS (D)1FUS Rabat (Domicile), difficulté 1 sur 5RSB (E)3RS Berkane (Extérieur), difficulté 3 sur 5MAT (D)5Maghreb Tétouan (Domicile), difficulté 5 sur 5HUS (E)2Hassania Agadir (Extérieur), difficulté 2 sur 5MCO (D)4Mouloudia Oujda (Domicile), difficulté 4 sur 5RSBRS BerkaneMAT (D)3Maghreb Tétouan (Domicile), difficulté 3 sur 5HUS (E)5Hassania Agadir (Extérieur), difficulté 5 sur 5MCO (D)2Mouloudia Oujda (Domicile), difficulté 2 sur 5WAC (E)4Wydad AC (Extérieur), difficulté 4 sur 5RCA (D)1Raja CA (Domicile), difficulté 1 sur 5FAR (E)3AS FAR (Extérieur), difficulté 3 sur 5WACWydad ACRCA (D)1Raja CA (Domicile), difficulté 1 sur 5FAR (E)3AS FAR (Extérieur), difficulté 3 sur 5FUS (D)5FUS Rabat (Domicile), difficulté 5 sur 5RSB (E)2RS Berkane (Extérieur), difficulté 2 sur 5MAT (D)4Maghreb Tétouan (Domicile), difficulté 4 sur 5HUS (E)1Hassania Agadir (Extérieur), difficulté 1 sur 5Difficulté12345",
+    "recordSelector": "[data-fdr-fixture]",
+    "records": 48
+  },
+  {
+    "phase": "after",
+    "name": "rankings",
+    "path": "/fantasy/rankings",
+    "status": 200,
+    "mainText": "RetourFantasyClassementGénéralJournéeMes liguesMon classementClassement général#ManagerJ.Total+/−Mouvement1Aigles de RabatReda Z.621 599=Position inchangée2Aigles de FèsMeryem O.661 595▲En hausse43Étoiles d'OujdaAnas I.541 592▲En hausse24Lions de CasaKhadija E.581 591=Position inchangée5Panthères du RifHamza Z.461 588▼En baisse36Étoiles de MarrakechSofia N.501 584▲En hausse47Faucons de TangerMehdi I.381 581▲En hausse28Panthères de l'AtlasImane D.421 577▼En baisse19Panthères d'OujdaAchraf Z.641 576▲En hausse210Faucons de MarrakechSalma D.601 571▲En hausse411Panthères du SoussSara A.561 569▲En hausse112Panthères de FèsAyoub E.521 567▲En hausse313Lions du RifAmina K.641 564▼En baisse314Étoiles de l'AtlasZakaria O.601 559▼En baisse115Titans du DraaGhita Z.401 558▲En hausse116Cavaliers de MarrakechBilal E.361 553▲En hausse317Faucons de RabatHind I.481 550▼En baisse418Faucons de CasaOmar O.441 548▼En baisse119Corsaires du SoussImane B.371 546▲En hausse120Corsaires de FèsMehdi F.331 541▲En hausse421Dragons de CasaAnas L.671 540=Position inchangée22Dragons du DraaSofia R.631 535▲En hausse223Corsaires d'OujdaHamza B.591 533▼En baisse424Corsaires du RifImane F.551 531▼En baisse225Faucons de l'AtlasBilal M.321 527=Position inchangée500 managers classésPage 1 / 20",
+    "recordSelector": "tbody tr",
+    "records": 25
+  },
+  {
+    "phase": "after",
+    "name": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "status": 200,
+    "mainText": "WACBotola Pro Inwi · 2026/2027Wydad ACSuivre Wydad AC2026/2027Position2ePoints27Joués13Diff.+11AperçuMatchsClassementEffectifProchain matchlun. 12 oct.En direct63′J. 14WACWydad AC1FARAS FAR1ActualitésLe Wydad relance la course au titre après le derbyÀ la Uneil y a 3 heuresFantasy : les meilleurs choix pour la journée 14Fantasyil y a 5 heuresDerniers résultatsFormeVjeu. 08 oct.TerminéJ. 13RSBRS Berkane1WACWydad AC22026/2027StatistiquesBilanGagnés8Nuls3Perdus2ButsMarqués110,8 par matchEncaissés00,0 par matchTaux de victoire62 %Matchs sans encaisser0Matchs sans marquer0Domicile et extérieurDomicile et extérieurJMatches jouésGGagnésNNulsPPerdusButsÀ domicile00000–0À l'extérieur11002–1Plus large victoirejeu. 08 oct.TerminéJ. 13RSBRS Berkane1WACWydad AC2ClassementClassement complet1FARAS FAR13+14302WACWydad AC13+11273RCARaja CA13+8254RSBRS Berkane13+5235FUSFUS Rabat13+221",
+    "recordSelector": "a[href^=\"/matches/\"]",
+    "records": 3
+  },
+  {
+    "phase": "after",
+    "name": "squad",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001?tab=squad",
+    "status": 200,
+    "mainText": "WACBotola Pro Inwi · 2026/2027Wydad ACSuivre Wydad AC2026/2027Position2ePoints27Joués13Diff.+11AperçuMatchsClassementEffectifDéfenseurs2Mohamed NahiriYahya Attiat-Allah",
+    "recordSelector": null,
+    "records": null
+  },
+  {
+    "phase": "after",
+    "name": "pepites",
+    "path": "/pepites/classement",
+    "status": 200,
+    "mainText": "TousSuivisClubFARFUSHUSAIRTMASRajaRSBWydadMinutes min.600+ Minutes900+ Minutes1 200+ MinutesTri : Rising1Joueur exemple 1Raja Casablanca · ATT · ⁨18⁩ ans92RISINGRAJPercentiles · vs les U23 classésNote moyenne–Forme–Contribution–Progression–Temps de jeu–Classement complet#JoueurMinB/PDNoteScore1RAJJoueur exemple 1ATT · RajaAttaquantMinutes 1 350Buts / passes décisives 9/07,6922WYDJoueur exemple 2MIL · WydadMilieuMinutes 1 329Buts / passes décisives 1/17,6903FARJoueur exemple 3DEF · FARDéfenseurMinutes 1 308Buts / passes décisives 2/27,5884RSBJoueur exemple 4GB · RSBGardienMinutes 1 287Buts / passes décisives 0/37,5865FUSJoueur exemple 5ATT · FUSAttaquantMinutes 1 266Buts / passes décisives 8/47,5846MASJoueur exemple 6MIL · MASMilieuMinutes 1 245Buts / passes décisives 2/57,5837HUSJoueur exemple 7DEF · HUSADéfenseurMinutes 1 224Buts / passes décisives 0/07,4818IRTJoueur exemple 8GB · IRTGardienMinutes 1 203Buts / passes décisives 1/17,4799RAJJoueur exemple 9ATT · RajaAttaquantMinutes 1 182Buts / passes décisives 7/27,47710WYDJoueur exemple 10MIL · WydadMilieuMinutes 1 161Buts / passes décisives 0/37,37511FARJoueur exemple 11DEF · FARDéfenseurMinutes 1 140Buts / passes décisives 1/47,37312RSBJoueur exemple 12GB · RSBGardienMinutes 1 119Buts / passes décisives 2/57,37113FUSJoueur exemple 13ATT · FUSAttaquantMinutes 1 098Buts / passes décisives 6/07,26914MASJoueur exemple 14MIL · MASMilieuMinutes 1 077Buts / passes décisives 1/17,26715HUSJoueur exemple 15DEF · HUSADéfenseurMinutes 1 056Buts / passes décisives 2/27,26516IRTJoueur exemple 16GB · IRTGardienMinutes 1 035Buts / passes décisives 0/37,26417RAJJoueur exemple 17ATT · RajaAttaquantMinutes 1 014Buts / passes décisives 5/47,16218WYDJoueur exemple 18MIL · WydadMilieuMinutes 993Buts / passes décisives 2/57,16019FARJoueur exemple 19DEF · FARDéfenseurMinutes 972Buts / passes décisives 0/07,15820RSBJoueur exemple 20GB · RSBGardienMinutes 951Buts / passes décisives 1/17,056Classement U23#JoueurPosteÂgeMATCHSTITUL.MinButsPasses décisivesB+PD/90NoteForme2de moitiéScore1RAJJoueur exemple 1Raja CasablancaATT1815151 350900,607,67,4088%922WYDJoueur exemple 2Wydad ACMIL1915141 329110,607,67,3870%903FARJoueur exemple 3AS FARDEF2015131 308220,597,57,3655%884RSBJoueur exemple 4RS BerkaneGB2115121 287030,597,57,3450%865FUSJoueur exemple 5FUS RabatATT2215151 266840,587,57,3245%846MASJoueur exemple 6Maghreb FèsMIL1815141 245250,587,57,3088%837HUSJoueur exemple 7Hassania AgadirDEF1915131 224000,577,47,2870%818IRTJoueur exemple 8Ittihad TangerGB2015121 203110,577,47,2655%799RAJJoueur exemple 9Raja CasablancaATT2115151 182720,567,47,2450%7710WYDJoueur exemple 10Wydad ACMIL2215141 161030,567,37,2245%7511FARJoueur exemple 11AS FARDEF1815131 140140,557,37,2088%7312RSBJoueur exemple 12RS BerkaneGB1915121 119250,557,37,1870%7113FUSJoueur exemple 13FUS RabatATT2015151 098600,547,27,1655%6914MASJoueur exemple 14Maghreb FèsMIL2115141 077110,537,27,1450%6715HUSJoueur exemple 15Hassania AgadirDEF2215131 056220,537,27,1245%6516IRTJoueur exemple 16Ittihad TangerGB1815121 035030,527,27,1088%6417RAJJoueur exemple 17Raja CasablancaATT1915151 014540,517,17,0870%6218WYDJoueur exemple 18Wydad ACMIL201514993250,517,17,0655%6019FARJoueur exemple 19AS FARDEF211513972000,507,17,0450%5820RSBJoueur exemple 20RS BerkaneGB221512951110,497,07,0245%56Voir plusComment le classement est calculé",
+    "recordSelector": "[data-testid=\"pepites-ranking-row\"]",
+    "records": 20
+  },
+  {
+    "phase": "after",
+    "name": "help",
+    "path": "/fantasy/help",
+    "status": 200,
+    "mainText": "RetourFantasyAide et règlesComment pouvons-nous vous aider ?Votre compte BotolaGOJe n’arrive pas à me connecter. Que faire ?Vérifiez que vous utilisez l’adresse e-mail et le mot de passe de votre inscription. Le mot de passe est sensible à la casse. Si vous venez de créer votre compte, confirmez-le avec le code à 6 chiffres reçu par e-mail, sur l’écran « Vérification », avant d’enregistrer une équipe BotolaGO Fantasy. Pensez à vérifier votre dossier spam ; l’écran permet aussi de renvoyer le code. Vous pouvez réinitialiser votre mot de passe depuis l’écran de connexion : un lien vous sera envoyé à l’adresse enregistrée.J’ai créé une équipe mais je ne vois pas mon historique. Pouvez-vous lier mon compte ?L’historique BotolaGO Fantasy est attaché à votre compte BotolaGO. Connectez-vous avec le même compte que celui utilisé pour créer l’équipe. Une seule équipe est autorisée par compte et par saison.Choisir votre effectifPuis-je avoir plusieurs équipes ?Non. Chaque compte BotolaGO ne peut gérer qu’une seule équipe Fantasy par saison.Puis-je modifier mon effectif après être entré dans le jeu ?Oui. Avant la date limite de chaque journée, vous pouvez effectuer des transferts (1 transfert gratuit par journée, cumulable jusqu’à 2 ; chaque transfert supplémentaire coûte 4 points) et modifier votre onze, votre capitaine et votre vice-capitaine depuis « Composer l’équipe ».Quel est le budget et quelles sont les contraintes de l’effectif ?Vous disposez de 100.0 pour 15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, avec au maximum 3 joueurs du même club de Botola Pro.Gérer votre équipeQuelles formations puis-je utiliser ?Votre onze doit comprendre 1 gardien, au moins 3 défenseurs, au moins 2 milieux et au moins 1 attaquant : 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 ou 5-4-1.Comment changer mon capitaine ?Dans « Composer l’équipe », touchez un joueur titulaire puis « Nommer capitaine » ou « Nommer vice-capitaine ». Les points du capitaine sont doublés (triplés avec le Triple Capitaine). Si le capitaine ne joue pas, le vice-capitaine prend le relais.Comment changer le nom de mon équipe ?Le nom de l’équipe est défini lors de la création. Contactez l’équipe BotolaGO depuis votre profil pour toute modification.Puis-je modifier mon équipe pendant une journée ?Non. Les modifications sont verrouillées à la date limite (90 minutes avant le premier coup d’envoi de la journée) et rouvrent une fois la journée finalisée.Comment fonctionnent les jetons (Joker, Free Hit, Bench Boost, Triple Capitaine) ?Chaque jeton est utilisable une fois par saison (le Joker deux fois : première et seconde moitié de saison). Joker : transferts illimités et permanents. Free Hit : transferts illimités pour une seule journée, l’effectif est restauré ensuite. Bench Boost : les points des remplaçants comptent. Triple Capitaine : les points du capitaine sont triplés. Un seul jeton par journée.",
+    "recordSelector": "details",
+    "records": 10
+  }
+]

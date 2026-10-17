@@ -1,11 +1,7 @@
+import { prefetchForSsr, ssrAvailability, isServerRender } from "@/lib/ssr-prefetch";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
-import {
-  isMissingContent,
-  isUnavailable,
-  UNAVAILABLE,
-  unavailableHeaders,
-} from "@/lib/page-availability";
+import { isMissingContent, UNAVAILABLE, unavailableHeaders } from "@/lib/page-availability";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
@@ -76,35 +72,79 @@ export const Route = createFileRoute("/clubs/$clubId")({
       ...(season ? { season } : {}),
     };
   },
-  /**
-   * The club itself, in French, for the page title and so the server renders
-   * the hero rather than a spinner. As on the match page, loader data is
-   * serialized to the browser and the query cache is not, so the page seeds
-   * its query with it (`initialData`) and both first renders agree.
-   *
-   * An unknown or malformed club id is a 404 and a failed read a 503 (see
-   * `@/lib/page-availability`); both used to answer 200, the first with an
-   * indexable "Club introuvable".
-   */
-  loader: async ({ params, context }) => {
+  loaderDeps: ({ search }) => ({ season: search.season, tab: search.tab }),
+  loader: async ({ params, context, deps }) => {
     if (!UUID.test(params.clubId)) throw notFound();
+    const { queryClient } = context;
+    const queryKey = ["football", "club", params.clubId, "fr"];
+    const identity = { queryKey, queryFn: () => footballService.getClub(params.clubId, "fr") };
     try {
-      const queryKey = ["football", "club", params.clubId, "fr"];
-      const club = await context.queryClient.ensureQueryData({
-        queryKey,
-        queryFn: () => footballService.getClub(params.clubId, "fr"),
-      });
-      const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      return { club, fetchedAt };
+      if (isServerRender()) {
+        await prefetchForSsr(queryClient, [identity]);
+        const error = queryClient.getQueryState(queryKey)?.error;
+        if (error) throw error;
+        if (ssrAvailability(queryClient)) return UNAVAILABLE;
+      } else {
+        await queryClient.ensureQueryData(identity);
+      }
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
     }
+    const club = queryClient.getQueryData<Club>(queryKey)!;
+    const fetchedAt = queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
+    await prefetchForSsr(queryClient, [
+      {
+        queryKey: ["football", "seasons", "fr"],
+        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+      },
+    ]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    if (seasons) {
+      const season = seasons.find((item) => item.id === deps.season) ?? defaultSeason(seasons);
+      const squadSeason = season && !season.isCurrent ? season.id : null;
+      await prefetchForSsr(queryClient, [
+        {
+          queryKey: ["football", "club-matches", params.clubId, season?.id ?? "none", "fr"],
+          queryFn: () => footballService.getClubSeasonMatches(params.clubId, season ?? null, "fr"),
+        },
+        ...(season
+          ? [
+              {
+                queryKey: ["football", "standings", season.id, "fr"],
+                queryFn: ({ signal }: { signal: AbortSignal }) =>
+                  footballService.getStandings(season, "fr", signal),
+              },
+            ]
+          : []),
+        ...(deps.tab === "squad"
+          ? [
+              {
+                queryKey: ["football", "club-squad", params.clubId, squadSeason ?? "current", "fr"],
+                queryFn: () => footballService.getClubSquad(params.clubId, squadSeason, "fr"),
+              },
+            ]
+          : []),
+        ...(NEWS_ENABLED && !deps.tab
+          ? [
+              {
+                queryKey: ["news", "club", params.clubId, "fr"],
+                queryFn: async () =>
+                  newsArticlesForCategory(
+                    await newsService.getArticles("fr", { teamId: params.clubId }),
+                    "latest",
+                  ).slice(0, CLUB_NEWS_COUNT),
+              },
+            ]
+          : []),
+      ]);
+    }
+    return { club, fetchedAt, unavailable: !!ssrAvailability(queryClient) };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
-    const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
+    const club = loaderData && "club" in loaderData ? loaderData.club : undefined;
     const name = club?.name.fr;
     const title = name
       ? `${name} — matchs, classement et effectif | BotolaGO`
@@ -182,7 +222,7 @@ function ClubPage() {
   const search = Route.useSearch();
   const tab: ClubTabKey = search.tab ?? "overview";
   const loaded = Route.useLoaderData();
-  const loaderData = isUnavailable(loaded) ? undefined : loaded;
+  const loaderData = loaded && "club" in loaded ? loaded : undefined;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
   const goBack = useBackTo("/clubs");

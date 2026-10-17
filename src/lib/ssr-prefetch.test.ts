@@ -222,3 +222,16 @@ describe("server-rendered page data", () => {
     });
   });
 });
+
+test("a rendered observer cannot erase the SSR handover, and another request is not opted in", async () => {
+  onServer();
+  const server = client();
+  const key = ["public-directory"];
+  await prefetchForSsr(server, [{ queryKey: key, queryFn: async () => ["Player"] }]);
+  const query = server.getQueryCache().find({ queryKey: key })!;
+  query.setOptions({ queryKey: key }); // What an observer without meta does.
+  expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toHaveLength(1);
+  const other = client();
+  other.setQueryData(key, ["private to another request"]);
+  expect(dehydrate(other, SSR_DEHYDRATE_OPTIONS).queries).toHaveLength(0);
+});

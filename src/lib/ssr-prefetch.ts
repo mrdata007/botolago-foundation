@@ -33,6 +33,10 @@ export const SSR_PREFETCH_BUDGET_MS = 3_000;
 /** Each render's deadline. The server makes a query client per request (`src/router.tsx`). */
 const renderDeadlines = new WeakMap<QueryClient, number>();
 const renderQueries = new WeakMap<QueryClient, QueryKey[]>();
+// Observers can replace query.meta during rendering. Remember the actual
+// prefetched query object, never a global key that could cross request/account
+// boundaries, so the final dehydrated snapshot still contains its public data.
+const prefetchedQueries = new WeakSet<object>();
 
 /** Failed or timed-out public reads are temporary failures, never empty 200 pages. */
 export function ssrAvailability(queryClient: QueryClient) {
@@ -76,11 +80,16 @@ async function prefetchStep(
       queryKeys.map((queryKey) => queryClient.cancelQueries({ queryKey, exact: true })),
     );
   }
+  for (const queryKey of queryKeys) {
+    const query = queryClient.getQueryCache().find({ queryKey, exact: true });
+    if (query) prefetchedQueries.add(query);
+  }
 }
 
 /** What the router hands from the server to the browser: marked, loaded queries only. */
 export const SSR_DEHYDRATE_OPTIONS: DehydrateOptions = {
-  shouldDehydrateQuery: (query) => query.state.status === "success" && query.meta?.ssr === true,
+  shouldDehydrateQuery: (query) =>
+    query.state.status === "success" && (query.meta?.ssr === true || prefetchedQueries.has(query)),
 };
 
 export interface SsrQuery {

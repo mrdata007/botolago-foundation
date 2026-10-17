@@ -28,7 +28,10 @@ function failingCache(error: unknown) {
       ensureQueryData: async () => {
         throw error;
       },
-      getQueryState: () => undefined,
+      // prefetchQuery records failure rather than throwing (TanStack Query).
+      prefetchQuery: async () => {},
+      getQueryCache: () => ({ find: () => undefined }),
+      getQueryState: () => ({ status: "error", error }),
     },
   };
 }
