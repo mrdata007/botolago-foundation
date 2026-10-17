@@ -20,6 +20,7 @@ import {
 } from "@/components/legal/consent-segments";
 import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
+import { socialSignInErrorKey } from "@/auth/social-error";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
@@ -164,7 +165,7 @@ function RegisterPage() {
         : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.generic" });
+      setErrors({ form: socialSignInErrorKey(res.errorCode) });
       return;
     }
     markWelcomeDone();

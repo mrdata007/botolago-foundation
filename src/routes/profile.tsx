@@ -175,7 +175,15 @@ function RowInner({ icon, label, value, tone = "default", chevron = true }: RowC
         {label}
       </span>
       {value !== undefined ? (
-        <span className={cn("shrink-0 whitespace-nowrap", ui.text.meta, ui.tone.muted)}>
+        <span
+          className={cn(
+            // Shrinks and breaks anywhere only when the row is too narrow for
+            // it (an e-mail address at 320px and 200% text, 19px past the edge).
+            "min-w-0 [overflow-wrap:anywhere]",
+            ui.text.meta,
+            ui.tone.muted,
+          )}
+        >
           {value}
         </span>
       ) : null}

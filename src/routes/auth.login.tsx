@@ -16,6 +16,7 @@ import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { WebOnly } from "@/components/native/WebOnly";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
+import { socialSignInErrorKey } from "@/auth/social-error";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -205,7 +206,7 @@ function LoginPage() {
         : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.generic" });
+      setErrors({ form: socialSignInErrorKey(res.errorCode) });
       return;
     }
     continueAfterAuth(res.status, res.data?.profileComplete);

@@ -203,3 +203,40 @@ export function cleanAuthCallbackUrl(rawUrl: string): string {
   clean.hash = "";
   return clean.toString();
 }
+
+/**
+ * Whether a provider's own refusal says that the provider is not switched on
+ * in Supabase Auth (`error_code=provider_disabled`, or `validation_failed` with
+ * "Unsupported provider: provider is not enabled"). Read from an `/authorize`
+ * answer's JSON and from the error a redirect carries back to `/auth/callback`.
+ */
+export function isProviderOffReason(code: unknown, message: unknown): boolean {
+  const errorCode = typeof code === "string" ? code.toLowerCase() : "";
+  const text = typeof message === "string" ? message.toLowerCase() : "";
+  if (errorCode === "provider_disabled") return true;
+  if (text.includes("provider is not enabled") || text.includes("unsupported provider")) {
+    return true;
+  }
+  return errorCode === "validation_failed" && text.includes("provider");
+}
+
+/**
+ * What an auth redirect's query and hash say went wrong, or `null` when they
+ * carry no error. Supabase reports a failed provider sign-in as
+ * `?error=…&error_code=…&error_description=…` (or the same in the hash);
+ * a provider that is switched off is told apart so the page can say so,
+ * instead of "the link is invalid or has expired".
+ */
+export function authReturnError(
+  query: URLSearchParams,
+  hash: URLSearchParams,
+): "provider_unavailable" | "callback_error" | null {
+  const pick = (key: string) => query.get(key) ?? hash.get(key);
+  const failed = [query, hash].some(
+    (params) => params.has("error_description") || params.has("error_code"),
+  );
+  if (!failed) return null;
+  return isProviderOffReason(pick("error_code") ?? pick("error"), pick("error_description"))
+    ? "provider_unavailable"
+    : "callback_error";
+}
