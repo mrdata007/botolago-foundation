@@ -1,0 +1,17 @@
+{
+  "persona": "Mobile first-time user",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "network": {
+    "latencyMs": 2000,
+    "downloadBytesPerSecond": 50000,
+    "uploadBytesPerSecond": 50000
+  },
+  "limitation": "Vite development payload differs from shipped production build. No production writes.",
+  "steps": [],
+  "errors": [],
+  "error": "TimeoutError: page.screenshot: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n",
+  "elapsedMs": 24590
+}

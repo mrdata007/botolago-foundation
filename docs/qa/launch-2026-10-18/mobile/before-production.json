@@ -1,0 +1,89 @@
+{
+  "persona": "Mobile first-time user",
+  "phase": "before",
+  "productionBuild": true,
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "network": {
+    "latencyMs": 2000,
+    "downloadBytesPerSecond": 50000,
+    "uploadBytesPerSecond": 50000
+  },
+  "browserCertificateException": "Ignore certificate errors for sandbox TLS interception",
+  "steps": [
+    {
+      "name": "01-language-choice",
+      "elapsedMs": 73859,
+      "url": "http://127.0.0.1:4173/",
+      "text": "Choisissez votre langue\n\nاختر لغتك\n\nFrançais\nActualité & Fantasy du football marocain\nالعربية\nأخبار وفانتازي كرة القدم المغربية\n\nContinuer",
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "text": "FrançaisActualité & Fantasy du football marocain",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 384.5078125,
+            "width": 295,
+            "height": 67.390625
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "العربيةأخبار وفانتازي كرة القدم المغربية",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 463.8984375,
+            "width": 295,
+            "height": 79.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Continuer",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 567.0859375,
+            "width": 295,
+            "height": 48
+          }
+        }
+      ],
+      "overflow": []
+    },
+    {
+      "name": "02-landing",
+      "elapsedMs": 77946,
+      "url": "http://127.0.0.1:4173/",
+      "text": "",
+      "controls": [],
+      "overflow": []
+    }
+  ],
+  "errors": [],
+  "requestsFailed": [
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "success": false,
+  "navigation": {
+    "action": "Clicked bottom Matchs navigation",
+    "reason": "Explicit Voir les matchs et résultats CTA absent"
+  },
+  "error": "TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Matchs', exact: true }).last()\u001b[22m\n",
+  "elapsedMs": 87976
+}

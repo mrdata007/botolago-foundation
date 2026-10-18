@@ -1,0 +1,1925 @@
+{
+  "persona": "Mobile first-time user",
+  "phase": "after",
+  "productionBuild": true,
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "network": {
+    "latencyMs": 2000,
+    "downloadBytesPerSecond": 50000,
+    "uploadBytesPerSecond": 50000
+  },
+  "browserCertificateException": "Ignore certificate errors for sandbox TLS interception",
+  "steps": [
+    {
+      "name": "01-language-choice",
+      "elapsedMs": 74044,
+      "url": "http://127.0.0.1:4173/",
+      "text": "Chargement…\n\nVoir les matchs et résultats\nChoisissez votre langue\n\nاختر لغتك\n\nFrançais\nActualité & Fantasy du football marocain\nالعربية\nأخبار وفانتازي كرة القدم المغربية\n\nContinuer",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Voir les matchs et résultats",
+          "href": "/matches",
+          "rect": {
+            "x": 86.796875,
+            "y": 440.875,
+            "width": 201.40625,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FrançaisActualité & Fantasy du football marocain",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 384.5078125,
+            "width": 295,
+            "height": 67.390625
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "العربيةأخبار وفانتازي كرة القدم المغربية",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 463.8984375,
+            "width": 295,
+            "height": 79.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Continuer",
+          "href": null,
+          "rect": {
+            "x": 40,
+            "y": 567.0859375,
+            "width": 295,
+            "height": 48
+          }
+        }
+      ],
+      "overflow": []
+    },
+    {
+      "name": "02-landing",
+      "elapsedMs": 78165,
+      "url": "http://127.0.0.1:4173/",
+      "text": "Chargement…\n\nVoir les matchs et résultats",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Voir les matchs et résultats",
+          "href": "/matches",
+          "rect": {
+            "x": 86.796875,
+            "y": 440.875,
+            "width": 201.40625,
+            "height": 44
+          }
+        }
+      ],
+      "overflow": []
+    },
+    {
+      "name": "03-match-list",
+      "elapsedMs": 83275,
+      "url": "http://127.0.0.1:4173/matches",
+      "text": "Aller au contenu\nFR\nMatchs\n2026/2027\nCalendrier\nClassement\nPronostics\nWID\nKAW\nWID\n0\n–\n1\nKAW\n60′\nTous\nEn direct\nÀ venir\nRésultats\nDimanche 18 octobre\n\nAUJOURD'HUI\n\nDIM.\n11\nLUN.\n12\nMAR.\n13\nMER.\n14\nJEU.\n15\nVEN.\n16\nSAM.\n17\nAUJOURD'HUI\n18\nLUN.\n19\nMAR.\n20\nMER.\n21\nJEU.\n22\nVEN.\n23\nSAM.\n24\nDIM.\n25\nAccueil\nActualités\nFantasy\nMatchs\nProspects",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "rect": {
+            "x": -1,
+            "y": -1,
+            "width": 1,
+            "height": 1
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Rechercher",
+          "href": null,
+          "rect": {
+            "x": 211,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "rect": {
+            "x": 263,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Profil",
+          "href": "/profile",
+          "rect": {
+            "x": 315,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "2026/2027",
+          "href": null,
+          "rect": {
+            "x": 240.6875,
+            "y": 73,
+            "width": 118.3125,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Calendrier",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Classement",
+          "href": null,
+          "rect": {
+            "x": 125,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Pronostics",
+          "href": null,
+          "rect": {
+            "x": 250,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "A",
+          "text": "WIDKAWWID0–1KAW60′",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "rect": {
+            "x": 16,
+            "y": 181.5,
+            "width": 238.609375,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Tous",
+          "href": null,
+          "rect": {
+            "x": 16,
+            "y": 234,
+            "width": 54.0625,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "En direct",
+          "href": null,
+          "rect": {
+            "x": 76.0625,
+            "y": 234,
+            "width": 80,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "À venir",
+          "href": null,
+          "rect": {
+            "x": 162.0625,
+            "y": 234,
+            "width": 66.84375,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Résultats",
+          "href": null,
+          "rect": {
+            "x": 234.90625,
+            "y": 234,
+            "width": 85.015625,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour précédent",
+          "href": null,
+          "rect": {
+            "x": 16,
+            "y": 303.140625,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour suivant",
+          "href": null,
+          "rect": {
+            "x": 315,
+            "y": 303.140625,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.11",
+          "href": null,
+          "rect": {
+            "x": -217,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.12",
+          "href": null,
+          "rect": {
+            "x": -167,
+            "y": 373.296875,
+            "width": 44.5625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.13",
+          "href": null,
+          "rect": {
+            "x": -116.4375,
+            "y": 373.296875,
+            "width": 46.921875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.14",
+          "href": null,
+          "rect": {
+            "x": -63.515625,
+            "y": 373.296875,
+            "width": 46.046875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.15",
+          "href": null,
+          "rect": {
+            "x": -11.46875,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.16",
+          "href": null,
+          "rect": {
+            "x": 38.53125,
+            "y": 373.296875,
+            "width": 44.21875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.17",
+          "href": null,
+          "rect": {
+            "x": 88.75,
+            "y": 373.296875,
+            "width": 46.84375,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Aujourd'hui18",
+          "href": null,
+          "rect": {
+            "x": 141.59375,
+            "y": 373.296875,
+            "width": 92.265625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.19",
+          "href": null,
+          "rect": {
+            "x": 239.859375,
+            "y": 373.296875,
+            "width": 44.5625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.20",
+          "href": null,
+          "rect": {
+            "x": 290.421875,
+            "y": 373.296875,
+            "width": 46.921875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.21",
+          "href": null,
+          "rect": {
+            "x": 343.34375,
+            "y": 373.296875,
+            "width": 46.046875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.22",
+          "href": null,
+          "rect": {
+            "x": 395.390625,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.23",
+          "href": null,
+          "rect": {
+            "x": 445.390625,
+            "y": 373.296875,
+            "width": 44.21875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.24",
+          "href": null,
+          "rect": {
+            "x": 495.609375,
+            "y": 373.296875,
+            "width": 46.84375,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.25",
+          "href": null,
+          "rect": {
+            "x": 548.453125,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 8,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 79.796875,
+            "y": 744.609375,
+            "width": 71.8125,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 151.609375,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 223.40625,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 295.203125,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        }
+      ],
+      "overflow": [
+        {
+          "tag": "DIV",
+          "text": "dim.11",
+          "left": -217,
+          "right": -173
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.11",
+          "left": -217,
+          "right": -173
+        },
+        {
+          "tag": "SPAN",
+          "text": "dim.",
+          "left": -206.515625,
+          "right": -183.5
+        },
+        {
+          "tag": "SPAN",
+          "text": "11",
+          "left": -205.375,
+          "right": -184.625
+        },
+        {
+          "tag": "DIV",
+          "text": "lun.12",
+          "left": -167,
+          "right": -122.4375
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.12",
+          "left": -167,
+          "right": -122.4375
+        },
+        {
+          "tag": "SPAN",
+          "text": "lun.",
+          "left": -157,
+          "right": -132.4375
+        },
+        {
+          "tag": "SPAN",
+          "text": "12",
+          "left": -155.09375,
+          "right": -134.34375
+        },
+        {
+          "tag": "DIV",
+          "text": "mar.13",
+          "left": -116.4375,
+          "right": -69.515625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.13",
+          "left": -116.4375,
+          "right": -69.515625
+        },
+        {
+          "tag": "SPAN",
+          "text": "mar.",
+          "left": -106.4375,
+          "right": -79.515625
+        },
+        {
+          "tag": "SPAN",
+          "text": "13",
+          "left": -103.359375,
+          "right": -82.609375
+        },
+        {
+          "tag": "DIV",
+          "text": "mer.14",
+          "left": -63.515625,
+          "right": -17.46875
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.14",
+          "left": -63.515625,
+          "right": -17.46875
+        },
+        {
+          "tag": "SPAN",
+          "text": "mer.",
+          "left": -53.515625,
+          "right": -27.46875
+        },
+        {
+          "tag": "SPAN",
+          "text": "14",
+          "left": -50.875,
+          "right": -30.125
+        },
+        {
+          "tag": "DIV",
+          "text": "jeu.15",
+          "left": -11.46875,
+          "right": 32.53125
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.15",
+          "left": -11.46875,
+          "right": 32.53125
+        },
+        {
+          "tag": "DIV",
+          "text": "mer.21",
+          "left": 343.34375,
+          "right": 389.390625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.21",
+          "left": 343.34375,
+          "right": 389.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "mer.",
+          "left": 353.34375,
+          "right": 379.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "21",
+          "left": 355.984375,
+          "right": 376.734375
+        },
+        {
+          "tag": "DIV",
+          "text": "jeu.22",
+          "left": 395.390625,
+          "right": 439.390625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.22",
+          "left": 395.390625,
+          "right": 439.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "jeu.",
+          "left": 406.109375,
+          "right": 428.65625
+        },
+        {
+          "tag": "SPAN",
+          "text": "22",
+          "left": 407.015625,
+          "right": 427.765625
+        },
+        {
+          "tag": "DIV",
+          "text": "ven.23",
+          "left": 445.390625,
+          "right": 489.609375
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.23",
+          "left": 445.390625,
+          "right": 489.609375
+        },
+        {
+          "tag": "SPAN",
+          "text": "ven.",
+          "left": 455.390625,
+          "right": 479.609375
+        },
+        {
+          "tag": "SPAN",
+          "text": "23",
+          "left": 457.125,
+          "right": 477.875
+        }
+      ]
+    },
+    {
+      "name": "03b-match-list-loaded",
+      "elapsedMs": 83371,
+      "url": "http://127.0.0.1:4173/matches",
+      "text": "Aller au contenu\nFR\nMatchs\n2026/2027\nCalendrier\nClassement\nPronostics\nWID\nKAW\nWID\n0\n–\n1\nKAW\n60′\nTous\nEn direct\nÀ venir\nRésultats\nDimanche 18 octobre\n\nAUJOURD'HUI\n\nDIM.\n11\nLUN.\n12\nMAR.\n13\nMER.\n14\nJEU.\n15\nVEN.\n16\nSAM.\n17\nAUJOURD'HUI\n18\nLUN.\n19\nMAR.\n20\nMER.\n21\nJEU.\n22\nVEN.\n23\nSAM.\n24\nDIM.\n25\nAccueil\nActualités\nFantasy\nMatchs\nProspects",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "rect": {
+            "x": -1,
+            "y": -1,
+            "width": 1,
+            "height": 1
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Rechercher",
+          "href": null,
+          "rect": {
+            "x": 211,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "rect": {
+            "x": 263,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Profil",
+          "href": "/profile",
+          "rect": {
+            "x": 315,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "2026/2027",
+          "href": null,
+          "rect": {
+            "x": 240.6875,
+            "y": 73,
+            "width": 118.3125,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Calendrier",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Classement",
+          "href": null,
+          "rect": {
+            "x": 125,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Pronostics",
+          "href": null,
+          "rect": {
+            "x": 250,
+            "y": 129,
+            "width": 125,
+            "height": 48
+          }
+        },
+        {
+          "tag": "A",
+          "text": "WIDKAWWID0–1KAW60′",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "rect": {
+            "x": 16,
+            "y": 181.5,
+            "width": 238.609375,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Tous",
+          "href": null,
+          "rect": {
+            "x": 16,
+            "y": 234,
+            "width": 54.0625,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "En direct",
+          "href": null,
+          "rect": {
+            "x": 76.0625,
+            "y": 234,
+            "width": 80,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "À venir",
+          "href": null,
+          "rect": {
+            "x": 162.0625,
+            "y": 234,
+            "width": 66.84375,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Résultats",
+          "href": null,
+          "rect": {
+            "x": 234.90625,
+            "y": 234,
+            "width": 85.015625,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour précédent",
+          "href": null,
+          "rect": {
+            "x": 16,
+            "y": 303.140625,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour suivant",
+          "href": null,
+          "rect": {
+            "x": 315,
+            "y": 303.140625,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.11",
+          "href": null,
+          "rect": {
+            "x": -217,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.12",
+          "href": null,
+          "rect": {
+            "x": -167,
+            "y": 373.296875,
+            "width": 44.5625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.13",
+          "href": null,
+          "rect": {
+            "x": -116.4375,
+            "y": 373.296875,
+            "width": 46.921875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.14",
+          "href": null,
+          "rect": {
+            "x": -63.515625,
+            "y": 373.296875,
+            "width": 46.046875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.15",
+          "href": null,
+          "rect": {
+            "x": -11.46875,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.16",
+          "href": null,
+          "rect": {
+            "x": 38.53125,
+            "y": 373.296875,
+            "width": 44.21875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.17",
+          "href": null,
+          "rect": {
+            "x": 88.75,
+            "y": 373.296875,
+            "width": 46.84375,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Aujourd'hui18",
+          "href": null,
+          "rect": {
+            "x": 141.59375,
+            "y": 373.296875,
+            "width": 92.265625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.19",
+          "href": null,
+          "rect": {
+            "x": 239.859375,
+            "y": 373.296875,
+            "width": 44.5625,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.20",
+          "href": null,
+          "rect": {
+            "x": 290.421875,
+            "y": 373.296875,
+            "width": 46.921875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.21",
+          "href": null,
+          "rect": {
+            "x": 343.34375,
+            "y": 373.296875,
+            "width": 46.046875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.22",
+          "href": null,
+          "rect": {
+            "x": 395.390625,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.23",
+          "href": null,
+          "rect": {
+            "x": 445.390625,
+            "y": 373.296875,
+            "width": 44.21875,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.24",
+          "href": null,
+          "rect": {
+            "x": 495.609375,
+            "y": 373.296875,
+            "width": 46.84375,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.25",
+          "href": null,
+          "rect": {
+            "x": 548.453125,
+            "y": 373.296875,
+            "width": 44,
+            "height": 51.1875
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 8,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 79.796875,
+            "y": 744.609375,
+            "width": 71.8125,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 151.609375,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 223.40625,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 295.203125,
+            "y": 744.609375,
+            "width": 71.796875,
+            "height": 59.390625
+          }
+        }
+      ],
+      "overflow": [
+        {
+          "tag": "DIV",
+          "text": "dim.11",
+          "left": -217,
+          "right": -173
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.11",
+          "left": -217,
+          "right": -173
+        },
+        {
+          "tag": "SPAN",
+          "text": "dim.",
+          "left": -206.515625,
+          "right": -183.5
+        },
+        {
+          "tag": "SPAN",
+          "text": "11",
+          "left": -205.375,
+          "right": -184.625
+        },
+        {
+          "tag": "DIV",
+          "text": "lun.12",
+          "left": -167,
+          "right": -122.4375
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.12",
+          "left": -167,
+          "right": -122.4375
+        },
+        {
+          "tag": "SPAN",
+          "text": "lun.",
+          "left": -157,
+          "right": -132.4375
+        },
+        {
+          "tag": "SPAN",
+          "text": "12",
+          "left": -155.09375,
+          "right": -134.34375
+        },
+        {
+          "tag": "DIV",
+          "text": "mar.13",
+          "left": -116.4375,
+          "right": -69.515625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.13",
+          "left": -116.4375,
+          "right": -69.515625
+        },
+        {
+          "tag": "SPAN",
+          "text": "mar.",
+          "left": -106.4375,
+          "right": -79.515625
+        },
+        {
+          "tag": "SPAN",
+          "text": "13",
+          "left": -103.359375,
+          "right": -82.609375
+        },
+        {
+          "tag": "DIV",
+          "text": "mer.14",
+          "left": -63.515625,
+          "right": -17.46875
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.14",
+          "left": -63.515625,
+          "right": -17.46875
+        },
+        {
+          "tag": "SPAN",
+          "text": "mer.",
+          "left": -53.515625,
+          "right": -27.46875
+        },
+        {
+          "tag": "SPAN",
+          "text": "14",
+          "left": -50.875,
+          "right": -30.125
+        },
+        {
+          "tag": "DIV",
+          "text": "jeu.15",
+          "left": -11.46875,
+          "right": 32.53125
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.15",
+          "left": -11.46875,
+          "right": 32.53125
+        },
+        {
+          "tag": "DIV",
+          "text": "mer.21",
+          "left": 343.34375,
+          "right": 389.390625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.21",
+          "left": 343.34375,
+          "right": 389.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "mer.",
+          "left": 353.34375,
+          "right": 379.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "21",
+          "left": 355.984375,
+          "right": 376.734375
+        },
+        {
+          "tag": "DIV",
+          "text": "jeu.22",
+          "left": 395.390625,
+          "right": 439.390625
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.22",
+          "left": 395.390625,
+          "right": 439.390625
+        },
+        {
+          "tag": "SPAN",
+          "text": "jeu.",
+          "left": 406.109375,
+          "right": 428.65625
+        },
+        {
+          "tag": "SPAN",
+          "text": "22",
+          "left": 407.015625,
+          "right": 427.765625
+        },
+        {
+          "tag": "DIV",
+          "text": "ven.23",
+          "left": 445.390625,
+          "right": 489.609375
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.23",
+          "left": 445.390625,
+          "right": 489.609375
+        },
+        {
+          "tag": "SPAN",
+          "text": "ven.",
+          "left": 455.390625,
+          "right": 479.609375
+        },
+        {
+          "tag": "SPAN",
+          "text": "23",
+          "left": 457.125,
+          "right": 477.875
+        }
+      ]
+    },
+    {
+      "name": "04-first-result-detail",
+      "elapsedMs": 88557,
+      "url": "http://127.0.0.1:4173/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+      "text": "Aller au contenu\nFR\nChargement…",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Rechercher",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Profil",
+          "href": "/profile",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "2026/2027",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Calendrier",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Classement",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Pronostics",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "WIDKAWWID0–1KAW60′",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Tous",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "En direct",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "À venir",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Résultats",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour précédent",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Jour suivant",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.11",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.12",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.13",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.14",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.15",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.16",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.17",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Aujourd'hui18",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "lun.19",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mar.20",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "mer.21",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "jeu.22",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ven.23",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "sam.24",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "dim.25",
+          "href": null,
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "rect": {
+            "x": -1,
+            "y": -1,
+            "width": 1,
+            "height": 1
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Rechercher",
+          "href": null,
+          "rect": {
+            "x": 211,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "rect": {
+            "x": 263,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        },
+        {
+          "tag": "A",
+          "text": "Profil",
+          "href": "/profile",
+          "rect": {
+            "x": 315,
+            "y": 12,
+            "width": 44,
+            "height": 44
+          }
+        }
+      ],
+      "overflow": []
+    }
+  ],
+  "errors": [],
+  "requestsFailed": [
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
+      "failure": "net::ERR_ABORTED"
+    }
+  ],
+  "success": true,
+  "navigation": {
+    "action": "Clicked Voir les matchs et résultats",
+    "reason": "Literal landing CTA"
+  },
+  "firstResult": {
+    "text": "WID\nKAW\nWID\n0\n–\n1\nKAW\n60′",
+    "accessibleLabel": "Score : Widad Témara 0, Kawkab Marrakech 1 — 60′",
+    "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5"
+  },
+  "successDefinition": "Reached an actual scored football match detail through visible UI without signup",
+  "elapsedMs": 88585
+}

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
+import { useAuthDraftField } from "@/auth/use-auth-draft-field";
 import { AtSign, Loader2, Lock, Mail, User } from "lucide-react";
 import {
   AuthShell,
@@ -89,9 +90,9 @@ function RegisterPage() {
     cpw: useId(),
   };
 
-  const [fullName, setFullName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [fullName, setFullName, clearNameDraft] = useAuthDraftField("register.fullName");
+  const [username, setUsername, clearUsernameDraft] = useAuthDraftField("register.username");
+  const [email, setEmail, clearEmailDraft] = useAuthDraftField("register.email");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [terms, setTerms] = useState(false);
@@ -152,6 +153,9 @@ function RegisterPage() {
     }
     // The account exists and waits for its e-mail code: the funnel's
     // "sign-up started", counted once the server accepted it.
+    clearNameDraft();
+    clearUsernameDraft();
+    clearEmailDraft();
     track("signup_submitted");
     toast.success(t("auth.success.register"));
     navigate({ to: "/auth/verify", search: { email: res.data!.email, next } });
@@ -168,6 +172,9 @@ function RegisterPage() {
       setErrors({ form: socialSignInErrorKey(res.errorCode) });
       return;
     }
+    clearNameDraft();
+    clearUsernameDraft();
+    clearEmailDraft();
     markWelcomeDone();
     if (res.data?.profileComplete) {
       navigate(authLanding(next));

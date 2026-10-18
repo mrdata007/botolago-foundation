@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useId } from "react";
+import { useAuthDraftField } from "@/auth/use-auth-draft-field";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -160,7 +161,7 @@ function LoginPage() {
     setFailedRetries(0);
   };
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail, clearEmailDraft] = useAuthDraftField("login.email");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<{
@@ -195,6 +196,7 @@ function LoginPage() {
       });
       return;
     }
+    clearEmailDraft();
     continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
@@ -209,6 +211,7 @@ function LoginPage() {
       setErrors({ form: socialSignInErrorKey(res.errorCode) });
       return;
     }
+    clearEmailDraft();
     continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
