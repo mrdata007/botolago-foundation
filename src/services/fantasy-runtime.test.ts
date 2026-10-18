@@ -285,6 +285,45 @@ describe("a gameweek that closed on provisional points says so (staged SofaScore
     );
   });
 
+  test("a missing rating remains unknown while a real zero stays known", () => {
+    const player = {
+      fantasyPlayerId: uuid(11),
+      slot: "starter",
+      slotOrder: 1,
+      captain: false,
+      viceCaptain: false,
+      multiplier: 1,
+      provisionalPoints: null,
+      finalPoints: null,
+      didPlay: null,
+      minutesPlayed: null,
+      events: [],
+      ratingPending: true,
+    };
+    const view = pointsDto(
+      7,
+      payload({
+        ratingPublication: {
+          historicalRevision: true,
+          pending: true,
+          pendingFixtures: 1,
+          sourceUpdatedAt: "2026-10-18T20:00:00Z",
+        },
+        players: [
+          player,
+          { ...player, fantasyPlayerId: uuid(12), provisionalPoints: 0, ratingPending: false },
+        ],
+      }),
+      null,
+    );
+    expect(view?.breakdown[0]?.pointsKnown).toBe(false);
+    expect(view?.breakdown[0]?.ratingPending).toBe(true);
+    expect(view?.breakdown[1]?.pointsKnown).toBe(true);
+    expect(view?.breakdown[1]?.totalPoints).toBe(0);
+    expect(view?.authoritative?.ratingPublication?.historicalRevision).toBe(true);
+    expect(view?.authoritative?.finalized).toBe(false);
+  });
+
   test("once locked the label goes away even though the gameweek did close", () => {
     const view = pointsDto(
       7,
