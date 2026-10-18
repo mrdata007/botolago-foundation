@@ -852,3 +852,20 @@ script. The `noRatingPoints: null` response needs the updated client before the
 policy is enabled. This does not authorize changing GW4's already-started rules,
 finalizing without ratings, or applying PR #517. Evidence and scope:
 `docs/backend/FANTASY_ACTUAL_RATINGS_20261018.md`.
+
+## API-native rating recovery follow-up (2026-10-18)
+
+Migration `20261018173321_fantasy_api_rating_recovery.sql` is a separate,
+owner-approved follow-up, not part of the original automatic bundle. Its source
+ledger uses literal API player IDs and actual ratings; it adds no player link.
+Deploy the matching football refresh code before the guarded owner cutover.
+Apply `scripts/backend/apply-api-rating-recovery.sql` (rollback by default).
+Capture the exact main commit, rehearse the source import and staged recovery,
+verify rollback independently, then commit once with the relevant writers
+paused and leases drained. The owner cutover refuses a closed/finalized week,
+requires a matching staged input digest and preserves past seals and results.
+Historical proposals are staged while actual ratings or selected API IDs are
+missing. The October 18 authorization covers all available gameweeks; it does
+not turn absent API ratings or unidentified selections into points and does not
+authorize prize payment or another launch stage. See
+`docs/backend/FANTASY_ALL_GAMEWEEK_RATINGS_20261018.md`.

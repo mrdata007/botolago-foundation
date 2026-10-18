@@ -950,6 +950,22 @@ describe("rating gameweek (docs/backend/FANTASY_RATING_POINTS.md)", () => {
     });
   });
 
+  it("uses API appearance evidence for a rated player without minutes", () => {
+    const doc = rating(ratings);
+    doc.playerFixtures[7]!.apiAppeared = true;
+    delete doc.playerFixtures[7]!.stats.minutes;
+    const result = calculateSnapshotResults(doc);
+    expect(result.playerResults[7]!.events[0]!.category).toBe("rating");
+    expect(result.teamResults[0]!.effectiveCaptainId).toBe(id(107));
+  });
+  it("waits for the actual API rating even when appearance has no minute statistic", () => {
+    const doc = rating(ratings);
+    doc.playerFixtures[7]!.apiAppeared = true;
+    doc.playerFixtures[7]!.rating = null;
+    delete doc.playerFixtures[7]!.stats.minutes;
+    expect(() => calculateSnapshotResults(doc)).toThrow("fantasy_ratings_pending");
+  });
+
   it("gives 0 to a starter who did not play and brings on the bench", () => {
     const doc = rating(ratings);
     doc.playerFixtures[4]!.stats.minutes = 0;

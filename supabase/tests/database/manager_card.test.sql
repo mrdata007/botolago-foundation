@@ -1687,7 +1687,10 @@ select extensions.ok(
         -- trophy tables, and no prize, ranking or Fantasy rule reads a trophy. The league mates'
         -- trophies read only needs the card's current season.
         'trophies_evaluate_season', 'trophies_evaluate_user', 'trophies_tick',
-        'get_my_trophies', 'get_league_member_trophies'])
+        'get_my_trophies', 'get_league_member_trophies',
+        -- Owner maintenance only checks compute_enabled before changing Fantasy results.
+        -- The native recovery tests prove it never reads card scores or tiers.
+        'fantasy_activate_api_ratings'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(
