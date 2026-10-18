@@ -22,3 +22,7 @@ BotolaGO brand, existing design-system tokens and 44px touch floor, French and A
 ## Evidence exclusions
 
 Initial browser scripts that targeted the language radio as a button were corrected and excluded. Untrusted proxy certificates caused strict Chromium to fail public backend reads; Chromium-only test configuration accommodates that environment. Development payload timings are excluded from production performance conclusions. The report keeps these limitations separate from product defects.
+
+## Additional baseline finding before mobile edit
+
+The production375px Slow3G run confirmed an entirely blank navy screen after language selection (mobile/before-02-landing.png,77.9seconds from start). The lazy LandingFallback in src/routes/index.tsx renders an empty div. Preserve its dark ground and lazy-loading strategy; add an announced, translated loading state plus a usable public matches escape. Acceptance: no empty fallback, clear status and44px link in French/Arabic; mobile can reach actual public match data under the same throttle. This issue affected1/5 personas and joins the same repair pass.
