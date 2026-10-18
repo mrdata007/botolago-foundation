@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { AUTH_DRAFT_FIELDS } from "./auth-draft-storage";
 
-type DraftField = "login.email" | "register.fullName" | "register.username" | "register.email";
+type DraftField = (typeof AUTH_DRAFT_FIELDS)[number];
 const MAX_AGE_MS = 30 * 60_000;
 
 /** Keep only non-secret fields during a same-tab policy visit or history navigation. */
@@ -37,6 +38,5 @@ export function useAuthDraftField(field: DraftField) {
     }
   };
 
-  const clear = () => update("");
-  return [value, update, clear] as const;
+  return [value, update] as const;
 }

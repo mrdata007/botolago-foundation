@@ -161,7 +161,7 @@ function LoginPage() {
     setFailedRetries(0);
   };
 
-  const [email, setEmail, clearEmailDraft] = useAuthDraftField("login.email");
+  const [email, setEmail] = useAuthDraftField("login.email");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<{
@@ -196,7 +196,6 @@ function LoginPage() {
       });
       return;
     }
-    clearEmailDraft();
     continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
@@ -211,7 +210,6 @@ function LoginPage() {
       setErrors({ form: socialSignInErrorKey(res.errorCode) });
       return;
     }
-    clearEmailDraft();
     continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
