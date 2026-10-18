@@ -22,6 +22,7 @@ function bodyOf(source: string, signature: string): string {
 const SWITCH =
   "select app_private.fantasy_rating_points_configure('5ada3e98-2929-405a-a3f1-a26de8e51933', true, 5) as configured;";
 const policy = read("supabase/migrations/20261014090000_fantasy_rating_points.sql");
+const actual = read("supabase/migrations/20261018153305_fantasy_require_actual_api_ratings.sql");
 const save = read("supabase/migrations/20261014090100_fantasy_rating_points_save.sql");
 
 describe("activate-fantasy-rating-points.sql", () => {
@@ -48,6 +49,7 @@ describe("activate-fantasy-rating-points.sql", () => {
       "stop: GW5 is %, the rule can start only at a scheduled or open gameweek",
       "stop: a gameweek after GW5 has already started",
       "stop: adaptive scoring is not on for the season",
+      "stop: actual API rating requirement migration 20261018153305 is not applied",
       "stop: migrations 20261014090000 and 20261014090100 are not both applied",
     ]) {
       expect(script.indexOf(guard)).toBeGreaterThan(-1);
@@ -75,12 +77,12 @@ describe("activate-fantasy-rating-points.sql", () => {
       ],
       [
         "api.fantasy_rules(uuid)",
-        md5(bodyOf(policy, "create or replace function api.fantasy_rules(")),
+        md5(bodyOf(actual, "create or replace function api.fantasy_rules(")),
       ],
       [
         "api.service_persist_fantasy_scoring_results(uuid,bigint,text,jsonb,jsonb)",
         md5(
-          bodyOf(save, "create or replace function api.service_persist_fantasy_scoring_results("),
+          bodyOf(actual, "create or replace function api.service_persist_fantasy_scoring_results("),
         ),
       ],
     ] as const;
