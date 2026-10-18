@@ -232,6 +232,7 @@ create function api.get_my_fantasy_points(p_team_id uuid,p_gameweek_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare d jsonb; doc jsonb; pending boolean; revision boolean; updated timestamptz;
 begin
+ perform app_private.assert_mfa_step_up();
  d:=api.get_my_fantasy_points_before_publication(p_team_id,p_gameweek_id);
  doc:=app_private.fantasy_rating_display_document(p_gameweek_id);
  if doc is null then return d; end if;

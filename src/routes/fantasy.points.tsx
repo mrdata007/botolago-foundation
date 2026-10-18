@@ -44,6 +44,7 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { pointsUnit } from "@/lib/points-unit";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 interface PointsSearch {
   /** The round to open on (`/fantasy/points?gw=13`), as the hub's team card links it. */
@@ -464,6 +465,19 @@ function PointsBody() {
                 awaitingLabel={t("fantasy.points.awaiting_rating")}
               />
               <span>{t("fantasy.points.ratings_pending")}</span>
+            </p>
+          ) : null}
+          {resultQ.data.authoritative.ratingPublication.sourceUpdatedAt ? (
+            <p>
+              {t("fantasy.points.ratings_updated").replace(
+                "{time}",
+                moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(new Date(resultQ.data.authoritative.ratingPublication.sourceUpdatedAt)),
+              )}
             </p>
           ) : null}
         </div>
