@@ -223,7 +223,7 @@ describe("Home — where the row sits", () => {
   const home = readFileSync(join(ROOT, "src/routes/index.tsx"), "utf8");
 
   it("is inside the upcoming-matches section, right under its heading", () => {
-    const section = home.indexOf('<Section className="order-3 lg:mt-0">');
+    const section = home.indexOf('<Section className="order-3 xl:mt-0">');
     const heading = home.indexOf('title={t("matches.section.upcoming")}', section);
     const row = home.indexOf("<MyClubsRow", section);
     expect(section).toBeGreaterThan(-1);
