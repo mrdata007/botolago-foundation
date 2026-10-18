@@ -1,0 +1,1215 @@
+{
+  "schemaVersion": 1,
+  "source": "sofascore:api-dojo-rapidapi",
+  "evidenceKind": "authenticated",
+  "capturedAt": "2026-10-18T20:17:51.699Z",
+  "freshAuthenticatedPull": true,
+  "requestsConsumed": 42,
+  "discoveryRequests": 2,
+  "quota": {
+    "limit": 10000,
+    "remaining": 7957
+  },
+  "exitCode": 4,
+  "workflowRun": "https://github.com/mrdata007/botolago-foundation/actions/runs/39162589473",
+  "codeCommit": "a794db8e0285743d969fea26baf710bab5045596",
+  "artifact": "https://github.com/mrdata007/botolago-foundation/actions/runs/39162589473/artifacts/12149661139",
+  "discovery": {
+    "season": {
+      "id": 102220,
+      "name": "Botola Pro D1 26/27",
+      "year": "26/27"
+    },
+    "round": 3,
+    "eventIds": [
+      "17256977",
+      "17256968",
+      "17256980",
+      "17256969",
+      "17256974",
+      "17256979",
+      "17256971",
+      "17256972"
+    ],
+    "pages": 1,
+    "observedAt": ["2026-10-18T20:17:21.242Z", "2026-10-18T20:17:22.207Z"],
+    "transport": "live"
+  },
+  "matches": [
+    {
+      "eventId": "17132481",
+      "event": {
+        "home": {
+          "id": 55035,
+          "name": "Maghreb Fes"
+        },
+        "away": {
+          "id": 263373,
+          "name": "Renaissance Zemamra"
+        },
+        "seasonId": 102220,
+        "round": 1,
+        "kickoffAt": "2026-09-27T18:00:00.000Z"
+      },
+      "participants": 31,
+      "ratedPlayers": 29,
+      "missingRatingIds": ["2161842", "1182110"],
+      "coverage": "full",
+      "ratingState": "partial",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceCreated",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7993
+      },
+      "capturedAt": "2026-10-18T20:17:24.174Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:22.691Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:23.079Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:23.638Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:24.173Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 18,
+      "missingRatings": [
+        {
+          "playerId": "2161842",
+          "matchSideTeamId": "55035",
+          "appearance": "appeared",
+          "minutes": 7,
+          "ratingState": "unavailable"
+        },
+        {
+          "playerId": "1182110",
+          "matchSideTeamId": "55035",
+          "appearance": "appeared",
+          "minutes": 2,
+          "ratingState": "unavailable"
+        }
+      ],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "16958239",
+      "event": {
+        "home": {
+          "id": 118834,
+          "name": "Union Touarga Sport"
+        },
+        "away": {
+          "id": 55027,
+          "name": "Fath Union Sport"
+        },
+        "seasonId": 102220,
+        "round": 1,
+        "kickoffAt": "2026-09-26T16:00:00.000Z"
+      },
+      "participants": 30,
+      "ratedPlayers": 30,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceCreated",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7989
+      },
+      "capturedAt": "2026-10-18T20:17:26.316Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:24.784Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:25.278Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:25.877Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:26.316Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 18,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256977",
+      "event": {
+        "home": {
+          "id": 118834,
+          "name": "Union Touarga Sport"
+        },
+        "away": {
+          "id": 80395,
+          "name": "RS Berkane"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-08T16:00:00.000Z"
+      },
+      "participants": 32,
+      "ratedPlayers": 32,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7985
+      },
+      "capturedAt": "2026-10-18T20:17:28.938Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:27.090Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:27.541Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:28.320Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:28.937Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 15,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256968",
+      "event": {
+        "home": {
+          "id": 263373,
+          "name": "Renaissance Zemamra"
+        },
+        "away": {
+          "id": 55039,
+          "name": "Hassania d'Agadir"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-08T18:00:00.000Z"
+      },
+      "participants": 32,
+      "ratedPlayers": 32,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceCreated",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7981
+      },
+      "capturedAt": "2026-10-18T20:17:32.645Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:29.579Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:30.475Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:31.049Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:32.645Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 22,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256980",
+      "event": {
+        "home": {
+          "id": 24394,
+          "name": "AS FAR Rabat"
+        },
+        "away": {
+          "id": 204302,
+          "name": "Wydad Sportive Témara"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-08T18:00:00.000Z"
+      },
+      "participants": 32,
+      "ratedPlayers": 31,
+      "missingRatingIds": ["1008347"],
+      "coverage": "full",
+      "ratingState": "partial",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "hitWoodwork",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7977
+      },
+      "capturedAt": "2026-10-18T20:17:35.073Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:33.599Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:34.012Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:34.463Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:35.073Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 16,
+      "missingRatings": [
+        {
+          "playerId": "1008347",
+          "matchSideTeamId": "24394",
+          "appearance": "appeared",
+          "minutes": 5,
+          "ratingState": "unavailable"
+        }
+      ],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256969",
+      "event": {
+        "home": {
+          "id": 55035,
+          "name": "Maghreb Fes"
+        },
+        "away": {
+          "id": 41757,
+          "name": "Raja Club Athletic"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-08T20:00:00.000Z"
+      },
+      "participants": 31,
+      "ratedPlayers": 31,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "hitWoodwork",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7973
+      },
+      "capturedAt": "2026-10-18T20:17:38.814Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:35.537Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:36.820Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:37.525Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:38.814Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 17,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256974",
+      "event": {
+        "home": {
+          "id": 55049,
+          "name": "Moghreb Atlético Tetuán"
+        },
+        "away": {
+          "id": 55027,
+          "name": "Fath Union Sport"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-09T20:00:00.000Z"
+      },
+      "participants": 30,
+      "ratedPlayers": 30,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceCreated",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "hitWoodwork",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7969
+      },
+      "capturedAt": "2026-10-18T20:17:42.815Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:40.435Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:41.532Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:42.264Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:42.813Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 11,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256979",
+      "event": {
+        "home": {
+          "id": 47696,
+          "name": "Kawkab Athletic Club Marrakech"
+        },
+        "away": {
+          "id": 87180,
+          "name": "Ittihad Tanger"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-10T17:00:00.000Z"
+      },
+      "participants": 31,
+      "ratedPlayers": 30,
+      "missingRatingIds": ["833301"],
+      "coverage": "full",
+      "ratingState": "partial",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "clearanceOffLine",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7965
+      },
+      "capturedAt": "2026-10-18T20:17:45.764Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:43.509Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:44.197Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:44.970Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:45.763Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 20,
+      "missingRatings": [
+        {
+          "playerId": "833301",
+          "matchSideTeamId": "87180",
+          "appearance": "appeared",
+          "minutes": 4,
+          "ratingState": "unavailable"
+        }
+      ],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256971",
+      "event": {
+        "home": {
+          "id": 223445,
+          "name": "Union Sportive Amal Tiznit"
+        },
+        "away": {
+          "id": 55043,
+          "name": "Difaâ Hassani El-Jadidi"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-10T19:00:00.000Z"
+      },
+      "participants": 32,
+      "ratedPlayers": 32,
+      "missingRatingIds": [],
+      "coverage": "full",
+      "ratingState": "complete",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "bigChanceCreated",
+        "bigChanceMissed",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "hitWoodwork",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "penaltyConceded",
+        "penaltyWon",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7961
+      },
+      "capturedAt": "2026-10-18T20:17:49.154Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:46.494Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:47.532Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:48.155Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:49.153Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 27,
+      "missingRatings": [],
+      "uncertainParticipants": 0,
+      "playerStatisticsSamples": 1
+    },
+    {
+      "eventId": "17256972",
+      "event": {
+        "home": {
+          "id": 36268,
+          "name": "Wydad Casablanca"
+        },
+        "away": {
+          "id": 55025,
+          "name": "CODM Meknès"
+        },
+        "seasonId": 102220,
+        "round": 3,
+        "kickoffAt": "2026-10-11T20:00:00.000Z"
+      },
+      "participants": 31,
+      "ratedPlayers": 30,
+      "missingRatingIds": ["919712", "1526456"],
+      "coverage": "full",
+      "ratingState": "partial",
+      "availableStatistics": [
+        "accurateCross",
+        "accurateKeeperSweeper",
+        "accurateLongBalls",
+        "accurateOppositionHalfPasses",
+        "accurateOwnHalfPasses",
+        "accuratePass",
+        "aerialLost",
+        "aerialWon",
+        "ballRecovery",
+        "blockedScoringAttempt",
+        "challengeLost",
+        "crossNotClaimed",
+        "defensiveValueNormalized",
+        "dispossessed",
+        "dribbleValueNormalized",
+        "duelLost",
+        "duelWon",
+        "errorLeadToAShot",
+        "expectedAssists",
+        "expectedGoals",
+        "fouls",
+        "goalAssist",
+        "goalkeeperValueNormalized",
+        "goals",
+        "goodHighClaim",
+        "interceptionWon",
+        "keeperSaveValue",
+        "keyPass",
+        "minutesPlayed",
+        "onTargetScoringAttempt",
+        "outfielderBlock",
+        "ownGoals",
+        "passValueNormalized",
+        "possessionLostCtrl",
+        "rating",
+        "savedShotsFromInsideTheBox",
+        "saves",
+        "shotOffTarget",
+        "shotValueNormalized",
+        "totalClearance",
+        "totalContest",
+        "totalCross",
+        "totalKeeperSweeper",
+        "totalLongBalls",
+        "totalOffside",
+        "totalOppositionHalfPasses",
+        "totalOwnHalfPasses",
+        "totalPass",
+        "totalShots",
+        "totalTackle",
+        "touches",
+        "unsuccessfulTouch",
+        "wasFouled",
+        "wonContest",
+        "wonTackle"
+      ],
+      "requestsConsumed": 4,
+      "quota": {
+        "limit": 10000,
+        "remaining": 7957
+      },
+      "capturedAt": "2026-10-18T20:17:51.698Z",
+      "observations": [
+        {
+          "endpoint": "matches/detail",
+          "fetchedAt": "2026-10-18T20:17:49.771Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-lineups",
+          "fetchedAt": "2026-10-18T20:17:50.486Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-player-statistics",
+          "fetchedAt": "2026-10-18T20:17:51.142Z",
+          "transport": "live"
+        },
+        {
+          "endpoint": "matches/get-incidents",
+          "fetchedAt": "2026-10-18T20:17:51.698Z",
+          "transport": "live"
+        }
+      ],
+      "incidentCount": 17,
+      "missingRatings": [
+        {
+          "playerId": "919712",
+          "matchSideTeamId": "36268",
+          "appearance": "uncertain",
+          "minutes": null,
+          "ratingState": "unavailable"
+        },
+        {
+          "playerId": "1526456",
+          "matchSideTeamId": "55025",
+          "appearance": "appeared",
+          "minutes": 6,
+          "ratingState": "unavailable"
+        }
+      ],
+      "uncertainParticipants": 1,
+      "playerStatisticsSamples": 1
+    }
+  ]
+}

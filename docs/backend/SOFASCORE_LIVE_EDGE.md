@@ -5,6 +5,13 @@ SofaScore (RapidAPI) when `api.football_data_source()` says so. SportsMonks is
 not called on that path. Code: `supabase/functions/_shared/sofascore-live-refresh.ts`
 (wired in `football-live-refresh.ts`).
 
+## Read-only player evidence
+
+For bounded fresh player ratings/statistics, explicit event IDs, recent-round
+API discovery and JSON/CSV exports without database access, use
+[the read-only collector](SOFASCORE_READONLY_COLLECTION.md). Its live verification
+is separate from this deployed Edge ingestion and from historical fixture tests.
+
 ## The switch
 
 ```sql

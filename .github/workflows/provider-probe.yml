@@ -93,6 +93,11 @@ jobs:
       - name: Install collector dependencies (no secrets)
         if: ${{ inputs.fixtures == 'sofascore-ratings' }}
         run: bun install --frozen-lockfile --ignore-scripts
+      - name: Verify collector before using the provider secret
+        if: ${{ inputs.fixtures == 'sofascore-ratings' }}
+        run: |
+          bun run typecheck:sofascore-collection
+          bun test scripts/backend/sofascore-collect.test.ts scripts/backend/sofascore-ratings-audit.test.ts src/backend/football/provider/rapidapi-client.test.ts
       - name: Collect fresh Botola ratings (read-only, no database)
         if: ${{ (inputs.fixtures == 'sofascore-ratings') && inputs.provider == 'sofascore' }}
         env:

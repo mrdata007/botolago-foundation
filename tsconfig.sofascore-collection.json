@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["scripts/backend/sofascore-collect*.ts"],
+  "exclude": [],
+  "compilerOptions": {
+    "types": ["bun"]
+  }
+}

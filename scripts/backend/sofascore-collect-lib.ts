@@ -50,6 +50,11 @@ export function safeError(error: unknown) {
     return { reason: error.reason, httpStatus: error.httpStatus, retryAfterMs: error.retryAfterMs };
   if (error instanceof CollectionError)
     return { reason: error.reason, field: error.field, httpStatus: null, retryAfterMs: null };
+  if (
+    error instanceof Error &&
+    ["ratings_player_id_invalid", "ratings_lineups_missing"].includes(error.message)
+  )
+    return { reason: error.message, httpStatus: null, retryAfterMs: null };
   return { reason: "collection_or_payload_failed", httpStatus: null, retryAfterMs: null };
 }
 export function parseEvent(raw: unknown, eventId: string, now: number): CollectedEvent {
