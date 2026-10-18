@@ -117,7 +117,7 @@ function AdSlot({ placement, className }: { placement: AdPlacement; className?: 
     >
       <style>{SIZES}</style>
       <p className={cn("mb-2 text-center", ui.text.micro, ui.tone.muted)}>
-        {t(sponsor ? "ads.sponsored" : "ads.label")}
+        {sponsor ? t("ads.sponsored") : t("ads.label")}
       </p>
       <div ref={surface} data-ad-surface="" className={cn("mx-auto", shape)}>
         {sponsor ? (
