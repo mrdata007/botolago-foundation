@@ -27,7 +27,10 @@ const eventSchema = z.object({
 });
 export type CollectedEvent = z.infer<typeof eventSchema>;
 export class CollectionError extends Error {
-  constructor(readonly reason: string) {
+  constructor(
+    readonly reason: string,
+    readonly field: string | null = null,
+  ) {
     super(reason);
   }
 }
@@ -80,12 +83,51 @@ const rawLineups = z.object({
   away: z.object({ players: z.array(rawPlayer).min(11).max(40) }),
 });
 const signed = new Set(["keeperSaveValue", "goalsPrevented"]);
-const fractional = new Set([
-  "rating",
-  "expectedGoals",
-  "expectedAssists",
-  "expectedGoalsOnTarget",
-  ...signed,
+// Counts whose units were established in the coverage audit. Other finite numeric
+// metrics can be fractional; do not infer their units from an unfamiliar name.
+const counters = new Set([
+  "minutesPlayed",
+  "goals",
+  "goalAssist",
+  "ownGoals",
+  "saves",
+  "totalPass",
+  "penaltyMiss",
+  "totalShots",
+  "onTargetScoringAttempt",
+  "accuratePass",
+  "keyPass",
+  "totalTackle",
+  "wonTackle",
+  "interceptionWon",
+  "totalClearance",
+  "duelWon",
+  "duelLost",
+  "fouls",
+  "wasFouled",
+  "bigChanceMissed",
+  "bigChanceCreated",
+  "possessionLostCtrl",
+  "dispossessed",
+  "totalCross",
+  "accurateCross",
+  "totalLongBalls",
+  "accurateLongBalls",
+  "penaltyWon",
+  "penaltyConceded",
+  "goodHighClaim",
+  "crossNotClaimed",
+  "totalKeeperSweeper",
+  "accurateKeeperSweeper",
+  "savedShotsFromInsideTheBox",
+  "totalOffside",
+  "touches",
+  "totalContest",
+  "wonContest",
+  "aerialWon",
+  "aerialLost",
+  "errorLeadToAShot",
+  "errorLeadToAGoal",
 ]);
 /** Preserve numeric statistics, but reject invalid counts/ranges; missing stays null/absent. */
 export function numericStatistics(raw: Record<string, unknown> | null | undefined) {
@@ -104,9 +146,9 @@ export function numericStatistics(raw: Record<string, unknown> | null | undefine
       value > 100_000 ||
       value < (signed.has(key) ? -100 : 0)
     )
-      throw new CollectionError("invalid_statistic_value");
-    if (!fractional.has(key) && !Number.isInteger(value))
-      throw new CollectionError("invalid_statistic_count");
+      throw new CollectionError("invalid_statistic_value", key);
+    if (counters.has(key) && !Number.isInteger(value))
+      throw new CollectionError("invalid_statistic_count", key);
     if (key === "minutesPlayed" && value > 130) throw new CollectionError("invalid_minutes");
     if (key === "rating" && (value > 10 || Math.abs(value * 100 - Math.round(value * 100)) > 1e-7))
       throw new CollectionError("invalid_rating");

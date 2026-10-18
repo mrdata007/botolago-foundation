@@ -186,7 +186,7 @@ export class RapidApiClient {
             this.lastQuota = readQuota(response.headers, this.lastQuota);
             const status = response.status;
             if (status < 200 || status >= 300) {
-              await response.body?.cancel();
+              void response.body?.cancel().catch(() => undefined);
               throw new RapidApiRequestError(
                 status === 401
                   ? "authentication"

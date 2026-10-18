@@ -122,9 +122,12 @@ describe("mock collection validation (no live calls)", () => {
       { goals: NaN },
     ])
       expect(() => numericStatistics(raw)).toThrow();
-    expect(numericStatistics({ rating: null, keeperSaveValue: -0.5 })).toEqual({
+    expect(
+      numericStatistics({ rating: null, keeperSaveValue: -0.5, metricWithFraction: 0.12345 }),
+    ).toEqual({
       rating: null,
       keeperSaveValue: -0.5,
+      metricWithFraction: 0.12345,
     });
   });
   test("complete recent round discovery verifies season and paginates with a bound", async () => {
