@@ -37,7 +37,7 @@ const start = performance.now();
 let token: string | null = null;
 let release = true;
 try {
-  const lease = await acquireWorkerLease(scoped.rpc, "staging:rating-drill-5000", 420);
+  const lease = await acquireWorkerLease(scoped.rpc, "manual:staging-rating-drill-5000", 420);
   if (lease.kind !== "acquired") throw new Error("staging_drill_lease_unavailable");
   token = lease.token;
   const gateway = leasedGateway(scoped, { token, ttlSeconds: 420, deadlineAt: Date.now() + 20 * 60_000 });
