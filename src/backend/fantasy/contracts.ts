@@ -552,7 +552,8 @@ export const fantasyRulesSchema = z.object({
   ratingScoring: z
     .object({
       fromGameweek: z.number().int().positive(),
-      noRatingPoints: z.number().int(),
+      noRatingPoints: z.number().int().nullable(),
+      waitForRating: z.boolean().optional(),
     })
     .optional(),
   seasonId: postgresUuidSchema,

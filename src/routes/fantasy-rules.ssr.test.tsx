@@ -172,6 +172,25 @@ describe("the rules page without a scoring scale", () => {
 });
 
 describe("the rules page under the rating rule (docs/backend/FANTASY_RATING_POINTS.md)", () => {
+  test("waits for actual API ratings when the server disables fallback points", async () => {
+    const rules = await fantasyService.getRules();
+    const page = text(
+      await render({
+        ...rules,
+        ratingScoring: {
+          fromGameweek: 5,
+          noRatingPoints: null,
+          waitForRating: true,
+        },
+      }),
+    );
+    expect(page).toContain("le calcul des points attend sa note SofaScore");
+    expect(page).toContain("Aucun point de remplacement n’est attribué");
+    expect(page).not.toContain("marque 5 points");
+    expect(ar["fantasy.rules.rating_rule_pending"]).toContain("ينتظر حساب النقاط");
+    expect(ar["fantasy.rules.rating_rule_pending"]).not.toContain("5 نقاط");
+  });
+
   test("states the rating rule from its first gameweek and keeps the earlier scale below it", async () => {
     const rules = await fantasyService.getRules();
     const html = await render({ ...rules, ratingScoring: { fromGameweek: 5, noRatingPoints: 5 } });
