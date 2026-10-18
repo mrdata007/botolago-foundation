@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: eb5dab8348ee04f71d10504da28e12e208c4b5cf19cbc1379f94727f4f0e8a49
+-- Production V2 only. Canonical migration SHA256: 84c8477e1be97098940a5083bcaf78eb076e9149d20ecac72a53fd13bb5ac123
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -248,7 +248,7 @@ begin
    or (r#>>'{events,0,points}')::numeric is distinct from round((pf->>'rating')::numeric) then raise exception 'rating_publication_rating_mismatch'; end if;
  elsif jsonb_array_length(r->'events')<>0 then raise exception 'rating_publication_unused_points'; end if;
  end loop;
- if (select count(distinct (r->>'fantasyPlayerId',r->>'fixtureId')) from jsonb_array_elements(p.results->'playerResults') r)<>jsonb_array_length(p.results->'playerResults') then raise exception 'rating_publication_duplicate_rows'; end if;
+ if (select count(distinct (entry.value->>'fantasyPlayerId',entry.value->>'fixtureId')) from jsonb_array_elements(p.results->'playerResults') entry)<>jsonb_array_length(p.results->'playerResults') then raise exception 'rating_publication_duplicate_rows'; end if;
  for t in select value from jsonb_array_elements(p.results->'teamResults') loop
  if not exists(select 1 from app.fantasy_lineups l join app.fantasy_team_gameweek_results b on b.gameweek_id=l.gameweek_id and b.fantasy_team_id=l.fantasy_team_id
  where l.id=(t->>'lineupId')::uuid and l.fantasy_team_id=(t->>'teamId')::uuid and l.gameweek_id=g.id and l.locked_at is not null)
@@ -408,7 +408,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'eb5dab8348ee04f71d10504da28e12e208c4b5cf19cbc1379f94727f4f0e8a49' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'84c8477e1be97098940a5083bcaf78eb076e9149d20ecac72a53fd13bb5ac123' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin

@@ -220,7 +220,7 @@ begin
    or (r#>>'{events,0,points}')::numeric is distinct from round((pf->>'rating')::numeric) then raise exception 'rating_publication_rating_mismatch'; end if;
  elsif jsonb_array_length(r->'events')<>0 then raise exception 'rating_publication_unused_points'; end if;
  end loop;
- if (select count(distinct (r->>'fantasyPlayerId',r->>'fixtureId')) from jsonb_array_elements(p.results->'playerResults') r)<>jsonb_array_length(p.results->'playerResults') then raise exception 'rating_publication_duplicate_rows'; end if;
+ if (select count(distinct (entry.value->>'fantasyPlayerId',entry.value->>'fixtureId')) from jsonb_array_elements(p.results->'playerResults') entry)<>jsonb_array_length(p.results->'playerResults') then raise exception 'rating_publication_duplicate_rows'; end if;
  for t in select value from jsonb_array_elements(p.results->'teamResults') loop
  if not exists(select 1 from app.fantasy_lineups l join app.fantasy_team_gameweek_results b on b.gameweek_id=l.gameweek_id and b.fantasy_team_id=l.fantasy_team_id
  where l.id=(t->>'lineupId')::uuid and l.fantasy_team_id=(t->>'teamId')::uuid and l.gameweek_id=g.id and l.locked_at is not null)
