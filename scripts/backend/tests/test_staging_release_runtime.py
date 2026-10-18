@@ -30,6 +30,8 @@ class Target:
 
     def execute(self, sql, timeout):
         self.executed.append(sql)
+        if "scheduler_token()" in sql:
+            return [{"token": TOKEN}]
 
     def _request(self, method, path, body, timeout):
         self.requests.append((method, path, body))

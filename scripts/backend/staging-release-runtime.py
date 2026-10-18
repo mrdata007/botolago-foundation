@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -57,9 +58,12 @@ def deploy(target, ref: str, run=subprocess.run) -> dict:
     config = tomllib.loads((ROOT / "supabase/config.toml").read_text())
     names = sorted(p.name for p in (ROOT / "supabase/functions").iterdir() if p.is_dir() and (p / "index.ts").is_file())
     print(json.dumps({"phase": "scheduler_transfer"}), flush=True)
-    token = target.rows("select app_private.scheduler_token() as token")[0]["token"]
+    # The Management API's read-only role cannot decrypt Vault secrets. The
+    # owner connection runs this SELECT; the query still changes no DB data.
+    token = target.execute("select app_private.scheduler_token() as token", 60)[0]["token"]
     if not isinstance(token, str) or len(token) < 32:
         raise RuntimeError("staging_runtime_invalid_scheduler")
+    print(json.dumps({"phase": "scheduler_secret_store"}), flush=True)
     target._request("POST", f"/v1/projects/{ref}/secrets", [
         {"name": "BOTOLAGO_SCHEDULER_TOKEN", "value": token}
     ], 60)
@@ -107,7 +111,9 @@ def main() -> int:
         # Do not print an upstream response, exception payload, or subprocess
         # stderr: secret-store requests can carry credentials.
         code = str(error) if type(error) is RuntimeError and str(error).startswith("staging_runtime_") else "staging_runtime_setup_failed"
-        print(json.dumps({"passed": False, "error": code, "error_type": type(error).__name__}))
+        http = re.match(r"HTTP (\d{3}):", str(error))
+        print(json.dumps({"passed": False, "error": code, "error_type": type(error).__name__,
+                          "http_status": int(http[1]) if http else None}))
         return 1
 
 
