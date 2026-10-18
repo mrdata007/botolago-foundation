@@ -379,6 +379,21 @@ $$;
 revoke all on function api.fantasy_gameweek_summary(uuid) from public;
 grant execute on function api.fantasy_gameweek_summary(uuid) to anon,authenticated,service_role;
 
+-- The rules card follows the visible scale once every earlier existing round
+-- has an approved rating publication; raw historical policy/seals stay intact.
+create or replace function api.fantasy_rules(p_season_id uuid)
+returns jsonb language sql stable security definer set search_path='' as $$
+ select api.fantasy_rules_before_api_ratings(p_season_id)||coalesce((select jsonb_build_object('ratingScoring',
+ jsonb_build_object('fromGameweek',case when not exists(select 1 from app.fantasy_gameweeks g
+ where g.fantasy_season_id=p.season_id and g.sequence_number<p.from_gameweek
+ and not exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id))
+ then least(p.from_gameweek,coalesce((select min(g.sequence_number) from app_private.fantasy_current_rating_publications x
+ join app.fantasy_gameweeks g on g.id=x.gameweek_id where g.fantasy_season_id=p.season_id),p.from_gameweek)) else p.from_gameweek end,
+ 'noRatingPoints',null,'waitForRating',true)) from app_private.fantasy_api_rating_seasons p where p.season_id=p_season_id),'{}');
+$$;
+revoke all on function api.fantasy_rules(uuid) from public;
+grant execute on function api.fantasy_rules(uuid) to anon,authenticated,service_role;
+
 -- Fair, bounded recent-match polling. Unchanged payloads only update poll
 -- freshness, never create a new source or erase a successful score.
 create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)

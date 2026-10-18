@@ -164,6 +164,8 @@ select extensions.ok(app_private.fantasy_native_player_selectable(pg_temp.rid(20
 select extensions.throws_ok($$insert into app.fantasy_squad_memberships(fantasy_team_id,fantasy_player_id,purchase_price,current_sale_price,acquired_gameweek_id)
 values(pg_temp.rid(9),pg_temp.rid(2002),6,6,pg_temp.rid(25))$$,'PT400','player_not_eligible','the server rejects an unidentified new purchase atomically');
 select extensions.is((select count(*)::int from app.fantasy_squad_memberships where fantasy_team_id=pg_temp.rid(9) and fantasy_player_id=pg_temp.rid(2001)),1,'an existing legacy selection is preserved');
+select extensions.ok(not exists(select 1 from jsonb_array_elements(api.fantasy_player_pool(pg_temp.rid(5),null,null,null,null,null,null,100)->'items') item
+ where item->>'id'=pg_temp.rid(2002)::text),'the public pool hides an unidentified new purchase before pagination');
 
 -- A later provider reply with one missing rating must still expose the other
 -- real ratings provisionally, without allowing sealing or a false GK swap.
@@ -231,6 +233,7 @@ select set_config('request.jwt.claims',jsonb_build_object('sub',pg_temp.rid(8),'
 select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))#>>'{result,provisionalScore}','88','authenticated points use the published calculation');
 select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->>'pointsState','provisional','a historical final status does not mislabel incomplete rating points as final');
 select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))#>>'{ratingPublication,historicalRevision}','true','the client receives the historical revision status');
+select extensions.is(api.fantasy_rules(pg_temp.rid(5))#>>'{ratingScoring,fromGameweek}','5','the rules do not regrade a still-unpublished earlier round');
 select extensions.ok(exists(select 1 from jsonb_array_elements(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->'players') p
  where p->>'fantasyPlayerId'=pg_temp.rid(2023)::text and p->>'ratingPending'='true' and p->'provisionalPoints'='null'::jsonb),'the unrated selected player is explicitly pending in the owned API');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);

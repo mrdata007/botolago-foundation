@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: b153f6dd5708ce633e3da5efacd25fc2375321a418c4f93260c44b04cd34f662
+-- Production V2 only. Canonical migration SHA256: e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -411,6 +411,21 @@ $$;
 revoke all on function api.fantasy_gameweek_summary(uuid) from public;
 grant execute on function api.fantasy_gameweek_summary(uuid) to anon,authenticated,service_role;
 
+-- The rules card follows the visible scale once every earlier existing round
+-- has an approved rating publication; raw historical policy/seals stay intact.
+create or replace function api.fantasy_rules(p_season_id uuid)
+returns jsonb language sql stable security definer set search_path='' as $$
+ select api.fantasy_rules_before_api_ratings(p_season_id)||coalesce((select jsonb_build_object('ratingScoring',
+ jsonb_build_object('fromGameweek',case when not exists(select 1 from app.fantasy_gameweeks g
+ where g.fantasy_season_id=p.season_id and g.sequence_number<p.from_gameweek
+ and not exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id))
+ then least(p.from_gameweek,coalesce((select min(g.sequence_number) from app_private.fantasy_current_rating_publications x
+ join app.fantasy_gameweeks g on g.id=x.gameweek_id where g.fantasy_season_id=p.season_id),p.from_gameweek)) else p.from_gameweek end,
+ 'noRatingPoints',null,'waitForRating',true)) from app_private.fantasy_api_rating_seasons p where p.season_id=p_season_id),'{}');
+$$;
+revoke all on function api.fantasy_rules(uuid) from public;
+grant execute on function api.fantasy_rules(uuid) to anon,authenticated,service_role;
+
 -- Fair, bounded recent-match polling. Unchanged payloads only update poll
 -- freshness, never create a new source or erase a successful score.
 create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)
@@ -474,7 +489,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'b153f6dd5708ce633e3da5efacd25fc2375321a418c4f93260c44b04cd34f662' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin
