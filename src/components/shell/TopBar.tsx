@@ -48,9 +48,9 @@ export function TopBar({
 }: {
   trailing?: React.ReactNode;
   /**
-   * From 1024px, open the bar to the desktop canvas and put the search field
-   * in it. Search itself does not depend on this: every bar has the search
-   * button, and a bar kept to the content column opens the field under it.
+   * Offer inline search from 1280px. Smaller bars use the search button so
+   * navigation and actions retain their space. Every page shares the desktop
+   * header canvas independently of its content's reading width.
    */
   wide?: boolean;
 }) {
@@ -74,10 +74,7 @@ export function TopBar({
         className={cn(
           // `@container`: what the bar can hold is asked in rem, which a larger
           // text size changes, not in pixels (see the logo and the buttons).
-          "@container mx-auto flex items-center gap-3",
-          wide
-            ? "md:max-w-[var(--ui-content-max)] lg:max-w-[var(--ui-desktop-max)]"
-            : "md:max-w-[var(--ui-content-max)]",
+          "@container mx-auto flex items-center gap-3 md:max-w-4xl lg:max-w-[var(--ui-desktop-max)]",
           ui.space.gutter,
           "min-h-[var(--ui-tap-min)]",
         )}
@@ -100,16 +97,16 @@ export function TopBar({
 
         <PrimaryNavLinks />
 
-        {wide ? <GlobalSearch className="hidden w-64 lg:block" /> : null}
+        {wide ? <GlobalSearch className="hidden w-52 shrink-0 xl:block" /> : null}
 
         {/* Under 10rem of bar (a 320px phone at 200% text): the buttons' 44px
             floor is `rem`, so three of them are 264px of a 288px bar. The floor
             drops to 44 CSS px there (1.375rem at 200%), the guideline's own
             number, so the buttons stay on screen. */}
-        <div className="ms-auto flex items-center gap-2 @max-[10rem]:[--ui-tap-min:1.375rem] @max-[20rem]:gap-1 md:ms-0">
+        <div className="ms-auto flex shrink-0 items-center gap-2 @max-[10rem]:[--ui-tap-min:1.375rem] @max-[20rem]:gap-1 md:ms-0">
           {trailing}
           <UiIconButton
-            className={wide ? "lg:hidden" : undefined}
+            className={wide ? "xl:hidden" : undefined}
             aria-label={t("nav.search.label")}
             aria-expanded={searchOpen}
             onClick={() => {
@@ -136,7 +133,7 @@ export function TopBar({
         <div
           className={cn(
             "absolute inset-x-0 top-full z-10 pb-2 pt-2",
-            wide && "lg:hidden",
+            wide && "xl:hidden",
             ui.surface.bar,
             ui.rule.block,
           )}
@@ -169,7 +166,7 @@ export function PrimaryNavLinks() {
             to={item.to}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex items-center justify-center px-4 transition-colors",
+              "inline-flex shrink-0 items-center justify-center whitespace-nowrap px-2 transition-colors lg:px-3 xl:px-4",
               ui.space.tap,
               // Round like every other control a thumb or a pointer
               // presses in Option A (chips, buttons, the nav pill).
