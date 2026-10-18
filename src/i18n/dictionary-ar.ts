@@ -1900,6 +1900,9 @@ export const ar = {
     "انتهى الموعد النهائي لهذه الجولة. أعد تحميل الصفحة لتسجيل فريقك في الجولة المقبلة.",
   "fantasy.create.error.season_closed": "التسجيل في موسم الفانتازي مغلق.",
   "fantasy.create.error.already_exists": "لديك فريق بالفعل في هذا الموسم.",
+  // Owner to confirm Arabic: formal, short wording for the pilot cap.
+  "fantasy.create.error.pilot_full":
+    "اكتمل عدد المشاركين في المرحلة التجريبية حاليًا. لم يتم إنشاء فريقك، يرجى المحاولة لاحقًا.",
   "fantasy.create.error.player_unavailable":
     "أحد لاعبي تشكيلتك لم يعد متاحًا. استبدله ثم أعد المحاولة.",
   "fantasy.create.error.rejected":
