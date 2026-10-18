@@ -870,11 +870,11 @@ describe("rating gameweek (docs/backend/FANTASY_RATING_POINTS.md)", () => {
     return doc;
   }
   // Starters 0,2,3,4,5,7,8,9,10,12,13; bench 1 (GK), 6 (DEF), 11 (MID), 14 (FWD).
-  // Player 0: 7.5 -> 8; player 2: no rating -> 5; player 3: 7.49 -> 7; captain 7: 8.5 -> 9;
+  // Player 0: 7.5 -> 8; player 2: actual API rating 5; player 3: 7.49 -> 7; captain 7: 8.5 -> 9;
   // everyone else 6.0 -> 6. Starters 8+5+7+6+6+9+6+6+6+6+6 = 71, bench 24, hit 4.
-  const ratings = { 0: 7.5, 2: null, 3: 7.49, 7: 8.5 };
+  const ratings = { 0: 7.5, 2: 5, 3: 7.49, 7: 8.5 };
 
-  it("gives each appearing player one rating event, the rating rounded half up or 5 without one", () => {
+  it("gives each appearing player one event from his actual API rating, rounded half up", () => {
     const result = calculateSnapshotResults(scoringSnapshotSchema.parse(rating(ratings)));
     const eventsOf = (i: number) =>
       result.playerResults.find((p) => p.fantasyPlayerId === id(100 + i))!.events;
@@ -885,6 +885,42 @@ describe("rating gameweek (docs/backend/FANTASY_RATING_POINTS.md)", () => {
     expect(eventsOf(3)[0]!.points).toBe(7);
     expect(eventsOf(7)[0]!.points).toBe(9);
     for (const player of result.playerResults) expect(player.events.length).toBe(1);
+  });
+
+  it("refuses missing ratings before computing totals, captaincy or substitutions", () => {
+    for (const index of [0, 1, 7, 14]) {
+      const doc = rating({ [index]: null });
+      expect(() => calculateSnapshotResults(doc)).toThrow("fantasy_ratings_pending");
+      doc.playerFixtures[index]!.rating = 6;
+      expect(() => calculateSnapshotResults(doc)).not.toThrow();
+      doc.playerFixtures[index]!.rating = null;
+      doc.playerFixtures[index]!.stats.minutes = 0;
+      expect(() => calculateSnapshotResults(doc)).not.toThrow();
+    }
+  });
+
+  it("waits before any result, ranking or finalization write, then resumes on a rated snapshot", async () => {
+    const h = harness();
+    let rated = false;
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        if (name === "service_get_fantasy_scoring_snapshot") {
+          h.calls.push({ name, args });
+          return rating(rated ? {} : { 7: null });
+        }
+        return h.gateway.rpc(name, args);
+      },
+    };
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })).toMatchObject(
+      {
+        outcome: "waiting",
+        reason: "fantasy_ratings_pending",
+      },
+    );
+    expect(h.calls.some((c) => /persist|rankings|finaliz/.test(c.name))).toBeFalse();
+    rated = true;
+    await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(h.calls.some((c) => c.name === "service_persist_fantasy_scoring_results")).toBeTrue();
   });
 
   it("doubles the captain and keeps the transfer hit", () => {

@@ -1,6 +1,6 @@
 # Fantasy points from the SofaScore rating
 
-Owner decision of 2026-10-13. Status: built, **off**. Nothing changes until the
+Owner decisions of 2026-10-13 and 2026-10-18. The latter supersedes the five-point fallback: wait for an actual API rating. No manual player linking is part of this change. See [the recovery evidence and scope](FANTASY_ACTUAL_RATINGS_20261018.md). Status: built, **off**. Nothing changes until the
 owner runs `scripts/backend/activate-fantasy-rating-points.sql`.
 
 ## The rule
@@ -10,7 +10,7 @@ From Fantasy gameweek 5 of the 2026/27 season onward:
 | Player in a match                    | Fantasy points                                            |
 | ------------------------------------ | --------------------------------------------------------- |
 | Appeared (minutes > 0) with a rating | His SofaScore rating rounded to a whole number, halves up |
-| Appeared without a SofaScore rating  | 5                                                         |
+| Appeared without a SofaScore rating  | Pending until the API supplies his rating                 |
 | Did not appear                       | 0                                                         |
 
 Rounding: 7.5 gives 8, 7.49 gives 7, 6.5 gives 7, 5.55 gives 6. Points stay whole
@@ -78,21 +78,21 @@ display only") from the gameweek the rule starts.
 5. **The worker** accepts ruleset 3.0 only with scoring version 3 on the adaptive
    document (anything else is still `fantasy_scoring_rules_unsupported`). It gives
    a player one `rating` event per match when his minutes are established (as for
-   `appearance`) and above zero, worth `ratingPoints(rating)`; no event otherwise.
+   `appearance`) and above zero, worth `ratingPoints(rating)`; no event for a confirmed nonparticipant. If any participant has no rating the worker returns `waiting / fantasy_ratings_pending` before any result persistence, ranking or finalization.
    Captain, chips and substitutions run on those totals as before. v1/v2 snapshots
    are scored by the same code as before.
 6. **The save** (`api.service_persist_fantasy_scoring_results`, replacing the body
    of `20261013180000` behind an md5 guard) accepts, for a scoring-version-3
    snapshot, exactly one `rating` event for each appearing player and none for the
    others, and recomputes the figure from the snapshot's own rating
-   (`floor(rating + 0.5)`, 5 without one): a wrong figure is
+   (`floor(rating + 0.5)`); a missing rating is refused by the wrapper from migration `20261018153305`: a wrong figure is
    `fantasy_point_event_invalid`. For v1/v2 snapshots nothing changed; `rating` is
    refused there like any unknown category.
 7. **What players see.** The points screen labels the line "Note SofaScore" /
    "تقييم SofaScore" (`fantasy.points.event.rating`). The rules page, while the rule
    is on (`api.fantasy_rules` returns `ratingScoring: {fromGameweek, noRatingPoints}`),
    states in French and Arabic: points = SofaScore rating rounded to the nearest
-   whole number, 5 when he played without a rating, 0 when he did not play, the
+   whole number, points pending when he played without a rating, 0 when he did not play, the
    captain doubles; the category scale stays below it, labelled "until GW4". The
    landing page and the Fantasy onboarding quote no scale at all (audit FANT-06): they
    say points follow match performance and point to the rules page, which names the
@@ -126,7 +126,7 @@ state truthfully. Text only; no layout, component or style change.
 
 ## Turning it on
 
-Owner action, after the two migrations are applied and the Edge Functions
+Owner action, after the rating migrations and `20261018153305` are applied and the Edge Functions
 `fantasy-lifecycle-worker` and `football-live-refresh` run this code (the worker
 must know ruleset 3.0 before a GW5 snapshot exists; the observations must carry the
 rating). Before the GW5 deadline:
@@ -158,16 +158,11 @@ digest in the references.
 
 - **Ratings arrive late on Botola matches.** SofaScore publishes the full
   statistics, rating included, 5 to 16 days after a match on many Botola games
-  (`SOFASCORE_STAGED_STATS.md`). Until then every player who appeared has no
-  rating and scores **5**: provisional points look flat right after the match
-  and move when the ratings arrive. A match that never gets full coverage
-  (`FINAL_LIMITED` after 21 days) keeps 5 for everyone, and those 5s become final.
+  (`SOFASCORE_STAGED_STATS.md`). Until then scoring **waits**. There is no five-point fallback and no conversion of missing ratings to zero. A match that never receives ratings remains pending, including after `FINAL_LIMITED`; neither that status nor a time limit invents ratings or authorizes finalization.
 - **Players SofaScore does not rate.** A substitute with a few minutes often has no
-  rating: he gets 5, possibly more than a rated starter who played badly (a 4.2
-  rating gives 4).
+  rating: scoring remains pending for him. No score is invented for an unrated substitute.
 - **Observations recorded before the deploy** have no rating, so a GW5 match
-  recorded by older code scores 5 for everyone until a re-pull records the
-  ratings. Deploy before GW5's first match.
+  recorded by older code waits until a re-pull records actual ratings. Deploy before GW5's first match.
 - **A rating flip-flop** (A, then B, then A again) does not record the third pull:
   the observation with digest A already exists, so the latest stays B. This is the
   recorder's existing de-duplication, unchanged here.
@@ -183,7 +178,7 @@ digest in the references.
 
 ## Tests
 
-- `supabase/functions/_shared/fantasy-rating-scoring.test.ts`: rounding, 5 without
+- `supabase/functions/_shared/fantasy-rating-scoring.test.ts`: rounding, pending without
   a rating, refusal of impossible ratings.
 - `scripts/backend/fantasy-lifecycle-runner.test.ts` ("rating gameweek"): captain,
   Triple Captain, Bench Boost, automatic substitution, vice-captain, unknown

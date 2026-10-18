@@ -254,8 +254,19 @@ function isRatingSnapshot(snapshot: ScoringSnapshot): boolean {
   return true;
 }
 
+/** Never turn an unrated appearance into points, a DNP, or an automatic substitute. */
+export function hasPendingRatings(snapshot: ScoringSnapshot): boolean {
+  return (
+    isRatingSnapshot(snapshot) &&
+    snapshot.playerFixtures.some(
+      (player) => (player.stats.minutes ?? 0) > 0 && player.rating == null,
+    )
+  );
+}
+
 export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
   const rating = isRatingSnapshot(snapshot);
+  if (hasPendingRatings(snapshot)) throw new Error("fantasy_ratings_pending");
   const rules = rating ? null : scoringRules(snapshot);
   const totals = new Map(
     snapshot.players.map((player) => [player.fantasyPlayerId, { points: 0, minutes: 0 }]),
@@ -876,6 +887,8 @@ export async function runFantasyLifecycle(
       break;
     }
     if (snapshot.sealed) throw new Error("fantasy_scoring_snapshot_state_mismatch");
+    if (hasPendingRatings(snapshot))
+      return { outcome: "waiting", gameweekId, reason: "fantasy_ratings_pending", calls };
     const unresolvedTeams = new Set(
       snapshot.adaptive && !snapshot.incremental
         ? snapshot.teams

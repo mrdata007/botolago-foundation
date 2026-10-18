@@ -2,7 +2,7 @@
 -- (owner decision of 2026-10-13, docs/backend/FANTASY_RATING_POINTS.md).
 --
 -- From GW5: a player's points for a match are his SofaScore rating rounded to the
--- nearest whole number (halves up), 5 when he appeared without a rating, 0 when he
+-- nearest whole number (halves up), pending when he appeared without a rating, 0 when he
 -- did not appear. Captain, vice-captain, chips, automatic substitutions and transfer
 -- hits are unchanged. GW1-4 and every result already saved stay exactly as they are.
 --
@@ -42,6 +42,9 @@ begin
        where version in ('20261014090000', '20261014090100')) <> 2 then
     raise exception 'stop: migrations 20261014090000 and 20261014090100 are not both applied';
   end if;
+  if not exists(select 1 from supabase_migrations.schema_migrations where version='20261018153305') then
+    raise exception 'stop: actual API rating requirement migration 20261018153305 is not applied';
+  end if;
   -- The reviewed bodies (md5 of pg_proc.prosrc, recomputed from the migration files by
   -- scripts/backend/activate-fantasy-rating-points-script.test.ts).
   if md5((select prosrc from pg_proc where oid = 'app_private.fantasy_rating_points_configure(uuid,boolean,integer)'::regprocedure))
@@ -49,9 +52,9 @@ begin
     or md5((select prosrc from pg_proc where oid = 'app_private.fantasy_scoring_input_document(uuid)'::regprocedure))
        is distinct from 'afadd0ff2962af449192608e22aaf507'
     or md5((select prosrc from pg_proc where oid = 'api.fantasy_rules(uuid)'::regprocedure))
-       is distinct from 'b22d36fc571080403f8ed0a8ae4a832f'
+       is distinct from '0b4e4f27ac3f510d968b21a8485aa9ae'
     or md5((select prosrc from pg_proc where oid = 'api.service_persist_fantasy_scoring_results(uuid,bigint,text,jsonb,jsonb)'::regprocedure))
-       is distinct from 'bc3f7628fad37bee9ba5b9bafb96f9b7' then
+       is distinct from '9722dc37a65013040a350383b08a478d' then
     raise exception 'stop: a function of the rating rule is not the reviewed body';
   end if;
   if not exists (select 1 from app.fantasy_rulesets where id = 'f6200000-0000-4000-8000-000000000300'

@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  NO_RATING_POINTS,
   isValidRating,
   ratingPoints,
   scoreRatingPlayerFixture,
@@ -22,10 +21,9 @@ describe("rating points (docs/backend/FANTASY_RATING_POINTS.md)", () => {
     expect(ratingPoints(0)).toBe(0);
   });
 
-  test("gives 5 points to an appearance without a rating", () => {
-    expect(NO_RATING_POINTS).toBe(5);
-    expect(ratingPoints(null)).toBe(5);
-    expect(ratingPoints(undefined)).toBe(5);
+  test("waits for an actual rating instead of supplying points", () => {
+    expect(() => ratingPoints(null)).toThrow("fantasy_ratings_pending");
+    expect(() => ratingPoints(undefined)).toThrow("fantasy_ratings_pending");
   });
 
   test("refuses a rating the database would refuse", () => {
@@ -51,9 +49,8 @@ describe("rating points (docs/backend/FANTASY_RATING_POINTS.md)", () => {
     expect(scoreRatingPlayerFixture("p", "f", true, 7.5)).toEqual([
       { category: "rating", points: 8, sourceKey: "fixture-stats:f:p:rating" },
     ]);
-    expect(scoreRatingPlayerFixture("p", "f", true, null)).toEqual([
-      { category: "rating", points: 5, sourceKey: "fixture-stats:f:p:rating" },
-    ]);
+    expect(() => scoreRatingPlayerFixture("p", "f", true, null)).toThrow("fantasy_ratings_pending");
+    expect(scoreRatingPlayerFixture("p", "f", false, null)).toEqual([]);
     expect(scoreRatingPlayerFixture("p", "f", false, 9.1)).toEqual([]);
   });
 });

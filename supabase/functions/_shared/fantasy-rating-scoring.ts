@@ -4,7 +4,7 @@
 //
 //   * his SofaScore rating for that match, rounded to the nearest whole number,
 //     halves up (7.5 -> 8, 7.49 -> 7, 6.5 -> 7);
-//   * 5 when he appeared (minutes > 0) and SofaScore gave him no rating;
+//   * pending when he appeared (minutes > 0) and SofaScore gave him no rating;
 //   * 0 when he did not appear (no event at all).
 //
 // That single `rating` event replaces every other category for those
@@ -13,7 +13,7 @@
 //
 // The database recomputes the same figure from the same snapshot before it
 // saves an event (api.service_persist_fantasy_scoring_results, migration
-// 20261014090100): floor(rating + 0.5), 5 without a rating. Ratings are stored
+// 20261018153305): floor(rating + 0.5), refusing a missing rating. Ratings are stored
 // with at most two decimals, so the arithmetic below is exact in both places.
 //
 // Dependency free: Bun (tests) and Deno (the Edge Function).
@@ -26,8 +26,6 @@ export const RATING_RULESET_VERSION = 3;
 export const RATING_SCORING_VERSION = 3;
 /** The one category a rating gameweek writes. */
 export const RATING_CATEGORY = "rating";
-/** Points for a player who appeared with no SofaScore rating. */
-export const NO_RATING_POINTS = 5;
 /** The range a stored rating may take (SofaScore rates from 3.0 to 10.0). */
 export const RATING_MIN = 0;
 export const RATING_MAX = 10;
@@ -51,12 +49,12 @@ export function storedRating(value: unknown): number | null {
 }
 
 /**
- * The points for one appearance: the rating rounded half up, or 5 without a
- * rating. Computed in hundredths so 7.5 and 6.5 never meet a binary rounding
+ * The points for one appearance: the actual rating rounded half up. A missing
+ * rating leaves scoring pending. Computed in hundredths so 7.5 and 6.5 never meet a binary rounding
  * error (both are 750 and 650 hundredths exactly).
  */
 export function ratingPoints(rating: number | null | undefined): number {
-  if (rating === null || rating === undefined) return NO_RATING_POINTS;
+  if (rating === null || rating === undefined) throw new Error("fantasy_ratings_pending");
   if (!isValidRating(rating)) throw new Error("fantasy_rating_invalid");
   const cents = Math.round(rating * 100);
   return Math.floor((cents + 50) / 100);
