@@ -52,9 +52,11 @@ def readiness(target) -> dict:
 
 def deploy(target, ref: str, run=subprocess.run) -> dict:
     validate_ref(ref)
+    print(json.dumps({"phase": "readiness"}), flush=True)
     readiness(target)
     config = tomllib.loads((ROOT / "supabase/config.toml").read_text())
     names = sorted(p.name for p in (ROOT / "supabase/functions").iterdir() if p.is_dir() and (p / "index.ts").is_file())
+    print(json.dumps({"phase": "scheduler_transfer"}), flush=True)
     token = target.rows("select app_private.scheduler_token() as token")[0]["token"]
     if not isinstance(token, str) or len(token) < 32:
         raise RuntimeError("staging_runtime_invalid_scheduler")
@@ -62,6 +64,7 @@ def deploy(target, ref: str, run=subprocess.run) -> dict:
         {"name": "BOTOLAGO_SCHEDULER_TOKEN", "value": token}
     ], 60)
     del token
+    print(json.dumps({"phase": "edge_deployment"}), flush=True)
     deployed = []
     for name in names:
         command = [str(ROOT / "node_modules/.bin/supabase"), "functions", "deploy", name,
@@ -95,14 +98,16 @@ def main() -> int:
     try:
         ref = os.environ.get("SUPABASE_STAGING_PROJECT_REF", "")
         validate_ref(ref)
+        print(json.dumps({"phase": "target_validation"}), flush=True)
         target = UPDATE.ManagementTarget(os.environ["SUPABASE_ACCESS_TOKEN"], ref)
         report = deploy(target, ref)
         print(json.dumps({"passed": True, **report}, sort_keys=True, indent=2))
         return 0
-    except Exception:
+    except Exception as error:
         # Do not print an upstream response, exception payload, or subprocess
         # stderr: secret-store requests can carry credentials.
-        print(json.dumps({"passed": False, "error": "staging_runtime_setup_failed"}))
+        code = str(error) if type(error) is RuntimeError and str(error).startswith("staging_runtime_") else "staging_runtime_setup_failed"
+        print(json.dumps({"passed": False, "error": code, "error_type": type(error).__name__}))
         return 1
 
 
