@@ -49,7 +49,7 @@ export function safeError(error: unknown) {
   if (error instanceof RapidApiRequestError)
     return { reason: error.reason, httpStatus: error.httpStatus, retryAfterMs: error.retryAfterMs };
   if (error instanceof CollectionError)
-    return { reason: error.reason, httpStatus: null, retryAfterMs: null };
+    return { reason: error.reason, field: error.field, httpStatus: null, retryAfterMs: null };
   return { reason: "collection_or_payload_failed", httpStatus: null, retryAfterMs: null };
 }
 export function parseEvent(raw: unknown, eventId: string, now: number): CollectedEvent {
@@ -82,7 +82,15 @@ const rawLineups = z.object({
   home: z.object({ players: z.array(rawPlayer).min(11).max(40) }),
   away: z.object({ players: z.array(rawPlayer).min(11).max(40) }),
 });
-const signed = new Set(["keeperSaveValue", "goalsPrevented"]);
+const signed = new Set([
+  "keeperSaveValue",
+  "goalsPrevented",
+  "passValueNormalized",
+  "defensiveValueNormalized",
+  "goalkeeperValueNormalized",
+  "dribbleValueNormalized",
+  "shotValueNormalized",
+]);
 // Counts whose units were established in the coverage audit. Other finite numeric
 // metrics can be fractional; do not infer their units from an unfamiliar name.
 const counters = new Set([

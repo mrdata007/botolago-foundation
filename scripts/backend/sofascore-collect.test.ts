@@ -86,6 +86,24 @@ describe("mock collection validation (no live calls)", () => {
     expect(result.players[0]!.rating).toBeNull();
     expect(result.players[11]!.ratingState).toBe("not_applicable");
   });
+  test("preserves signed fractional normalized metrics from the live response shape", () => {
+    const data = lineups();
+    Object.assign(data.home.players[0]!.statistics!, {
+      passValueNormalized: -0.25,
+      defensiveValueNormalized: -0.7,
+      goalkeeperValueNormalized: -0.125,
+      dribbleValueNormalized: -0.3,
+      shotValueNormalized: -0.4,
+      ratingVersions: { original: 6.5, alternative: 6.6 },
+      statisticsType: { sportSlug: "football", statisticsType: "player" },
+    });
+    const parsed = collectLineups(event(), data, observed, "mock");
+    expect(parsed.players[0]!.statistics.passValueNormalized).toBe(-0.25);
+    expect(parsed.ratedPlayers).toBe(22);
+    expect(() => numericStatistics({ passValueNormalized: -101 })).toThrow(
+      "invalid_statistic_value",
+    );
+  });
   test("missing starter data and late unrated substitutes remain pending", () => {
     const data = lineups();
     data.home.players[0]!.statistics = undefined;
