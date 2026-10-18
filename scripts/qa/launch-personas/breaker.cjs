@@ -117,19 +117,17 @@ const read = new Set([
           .evaluateAll((ns) =>
             ns.map((n) => ({ text: n.innerText, href: n.getAttribute("href") })),
           ),
-        inputs: await p
-          .locator("input")
-          .evaluateAll((ns) =>
-            ns.map((n) => ({
-              type: n.type,
-              name: n.name,
-              id: n.id,
-              placeholder: n.placeholder,
-              value: n.value,
-              valid: n.validity.valid,
-              validation: n.validationMessage,
-            })),
-          ),
+        inputs: await p.locator("input").evaluateAll((ns) =>
+          ns.map((n) => ({
+            type: n.type,
+            name: n.name,
+            id: n.id,
+            placeholder: n.placeholder,
+            value: n.value,
+            valid: n.validity.valid,
+            validation: n.validationMessage,
+          })),
+        ),
       };
       results.steps.push(step);
       fs.writeFileSync(out + "/after.json", JSON.stringify(results, null, 2));

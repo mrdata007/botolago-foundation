@@ -18,19 +18,17 @@ fs.mkdirSync(dir, { recursive: true });
       label,
       url: page.url(),
       text: await page.locator("body").innerText(),
-      fields: await page
-        .locator("input")
-        .evaluateAll((xs) =>
-          xs
-            .filter((x) => x.type !== "password")
-            .map((x) => ({
-              type: x.type,
-              name: x.name,
-              id: x.id,
-              value: x.value,
-              checked: x.checked,
-            })),
-        ),
+      fields: await page.locator("input").evaluateAll((xs) =>
+        xs
+          .filter((x) => x.type !== "password")
+          .map((x) => ({
+            type: x.type,
+            name: x.name,
+            id: x.id,
+            value: x.value,
+            checked: x.checked,
+          })),
+      ),
     });
     console.log(label, rows.at(-1));
   }
