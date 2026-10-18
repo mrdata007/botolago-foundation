@@ -8,6 +8,8 @@ Preserve locked selections, captain/chip/substitution/transfer-hit rules, authen
 
 ## Improvements
 
+Owner refinement: audit each match against the supplied SofaScore tournament/season (937 / 102220). Missing player points show a looping awaiting-rating indicator inside the points box, never a numeric zero. Include an accessible label and a static reduced-motion state.
+
 Publish reviewed historical rating revisions without deleting or reopening old final calculations. Points, history, round summaries and standings must agree on the published revision. Display pending players explicitly rather than turning missing data into a zero. Publish available points without whole-round blocking. Run the existing trusted scorer on the database clock, under its existing global lease; retain GitHub as fallback. Bound provider retries, prioritize recent fixtures fairly, and expose source/calculation freshness.
 
 ## Evidence and acceptance

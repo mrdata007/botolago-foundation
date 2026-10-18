@@ -174,5 +174,53 @@ select extensions.throws_ok($$select api.service_begin_fantasy_finalization(pg_t
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '3 hours',last_attempt_at=statement_timestamp()-interval '1 hour' where fixture_id=pg_temp.rid(3002);
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a stale native fixture gets one bounded poll claim');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'even a failed provider request cannot be retried again within fifteen minutes');
+-- A published historical revision exposes real points without replacing its
+-- original final result or seal. Missing data stays NULL in the projection.
+update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp() where id=pg_temp.rid(25);
+update app.fantasy_team_gameweek_results set state='final',final_score=96,finalized_at=statement_timestamp() where gameweek_id=pg_temp.rid(25);
+select set_config('test.history_before',(select md5(to_jsonb(r)::text) from app.fantasy_team_gameweek_results r where r.gameweek_id=pg_temp.rid(25)),true);
+select set_config('test.hist_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select set_config('test.hist_results',(select jsonb_build_object('playerResults',
+ (select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','fixtureId',p->'fixtureId','events',
+ case when p->>'apiAppeared'='true' then jsonb_build_array(jsonb_build_object('category','rating','points',8,
+ 'sourceKey','fixture-stats:'||(p->>'fixtureId')||':'||(p->>'playerId')||':rating')) else '[]'::jsonb end))
+ from jsonb_array_elements(current_setting('test.hist_preview')::jsonb->'playerFixtures') p),
+ 'teamResults',(select jsonb_build_array(jsonb_build_object('teamId',pg_temp.rid(9),'lineupId',pg_temp.rid(30),
+ 'startingPoints',80,'benchPoints',32,'captainPoints',8,'transferHit',0,'provisionalScore',88,'effectiveCaptainId',pg_temp.rid(2028),
+ 'substitutions','[]'::jsonb,'players',jsonb_agg(jsonb_build_object('fantasyPlayerId',lp.fantasy_player_id,
+ 'multiplier',case when lp.captain then 2 when lp.slot='starter' then 1 else 0 end))))
+ from app.fantasy_lineup_players lp where lp.lineup_id=pg_temp.rid(30)))::text),true);
+select app_private.fantasy_stage_api_rating_recovery(pg_temp.rid(25),current_setting('test.hist_preview')::jsonb->>'inputDigest',
+ current_setting('test.hist_results')::jsonb,'Owner approved historical available rating publication');
+select set_config('test.hist_plan',(select id::text from app_private.fantasy_rating_recovery_plans where gameweek_id=pg_temp.rid(25) order by id desc limit 1),true);
+select extensions.throws_ok($$select app_private.fantasy_publish_rating_recovery(current_setting('test.hist_plan')::bigint,repeat('0',64),'Owner approved historical available rating publication')$$,
+ 'P0001','rating_publication_plan_mismatch','historical publication rejects an unreviewed digest');
+select extensions.is(app_private.fantasy_publish_rating_recovery(current_setting('test.hist_plan')::bigint,
+ current_setting('test.hist_preview')::jsonb->>'inputDigest','Owner approved historical available rating publication')->>'published','true','historical actual points are published');
+select extensions.is((select provisional_score from app_private.fantasy_visible_team_results where gameweek_id=pg_temp.rid(25)),88,'the visible revision uses the shared scorer total');
+select extensions.is((select md5(to_jsonb(r)::text) from app.fantasy_team_gameweek_results r where gameweek_id=pg_temp.rid(25)),current_setting('test.history_before'),'original final result is unchanged byte for byte');
+select extensions.is((select md5(to_jsonb(s)::text) from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),current_setting('test.past_seal'),'publication does not change a historical seal');
+select extensions.is((select provisional_points from app_private.fantasy_visible_player_points where gameweek_id=pg_temp.rid(25) and fantasy_player_id=pg_temp.rid(2023)),null::integer,'the unrated player is pending rather than zero');
+select extensions.is((select count(*)::int from app_private.fantasy_visible_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating'),0,'the historical projection contains only real rating events');
+select extensions.is((select gameweek_points from app.fantasy_rankings where gameweek_id=pg_temp.rid(25) and league_id is null and fantasy_team_id=pg_temp.rid(9)),88,'rankings use the same published total');
+select extensions.is(app_private.fantasy_publish_rating_recovery(current_setting('test.hist_plan')::bigint,
+ current_setting('test.hist_preview')::jsonb->>'inputDigest','Owner approved historical available rating publication')->>'alreadyPublished','true','publication retries are idempotent');
+select extensions.throws_ok($$update app_private.fantasy_rating_recovery_plans set complete=true where id=current_setting('test.hist_plan')::bigint$$,
+ 'P0001','published_rating_revision_immutable','a published calculation cannot be edited');
+select extensions.ok(not has_function_privilege('service_role','app_private.fantasy_publish_rating_recovery(bigint,text,text)','execute'),'workers cannot publish historical revisions');
+select extensions.ok(not has_table_privilege('authenticated','app_private.fantasy_visible_team_results','select'),'private projections do not expose other managers');
+select set_config('request.jwt.claims',jsonb_build_object('sub',pg_temp.rid(8),'role','authenticated')::text,true);
+select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))#>>'{result,provisionalScore}','88','authenticated points use the published calculation');
+select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->>'pointsState','provisional','a historical final status does not mislabel incomplete rating points as final');
+select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))#>>'{ratingPublication,historicalRevision}','true','the client receives the historical revision status');
+select extensions.ok(exists(select 1 from jsonb_array_elements(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->'players') p
+ where p->>'fantasyPlayerId'=pg_temp.rid(2023)::text and p->>'ratingPending'='true' and p->'provisionalPoints'='null'::jsonb),'the unrated selected player is explicitly pending in the owned API');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+-- Recent finished fixtures are retried promptly and reservations prevent bursts.
+update app.fixtures set finalized_at=statement_timestamp()-interval '1 hour' where id=pg_temp.rid(3002);
+update app.fantasy_gameweeks set status='provisional',points_state='provisional',finalized_at=null where id=pg_temp.rid(25);
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '7 minutes',last_attempt_at=statement_timestamp()-interval '7 minutes' where fixture_id=pg_temp.rid(3002);
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'recent post-match ratings are polled within five minutes');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'a reserved recent poll cannot be claimed again immediately');
 select * from extensions.finish();
 rollback;
