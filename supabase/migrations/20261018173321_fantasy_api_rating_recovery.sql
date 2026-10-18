@@ -146,17 +146,17 @@ begin
  fixtures as(select f from jsonb_array_elements(fs) f),
  pairs as (
  select distinct p,f,m.external_id,
- case when jsonb_typeof(raw.p->'minutes')='number' then raw.p->'minutes'
-      when raw.p is null and m.external_id is not null then '0'::jsonb else 'null'::jsonb end as minutes,
- case when raw.p is not null then (raw.p->>'appeared')::boolean else false end as appeared,
- raw.p->'rating' as rating,
+ case when jsonb_typeof(raw.entry->'minutes')='number' then raw.entry->'minutes'
+      when raw.entry is null and m.external_id is not null then '0'::jsonb else 'null'::jsonb end as minutes,
+ case when raw.entry is not null then (raw.entry->>'appeared')::boolean else false end as appeared,
+ raw.entry->'rating' as rating,
  m.external_id is not null as known
  from players cross join fixtures
  join app.fixtures fi on fi.id=(f->>'fixtureId')::uuid
  left join app_private.football_provider_mappings m on m.provider_name='sofascore' and m.entity_type='player'
  and m.active and m.internal_entity_id=(p->>'playerId')::uuid
  left join app_private.fantasy_api_rating_sources s on s.id=(f->>'apiRatingSourceId')::bigint
- left join lateral(select r as p from jsonb_array_elements(s.players) r where r->>'externalId'=m.external_id) raw on true
+ left join lateral(select r as entry from jsonb_array_elements(s.players) r where r->>'externalId'=m.external_id) raw on true
  where exists(select 1 from app.team_memberships tm where tm.player_id=(p->>'playerId')::uuid
  and tm.season_id=fi.season_id and tm.team_id in(fi.home_team_id,fi.away_team_id)
  and tm.valid_from<=fi.kickoff_at::date and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date))
@@ -234,9 +234,9 @@ revoke all on function app_private.fantasy_validate_scoring_document(jsonb) from
 create function api.service_fantasy_api_rating_context(p_fixture_id uuid)
 returns jsonb language sql stable security definer set search_path='' as $$
  select case when not app_private.is_service_request() then null else jsonb_build_object('enabled',
- exists(select 1 from app.fantasy_fixture_assignments a join app.fantasy_gameweeks g on g.id=a.gameweek_id
- join app_private.fantasy_api_rating_seasons p on p.season_id=g.fantasy_season_id
- where a.fixture_id=p_fixture_id and a.superseded_at is null and g.sequence_number>=p.from_gameweek)) end;
+ exists(select 1 from app.fixtures f join app.fantasy_seasons fs on fs.football_season_id=f.season_id
+ join app_private.fantasy_api_rating_seasons p on p.season_id=fs.id
+ where f.id=p_fixture_id)) end;
 $$;
 revoke all on function api.service_fantasy_api_rating_context(uuid) from public,anon,authenticated;
 grant execute on function api.service_fantasy_api_rating_context(uuid) to service_role;
@@ -266,7 +266,7 @@ declare gw app.fantasy_gameweeks%rowtype; snapshot app_private.fantasy_scoring_s
   -- snapshot.payload is large. Read each part once: a reference to the record field inside a
   -- loop or a per-row subquery makes the executor fetch and copy the whole document again.
   v_player_fixtures jsonb; v_players jsonb; v_pending jsonb; v_rules jsonb; v_ruleset jsonb;
-  v_adaptive boolean:=false; v_bad integer; v_digest text; v_scoring_version text; v_rating boolean:=false;
+  v_adaptive boolean:=false; v_api_native boolean:=false; v_bad integer; v_digest text; v_scoring_version text; v_rating boolean:=false;
 begin
   if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
   if p_gameweek_id is null or p_calculation_version is null or p_calculation_version<1
@@ -281,6 +281,7 @@ begin
   if gw.status<>'provisional' and not (gw.status='live' and (app_private.fantasy_adaptive_enabled(gw.id) or app_private.fantasy_live_scoring_enabled(gw.id))) then raise exception using errcode='PT409',message='gameweek_not_scorable'; end if;
   snapshot:=app_private.fantasy_assert_scoring_snapshot(gw.id,p_calculation_version,p_input_digest);
   if snapshot.sealed_at is not null then raise exception using errcode='PT409',message='fantasy_scoring_sealed'; end if;
+  v_api_native:=snapshot.payload->>'apiNativeRatings'='true';
   v_player_fixtures:=snapshot.payload->'playerFixtures';
   v_players:=snapshot.payload->'players';
   v_pending:=coalesce(snapshot.payload->'pendingPlayerIds','[]'::jsonb);
@@ -341,7 +342,7 @@ begin
         floor((pf.j->>'rating')::numeric+0.5)::integer
       from pf
       where v_rating and v_adaptive
-        and case when snapshot.payload->>'apiNativeRatings'='true' then pf.j->>'apiAppeared'='true'
+        and case when v_api_native then pf.j->>'apiAppeared'='true'
           else (case when pf.j->>'scoringMode'='simple' then app_private.fantasy_field_scorable(pf.j,'minutes')
                  else app_private.fantasy_field_certified(pf.j,'minutes') end
           and case when jsonb_typeof(pf.j#>'{stats,minutes}')='number' then (pf.j#>>'{stats,minutes}')::numeric>0 else false end) end

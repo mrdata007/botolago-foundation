@@ -83,5 +83,58 @@ select extensions.ok(not has_function_privilege('authenticated','api.service_rec
 select extensions.is((app_private.fantasy_api_rating_preview(pg_temp.rid(24))->>'apiNativeRatings'),'true','owner preview builds native input without enabling a policy');
 select extensions.is((select count(*)::int from app_private.fantasy_api_rating_seasons),0,'a preview changes no active scoring policy');
 select extensions.is(app_private.fantasy_scoring_input_document(pg_temp.rid(24))->>'apiNativeRatings',null::text,'ordinary documents are unchanged while the native policy is off');
+
+select extensions.ok((select prosrc like '%app_private.manager_card_settings%' and prosrc !~ 'app\.manager_cards|app\.manager_card_seasons|app\.manager_card_gameweeks'
+ from pg_proc where oid='app_private.fantasy_activate_api_ratings(uuid,text,text)'::regprocedure),'maintenance only reads the card writer switch, never card scores');
+select extensions.ok((select prosrc like '%app_private.trophy_settings%' and prosrc !~ 'app\.trophies_earned|app\.trophy_catalog|app\.card_frames'
+ from pg_proc where oid='app_private.fantasy_activate_api_ratings(uuid,text,text)'::regprocedure),'maintenance only reads the trophy writer switch, never trophy awards');
+
+-- Exercise the real staged-plan -> cutover -> guarded persistence path.
+insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
+select 'sofascore','player',(i-22)::text,pg_temp.rid(1000+i),'test',now() from generate_series(23,44) i;
+insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
+values('sofascore','player','99',pg_temp.rid(1045),'test',now());
+select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(),statement_timestamp());
+insert into app_private.fantasy_adaptive_policy(season_id,from_gameweek,ruleset_id)
+values(pg_temp.rid(5),4,'f6200000-0000-4000-8000-000000000200');
+insert into app_private.fantasy_live_scoring_policy(season_id,enabled) values(pg_temp.rid(5),true);
+insert into app.fantasy_lineups(id,fantasy_team_id,gameweek_id,team_version,locked_at)
+values(pg_temp.rid(30),pg_temp.rid(9),pg_temp.rid(25),1,'2026-08-17 10:30Z');
+insert into app.fantasy_lineup_players(lineup_id,fantasy_player_id,slot,slot_order,captain,vice_captain,snapshot_price)
+select pg_temp.rid(30),pg_temp.rid(2000+n),case when ord<=11 then 'starter'::app.fantasy_lineup_slot else 'bench'::app.fantasy_lineup_slot end,
+ case when ord<=11 then ord else ord-11 end,n=28,n=29,6
+from unnest(array[23,24,25,26,27,28,29,30,31,32,33,34,35,39,43]) with ordinality as selected(n,ord);
+update app.fantasy_gameweeks set status='provisional' where id=pg_temp.rid(25);
+select set_config('test.native_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select set_config('test.native_results',(select jsonb_build_object('playerResults',
+ (select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','fixtureId',p->'fixtureId','events',
+ case when p->>'apiAppeared'='true' then jsonb_build_array(jsonb_build_object('category','rating','points',8,
+ 'sourceKey','fixture-stats:'||(p->>'fixtureId')||':'||(p->>'playerId')||':rating')) else '[]'::jsonb end))
+ from jsonb_array_elements(current_setting('test.native_preview')::jsonb->'playerFixtures') p),
+ 'teamResults',(select jsonb_build_array(jsonb_build_object('teamId',pg_temp.rid(9),'lineupId',pg_temp.rid(30),
+ 'startingPoints',88,'benchPoints',32,'captainPoints',8,'transferHit',0,'provisionalScore',96,'effectiveCaptainId',pg_temp.rid(2028),
+ 'substitutions','[]'::jsonb,'players',jsonb_agg(jsonb_build_object('fantasyPlayerId',lp.fantasy_player_id,
+ 'multiplier',case when lp.captain then 2 when lp.slot='starter' then 1 else 0 end))))
+ from app.fantasy_lineup_players lp where lp.lineup_id=pg_temp.rid(30)))::text),true);
+select extensions.is(app_private.fantasy_stage_api_rating_recovery(pg_temp.rid(25),
+ current_setting('test.native_preview')::jsonb->>'inputDigest',current_setting('test.native_results')::jsonb,
+ 'Owner approved actual API ratings only')->>'published','false','staging does not publish a score');
+select extensions.is((select count(*)::int from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),0,'staged calculations leave public results untouched');
+select app_private.fantasy_automation_configure(false);
+select app_private.notification_email_configure('off',null,null,false);
+select app_private.account_deletion_configure(false);
+select app_private.manager_card_configure(false,null);
+select app_private.rivals_configure(false);
+select app_private.trophy_configure(false);
+select extensions.throws_ok($$select app_private.fantasy_activate_api_ratings(pg_temp.rid(25),repeat('0',64),'Owner approved actual API ratings only')$$,
+ 'P0001','rating_cutover_inputs_changed_or_no_ratings','a changed input digest cannot activate scoring');
+select extensions.is(app_private.fantasy_activate_api_ratings(pg_temp.rid(25),
+ current_setting('test.native_preview')::jsonb->>'inputDigest','Owner approved actual API ratings only')->>'finalized','false',
+ 'owner cutover publishes provisional results without finalizing');
+select extensions.is((select provisional_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),96,'SQL independently verifies the rating-only team total');
+select extensions.is((select final_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),null::integer,'the cutover does not create a final score');
+select extensions.is((select status::text from app.fantasy_gameweeks where id=pg_temp.rid(25)),'provisional','gameweek status is preserved');
+select extensions.is((select count(*)::int from app.fantasy_player_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating' and superseded_at is null),0,'no goals, assists, cards or minute events enter the rating ledger');
+select extensions.is(api.service_fantasy_api_rating_context(pg_temp.rid(3001))->>'enabled','true','the season-wide native path also prevents old-match identity linking');
 select * from extensions.finish();
 rollback;
