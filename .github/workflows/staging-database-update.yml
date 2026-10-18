@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "plan (read only), rehearse (rolled back), apply, seed, or check (read only)"
+        description: "plan/check (read only), rehearse, apply, seed, or deploy staging runtime"
         required: true
         type: choice
         default: plan
@@ -19,8 +19,9 @@ on:
           - apply
           - seed
           - check
+          - runtime
       confirmation:
-        description: "For rehearse, apply and seed: type UPDATE_STAGING_DATABASE"
+        description: "For rehearse, apply, seed and runtime: type UPDATE_STAGING_DATABASE"
         required: false
         type: string
 
@@ -53,7 +54,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check) ;;
-            rehearse|apply|seed) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -68,13 +69,33 @@ jobs:
           python-version: "3.12"
 
       - name: No other staging writer is running
-        if: inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed'
+        if: inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed' || inputs.action == 'runtime'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/backend/staging-writer-guard.py
 
+      - name: Set up Bun for the staging runtime
+        if: inputs.action == 'runtime'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install pinned runtime deployment tooling
+        if: inputs.action == 'runtime'
+        run: |
+          node scripts/backend/check-config-integrity.mjs
+          bun install --frozen-lockfile
+
+      - name: Deploy staging runtime
+        if: inputs.action == 'runtime'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-release-runtime.py
+
       - name: Run ${{ inputs.action }}
+        if: inputs.action != 'runtime'
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
