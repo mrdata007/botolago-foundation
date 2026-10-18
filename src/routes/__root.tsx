@@ -1,3 +1,4 @@
+import { ADVERTISING, validPublisherId } from "@/lib/advertising";
 import notFoundArt from "@/assets/illustrations/not-found.webp";
 import errorArt from "@/assets/illustrations/no-connection.webp";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
@@ -248,6 +249,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Actualités, calendrier et Fantasy de la Botola Pro, avec une interface en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
+      ...(validPublisherId(ADVERTISING.publisherId)
+        ? [{ name: "google-adsense-account", content: ADVERTISING.publisherId }]
+        : []),
       // The commit this build came from (see vite.config.ts).
       { name: "botolago-release", content: currentRelease() },
       {

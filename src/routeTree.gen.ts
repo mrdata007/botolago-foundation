@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdsDottxtRouteImport } from './routes/ads[.]txt'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CurvaRouteImport } from './routes/curva'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -121,6 +122,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdsDottxtRoute = AdsDottxtRouteImport.update({
+  id: '/ads.txt',
+  path: '/ads.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -642,6 +648,7 @@ const PronosticsLiguesRejoindreRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/ads.txt': typeof AdsDottxtRoute
   '/auth': typeof AuthRouteWithChildren
   '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
@@ -747,6 +754,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/ads.txt': typeof AdsDottxtRoute
   '/demo': typeof DemoRoute
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
@@ -847,6 +855,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/ads.txt': typeof AdsDottxtRoute
   '/auth': typeof AuthRouteWithChildren
   '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
@@ -954,6 +963,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/ads.txt'
     | '/auth'
     | '/curva'
     | '/demo'
@@ -1059,6 +1069,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/ads.txt'
     | '/demo'
     | '/jouer'
     | '/mcp'
@@ -1158,6 +1169,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/ads.txt'
     | '/auth'
     | '/curva'
     | '/demo'
@@ -1264,6 +1276,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdsDottxtRoute: typeof AdsDottxtRoute
   AuthRoute: typeof AuthRouteWithChildren
   CurvaRoute: typeof CurvaRouteWithChildren
   DemoRoute: typeof DemoRoute
@@ -1317,6 +1330,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ads.txt': {
+      id: '/ads.txt'
+      path: '/ads.txt'
+      fullPath: '/ads.txt'
+      preLoaderRoute: typeof AdsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -2289,6 +2309,7 @@ const PronosticsRouteWithChildren = PronosticsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdsDottxtRoute: AdsDottxtRoute,
   AuthRoute: AuthRouteWithChildren,
   CurvaRoute: CurvaRouteWithChildren,
   DemoRoute: DemoRoute,

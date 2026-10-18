@@ -2,6 +2,12 @@
 // checks it). Loaded on demand by the language provider, so a French reader
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
+  "ads.label": "إعلان",
+  "ads.sponsored": "محتوى برعاية",
+  "ads.placeholder": "علامتكم هنا",
+  "ads.available": "مساحة متاحة للشركاء",
+  "ads.contact": "تواصلوا معنا",
+
   "fantasy.scoring.incrementalPolicy":
     "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وقد تتغير النقاط خلال الجولة. تُطبَّق الاستبدالات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
   "fantasy.scoring.closedProvisional":
