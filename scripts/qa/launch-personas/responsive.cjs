@@ -12,7 +12,10 @@ fs.mkdirSync(dir, { recursive: true });
   try {
     for (const language of ["fr", "ar"])
       for (const width of [375, 1440]) {
-        const context = await browser.newContext({ viewport: { width, height: 900 } });
+        const context = await browser.newContext({
+          viewport: { width, height: 900 },
+          reducedMotion: "reduce",
+        });
         const page = await context.newPage();
         page.setDefaultTimeout(20000);
         await page.goto("http://127.0.0.1:4173/jouer", { waitUntil: "domcontentloaded" });
@@ -38,15 +41,14 @@ fs.mkdirSync(dir, { recursive: true });
         await page.locator('[data-testid="landing-page"] a[href^="/auth/login"]').first().click();
         await page.locator('a[href^="/auth/register"]').first().click();
         await page.locator("input[type=email]").waitFor();
-        const inputs = await page
-          .locator("input:not([type=checkbox])")
-          .evaluateAll((nodes) =>
-            nodes.map((n) => ({
-              type: n.type,
-              x: n.getBoundingClientRect().x,
-              right: n.getBoundingClientRect().right,
-            })),
-          );
+        await page.waitForTimeout(300);
+        const inputs = await page.locator("input:not([type=checkbox])").evaluateAll((nodes) =>
+          nodes.map((n) => ({
+            type: n.type,
+            x: n.getBoundingClientRect().x,
+            right: n.getBoundingClientRect().right,
+          })),
+        );
         if (inputs.some((r) => r.x < 0 || r.right > width + 1)) throw Error("Auth field clipped");
         await page.screenshot({
           path: path.join(dir, `${language}-${width}-register.png`),
