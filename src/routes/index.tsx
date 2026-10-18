@@ -575,10 +575,11 @@ function HomeContent() {
       {/* Phone: one column, in the order the order-N classes give. From 768px
           the three columns below are real columns (`contents` on a phone lets
           their children join the one list): tablet is the hero across the
-          top and two columns under it, desktop is 340 / fluid / 340. */}
-      <div className="flex flex-col md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:grid-cols-[340px_minmax(0,1fr)_340px]">
-        <div className="contents md:flex md:flex-col lg:min-w-0 md:col-span-2 lg:order-2 lg:col-span-1">
-          <div className="order-1 lg:min-w-0">
+          top and two columns under it. Three flexible columns start at 1280px,
+          where the central match card has enough room for both club names. */}
+      <div className="flex flex-col md:grid md:grid-cols-2 md:items-start md:gap-x-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="contents md:col-span-2 md:flex md:min-w-0 md:flex-col xl:order-2 xl:col-span-1">
+          <div className="order-1 md:min-w-0">
             <GameweekBand
               afterStrip={stripTime !== null}
               greeting={greeting}
@@ -649,12 +650,12 @@ function HomeContent() {
             </Section>
           )}
         </div>
-        <div className="contents md:flex md:flex-col lg:min-w-0 md:order-2 lg:order-1">
+        <div className="contents md:order-2 md:flex md:min-w-0 md:flex-col xl:order-1">
           {(matchesQ.isError ||
             upcomingDays.length > 0 ||
             homeMatches.length === 0 ||
             myClubs.length > 0) && (
-            <Section className="order-3 lg:mt-0">
+            <Section className="order-3 xl:mt-0">
               <SectionHeader
                 as="h3"
                 title={t("matches.section.upcoming")}
@@ -795,14 +796,14 @@ function HomeContent() {
             </div>
           </Section>
         </div>
-        <div className="contents md:flex md:flex-col lg:min-w-0 md:order-3 lg:order-3">
+        <div className="contents md:order-3 md:flex md:min-w-0 md:flex-col">
           {/* -------------------------------------------------------- */}
           {/* 3. Fantasy — the manager's card / team entry              */}
           {/* -------------------------------------------------------- */}
           {/* The card names itself ("VOTRE FANTASY · ATLAS XI"), as the board
           draws it; the heading is for the document outline. */}
           <Section
-            className={cn("lg:order-4 lg:mt-0", fantasyFirst ? "-order-1 sm:mt-0" : "order-5")}
+            className={cn("xl:order-4 xl:mt-0", fantasyFirst ? "-order-1 sm:mt-0" : "order-5")}
           >
             <h2 className="sr-only">{plain(t("home.fantasy_hub"))}</h2>
             {status === "loading" || availability.isPending ? (
@@ -872,7 +873,7 @@ function HomeContent() {
           {/* Pronostics (BG-0146), right after the matches: shown once promoted,
           and it hides itself while the game is off in the database. */}
           {PRONOSTICS_PROMOTED && (
-            <Section className="order-4 lg:order-5">
+            <Section className="order-4 xl:order-5">
               <PredictionsHomeCard />
             </Section>
           )}

@@ -37,8 +37,8 @@ describe("Accueil (Home) structural contract", () => {
     // From 768px the sections sit in columns, so the source is grouped by
     // column and the phone order is carried by `order-N` classes. Phone order:
     // matches 3, Pronostics 4, Fantasy 5, news 6, standings 7, discovery 8.
-    expect(source).toContain('<Section className="order-3 lg:mt-0">'); // upcoming matches
-    expect(source).toContain('<Section className="order-4 lg:order-5">'); // Pronostics
+    expect(source).toContain('<Section className="order-3 xl:mt-0">'); // upcoming matches
+    expect(source).toContain('<Section className="order-4 xl:order-5">'); // Pronostics
     expect(source).toContain('fantasyFirst ? "-order-1 sm:mt-0" : "order-5"'); // Fantasy
     expect(source).toContain('<Section className="order-6">'); // news
     expect(source).toContain('<Section className="order-7">'); // standings
