@@ -159,9 +159,10 @@ begin
  and m.active and m.internal_entity_id=(p->>'playerId')::uuid
  left join app_private.fantasy_api_rating_sources s on s.id=(f->>'apiRatingSourceId')::bigint
  left join lateral(select r as entry from jsonb_array_elements(s.players) r where r->>'externalId'=m.external_id) raw on true
- where exists(select 1 from app.team_memberships tm where tm.player_id=(p->>'playerId')::uuid
+ where (raw.entry is not null or (p->>'teamId')::uuid in(fi.home_team_id,fi.away_team_id)
+ or exists(select 1 from app.team_memberships tm where tm.player_id=(p->>'playerId')::uuid
  and tm.season_id=fi.season_id and tm.team_id in(fi.home_team_id,fi.away_team_id)
- and tm.valid_from<=fi.kickoff_at::date and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date))
+ and tm.valid_from<=fi.kickoff_at::date and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date)))
  and (raw.entry is null or ((raw.entry->>'uncertain')::boolean is false
  and ((raw.entry->>'appeared')::boolean is false or jsonb_typeof(raw.entry->'rating')='number')))
  ), built as (
@@ -178,9 +179,10 @@ begin
  and exists(select 1 from app.fantasy_lineup_players lp join app.fantasy_lineups l on l.id=lp.lineup_id
  where l.gameweek_id=p_gameweek_id and lp.fantasy_player_id=(p->>'fantasyPlayerId')::uuid))
  or exists(select 1 from jsonb_array_elements(pending) f join app.fixtures fi on fi.id=(f->>'fixtureId')::uuid
- join app.team_memberships tm on tm.player_id=(p->>'playerId')::uuid and tm.season_id=fi.season_id
+ where (p->>'teamId')::uuid in(fi.home_team_id,fi.away_team_id)
+ or exists(select 1 from app.team_memberships tm where tm.player_id=(p->>'playerId')::uuid and tm.season_id=fi.season_id
  and tm.team_id in(fi.home_team_id,fi.away_team_id) and tm.valid_from<=fi.kickoff_at::date
- and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date));
+ and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date)));
  return d||jsonb_build_object('scoringVersion',3,'ratingScoring',true,'apiNativeRatings',true,
  'adaptive',true,'policyPaused',false,'incremental',true,
  'ruleset',(select to_jsonb(r)-'created_at'-'updated_at' from app.fantasy_rulesets r where r.id='f6200000-0000-4000-8000-000000000300'),

@@ -94,7 +94,13 @@ insert into app_private.football_provider_mappings(provider_name,entity_type,ext
 select 'sofascore','player',(i-22)::text,pg_temp.rid(1000+i),'test',now() from generate_series(23,44) i;
 insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
 values('sofascore','player','99',pg_temp.rid(1045),'test',now());
-select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(),statement_timestamp());
+-- This API ID is already known, but legacy catalog club/membership data are stale.
+insert into app.players(id,slug,full_name,display_name,position) values(pg_temp.rid(1046),'native-only-46','Native Player','Native','midfielder');
+insert into app.fantasy_players(id,fantasy_season_id,football_player_id,football_team_id,position_id,price)
+select pg_temp.rid(2046),pg_temp.rid(5),pg_temp.rid(1046),pg_temp.rid(101),id,6 from app.fantasy_positions where code='MID';
+insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
+values('sofascore','player','500',pg_temp.rid(1046),'test',now());
+select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',jsonb_set(pg_temp.native_players(),'{21,externalId}','"500"'),statement_timestamp());
 insert into app_private.fantasy_adaptive_policy(season_id,from_gameweek,ruleset_id)
 values(pg_temp.rid(5),4,'f6200000-0000-4000-8000-000000000200');
 insert into app_private.fantasy_live_scoring_policy(season_id,enabled) values(pg_temp.rid(5),true);
@@ -112,6 +118,10 @@ select pg_temp.rid(24),1,encode(extensions.digest(d::text,'sha256'),'hex'),d,tru
 from (select app_private.fantasy_scoring_input_document(pg_temp.rid(24)) as d) x;
 select set_config('test.past_seal', (select md5(to_jsonb(s)::text) from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),true);
 select set_config('test.native_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select extensions.ok(exists(select 1 from jsonb_array_elements(current_setting('test.native_preview')::jsonb->'playerFixtures') p
+ where p->>'fantasyPlayerId'=pg_temp.rid(2046)::text and p->>'providerPlayerId'='500' and p->>'apiAppeared'='true'),
+ 'actual API participation is scored even when legacy club/membership data disagree');
+
 select set_config('test.native_results',(select jsonb_build_object('playerResults',
  (select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','fixtureId',p->'fixtureId','events',
  case when p->>'apiAppeared'='true' then jsonb_build_array(jsonb_build_object('category','rating','points',8,
