@@ -131,3 +131,133 @@ describe("providers", () => {
     ).toBeInstanceOf(FlashscorePerformanceProvider);
   });
 });
+
+describe("collection transport safeguards (mock HTTP responses)", () => {
+  test("access denial opens a circuit across later events, without retry or body leakage", async () => {
+    const seen: { url: string }[] = [];
+    const api = client([reply(403, { reason: "challenge", echo: KEY })], seen);
+    await expect(api.getJson("matches/detail?matchId=1")).rejects.toMatchObject({
+      reason: "access_denied",
+      httpStatus: 403,
+    });
+    await expect(api.getJson("matches/detail?matchId=2")).rejects.toMatchObject({
+      reason: "access_denied",
+    });
+    expect(api.requestsSent()).toBe(1);
+    expect(JSON.stringify(api.stoppedReason())).not.toContain(KEY);
+  });
+  test("budget applies inside a retry sequence", async () => {
+    const api = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      maxRequests: 1,
+      runtime,
+      fetch: async () => reply(503, {}),
+    });
+    await expect(api.getJson("x")).rejects.toMatchObject({ reason: "request_budget" });
+    expect(api.requestsSent()).toBe(1);
+  });
+  test("quota is checked again before retries, including a zero reserve", async () => {
+    for (const floor of [0, 100]) {
+      const api = new RapidApiClient({
+        host: "sofascore.p.rapidapi.com",
+        key: KEY,
+        minRemaining: floor,
+        runtime,
+        fetch: async () => reply(429, {}, String(floor)),
+      });
+      await expect(api.getJson("x")).rejects.toMatchObject({ reason: "quota_floor" });
+      expect(api.requestsSent()).toBe(1);
+    }
+  });
+  test("honors Retry-After seconds and dates; long waits stop further calls", async () => {
+    for (const value of ["2", "Sun, 18 Oct 2026 12:00:02 GMT"]) {
+      const sleeps: number[] = [];
+      const responses = [
+        new Response("{}", { status: 429, headers: { "retry-after": value } }),
+        reply(200, {}),
+      ];
+      const api = new RapidApiClient({
+        host: "sofascore.p.rapidapi.com",
+        key: KEY,
+        now: () => Date.parse("2026-10-18T12:00:00Z"),
+        runtime: {
+          sleep: async (ms) => {
+            sleeps.push(ms);
+          },
+          random: () => 0,
+        },
+        fetch: async () => responses.shift()!,
+      });
+      await api.getJson("x");
+      expect(sleeps).toEqual([2000]);
+    }
+    const api = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      runtime,
+      fetch: async () => new Response("{}", { status: 429, headers: { "retry-after": "120" } }),
+    });
+    await expect(api.getJson("x")).rejects.toMatchObject({
+      reason: "rate_limited",
+      retryAfterMs: 120000,
+    });
+    await expect(api.getJson("y")).rejects.toMatchObject({ reason: "rate_limited" });
+    expect(api.requestsSent()).toBe(1);
+  });
+  test("timeouts include response body consumption", async () => {
+    const api = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      policy: { timeoutMs: 10, maxRetries: 0 },
+      fetch: async () => new Response(new ReadableStream({ start() {} })),
+    });
+    await expect(api.getJson("x")).rejects.toMatchObject({ reason: "timeout" });
+  });
+  test("network errors are retried and sanitized, cancellation does not send", async () => {
+    let calls = 0;
+    const api = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      runtime,
+      fetch: async () => {
+        if (++calls < 2) throw new Error(KEY);
+        return reply(200, {});
+      },
+    });
+    await api.getJson("x");
+    expect(calls).toBe(2);
+    await expect(api.getJson("y", AbortSignal.abort())).rejects.toMatchObject({
+      reason: "cancelled",
+    });
+    expect(calls).toBe(2);
+  });
+  test("missing data inside HTTP 200 is distinct from malformed JSON and bad endpoints", async () => {
+    await expect(client([reply(200, { error: { code: 404 } })]).getJson("x")).rejects.toMatchObject(
+      { reason: "upstream_missing", httpStatus: 200 },
+    );
+    await expect(client([new Response("bad")]).getJson("x")).rejects.toMatchObject({
+      reason: "invalid_json",
+    });
+    await expect(client([reply(422, {})]).getJson("x")).rejects.toMatchObject({
+      reason: "endpoint_rejected",
+      httpStatus: 422,
+    });
+  });
+  test("transient failures trip the breaker and redirects cannot forward credentials", async () => {
+    let init: RequestInit | undefined;
+    const api = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      policy: { maxRetries: 0, circuitFailureThreshold: 1 },
+      fetch: async (_url, options) => {
+        init = options;
+        return reply(503, {});
+      },
+    });
+    await expect(api.getJson("x")).rejects.toMatchObject({ reason: "provider_error" });
+    await expect(api.getJson("y")).rejects.toMatchObject({ reason: "circuit_open" });
+    expect(api.requestsSent()).toBe(1);
+    expect(init?.redirect).toBe("error");
+  });
+});

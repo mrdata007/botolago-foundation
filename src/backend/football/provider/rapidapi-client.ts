@@ -3,156 +3,280 @@ import type { ProviderQuota } from "./performance-contracts";
 import {
   DEFAULT_PROVIDER_RESILIENCE,
   ProviderCircuitBreaker,
-  withProviderResilience,
   type ProviderResiliencePolicy,
   type RetryRuntime,
 } from "./resilience";
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
+export type RapidApiFailure =
+  | "configuration"
+  | "invalid_path"
+  | "authentication"
+  | "access_denied"
+  | "request_budget"
+  | "quota_floor"
+  | "rate_limited"
+  | "circuit_open"
+  | "timeout"
+  | "network"
+  | "cancelled"
+  | "provider_error"
+  | "upstream_missing"
+  | "endpoint_rejected"
+  | "invalid_json";
+
+/** Safe to serialize by these fields only. No upstream bodies, URLs or causes. */
+export class RapidApiRequestError extends FootballError {
+  constructor(
+    readonly reason: RapidApiFailure,
+    readonly httpStatus: number | null = null,
+    readonly retryAfterMs: number | null = null,
+  ) {
+    super(
+      reason === "upstream_missing"
+        ? "data_unavailable"
+        : ["quota_floor", "rate_limited"].includes(reason)
+          ? "provider_rate_limited"
+          : ["invalid_json", "endpoint_rejected", "invalid_path"].includes(reason)
+            ? "invalid_provider_payload"
+            : "provider_unavailable",
+      `RapidAPI request failed: ${reason}.`,
+    );
+  }
+}
 
 export interface RapidApiClientConfig {
   readonly host: string;
   readonly key: string;
-  /** Refuse to send a request once the provider says fewer than this many remain. */
   readonly minRemaining?: number;
+  /** Counts every HTTP attempt, including unsuccessful requests and retries. */
+  readonly maxRequests?: number;
   readonly policy?: Partial<ProviderResiliencePolicy>;
   readonly fetch?: FetchLike;
   readonly runtime?: RetryRuntime;
   readonly now?: () => number;
 }
 
-/**
- * The monthly plans are 500 requests and a failed call (404, 422) still
- * counts, so only 429, 5xx, timeouts and network errors are retried, and
- * fewer times than the SportMonks default.
- */
 const RAPIDAPI_POLICY: ProviderResiliencePolicy = {
   ...DEFAULT_PROVIDER_RESILIENCE,
   timeoutMs: 15_000,
   maxRetries: 2,
 };
+const defaultRuntime: RetryRuntime = {
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  random: Math.random,
+};
 
-const DEFAULT_MIN_REMAINING = 100;
+/** Retry-After is seconds or an HTTP date; never shorten a provider's wait. */
+export function retryAfterMs(value: string | null, now: number): number | null {
+  if (value === null || value.trim() === "") return null;
+  const seconds = /^\d+(\.\d+)?$/.test(value.trim()) ? Number(value) : NaN;
+  const ms = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(value) - now;
+  return Number.isFinite(ms) ? Math.max(0, ms) : null;
+}
 
-/**
- * One RapidAPI host. The key goes in a header only: it is never put in a URL,
- * a log line or an error message, and error messages carry the path and status
- * but never the response body (third-party content).
- */
+/** Header-only credentials. Sequential requests keep budget and quota accounting exact. */
 export class RapidApiClient {
-  private readonly host: string;
-  private readonly key: string;
-  private readonly minRemaining: number;
+  private readonly config: RapidApiClientConfig;
   private readonly policy: ProviderResiliencePolicy;
   private readonly fetchImpl: FetchLike;
-  private readonly runtime: RetryRuntime | undefined;
+  private readonly runtime: RetryRuntime;
+  private readonly now: () => number;
   private readonly breaker: ProviderCircuitBreaker;
   private lastQuota: ProviderQuota = { limit: null, remaining: null };
   private requestCount = 0;
+  private stopped: RapidApiRequestError | null = null;
 
   constructor(config: RapidApiClientConfig) {
-    if (!config.key.trim() || !config.host.trim()) throw configurationError();
-    if (!/^[a-z0-9.-]+$/i.test(config.host)) throw configurationError();
-    const fetchImpl = config.fetch ?? globalThis.fetch?.bind(globalThis);
-    if (!fetchImpl) throw configurationError();
-    this.host = config.host.trim();
-    this.key = config.key.trim();
-    this.minRemaining = config.minRemaining ?? DEFAULT_MIN_REMAINING;
+    this.config = config;
     this.policy = { ...RAPIDAPI_POLICY, ...config.policy };
-    this.fetchImpl = fetchImpl;
-    this.runtime = config.runtime;
+    if (
+      !config.key.trim() ||
+      !/^[a-z0-9.-]+$/i.test(config.host) ||
+      !Number.isInteger(config.minRemaining ?? 100) ||
+      (config.minRemaining ?? 100) < 0 ||
+      !Number.isInteger(config.maxRequests ?? 100) ||
+      (config.maxRequests ?? 100) < 1 ||
+      !Number.isInteger(this.policy.maxRetries) ||
+      this.policy.maxRetries < 0 ||
+      this.policy.maxRetries > 5 ||
+      !Number.isFinite(this.policy.timeoutMs) ||
+      this.policy.timeoutMs < 1 ||
+      !Number.isFinite(this.policy.retryMaxMs) ||
+      this.policy.retryMaxMs < 0 ||
+      this.policy.retryMaxMs > 60_000
+    ) {
+      throw new RapidApiRequestError("configuration");
+    }
+    this.fetchImpl = config.fetch ?? globalThis.fetch.bind(globalThis);
+    this.runtime = config.runtime ?? defaultRuntime;
+    this.now = config.now ?? Date.now;
     this.breaker = new ProviderCircuitBreaker(
       this.policy.circuitFailureThreshold,
       this.policy.circuitResetMs,
-      config.now,
+      this.now,
     );
   }
 
-  /** Quota from the last response. Both null until a request has been made. */
   quota(): ProviderQuota {
-    return this.lastQuota;
+    return { ...this.lastQuota };
   }
-
-  /** Requests this client has sent, retries included. */
   requestsSent(): number {
     return this.requestCount;
   }
+  stoppedReason(): RapidApiRequestError | null {
+    return this.stopped;
+  }
+
+  private guard(): void {
+    if (this.stopped) throw this.stopped;
+    if (this.requestCount >= (this.config.maxRequests ?? 100))
+      throw (this.stopped = new RapidApiRequestError("request_budget"));
+    // Preserve the reserve, including when the floor is zero (no overage).
+    if (
+      this.lastQuota.remaining !== null &&
+      this.lastQuota.remaining <= (this.config.minRemaining ?? 100)
+    )
+      throw (this.stopped = new RapidApiRequestError("quota_floor"));
+    try {
+      this.breaker.assertAvailable();
+    } catch {
+      throw (this.stopped = new RapidApiRequestError("circuit_open"));
+    }
+  }
 
   async getJson(pathAndQuery: string, signal?: AbortSignal): Promise<unknown> {
-    if (/key=/i.test(pathAndQuery)) {
-      throw new FootballError("provider_unavailable", "A key must never be placed in a URL.");
-    }
-    const remaining = this.lastQuota.remaining;
-    if (remaining !== null && remaining < this.minRemaining) {
-      throw new FootballError(
-        "provider_rate_limited",
-        `Provider quota is low (${remaining} left): not sending the request.`,
-      );
-    }
+    // Relative endpoint paths only. Neither secrets nor arbitrary URLs enter diagnostics.
     const path = pathAndQuery.replace(/^\//, "");
-    const url = `https://${this.host}/${path}`;
-
-    const response = await withProviderResilience(
-      async (timeoutSignal) => {
-        this.requestCount += 1;
-        const result = await this.fetchImpl(url, {
-          headers: { "x-rapidapi-key": this.key, "x-rapidapi-host": this.host },
-          signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
-        });
-        this.lastQuota = readQuota(result.headers, this.lastQuota);
-        if (result.status === 429) {
-          throw new FootballError("provider_rate_limited", `Rate limited on ${path}.`);
-        }
-        if (result.status >= 500) {
-          throw new FootballError("provider_unavailable", `Provider error ${result.status}.`);
-        }
-        return result;
-      },
-      this.breaker,
-      this.policy,
-      this.runtime,
-    );
-
-    if (response.status === 401 || response.status === 403) {
-      throw new FootballError("provider_unavailable", "The provider refused the credentials.");
-    }
-    if (response.status === 404) {
-      throw new FootballError("data_unavailable", `The provider has no data for ${path}.`);
-    }
-    if (response.status < 200 || response.status >= 300) {
-      throw new FootballError(
-        "invalid_provider_payload",
-        `The provider rejected ${path} with status ${response.status}.`,
+    if (
+      !/^[a-z0-9/-]+(?:\?[a-z0-9_=&.,%-]+)?$/i.test(path) ||
+      /(?:key|token|secret|password)=/i.test(path) ||
+      path.includes("..")
+    )
+      throw new RapidApiRequestError("invalid_path");
+    for (let attempt = 0; attempt <= this.policy.maxRetries; attempt++) {
+      this.guard();
+      if (signal?.aborted) throw new RapidApiRequestError("cancelled");
+      const controller = new AbortController();
+      const combined = signal ? AbortSignal.any([signal, controller.signal]) : controller.signal;
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, this.policy.timeoutMs);
+      let onAbort: (() => void) | undefined;
+      const deadline = new Promise<never>((_, reject) => {
+        onAbort = () => reject(new RapidApiRequestError(timedOut ? "timeout" : "cancelled"));
+        combined.addEventListener("abort", onAbort, { once: true });
+      });
+      let failure: RapidApiRequestError;
+      try {
+        this.requestCount++;
+        const data = await Promise.race([
+          deadline,
+          (async () => {
+            const response = await this.fetchImpl(`https://${this.config.host}/${path}`, {
+              headers: {
+                "x-rapidapi-key": this.config.key.trim(),
+                "x-rapidapi-host": this.config.host,
+              },
+              signal: combined,
+              redirect: "error",
+            });
+            this.lastQuota = readQuota(response.headers, this.lastQuota);
+            const status = response.status;
+            if (status < 200 || status >= 300) {
+              await response.body?.cancel();
+              throw new RapidApiRequestError(
+                status === 401
+                  ? "authentication"
+                  : status === 403
+                    ? "access_denied"
+                    : status === 429
+                      ? "rate_limited"
+                      : status === 404
+                        ? "upstream_missing"
+                        : status >= 500
+                          ? "provider_error"
+                          : "endpoint_rejected",
+                status,
+                retryAfterMs(response.headers.get("retry-after"), this.now()),
+              );
+            }
+            let json: unknown;
+            try {
+              json = await response.json();
+            } catch {
+              throw new RapidApiRequestError(
+                combined.aborted ? (timedOut ? "timeout" : "cancelled") : "invalid_json",
+                status,
+              );
+            }
+            const error = (json as { error?: { code?: unknown } } | null)?.error;
+            // Api Dojo also returns missing upstream data inside HTTP 200.
+            if (error?.code === 404 || error?.code === "404")
+              throw new RapidApiRequestError("upstream_missing", status);
+            if (error !== undefined) throw new RapidApiRequestError("endpoint_rejected", status);
+            return json;
+          })(),
+        ]);
+        this.breaker.success();
+        return data;
+      } catch (error) {
+        failure =
+          error instanceof RapidApiRequestError
+            ? error
+            : new RapidApiRequestError(
+                combined.aborted ? (timedOut ? "timeout" : "cancelled") : "network",
+              );
+      } finally {
+        clearTimeout(timeout);
+        if (onAbort) combined.removeEventListener("abort", onAbort);
+      }
+      if (["authentication", "access_denied"].includes(failure.reason)) {
+        this.stopped = failure;
+        throw failure;
+      }
+      const retryable = ["rate_limited", "provider_error", "timeout", "network"].includes(
+        failure.reason,
       );
-    }
-    try {
-      return await response.json();
-    } catch (error) {
-      throw new FootballError(
-        "invalid_provider_payload",
-        `The response for ${path} is not JSON.`,
-        error,
+      if (!retryable) throw failure;
+      if (
+        attempt === this.policy.maxRetries ||
+        (failure.retryAfterMs ?? 0) > this.policy.retryMaxMs
+      ) {
+        this.breaker.failure();
+        if (
+          failure.reason === "rate_limited" ||
+          (failure.retryAfterMs ?? 0) > this.policy.retryMaxMs
+        )
+          this.stopped = failure;
+        throw failure;
+      }
+      this.guard();
+      const backoff = Math.min(this.policy.retryMaxMs, this.policy.retryBaseMs * 2 ** attempt);
+      const delay = Math.max(
+        failure.retryAfterMs ?? 0,
+        Math.min(
+          this.policy.retryMaxMs,
+          backoff + Math.floor(backoff * 0.25 * this.runtime.random()),
+        ),
       );
+      await this.runtime.sleep(delay);
     }
+    throw new RapidApiRequestError("provider_error");
   }
 }
 
 export function readQuota(headers: Headers, previous: ProviderQuota): ProviderQuota {
   const read = (name: string): number | null => {
     const raw = headers.get(name);
-    if (raw === null) return null;
+    if (raw === null || raw.trim() === "") return null;
     const value = Number(raw);
-    return Number.isFinite(value) && value >= 0 ? value : null;
+    return Number.isInteger(value) && value >= 0 ? value : null;
   };
   return {
     limit: read("x-ratelimit-requests-limit") ?? previous.limit,
     remaining: read("x-ratelimit-requests-remaining") ?? previous.remaining,
   };
-}
-
-function configurationError(): FootballError {
-  return new FootballError(
-    "provider_unavailable",
-    "The RapidAPI server configuration is incomplete or invalid.",
-  );
 }
