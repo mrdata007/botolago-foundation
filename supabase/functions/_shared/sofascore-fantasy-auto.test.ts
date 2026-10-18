@@ -92,6 +92,7 @@ interface Attempt {
   outcome: string;
 }
 interface Options {
+  native?: boolean | "unavailable";
   world?: World;
   /** undefined: function missing (PGRST202); otherwise its answer. */
   autoMap?: "missing" | ((args: Record<string, unknown>, world: World) => unknown);
@@ -118,6 +119,14 @@ function fakeDb(options: Options = {}) {
         rpc(name: string, args: Record<string, unknown>) {
           calls.push({ name, args });
           switch (name) {
+            case "service_fantasy_api_rating_context":
+              return options.native === "unavailable"
+                ? Promise.resolve({ data: null, error: { message: "database_unavailable" } })
+                : Promise.resolve({ data: { enabled: options.native ?? false }, error: null });
+            case "service_record_fantasy_api_ratings":
+              return Promise.resolve({ data: { sourceId: 1, ready: true }, error: null });
+            case "service_fantasy_api_ratings_due":
+              return Promise.resolve({ data: [], error: null });
             case "service_sofascore_fantasy_context": {
               if (options.contextMissing) return Promise.resolve(missing);
               const ids = args.p_player_ids as string[];
@@ -700,7 +709,10 @@ describe("automatic Fantasy: shadow", () => {
     const { run, lines } = makeRun(db, "shadow");
     await run.fromReplies(FIXTURE, EVENT, REPLIES);
     expect(lines[0].outcome).toBe("held:unmapped_players");
-    expect(names(db)).toEqual(["service_sofascore_fantasy_context"]);
+    expect(names(db)).toEqual([
+      "service_fantasy_api_rating_context",
+      "service_sofascore_fantasy_context",
+    ]);
   });
 });
 
@@ -1471,5 +1483,53 @@ describe("automatic Fantasy: stoppage time is kept with the stored replies", () 
     const retry = makeRun(db);
     await retry.run.sweep();
     expect(retry.lines[0]).toMatchObject({ outcome: "recorded", source: "stored" });
+  });
+});
+
+describe("API-native ratings bypass canonical player matching", () => {
+  test("rated unknown API IDs are recorded without a mapping call", async () => {
+    const db = fakeDb({ native: true, world: newWorld({ mapped: new Set() }) });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, {
+      ...REPLIES,
+      incidents: { invalid: true },
+      statistics: null,
+    });
+    expect(lines[0].outcome).toBe("recorded");
+    expect(names(db)).toEqual([
+      "service_fantasy_api_rating_context",
+      "service_record_fantasy_api_ratings",
+    ]);
+    const write = db.calls.find((c) => c.name === "service_record_fantasy_api_ratings")!;
+    expect(write.args.p_players).toBeArray();
+    expect(JSON.stringify(write.args)).not.toContain("appPlayerId");
+  });
+  test("an unrated participant remains pending without legacy ingestion", async () => {
+    const db = fakeDb({ native: true });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, { ...REPLIES, lineups: part("lineups") });
+    expect(lines[0].outcome).toBe("held:fantasy_ratings_pending");
+    expect(names(db)).not.toContain("service_sofascore_auto_map_players");
+    expect(names(db)).not.toContain("service_record_sofascore_fantasy_observation");
+  });
+  test("live fixtures do not create player links", async () => {
+    const db = fakeDb({ native: true });
+    const { run } = makeRun(db);
+    await run.fromLiveReplies(FIXTURE, EVENT, REPLIES);
+    expect(names(db)).toEqual(["service_fantasy_api_rating_context"]);
+  });
+  test("a policy read failure cannot fall through to identity matching", async () => {
+    const db = fakeDb({ native: "unavailable" });
+    const { run } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(names(db)).not.toContain("service_sofascore_auto_map_players");
+    expect(names(db)).not.toContain("service_record_sofascore_fantasy_observation");
+  });
+  test("shadow mode never records native sources", async () => {
+    const db = fakeDb({ native: true });
+    const { run, lines } = makeRun(db, "shadow");
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0].outcome).toBe("skipped:shadow_api_ratings");
+    expect(names(db)).not.toContain("service_record_fantasy_api_ratings");
   });
 });
