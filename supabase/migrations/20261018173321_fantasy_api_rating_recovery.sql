@@ -71,7 +71,7 @@ begin
  where a.fixture_id=p_fixture_id and a.superseded_at is null order by g.id for update of g;
  if exists(select 1 from app.fantasy_gameweeks g join app.fantasy_fixture_assignments a on a.gameweek_id=g.id
  where a.fixture_id=p_fixture_id and a.superseded_at is null and g.status='finalizing') then
- raise exception using errcode='PT409',message='fantasy_scoring_inputs_frozen'; end if;
+ raise exception using errcode='PT409',message='fantasy_api_ratings_sealed'; end if;
  select * into f from app.fixtures where id=p_fixture_id for share;
  if not found or f.status<>'finished' or f.finalized_at is null then
  raise exception using errcode='PT409',message='fantasy_api_fixture_not_finished'; end if;
