@@ -137,6 +137,10 @@ Machine-readable observations: [staging-results.json](evidence/2026-10-19-stagin
 - Independent SQL: all 5,000 final scores are 96 (sum 480,000); all bench totals
   are 32; 5,000 gameweek overall ranks and 5,000 season overall ranks; 500 league
   scopes; 5,000 rollover records; 5,000 successor lineups; zero duplicate results.
+  The 61,900 ranking rows cover 1,002 gameweek/season scopes; each scope has
+  unique consecutive ranks from 1 to its member count and the correct points.
+  All 5,000 teams have two free transfers, exactly one progression opened, and
+  all 66 player totals are eight points.
 - Real Edge probes: unauthenticated request 401; switch OFF returned `disabled`
   with no run row; another holder returned `lease_held`; clearing the URL
   returned `not_configured`. A real 45-second held gameweek-row lock caused

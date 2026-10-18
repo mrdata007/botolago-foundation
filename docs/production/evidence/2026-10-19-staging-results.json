@@ -413,5 +413,15 @@
     "reconciled_md5": "c2906a3ca3643c73d30f0b7d15dfde4a",
     "non_load_fingerprint": "9e17d5ca2dd396487a7c5a15161de11d",
     "existing_results_fingerprint": "fb327cfdc3d8bbb2c619e5fbe45b8bd7"
+  },
+  "additionalIndependentProof": {
+    "progressions": 1,
+    "ranking_rows": 61900,
+    "player_totals": 66,
+    "ranking_scopes": 1002,
+    "wrong_rank_points": 0,
+    "free_transfers_two": 5000,
+    "invalid_rank_ranges": 0,
+    "wrong_player_totals": 0
   }
 }
