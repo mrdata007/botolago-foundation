@@ -1,5 +1,12 @@
 # Fantasy load test
 
+**Current operator record (19 October 2026):** staging migrations and Edge
+runtime were updated; the owner requires **$0 extra spending**. The AWS and
+resize steps below are not authorised under that budget. See
+[the go-live evidence pack](../production/2026-10-19-go-live-pack.md) for actual
+runs, remaining gates and the consumed legacy seed. Do not rerun that seed over
+the existing QA teams.
+
 A rehearsal of the busiest minute BotolaGO will have: the last minute before
 a Fantasy deadline. 2,500 fake managers, each with their own account and team,
 save lineups, make transfers and play chips all at once, and we measure
@@ -140,9 +147,9 @@ previous size (Micro on 2026-09-25).
   Staging counts a migration as recorded by its **name**, because its history
   was partly recorded under apply-time versions; it also holds a few
   staging-only news-engine migrations the repository never kept, which the
-  plan lists and leaves alone. `DEFERRED` holds the migrations production has
-  deliberately not applied yet (today `20260925090500`); remove an entry once
-  production applies it. A rehearsal stops after the first migration that
+  plan lists and leaves alone. `DEFERRED` is now empty: production had already
+  applied `20260925090500`, and staging rehearsed and applied it on 19 October.
+  A rehearsal stops after the first migration that
   adds an enum value, because Postgres cannot use a new enum value in the
   transaction that added it; apply checks the rest one at a time. To rehearse
   the script itself, point `BOTOLAGO_STAGING_DATABASE_URL` at a local

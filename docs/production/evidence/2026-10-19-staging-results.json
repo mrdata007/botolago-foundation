@@ -1,0 +1,417 @@
+{
+  "schemaVersion": 1,
+  "project": "srdrflfrfpwixsllveid",
+  "productionWrites": false,
+  "paidInfrastructureStarted": false,
+  "baseline": {
+    "users": 50008,
+    "teams": 50005,
+    "cronJobs": 25,
+    "nonLoadTeamMd5": "9e17d5ca2dd396487a7c5a15161de11d",
+    "existingResultsMd5": "fb327cfdc3d8bbb2c619e5fbe45b8bd7"
+  },
+  "scoringRun": {
+    "id": 39173465315,
+    "job": 117811198876,
+    "records": [
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "finalized",
+          "gameweekId": "f9500000-0000-4000-8000-000000000021",
+          "calculationVersion": 1,
+          "processedTeams": 5000,
+          "nextGameweekId": "f9500000-0000-4000-8000-000000000022",
+          "nextGameweekStatus": "open",
+          "prizes": {
+            "error": "staging_drill_unscoped_prizes_skipped"
+          },
+          "calls": 1315
+        },
+        "elapsedMs": 696347.123758,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 448.43499199999997,
+            "maxMs": 448.43499199999997
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 280.479102,
+            "maxMs": 280.479102
+          },
+          "service_get_fantasy_scoring_snapshot": {
+            "calls": 50,
+            "totalMs": 150596.61012399994,
+            "maxMs": 3352.5406340000336
+          },
+          "service_persist_fantasy_scoring_results": {
+            "calls": 50,
+            "totalMs": 170317.49222099993,
+            "maxMs": 3725.9803829999946
+          },
+          "service_fantasy_worker_lease_extend": {
+            "calls": 6,
+            "totalMs": 672.2511350000132,
+            "maxMs": 121.74542799999472
+          },
+          "service_begin_fantasy_finalization": {
+            "calls": 1,
+            "totalMs": 3884.669643000001,
+            "maxMs": 3884.669643000001
+          },
+          "service_finalize_fantasy_team_results": {
+            "calls": 50,
+            "totalMs": 146690.98677799996,
+            "maxMs": 3190.3073960000183
+          },
+          "service_restore_free_hit": {
+            "calls": 1,
+            "totalMs": 109.11013499996625,
+            "maxMs": 109.11013499996625
+          },
+          "service_roll_fantasy_free_transfers": {
+            "calls": 51,
+            "totalMs": 6937.55578200001,
+            "maxMs": 303.4873769999831
+          },
+          "service_recalculate_fantasy_rankings": {
+            "calls": 1002,
+            "totalMs": 157639.76421999995,
+            "maxMs": 2915.6090149999945
+          },
+          "service_fantasy_scoring_league_page": {
+            "calls": 5,
+            "totalMs": 551.8342810000177,
+            "maxMs": 127.30857300001662
+          },
+          "service_complete_fantasy_gameweek": {
+            "calls": 1,
+            "totalMs": 5611.306249000016,
+            "maxMs": 5611.306249000016
+          },
+          "service_run_fantasy_price_batch": {
+            "calls": 1,
+            "totalMs": 192.15695299999788,
+            "maxMs": 192.15695299999788
+          },
+          "service_enqueue_gameweek_finalized_notifications": {
+            "calls": 50,
+            "totalMs": 25918.988471999997,
+            "maxMs": 1243.9532180000097
+          },
+          "service_complete_fantasy_postwork": {
+            "calls": 1,
+            "totalMs": 1189.8192089999793,
+            "maxMs": 1189.8192089999793
+          },
+          "service_prepare_next_fantasy_gameweek": {
+            "calls": 50,
+            "totalMs": 24988.780341999955,
+            "maxMs": 782.2783570000902
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": false,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 0
+      }
+    ]
+  },
+  "scoringVerificationRun": {
+    "id": 39174387599,
+    "job": 117813941611,
+    "records": [
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "already_advanced",
+          "gameweekId": "f9500000-0000-4000-8000-000000000021",
+          "nextGameweekId": "f9500000-0000-4000-8000-000000000022",
+          "calls": 1
+        },
+        "elapsedMs": 1207.856021,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 704.973619,
+            "maxMs": 704.973619
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 497.18280300000004,
+            "maxMs": 497.18280300000004
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": true,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 5000
+      }
+    ]
+  },
+  "workerProbeRun": {
+    "id": 39174524941,
+    "job": 117814357575,
+    "records": [
+      {
+        "probe": "unauthorized",
+        "http_status": 401,
+        "duration_ms": 506,
+        "error": "unauthorized"
+      },
+      {
+        "probe": "disabled",
+        "http_status": 200,
+        "duration_ms": 847,
+        "status": "disabled",
+        "workerCode": null,
+        "recorded": false,
+        "calls": 0
+      },
+      {
+        "probe": "lease_held",
+        "http_status": 200,
+        "duration_ms": 660,
+        "status": "lease_held",
+        "workerCode": null,
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "missing_base_url",
+        "tick_outcome": "not_configured"
+      },
+      {
+        "probe": "held_row",
+        "http_status": 500,
+        "duration_ms": 9015,
+        "status": "failed",
+        "workerCode": "fantasy_worker_rpc_failed",
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "after_lock_release",
+        "http_status": 200,
+        "duration_ms": 1865,
+        "status": "ok",
+        "workerCode": null,
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "restoration",
+        "active_cron": 0,
+        "lease_held": false
+      }
+    ]
+  },
+  "final": {
+    "cron": [
+      {
+        "jobid": 24,
+        "active": true,
+        "jobname": "account-deletion-history-prune",
+        "schedule": "37 3 * * *"
+      },
+      {
+        "jobid": 23,
+        "active": true,
+        "jobname": "account-deletion-tick",
+        "schedule": "23 * * * *"
+      },
+      {
+        "jobid": 21,
+        "active": true,
+        "jobname": "ai-content-generate",
+        "schedule": "*/30 * * * *"
+      },
+      {
+        "jobid": 27,
+        "active": true,
+        "jobname": "ai-home-stories",
+        "schedule": "4,14,24,34,44,54 * * * *"
+      },
+      {
+        "jobid": 6,
+        "active": true,
+        "jobname": "fantasy-lifecycle-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 40,
+        "active": true,
+        "jobname": "fantasy-worker-tick",
+        "schedule": "*/10 * * * *"
+      },
+      {
+        "jobid": 39,
+        "active": true,
+        "jobname": "football-catalog-weekly",
+        "schedule": "17 4 * * 0"
+      },
+      {
+        "jobid": 4,
+        "active": true,
+        "jobname": "football-live-refresh",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 14,
+        "active": true,
+        "jobname": "football-season-refresh",
+        "schedule": "*/10 * * * *"
+      },
+      {
+        "jobid": 26,
+        "active": true,
+        "jobname": "manager-card-history-prune",
+        "schedule": "47 3 * * *"
+      },
+      {
+        "jobid": 25,
+        "active": true,
+        "jobname": "manager-card-tick",
+        "schedule": "*/15 * * * *"
+      },
+      {
+        "jobid": 1,
+        "active": true,
+        "jobname": "news-publish-due-editions",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 2,
+        "active": true,
+        "jobname": "news-publish-due-editions-history-prune",
+        "schedule": "17 3 * * *"
+      },
+      {
+        "jobid": 11,
+        "active": true,
+        "jobname": "news-sitemap-refresh",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 12,
+        "active": true,
+        "jobname": "news-sitemap-refresh-history-prune",
+        "schedule": "27 3 * * *"
+      },
+      {
+        "jobid": 5,
+        "active": true,
+        "jobname": "notification-email-history-prune",
+        "schedule": "37 3 * * *"
+      },
+      {
+        "jobid": 3,
+        "active": true,
+        "jobname": "notification-email-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 22,
+        "active": true,
+        "jobname": "notification-push-tick",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 7,
+        "active": true,
+        "jobname": "ops-alert-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 18,
+        "active": true,
+        "jobname": "pepites-history-prune",
+        "schedule": "41 3 * * *"
+      },
+      {
+        "jobid": 17,
+        "active": true,
+        "jobname": "pepites-tick",
+        "schedule": "*/15 * * * *"
+      },
+      {
+        "jobid": 10,
+        "active": true,
+        "jobname": "predictions-history-prune",
+        "schedule": "53 3 * * *"
+      },
+      {
+        "jobid": 9,
+        "active": true,
+        "jobname": "predictions-score-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 32,
+        "active": true,
+        "jobname": "rivals-history-prune",
+        "schedule": "59 3 * * *"
+      },
+      {
+        "jobid": 31,
+        "active": true,
+        "jobname": "rivals-tick",
+        "schedule": "7,22,37,52 * * * *"
+      },
+      {
+        "jobid": 36,
+        "active": true,
+        "jobname": "trophies-history-prune",
+        "schedule": "31 3 * * *"
+      },
+      {
+        "jobid": 35,
+        "active": true,
+        "jobname": "trophies-tick",
+        "schedule": "10,40 * * * *"
+      }
+    ],
+    "teams": 55005,
+    "users": 50008,
+    "settings": {
+      "ops": false,
+      "push": {
+        "mode": "off",
+        "test_user_ids": []
+      },
+      "email": {
+        "url": "https://srdrflfrfpwixsllveid.supabase.co/functions/v1",
+        "live": false,
+        "mode": "off",
+        "test_user_ids": []
+      },
+      "rivals": true,
+      "fantasy": {
+        "tick": false,
+        "worker": false
+      }
+    },
+    "deliveries": 0,
+    "lease_held": false,
+    "observed_at": "2026-10-18T23:03:24.129361+00:00",
+    "drill_season": "completed",
+    "notifications": 0,
+    "drill_archived": 5000,
+    "reconciled_md5": "c2906a3ca3643c73d30f0b7d15dfde4a",
+    "non_load_fingerprint": "9e17d5ca2dd396487a7c5a15161de11d",
+    "existing_results_fingerprint": "fb327cfdc3d8bbb2c619e5fbe45b8bd7"
+  }
+}

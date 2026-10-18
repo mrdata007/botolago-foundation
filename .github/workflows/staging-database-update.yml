@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "plan/check (read only), rehearse, apply, seed, or deploy staging runtime"
+        description: "Plan/check, rehearse/apply/seed, deploy runtime, score5000, or workerprobe (staging only)"
         required: true
         type: choice
         default: plan
@@ -23,7 +23,7 @@ on:
           - score5000
           - workerprobe
       confirmation:
-        description: "For rehearse, apply, seed and runtime: type UPDATE_STAGING_DATABASE"
+        description: "For every write action: type UPDATE_STAGING_DATABASE"
         required: false
         type: string
 
