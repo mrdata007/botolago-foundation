@@ -1,0 +1,1117 @@
+{
+  "persona": "Literal-language first-time user",
+  "language": "ar",
+  "ignoreHTTPSErrors": true,
+  "actions": [
+    {
+      "action": "Choose language",
+      "label": "العربية\nأخبار وفانتازي كرة القدم المغربية",
+      "aria": null
+    },
+    {
+      "action": "Confirm language",
+      "label": "متابعة",
+      "aria": null
+    },
+    {
+      "action": "Follow landing primary action",
+      "label": "اكتشف اللعبة",
+      "aria": null
+    },
+    {
+      "action": "Follow calendar from closed Fantasy hub",
+      "label": "المباريات",
+      "aria": null
+    },
+    {
+      "action": "Open visible match row",
+      "label": "ودا\nالك\nودا\n0\n–\n1\nالك\n59′",
+      "aria": "النتيجة: وداد تمارة 0، الكوكب المراكشي 1 — 59′"
+    }
+  ],
+  "states": [
+    {
+      "step": "01-first-visit",
+      "url": "http://127.0.0.1:4173/",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "FR\nSe connecter\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nVoir les matchs et résultats\nComment ça marche\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nEN CE MOMENT\n\nLa Botola Pro, journée après journée\n\nLes matchs\n\nTout le calendrier\n\nLe classement\n\nClassement complet\n#\nÉQUIPE\nJ\nPTS\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nLes joueurs à suivre\n\nLes plus choisis par les managers.\n\nTous les joueurs\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nConditions d'utilisation\nPolitique de confidentialité\nChoisissez votre langue\n\nاختر لغتك\n\nFrançais\nActualité & Fantasy du football marocain\nالعربية\nأخبار وفانتازي كرة القدم المغربية\n\nContinuer",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "aria": "Langue"
+        },
+        {
+          "tag": "A",
+          "text": "Se connecter",
+          "href": "/auth/login",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs et résultats",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Comment ça marche",
+          "href": "#_r_5_",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Gardien\n1",
+          "href": null,
+          "aria": "Nommer capitaine : Gardien 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n2",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 2"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n4",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 4"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n5",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 5"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n3",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 3"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n8",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 8"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n6",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 6"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n10",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 10"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n7",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 7"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "C\nAttaquant\n×2",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 9"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n11",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 11"
+        },
+        {
+          "tag": "A",
+          "text": "Tout le calendrier",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\nEN DIRECT\n59′\nJ. 4\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — En direct, 59e minute"
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\n20:00\nJ. 4\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "Wydad Casablanca vs Amal Tiznit — dim. 18 oct. · Coup d'envoi à 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Me rappeler ce match"
+        },
+        {
+          "tag": "A",
+          "text": "Classement complet",
+          "href": "/matches/standings",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir le barème en vigueur",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Tous les joueurs",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les lots et le règlement",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Lire le règlement complet",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Centre d’aide",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Conditions d'utilisation",
+          "href": "/terms",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Politique de confidentialité",
+          "href": "/privacy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Français\nActualité & Fantasy du football marocain",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "العربية\nأخبار وفانتازي كرة القدم المغربية",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Continuer",
+          "href": null,
+          "aria": null
+        }
+      ]
+    },
+    {
+      "step": "02-landing",
+      "url": "http://127.0.0.1:4173/",
+      "dir": "rtl",
+      "lang": "ar",
+      "text": "ع\nتسجيل الدخول\nاكتشف اللعبة\n\nفانتازي البطولة الاحترافية · مجاناً\n\nأنت تعرف البطولة.\nالآن دورك.\n\nكوّن فريقك من لاعبي البطولة الاحترافية، اختر قائدك وتحدَّ باقي المشجعين في كل جولة.\n\nاكتشف اللعبة\nتابع المباريات والنتائج\nكيف تلعب؟\n\nالتسجيل مغلق لهذه الجولة\n\nحارس مرمى\n1\nمدافع\n2\nمدافع\n4\nمدافع\n5\nمدافع\n3\nلاعب وسط\n8\nلاعب وسط\n6\nلاعب وسط\n10\nمهاجم\n7\nق\nمهاجم\n×2\nمهاجم\n11\nعرض توضيحي\nالمس لاعباً لتمنحه شارة القيادة: نقاطه تُحتسب مضاعفة.\n\nالآن\n\nالبطولة الاحترافية، جولة بعد جولة\n\nالمباريات\n\nالرزنامة كاملة\nالأحد، 18 أكتوبر\nمباشر\n59′\nج. 4\nودا\nوداد تمارة\n0\nالك\nالكوكب المراكشي\n1\nالأحد، 18 أكتوبر\n20:00\nج. 4\nWCA\nالوداد\nأمل\nأمل تيزنيت\n\nالترتيب\n\nالترتيب الكامل\n#\nالفريق\nل\nن\n1\nالم\nالمكناسي\n4\n7\n2\nحسن\nحسنية أكادير\n4\n7\n3\nاتح\nاتحاد طنجة\n4\n7\n4\nالم\nالمغرب الفاسي\n4\n7\n5\nUTS\nاتحاد تواركة\n4\n7\n\nكيف تلعب؟\n\nثلاث خطوات في كل جولة\n1\nكوّن تشكيلتك\n\n15 لاعباً من البطولة الاحترافية، بميزانية 100 م، و3 لاعبين كحد أقصى من النادي نفسه.\n\n15 لاعبًا\n100 م\n\nحارسان · 5 مدافعين · 5 لاعبي وسط · 3 مهاجمين\n\n2\nاختر قائدك\n\nقبل الموعد النهائي، اختر تشكيلتك الأساسية وامنح شارة القيادة: نقاط القائد تُحتسب مضاعفة.\n\nق\nالقائد ×2\n\nمثال: يحصد قائدك 6 نقاط، فتحصل أنت على 12.\n\n3\nاجمع النقاط وتقدّم في الترتيب\n\nيحصد لاعبوك نقاطاً بحسب أدائهم في المباريات. نظام النقاط المعتمد منشور في صفحة القواعد.\n\nاطّلع على نظام النقاط المعتمد\nلاعبون يستحقون المتابعة\n\nالأكثر حصدًا للنقاط هذا الموسم.\n\nكل اللاعبين\nImad Riahi\nحسن\nمهاجم\n30 نقاط\nAbderrazak Ennakouss\nالد\nلاعب وسط\n22 نقاط\nYouness Najari\nاتح\nمهاجم\n19 نقاط\nAyoub Benaadi\nحسن\nلاعب وسط\n15 نقاط\nSaleh Al Sellami\nالك\nمهاجم\n15 نقاط\nYahia Attiyat Allah\nWCA\nمدافع\n15 نقاط\nلماذا ستعود في كل جولة\n\nلاعبون تتابعهم أصلاً\n\nلاعبو البطولة الاحترافية فقط: فريقك يلعب في المباريات التي تشاهدها.\n\nدوريات مع الأصدقاء\n\nأنشئ دورياً خاصاً، شارك رمزه وقارنوا نتائجكم في كل جولة.\n\nفرصة جديدة في كل جولة\n\nالانتقالات والتشكيلة والقائد تُضبط من جديد قبل كل موعد نهائي.\n\nلست مستعداً بعد؟\n\nالمباريات والنتائج والترتيب متاحة للجميع، دون حساب.\n\nتابع المباريات\nجوائز لأفضل المدربين\n\nالجوائز المطروحة هذا الموسم، وتُمنح وفق القانون:\n\nجائزة الجولة\nرصيد هاتفي + قميص نادٍ من البطولة\nالجائزة الشهرية\nهاتف ذكي\nجائزة الموسم\nرحلة لحضور الديربي + هاتف ذكي من الفئة الراقية\n\nمجاني 100% — دون أي شراء أو رهان.\n\nالجوائز والقانون\nأسئلة شائعة\n\nكل ما تحتاج معرفته قبل تشكيل فريقك.\n\nهل اللعبة مجانية فعلاً؟\nبدأ الموسم، هل ما زال بإمكاني اللعب؟\nكيف تُحتسب النقاط؟\nهل أحتاج إلى حساب؟\nإلى متى يمكنني تعديل فريقي؟\nاقرأ القانون الكامل\nمركز المساعدة\nفريقك في انتظارك.\n\nاختر لاعبيك الخمسة عشر، امنح شارة القيادة وتابع نقاطك جولة بعد جولة.\n\nاكتشف اللعبة\n\nالتسجيل مغلق لهذه الجولة\n\nشروط الاستخدام\nسياسة الخصوصية",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ع",
+          "href": null,
+          "aria": "اللغة"
+        },
+        {
+          "tag": "A",
+          "text": "تسجيل الدخول",
+          "href": "/auth/login",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اكتشف اللعبة",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اكتشف اللعبة",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "تابع المباريات والنتائج",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "كيف تلعب؟",
+          "href": "#_r_5_",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "حارس مرمى\n1",
+          "href": null,
+          "aria": "تعيين قائداً: حارس مرمى 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مدافع\n2",
+          "href": null,
+          "aria": "تعيين قائداً: مدافع 2"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مدافع\n4",
+          "href": null,
+          "aria": "تعيين قائداً: مدافع 4"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مدافع\n5",
+          "href": null,
+          "aria": "تعيين قائداً: مدافع 5"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مدافع\n3",
+          "href": null,
+          "aria": "تعيين قائداً: مدافع 3"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "لاعب وسط\n8",
+          "href": null,
+          "aria": "تعيين قائداً: لاعب وسط 8"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "لاعب وسط\n6",
+          "href": null,
+          "aria": "تعيين قائداً: لاعب وسط 6"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "لاعب وسط\n10",
+          "href": null,
+          "aria": "تعيين قائداً: لاعب وسط 10"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مهاجم\n7",
+          "href": null,
+          "aria": "تعيين قائداً: مهاجم 7"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ق\nمهاجم\n×2",
+          "href": null,
+          "aria": "تعيين قائداً: مهاجم 9"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مهاجم\n11",
+          "href": null,
+          "aria": "تعيين قائداً: مهاجم 11"
+        },
+        {
+          "tag": "A",
+          "text": "الرزنامة كاملة",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الأحد، 18 أكتوبر\nمباشر\n59′\nج. 4\nودا\nوداد تمارة\n0\nالك\nالكوكب المراكشي\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "النتيجة: نادي الوداد الرياضي لتمارة 0، الكوكب المراكشي 1 — مباشر، الدقيقة 59"
+        },
+        {
+          "tag": "A",
+          "text": "الأحد، 18 أكتوبر\n20:00\nج. 4\nWCA\nالوداد\nأمل\nأمل تيزنيت",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "الوداد ضد أمل تيزنيت — الأحد، 18 أكتوبر · انطلاق المباراة على الساعة 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "ذكّرني بهذه المباراة"
+        },
+        {
+          "tag": "A",
+          "text": "الترتيب الكامل",
+          "href": "/matches/standings",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "1\nالم\nالمكناسي\n4\n7",
+          "href": "/clubs/8059c0cf-8b7b-4317-be7e-fd646d377cd0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "2\nحسن\nحسنية أكادير\n4\n7",
+          "href": "/clubs/9f8c170d-24ed-41a3-99ca-a06167fd9c8b",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "3\nاتح\nاتحاد طنجة\n4\n7",
+          "href": "/clubs/353e19d7-0a4b-41e6-a491-fc85f6c952d8",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "4\nالم\nالمغرب الفاسي\n4\n7",
+          "href": "/clubs/0257feb3-4c16-431d-a58b-5faf060576ad",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "5\nUTS\nاتحاد تواركة\n4\n7",
+          "href": "/clubs/b78eaee8-93af-4630-8335-b208151cbf37",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اطّلع على نظام النقاط المعتمد",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "كل اللاعبين",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Imad Riahi\nحسن\nمهاجم\n30 نقاط",
+          "href": "/fantasy/players/42e13529-a788-41df-a747-ad061461a046",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Abderrazak Ennakouss\nالد\nلاعب وسط\n22 نقاط",
+          "href": "/fantasy/players/1753f151-59ca-4274-a65b-fad4980a3cc0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Youness Najari\nاتح\nمهاجم\n19 نقاط",
+          "href": "/fantasy/players/72403c4b-237d-46eb-8d1f-f035ba7d4baf",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Ayoub Benaadi\nحسن\nلاعب وسط\n15 نقاط",
+          "href": "/fantasy/players/8111b9a8-8117-4af3-b927-71a130056d5a",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Saleh Al Sellami\nالك\nمهاجم\n15 نقاط",
+          "href": "/fantasy/players/91ed6866-48e9-40e0-88fe-584f2cefd8e1",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Yahia Attiyat Allah\nWCA\nمدافع\n15 نقاط",
+          "href": "/fantasy/players/b28d64d4-6582-47f2-bb64-79b56f5a169f",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "تابع المباريات",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الجوائز والقانون",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اقرأ القانون الكامل",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "مركز المساعدة",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اكتشف اللعبة",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "شروط الاستخدام",
+          "href": "/terms",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "سياسة الخصوصية",
+          "href": "/privacy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "اكتشف اللعبة",
+          "href": "/fantasy",
+          "aria": null
+        }
+      ]
+    },
+    {
+      "step": "03-primary-action",
+      "url": "http://127.0.0.1:4173/fantasy",
+      "dir": "rtl",
+      "lang": "ar",
+      "text": "انتقل إلى المحتوى\nالرئيسية\nالأخبار\nفانتازي\nالمباريات\nالمواهب\nع\nفانتازي\n\nالجولة 4\n· الموعد النهائي\n\nالاثنين، 12 أكتوبر، 18:30\n\nمباشرة\nالتسجيل مغلق لهذه الجولة\n\nستتمكن من إنشاء فريقك عند فتح جولة قادمة. في هذه الأثناء، تصفّح اللاعبين وجدول المباريات.\n\nالمباريات\nصعوبة المباريات\nإحصائيات اللاعبين\nأفضل اللاعبين\nكن مدرّباً في البطولة الاحترافية\n\nفانتازي BotolaGO لعبة مجانية: يجمع لك لاعبوك من البطولة الاحترافية النقاط حسب أدائهم في مبارياتهم الحقيقية جولةً بعد جولة، وتتحدى أصدقاءك في دوريات خاصة.\n\nجوائز بانتظار أفضل المدربين.\n\nطريقة اللعب\nتشكيلة من 15 لاعباً\nحارسان و5 مدافعين و5 لاعبي وسط و3 مهاجمين، تختار منهم 11 أساسياً في كل جولة.\nميزانية 100 م\nلكل لاعب سعره، وبحد أقصى 3 لاعبين من النادي نفسه: عليك أن تجد التوازن المناسب.\nقائد بنقاط مضاعفة\nاختر قائدك في كل جولة لتُضاعَف نقاطه، وإذا لم يلعب يحلّ نائبه محله.\nموعد نهائي لكل جولة\nأجرِ انتقالاتك واختر أساسييك وقائدك قبل الموعد النهائي، وبعده يُقفَل فريقك حتى نهاية الجولة.\nقواعد اللعبة\nالأخبار\nعرض الكل\n\nانتصار كبير للدفاع الحسني الجديدي على نادي المغرب أتلتيك تطوان\n\nفوز النادي المكناسي على اتحاد تواركة\n\nمباراة وداد الرياضي ضد أمل تيزنيت\n\nمعاينة المباراة: نادي الوداد الرياضي لتمارة يستضيف الكوكب المراكشي\n\nمقدمة مباراة الدفاع الحسني الجديدي ونادي المغرب التطواني\n\nالنادي المكناسي يستضيف اتحاد تواركة في مواجهة مثيرة\n\nالمزيد عن  Fantasy\nالجوائز\nقواعد اللعبة\nالمساعدة والقواعد",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "انتقل إلى المحتوى",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الرئيسية",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الأخبار",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "فانتازي",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "المباريات",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "المواهب",
+          "href": "/pepites",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "بحث"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ع",
+          "href": null,
+          "aria": "اللغة"
+        },
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/profile",
+          "aria": "الملف الشخصي"
+        },
+        {
+          "tag": "A",
+          "text": "المباريات",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "صعوبة المباريات",
+          "href": "/fantasy/fixtures",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "إحصائيات اللاعبين",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "أفضل اللاعبين",
+          "href": "/fantasy/top-players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "قواعد اللعبة",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "عرض الكل",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "انتصار كبير للدفاع الحسني الجديدي على نادي المغرب أتلتيك تطوان",
+          "href": "/news/028c3654-3c53-4bbf-997a-9fc5b999344d",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "فوز النادي المكناسي على اتحاد تواركة",
+          "href": "/news/c041d67b-be68-49c4-990d-c29f1fe81dd0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "مباراة وداد الرياضي ضد أمل تيزنيت",
+          "href": "/news/859b749e-b675-4cc9-b984-3384dab32f7d",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "معاينة المباراة: نادي الوداد الرياضي لتمارة يستضيف الكوكب المراكشي",
+          "href": "/news/41a775c8-28c5-4887-8508-f7f745780c36",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "مقدمة مباراة الدفاع الحسني الجديدي ونادي المغرب التطواني",
+          "href": "/news/52071621-70a1-4bae-a614-0126ed9f1b7d",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "النادي المكناسي يستضيف اتحاد تواركة في مواجهة مثيرة",
+          "href": "/news/e267738a-366a-4166-93ee-76ec94fbde60",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الجوائز",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "قواعد اللعبة",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "المساعدة والقواعد",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الرئيسية",
+          "href": "/",
+          "aria": "الرئيسية"
+        },
+        {
+          "tag": "A",
+          "text": "الأخبار",
+          "href": "/news",
+          "aria": "الأخبار"
+        },
+        {
+          "tag": "A",
+          "text": "فانتازي",
+          "href": "/fantasy",
+          "aria": "فانتازي"
+        },
+        {
+          "tag": "A",
+          "text": "المباريات",
+          "href": "/matches",
+          "aria": "المباريات"
+        },
+        {
+          "tag": "A",
+          "text": "المواهب",
+          "href": "/pepites",
+          "aria": "المواهب"
+        }
+      ]
+    },
+    {
+      "step": "06-calendar",
+      "url": "http://127.0.0.1:4173/matches",
+      "dir": "rtl",
+      "lang": "ar",
+      "text": "انتقل إلى المحتوى\nالرئيسية\nالأخبار\nفانتازي\nالمباريات\nالمواهب\nع\nالمباريات\n2026/2027\nالرزنامة\nالترتيب\nالتوقعات\nودا\nالك\nودا\n0\n–\n1\nالك\n59′\nالكل\nمباشر\n1\n1\nقادمة\nالنتائج\nالأحد، 18 أكتوبر\n\nاليوم · الجولة 4\n\nالأحد\n11\nالاثنين\n12\nالثلاثاء\n13\nالأربعاء\n14\nالخميس\n15\nالجمعة\n16\nالسبت\n17\nاليوم\n18\nالاثنين\n19\nالثلاثاء\n20\nالأربعاء\n21\nالخميس\n22\nالجمعة\n23\nالسبت\n24\nالأحد\n25\nمباشر\n59′\nودا\nوداد تمارة\n0\nالك\nالكوكب المراكشي\n1\n20:00\nWCA\nالوداد\nأمل\nأمل تيزنيت",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "انتقل إلى المحتوى",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الرئيسية",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "الأخبار",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "فانتازي",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "المباريات",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "المواهب",
+          "href": "/pepites",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "بحث"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "ع",
+          "href": null,
+          "aria": "اللغة"
+        },
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/profile",
+          "aria": "الملف الشخصي"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "2026/2027",
+          "href": null,
+          "aria": "الموسم"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الرزنامة",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الترتيب",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "التوقعات",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "ودا\nالك\nودا\n0\n–\n1\nالك\n59′",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "النتيجة: وداد تمارة 0، الكوكب المراكشي 1 — 59′"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الكل",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "مباشر\n1\n1",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "قادمة",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "النتائج",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "اليوم السابق"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "اليوم التالي"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الأحد\n11",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الاثنين\n12",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الثلاثاء\n13",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الأربعاء\n14",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الخميس\n15",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الجمعة\n16",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "السبت\n17",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "اليوم\n18",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الاثنين\n19",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الثلاثاء\n20",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الأربعاء\n21",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الخميس\n22",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الجمعة\n23",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "السبت\n24",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الأحد\n25",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "مباشر\n59′\nودا\nوداد تمارة\n0\nالك\nالكوكب المراكشي\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "النتيجة: نادي الوداد الرياضي لتمارة 0، الكوكب المراكشي 1 — مباشر، الدقيقة 59"
+        },
+        {
+          "tag": "A",
+          "text": "20:00\nWCA\nالوداد\nأمل\nأمل تيزنيت",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "الوداد ضد أمل تيزنيت — الأحد، 18 أكتوبر · انطلاق المباراة على الساعة 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "ذكّرني بهذه المباراة"
+        },
+        {
+          "tag": "A",
+          "text": "الرئيسية",
+          "href": "/",
+          "aria": "الرئيسية"
+        },
+        {
+          "tag": "A",
+          "text": "الأخبار",
+          "href": "/news",
+          "aria": "الأخبار"
+        },
+        {
+          "tag": "A",
+          "text": "فانتازي",
+          "href": "/fantasy",
+          "aria": "فانتازي"
+        },
+        {
+          "tag": "A",
+          "text": "المباريات",
+          "href": "/matches",
+          "aria": "المباريات"
+        },
+        {
+          "tag": "A",
+          "text": "المواهب",
+          "href": "/pepites",
+          "aria": "المواهب"
+        }
+      ]
+    },
+    {
+      "step": "08-match-detail",
+      "url": "http://127.0.0.1:4173/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+      "dir": "rtl",
+      "lang": "ar",
+      "text": "انتقل إلى المحتوى\nرجوع\n\nالبطولة الاحترافية إنوي · ج. 4\n\nرجوع\nودا\n0\n–\n1\nمباشر\n59′\nالك\nنادي الوداد الرياضي لتمارة ضد الكوكب المراكشي\nودا\n\nالوداد لتمارة\n\nالك\n\nالكوكب المراكشي\n\nالنتيجة: وداد تمارة 0، الكوكب المراكشي 1\n0\n–\n1\nمباشر\n59′\nتحديث تلقائي\n\nSaleh Al Sellami 5′\n\nآخر تحديث على الساعة 19:17\n\nتوقعك\nودا\nوداد تمارة\n0\n–\n1\nالكوكب المراكشي\nالك\nبدون توقع\nمباشر\nتوقّع كل مباريات الجولة\nالملخص\nإحصائيات\nالتشكيلة\nالمواجهات\nالملخص\n5′\n\nهدف · Saleh Al Sellami\n\nالكوكب المراكشي\n\nالتشكيلة\nالك\nالكوكب المراكشي\n4-3-3\n67\nAmine El Ouaad\n15\nAbdellah Bouallali\n14\nHamza Smaali\n20\nMouhcine Rabja\n25\nNabil Khali\n21\nHamza Rafaa\n13\nAbdellah Haimoud\n5\nOussama Mahrous\n77\nAyoub Maamouri\n19\nJawad Rhabra\n11\nSaleh Al Sellami\n33\nRabie Ajlid\n18\nMouad Gari\n20\nNizar Cherki\n19\nZakaria Labib\n34\nMohamed Belkaida\n22\nAbdellah Cherrad\n99\nRabiae Bounnit\n88\nFahd El Kaaba\n10\nAkram Khouidsi\n70\nOussama Essabri\n7\nTaoufik Ijrouten\nودا\nنادي الوداد الرياضي لتمارة\n4-2-3-1\nنادي الوداد الرياضي لتمارة · 4-2-3-1\n\nالتشكيلة الأساسية\n\n33 Rabie Ajlid\n18 Mouad Gari\n20 Nizar Cherki\n19 Zakaria Labib\n34 Mohamed Belkaida\n22 Abdellah Cherrad\n99 Rabiae Bounnit\n88 Fahd El Kaaba\n10 Akram Khouidsi\n70 Oussama Essabri\n7 Taoufik Ijrouten\nالكوكب المراكشي · 4-3-3\n\nالتشكيلة الأساسية\n\n67 Amine El Ouaad\n15 Abdellah Bouallali\n14 Hamza Smaali\n20 Mouhcine Rabja\n25 Nabil Khali\n21 Hamza Rafaa\n13 Abdellah Haimoud\n5 Oussama Mahrous\n77 Ayoub Maamouri\n19 Jawad Rhabra\n11 Saleh Al Sellami\nالاحتياط\nودا\nوداد تمارة\n12\nBrahim El Yamlahi\n30\nAyoub Belcadi\n8\nOthman Sabri\n11\nMohamed Assraoui\n21\nMohamed Wail Babah\n27\nIbrahima Balia Sagna\n2\nOmar El Birbri\n14\nIsmail Sbahe\nالك\nالكوكب المراكشي\n22\nAbdelali Mhamdi\n33\nAbdelkarim Baadi\n4\nMohamed Adam Benhita\n44\nIsmail El Alami\n26\nHamza Fassoukh\n6\nMohamed Dadssi\n16\nMahmoud El Kayssoumi\n99\nOussama Haffari\n8\nKhalil Tamrani\nالأخبار\nاقرأ أيضاً\nمعاينة المباراة: نادي الوداد الرياضي لتمارة يستضيف الكوكب المراكشي\n\nآخر الأخبار\nأمس\n\nالجيش الملكي يفوز على الوداد الرياضي لتمارة\n\nآخر الأخبار\n9 أكتوبر\n\nأثمنتها تتراوح بين 60 و2000 درهم.. الوداد يطرح تذاكر مباراته أمام وداد تمارة ضمن الجولة الأولى من البطولة الاحترافية\n\nآخر الأخبار\n23 شتنبر",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "انتقل إلى المحتوى",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "رجوع",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "مشاركة"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "رجوع",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "مشاركة"
+        },
+        {
+          "tag": "A",
+          "text": "توقّع كل مباريات الجولة",
+          "href": "/pronostics?journee=4",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "الملخص",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "إحصائيات",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "التشكيلة",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "المواجهات",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "معاينة المباراة: نادي الوداد الرياضي لتمارة يستضيف الكوكب المراكشي\n\nآخر الأخبار\nأمس",
+          "href": "/news/41a775c8-28c5-4887-8508-f7f745780c36",
+          "aria": "معاينة المباراة: نادي الوداد الرياضي لتمارة يستضيف الكوكب المراكشي"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "حفظ"
+        },
+        {
+          "tag": "A",
+          "text": "الجيش الملكي يفوز على الوداد الرياضي لتمارة\n\nآخر الأخبار\n9 أكتوبر",
+          "href": "/news/89bd7638-656c-45e8-b65e-7b135aae5518",
+          "aria": "الجيش الملكي يفوز على الوداد الرياضي لتمارة"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "حفظ"
+        },
+        {
+          "tag": "A",
+          "text": "أثمنتها تتراوح بين 60 و2000 درهم.. الوداد يطرح تذاكر مباراته أمام وداد تمارة ضمن الجولة الأولى من البطولة الاحترافية\n\nآخر الأخبار\n23 شتنبر",
+          "href": "/news/dceb70af-928e-4f6d-95ae-55f06d846614",
+          "aria": "أثمنتها تتراوح بين 60 و2000 درهم.. الوداد يطرح تذاكر مباراته أمام وداد تمارة ضمن الجولة الأولى من البطولة الاحترافية"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "حفظ"
+        }
+      ]
+    }
+  ],
+  "requestFailures": [
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
+      "error": "net::ERR_ABORTED"
+    }
+  ]
+}

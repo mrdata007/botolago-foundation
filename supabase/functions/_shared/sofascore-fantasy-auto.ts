@@ -54,6 +54,7 @@
 //
 // Dependency-free apart from sibling shared modules (Bun tests, Deno runtime).
 
+import { buildApiRatingLineups } from "./fantasy-api-ratings.ts";
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
 import type {
   PerformanceIncident,
@@ -422,6 +423,7 @@ export class SofascoreFantasyRun {
   private readonly liveDone = new Set<string>();
   private stateMissing = false;
   private autoMapMissing = false;
+  private readonly nativePolicy = new Map<string, Promise<boolean>>();
   private rateLimited = false;
   private counts = { recorded: 0, held: 0, skipped: 0, errors: 0 };
   private perf = { written: 0, unchanged: 0, rated: 0, refused: 0, errors: 0 };
@@ -494,6 +496,7 @@ export class SofascoreFantasyRun {
       }
     };
     try {
+      if (await this.nativeEnabled(fixtureId)) return line("skipped:api_ratings");
       if (replies.lineups === null) return line("skipped:no_lineups");
       let lineups: PerformanceLineups;
       try {
@@ -535,9 +538,45 @@ export class SofascoreFantasyRun {
   async sweep(): Promise<void> {
     const { config, deps } = this;
     if (!config.enabled || deps.mode !== "sofascore") return;
+    await this.refreshNativeRatings();
     await this.retryAndCatchUp();
     // After the retries, so a fixture recorded just now is written in this same tick.
     await this.syncDuePerformances();
+  }
+
+  private async refreshNativeRatings(): Promise<void> {
+    if (this.config.catchUpPerTick === 0) return;
+    const due = await this.call("service_fantasy_api_ratings_due", {
+      p_limit: this.config.catchUpPerTick,
+    });
+    if (due.error || !Array.isArray(due.data)) return;
+    for (const item of due.data.slice(0, this.config.catchUpPerTick)) {
+      if (
+        !isRecord(item) ||
+        typeof item.fixtureId !== "string" ||
+        typeof item.eventId !== "string" ||
+        !/^\d{1,12}$/.test(item.eventId) ||
+        this.done.has(item.fixtureId)
+      )
+        continue;
+      this.done.add(item.fixtureId);
+      try {
+        const reply = await this.deps.rapid.getJson(`matches/get-lineups?matchId=${item.eventId}`);
+        await this.recordNative(
+          item.fixtureId,
+          item.eventId,
+          "catch_up",
+          parseSofascoreLineups(reply.data),
+        );
+      } catch {
+        this.finish({
+          fixtureId: item.fixtureId,
+          eventId: item.eventId,
+          source: "catch_up",
+          outcome: "error:api_rating_fetch_failed",
+        });
+      }
+    }
   }
 
   private async retryAndCatchUp(): Promise<void> {
@@ -595,6 +634,61 @@ export class SofascoreFantasyRun {
     }
   }
 
+  // A native rating fixture never enters canonical matching, even when a
+  // provider or database request fails. Only a missing RPC permits the legacy
+  // path on an older deployment.
+  private nativeEnabled(fixtureId: string): Promise<boolean> {
+    let pending = this.nativePolicy.get(fixtureId);
+    if (!pending) {
+      pending = (async () => {
+        const r = await this.call("service_fantasy_api_rating_context", {
+          p_fixture_id: fixtureId,
+        });
+        if (r.error && isMissingFunction(r.error)) return false;
+        if (r.error || !isRecord(r.data) || typeof r.data.enabled !== "boolean")
+          throw new Error("fantasy_api_rating_state_unavailable");
+        return r.data.enabled;
+      })();
+      this.nativePolicy.set(fixtureId, pending);
+    }
+    return pending;
+  }
+
+  private async recordNative(
+    fixtureId: string,
+    eventId: string,
+    source: FantasySource,
+    lineups: PerformanceLineups,
+  ): Promise<boolean> {
+    if (!(await this.nativeEnabled(fixtureId))) return false;
+    if (source === "stored") {
+      this.finish({ fixtureId, eventId, source, outcome: "skipped:api_ratings_refresh_due" });
+      return true;
+    }
+    if (this.deps.mode !== "sofascore") {
+      this.finish({ fixtureId, eventId, source, outcome: "skipped:shadow_api_ratings" });
+      return true;
+    }
+    const payload = buildApiRatingLineups(lineups);
+    const answer = await this.call("service_record_fantasy_api_ratings", {
+      p_fixture_id: fixtureId,
+      p_event_id: eventId,
+      p_players: payload.players,
+      p_captured_at: this.deps.now.toISOString(),
+    });
+    this.finish({
+      fixtureId,
+      eventId,
+      source,
+      outcome: answer.error
+        ? "error:api_rating_write_failed"
+        : payload.ready
+          ? "recorded"
+          : "held:fantasy_ratings_pending",
+    });
+    return true;
+  }
+
   // -- one fixture, from fresh replies ---------------------------------------
 
   private async processReplies(
@@ -607,8 +701,10 @@ export class SofascoreFantasyRun {
     try {
       if (replies.lineups === null)
         throw new SofascoreParseError("lineups", ["lineups: not provided"]);
+      const lineups = parseSofascoreLineups(replies.lineups);
+      if (await this.recordNative(fixtureId, eventId, source, lineups)) return;
       parts = {
-        lineups: parseSofascoreLineups(replies.lineups),
+        lineups,
         incidents: parseSofascoreIncidents(replies.incidents),
         statistics: replies.statistics === null ? [] : parseSofascoreStatistics(replies.statistics),
         stoppage: parseSofascoreStoppage(replies.incidents),
@@ -694,6 +790,7 @@ export class SofascoreFantasyRun {
     parts: MatchParts,
   ): Promise<void> {
     const { mode, now } = this.deps;
+    if (await this.recordNative(fixtureId, eventId, source, parts.lineups)) return;
     const ids = [...new Set(parts.lineups.players.map((p) => p.externalId))].slice(
       0,
       MAX_PLAYER_IDS,

@@ -3,7 +3,7 @@
 -- scheduled or open; the documents of earlier gameweeks unchanged byte for byte; a rating
 -- gameweek's document carries ruleset v3.0, scoring version 3 and each player's SofaScore
 -- rating; the save accepts exactly one `rating` event per appearing player, worth the rating
--- rounded half up (5 without a rating), and refuses `rating` for a v2 snapshot.
+-- rounded half up (pending without a rating), and refuses `rating` for a v2 snapshot.
 begin;
 select extensions.no_plan();
 create function pg_temp.rid(n integer) returns uuid language sql immutable as $$
@@ -148,7 +148,7 @@ select extensions.is(app_private.fantasy_scoring_input_document(pg_temp.rid(24))
   'the document of GW4 is byte for byte the one it was');
 select extensions.ok(not app_private.fantasy_rating_scoring_enabled(pg_temp.rid(24)) and app_private.fantasy_rating_scoring_enabled(pg_temp.rid(25))
   and app_private.fantasy_rating_scoring_enabled(pg_temp.rid(26)),'the rule covers GW5 and later, not GW4');
-select extensions.is(api.fantasy_rules(pg_temp.rid(5))->'ratingScoring','{"fromGameweek": 5, "noRatingPoints": 5}'::jsonb,'the rules say from which gameweek');
+select extensions.is(api.fantasy_rules(pg_temp.rid(5))->'ratingScoring','{"fromGameweek": 5, "noRatingPoints": null, "waitForRating": true}'::jsonb,'the rules say from which gameweek');
 
 -- ---------------------------------------------------------------------------
 -- GW5 scored under the rule.
@@ -190,6 +190,24 @@ create function pg_temp.persist5(p_results jsonb, p_teams jsonb default '[]') re
  select api.service_persist_fantasy_scoring_results(pg_temp.rid(25),(current_setting('test.snap5')::jsonb->>'calculationVersion')::bigint,
    current_setting('test.snap5')::jsonb->>'inputDigest',p_results,p_teams);
 $$;
+-- The old worker supplies five points for a null rating. The database must
+-- reject that entire write, including team totals, before any points persist.
+select extensions.throws_ok($$select pg_temp.persist5(pg_temp.rating_results(current_setting('test.snap5')::jsonb),
+  current_setting('test.teams5')::jsonb)$$,'PT409','fantasy_ratings_pending',
+  'an unrated appearance waits even when an older worker supplies five points');
+select extensions.is((select count(*)::integer from app.fantasy_player_point_events where gameweek_id=pg_temp.rid(25)),0,
+  'pending ratings wrote no player events');
+select extensions.is((select count(*)::integer from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),0,
+  'pending ratings wrote no team results or substitutions');
+-- The provider subsequently supplies a genuine rating of 5 for player 25.
+select api.service_record_fantasy_observation(pg_temp.rid(3002),pg_temp.payload(2,
+  '{"23":7.5,"24":7.49,"25":5,"26":6.5,"27":6.0,"28":8.26,"29":7.0,"30":9.5,"31":6.8,"32":7.2,"33":5.55,"34":6.1,"35":6.3,"43":7.7}',
+  (select digest from app_private.fantasy_fixture_observations where fixture_id=pg_temp.rid(3002) order by observed_at desc,id desc limit 1)),
+  'reviewed-correction');
+do $$declare snap jsonb; begin
+ snap:=api.service_get_fantasy_scoring_snapshot(pg_temp.rid(25),(select greatest(scoring_input_version,1) from app.fantasy_gameweeks where id=pg_temp.rid(25)));
+ perform set_config('test.snap5',snap::text,true);
+end $$;
 -- Refusals first (each rolls back on its own).
 select extensions.throws_ok($$select pg_temp.persist5(pg_temp.category_results(current_setting('test.snap5')::jsonb))$$,
   'PT400','fantasy_player_result_scope_invalid','category events are refused in a rating gameweek');
@@ -198,7 +216,7 @@ select extensions.throws_ok($$select pg_temp.persist5((select jsonb_agg(case whe
   'PT400','fantasy_point_event_invalid','7.49 is 7 points, not 8: the save recomputes the rounding');
 select extensions.throws_ok($$select pg_temp.persist5((select jsonb_agg(case when r->>'fantasyPlayerId'=pg_temp.rid(2025)::text
     then jsonb_set(r,'{events,0,points}','0') else r end) from jsonb_array_elements(pg_temp.rating_results(current_setting('test.snap5')::jsonb)) r))$$,
-  'PT400','fantasy_point_event_invalid','an appearance without a rating is 5 points');
+  'PT400','fantasy_point_event_invalid','an actual rating of 5 is five points, not zero');
 select extensions.throws_ok($$select pg_temp.persist5((select jsonb_agg(case when r->>'fantasyPlayerId'=pg_temp.rid(2045)::text
     then jsonb_set(r,'{events}',jsonb_build_array(jsonb_build_object('category','rating','points',5,'sourceKey','fixture-stats:'||(r->>'fixtureId')||':'||pg_temp.rid(1045)||':rating')))
     else r end) from jsonb_array_elements(pg_temp.rating_results(current_setting('test.snap5')::jsonb)) r))$$,
@@ -212,7 +230,7 @@ select extensions.is((select string_agg(fp.football_player_id::text||'='||pp.pro
   from app.fantasy_player_gameweek_points pp join app.fantasy_players fp on fp.id=pp.fantasy_player_id
   where pp.gameweek_id=pg_temp.rid(25) and fp.football_player_id in (pg_temp.rid(1023),pg_temp.rid(1024),pg_temp.rid(1025),pg_temp.rid(1026),pg_temp.rid(1028),pg_temp.rid(1030),pg_temp.rid(1033),pg_temp.rid(1045))),
   pg_temp.rid(1023)||'=8,'||pg_temp.rid(1024)||'=7,'||pg_temp.rid(1025)||'=5,'||pg_temp.rid(1026)||'=7,'||pg_temp.rid(1028)||'=8,'||pg_temp.rid(1030)||'=10,'||pg_temp.rid(1033)||'=6,'||pg_temp.rid(1045)||'=0',
-  '7.5 -> 8, 7.49 -> 7, no rating -> 5, 6.5 -> 7, 8.26 -> 8, 9.5 -> 10, 5.55 -> 6, did not play -> 0');
+  '7.5 -> 8, 7.49 -> 7, actual rating 5 -> 5, 6.5 -> 7, 8.26 -> 8, 9.5 -> 10, 5.55 -> 6, did not play -> 0');
 select extensions.is((select string_agg(distinct category||'@'||scoring_version,',') from app.fantasy_player_point_events
   where gameweek_id=pg_temp.rid(25) and superseded_at is null),'rating@3','GW5 writes only rating events, scoring version 3');
 select extensions.is((select provisional_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25) and fantasy_team_id=pg_temp.rid(9)),86,
@@ -223,10 +241,10 @@ select extensions.is((select player_out_id||'>'||player_in_id from app.fantasy_a
 -- A corrected rating is a new observation, so a new document digest (a rescore).
 select set_config('test.digest5',encode(extensions.digest(app_private.fantasy_scoring_input_document(pg_temp.rid(25))::text,'sha256'),'hex'),true);
 select api.service_record_fantasy_observation(pg_temp.rid(3002),pg_temp.payload(2,
-  '{"23":7.5,"24":7.6,"25":null,"26":6.5,"27":6.0,"28":8.26,"29":7.0,"30":9.5,"31":6.8,"32":7.2,"33":5.55,"34":6.1,"35":6.3,"43":7.7}',
+  '{"23":7.5,"24":7.6,"25":5,"26":6.5,"27":6.0,"28":8.26,"29":7.0,"30":9.5,"31":6.8,"32":7.2,"33":5.55,"34":6.1,"35":6.3,"43":7.7}',
   (select digest from app_private.fantasy_fixture_observations where fixture_id=pg_temp.rid(3002) order by observed_at desc,id desc limit 1)),
   'reviewed-correction');
-select extensions.is((select count(*)::integer from app_private.fantasy_fixture_observations where fixture_id=pg_temp.rid(3002)),2,
+select extensions.is((select count(*)::integer from app_private.fantasy_fixture_observations where fixture_id=pg_temp.rid(3002)),3,
   'a rating-only correction records a new observation');
 select extensions.isnt(encode(extensions.digest(app_private.fantasy_scoring_input_document(pg_temp.rid(25))::text,'sha256'),'hex'),current_setting('test.digest5'),
   'and changes the document digest, so the next pass rescores');

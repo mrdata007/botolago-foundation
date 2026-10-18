@@ -1,0 +1,1130 @@
+{
+  "persona": "Literal-language first-time user",
+  "language": "fr",
+  "ignoreHTTPSErrors": true,
+  "actions": [
+    {
+      "action": "Choose language",
+      "label": "Français\nActualité & Fantasy du football marocain",
+      "aria": null
+    },
+    {
+      "action": "Confirm language",
+      "label": "Continuer",
+      "aria": null
+    },
+    {
+      "action": "Follow landing primary action",
+      "label": "Découvrir le jeu",
+      "aria": null
+    },
+    {
+      "action": "Follow calendar from closed Fantasy hub",
+      "label": "Calendrier",
+      "aria": null
+    },
+    {
+      "action": "Open visible match row",
+      "label": "WID\nKAW\nWID\n0\n–\n1\nKAW\n55′",
+      "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — 55′"
+    }
+  ],
+  "states": [
+    {
+      "step": "01-first-visit",
+      "url": "http://127.0.0.1:4173/",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "FR\nSe connecter\nDécouvrir le jeu\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nDécouvrir le jeu\nVoir les matchs et résultats\nComment ça marche\n\nLes inscriptions sont fermées pour cette journée\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nEN CE MOMENT\n\nLa Botola Pro, journée après journée\n\nLes matchs\n\nTout le calendrier\ndim. 18 oct.\nEN DIRECT\n55′\nJ. 4\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1\ndim. 18 oct.\n20:00\nJ. 4\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit\n\nLe classement\n\nClassement complet\n#\nÉQUIPE\nJ\nPTS\n1\nCOD\nCODM Meknès\n4\n7\n2\nHAS\nHassania Agadir\n4\n7\n3\nITT\nIttihad Tanger\n4\n7\n4\nMAG\nMaghreb Fès\n4\n7\n5\nUTS\nUTS Rabat\n4\n7\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nLes joueurs à suivre\n\nCeux qui rapportent le plus de points cette saison.\n\nTous les joueurs\nImad Riahi\nHAS\nAttaquant\n30 pts\nAbderrazak Ennakouss\nDEJ\nMilieu\n22 pts\nYouness Najari\nITT\nAttaquant\n19 pts\nAyoub Benaadi\nHAS\nMilieu\n15 pts\nSaleh Al Sellami\nKAW\nAttaquant\n15 pts\nYahia Attiyat Allah\nWCA\nDéfenseur\n15 pts\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nDes lots pour les meilleurs managers\n\nLes lots en jeu cette saison, attribués selon le règlement :\n\nLot de la journée\nRecharge mobile + maillot d'un club de la Botola\nLot du mois\nSmartphone\nLot de la saison\nVoyage pour le derby + smartphone haut de gamme\n\n100 % gratuit — aucun achat, aucun pari.\n\nVoir les lots et le règlement\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nDécouvrir le jeu\n\nLes inscriptions sont fermées pour cette journée\n\nChoisissez votre langue\n\nاختر لغتك\n\nFrançais\nActualité & Fantasy du football marocain\nالعربية\nأخبار وفانتازي كرة القدم المغربية\n\nContinuer",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "aria": "Langue"
+        },
+        {
+          "tag": "A",
+          "text": "Se connecter",
+          "href": "/auth/login",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs et résultats",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Comment ça marche",
+          "href": "#_r_l_",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Gardien\n1",
+          "href": null,
+          "aria": "Nommer capitaine : Gardien 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n2",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 2"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n4",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 4"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n5",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 5"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n3",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 3"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n8",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 8"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n6",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 6"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n10",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 10"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n7",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 7"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "C\nAttaquant\n×2",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 9"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n11",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 11"
+        },
+        {
+          "tag": "A",
+          "text": "Tout le calendrier",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\nEN DIRECT\n55′\nJ. 4\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — En direct, 55e minute"
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\n20:00\nJ. 4\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "Wydad Casablanca vs Amal Tiznit — dim. 18 oct. · Coup d'envoi à 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Me rappeler ce match"
+        },
+        {
+          "tag": "A",
+          "text": "Classement complet",
+          "href": "/matches/standings",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "1\nCOD\nCODM Meknès\n4\n7",
+          "href": "/clubs/8059c0cf-8b7b-4317-be7e-fd646d377cd0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "2\nHAS\nHassania Agadir\n4\n7",
+          "href": "/clubs/9f8c170d-24ed-41a3-99ca-a06167fd9c8b",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "3\nITT\nIttihad Tanger\n4\n7",
+          "href": "/clubs/353e19d7-0a4b-41e6-a491-fc85f6c952d8",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "4\nMAG\nMaghreb Fès\n4\n7",
+          "href": "/clubs/0257feb3-4c16-431d-a58b-5faf060576ad",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "5\nUTS\nUTS Rabat\n4\n7",
+          "href": "/clubs/b78eaee8-93af-4630-8335-b208151cbf37",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir le barème en vigueur",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Tous les joueurs",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Imad Riahi\nHAS\nAttaquant\n30 pts",
+          "href": "/fantasy/players/42e13529-a788-41df-a747-ad061461a046",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Abderrazak Ennakouss\nDEJ\nMilieu\n22 pts",
+          "href": "/fantasy/players/1753f151-59ca-4274-a65b-fad4980a3cc0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Youness Najari\nITT\nAttaquant\n19 pts",
+          "href": "/fantasy/players/72403c4b-237d-46eb-8d1f-f035ba7d4baf",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Ayoub Benaadi\nHAS\nMilieu\n15 pts",
+          "href": "/fantasy/players/8111b9a8-8117-4af3-b927-71a130056d5a",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Saleh Al Sellami\nKAW\nAttaquant\n15 pts",
+          "href": "/fantasy/players/91ed6866-48e9-40e0-88fe-584f2cefd8e1",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Yahia Attiyat Allah\nWCA\nDéfenseur\n15 pts",
+          "href": "/fantasy/players/b28d64d4-6582-47f2-bb64-79b56f5a169f",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les lots et le règlement",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Lire le règlement complet",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Centre d’aide",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Français\nActualité & Fantasy du football marocain",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "العربية\nأخبار وفانتازي كرة القدم المغربية",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Continuer",
+          "href": null,
+          "aria": null
+        }
+      ]
+    },
+    {
+      "step": "02-landing",
+      "url": "http://127.0.0.1:4173/",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "FR\nSe connecter\nDécouvrir le jeu\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nDécouvrir le jeu\nVoir les matchs et résultats\nComment ça marche\n\nLes inscriptions sont fermées pour cette journée\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nEN CE MOMENT\n\nLa Botola Pro, journée après journée\n\nLes matchs\n\nTout le calendrier\ndim. 18 oct.\nEN DIRECT\n55′\nJ. 4\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1\ndim. 18 oct.\n20:00\nJ. 4\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit\n\nLe classement\n\nClassement complet\n#\nÉQUIPE\nJ\nPTS\n1\nCOD\nCODM Meknès\n4\n7\n2\nHAS\nHassania Agadir\n4\n7\n3\nITT\nIttihad Tanger\n4\n7\n4\nMAG\nMaghreb Fès\n4\n7\n5\nUTS\nUTS Rabat\n4\n7\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nLes joueurs à suivre\n\nCeux qui rapportent le plus de points cette saison.\n\nTous les joueurs\nImad Riahi\nHAS\nAttaquant\n30 pts\nAbderrazak Ennakouss\nDEJ\nMilieu\n22 pts\nYouness Najari\nITT\nAttaquant\n19 pts\nAyoub Benaadi\nHAS\nMilieu\n15 pts\nSaleh Al Sellami\nKAW\nAttaquant\n15 pts\nYahia Attiyat Allah\nWCA\nDéfenseur\n15 pts\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nDes lots pour les meilleurs managers\n\nLes lots en jeu cette saison, attribués selon le règlement :\n\nLot de la journée\nRecharge mobile + maillot d'un club de la Botola\nLot du mois\nSmartphone\nLot de la saison\nVoyage pour le derby + smartphone haut de gamme\n\n100 % gratuit — aucun achat, aucun pari.\n\nVoir les lots et le règlement\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nDécouvrir le jeu\n\nLes inscriptions sont fermées pour cette journée",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "aria": "Langue"
+        },
+        {
+          "tag": "A",
+          "text": "Se connecter",
+          "href": "/auth/login",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs et résultats",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Comment ça marche",
+          "href": "#_r_l_",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Gardien\n1",
+          "href": null,
+          "aria": "Nommer capitaine : Gardien 1"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n2",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 2"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n4",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 4"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n5",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 5"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Défenseur\n3",
+          "href": null,
+          "aria": "Nommer capitaine : Défenseur 3"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n8",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 8"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n6",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 6"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Milieu\n10",
+          "href": null,
+          "aria": "Nommer capitaine : Milieu 10"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n7",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 7"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "C\nAttaquant\n×2",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 9"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Attaquant\n11",
+          "href": null,
+          "aria": "Nommer capitaine : Attaquant 11"
+        },
+        {
+          "tag": "A",
+          "text": "Tout le calendrier",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\nEN DIRECT\n55′\nJ. 4\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — En direct, 55e minute"
+        },
+        {
+          "tag": "A",
+          "text": "dim. 18 oct.\n20:00\nJ. 4\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "Wydad Casablanca vs Amal Tiznit — dim. 18 oct. · Coup d'envoi à 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Me rappeler ce match"
+        },
+        {
+          "tag": "A",
+          "text": "Classement complet",
+          "href": "/matches/standings",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "1\nCOD\nCODM Meknès\n4\n7",
+          "href": "/clubs/8059c0cf-8b7b-4317-be7e-fd646d377cd0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "2\nHAS\nHassania Agadir\n4\n7",
+          "href": "/clubs/9f8c170d-24ed-41a3-99ca-a06167fd9c8b",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "3\nITT\nIttihad Tanger\n4\n7",
+          "href": "/clubs/353e19d7-0a4b-41e6-a491-fc85f6c952d8",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "4\nMAG\nMaghreb Fès\n4\n7",
+          "href": "/clubs/0257feb3-4c16-431d-a58b-5faf060576ad",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "5\nUTS\nUTS Rabat\n4\n7",
+          "href": "/clubs/b78eaee8-93af-4630-8335-b208151cbf37",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir le barème en vigueur",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Tous les joueurs",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Imad Riahi\nHAS\nAttaquant\n30 pts",
+          "href": "/fantasy/players/42e13529-a788-41df-a747-ad061461a046",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Abderrazak Ennakouss\nDEJ\nMilieu\n22 pts",
+          "href": "/fantasy/players/1753f151-59ca-4274-a65b-fad4980a3cc0",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Youness Najari\nITT\nAttaquant\n19 pts",
+          "href": "/fantasy/players/72403c4b-237d-46eb-8d1f-f035ba7d4baf",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Ayoub Benaadi\nHAS\nMilieu\n15 pts",
+          "href": "/fantasy/players/8111b9a8-8117-4af3-b927-71a130056d5a",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Saleh Al Sellami\nKAW\nAttaquant\n15 pts",
+          "href": "/fantasy/players/91ed6866-48e9-40e0-88fe-584f2cefd8e1",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Yahia Attiyat Allah\nWCA\nDéfenseur\n15 pts",
+          "href": "/fantasy/players/b28d64d4-6582-47f2-bb64-79b56f5a169f",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les matchs",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Voir les lots et le règlement",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Lire le règlement complet",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Centre d’aide",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Découvrir le jeu",
+          "href": "/fantasy",
+          "aria": null
+        }
+      ]
+    },
+    {
+      "step": "03-primary-action",
+      "url": "http://127.0.0.1:4173/fantasy",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "Aller au contenu\nAccueil\nActualités\nFantasy\nMatchs\nProspects\nFR\nFantasy\n\nJOURNÉE 4\n· DATE LIMITE\n\nlun. 12 oct., 18:30\n\nEN DIRECT\nLes inscriptions sont fermées pour cette journée\n\nVous pourrez créer votre équipe à l’ouverture d’une prochaine journée. En attendant, parcourez les joueurs et le calendrier des matchs.\n\nCalendrier\nDifficulté des matchs\nStatistiques joueurs\nMeilleurs joueurs\nDevenez manager en Botola Pro\n\nBotolaGO Fantasy est un jeu gratuit : vos joueurs de Botola Pro vous rapportent des points selon leurs vrais matchs, journée après journée, et vous défiez vos amis dans des ligues privées.\n\nDes lots récompensent les meilleurs managers.\n\nCOMMENT ÇA MARCHE\nUn effectif de 15 joueurs\n2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, dont 11 titulaires à aligner à chaque journée.\nUn budget de 100 M\nChaque joueur a son prix, et 3 joueurs au maximum par club : à vous de trouver le bon équilibre.\nUn capitaine qui compte double\nChoisissez-le à chaque journée : ses points sont doublés. S’il ne joue pas, le vice-capitaine prend le relais.\nUne date limite par journée\nTransferts, titulaires et capitaine se règlent avant la date limite. Ensuite, votre équipe est verrouillée jusqu’à la fin de la journée.\nRègles du jeu\nActualités\nTout voir\n\nVictoire convaincante de Difaâ El Jadida contre Moghreb Tétouan\n\nVictoire de CODM Meknès contre UTS Rabat\n\nAperçu du match : Wydad Casablanca contre Amal Tiznit\n\nAperçu du match : Widad Témara accueille Kawkab Marrakech\n\nAperçu du match : Difaâ El Jadida contre Moghreb Tétouan\n\nCODM Meknès accueille UTS Rabat pour un duel captivant\n\nEn savoir plus sur  Fantasy\nLots à gagner\nRègles du jeu\nAide & Règles",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Rechercher"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "aria": "Langue"
+        },
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/profile",
+          "aria": "Profil"
+        },
+        {
+          "tag": "A",
+          "text": "Calendrier",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Difficulté des matchs",
+          "href": "/fantasy/fixtures",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Statistiques joueurs",
+          "href": "/fantasy/players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Meilleurs joueurs",
+          "href": "/fantasy/top-players",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Règles du jeu",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Tout voir",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Victoire convaincante de Difaâ El Jadida contre Moghreb Tétouan",
+          "href": "/news/318a6b59-2aa5-4bcb-b08c-0af5a85fce1e",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Victoire de CODM Meknès contre UTS Rabat",
+          "href": "/news/ed5d9dcc-d74e-4721-9790-a8f25ca8cfb2",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Aperçu du match : Wydad Casablanca contre Amal Tiznit",
+          "href": "/news/6f961785-a45f-4ed2-8abe-c931453bbcbc",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Aperçu du match : Widad Témara accueille Kawkab Marrakech",
+          "href": "/news/4144313d-9833-498b-985a-af2d6c6be5c4",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Aperçu du match : Difaâ El Jadida contre Moghreb Tétouan",
+          "href": "/news/f62a2156-a255-496b-b7d6-211ad87c0480",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "CODM Meknès accueille UTS Rabat pour un duel captivant",
+          "href": "/news/98542290-d2c1-474d-8650-de441f97737a",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Lots à gagner",
+          "href": "/prizes",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Règles du jeu",
+          "href": "/fantasy/rules",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Aide & Règles",
+          "href": "/fantasy/help",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "aria": "Accueil"
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "aria": "Actualités"
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "aria": "Fantasy"
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "aria": "Matchs"
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "aria": "Prospects"
+        }
+      ]
+    },
+    {
+      "step": "06-calendar",
+      "url": "http://127.0.0.1:4173/matches",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "Aller au contenu\nAccueil\nActualités\nFantasy\nMatchs\nProspects\nFR\nMatchs\n2026/2027\nCalendrier\nClassement\nPronostics\nWID\nKAW\nWID\n0\n–\n1\nKAW\n55′\nTous\nEn direct\n1\n1\nÀ venir\nRésultats\nDimanche 18 octobre\n\nAUJOURD'HUI · JOURNÉE 4\n\nDIM.\n11\nLUN.\n12\nMAR.\n13\nMER.\n14\nJEU.\n15\nVEN.\n16\nSAM.\n17\nAUJOURD'HUI\n18\nLUN.\n19\nMAR.\n20\nMER.\n21\nJEU.\n22\nVEN.\n23\nSAM.\n24\nDIM.\n25\nEN DIRECT\n55′\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1\n20:00\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Rechercher"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "FR",
+          "href": null,
+          "aria": "Langue"
+        },
+        {
+          "tag": "A",
+          "text": "",
+          "href": "/profile",
+          "aria": "Profil"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "2026/2027",
+          "href": null,
+          "aria": "Saison"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Calendrier",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Classement",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Pronostics",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "WID\nKAW\nWID\n0\n–\n1\nKAW\n55′",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — 55′"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Tous",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "En direct\n1\n1",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "À venir",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Résultats",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Jour précédent"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Jour suivant"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "DIM.\n11",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "LUN.\n12",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "MAR.\n13",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "MER.\n14",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "JEU.\n15",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "VEN.\n16",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "SAM.\n17",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "AUJOURD'HUI\n18",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "LUN.\n19",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "MAR.\n20",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "MER.\n21",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "JEU.\n22",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "VEN.\n23",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "SAM.\n24",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "DIM.\n25",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "EN DIRECT\n55′\nWID\nWidad Témara\n0\nKAW\nKawkab Marrakech\n1",
+          "href": "/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+          "aria": "Score : Widad Témara 0, Kawkab Marrakech 1 — En direct, 55e minute"
+        },
+        {
+          "tag": "A",
+          "text": "20:00\nWCA\nWydad Casablanca\nAMA\nAmal Tiznit",
+          "href": "/matches/880e1ad0-dd4b-4081-bd5f-aae1faab6cc1",
+          "aria": "Wydad Casablanca vs Amal Tiznit — dim. 18 oct. · Coup d'envoi à 20:00"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Me rappeler ce match"
+        },
+        {
+          "tag": "A",
+          "text": "Accueil",
+          "href": "/",
+          "aria": "Accueil"
+        },
+        {
+          "tag": "A",
+          "text": "Actualités",
+          "href": "/news",
+          "aria": "Actualités"
+        },
+        {
+          "tag": "A",
+          "text": "Fantasy",
+          "href": "/fantasy",
+          "aria": "Fantasy"
+        },
+        {
+          "tag": "A",
+          "text": "Matchs",
+          "href": "/matches",
+          "aria": "Matchs"
+        },
+        {
+          "tag": "A",
+          "text": "Prospects",
+          "href": "/pepites",
+          "aria": "Prospects"
+        }
+      ]
+    },
+    {
+      "step": "08-match-detail",
+      "url": "http://127.0.0.1:4173/matches/e3ee8a8a-f568-4cf2-ae9a-a21c409be5f5",
+      "dir": "ltr",
+      "lang": "fr",
+      "text": "Aller au contenu\nRetour\n\nBOTOLA PRO INWI · J. 4\n\nRetour\nWID\n0\n–\n1\nEN DIRECT\n55′\nKAW\nWidad Témara vs Kawkab Marrakech\nWID\n\nWidad Témara\n\nKAW\n\nKawkab Marrakech\n\nScore : Widad Témara 0, Kawkab Marrakech 1\n0\n–\n1\nEN DIRECT\n55′\nMise à jour automatique\n\nSaleh Al Sellami 5′\n\nMis à jour à 19:12\n\nVOTRE PRONOSTIC\nWID\nWidad Témara\n0\n–\n1\nKawkab Marrakech\nKAW\nPas de pronostic\nEN DIRECT\nPronostiquer toute la journée\nRésumé\nStats\nCompos\nFace à face\nRésumé\n5′\n\nBut · Saleh Al Sellami\n\nKawkab Marrakech\n\nCompositions\nKAW\nKawkab Marrakech\n4-3-3\n67\nAmine El Ouaad\n15\nAbdellah Bouallali\n14\nHamza Smaali\n20\nMouhcine Rabja\n25\nNabil Khali\n21\nHamza Rafaa\n13\nAbdellah Haimoud\n5\nOussama Mahrous\n77\nAyoub Maamouri\n19\nJawad Rhabra\n11\nSaleh Al Sellami\n33\nRabie Ajlid\n18\nMouad Gari\n20\nNizar Cherki\n19\nZakaria Labib\n34\nMohamed Belkaida\n22\nAbdellah Cherrad\n99\nRabiae Bounnit\n88\nFahd El Kaaba\n10\nAkram Khouidsi\n70\nOussama Essabri\n7\nTaoufik Ijrouten\nWID\nWidad Témara\n4-2-3-1\nWidad Témara · 4-2-3-1\n\nOnze de départ\n\n33 Rabie Ajlid\n18 Mouad Gari\n20 Nizar Cherki\n19 Zakaria Labib\n34 Mohamed Belkaida\n22 Abdellah Cherrad\n99 Rabiae Bounnit\n88 Fahd El Kaaba\n10 Akram Khouidsi\n70 Oussama Essabri\n7 Taoufik Ijrouten\nKawkab Marrakech · 4-3-3\n\nOnze de départ\n\n67 Amine El Ouaad\n15 Abdellah Bouallali\n14 Hamza Smaali\n20 Mouhcine Rabja\n25 Nabil Khali\n21 Hamza Rafaa\n13 Abdellah Haimoud\n5 Oussama Mahrous\n77 Ayoub Maamouri\n19 Jawad Rhabra\n11 Saleh Al Sellami\nRemplaçants\nWID\nWIDAD TÉMARA\n12\nBrahim El Yamlahi\n30\nAyoub Belcadi\n8\nOthman Sabri\n11\nMohamed Assraoui\n21\nMohamed Wail Babah\n27\nIbrahima Balia Sagna\n2\nOmar El Birbri\n14\nIsmail Sbahe\nKAW\nKAWKAB MARRAKECH\n22\nAbdelali Mhamdi\n33\nAbdelkarim Baadi\n4\nMohamed Adam Benhita\n44\nIsmail El Alami\n26\nHamza Fassoukh\n6\nMohamed Dadssi\n16\nMahmoud El Kayssoumi\n99\nOussama Haffari\n8\nKhalil Tamrani\nACTUALITÉS\nÀ lire aussi\nAperçu du match : Widad Témara accueille Kawkab Marrakech\n\nDernières actualités\nhier\n\nKawkab : les remplaçants, ces héros discrets salués par Safri\n\nDernières actualités\n11 oct.\n\nFAR Rabat s'impose face à Widad Témara\n\nDernières actualités\n9 oct.",
+      "controls": [
+        {
+          "tag": "A",
+          "text": "Aller au contenu",
+          "href": "#main-content",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Retour",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Partager"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Retour",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Partager"
+        },
+        {
+          "tag": "A",
+          "text": "Pronostiquer toute la journée",
+          "href": "/pronostics?journee=4",
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Résumé",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Stats",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Compos",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "BUTTON",
+          "text": "Face à face",
+          "href": null,
+          "aria": null
+        },
+        {
+          "tag": "A",
+          "text": "Aperçu du match : Widad Témara accueille Kawkab Marrakech\n\nDernières actualités\nhier",
+          "href": "/news/4144313d-9833-498b-985a-af2d6c6be5c4",
+          "aria": "Aperçu du match : Widad Témara accueille Kawkab Marrakech"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Enregistrer"
+        },
+        {
+          "tag": "A",
+          "text": "Kawkab : les remplaçants, ces héros discrets salués par Safri\n\nDernières actualités\n11 oct.",
+          "href": "/news/ce6f2186-3970-4c40-adc4-0e96656de5b8",
+          "aria": "Kawkab : les remplaçants, ces héros discrets salués par Safri"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Enregistrer"
+        },
+        {
+          "tag": "A",
+          "text": "FAR Rabat s'impose face à Widad Témara\n\nDernières actualités\n9 oct.",
+          "href": "/news/d0fb8590-422f-4717-a78b-47dd44688ac8",
+          "aria": "FAR Rabat s'impose face à Widad Témara"
+        },
+        {
+          "tag": "BUTTON",
+          "text": "",
+          "href": null,
+          "aria": "Enregistrer"
+        }
+      ]
+    }
+  ],
+  "requestFailures": []
+}

@@ -1,0 +1,119 @@
+[
+  {
+    "label": "14-before-terms",
+    "url": "http://127.0.0.1:4173/auth/register",
+    "text": "Aller au contenu\nRetour\nFR\n\nLe football marocain, réuni.\n\nCréer votre compte\n\nRejoignez la communauté BotolaGO en moins d'une minute.\n\nNom complet\n\nNom d'utilisateur\n\nAdresse e-mail\n\nMot de passe\n\nConfirmer le mot de passe\n\nJ'accepte les Conditions d'utilisation et la Politique de confidentialité.\nCréer mon compte\nou continuer avec\nContinuer avec Google\nContinuer avec Apple\n\nVous avez déjà un compte ?\nSe connecter\n\nEn continuant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité.",
+    "fields": [
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_1e_",
+        "value": "QA Skeptic",
+        "checked": false
+      },
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_1f_",
+        "value": "qa_skeptic_local",
+        "checked": false
+      },
+      {
+        "type": "email",
+        "name": "",
+        "id": "_r_1g_",
+        "value": "qa-skeptic@example.invalid",
+        "checked": false
+      },
+      {
+        "type": "checkbox",
+        "name": "",
+        "id": "_r_1q_",
+        "value": "on",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "label": "15-terms-read",
+    "url": "http://127.0.0.1:4173/terms",
+    "text": "Aller au contenu\nAccueil\nActualités\nFantasy\nMatchs\nProspects\nFR\nConditions Générales d'Utilisation (FR)\n\nVersion 1.1 — en vigueur au 24 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.\n\n1. Éditeur et objet\n\nL'application BotolaGO (ci-après « l'Application ») est éditée par Go Sports Technologies (société en cours de constitution), société de droit marocain, RC : en cours d'immatriculation, ICE : en cours d'immatriculation, siège social : Agadir, Maroc (ci-après « BotolaGO » ou « nous »). Contact : support@botolago.com.\n\nLes présentes Conditions Générales d'Utilisation (« CGU ») régissent l'accès et l'utilisation de l'Application, un jeu de fantasy football gratuit basé sur les performances réelles des joueurs de la Botola Pro. En créant un compte, vous acceptez sans réserve les présentes CGU et la Politique de confidentialité. Si vous les refusez, n'utilisez pas l'Application.\n\n2. Absence d'affiliation\n\nBotolaGO est un service indépendant. Il n'est ni affilié, ni sponsorisé, ni approuvé par la Fédération Royale Marocaine de Football (FRMF), la Ligue Nationale de Football Professionnel (LNFP), les clubs de la Botola Pro ou leurs joueurs. Les noms de compétitions, de clubs et de joueurs sont utilisés à des fins d'identification et d'information uniquement ; leurs marques restent la propriété de leurs titulaires respectifs.\n\n3. Éligibilité\nVous devez avoir 18 ans révolus et la capacité juridique de contracter.\nUn seul compte par personne physique. Les comptes multiples, partagés, automatisés ou créés au nom d'un tiers sont interdits.\nLes salariés, dirigeants et prestataires de BotolaGO, ainsi que les personnes intervenant dans l'organisation de la Botola Pro (arbitres, officiels, joueurs, staffs), ne peuvent pas participer aux classements dotés.\nCertaines dotations peuvent être réservées aux résidents du Maroc ; la restriction est précisée dans le règlement du concours concerné.\n4. Compte utilisateur\n\nVous vous engagez à fournir des informations exactes et à les maintenir à jour. Vous êtes seul responsable de la confidentialité de vos identifiants et de toute activité effectuée depuis votre compte. Informez-nous sans délai de tout accès non autorisé à support@botolago.com.\n\nNous pouvons suspendre ou clôturer un compte inactif depuis plus de 24 mois, après notification.\n\n5. Nature du jeu\n\nBotolaGO est un jeu d'adresse gratuit : aucun achat, aucune mise et aucun dépôt d'argent ne sont requis pour jouer ni pour prétendre à une dotation. Le classement dépend exclusivement des choix de l'utilisateur (composition d'équipe, capitaine, transferts, jetons) appliqués aux performances réelles des joueurs. BotolaGO n'est pas un jeu de hasard, ne propose aucun pari et ne permet aucun gain en argent lié à une mise.\n\n6. Règles du jeu\nLes règles de composition d'équipe, de budget, de transferts, de jetons (chips) et le barème de points sont publiés dans l'Application, rubrique « Règles ». Elles font partie intégrante des CGU.\nLes points sont calculés à partir des données officielles de match fournies par notre fournisseur de données sportives. En cas d'erreur ou de correction ultérieure des statistiques officielles, BotolaGO peut recalculer les points ; les classements corrigés font foi.\nLes délais de validation (deadline avant chaque journée) sont indiqués dans l'Application, heure de Rabat. Toute équipe non validée avant la deadline est reconduite automatiquement.\nMatch reporté, annulé ou arrêté : les points sont attribués selon les données officielles disponibles au moment de la clôture de la journée. BotolaGO décide seule du traitement des cas non prévus.\nLes ligues privées sont créées et gérées par les utilisateurs sous leur responsabilité ; BotolaGO n'arbitre pas les litiges entre membres d'une ligue privée.\n7. Dotations et concours sponsorisés\nCertains classements peuvent être dotés de lots offerts par BotolaGO ou par un sponsor. Chaque concours doté fait l'objet d'un règlement spécifique (durée, lots, critères, modalités de remise) publié dans l'Application.\nLes lots sont attribués au seul titulaire du compte gagnant. Une vérification d'identité (pièce d'identité, justificatif de résidence) est exigée avant remise. Un gagnant qui ne répond pas dans un délai de 15 jours, ou dont le compte enfreint les CGU, perd son lot.\nLes lots ne sont ni échangeables, ni cessibles, ni convertibles en espèces, sauf mention contraire dans le règlement du concours.\nBotolaGO ne prélève aucun frais pour participer. Les éventuels impôts et taxes applicables aux lots sont à la charge du gagnant selon la législation en vigueur.\n8. Fair-play et comportements interdits\n\nSont interdits, et peuvent entraîner la suspension immédiate du compte et l'annulation des points ou lots :\n\nl'utilisation de robots, scripts, émulateurs ou tout moyen automatisé ;\nla création ou l'utilisation de comptes multiples, la collusion entre comptes ;\nl'exploitation d'un bug ou d'une faille de l'Application ;\nl'accès non autorisé aux systèmes, l'extraction de données (scraping), l'ingénierie inverse ;\nles noms d'équipe, de ligue ou contenus injurieux, discriminatoires, à caractère sexuel, politique ou religieux, ou portant atteinte aux droits de tiers ;\ntoute usurpation d'identité ou fausse déclaration.\n9. Contenus publiés par les utilisateurs\n\nVous conservez vos droits sur les contenus que vous publiez (noms d'équipe, avatars, messages). Vous accordez à BotolaGO une licence gratuite, mondiale et non exclusive pour les afficher dans l'Application et dans ses communications (classements, réseaux sociaux) pour la durée d'utilisation du service. BotolaGO peut modérer ou retirer tout contenu contraire aux CGU sans préavis.\n\n10. Propriété intellectuelle\n\nL'Application, son code, sa charte graphique, sa marque, son moteur de calcul et ses bases de données sont la propriété exclusive de BotolaGO ou de ses concédants. Toute reproduction, extraction ou exploitation non autorisée est interdite. Les données sportives sont fournies sous licence par un fournisseur tiers et ne peuvent être réutilisées en dehors de l'Application.\n\n11. Sponsors et publicité\n\nL'Application est financée par le sponsoring et peut afficher des contenus publicitaires ou de marque. BotolaGO ne vend pas vos données personnelles aux sponsors ; seules des statistiques agrégées et anonymisées leur sont communiquées (voir Politique de confidentialité).\n\n12. Disponibilité et modifications\n\nBotolaGO s'efforce d'assurer la disponibilité de l'Application mais ne garantit pas un fonctionnement ininterrompu ou exempt d'erreurs. Nous pouvons modifier, suspendre ou interrompre tout ou partie du service, notamment pour maintenance, ou en cas de suspension de la compétition ou d'indisponibilité des données sportives.\n\nNous pouvons modifier les CGU. Toute modification substantielle est notifiée dans l'Application au moins 7 jours avant son entrée en vigueur. La poursuite de l'utilisation après cette date vaut acceptation.\n\n13. Responsabilité\n\nL'Application est fournie « en l'état ». Dans la mesure permise par la loi, BotolaGO n'est pas responsable :\n\ndes erreurs ou retards dans les données sportives fournies par des tiers ;\ndes pertes indirectes, de données ou d'opportunité ;\ndes interruptions dues à des tiers (hébergeur, opérateurs télécom, magasins d'applications) ou à un cas de force majeure ;\ndes agissements d'autres utilisateurs, notamment dans les ligues privées.\n\nRien dans les CGU n'exclut la responsabilité de BotolaGO en cas de dol ou de faute lourde.\n\n14. Résiliation\n\nVous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application ou en écrivant à support@botolago.com. BotolaGO peut suspendre ou résilier votre accès, avec ou sans préavis selon la gravité, en cas de violation des CGU. La suppression du compte entraîne la perte des points, classements et lots non réclamés.\n\n15. Droit applicable et litiges\n\nLes CGU sont soumises au droit marocain. Toute réclamation doit d'abord être adressée à support@botolago.com ; nous répondons sous 30 jours. À défaut de règlement amiable, les tribunaux compétents d'Agadir sont seuls compétents, sous réserve des dispositions impératives protectrices du consommateur (loi n° 31-08).\n\n16. Dispositions diverses\n\nSi une clause est jugée nulle, les autres restent applicables. Le fait pour BotolaGO de ne pas se prévaloir d'une clause ne vaut pas renonciation. En cas de divergence entre la version française et la version arabe, la version française prévaut.",
+    "fields": []
+  },
+  {
+    "label": "16-after-terms-back",
+    "url": "http://127.0.0.1:4173/auth/register",
+    "text": "Aller au contenu\nRetour\nFR\n\nLe football marocain, réuni.\n\nCréer votre compte\n\nRejoignez la communauté BotolaGO en moins d'une minute.\n\nNom complet\n\nNom d'utilisateur\n\nAdresse e-mail\n\nMot de passe\n\nConfirmer le mot de passe\n\nJ'accepte les Conditions d'utilisation et la Politique de confidentialité.\nCréer mon compte\nou continuer avec\nContinuer avec Google\nContinuer avec Apple\n\nVous avez déjà un compte ?\nSe connecter\n\nEn continuant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité.",
+    "fields": [
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_1t_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_1u_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "email",
+        "name": "",
+        "id": "_r_1v_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "checkbox",
+        "name": "",
+        "id": "_r_29_",
+        "value": "on",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "label": "17-privacy-read",
+    "url": "http://127.0.0.1:4173/privacy",
+    "text": "Aller au contenu\nAccueil\nActualités\nFantasy\nMatchs\nProspects\nFR\nPolitique de confidentialité (FR)\n\nVersion 1.3 — en vigueur au 6 octobre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.\n\n1. Responsable du traitement\n\nGo Sports Technologies (société en cours de constitution), RC : en cours d'immatriculation, ICE : en cours d'immatriculation, Agadir, Maroc. Contact données personnelles : support@botolago.com. Déclaration CNDP : déclaration en cours.\n\n2. Données collectées\nCatégorie\tDonnées\tSource\nIdentification du compte\tadresse email, pseudonyme, mot de passe (haché), identifiant de connexion sociale (Google / Apple) le cas échéant\tvous\nProfil\tavatar, nom d'équipe, club favori, langue\tvous (facultatif)\nDonnées de jeu\tcompositions, transferts, jetons, points, classements, ligues rejointes\tgénérées par votre utilisation\nDonnées techniques\tmodèle d'appareil, système d'exploitation, identifiant de notification push, adresse IP, journaux de connexion, version de l'Application\tcollecte automatique\nUsage et analyse\técrans consultés, actions, fréquence d'utilisation, plantages\tcollecte automatique (agrégée)\nDotations\tnom, prénom, copie de pièce d'identité, adresse postale, téléphone\tvous, uniquement si vous gagnez un lot\nSupport\tcontenu de vos messages au support\tvous\n\nNous ne collectons ni données bancaires, ni données de géolocalisation précise, ni données sensibles (santé, opinions, religion).\n\n3. Finalités et bases légales\nFinalité\tBase légale\nCréer et gérer votre compte, faire fonctionner le jeu, calculer les points et classements\texécution du contrat (CGU)\nVérifier votre éligibilité et remettre les lots\texécution du contrat et obligation légale\nPrévenir la fraude, les comptes multiples et les abus\tintérêt légitime\nEnvoyer les notifications de jeu et de match, dans l'Application et par e-mail (programme et résultats des matchs, rappels de deadline, bilan Fantasy)\texécution du contrat ; désactivables dans les paramètres ou par le lien de désabonnement présent dans chaque e-mail\nEnvoyer des communications marketing ou offres de sponsors\tconsentement, retirable à tout moment\nMesurer l'audience et améliorer l'Application\tintérêt légitime (données agrégées)\nRépondre aux demandes du support et aux obligations légales\tintérêt légitime et obligation légale\n4. Sponsors et publicité\n\nBotolaGO est financé par le sponsoring. Nous ne vendons ni ne louons vos données personnelles. Les sponsors reçoivent uniquement des statistiques agrégées et anonymisées (nombre d'utilisateurs, taux de participation, répartition par ville ou tranche d'âge). Une offre de sponsor ne vous est adressée nominativement que si vous y avez consenti.\n\n5. Destinataires et sous-traitants\n\nVos données sont accessibles au personnel habilité de BotolaGO et aux prestataires suivants, agissant sur nos instructions et liés par contrat :\n\nPrestataire\tRôle\tLocalisation des données\nSupabase\thébergement de la base de données et authentification\tUnion européenne — Paris, France (eu-west-3)\nFournisseur de données sportives\tstatistiques de match (aucune donnée personnelle transmise)\t—\nApple / Google\tdistribution de l'Application, notifications push, connexion sociale\tselon leurs politiques\nSeline Analytics\tmesure d'audience : pages vues et événements agrégés, sans cookie ; l'adresse IP n'est pas conservée\tUnion européenne\nSupabase Auth\te-mails transactionnels (confirmation de compte, réinitialisation)\tselon la politique de Supabase\nResend\tenvoi des e-mails de notification (matchs, rappels et bilans Fantasy) : reçoit votre adresse e-mail et le contenu de chaque e-mail\tUnion européenne — Irlande (eu-west-1)\n\nVos données peuvent être communiquées aux autorités marocaines sur demande légale.\n\n6. Transferts hors du Maroc\n\nCertains prestataires hébergent les données hors du Maroc. Ces transferts sont encadrés par des clauses contractuelles garantissant un niveau de protection adéquat et font l'objet de l'autorisation requise auprès de la CNDP conformément à l'article 43 de la loi 09-08.\n\n7. Durée de conservation\nDonnées\tDurée\nCompte et données de jeu\tpendant la vie du compte ; en cas de suppression, le compte est fermé immédiatement et ses données sont effacées sous 7 jours (inactivité de 24 mois : suppression dans les mêmes conditions)\nJournaux techniques et IP\t12 mois\nPièces justificatives des gagnants\t5 ans à compter de la remise du lot (obligations comptables et fiscales)\nConsentement marketing\tjusqu'au retrait, puis 3 ans à titre de preuve\nMessages au support\t2 ans après clôture de la demande\n\nÀ l'issue de ces durées, les données sont supprimées ou anonymisées. Les classements historiques peuvent être conservés sous pseudonyme. Les traces des lots déjà remis sont conservées détachées du compte supprimé.\n\n8. Vos droits\n\nConformément à la loi 09-08, vous disposez des droits d'accès, de rectification, d'opposition et de suppression de vos données, ainsi que du droit de retirer votre consentement au marketing. Exercez-les depuis les paramètres de l'Application ou en écrivant à support@botolago.com avec une copie de votre pièce d'identité. Nous répondons sous 30 jours. Vous pouvez également saisir la CNDP (www.cndp.ma).\n\n9. Sécurité\n\nLes données sont chiffrées en transit (TLS) et au repos, les mots de passe sont hachés, les accès sont restreints et journalisés. En cas de violation de données susceptible de vous porter préjudice, nous vous en informons ainsi que la CNDP dans les délais légaux.\n\n10. Mineurs\n\nL'Application est réservée aux personnes de 18 ans et plus. Nous ne collectons pas sciemment de données de mineurs ; tout compte identifié comme appartenant à un mineur est supprimé.\n\n11. Cookies et traceurs\n\nL'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Seline Analytics) ne dépose aucun cookie et ne garde aucun identifiant sur votre appareil ; seule une mention technique, effacée à la fermeture de l'onglet, lui évite de compter deux fois le site d'où vous venez. Les pronostics faits sans compte sont conservés dans le stockage local de votre appareil, ce qui est nécessaire au service que vous utilisez ; ils n'en sortent que si vous créez un compte, auquel ils sont alors rattachés.\n\n12. Modifications\n\nToute modification substantielle de cette politique est notifiée dans l'Application au moins 7 jours avant son entrée en vigueur. La version en vigueur est toujours disponible dans l'Application, rubrique « Confidentialité ».\n\n13. Contact\n\nGo Sports Technologies (société en cours de constitution) — Agadir, Maroc — support@botolago.com.\n\nSupprimer votre compte : comment faire, ce qui est supprimé et ce qui est conservé",
+    "fields": []
+  },
+  {
+    "label": "18-after-privacy-back",
+    "url": "http://127.0.0.1:4173/auth/register",
+    "text": "Aller au contenu\nRetour\nFR\n\nLe football marocain, réuni.\n\nCréer votre compte\n\nRejoignez la communauté BotolaGO en moins d'une minute.\n\nNom complet\n\nNom d'utilisateur\n\nAdresse e-mail\n\nMot de passe\n\nConfirmer le mot de passe\n\nJ'accepte les Conditions d'utilisation et la Politique de confidentialité.\nCréer mon compte\nou continuer avec\nContinuer avec Google\nContinuer avec Apple\n\nVous avez déjà un compte ?\nSe connecter\n\nEn continuant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité.",
+    "fields": [
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_2c_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "text",
+        "name": "",
+        "id": "_r_2d_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "email",
+        "name": "",
+        "id": "_r_2e_",
+        "value": "",
+        "checked": false
+      },
+      {
+        "type": "checkbox",
+        "name": "",
+        "id": "_r_2o_",
+        "value": "on",
+        "checked": false
+      }
+    ]
+  }
+]

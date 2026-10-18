@@ -163,6 +163,7 @@ function RulesPage() {
         rules.ratingScoring ? (
           <RatingScoring
             fromGameweek={rules.ratingScoring.fromGameweek}
+            waitForRating={rules.ratingScoring.waitForRating === true}
             table={scoringTable}
             nf={nf}
           />
@@ -416,17 +417,24 @@ function ScoringTable({ table, nf }: { table: ScoringTableModel; nf: Intl.Number
  */
 function RatingScoring({
   fromGameweek,
+  waitForRating,
   table,
   nf,
 }: {
   fromGameweek: number;
+  waitForRating: boolean;
   table: ScoringTableModel | null;
   nf: Intl.NumberFormat;
 }) {
   const { t } = useI18n();
   return (
     <>
-      <RuleText>{t("fantasy.rules.rating_rule").replace("{n}", nf.format(fromGameweek))}</RuleText>
+      <RuleText>
+        {(waitForRating
+          ? t("fantasy.rules.rating_rule_pending")
+          : t("fantasy.rules.rating_rule")
+        ).replace("{n}", nf.format(fromGameweek))}
+      </RuleText>
       {fromGameweek > 1 && table ? (
         <>
           <RuleText>

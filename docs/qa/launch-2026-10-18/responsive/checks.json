@@ -1,0 +1,214 @@
+[
+  {
+    "language": "fr",
+    "width": 375,
+    "direction": "ltr",
+    "links": [
+      {
+        "label": "Conditions d'utilisation",
+        "rect": {
+          "x": 18.984375,
+          "y": 847.828125,
+          "width": 145.21875,
+          "height": 44
+        }
+      },
+      {
+        "label": "Politique de confidentialité",
+        "rect": {
+          "x": 188.203125,
+          "y": 847.828125,
+          "width": 167.8125,
+          "height": 44
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "type": "text",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "text",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "email",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "password",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "password",
+        "x": 16,
+        "right": 359
+      }
+    ],
+    "passed": true
+  },
+  {
+    "language": "fr",
+    "width": 1440,
+    "direction": "ltr",
+    "links": [
+      {
+        "label": "Conditions d'utilisation",
+        "rect": {
+          "x": 551.484375,
+          "y": 775.921875,
+          "width": 145.21875,
+          "height": 44
+        }
+      },
+      {
+        "label": "Politique de confidentialité",
+        "rect": {
+          "x": 720.703125,
+          "y": 775.921875,
+          "width": 167.8125,
+          "height": 44
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "type": "text",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "text",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "email",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "password",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "password",
+        "x": 504,
+        "right": 936
+      }
+    ],
+    "passed": true
+  },
+  {
+    "language": "ar",
+    "width": 375,
+    "direction": "rtl",
+    "links": [
+      {
+        "label": "شروط الاستخدام",
+        "rect": {
+          "x": 204.671875,
+          "y": 847.75,
+          "width": 91.296875,
+          "height": 44
+        }
+      },
+      {
+        "label": "سياسة الخصوصية",
+        "rect": {
+          "x": 79.046875,
+          "y": 847.75,
+          "width": 101.625,
+          "height": 44
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "type": "text",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "text",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "email",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "password",
+        "x": 16,
+        "right": 359
+      },
+      {
+        "type": "password",
+        "x": 16,
+        "right": 359
+      }
+    ],
+    "passed": true
+  },
+  {
+    "language": "ar",
+    "width": 1440,
+    "direction": "rtl",
+    "links": [
+      {
+        "label": "شروط الاستخدام",
+        "rect": {
+          "x": 737.171875,
+          "y": 776,
+          "width": 91.296875,
+          "height": 44
+        }
+      },
+      {
+        "label": "سياسة الخصوصية",
+        "rect": {
+          "x": 611.546875,
+          "y": 776,
+          "width": 101.625,
+          "height": 44
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "type": "text",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "text",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "email",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "password",
+        "x": 504,
+        "right": 936
+      },
+      {
+        "type": "password",
+        "x": 504,
+        "right": 936
+      }
+    ],
+    "passed": true
+  }
+]

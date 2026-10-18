@@ -142,6 +142,7 @@ export const scoringSnapshotSchema = z.object({
         evidence: z.record(z.string(), z.unknown()).optional(),
         scoringMode: z.enum(["full", "simple"]).nullable().optional(),
         participationKnown: z.boolean().optional(),
+        apiAppeared: z.boolean().optional(),
         // The SofaScore match rating, carried only in a rating gameweek
         // (migration 20261014090000): two decimals at most, null without one.
         rating: z.number().min(0).max(10).nullable().optional(),
@@ -254,11 +255,26 @@ function isRatingSnapshot(snapshot: ScoringSnapshot): boolean {
   return true;
 }
 
+/** Never turn an unrated appearance into points, a DNP, or an automatic substitute. */
+export function hasPendingRatings(snapshot: ScoringSnapshot): boolean {
+  return (
+    isRatingSnapshot(snapshot) &&
+    snapshot.playerFixtures.some(
+      (player) =>
+        (player.apiAppeared === true || (player.stats.minutes ?? 0) > 0) && player.rating == null,
+    )
+  );
+}
+
 export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
   const rating = isRatingSnapshot(snapshot);
+  if (hasPendingRatings(snapshot)) throw new Error("fantasy_ratings_pending");
   const rules = rating ? null : scoringRules(snapshot);
   const totals = new Map(
-    snapshot.players.map((player) => [player.fantasyPlayerId, { points: 0, minutes: 0 }]),
+    snapshot.players.map((player) => [
+      player.fantasyPlayerId,
+      { points: 0, minutes: 0, didPlay: false },
+    ]),
   );
   if (totals.size !== snapshot.players.length) throw new Error("fantasy_duplicate_player");
   const seen = new Set<string>();
@@ -275,12 +291,14 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
           player.fixtureId,
           // He appeared when his minutes are established (as the adaptive
           // scorer requires for `appearance`) and above zero.
-          certified(
-            "minutes",
-            player.stats,
-            (player.evidence ?? {}) as FieldEvidence,
-            player.scoringMode === "simple",
-          ) && (player.stats.minutes ?? 0) > 0,
+          player.apiAppeared ??
+            (certified(
+              "minutes",
+              player.stats,
+              (player.evidence ?? {}) as FieldEvidence,
+              player.scoringMode === "simple",
+            ) &&
+              (player.stats.minutes ?? 0) > 0),
           player.rating ?? null,
         )
       : snapshot.adaptive
@@ -302,6 +320,7 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
           );
     total.points += events.reduce((sum, event) => sum + event.points, 0);
     total.minutes += player.stats.minutes ?? 0;
+    total.didPlay ||= player.apiAppeared ?? (player.stats.minutes ?? 0) > 0;
     return { fantasyPlayerId: player.fantasyPlayerId, fixtureId: player.fixtureId, events };
   });
   const formation = snapshot.positionRules.map((rule) => ({
@@ -320,7 +339,7 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const players = team.players.map((player) => {
       const total = totals.get(player.id);
       if (!total) throw new Error("fantasy_scoring_player_missing");
-      return { ...player, didPlay: total.minutes > 0 };
+      return { ...player, didPlay: total.didPlay };
     });
     const benchBoost = team.chipType === "bench_boost";
     const participationPending = team.players.some((player) =>
@@ -876,6 +895,8 @@ export async function runFantasyLifecycle(
       break;
     }
     if (snapshot.sealed) throw new Error("fantasy_scoring_snapshot_state_mismatch");
+    if (hasPendingRatings(snapshot))
+      return { outcome: "waiting", gameweekId, reason: "fantasy_ratings_pending", calls };
     const unresolvedTeams = new Set(
       snapshot.adaptive && !snapshot.incremental
         ? snapshot.teams

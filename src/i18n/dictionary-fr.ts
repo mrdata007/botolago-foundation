@@ -886,6 +886,8 @@ export const fr = {
   "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
   "fantasy.rules.rating_rule":
     "À partir de la journée {n}, les points d’un joueur pour un match sont sa note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Un joueur entré en jeu sans note SofaScore marque 5 points, un joueur qui n’a pas joué 0. Le capitaine double ses points.",
+  "fantasy.rules.rating_rule_pending":
+    "À partir de la journée {n}, les points d’un joueur pour un match sont sa note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). S’il a joué mais n’a pas encore de note, le calcul des points attend sa note SofaScore. Aucun point de remplacement n’est attribué. Un joueur qui n’a pas joué marque 0. Le capitaine double ses points.",
   "fantasy.rules.rating_previous":
     "Jusqu’à la journée {n}, les points suivaient le barème ci-dessous.",
   "fantasy.rules.chips": "Jetons",

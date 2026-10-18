@@ -218,17 +218,41 @@ const LandingPage = lazy(() =>
 );
 
 /**
- * While the chunk arrives: the landing hero's own ground, nothing else. Home
- * in its place went on loading and moving under the splash (CLS 0.10 measured
- * with it as the fallback, against 0.006 without); an empty dark screen has
- * nothing to move, and the hero paints over it in the same colour. Being
- * dark in both themes, it holds light status-bar icons too, so a slow chunk
- * does not leave dark icons over it until the landing page mounts (the hand
- * over between the two holds is settled in one go, so nothing flicks).
+ * Keep the hero's dark ground while its chunk arrives, with a readable status
+ * and a public way forward even on a slow connection. Home's moving feed is
+ * deliberately not mounted underneath it.
  */
 function LandingFallback() {
   useDarkStatusBand();
-  return <div aria-busy className="min-h-[100dvh] bg-[color:var(--ui-ink-deep)]" />;
+  const { t } = useI18n();
+  return (
+    <div
+      className={cn(
+        "flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-[color:var(--ui-ink-deep)] text-center",
+        ui.space.gutter,
+        ui.tone.onMesh,
+      )}
+    >
+      <h1 className={ui.display.title}>
+        <BrandedText text="BotolaGO" tone="light" />
+      </h1>
+      <p role="status" className={ui.text.body}>
+        {t("state.loading")}
+      </p>
+      <Link
+        to="/matches"
+        onClick={markWelcomeDone}
+        className={cn(
+          "inline-flex items-center underline underline-offset-4",
+          ui.space.tap,
+          ui.text.bodyStrong,
+          ui.focusOnMesh,
+        )}
+      >
+        {t("landing.cta_matches")}
+      </Link>
+    </div>
+  );
 }
 
 function HomePage() {

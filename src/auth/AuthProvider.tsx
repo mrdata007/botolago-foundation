@@ -22,6 +22,7 @@ import {
 import { forgetAccount, watchAccountSwitch } from "./account-queries";
 import { challengeSearch, MFA_CHALLENGE_PATH, requireAuthStep } from "./second-factor";
 import { SecondFactorGate } from "./SecondFactorGate";
+import { clearAuthDrafts } from "./auth-draft-storage";
 
 interface AuthPromptState {
   open: boolean;
@@ -106,6 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // database refuses a banned account's writes on its own.
   const lastVisibilityCheck = useRef(0);
   const signedInUid = session.status === "authenticated" ? (session.user?.id ?? null) : null;
+  useEffect(() => {
+    if (signedInUid) clearAuthDrafts();
+  }, [signedInUid]);
+
   useEffect(() => {
     if (!signedInUid) return;
     let cancelled = false;
