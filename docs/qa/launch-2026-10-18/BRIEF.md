@@ -26,3 +26,7 @@ Initial browser scripts that targeted the language radio as a button were correc
 ## Additional baseline finding before mobile edit
 
 The production375px Slow3G run confirmed an entirely blank navy screen after language selection (mobile/before-02-landing.png,77.9seconds from start). The lazy LandingFallback in src/routes/index.tsx renders an empty div. Preserve its dark ground and lazy-loading strategy; add an announced, translated loading state plus a usable public matches escape. Acceptance: no empty fallback, clear status and44px link in French/Arabic; mobile can reach actual public match data under the same throttle. This issue affected1/5 personas and joins the same repair pass.
+
+## Review follow-up before release
+
+Preserve all non-secret drafts while OAuth redirects or is cancelled. Clear all four auth-draft fields centrally only when a confirmed authenticated session exists, including email verification and OAuth callback. Preserve the existing SSR hydration seed and MFA gates. Acceptance: policy/history retention still passes; failed/unconfirmed auth does not clear drafts; confirmed authentication clears both login and registration drafts without touching other session storage. These changes address PR521's two review conversations before merging.
