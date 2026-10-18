@@ -15,8 +15,9 @@ TOKEN = "test-secret-that-must-never-be-in-reports-123456789"
 
 
 class Target:
-    def __init__(self, active=0):
+    def __init__(self, active=0, lease=False):
         self.active = active
+        self.lease = lease
         self.requests = []
         self.executed = []
 
@@ -26,7 +27,7 @@ class Target:
         if "scheduler_token()" in sql:
             return [{"token": TOKEN}]
         return [{"active_cron": self.active, "fantasy_on": False, "worker_on": False,
-                 "email_mode": "off", "push_mode": "off", "generating": 0, "scheduler_present": True}]
+                 "email_mode": "off", "push_mode": "off", "generating": 0, "lease_held":self.lease, "scheduler_present": True}]
 
     def execute(self, sql, timeout):
         self.executed.append(sql)
@@ -36,7 +37,8 @@ class Target:
     def _request(self, method, path, body, timeout):
         self.requests.append((method, path, body))
         if path.endswith("/functions"):
-            return [{"slug": p.name, "status": "ACTIVE", "version": 2, "verify_jwt": False}
+            config=RUNTIME.tomllib.loads((RUNTIME.ROOT / "supabase/config.toml").read_text())
+            return [{"slug": p.name, "status": "ACTIVE", "version": 2, "verify_jwt": config.get("functions",{}).get(p.name,{}).get("verify_jwt",True)}
                     for p in (RUNTIME.ROOT / "supabase/functions").iterdir() if (p / "index.ts").is_file()]
         if method == "GET" and path.endswith("/secrets"):
             return [{"name": "BOTOLAGO_SCHEDULER_TOKEN"}]
@@ -75,6 +77,12 @@ class RuntimeTests(unittest.TestCase):
         ingest = next(command for command in calls if "football-ingest" in command)
         self.assertNotIn("--no-verify-jwt", ingest)
         self.assertFalse(report["email_provider_secret_present"])
+
+    def test_inflight_worker_blocks_mutations_even_with_schedules_paused(self):
+        target=Target(lease=True)
+        with self.assertRaisesRegex(RuntimeError,"writers_not_paused"):
+            RUNTIME.deploy(target,RUNTIME.REF)
+        self.assertEqual(target.requests,[])
 
 
 if __name__ == "__main__":

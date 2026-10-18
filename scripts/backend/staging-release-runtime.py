@@ -38,9 +38,10 @@ def readiness(target) -> dict:
       (select mode from app_private.notification_email_settings) as email_mode,
       (select mode from app_private.notification_push_settings) as push_mode,
       (select count(*) from app_private.ai_home_story_jobs where status='generating')::int as generating,
+      exists(select 1 from app_private.fantasy_worker_lease where released_at is null and expires_at>now()) as lease_held,
       exists(select 1 from vault.secrets where name='botolago_scheduler_token') as scheduler_present
     """)[0]
-    if row["active_cron"] or row["fantasy_on"] or row["worker_on"] or row["generating"]:
+    if row["active_cron"] or row["fantasy_on"] or row["worker_on"] or row["generating"] or row["lease_held"]:
         raise RuntimeError("staging_runtime_writers_not_paused")
     if row["email_mode"] != "off" or row["push_mode"] != "off":
         raise RuntimeError("staging_runtime_delivery_not_off")
@@ -88,6 +89,8 @@ def deploy(target, ref: str, run=subprocess.run) -> dict:
     listed = {item["slug"]: item for item in functions}
     if any(name not in listed or listed[name]["status"] != "ACTIVE" for name in names):
         raise RuntimeError("staging_runtime_inventory_mismatch")
+    if any(listed[name]["verify_jwt"] != config.get("functions", {}).get(name, {}).get("verify_jwt", True) for name in names):
+        raise RuntimeError("staging_runtime_authentication_mismatch")
     secrets = target._request("GET", f"/v1/projects/{ref}/secrets", None, 60)
     secret_names = {item["name"] for item in secrets}
     return {"project": ref, "functions": [
