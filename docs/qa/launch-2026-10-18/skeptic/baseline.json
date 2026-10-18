@@ -1,0 +1,398 @@
+[
+  {
+    "label": "language-choice",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/01-language-choice.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nChoisissez votre langue\n\nاختر لغتك\n\nFrançais\nActualité & Fantasy du football marocain\nالعربية\nأخبار وفانتازي كرة القدم المغربية\n\nContinuer",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "landing-french",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/02-landing-french.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "pricing-not-found",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/03-pricing-not-found.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "terms-not-found",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/04-terms-not-found.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "privacy-not-found",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/05-privacy-not-found.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "pre-signup",
+    "url": "http://127.0.0.1:4173/",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/06-pre-signup.png",
+    "text": "FR\nSe connecter\nCréer mon équipe\n\nFANTASY BOTOLA PRO · GRATUIT\n\nVous connaissez la Botola.\nÀ vous de jouer.\n\nComposez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.\n\nCréer mon équipe\nVoir les matchs et résultats\nComment ça marche\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.\n\nGardien\n1\nDéfenseur\n2\nDéfenseur\n4\nDéfenseur\n5\nDéfenseur\n3\nMilieu\n8\nMilieu\n6\nMilieu\n10\nAttaquant\n7\nC\nAttaquant\n×2\nAttaquant\n11\nDÉMONSTRATION\nTouchez un joueur pour lui donner le brassard : ses points comptent double.\n\nCOMMENT ÇA MARCHE\n\nTrois gestes à chaque journée\n1\nComposez votre effectif\n\n15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.\n\n15 joueurs\n100 M\n\n2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants\n\n2\nChoisissez votre capitaine\n\nAvant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.\n\nC\nCapitaine ×2\n\nExemple : votre capitaine marque 6 pts, il vous en rapporte 12.\n\n3\nMarquez des points, grimpez au classement\n\nVos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.\n\nVoir le barème en vigueur\nPourquoi vous allez revenir\n\nLes joueurs que vous suivez déjà\n\nUniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.\n\nDes ligues entre amis\n\nCréez une ligue privée, partagez son code et comparez vos scores à chaque journée.\n\nUne nouvelle chance à chaque journée\n\nTransferts, onze et capitaine se règlent de nouveau avant chaque date limite.\n\nPas encore prêt ?\n\nMatchs, résultats et classement restent ouverts à tous, sans compte.\n\nVoir les matchs\nQuestions fréquentes\n\nTout ce qu'il faut savoir avant de composer votre équipe.\n\nC’est vraiment gratuit ?\nLa saison a commencé : puis-je encore jouer ?\nComment marque-t-on des points ?\nFaut-il un compte ?\nJusqu’à quand puis-je modifier mon équipe ?\nLire le règlement complet\nCentre d’aide\nVotre équipe vous attend.\n\nChoisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.\n\nCréer mon équipe\n\nComposez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+    "links": [
+      {
+        "text": "",
+        "href": "/"
+      },
+      {
+        "text": "Se connecter",
+        "href": "/auth/login?next=%2Ffantasy%2Fcreate"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Voir les matchs et résultats",
+        "href": "/matches"
+      },
+      {
+        "text": "Comment ça marche",
+        "href": "#_r_9_"
+      },
+      {
+        "text": "Voir le barème en vigueur",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Voir les matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Lire le règlement complet",
+        "href": "/fantasy/rules"
+      },
+      {
+        "text": "Centre d’aide",
+        "href": "/fantasy/help"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      },
+      {
+        "text": "Créer mon équipe",
+        "href": "/fantasy/create"
+      }
+    ]
+  },
+  {
+    "label": "first-cta",
+    "url": "http://127.0.0.1:4173/fantasy/create",
+    "screenshot": "/workspace/botolago-foundation/docs/qa/launch-2026-10-18/skeptic/07-first-cta.png",
+    "text": "Aller au contenu\nAccueil\nActualités\nFantasy\nMatchs\nCurva\nFR\nRetour\n\nFANTASY\n\nSélection de l’effectif\nChargement…",
+    "links": [
+      {
+        "text": "Aller au contenu",
+        "href": "#main-content"
+      },
+      {
+        "text": "Accueil",
+        "href": "/"
+      },
+      {
+        "text": "Actualités",
+        "href": "/news"
+      },
+      {
+        "text": "Fantasy",
+        "href": "/fantasy"
+      },
+      {
+        "text": "Matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Curva",
+        "href": "/curva"
+      },
+      {
+        "text": "",
+        "href": "/profile"
+      },
+      {
+        "text": "Retour",
+        "href": "/fantasy"
+      },
+      {
+        "text": "Accueil",
+        "href": "/"
+      },
+      {
+        "text": "Actualités",
+        "href": "/news"
+      },
+      {
+        "text": "Fantasy",
+        "href": "/fantasy"
+      },
+      {
+        "text": "Matchs",
+        "href": "/matches"
+      },
+      {
+        "text": "Curva",
+        "href": "/curva"
+      }
+    ]
+  }
+]

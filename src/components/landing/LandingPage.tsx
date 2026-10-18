@@ -593,6 +593,30 @@ export function LandingPage({
             <PrimaryAction cta={cta} event="landing_cta_final" onLeave={onLeave} />
           </div>
           <HeroStateLine cta={cta} joinBy={joinBy} />
+          <div className="mt-5 flex flex-wrap justify-center gap-x-6">
+            <Link
+              to="/terms"
+              className={cn(
+                "inline-flex items-center underline underline-offset-4",
+                ui.space.tap,
+                ui.text.meta,
+                ui.focusOnMesh,
+              )}
+            >
+              {t("profile.legal.terms")}
+            </Link>
+            <Link
+              to="/privacy"
+              className={cn(
+                "inline-flex items-center underline underline-offset-4",
+                ui.space.tap,
+                ui.text.meta,
+                ui.focusOnMesh,
+              )}
+            >
+              {t("profile.legal.privacy")}
+            </Link>
+          </div>
         </div>
       </section>
 

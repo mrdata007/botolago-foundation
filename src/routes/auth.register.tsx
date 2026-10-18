@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
+import { useAuthDraftField } from "@/auth/use-auth-draft-field";
 import { AtSign, Loader2, Lock, Mail, User } from "lucide-react";
 import {
   AuthShell,
@@ -89,9 +90,9 @@ function RegisterPage() {
     cpw: useId(),
   };
 
-  const [fullName, setFullName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useAuthDraftField("register.fullName");
+  const [username, setUsername] = useAuthDraftField("register.username");
+  const [email, setEmail] = useAuthDraftField("register.email");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [terms, setTerms] = useState(false);

@@ -80,6 +80,8 @@ describe("LandingPage (server render)", () => {
     expect(html).toContain('href="/matches"');
     expect(html).toContain('href="/fantasy/rules"');
     expect(html).toContain('href="/fantasy/help"');
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/privacy"');
   });
 
   /**
