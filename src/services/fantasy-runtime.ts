@@ -138,6 +138,7 @@ export function pointsDto(
   const captain = dto.players.find((player) => player.captain);
   return {
     authoritative: {
+      ratingPublication: dto.ratingPublication,
       startingIds: dto.players
         .filter((p) => p.slot === "starter")
         .sort((a, b) => a.slotOrder - b.slotOrder)
@@ -187,6 +188,8 @@ export function pointsDto(
           }
         : undefined,
       multiplier: player.multiplier,
+      ratingPending: player.ratingPending,
+      pointsKnown: player.finalPoints !== null || player.provisionalPoints !== null,
       totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
       minutesPlayed: player.minutesPlayed ?? 0,
       isCaptain: player.captain || undefined,

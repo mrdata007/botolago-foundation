@@ -179,6 +179,9 @@ export interface PlayerPointsBreakdown {
   identity?: PlayerRoundIdentity;
   totalPoints: number;
   minutesPlayed: number;
+  /** The server distinguishes missing ratings from a confirmed zero. */
+  ratingPending?: boolean;
+  pointsKnown?: boolean;
   isCaptain?: boolean;
   isViceCaptain?: boolean;
   isBench?: boolean;
@@ -195,6 +198,12 @@ export interface PlayerPointsBreakdown {
 
 export interface GameweekResult {
   authoritative?: {
+    ratingPublication?: {
+      historicalRevision: boolean;
+      pending: boolean;
+      pendingFixtures: number;
+      sourceUpdatedAt: string | null;
+    };
     startingIds: string[];
     benchIds: string[];
     effectiveCaptainId: string | null;

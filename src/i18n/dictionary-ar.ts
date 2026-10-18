@@ -636,6 +636,11 @@ export const ar = {
   "fantasy.points.total": "المجموع",
   "fantasy.points.how_scored": "كيف تُحتسب النقاط",
   "fantasy.points.status.provisional": "جارية",
+  "fantasy.points.awaiting_rating": "في انتظار التقييم",
+  "fantasy.points.ratings_pending":
+    "النقاط المتوفرة ظاهرة. ستُضاف التقييمات المنتظرة تلقائيًا عند توفرها.",
+  "fantasy.points.rating_revision": "أُعيد احتساب النقاط انطلاقًا من تقييمات المباريات.",
+  "fantasy.points.ratings_updated": "آخر تحديث للتقييمات: {time}",
   "fantasy.points.status.live": "مباشرة",
   "fantasy.points.status.final": "نهائية",
   "fantasy.points.auto_subs": "استبدالات تلقائية",
