@@ -201,6 +201,7 @@ select extensions.is((select provisional_score from app_private.fantasy_visible_
 select extensions.is((select md5(to_jsonb(r)::text) from app.fantasy_team_gameweek_results r where gameweek_id=pg_temp.rid(25)),current_setting('test.history_before'),'original final result is unchanged byte for byte');
 select extensions.is((select md5(to_jsonb(s)::text) from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),current_setting('test.past_seal'),'publication does not change a historical seal');
 select extensions.is((select provisional_points from app_private.fantasy_visible_player_points where gameweek_id=pg_temp.rid(25) and fantasy_player_id=pg_temp.rid(2023)),null::integer,'the unrated player is pending rather than zero');
+select extensions.is((select provisional_points from app_private.fantasy_visible_player_points where gameweek_id=pg_temp.rid(25) and fantasy_player_id=pg_temp.rid(2045)),0,'a confirmed nonparticipant stays a real zero even when a different player is unrated');
 select extensions.is((select count(*)::int from app_private.fantasy_visible_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating'),0,'the historical projection contains only real rating events');
 select extensions.is((select gameweek_points from app.fantasy_rankings where gameweek_id=pg_temp.rid(25) and league_id is null and fantasy_team_id=pg_temp.rid(9)),88,'rankings use the same published total');
 select extensions.is(app_private.fantasy_publish_rating_recovery(current_setting('test.hist_plan')::bigint,

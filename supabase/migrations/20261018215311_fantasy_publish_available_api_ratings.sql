@@ -35,6 +35,31 @@ join app_private.fantasy_rating_recovery_plans p on p.id=x.plan_id
 order by x.gameweek_id,x.id desc;
 revoke all on app_private.fantasy_current_rating_publications from public,anon,authenticated,service_role;
 
+-- Finalization deliberately waits for a whole fixture. Display certainty is
+-- per player: a confirmed unused bench player still has a real zero even
+-- while somebody else's rating is missing. This never changes seal readiness.
+create function app_private.fantasy_player_rating_pending(p_doc jsonb,p_player_id uuid)
+returns boolean language plpgsql stable security definer set search_path='' as $$
+declare player jsonb; fixture jsonb;
+begin
+ if not (p_doc->'pendingPlayerIds' ? p_player_id::text) then return false; end if;
+ if exists(select 1 from jsonb_array_elements(p_doc->'playerFixtures') f where f->>'fantasyPlayerId'=p_player_id::text
+ and (f->>'participationKnown')::boolean is not true) then return true; end if;
+ select value into player from jsonb_array_elements(p_doc->'players') where value->>'fantasyPlayerId'=p_player_id::text;
+ for fixture in select value from jsonb_array_elements(p_doc->'pendingFixtures') loop
+ if player->>'teamId' in (fixture->>'homeTeamId',fixture->>'awayTeamId')
+ or exists(select 1 from app.fixtures fi join app.team_memberships tm on tm.season_id=fi.season_id
+ and tm.team_id in(fi.home_team_id,fi.away_team_id) and tm.player_id=(player->>'playerId')::uuid
+ and tm.valid_from<=fi.kickoff_at::date and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date)
+ where fi.id=(fixture->>'fixtureId')::uuid) then
+ if not exists(select 1 from jsonb_array_elements(p_doc->'playerFixtures') f where f->>'fantasyPlayerId'=p_player_id::text
+ and f->>'fixtureId'=fixture->>'fixtureId' and (f->>'participationKnown')::boolean is true) then return true; end if;
+ end if;
+ end loop;
+ return not exists(select 1 from jsonb_array_elements(p_doc->'playerFixtures') f where f->>'fantasyPlayerId'=p_player_id::text and (f->>'participationKnown')::boolean is true);
+end $$;
+revoke all on function app_private.fantasy_player_rating_pending(jsonb,uuid) from public,anon,authenticated,service_role;
+
 create function app_private.fantasy_rating_publication_immutable()
 returns trigger language plpgsql set search_path='' as $$
 begin
@@ -74,7 +99,7 @@ where not exists(select 1 from app_private.fantasy_current_rating_publications p
 union all
 select (jsonb_populate_record(null::app.fantasy_player_gameweek_points,jsonb_build_object(
  'fantasy_player_id',pl->'fantasyPlayerId','gameweek_id',p.gameweek_id,
- 'provisional_points',case when p.proposal->'pendingPlayerIds' ? (pl->>'fantasyPlayerId') and coalesce(e.n,0)=0 then null else coalesce(e.points,0) end,
+ 'provisional_points',case when app_private.fantasy_player_rating_pending(p.proposal,(pl->>'fantasyPlayerId')::uuid) and coalesce(e.n,0)=0 then null else coalesce(e.points,0) end,
  'final_points',null,'minutes_played',coalesce(f.minutes,0),'did_play',coalesce(f.played,false),
  'calculation_version',p.calculation_version,'football_input_version',coalesce(f.sequence,0),
  'finalized_at',null,'created_at',p.published_at,'updated_at',p.published_at
@@ -273,9 +298,9 @@ begin
  'pointsState',case when revision or pending then 'provisional' else d->>'pointsState' end,
  'incrementalScoring',true,
  'players',(select jsonb_agg(player||jsonb_build_object(
- 'ratingPending',(doc->'pendingPlayerIds' ? (player->>'fantasyPlayerId')),
- 'provisionalPoints',case when doc->'pendingPlayerIds' ? (player->>'fantasyPlayerId') and jsonb_array_length(player->'events')=0 then null else player->'provisionalPoints' end,
- 'didPlay',case when doc->'pendingPlayerIds' ? (player->>'fantasyPlayerId') and jsonb_array_length(player->'events')=0 then null else player->'didPlay' end
+ 'ratingPending',app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid),
+ 'provisionalPoints',case when app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid) and jsonb_array_length(player->'events')=0 then null else player->'provisionalPoints' end,
+ 'didPlay',case when app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid) and jsonb_array_length(player->'events')=0 then null else player->'didPlay' end
  ) order by ord) from jsonb_array_elements(d->'players') with ordinality x(player,ord)));
  return d;
 end $$;

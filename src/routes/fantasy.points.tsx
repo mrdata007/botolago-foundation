@@ -304,6 +304,7 @@ function PointsBody() {
         player={p}
         club={clubOf(p.clubId)}
         sub={<PopOnChange value={pts}>{ratingPoints(id)}</PopOnChange>}
+        pointsPending={breakdown.get(id)?.ratingPending === true || (isCloud && !vm)}
         captain={id === badgeCaptainId}
         vice={id === viceId && id !== badgeCaptainId}
         size={size}
@@ -464,7 +465,11 @@ function PointsBody() {
                 pending
                 awaitingLabel={t("fantasy.points.awaiting_rating")}
               />
-              <span>{t("fantasy.points.ratings_pending")}</span>
+              <span>
+                {resultQ.data.authoritative.ratingPublication.historicalRevision
+                  ? t("fantasy.points.revision_pending")
+                  : t("fantasy.points.ratings_pending")}
+              </span>
             </p>
           ) : null}
           {resultQ.data.authoritative.ratingPublication.sourceUpdatedAt ? (

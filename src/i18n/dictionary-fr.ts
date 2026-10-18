@@ -666,6 +666,8 @@ export const fr = {
   "fantasy.points.ratings_pending":
     "Les points disponibles sont affichés. Les notes en attente seront ajoutées automatiquement.",
   "fantasy.points.rating_revision": "Points recalculés à partir des notes des matchs.",
+  "fantasy.points.revision_pending":
+    "Certaines notes manquent encore. Les points affichés correspondent aux notes disponibles.",
   "fantasy.points.ratings_updated": "Notes mises à jour : {time}",
   "fantasy.points.status.live": "En direct",
   "fantasy.points.status.final": "Définitif",
