@@ -42,6 +42,7 @@ export const BACKEND_ERROR_CODES = [
   "fantasy_team_not_found",
   "fantasy_team_already_exists",
   "fantasy_season_closed",
+  "fantasy_pilot_full",
   "fantasy_gameweek_locked",
   "fantasy_gameweek_not_found",
   "invalid_team_name",

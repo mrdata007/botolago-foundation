@@ -17,9 +17,9 @@
 > again on production: it refuses a second run ("already recorded"). The sections below are the
 > procedure as written; "What was and was not run" at the end describes the authoring session,
 > before this apply. Still open, not fixed by this guard: see "Not covered, and why" (a score
-> correction on an already finished fixture), and a team save started just before a deadline might
-> slip in after the lock (not proven; `app_private.fantasy_assert_mutable_gameweek` takes no row
-> lock).
+> correction on an already finished fixture), and the deadline race (see "Known gap: the deadline
+> race" below: proven real on 2026-10-16, its fix is prepared and not applied,
+> `docs/production/FANTASY_DEADLINE_LOCK_OWNER_RUNBOOK.md`).
 
 Target: BotolaGO Production V2, project `tkewgajrljbwgwedqsxn`, Supabase SQL editor.
 Migration: `supabase/migrations/20261016110000_fantasy_finalizing_scoring_inputs_guard.sql`.
@@ -309,6 +309,18 @@ Nothing else depends on them. Rolling back restores the defect.
   `app_private.fantasy_scoring_input_document(<gameweek id>)`), then decide with the rules owner:
   put the fixture back by a reviewed correction, or reopen the gameweek by the documented
   correction path to re-seal. Do not weaken a guard.
+- **Known gap: the deadline race. Proven real (2026-10-16); fix prepared, not applied.** It is not a
+  `finalizing` problem but the lock at the deadline. A new squad (`api.create_fantasy_team`) whose call
+  started before the deadline can commit after the lock step moved the gameweek to `locked`, leaving
+  its lineup unlocked; `api.service_get_fantasy_scoring_snapshot` then refuses the gameweek on every
+  pass with `fantasy_lineup_not_locked`, so it cannot be scored. A chip activated or cancelled that
+  way lands after the lock and is scored. Lineup saves of an existing lineup and transfers were already
+  refused at their lineup check. Reproduced with two sessions on PostgreSQL 16 with the real functions;
+  the window is the call's time from its start to its first insert (about 1 ms idle, hundreds of ms
+  under heavy load), and it did not happen in 18 runs with natural timing. The fix, the measurements
+  and the owner script: `docs/production/FANTASY_DEADLINE_LOCK_OWNER_RUNBOOK.md`. **How to detect it
+  meanwhile:** a gameweek in `locked`, `live` or `provisional` with
+  `select count(*) from app.fantasy_lineups where gameweek_id = '<id>' and locked_at is null;` above 0.
 - **Other inputs of the document** (assignments, performance rows, observations, scoring rules)
   have their own controls and are not part of this change.
 - **The matcher's log label** does not show `createFailed`

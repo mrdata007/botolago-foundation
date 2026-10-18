@@ -24,6 +24,8 @@ that script has been committed.
   place at once. No recalculation is needed.
 - Hiding is audited. Every hide and show writes a row to the admin audit log
   (`rankings.set_exclusion`) with the reason.
+- While the pilot cap is on (`docs/production/PILOT_CAP_OWNER_RUNBOOK.md`), a hidden account
+  neither uses a place nor is refused by the cap, so hide only real test and QA accounts.
 - Nothing in the migration names an account. The list of hidden accounts is
   data, set by the owner.
 
