@@ -13,7 +13,11 @@ union all select 'points',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.gameweek
 union all select 'rankings',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_rankings t
 union all select 'mappings',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app_private.football_provider_mappings t
 union all select 'aliases',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app_private.sofascore_player_aliases t
-union all select 'gameweeks',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_gameweeks t`;
+union all select 'gameweeks',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_gameweeks t
+union all select 'memberships',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_squad_memberships t
+union all select 'lineups',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_lineups t
+union all select 'lineupPlayers',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.lineup_id,t.fantasy_player_id)::text,'')) from app.fantasy_lineup_players t
+union all select 'prizes',md5(coalesce(jsonb_agg(to_jsonb(t) order by t.id)::text,'')) from app.fantasy_prize_winners t`;
 const sql = `-- Production V2 only. Canonical migration SHA256: ${digest}
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,

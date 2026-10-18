@@ -90,6 +90,9 @@ select extensions.ok((select prosrc like '%app_private.trophy_settings%' and pro
  from pg_proc where oid='app_private.fantasy_activate_api_ratings(uuid,text,text)'::regprocedure),'maintenance only reads the trophy writer switch, never trophy awards');
 
 -- Exercise the real staged-plan -> cutover -> guarded persistence path.
+-- A legacy membership created before native policy activation stays intact.
+insert into app.fantasy_squad_memberships(fantasy_team_id,fantasy_player_id,purchase_price,current_sale_price,acquired_gameweek_id)
+values(pg_temp.rid(9),pg_temp.rid(2001),6,6,pg_temp.rid(24));
 insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
 select 'sofascore','player',(i-22)::text,pg_temp.rid(1000+i),'test',now() from generate_series(23,44) i;
 insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
@@ -156,6 +159,11 @@ select extensions.is((select final_score from app.fantasy_team_gameweek_results 
 select extensions.is((select status::text from app.fantasy_gameweeks where id=pg_temp.rid(25)),'provisional','gameweek status is preserved');
 select extensions.is((select count(*)::int from app.fantasy_player_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating' and superseded_at is null),0,'no goals, assists, cards or minute events enter the rating ledger');
 select extensions.is(api.service_fantasy_api_rating_context(pg_temp.rid(3001))->>'enabled','true','the season-wide native path also prevents old-match identity linking');
+select extensions.ok(not app_private.fantasy_native_player_selectable(pg_temp.rid(2002)),'a native season cannot sell another unidentified legacy player');
+select extensions.ok(app_private.fantasy_native_player_selectable(pg_temp.rid(2024)),'an existing authoritative API ID remains selectable');
+select extensions.throws_ok($$insert into app.fantasy_squad_memberships(fantasy_team_id,fantasy_player_id,purchase_price,current_sale_price,acquired_gameweek_id)
+values(pg_temp.rid(9),pg_temp.rid(2002),6,6,pg_temp.rid(25))$$,'PT400','player_not_eligible','the server rejects an unidentified new purchase atomically');
+select extensions.is((select count(*)::int from app.fantasy_squad_memberships where fantasy_team_id=pg_temp.rid(9) and fantasy_player_id=pg_temp.rid(2001)),1,'an existing legacy selection is preserved');
 
 -- A later provider reply with one missing rating must still expose the other
 -- real ratings provisionally, without allowing sealing or a false GK swap.

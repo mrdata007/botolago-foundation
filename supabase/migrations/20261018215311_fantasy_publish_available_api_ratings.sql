@@ -22,6 +22,43 @@ create table app_private.fantasy_rating_publications (
  owner_approval text not null check(char_length(owner_approval) between 20 and 1000),
  published_at timestamptz not null default statement_timestamp()
 );
+
+-- Prevent a new unidentified selection without altering the reviewed
+-- create/transfer/deadline RPC bodies or any existing squad membership.
+create function app_private.fantasy_native_player_selectable(p_player_id uuid)
+returns boolean language sql stable security definer set search_path='' as $$
+ select not exists(select 1 from app.fantasy_players fp join app_private.fantasy_api_rating_seasons s on s.season_id=fp.fantasy_season_id where fp.id=p_player_id)
+ or exists(select 1 from app.fantasy_players fp join app_private.football_provider_mappings m on m.internal_entity_id=fp.football_player_id
+ and m.provider_name='sofascore' and m.entity_type='player' and m.active and m.external_id ~ '^[0-9]{1,12}$' where fp.id=p_player_id);
+$$;
+revoke all on function app_private.fantasy_native_player_selectable(uuid) from public,anon,authenticated,service_role;
+create function app_private.fantasy_rating_new_member_guard()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if tg_op='UPDATE' and new.fantasy_player_id=old.fantasy_player_id and new.fantasy_team_id=old.fantasy_team_id then return new; end if;
+ if not app_private.fantasy_native_player_selectable(new.fantasy_player_id) then
+ -- The trusted free-hit restoration may return an already owned legacy
+ -- selection, using the exact original acquisition stored in its snapshot.
+ if app_private.is_service_request() and exists(select 1 from app.fantasy_free_hit_snapshots s
+ join app.fantasy_free_hit_snapshot_players p on p.snapshot_id=s.id
+ where s.fantasy_team_id=new.fantasy_team_id and s.restored_at is null
+ and p.fantasy_player_id=new.fantasy_player_id and p.acquired_gameweek_id=new.acquired_gameweek_id) then return new; end if;
+ raise exception using errcode='PT400',message='player_not_eligible';
+ end if;
+ return new;
+end $$;
+revoke all on function app_private.fantasy_rating_new_member_guard() from public,anon,authenticated,service_role;
+create trigger fantasy_rating_new_member_guard before insert or update of fantasy_player_id,fantasy_team_id on app.fantasy_squad_memberships
+for each row execute function app_private.fantasy_rating_new_member_guard();
+do $$ declare source text; begin
+ if md5((select prosrc from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure))<>'36dfa9ccf4ed6e085f3825694621f820' then raise exception 'rating_publication_unexpected_pool_body'; end if;
+ source:=pg_get_functiondef('api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure);
+ source:=replace(source,'and fantasy_player.active and fantasy_player.eligible',
+ 'and fantasy_player.active and fantasy_player.eligible and (app_private.fantasy_native_player_selectable(fantasy_player.id)
+ or exists(select 1 from app.fantasy_squad_memberships owned join app.fantasy_teams owner_team on owner_team.id=owned.fantasy_team_id
+ where owned.fantasy_player_id=fantasy_player.id and owned.sold_at is null and owner_team.user_id=(select auth.uid())))');
+ execute source;
+end $$;
 create index fantasy_rating_publications_latest on app_private.fantasy_rating_publications(gameweek_id,id desc);
 alter table app_private.fantasy_rating_publications enable row level security;
 alter table app_private.fantasy_rating_publications force row level security;
