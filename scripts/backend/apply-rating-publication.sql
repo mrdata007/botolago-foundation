@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: 5a0e2cf1cfd1492951af524c2c2c40787235a2f8bad8e1e17f1baa857f66e76d
+-- Production V2 only. Canonical migration SHA256: b153f6dd5708ce633e3da5efacd25fc2375321a418c4f93260c44b04cd34f662
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -96,6 +96,25 @@ alter table app_private.fantasy_rating_publications enable row level security;
 alter table app_private.fantasy_rating_publications force row level security;
 revoke all on app_private.fantasy_rating_publications from public,anon,authenticated,service_role;
 
+-- Flatten the reviewed immutable revision once at publication. Customer reads
+-- use indexed rows instead of repeatedly expanding the full source document.
+create table app_private.fantasy_published_rating_players (
+ publication_id bigint not null references app_private.fantasy_rating_publications(id),
+ fantasy_player_id uuid not null references app.fantasy_players(id),
+ gameweek_id uuid not null references app.fantasy_gameweeks(id),
+ provisional_points integer,
+ minutes_played integer not null,
+ did_play boolean not null,
+ football_input_version bigint not null,
+ rating_pending boolean not null,
+ events jsonb not null check(jsonb_typeof(events)='array'),
+ primary key(publication_id,fantasy_player_id)
+);
+create index fantasy_published_rating_players_lookup on app_private.fantasy_published_rating_players(gameweek_id,fantasy_player_id,publication_id);
+alter table app_private.fantasy_published_rating_players enable row level security;
+alter table app_private.fantasy_published_rating_players force row level security;
+revoke all on app_private.fantasy_published_rating_players from public,anon,authenticated,service_role;
+
 create view app_private.fantasy_current_rating_publications with (security_invoker=true) as
 select distinct on (x.gameweek_id) x.gameweek_id,x.id,x.plan_id,x.published_at,
  p.calculation_version,p.input_digest,p.proposal,p.results,p.complete
@@ -132,8 +151,9 @@ revoke all on function app_private.fantasy_player_rating_pending(jsonb,uuid) fro
 create function app_private.fantasy_rating_publication_immutable()
 returns trigger language plpgsql set search_path='' as $$
 begin
- if tg_table_name='fantasy_rating_publications' or exists(select 1 from app_private.fantasy_rating_publications where plan_id=old.id) then
- raise exception 'published_rating_revision_immutable'; end if;
+ if tg_table_name='fantasy_rating_recovery_plans' then
+ if exists(select 1 from app_private.fantasy_rating_publications where plan_id=old.id) then raise exception 'published_rating_revision_immutable'; end if;
+ else raise exception 'published_rating_revision_immutable'; end if;
  if tg_op='UPDATE' then return new; end if;
  return old;
 end $$;
@@ -141,6 +161,8 @@ revoke all on function app_private.fantasy_rating_publication_immutable() from p
 create trigger fantasy_rating_publication_immutable before update or delete on app_private.fantasy_rating_publications
 for each row execute function app_private.fantasy_rating_publication_immutable();
 create trigger fantasy_rating_plan_immutable before update or delete on app_private.fantasy_rating_recovery_plans
+for each row execute function app_private.fantasy_rating_publication_immutable();
+create trigger fantasy_rating_player_projection_immutable before update or delete on app_private.fantasy_published_rating_players
 for each row execute function app_private.fantasy_rating_publication_immutable();
 
 -- Read projections, not replacement base tables. Private owner/definer readers
@@ -166,37 +188,21 @@ create view app_private.fantasy_visible_player_points with (security_invoker=tru
 select r.* from app.fantasy_player_gameweek_points r
 where not exists(select 1 from app_private.fantasy_current_rating_publications p where p.gameweek_id=r.gameweek_id)
 union all
-select (jsonb_populate_record(null::app.fantasy_player_gameweek_points,jsonb_build_object(
- 'fantasy_player_id',pl->'fantasyPlayerId','gameweek_id',p.gameweek_id,
- 'provisional_points',case when app_private.fantasy_player_rating_pending(p.proposal,(pl->>'fantasyPlayerId')::uuid) and coalesce(e.n,0)=0 then null else coalesce(e.points,0) end,
- 'final_points',null,'minutes_played',coalesce(f.minutes,0),'did_play',coalesce(f.played,false),
- 'calculation_version',p.calculation_version,'football_input_version',coalesce(f.sequence,0),
- 'finalized_at',null,'created_at',p.published_at,'updated_at',p.published_at
-))).*
-from app_private.fantasy_current_rating_publications p
-cross join lateral jsonb_array_elements(p.proposal->'players') pl
-left join lateral(select sum((ev->>'points')::integer)::integer as points,count(*) as n
- from jsonb_array_elements(p.results->'playerResults') pr
- cross join lateral jsonb_array_elements(pr->'events') ev
- where pr->>'fantasyPlayerId'=pl->>'fantasyPlayerId') e on true
-left join lateral(select sum(coalesce((pf#>>'{stats,minutes}')::integer,0))::integer as minutes,
- bool_or(coalesce((pf->>'apiAppeared')::boolean,false)) as played,max((pf->>'sourceSequence')::bigint) as sequence
- from jsonb_array_elements(p.proposal->'playerFixtures') pf where pf->>'fantasyPlayerId'=pl->>'fantasyPlayerId') f on true;
+select c.fantasy_player_id,c.gameweek_id,c.provisional_points,null::integer,c.minutes_played,c.did_play,
+ p.calculation_version,c.football_input_version,null::timestamptz,p.published_at,p.published_at
+from app_private.fantasy_published_rating_players c
+join app_private.fantasy_current_rating_publications p on p.id=c.publication_id;
 
 create view app_private.fantasy_visible_point_events with (security_invoker=true) as
 select r.* from app.fantasy_player_point_events r
 where not exists(select 1 from app_private.fantasy_current_rating_publications p where p.gameweek_id=r.gameweek_id)
 union all
-select (jsonb_populate_record(null::app.fantasy_player_point_events,jsonb_build_object(
- 'id',md5(p.id::text||':'||(pr->>'fantasyPlayerId')||':'||(pr->>'fixtureId')||':'||(ev->>'category'))::uuid,
- 'fantasy_player_id',pr->'fantasyPlayerId','gameweek_id',p.gameweek_id,'fixture_id',pr->'fixtureId',
- 'football_event_id',null,'category',ev->'category','points',ev->'points','state','provisional',
- 'scoring_version',3,'source_sequence',p.calculation_version,'source_key',ev->'sourceKey',
- 'superseded_at',null,'created_at',p.published_at,'updated_at',p.published_at
-))).*
-from app_private.fantasy_current_rating_publications p
-cross join lateral jsonb_array_elements(p.results->'playerResults') pr
-cross join lateral jsonb_array_elements(pr->'events') ev;
+select md5(p.id::text||':'||c.fantasy_player_id::text||':'||(ev->>'fixtureId')||':'||(ev->>'category'))::uuid,
+ c.fantasy_player_id,c.gameweek_id,(ev->>'fixtureId')::uuid,null::uuid,ev->>'category',(ev->>'points')::integer,
+ 'provisional'::app.fantasy_points_state,3,p.calculation_version,ev->>'sourceKey',null::timestamptz,p.published_at,p.published_at
+from app_private.fantasy_published_rating_players c
+join app_private.fantasy_current_rating_publications p on p.id=c.publication_id
+cross join lateral jsonb_array_elements(c.events) ev;
 
 create view app_private.fantasy_visible_substitutions with (security_invoker=true) as
 select r.* from app.fantasy_auto_substitutions r join app.fantasy_lineups l on l.id=r.lineup_id
@@ -246,7 +252,7 @@ end $$;
 create function app_private.fantasy_publish_rating_recovery(p_plan_id bigint,p_expected_digest text,p_owner_approval text)
 returns jsonb language plpgsql set search_path='' as $$
 declare p app_private.fantasy_rating_recovery_plans%rowtype; preview jsonb; g app.fantasy_gameweeks%rowtype;
- t jsonb; r jsonb; pf jsonb; expected integer; actual integer; league record; components record; old_claims text;
+ t jsonb; r jsonb; pf jsonb; expected integer; actual integer; league record; components record; old_claims text; published_id bigint;
 begin
  perform app_private.hold_scheduled_jobs();
  lock table app_private.fantasy_worker_lease in exclusive mode;
@@ -326,7 +332,24 @@ begin
  or (components.has_pending and jsonb_array_length(t->'substitutions')<>0) then raise exception 'rating_publication_components_mismatch'; end if;
  end loop;
  if (select count(distinct x->>'teamId') from jsonb_array_elements(p.results->'teamResults') x)<>jsonb_array_length(p.results->'teamResults') then raise exception 'rating_publication_duplicate_teams'; end if;
- insert into app_private.fantasy_rating_publications(gameweek_id,plan_id,owner_approval) values(g.id,p.id,p_owner_approval);
+ insert into app_private.fantasy_rating_publications(gameweek_id,plan_id,owner_approval) values(g.id,p.id,p_owner_approval) returning id into published_id;
+ insert into app_private.fantasy_published_rating_players(publication_id,fantasy_player_id,gameweek_id,provisional_points,
+ minutes_played,did_play,football_input_version,rating_pending,events)
+ with point_rows as (
+ select pr->>'fantasyPlayerId' as pid,coalesce(sum((ev->>'points')::integer),0)::integer as points,count(ev) as n,
+ coalesce(jsonb_agg(ev||jsonb_build_object('fixtureId',pr->'fixtureId') order by pr->>'fixtureId',ev->>'category') filter(where ev is not null),'[]') as events
+ from jsonb_array_elements(p.results->'playerResults') pr left join lateral jsonb_array_elements(pr->'events') ev on true group by 1
+ ), appearances as (
+ select f->>'fantasyPlayerId' as pid,sum(coalesce((f#>>'{stats,minutes}')::integer,0))::integer as minutes,
+ bool_or(coalesce((f->>'apiAppeared')::boolean,false)) as played,max((f->>'sourceSequence')::bigint) as sequence
+ from jsonb_array_elements(p.proposal->'playerFixtures') f group by 1
+ ), selected as materialized (
+ select pl,app_private.fantasy_player_rating_pending(p.proposal,(pl->>'fantasyPlayerId')::uuid) as pending
+ from jsonb_array_elements(p.proposal->'players') pl
+ ) select published_id,(s.pl->>'fantasyPlayerId')::uuid,g.id,
+ case when s.pending and coalesce(e.n,0)=0 then null else coalesce(e.points,0) end,
+ coalesce(a.minutes,0),coalesce(a.played,false),coalesce(a.sequence,0),s.pending,coalesce(e.events,'[]')
+ from selected s left join point_rows e on e.pid=s.pl->>'fantasyPlayerId' left join appearances a on a.pid=s.pl->>'fantasyPlayerId';
  old_claims:=current_setting('request.jwt.claims',true);
  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
  perform api.service_recalculate_fantasy_rankings(g.fantasy_season_id,g.id,null,p.calculation_version);
@@ -353,24 +376,26 @@ alter function api.get_my_fantasy_points(uuid,uuid) rename to get_my_fantasy_poi
 revoke all on function api.get_my_fantasy_points_before_publication(uuid,uuid) from public,anon,authenticated,service_role;
 create function api.get_my_fantasy_points(p_team_id uuid,p_gameweek_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
-declare d jsonb; doc jsonb; pending boolean; revision boolean; updated timestamptz;
+declare d jsonb; doc jsonb; pending boolean; revision boolean; updated timestamptz; display_publication_id bigint;
 begin
  perform app_private.assert_mfa_step_up();
  d:=api.get_my_fantasy_points_before_publication(p_team_id,p_gameweek_id);
  doc:=app_private.fantasy_rating_display_document(p_gameweek_id);
  if doc is null then return d; end if;
  pending:=jsonb_array_length(doc->'pendingFixtures')>0 or jsonb_array_length(doc->'pendingPlayerIds')>0;
- select exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek_id) into revision;
+ select id into display_publication_id from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek_id;
+ revision:=display_publication_id is not null;
  select max(captured_at) into updated from app_private.fantasy_api_rating_sources s where exists(select 1 from jsonb_array_elements(doc->'fixtures') f where f->>'apiRatingSourceId'=s.id::text);
  d:=d||jsonb_build_object('ratingPublication',jsonb_build_object('historicalRevision',revision,'pending',pending,
  'pendingFixtures',jsonb_array_length(doc->'pendingFixtures'),'sourceUpdatedAt',updated),
  'pointsState',case when revision or pending then 'provisional' else d->>'pointsState' end,
  'incrementalScoring',true,
  'players',(select jsonb_agg(player||jsonb_build_object(
- 'ratingPending',app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid),
- 'provisionalPoints',case when app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid) and jsonb_array_length(player->'events')=0 then null else player->'provisionalPoints' end,
- 'didPlay',case when app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid) and jsonb_array_length(player->'events')=0 then null else player->'didPlay' end
- ) order by ord) from jsonb_array_elements(d->'players') with ordinality x(player,ord)));
+ 'ratingPending',coalesce(c.rating_pending,app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid)),
+ 'provisionalPoints',case when coalesce(c.rating_pending,app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid)) and jsonb_array_length(player->'events')=0 then null else player->'provisionalPoints' end,
+ 'didPlay',case when coalesce(c.rating_pending,app_private.fantasy_player_rating_pending(doc,(player->>'fantasyPlayerId')::uuid)) and jsonb_array_length(player->'events')=0 then null else player->'didPlay' end
+ ) order by ord) from jsonb_array_elements(d->'players') with ordinality x(player,ord)
+ left join app_private.fantasy_published_rating_players c on c.publication_id=display_publication_id and c.fantasy_player_id=(player->>'fantasyPlayerId')::uuid));
  return d;
 end $$;
 revoke all on function api.get_my_fantasy_points(uuid,uuid) from public,anon;
@@ -449,7 +474,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'5a0e2cf1cfd1492951af524c2c2c40787235a2f8bad8e1e17f1baa857f66e76d' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'b153f6dd5708ce633e3da5efacd25fc2375321a418c4f93260c44b04cd34f662' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin
