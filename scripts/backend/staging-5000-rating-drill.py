@@ -39,7 +39,8 @@ def main():
         raise RuntimeError("staging_drill_worker_failed")
     proof = target.rows("""select count(*) as results,min(final_score) as min_score,max(final_score) as max_score,
       sum(final_score) as sum_score,count(*) filter(where state='final') as final_rows,
-      count(*) filter(where overall_rank is not null) as ranked
+      (select count(*) from app.fantasy_rankings where gameweek_id='f9500000-0000-4000-8000-000000000021'
+        and league_id is null) as ranked
       from app.fantasy_team_gameweek_results where gameweek_id='f9500000-0000-4000-8000-000000000021'""")[0]
     expected = {"results":5000,"min_score":96,"max_score":96,"sum_score":480000,"final_rows":5000,"ranked":5000}
     print(json.dumps({"kind":"independent_sql_proof", "passed":proof==expected, **proof}), flush=True)

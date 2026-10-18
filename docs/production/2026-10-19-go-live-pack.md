@@ -1,0 +1,178 @@
+# Production go-live pack — 19 October 2026
+
+**Decision: NO-GO pending the evidence below. No production operation is authorised by this pack.**
+Owner constraint: **$0 extra spending**. No AWS instances, compute resize or disk expansion was started.
+The owner explicitly handed this staging task to Codex, superseding the older Claude-only window.
+
+## Execution brief and evidence standard
+
+> Bring Staging V2 to the repository through plan → rolled-back rehearsal → apply.
+> Establish one operator-owned writer window, preserve existing accounts and results,
+> and distinguish migration history from executable function parity. Run the existing
+> launch-sized workload only within the $0 constraint. Measure real scoring, worker
+> failure/recovery and reminder delivery with independently checkable outcomes.
+> Preserve failed attempts and precise version/compute information. Prepare production
+> operations for review, retaining separate authorisation for each production step.
+
+Primary evidence is the actual GitHub job output, live PostgreSQL catalogs/counts,
+Edge inventory/secret-name metadata and the published release header. A written
+runbook, a seeded total or a green planning action does not prove acceptance.
+
+## Version and environment manifest
+
+| Component | Observed version / state |
+| --- | --- |
+| PR 517 integration | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de` |
+| Staging operations | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d` |
+| Staging database | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows, zero pending repository migrations |
+| Staging Edge runtime | All 15 repository functions deployed by run 39173000678, source `ea5044d4e5ed5099f93ce9d4f3d4b11b727d2bfe`; scheduler credential present; email provider credential absent |
+| Production database | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot |
+| Production website | At 2026-10-18 22:50 UTC, HTTP 200 with `x-botolago-release: 2b2d6b136d453a7725922c432a46aa65281ee097`; GitHub main matched that SHA |
+| Compute parity | Both projects report 60 maximum connections / Micro; neither was resized |
+
+Main and the website advanced through another release during this staging window.
+The tested source is pinned above; rerun the plan and compare backend files against
+the final selected release SHA before production. Do not present a mixed manifest
+as proof that all four deployment components run one commit.
+
+## Staging catch-up: completed
+
+| Operation | Evidence / outcome |
+| --- | --- |
+| Initial plan | [39171136417](https://github.com/mrdata007/botolago-foundation/actions/runs/39171136417): 45 pending migrations |
+| Complete first rehearsal | [39171357114](https://github.com/mrdata007/botolago-foundation/actions/runs/39171357114): all 45 applied in the rehearsal transaction; rollback verified by unchanged history and absent pilot table |
+| First apply | [39171527035](https://github.com/mrdata007/botolago-foundation/actions/runs/39171527035): all 45 committed; users 50,008 and teams 50,005 unchanged; pilot OFF at 1,000 |
+| Stale deferral corrected | Direct production history showed `20260925090500_fantasy_league_page_skip_empty.sql` already applied. Removed its obsolete planner exclusion; no applied migration edited |
+| Additional rehearsal / apply | [39172016378](https://github.com/mrdata007/botolago-foundation/actions/runs/39172016378) / [39172184216](https://github.com/mrdata007/botolago-foundation/actions/runs/39172184216): that one missing migration rehearsed, then applied |
+| Final plan | [39172283038](https://github.com/mrdata007/botolago-foundation/actions/runs/39172283038): `pending: []`, `deferred: {}`, 272 records; 13 staging-only historical names preserved |
+| Edge deployment | [39173000678](https://github.com/mrdata007/botolago-foundation/actions/runs/39173000678): 15 active functions, authentication modes recorded, staging base URL configured with email/live refresh OFF |
+
+The first runtime attempts failed during the private Vault read. The fix uses the
+owner connection for that SELECT: the Management API's read-only role cannot
+decrypt Vault. No secret value was emitted into logs or committed files.
+
+### Executable parity, beyond migration names
+
+Compared 928 production `api` / `app_private` functions against staging: none
+missing. Initially 12 bodies differed: four expected pilot/deadline changes,
+six comment/format differences, and two substantive historical differences.
+
+- Staging's inherited incremental-document validator rejects malformed or
+  absent arrays more strictly than production. Preserve this fail-closed check;
+  it is a known environment difference, not full function equivalence.
+- Staging's reconciled-observation recorder lacked the repository's concurrent
+  link recheck and rollback of links on a no-op replay. The unchanged source in
+  migration `20261003180000` has body MD5 `c2906a3ca3643c73d30f0b7d15dfde4a`,
+  exactly matching production. A staging-only guarded restoration is prepared in
+  `scripts/backend/staging-reconciled-drift-repair.sql`; completion evidence is
+  recorded below. Never replay the entire historical migration or weaken a pin.
+
+## Acceptance ledger
+
+| Gate | Current disposition | What objectively closes it |
+| --- | --- | --- |
+| Launch-sized load | BLOCKED under the existing AWS workflow and $0 budget; no measured traffic claimed | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met |
+| 5,000-team scoring | Running: [39173465315](https://github.com/mrdata007/botolago-foundation/actions/runs/39173465315) | 5,000 final rows, each 96, sum 480,000; independent SQL checks, all ranked; exactly one rollover and no duplicate results |
+| Worker stall / recovery | Real Edge probe prepared; 8 s database timeout changes expected failure class | Actual held-row failure recorded, exclusive lease behavior, lock released, subsequent real pass succeeds without score repair |
+| Ambiguous 30 s write | NOT PROVEN by an 8 s settled database failure | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it |
+| Silent-worker alarms | BLOCKED: no test webhook or alert email destination; provider key also absent | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps |
+| Two-account reminders | BLOCKED by missing `RESEND_API_KEY`; sending remains OFF | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
+| Morocco time | Helper checks PASS | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test |
+| Real iPhone / push | NOT RUN | Owner's actual device session, French/Arabic evidence and real delivery where supported |
+| Arabic skim | Owner review outstanding | Complete the remaining agreed wording review; no approval inferred here |
+| Production health | Historical watchdog failed `fantasy_fixture_coverage` | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data |
+
+The existing audited runner orchestration rents five AWS machines and estimates
+$18.75 with a $50 guard. It cannot be dispatched under a $0 authorisation.
+The repository is public, so standard GitHub-hosted runners are a plausible
+zero-cost replacement. A five-runner coordinator, session handoff, synchronized
+start, complete database/CPU/pool metrics and cleanup need implementation and
+validation first; a single local origin would not satisfy the existing evidence
+contract. No AWS charge or load-test pass is implied by this alternative.
+
+Existing launch-sized pass criteria, unchanged: read p95 ≤500 ms; save/transfer
+p95 ≤1,500 ms and p99 ≤3,000 ms; unexpected errors <0.5%; lock timeouts <0.1%;
+CPU, database connections and pool utilisation <80%; complete metrics; zero
+deadlocks/conflicts, data-integrity violations and leftover temporary accounts.
+A launch-sized pass would still not pass the locked 2,500-user full gate.
+
+### Scoring method and limits
+
+The old 50,000-team seed was already consumed: GW2 was finalized but retained
+precomputed provisional results. Its counts-only `seedLoaded` flag did not
+establish readiness. It was neither reopened nor overwritten.
+
+Created a separate `f9500000-...` season using 5,000 existing synthetic load
+identities, 66 players, six clubs, three completed fixtures and 500 leagues
+(largest 1,000 members). Every squad has 2 GK / 5 DEF / 5 MID / 3 FWD, no more
+than three from one club; its locked XI is 1 / 4 / 4 / 2. All 66 provider
+participants have a rating of 7.5, independently worth 8 points. Therefore:
+`11 × 8 + captain bonus 8 = 96`, bench `4 × 8 = 32`, aggregate `480,000`.
+No team result existed before the worker started.
+
+The production TypeScript lifecycle calculates scores through real staging
+PostgREST RPCs under its real lease. The operator-run job has a longer wall-clock
+budget than Edge; this can prove scoring/finalization on Micro, not Edge's CPU
+limit or completion in a 100-second Edge pass. Global prize catch-up is explicitly
+refused by this scoped operator adapter to preserve existing QA seasons; prize
+selection is not certified by the scoring run. Inputs are synthetic and uniform;
+this is scale/consistency evidence, not provider-fetch reliability or a test of
+every scoring rule.
+
+The first scoring attempt rejected an unsupported lease-holder prefix before
+changing results. The corrected holder is `manual:staging-rating-drill-5000`.
+All attempts remain linked in GitHub; setup failures are not capacity failures.
+
+## Final measurements and restoration
+
+Final scoring, worker-probe and drift-restoration evidence will be appended here
+after their actual completion. Do not treat this placeholder as a passed gate.
+
+Before writes: no other staging writer workflow, active client transaction,
+generating story job or worker lease. All 25 original cron jobs were paused;
+the two newly installed jobs were paused too. Rivals was the only enabled
+application writer and was temporarily disabled. The original settings and job
+IDs/schedules were saved privately before the first write.
+
+Pre-drill fingerprints: non-load team rows `9e17d5ca2dd396487a7c5a15161de11d`;
+all existing result rows `fb327cfdc3d8bbb2c619e5fbe45b8bd7`. Compare after the
+drill, excluding only the explicitly new fixture. No account/password changes
+are required by this scoring fixture.
+
+## Production execution order — only after the gates permit it
+
+1. Select and pin the release SHA. Review PR 526 and its final CI, review the
+   unrecovered fixture-guard work or an explicit replacement, and complete the
+   staging ledger. Check the current production watchdog and version manifest.
+2. Recheck one-writer ownership, active workflows, cron and leases immediately
+   before each production operation. Read and save the current settings rather
+   than copying staging's OFF state to production.
+3. With explicit go for the pilot migration, use the reviewed
+   `scripts/backend/apply-20261016170000-pilot-cap.sql`: rehearsal ending in
+   rollback, inspect its checks, then authorised commit. The cap must remain OFF.
+   Follow `PILOT_CAP_OWNER_RUNBOOK.md`; never edit an MD5 precondition to pass.
+4. With separate explicit go for the deadline migration, pause the Fantasy
+   lifecycle, wait for lease release/expiry and keep at least 30 minutes clear
+   of an open deadline. Rehearse then apply
+   `scripts/backend/apply-20261016180000-fantasy-deadline-lock.sql`
+   according to `FANTASY_DEADLINE_LOCK_OWNER_RUNBOOK.md`. Verify volatility,
+   grants, history and unlocked-lineup detection; restore the prior tick flag.
+5. Deploy only the approved production Edge functions from the selected source,
+   with reviewed JWT modes and securely configured same-project secrets. Staging
+   deployment is not permission to deploy production. Verify logs and inventory.
+6. With separate go for activation, inspect active managers and QA exclusions,
+   then `select app_private.pilot_configure(true,1000);`. This caps active teams
+   per season, excluding hidden QA accounts; Auth sign-up remains available.
+7. Owner publishes the selected version in Lovable. Verify the live release
+   header, French/Arabic signed-in flows and the relevant production read-only
+   checks. A merge alone does not deploy the website or database.
+
+If a guarded operation refuses, stop that operation and investigate its actual
+precondition. Keep sending features OFF if delivery evidence is missing. A schema
+rollback requires a new reviewed forward migration; do not edit applied history.
+For a bad website publish, use Lovable's prior version and verify its header.
+For an unhealthy worker, record state and use its documented switch; do not start
+another writer while an ambiguous write or unexpired lease remains.
+
+This pack prepares decisions and reviewable operations. It does not silently
+accept launch risk, approve production changes or certify the remaining gates.
