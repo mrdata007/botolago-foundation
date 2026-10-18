@@ -27,6 +27,8 @@ export type FantasyRepoErrorCode =
   | "season_closed"
   /** The server refused: this manager already has a team this season. */
   | "already_exists"
+  /** The server refused: the pilot is full, so no new team can be created for now. */
+  | "pilot_full"
   /**
    * The server refused: this session has not presented the account's second
    * factor yet (`PT403 mfa_required`). Not a Fantasy failure -- the save goes
@@ -92,15 +94,17 @@ function fromDomainError(err: FantasyError): FantasyRepoError {
         ? "season_closed"
         : err.code === "fantasy_team_already_exists"
           ? "already_exists"
-          : err.code === "version_conflict" || err.code === "idempotency_conflict"
-            ? "version_conflict"
-            : err.code.endsWith("_not_found")
-              ? "not_found"
-              : VALIDATION_DOMAIN_CODES.has(err.code)
-                ? "validation"
-                : err.code === "data_unavailable" && isNetworkFailure(err.cause)
-                  ? "network"
-                  : "unknown";
+          : err.code === "fantasy_pilot_full"
+            ? "pilot_full"
+            : err.code === "version_conflict" || err.code === "idempotency_conflict"
+              ? "version_conflict"
+              : err.code.endsWith("_not_found")
+                ? "not_found"
+                : VALIDATION_DOMAIN_CODES.has(err.code)
+                  ? "validation"
+                  : err.code === "data_unavailable" && isNetworkFailure(err.cause)
+                    ? "network"
+                    : "unknown";
   return new FantasyRepoError(code, err.message, err, undefined, err.code);
 }
 

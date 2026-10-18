@@ -138,6 +138,8 @@ export function createTeamErrorKey(error: { code: string; domainCode?: string })
       return "fantasy.create.error.season_closed";
     case "already_exists":
       return "fantasy.create.error.already_exists";
+    case "pilot_full":
+      return "fantasy.create.error.pilot_full";
     case "version_conflict":
       return "fantasy.error.version_conflict";
     case "network":

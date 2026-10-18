@@ -2026,6 +2026,8 @@ export const fr = {
     "La date limite de cette journée est passée. Rechargez la page pour inscrire votre équipe à la prochaine journée.",
   "fantasy.create.error.season_closed": "Les inscriptions à la saison Fantasy sont fermées.",
   "fantasy.create.error.already_exists": "Vous avez déjà une équipe pour cette saison.",
+  "fantasy.create.error.pilot_full":
+    "Les inscriptions de la phase pilote sont complètes pour le moment. Votre équipe n’a pas été créée : réessayez plus tard.",
   "fantasy.create.error.player_unavailable":
     "Un joueur de votre sélection n’est plus disponible. Remplacez-le puis réessayez.",
   "fantasy.create.error.rejected":
