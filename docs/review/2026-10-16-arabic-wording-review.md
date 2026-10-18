@@ -1026,13 +1026,48 @@ These live in database rows created by migrations: the weekly Top 10 bell title 
 
 ---
 
-## Part 5. Added after this sheet (branch `work/sweep-fixes-b`, owner to confirm)
+## Part 5. Added after this sheet (owner approved 2026-10-17)
 
 One line, shown when Google or Apple sign-in is tapped while that provider is switched off in Supabase (login, sign-up and the sign-in return page). It replaces the old `auth.error.provider_unavailable` line (“هذا المزود غير متاح حاليًا.”), which the app never showed.
 
 | #     | French                                                                                    | Arabic                                                                                          | Where it appears                                                          | Approve | Change to |
 | ----- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------- | --------- |
-| AU-01 | Cette connexion n'est pas disponible pour le moment. Continuez avec votre adresse e-mail. | <span dir="rtl">طريقة تسجيل الدخول هذه غير متاحة حاليًا. تابع باستخدام بريدك الإلكتروني.</span> | Form-error line under the sign-in and sign-up forms; sign-in return page. | ☐       |           |
+| AU-01 | Cette connexion n'est pas disponible pour le moment. Continuez avec votre adresse e-mail. | <span dir="rtl">طريقة تسجيل الدخول هذه غير متاحة حاليًا. تابع باستخدام بريدك الإلكتروني.</span> | Form-error line under the sign-in and sign-up forms; sign-in return page. | ✔       |           |
+
+## Part 6: consistency decisions (owner delegated 2026-10-17)
+
+The owner delegated six small glossary decisions. Nothing else was changed; the
+129 owner-approved rows and the Top-10, اشتراك, المواهب and الجاهزية decisions stand.
+Tests: `src/i18n/arabic-consistency.test.ts`.
+
+| #   | Key                                                                                                                                    | Old                                         | New                                         |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------- |
+| 1   | `fantasy.leagues.manager`                                                                                                              | المدير                                      | المدرب                                      |
+| 1   | `fantasy.leagues.search_manager`                                                                                                       | ابحث عن مدير                                | ابحث عن مدرب                                |
+| 2   | `fantasy.points.free_hit_restored`                                                                                                     | تمت استعادة تشكيلة Free Hit.                | تمت استعادة تشكيلة الضربة الحرة.            |
+| 2   | `fantasy.freehit.restored`                                                                                                             | تمت استعادة الفريق الأصلي بعد الـ Free Hit. | تمت استعادة الفريق الأصلي بعد الضربة الحرة. |
+| 3   | `fpl.substitute` (French: Remplacer)                                                                                                   | تبديل                                       | استبدال                                     |
+| 3   | `fantasy.scoring.incrementalPolicy` (French: remplacements automatiques)                                                               | …تُطبَّق التبديلات التلقائية…               | …تُطبَّق الاستبدالات التلقائية…             |
+| 4   | `bulk-copy.ts` phase headings                                                                                                          | ١. ٢. ٣.                                    | 1. 2. 3.                                    |
+| 5   | `home.explore`                                                                                                                         | استكشف بوتولاجو                             | استكشف BotolaGO                             |
+| 6   | `fantasy.hub.invite_message`, `fantasy.hub.invite_ready`, `card.onboarding.m6.msg.league`, `card.onboarding.m6.msg.league_provisional` | « {name} » / « {league} »                   | «{name}» / «{league}»                       |
+
+Notes:
+
+- `fantasy.substitute` was already استبدال; no change.
+- Both Free Hit keys are not used by any component today; they were changed anyway.
+- Latin chip names remain in the legal text `src/content/legal/prize-terms.ts`
+  (line 153, Arabic: Wildcard and Free Hit; line 81 is the French source). Not edited.
+- Left as they are: the four renderings of Forme, the two renderings of Pénalités,
+  transfer strings (انتقال), and the 25 keys with a number before the singular نقطة
+  (they need plural forms): predictions.rules.miss, plus.s2.lead_h, plus.s2.r_above,
+  plus.s2.p_cum_h, plus.s2.p_bars_h, plus.s2.c_race_h, plus.s2.m_under50, plus.s2.a_bars,
+  plus.s2.a_src, plus.home.duel_trail, plus.rv.pts, plus.recap.headline_more,
+  plus.recap.headline_less, plus.recap.headline_same, plus.recap.headline_plain,
+  plus.recap.captain_line, plus.recap.captain_plain, plus.recap.transfer_line,
+  plus.recap.transfer_free, plus.recap.share_message, plus.recap.season_title,
+  plus.recap.season_title_plain, plus.recap.tile_best_week_v, plus.tr.prog_points,
+  plus.tr.prog_points_none.
 
 ---
 

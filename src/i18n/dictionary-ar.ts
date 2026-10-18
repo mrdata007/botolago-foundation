@@ -3,7 +3,7 @@
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
   "fantasy.scoring.incrementalPolicy":
-    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وقد تتغير النقاط خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
+    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وقد تتغير النقاط خلال الجولة. تُطبَّق الاستبدالات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
   "fantasy.scoring.closedProvisional":
     "قد تُنشر إحصائيات المباريات التفصيلية لاحقاً، وقد تتغير النقاط إلى أن تُقفل الجولة نهائياً.",
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
@@ -105,7 +105,7 @@ export const ar = {
   "home.fantasy_hub": "فريقك في {accent}فانتازي{/accent}",
   "home.fantasy_alerts": "تنبيهات {accent}فانتازي{/accent}",
   "home.news_preview": "أخبار {accent}البطولة{/accent}",
-  "home.explore": "استكشف {accent}بوتولاجو{/accent}",
+  "home.explore": "استكشف {accent}BotolaGO{/accent}",
   "home.highlights": "أبرز أقسام BotolaGO",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
@@ -693,11 +693,11 @@ export const ar = {
   "fantasy.leagues.members": "من الأعضاء",
   "fantasy.leagues.leader": "المتصدر",
   "fantasy.leagues.standings": "الترتيب",
-  "fantasy.leagues.manager": "المدير",
+  "fantasy.leagues.manager": "المدرب",
   "fantasy.leagues.gw": "ج.",
   "fantasy.leagues.total": "المجموع",
   "fantasy.leagues.movement": "التغيّر",
-  "fantasy.leagues.search_manager": "ابحث عن مدير",
+  "fantasy.leagues.search_manager": "ابحث عن مدرب",
   "fantasy.leagues.me": "أنا",
   "fantasy.leagues.invite_help": "شارك هذا الرمز مع المدربين الذين تريد دعوتهم إلى الدوري.",
   "fantasy.leagues.copy_code": "نسخ رمز الدعوة",
@@ -1041,8 +1041,8 @@ export const ar = {
   "fantasy.hub.invite_whatsapp": "واتساب",
   "fantasy.hub.invite_copy": "نسخ الرابط",
   "fantasy.hub.invite_copied": "تم نسخ الرابط",
-  "fantasy.hub.invite_message": "انضم إلى دوريي « {name} » على BotolaGO: {link}",
-  "fantasy.hub.invite_ready": "تم إنشاء الدوري « {name} ». ادعُ أصدقاءك:",
+  "fantasy.hub.invite_message": "انضم إلى دوريي «{name}» على BotolaGO: {link}",
+  "fantasy.hub.invite_ready": "تم إنشاء الدوري «{name}». ادعُ أصدقاءك:",
   "fantasy.hub.points_round": "نقاط الجولة {n}",
   "fantasy.hub.points_none": "لا نقاط بعد",
   "fantasy.hub.points_open": "عرض نقاطي في الجولة {n}",
@@ -1249,7 +1249,7 @@ export const ar = {
   "fpl.vice_short": "ن",
   "fpl.make_captain": "تعيين قائدًا",
   "fpl.make_vice": "تعيين نائبًا للقائد",
-  "fpl.substitute": "تبديل",
+  "fpl.substitute": "استبدال",
   "fpl.close": "إغلاق",
   "fpl.pick.blocked.taken": "موجود في التشكيلة",
   "fpl.pick.blocked.club_limit": "بلغت حدّ النادي",
@@ -1383,7 +1383,7 @@ export const ar = {
     "سيتم تحديث الانتقالات المجانية (بحد أقصى 2) وإعادة تعيين حالة الانتقالات.",
   "fantasy.points.finalize_success": "تم إقفال الجولة.",
   "fantasy.points.advance_success": "تم بدء جولة جديدة.",
-  "fantasy.points.free_hit_restored": "تمت استعادة تشكيلة Free Hit.",
+  "fantasy.points.free_hit_restored": "تمت استعادة تشكيلة الضربة الحرة.",
   "fantasy.points.lifecycle_error": "تعذَّر تنفيذ العملية.",
   "fantasy.transfers.gw_closed": "الجولة مُقفَلة — الانتقالات معطّلة.",
   "fantasy.leagues.leave": "مغادرة الدوري",
@@ -1817,7 +1817,7 @@ export const ar = {
   "fantasy.error.keep_working": "المتابعة بتعديلاتي",
   // Pass 3 — stable / restored state
   "fantasy.result.stable_restored": "النتيجة الرسمية المعتمدة.",
-  "fantasy.freehit.restored": "تمت استعادة الفريق الأصلي بعد الـ Free Hit.",
+  "fantasy.freehit.restored": "تمت استعادة الفريق الأصلي بعد الضربة الحرة.",
   // Pass 3 — ranking placeholder
   "fantasy.rank.unavailable": "الترتيب سيتوفر قريبًا",
   // Pass 3.2-H2 — hardening keys (unsaved / conflict / import / empty / defaults)
@@ -2949,9 +2949,9 @@ export const ar = {
   "card.onboarding.m5.h2h.score": "أنت {a} · {name} {b}",
   "card.onboarding.m6.image.provisional": "تقييم مبدئي · الجولة {gw}",
   "card.onboarding.m6.msg.league":
-    "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي « {league} »: {link}",
+    "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي «{league}»: {link}",
   "card.onboarding.m6.msg.league_provisional":
-    "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي « {league} »: {link}",
+    "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي «{league}»: {link}",
   "card.onboarding.m6.msg.plain": "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ {link}",
   "card.onboarding.m6.msg.plain_provisional": "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ {link}",
   "card.onboarding.m7.line": "لم يعد تقييمك مبدئيًا: {ovr} بعد {final}.",
