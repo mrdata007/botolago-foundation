@@ -209,6 +209,15 @@ select extensions.throws_ok($$update app_private.fantasy_rating_recovery_plans s
  'P0001','published_rating_revision_immutable','a published calculation cannot be edited');
 select extensions.ok(not has_function_privilege('service_role','app_private.fantasy_publish_rating_recovery(bigint,text,text)','execute'),'workers cannot publish historical revisions');
 select extensions.ok(not has_table_privilege('authenticated','app_private.fantasy_visible_team_results','select'),'private projections do not expose other managers');
+select extensions.is(app_private.fantasy_prize_award(pg_temp.rid(5),'gameweek','gw:5',5,5,pg_temp.rid(25),null,null)->>'reason',
+ 'fantasy_ratings_pending','historical point publication never authorizes a new prize');
+insert into app_private.fantasy_rating_recovery_plans(gameweek_id,calculation_version,input_digest,owner_approval,previous_state,proposal,results,complete)
+select gameweek_id,calculation_version+500,input_digest,owner_approval,previous_state,proposal,
+ jsonb_set(results,'{teamResults,0,provisionalScore}','9999'),complete
+from app_private.fantasy_rating_recovery_plans where id=current_setting('test.hist_plan')::bigint;
+select extensions.throws_ok($$select app_private.fantasy_publish_rating_recovery((select max(id) from app_private.fantasy_rating_recovery_plans),
+ current_setting('test.hist_preview')::jsonb->>'inputDigest','Owner approved historical available rating publication')$$,
+ 'P0001','rating_publication_total_mismatch','independent SQL arithmetic refuses a staged wrong total');
 select set_config('request.jwt.claims',jsonb_build_object('sub',pg_temp.rid(8),'role','authenticated')::text,true);
 select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))#>>'{result,provisionalScore}','88','authenticated points use the published calculation');
 select extensions.is(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->>'pointsState','provisional','a historical final status does not mislabel incomplete rating points as final');

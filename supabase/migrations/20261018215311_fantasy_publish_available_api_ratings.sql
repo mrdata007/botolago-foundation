@@ -134,14 +134,17 @@ begin
  'api.fantasy_player_gameweek_history_v1(uuid)',
  'api.publish_fantasy_gameweek_recap(uuid,uuid,text)',
  'api.public_fantasy_gameweek_recap(text)',
- 'api.get_round_recap(uuid,uuid)',
- 'api.get_my_rivals(text)'
+ 'api.get_round_recap(uuid,uuid)'
  ] loop
  source:=pg_get_functiondef(sig::regprocedure);
  source:=replace(source,'app.fantasy_team_gameweek_results','app_private.fantasy_visible_team_results');
  source:=replace(source,'app.fantasy_player_gameweek_points','app_private.fantasy_visible_player_points');
  source:=replace(source,'app.fantasy_player_point_events','app_private.fantasy_visible_point_events');
  source:=replace(source,'app.fantasy_auto_substitutions','app_private.fantasy_visible_substitutions');
+ if sig='api.get_round_recap(uuid,uuid)' then
+ source:=replace(source,'v_final := v_gw.points_state = ''final'';',
+ 'v_final := v_gw.points_state = ''final'' and v_res.state = ''final'';');
+ end if;
  execute source;
  end loop;
 end $$;
@@ -149,7 +152,7 @@ end $$;
 create function app_private.fantasy_publish_rating_recovery(p_plan_id bigint,p_expected_digest text,p_owner_approval text)
 returns jsonb language plpgsql set search_path='' as $$
 declare p app_private.fantasy_rating_recovery_plans%rowtype; preview jsonb; g app.fantasy_gameweeks%rowtype;
- t jsonb; r jsonb; pf jsonb; expected integer; actual integer; league record; old_claims text;
+ t jsonb; r jsonb; pf jsonb; expected integer; actual integer; league record; components record; old_claims text;
 begin
  perform app_private.hold_scheduled_jobs();
  lock table app_private.fantasy_worker_lease in exclusive mode;
@@ -167,12 +170,16 @@ begin
  if not found or p.input_digest is distinct from p_expected_digest then raise exception 'rating_publication_plan_mismatch'; end if;
  select * into g from app.fantasy_gameweeks where id=p.gameweek_id for update;
  if g.status not in ('finalized','corrected') then raise exception 'rating_publication_requires_historical_week'; end if;
+ if exists(select 1 from app.fantasy_prize_winners w where w.fantasy_season_id=g.fantasy_season_id
+ and g.sequence_number between w.first_gameweek_number and w.last_gameweek_number and w.status in ('verified','paid')) then
+ raise exception 'rating_publication_settled_prize_requires_review'; end if;
  if exists(select 1 from app_private.fantasy_rating_publications where plan_id=p.id) then
  return jsonb_build_object('published',true,'alreadyPublished',true,'gameweekId',g.id); end if;
  lock table app_private.fantasy_api_rating_sources,app_private.football_provider_mappings,
  app.fantasy_lineups,app.fantasy_lineup_players,app.fantasy_chip_uses,app.fantasy_transfer_batches in share mode;
  preview:=app_private.fantasy_api_rating_preview(g.id);
  if preview->>'inputDigest' is distinct from p_expected_digest then raise exception 'rating_publication_inputs_changed'; end if;
+ if encode(extensions.digest(p.proposal::text,'sha256'),'hex') is distinct from p_expected_digest then raise exception 'rating_publication_proposal_mismatch'; end if;
  if jsonb_array_length(p.results->'playerResults')<>jsonb_array_length(preview->'playerFixtures')
  or jsonb_array_length(p.results->'teamResults')<>jsonb_array_length(preview->'teams') then raise exception 'rating_publication_result_scope'; end if;
  -- Independent rating arithmetic: an appeared player contributes exactly one
@@ -201,6 +208,28 @@ begin
  cross join lateral jsonb_array_elements(pr->'events') ev;
  select coalesce(sum(b.point_hit),0)::integer into actual from app.fantasy_transfer_batches b where b.fantasy_team_id=(t->>'teamId')::uuid and b.gameweek_id=g.id and b.status='confirmed';
  if (t->>'transferHit')::integer is distinct from actual or (t->>'provisionalScore')::integer is distinct from expected-actual then raise exception 'rating_publication_total_mismatch'; end if;
+ with raw_points as (
+ select pr->>'fantasyPlayerId' as pid,coalesce(sum((ev->>'points')::integer),0)::integer as points
+ from jsonb_array_elements(p.results->'playerResults') pr left join lateral jsonb_array_elements(pr->'events') ev on true group by 1
+ ), members as (
+ select lp.fantasy_player_id,lp.captain,lp.vice_captain,lp.slot,coalesce(rp.points,0) as points,
+ (lp.slot='starter' and not exists(select 1 from jsonb_array_elements(t->'substitutions') s where s->>'playerOutId'=lp.fantasy_player_id::text))
+ or exists(select 1 from jsonb_array_elements(t->'substitutions') s where s->>'playerInId'=lp.fantasy_player_id::text) as selected,
+ (x->>'multiplier')::integer as multiplier,
+ (select chip_type from app.fantasy_chip_uses c where c.fantasy_team_id=(t->>'teamId')::uuid and c.gameweek_id=g.id and c.cancelled_at is null) as chip
+ from app.fantasy_lineup_players lp join jsonb_array_elements(t->'players') x on x->>'fantasyPlayerId'=lp.fantasy_player_id::text
+ left join raw_points rp on rp.pid=lp.fantasy_player_id::text where lp.lineup_id=(t->>'lineupId')::uuid
+ ) select coalesce(sum(points) filter(where selected),0)::integer as starting,
+ coalesce(sum(points) filter(where not selected and slot='bench'),0)::integer as bench,
+ coalesce(sum(points*(multiplier-1)) filter(where multiplier>1),0)::integer as captain,
+ bool_or(multiplier is distinct from case when selected or chip='bench_boost' then
+ case when fantasy_player_id::text=t->>'effectiveCaptainId' then case when chip='triple_captain' then 3 else 2 end else 1 end else 0 end) as invalid_multiplier,
+ bool_or(fantasy_player_id::text=t->>'effectiveCaptainId' and not(captain or vice_captain)) as invalid_captain,
+ bool_or(p.proposal->'pendingPlayerIds' ? fantasy_player_id::text) as has_pending
+ into components from members;
+ if components.starting is distinct from (t->>'startingPoints')::integer or components.bench is distinct from (t->>'benchPoints')::integer
+ or components.captain is distinct from (t->>'captainPoints')::integer or components.invalid_multiplier or components.invalid_captain
+ or (components.has_pending and jsonb_array_length(t->'substitutions')<>0) then raise exception 'rating_publication_components_mismatch'; end if;
  end loop;
  if (select count(distinct x->>'teamId') from jsonb_array_elements(p.results->'teamResults') x)<>jsonb_array_length(p.results->'teamResults') then raise exception 'rating_publication_duplicate_teams'; end if;
  insert into app_private.fantasy_rating_publications(gameweek_id,plan_id,owner_approval) values(g.id,p.id,p_owner_approval);
@@ -294,3 +323,32 @@ begin
 end $$;
 revoke all on function api.service_fantasy_api_ratings_due(integer) from public,anon,authenticated;
 grant execute on function api.service_fantasy_api_ratings_due(integer) to service_role;
+
+-- A visible incomplete revision is never a new prize entitlement. Existing
+-- prize records remain untouched and no verification/payment can use it.
+create function app_private.fantasy_rating_prize_guard()
+returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if new.status in ('verified','paid') and exists(
+ select 1 from app_private.fantasy_current_rating_publications p join app.fantasy_gameweeks g on g.id=p.gameweek_id
+ where g.fantasy_season_id=new.fantasy_season_id and g.sequence_number between new.first_gameweek_number and new.last_gameweek_number
+ ) then raise exception using errcode='PT409',message='fantasy_ratings_pending'; end if;
+ return new;
+end $$;
+revoke all on function app_private.fantasy_rating_prize_guard() from public,anon,authenticated,service_role;
+create trigger fantasy_rating_prize_guard before insert or update on app.fantasy_prize_winners
+for each row execute function app_private.fantasy_rating_prize_guard();
+
+alter function app_private.fantasy_prize_award(uuid,app.fantasy_prize_tier,text,integer,integer,uuid,integer,uuid)
+rename to fantasy_prize_award_before_rating_publication;
+revoke all on function app_private.fantasy_prize_award_before_rating_publication(uuid,app.fantasy_prize_tier,text,integer,integer,uuid,integer,uuid) from public,anon,authenticated,service_role;
+create function app_private.fantasy_prize_award(p_season_id uuid,p_tier app.fantasy_prize_tier,p_period_key text,
+ p_first integer,p_last integer,p_gameweek_id uuid,p_block_number integer,p_league_id uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+begin
+ if exists(select 1 from app_private.fantasy_current_rating_publications p join app.fantasy_gameweeks g on g.id=p.gameweek_id
+ where g.fantasy_season_id=p_season_id and g.sequence_number between p_first and p_last) then
+ return jsonb_build_object('awarded',false,'reason','fantasy_ratings_pending'); end if;
+ return app_private.fantasy_prize_award_before_rating_publication(p_season_id,p_tier,p_period_key,p_first,p_last,p_gameweek_id,p_block_number,p_league_id);
+end $$;
+revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_tier,text,integer,integer,uuid,integer,uuid) from public,anon,authenticated,service_role;
