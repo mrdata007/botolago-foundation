@@ -22,7 +22,8 @@ create table app_private.fantasy_api_rating_sources (
 create index fantasy_api_rating_sources_latest on app_private.fantasy_api_rating_sources(fixture_id,id desc);
 create table app_private.fantasy_api_rating_polls (
  fixture_id uuid primary key references app.fixtures(id),
- last_fetched_at timestamptz not null
+ last_fetched_at timestamptz,
+ last_attempt_at timestamptz not null default statement_timestamp()
 );
 alter table app_private.fantasy_api_rating_polls enable row level security;
 alter table app_private.fantasy_api_rating_polls force row level security;
@@ -137,10 +138,11 @@ begin
  ), marked as (
  select f||jsonb_build_object('apiRatingSourceId',source_id,'apiRatingDigest',digest,
  'scoringMode','full','adaptiveReady',coalesce(ready,false)) as f,
- ready is true and f->>'status'='finished' and f->>'finalizedAt' is not null as ready
+ source_id is not null and f->>'status'='finished' and f->>'finalizedAt' is not null as scorable,
+ ready is true and f->>'status'='finished' and f->>'finalizedAt' is not null as complete
  from fixtures)
- select coalesce(jsonb_agg(f order by f->>'fixtureId') filter(where ready),'[]'),
- coalesce(jsonb_agg(f||jsonb_build_object('pendingReason','fantasy_ratings_pending') order by f->>'fixtureId') filter(where not ready),'[]')
+ select coalesce(jsonb_agg(f order by f->>'fixtureId') filter(where scorable),'[]'),
+ coalesce(jsonb_agg(f||jsonb_build_object('pendingReason','fantasy_ratings_pending') order by f->>'fixtureId') filter(where not complete),'[]')
  into fs,pending from marked;
  with players as(select p from jsonb_array_elements(d->'players') p),
  fixtures as(select f from jsonb_array_elements(fs) f),
@@ -160,6 +162,8 @@ begin
  where exists(select 1 from app.team_memberships tm where tm.player_id=(p->>'playerId')::uuid
  and tm.season_id=fi.season_id and tm.team_id in(fi.home_team_id,fi.away_team_id)
  and tm.valid_from<=fi.kickoff_at::date and (tm.valid_to is null or tm.valid_to>=fi.kickoff_at::date))
+ and (raw.entry is null or ((raw.entry->>'uncertain')::boolean is false
+ and ((raw.entry->>'appeared')::boolean is false or jsonb_typeof(raw.entry->'rating')='number')))
  ), built as (
  select jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','playerId',p->'playerId','position',p->'position',
  'fixtureId',f->'fixtureId','sourceSequence',f->'sourceSequence','providerPlayerId',external_id,
@@ -215,11 +219,15 @@ begin
    if p_document->>'ratingScoring' is distinct from 'true' or p_document->>'scoringVersion' is distinct from '3'
    or p_document#>>'{ruleset,version}' is distinct from '3'
    or jsonb_array_length(p_document->'players') not between 1 and 2000
-   or jsonb_array_length(p_document->'fixtures')+jsonb_array_length(p_document->'pendingFixtures') not between 1 and 64
+   or jsonb_array_length(p_document->'fixtures') not between 0 and 64
+   or jsonb_array_length(p_document->'pendingFixtures') not between 0 and 64
+   or jsonb_array_length(p_document->'fixtures')+jsonb_array_length(p_document->'pendingFixtures')=0
    or pg_column_size(p_document)>16777216
    or exists(select 1 from jsonb_array_elements(p_document->'fixtures') f
      left join app_private.fantasy_api_rating_sources s on s.id=(f->>'apiRatingSourceId')::bigint
-     where s.id is null or not s.ready or s.fixture_id is distinct from (f->>'fixtureId')::uuid
+     where s.id is null or (not s.ready and (p_document->>'incremental' is distinct from 'true'
+       or not exists(select 1 from jsonb_array_elements(p_document->'pendingFixtures') pending where pending->>'fixtureId'=f->>'fixtureId')))
+       or s.fixture_id is distinct from (f->>'fixtureId')::uuid
        or s.digest is distinct from f->>'apiRatingDigest'
        or f#>>'{assignment,frozen_at}' is null or f#>>'{assignment,counts_points}' is distinct from 'true')
    or app_private.fantasy_actual_ratings_pending(p_document) then
@@ -644,12 +652,14 @@ revoke all on function api.fantasy_rules(uuid) from public;
 grant execute on function api.fantasy_rules(uuid) to anon,authenticated,service_role;
 
 create function api.service_fantasy_api_ratings_due(p_limit integer default 3)
-returns jsonb language plpgsql stable security definer set search_path='' as $$
+returns jsonb language plpgsql volatile security definer set search_path='' as $$
+declare claimed jsonb;
 begin
  if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
  if p_limit is null or p_limit not between 0 and 12 then raise exception 'rating_due_limit_invalid'; end if;
- return (select coalesce(jsonb_agg(jsonb_build_object('fixtureId',x.id,'eventId',x.external_id)),'[]')
- from (select distinct f.id,m.external_id,f.kickoff_at from app.fixtures f
+ if not pg_try_advisory_xact_lock(hashtextextended('botolago:native-rating-polls',0)) then return '[]'::jsonb; end if;
+ with candidates as materialized (
+ select distinct f.id,m.external_id,f.kickoff_at from app.fixtures f
  join app.fantasy_fixture_assignments a on a.fixture_id=f.id and a.superseded_at is null
  join app.fantasy_gameweeks g on g.id=a.gameweek_id and g.status in ('live','provisional')
  join app_private.fantasy_api_rating_seasons p on p.season_id=g.fantasy_season_id and g.sequence_number>=p.from_gameweek
@@ -657,7 +667,15 @@ begin
  left join app_private.fantasy_api_rating_polls poll on poll.fixture_id=f.id
  where f.status='finished' and f.finalized_at is not null
  and (poll.last_fetched_at is null or poll.last_fetched_at<statement_timestamp()-interval '2 hours')
- order by f.kickoff_at,f.id limit p_limit) x);
+ and (poll.last_attempt_at is null or poll.last_attempt_at<statement_timestamp()-interval '15 minutes')
+ order by f.kickoff_at,f.id limit p_limit
+ ), reserved as (
+ insert into app_private.fantasy_api_rating_polls(fixture_id,last_attempt_at)
+ select id,statement_timestamp() from candidates
+ on conflict(fixture_id) do update set last_attempt_at=excluded.last_attempt_at returning fixture_id
+ ) select coalesce(jsonb_agg(jsonb_build_object('fixtureId',c.id,'eventId',c.external_id)),'[]')
+ into claimed from candidates c join reserved r on r.fixture_id=c.id;
+ return claimed;
 end $$;
 revoke all on function api.service_fantasy_api_ratings_due(integer) from public,anon,authenticated;
 grant execute on function api.service_fantasy_api_ratings_due(integer) to service_role;
@@ -718,3 +736,18 @@ begin
  'pendingPlayers',jsonb_array_length(d->'pendingPlayerIds'),'finalized',false);
 end $$;
 revoke all on function app_private.fantasy_activate_api_ratings(uuid,text,text) from public,anon,authenticated,service_role;
+
+-- Native rating weeks do not run legacy category mode selection. The trusted
+-- snapshot still carries the v3 rating rules and the same pending/seal guards.
+alter function api.service_fantasy_lifecycle_state(uuid) rename to fantasy_lifecycle_state_before_api_ratings;
+alter function api.fantasy_lifecycle_state_before_api_ratings(uuid) set schema app_private;
+revoke all on function app_private.fantasy_lifecycle_state_before_api_ratings(uuid) from public,anon,authenticated,service_role;
+create function api.service_fantasy_lifecycle_state(p_gameweek_id uuid)
+returns jsonb language sql volatile security definer set search_path='' as $$
+ select app_private.fantasy_lifecycle_state_before_api_ratings(p_gameweek_id)
+ ||case when exists(select 1 from app.fantasy_gameweeks g join app_private.fantasy_api_rating_seasons p
+ on p.season_id=g.fantasy_season_id where g.id=p_gameweek_id and g.sequence_number>=p.from_gameweek)
+ then jsonb_build_object('adaptiveScoringEnabled',false,'apiNativeRatings',true) else '{}'::jsonb end;
+$$;
+revoke all on function api.service_fantasy_lifecycle_state(uuid) from public,anon,authenticated;
+grant execute on function api.service_fantasy_lifecycle_state(uuid) to service_role;

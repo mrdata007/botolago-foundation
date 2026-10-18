@@ -25,9 +25,11 @@ No irreversible prize or trophy action is part of this change.
 The API-native input path records complete lineup replies under literal API IDs.
 The source ledger calculates one rounded rating value per API ID, including for
 unmapped participants. It makes no catalog/alias/link writes. An incomplete
-fixture remains pending; stored legacy retries cannot overwrite fresher native
+fixture remains pending for finalization while its actual rated participants
+can contribute provisional points; stored legacy retries cannot overwrite fresher native
 replies. Fresh native retries poll only lineups, at most once every two hours
-per finished fixture, bounded by the existing per-tick cap.
+per finished fixture, bounded by the existing per-tick cap. An atomic poll claim
+backs failed requests off for fifteen minutes and prevents overlapping polls.
 
 The current unfinished week can cut over only with an owner-approved staged plan,
 matching source/lineup digest, drained writers and an atomic result/ranking save.

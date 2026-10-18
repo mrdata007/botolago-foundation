@@ -105,6 +105,12 @@ select pg_temp.rid(30),pg_temp.rid(2000+n),case when ord<=11 then 'starter'::app
  case when ord<=11 then ord else ord-11 end,n=28,n=29,6
 from unnest(array[23,24,25,26,27,28,29,30,31,32,33,34,35,39,43]) with ordinality as selected(n,ord);
 update app.fantasy_gameweeks set status='provisional' where id=pg_temp.rid(25);
+-- A past sealed calculation stays immutable during the new unfinished-week cutover.
+update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp() where id=pg_temp.rid(24);
+insert into app_private.fantasy_scoring_snapshots(gameweek_id,calculation_version,input_digest,payload,players_persisted,sealed_at)
+select pg_temp.rid(24),1,encode(extensions.digest(d::text,'sha256'),'hex'),d,true,statement_timestamp()
+from (select app_private.fantasy_scoring_input_document(pg_temp.rid(24)) as d) x;
+select set_config('test.past_seal', (select md5(to_jsonb(s)::text) from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),true);
 select set_config('test.native_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
 select set_config('test.native_results',(select jsonb_build_object('playerResults',
  (select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','fixtureId',p->'fixtureId','events',
@@ -132,9 +138,31 @@ select extensions.is(app_private.fantasy_activate_api_ratings(pg_temp.rid(25),
  current_setting('test.native_preview')::jsonb->>'inputDigest','Owner approved actual API ratings only')->>'finalized','false',
  'owner cutover publishes provisional results without finalizing');
 select extensions.is((select provisional_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),96,'SQL independently verifies the rating-only team total');
+select extensions.is((select md5(to_jsonb(s)::text) from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),current_setting('test.past_seal'),'past sealed calculation remains byte-for-byte unchanged');
+select extensions.is((select status::text from app.fantasy_gameweeks where id=pg_temp.rid(24)),'finalized','the past gameweek remains finalized');
+select extensions.is(api.service_fantasy_lifecycle_state(pg_temp.rid(25))->>'adaptiveScoringEnabled','false','the native worker does not run category-mode selection');
+
 select extensions.is((select final_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),null::integer,'the cutover does not create a final score');
 select extensions.is((select status::text from app.fantasy_gameweeks where id=pg_temp.rid(25)),'provisional','gameweek status is preserved');
 select extensions.is((select count(*)::int from app.fantasy_player_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating' and superseded_at is null),0,'no goals, assists, cards or minute events enter the rating ledger');
 select extensions.is(api.service_fantasy_api_rating_context(pg_temp.rid(3001))->>'enabled','true','the season-wide native path also prevents old-match identity linking');
+
+-- A later provider reply with one missing rating must still expose the other
+-- real ratings provisionally, without allowing sealing or a false GK swap.
+select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(true),statement_timestamp());
+select set_config('test.partial_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select extensions.is(jsonb_array_length(current_setting('test.partial_preview')::jsonb->'fixtures'),1,'rated participants from an incomplete fixture remain scorable');
+select extensions.is(jsonb_array_length(current_setting('test.partial_preview')::jsonb->'pendingFixtures'),1,'the incomplete fixture remains explicitly pending');
+select extensions.ok(not exists(select 1 from jsonb_array_elements(current_setting('test.partial_preview')::jsonb->'playerFixtures') p
+ where p->>'fantasyPlayerId'=pg_temp.rid(2023)::text),'the unrated participant is absent from scored rows, never turned into zero/five points');
+select extensions.ok(current_setting('test.partial_preview')::jsonb->'pendingPlayerIds' ? pg_temp.rid(2023)::text,'the unrated GK remains pending, so automatic substitution cannot replace him');
+select set_config('test.partial_version',api.service_prepare_fantasy_live_scoring(pg_temp.rid(25))->>'calculationVersion',true);
+select api.service_get_fantasy_scoring_snapshot(pg_temp.rid(25),current_setting('test.partial_version')::bigint,null,100);
+select extensions.throws_ok($$select api.service_begin_fantasy_finalization(pg_temp.rid(25),current_setting('test.partial_version')::bigint,
+ current_setting('test.partial_preview')::jsonb->>'inputDigest')$$,'PT409',null,'missing actual ratings prevent sealing even though other ratings can score');
+
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '3 hours',last_attempt_at=statement_timestamp()-interval '1 hour' where fixture_id=pg_temp.rid(3002);
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a stale native fixture gets one bounded poll claim');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'even a failed provider request cannot be retried again within fifteen minutes');
 select * from extensions.finish();
 rollback;

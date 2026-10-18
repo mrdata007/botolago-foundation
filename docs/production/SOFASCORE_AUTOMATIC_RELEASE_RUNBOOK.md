@@ -859,6 +859,7 @@ Migration `20261018173321_fantasy_api_rating_recovery.sql` is a separate,
 owner-approved follow-up, not part of the original automatic bundle. Its source
 ledger uses literal API player IDs and actual ratings; it adds no player link.
 Deploy the matching football refresh code before the guarded owner cutover.
+Apply `scripts/backend/apply-api-rating-recovery.sql` (rollback by default).
 Capture the exact main commit, rehearse the source import and staged recovery,
 verify rollback independently, then commit once with the relevant writers
 paused and leases drained. The owner cutover refuses a closed/finalized week,

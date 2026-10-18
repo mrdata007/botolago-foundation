@@ -1091,6 +1091,10 @@ export type Database = {
       }
       fantasy_prizes: { Args: never; Returns: Json }
       fantasy_rules: { Args: { p_season_id: string }; Returns: Json }
+      fantasy_rules_before_api_ratings: {
+        Args: { p_season_id: string }
+        Returns: Json
+      }
       fantasy_rules_v1: { Args: { p_season_id: string }; Returns: Json }
       fantasy_top_players: {
         Args: { p_gameweek_id: string; p_limit?: number }
@@ -2064,6 +2068,14 @@ export type Database = {
         Args: { p_error_code: string; p_job_id: string }
         Returns: undefined
       }
+      service_fantasy_api_rating_context: {
+        Args: { p_fixture_id: string }
+        Returns: Json
+      }
+      service_fantasy_api_ratings_due: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       service_fantasy_deadline_watch: {
         Args: {
           p_escalate_hours?: number
@@ -2252,6 +2264,15 @@ export type Database = {
       }
       service_record_current_player_list: {
         Args: { p_observations: Json }
+        Returns: Json
+      }
+      service_record_fantasy_api_ratings: {
+        Args: {
+          p_captured_at: string
+          p_event_id: string
+          p_fixture_id: string
+          p_players: Json
+        }
         Returns: Json
       }
       service_record_fantasy_observation: {
