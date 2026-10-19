@@ -1,0 +1,192 @@
+{
+  "responsive_layout_cases_passed": 180,
+  "dark_breakpoint_cases_passed": 60,
+  "enlarged_root_font_cases_passed": 6,
+  "interaction_flows_passed": 10,
+  "existing_browser_regressions_passed": 25,
+  "unit_tests": {
+    "passed": 10708,
+    "skipped": 23,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "changed_file_lint": "passed",
+  "production_build_and_legal_gate": "passed",
+  "existing_browser_cases": [
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr 390px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr 768px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr 1024px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr 1280px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr 1440px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "fr: desktop search works in compact and inline layouts",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar 390px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar 768px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar 1024px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar 1280px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar 1440px: home tracks and shared navigation fit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "desktop-layout.e2e.ts",
+      "suite": ["desktop-layout.e2e.ts"],
+      "title": "ar: desktop search works in compact and inline layouts",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "dialog-focus-and-taps.e2e.ts",
+      "suite": ["dialog-focus-and-taps.e2e.ts"],
+      "title": "fr: closing the profile's dialogs gives focus back to the button that opened them",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "dialog-focus-and-taps.e2e.ts",
+      "suite": ["dialog-focus-and-taps.e2e.ts"],
+      "title": "fr: the points link and the narrowest filter chips are 44px to hit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "dialog-focus-and-taps.e2e.ts",
+      "suite": ["dialog-focus-and-taps.e2e.ts"],
+      "title": "ar: closing the profile's dialogs gives focus back to the button that opened them",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "dialog-focus-and-taps.e2e.ts",
+      "suite": ["dialog-focus-and-taps.e2e.ts"],
+      "title": "ar: the points link and the narrowest filter chips are 44px to hit",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "mobile-readability.e2e.ts",
+      "suite": ["mobile-readability.e2e.ts", "fr 360px"],
+      "title": "the standings keep five columns on a phone and open the rest on request",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "mobile-readability.e2e.ts",
+      "suite": ["mobile-readability.e2e.ts", "fr 390px"],
+      "title": "the standings keep five columns on a phone and open the rest on request",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "mobile-readability.e2e.ts",
+      "suite": ["mobile-readability.e2e.ts", "ar 360px"],
+      "title": "the standings keep five columns on a phone and open the rest on request",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "mobile-readability.e2e.ts",
+      "suite": ["mobile-readability.e2e.ts", "ar 390px"],
+      "title": "the standings keep five columns on a phone and open the rest on request",
+      "status": "passed",
+      "verified_run": "existing"
+    },
+    {
+      "file": "accessibility-keyboard.e2e.ts",
+      "suite": ["accessibility-keyboard.e2e.ts"],
+      "title": "fr: on every hub the skip target holds the page title (MOB-05)",
+      "status": "passed",
+      "verified_run": "existing-recheck"
+    },
+    {
+      "file": "accessibility-keyboard.e2e.ts",
+      "suite": ["accessibility-keyboard.e2e.ts"],
+      "title": "ar: on every hub the skip target holds the page title (MOB-05)",
+      "status": "passed",
+      "verified_run": "existing-recheck"
+    },
+    {
+      "file": "curva.e2e.ts",
+      "suite": ["curva.e2e.ts", "no heading is cut"],
+      "title": "fr: « Les vôtres » and the other headings of G1 are whole at 768, 1024, 1280 and 1440 px",
+      "status": "passed",
+      "verified_run": "curva-existing"
+    },
+    {
+      "file": "curva.e2e.ts",
+      "suite": ["curva.e2e.ts", "no heading is cut"],
+      "title": "ar: « أصحابك » and the other headings of G1 are whole at 768, 1024, 1280 and 1440 px",
+      "status": "passed",
+      "verified_run": "curva-existing"
+    },
+    {
+      "file": "curva.e2e.ts",
+      "suite": ["curva.e2e.ts", "G1 says what happens next"],
+      "title": "the card's width follows the window's height on a phone, between 232 and 296 px, and is 336 px from 768",
+      "status": "passed",
+      "verified_run": "curva-size-recheck"
+    }
+  ]
+}

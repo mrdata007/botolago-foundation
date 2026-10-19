@@ -1,0 +1,238 @@
+{
+  "stats": {
+    "startTime": "2026-10-19T07:02:56.941Z",
+    "duration": 132362.529,
+    "expected": 16,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "observations": [
+    {
+      "screen": "home",
+      "path": "/",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 129,
+        "width": 1440,
+        "height": 2372.53125,
+        "right": 1440,
+        "bottom": 2501.53125
+      },
+      "column": {
+        "x": 0,
+        "y": 354,
+        "width": 1440,
+        "height": 2147.53125,
+        "right": 1440,
+        "bottom": 2501.53125
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 354,
+          "x": 0,
+          "y": 250,
+          "width": 1440,
+          "height": 104,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 129,
+        "width": 1440,
+        "height": 1247,
+        "right": 1440,
+        "bottom": 1376
+      },
+      "column": {
+        "x": 384,
+        "y": 575,
+        "width": 672,
+        "height": 801,
+        "right": 1056,
+        "bottom": 1376
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 458,
+          "x": 0,
+          "y": 354,
+          "width": 1440,
+          "height": 104,
+          "right": 1440
+        },
+        {
+          "tag": "DIV",
+          "bottom": 575,
+          "x": 0,
+          "y": 458,
+          "width": 1440,
+          "height": 117,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/players",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 161,
+        "width": 1440,
+        "height": 3777,
+        "right": 1440,
+        "bottom": 3938
+      },
+      "column": {
+        "x": 0,
+        "y": 161,
+        "width": 1440,
+        "height": 3777,
+        "right": 1440,
+        "bottom": 3938
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "home",
+      "path": "/",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 129,
+        "width": 1440,
+        "height": 2404.140625,
+        "right": 1440,
+        "bottom": 2533.140625
+      },
+      "column": {
+        "x": 0,
+        "y": 354,
+        "width": 1440,
+        "height": 2179.140625,
+        "right": 1440,
+        "bottom": 2533.140625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 354,
+          "x": 0,
+          "y": 250,
+          "width": 1440,
+          "height": 104,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 129,
+        "width": 1440,
+        "height": 1254.296875,
+        "right": 1440,
+        "bottom": 1383.296875
+      },
+      "column": {
+        "x": 384,
+        "y": 575,
+        "width": 672,
+        "height": 808.296875,
+        "right": 1056,
+        "bottom": 1383.296875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 458,
+          "x": 0,
+          "y": 354,
+          "width": 1440,
+          "height": 104,
+          "right": 1440
+        },
+        {
+          "tag": "DIV",
+          "bottom": 575,
+          "x": 0,
+          "y": 458,
+          "width": 1440,
+          "height": 117,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/players",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 161,
+        "width": 1440,
+        "height": 3777,
+        "right": 1440,
+        "bottom": 3938
+      },
+      "column": {
+        "x": 0,
+        "y": 161,
+        "width": 1440,
+        "height": 3777,
+        "right": 1440,
+        "bottom": 3938
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    }
+  ]
+}

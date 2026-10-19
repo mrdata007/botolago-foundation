@@ -74,15 +74,15 @@ import { cn } from "@/lib/utils";
  * scroll container, and `flow-root` keeps the block formatting context
  * `hidden` gave (`clip` does not make one). The player page opts in, and so
  * does Pick Team for its confirmation bar (BG-0157). The squad
- * builder and transfer confirmation bars are sticky in the column too and do
- * not stick from `md` either; they keep today's behaviour until that is
- * decided for them.
+ * builder and transfer confirmation bars opt in too, so their actions remain
+ * reachable when the page is taller than the viewport in either language.
  */
 export function FantasyFrame({
   children,
   bottomNav = false,
   topBar = "desktop",
   stickyBottomBar = false,
+  width = "content",
   className,
   background = "light",
 }: {
@@ -91,6 +91,8 @@ export function FantasyFrame({
   bottomNav?: boolean;
   /** The screen has a `sticky bottom-0` bar in the column that must stick from `md` too. */
   stickyBottomBar?: boolean;
+  /** Dense boards can use the existing wide canvas; prose and pitches stay compact. */
+  width?: "content" | "wide";
   /** `always` shows the global top bar on phones too — the hub, which has no `UiHeader`. */
   topBar?: "desktop" | "always";
   className?: string;
@@ -137,6 +139,7 @@ export function FantasyFrame({
           // kept: the viewport-containment tooling selects `main.fpl-column`.
           "fpl-column relative",
           ui.space.content,
+          width === "wide" && "[--ui-content-max:var(--container-5xl)]",
           "md:my-4 md:min-h-[calc(100dvh-7rem)]",
           stickyBottomBar ? "md:flow-root md:overflow-clip" : "md:overflow-hidden",
           "md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",

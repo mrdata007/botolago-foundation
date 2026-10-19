@@ -90,7 +90,11 @@ export function AppShell({
         ref={pageRef}
         id={MAIN_CONTENT_ID}
         tabIndex={-1}
-        className="relative scroll-mt-[var(--topbar-h)] outline-none"
+        className={cn(
+          "relative scroll-mt-[var(--topbar-h)] outline-none",
+          // Header bands consume the same canvas as the body below them.
+          contentWidth === "wide" && "[--ui-content-max:var(--container-5xl)]",
+        )}
       >
         {pageHeader}
         {matchdayStrip ? <MatchdayStrip /> : null}
@@ -101,6 +105,7 @@ export function AppShell({
             contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
           }
           bottomNav={!hideBottomNav}
+          className={contentWidth === "compact" ? "max-w-[var(--ui-content-max)]" : undefined}
         >
           {children}
         </UiScreen>
