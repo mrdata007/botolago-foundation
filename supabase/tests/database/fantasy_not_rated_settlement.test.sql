@@ -24,13 +24,13 @@ $$;
 insert into app_private.fantasy_api_rating_sources(fixture_id,event_id,digest,players,ready,captured_at,created_at)
 values(pg_temp.nrid(20),'97710020',encode(extensions.digest(pg_temp.nrplayers(7)::text,'sha256'),'hex'),pg_temp.nrplayers(7),false,now()-interval '25 hours',now()-interval '25 hours');
 select set_config('test.nr_source',(select id::text from app_private.fantasy_api_rating_sources where fixture_id=pg_temp.nrid(20)),true);
-insert into app_private.fantasy_rating_checks(source_id,checked_at,provenance)
-values(current_setting('test.nr_source')::bigint,now()-interval '25 hours','source_receipt');
+insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)
+values(current_setting('test.nr_source')::bigint,now()-interval '25 hours',now()-interval '25 hours','source_receipt');
 select extensions.is(app_private.fantasy_settle_not_rated(current_setting('test.nr_source')::bigint),0,'one successful read never settles an unrated appearance');
 
 savepoint too_soon;
-insert into app_private.fantasy_rating_checks(source_id,checked_at,provenance)
-values(current_setting('test.nr_source')::bigint,now()-interval '2 hours','live_receipt');
+insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)
+values(current_setting('test.nr_source')::bigint,now()-interval '2 hours',now()-interval '2 hours','live_receipt');
 select extensions.is(app_private.fantasy_settle_not_rated(current_setting('test.nr_source')::bigint),0,'two checks only 23h apart remain pending');
 rollback to too_soon;
 

@@ -19,8 +19,9 @@ create table app_private.fantasy_rating_checks(
  id bigint generated always as identity primary key,
  source_id bigint not null references app_private.fantasy_api_rating_sources(id),
  checked_at timestamptz not null,
+ captured_at timestamptz not null,
  provenance text not null check(provenance in('source_receipt','successful_poll','live_receipt')),
- unique(source_id,checked_at)
+ unique(source_id,captured_at)
 );
 create index fantasy_rating_checks_source_time on app_private.fantasy_rating_checks(source_id,checked_at);
 create table app_private.fantasy_not_rated_settlements(
@@ -51,10 +52,10 @@ for each row execute function app_private.fantasy_not_rated_evidence_immutable()
 
 -- Existing timestamps are evidence of successful validated ingestions, not
 -- fabricated old checks. The poll clock advances only after full validation.
-insert into app_private.fantasy_rating_checks(source_id,checked_at,provenance)
-select id,created_at,'source_receipt'from app_private.fantasy_api_rating_sources;
-insert into app_private.fantasy_rating_checks(source_id,checked_at,provenance)
-select s.id,p.last_fetched_at,'successful_poll'
+insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)
+select id,created_at,captured_at,'source_receipt'from app_private.fantasy_api_rating_sources;
+insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)
+select s.id,p.last_fetched_at,p.last_fetched_at,'successful_poll'
 from app_private.fantasy_api_rating_polls p
 join lateral(select *from app_private.fantasy_api_rating_sources s where s.fixture_id=p.fixture_id order by id desc limit 1)s on true
 where p.last_fetched_at>s.created_at and p.last_fetched_at<=statement_timestamp()
@@ -74,6 +75,7 @@ returns jsonb language sql stable security definer set search_path='' as $$
  where d.source_id=p_source_id and d.api_player_id=p_api_id
  and f.status='finished'and f.finalized_at<=d.settled_at-interval '24 hours'
  and b.checked_at>=a.checked_at+interval '24 hours'and b.checked_at<=d.settled_at
+ and b.captured_at>=a.captured_at+interval '24 hours'
  and a.checked_at>=f.finalized_at and b.source_id=s.id and earlier.fixture_id=f.id
  and exists(select 1 from jsonb_array_elements(earlier.players)p where p->>'externalId'=d.api_player_id
   and p->>'appeared'='true'and p->>'uncertain'='false'and p->'rating'='null'::jsonb
@@ -113,6 +115,7 @@ begin
   join app_private.fantasy_api_rating_sources earlier on earlier.id=c.source_id
   where earlier.fixture_id=f.id and c.checked_at>=f.finalized_at
    and c.checked_at<=second_at-interval '24 hours'
+   and c.captured_at<=(select captured_at from app_private.fantasy_rating_checks where id=second_check)-interval '24 hours'
    and exists(select 1 from jsonb_array_elements(earlier.players)x
     where x->>'externalId'=p->>'externalId'and x->>'appeared'='true'and x->>'uncertain'='false'
     and x->'rating'='null'::jsonb and x->'minutes'=p->'minutes')
@@ -152,7 +155,7 @@ begin
  source:=pg_get_functiondef('api.service_record_fantasy_api_ratings(uuid,text,jsonb,timestamptz)'::regprocedure);
  if position('return jsonb_build_object(''sourceId'',v_id,'in source)=0 then raise exception 'not_rated_recorder_anchor_missing';end if;
  source:=replace(source,'return jsonb_build_object(''sourceId'',v_id,',
- 'insert into app_private.fantasy_rating_checks(source_id,checked_at,provenance)values(v_id,statement_timestamp(),''live_receipt'')on conflict do nothing;
+ 'insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)values(v_id,statement_timestamp(),p_captured_at,''live_receipt'')on conflict do nothing;
  perform app_private.fantasy_settle_not_rated(v_id);
  select ready into v_ready from app_private.fantasy_api_rating_sources where id=v_id;
  return jsonb_build_object(''sourceId'',v_id,');
