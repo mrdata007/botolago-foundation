@@ -18,6 +18,7 @@ dist-ssr
 playwright-report/
 test-results/
 *.local
+.phone.local/
 .env
 .env.*
 !.env.example
