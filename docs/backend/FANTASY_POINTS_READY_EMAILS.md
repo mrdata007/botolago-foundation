@@ -1,5 +1,7 @@
 # Three points-ready emails
 
+**Owner decision, 19 October 2026: Score reveal selected.** `APPROVED_POINTS_READY_VARIANT` records the choice. The matching selection-open and before-deadline reminders are documented in [FANTASY_MANAGER_EMAIL_JOURNEY.md](FANTASY_MANAGER_EMAIL_JOURNEY.md); the other two directions remain archived alternatives.
+
 Preview with `bun scripts/backend/fantasy-points-ready-previews.ts <directory>`. Open the generated `index.html`. Scores, names and ranks in the gallery are fictional. The generator makes no network or database requests and sends no email.
 
 | Direction | French subject example | Tone |

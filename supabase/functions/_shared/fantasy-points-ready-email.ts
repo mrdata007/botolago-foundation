@@ -2,6 +2,8 @@ import { EMAIL_COLORS as C, escapeHtml as e } from "./notification-email-render"
 
 export const POINTS_READY_VARIANTS = ["score-reveal", "manager-report", "full-time"] as const;
 export type PointsReadyVariant = (typeof POINTS_READY_VARIANTS)[number];
+/** Selected by the owner on 2026-10-19. Other directions remain archived previews. */
+export const APPROVED_POINTS_READY_VARIANT: PointsReadyVariant = "score-reveal";
 
 export interface PointsReadyEmailInput {
   language: "fr" | "ar";

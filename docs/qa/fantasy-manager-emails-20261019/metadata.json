@@ -1,0 +1,44 @@
+[
+  {
+    "kind": "selection-open",
+    "language": "fr",
+    "subject": "Journée 5 : à toi de jouer, coach !",
+    "preheader": "La sélection est ouverte. Prépare ton équipe avant la date limite.",
+    "sampleData": true
+  },
+  {
+    "kind": "selection-open",
+    "language": "ar",
+    "subject": "الجولة 5: حان دورك يا مدرب!",
+    "preheader": "اختيار التشكيلة متاح. جهّز فريقك قبل الموعد النهائي.",
+    "sampleData": true
+  },
+  {
+    "kind": "deadline-reminder",
+    "language": "fr",
+    "subject": "Journée 5 : dernier appel pour ton équipe !",
+    "preheader": "La date limite approche. Vérifie ton onze et ton capitaine avant le verrouillage.",
+    "sampleData": true
+  },
+  {
+    "kind": "deadline-reminder",
+    "language": "ar",
+    "subject": "الجولة 5: لا تنسَ تشكيلتك قبل الإغلاق!",
+    "preheader": "الموعد النهائي يقترب. راجع تشكيلتك وقائدك قبل إغلاق الاختيارات.",
+    "sampleData": true
+  },
+  {
+    "kind": "points-ready",
+    "language": "fr",
+    "subject": "Journée 5 : tes 76 points sont prêts !",
+    "preheader": "Le moment de découvrir le score de ton équipe est arrivé. À toi de jouer, coach !",
+    "sampleData": true
+  },
+  {
+    "kind": "points-ready",
+    "language": "ar",
+    "subject": "الجولة 5: نقاطك جاهزة — 76 نقطة!",
+    "preheader": "حان وقت اكتشاف رصيد فريقك. افتح الملخص يا مدرب!",
+    "sampleData": true
+  }
+]
