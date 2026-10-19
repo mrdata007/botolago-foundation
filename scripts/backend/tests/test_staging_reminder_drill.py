@@ -14,6 +14,16 @@ SPEC.loader.exec_module(D)
 
 
 class ReminderSafetyTests(unittest.TestCase):
+    def test_missing_private_handoff_cannot_mutate_staging(self):
+        target=Mock()
+        target.execute.return_value=[]
+        with patch.dict(os.environ,{'ACTION':'run','SUPABASE_STAGING_PROJECT_REF':D.R.REF,'SUPABASE_ACCESS_TOKEN':'private','STAGING_QA_OWNER_IDS':'','STAGING_APP_ORIGIN':'https://192.168.1.2:8443'}),patch.object(D.R.UPDATE,'ManagementTarget',return_value=target):
+            with self.assertRaisesRegex(RuntimeError,'private_owner_handoff_required'):
+                D.main()
+        self.assertEqual(target.execute.call_count,1)
+        self.assertTrue(target.execute.call_args.args[0].startswith('select decrypted_secret'))
+        target._request.assert_not_called()
+
     def test_cleanup_keeps_recovery_context_when_a_retirement_fails(self):
         ids=['f9710000-0000-4000-8000-000000000001','f9710000-0000-4000-8000-000000000002']
         prefs=[{'user_id':u,'email_notifications_enabled':True,'updated_at':'old'} for u in ids]

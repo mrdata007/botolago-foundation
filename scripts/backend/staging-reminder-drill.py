@@ -185,8 +185,15 @@ def main():
     if os.environ.get('ACTION') not in ('run','reminderrecover'):
         raise RuntimeError('staging_reminder_action_refused')
     origin=validate_origin(os.environ.get('STAGING_APP_ORIGIN',''))
-    ids=owner_ids(os.environ.get('STAGING_QA_OWNER_IDS',''))
     target=R.UPDATE.ManagementTarget(os.environ['SUPABASE_ACCESS_TOKEN'],ref)
+    supplied=os.environ.get('STAGING_QA_OWNER_IDS','')
+    if supplied:
+        ids=owner_ids(supplied)
+    else:
+        handoff=target.execute("select decrypted_secret as ids from vault.decrypted_secrets where name='botolago_staging_qa_owner_ids'",60)
+        if len(handoff)!=1:
+            raise RuntimeError('staging_reminder_private_owner_handoff_required')
+        ids=owner_ids(handoff[0]['ids'])
     if os.environ.get('ACTION')=='reminderrecover':
         saved=target.execute('select state from app_private.staging_reminder_recovery where id',60)
         if len(saved)!=1 or saved[0]['state']['ids']!=ids:

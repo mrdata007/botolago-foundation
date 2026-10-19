@@ -12,8 +12,11 @@ dispatch so other scheduled staging lanes also recognise this writer. Wait for
 the alarm drill to finish and verify restoration first. No parallel phone session
 or other staging writer may run during this drill.
 
-`STAGING_QA_OWNER_IDS` is a protected JSON secret containing the two already
+The operator privately stores `botolago_staging_qa_owner_ids` in staging Vault
+after the prior writer releases the database. It contains the two already
 confirmed test owners: positive email account first, email-off account second.
+An existing protected `STAGING_QA_OWNER_IDS` JSON secret can also supply them;
+the current GitHub integration cannot create that environment secret (HTTP 403).
 No addresses, passwords, credentials or owner-id array enter public inputs or
 artifacts. The Mac origin input must be `https://RFC1918_IP:8443`, reachable by
 the owner's phone. The [Mac launcher](2026-10-19-mac-iphone-session.md) is on the
