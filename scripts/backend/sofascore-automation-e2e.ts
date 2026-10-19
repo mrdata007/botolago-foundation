@@ -387,6 +387,56 @@ async function main() {
     "update app_private.sofascore_collection_queue set next_attempt_at=statement_timestamp()-interval '1 second' where fixture_id=$1",
     [uid(3002)],
   );
+  const abandoned = await rpcClient
+    .schema()
+    .rpc("service_sofascore_collection_claim", { p_holder: uid(9998) });
+  assert.equal(abandoned.data.status, "claimed");
+  await sql.unsafe(
+    "update app_private.sofascore_collection_settings set lease_until=statement_timestamp()-interval '1 second' where id",
+  );
+  await sql.unsafe(
+    "update app_private.fantasy_worker_lease set expires_at=statement_timestamp()-interval '1 second' where id",
+  );
+  await sql.unsafe(
+    "update app_private.sofascore_collection_queue set next_attempt_at=statement_timestamp()-interval '1 second' where fixture_id=$1",
+    [uid(3002)],
+  );
+  const contender = await rpcClient.schema().rpc("service_fantasy_worker_lease_acquire", {
+    p_holder: "edge:e2e-contender",
+    p_ttl_seconds: 240,
+  });
+  assert.equal(contender.data.acquired, true);
+  const busy = await rpcClient
+    .schema()
+    .rpc("service_sofascore_collection_claim", { p_holder: uid(9997) });
+  assert.equal(busy.error, null);
+  assert.equal(busy.data.status, "scoring_lease_held_or_disabled");
+  await rpcClient
+    .schema()
+    .rpc("service_fantasy_worker_lease_release", { p_token: contender.data.token });
+  const recoveredLease = await rpcClient
+    .schema()
+    .rpc("service_sofascore_collection_claim", { p_holder: uid(9997) });
+  assert.equal(recoveredLease.error, null);
+  assert.equal(
+    recoveredLease.data.status,
+    "claimed",
+    "a busy scorer cannot strand an abandoned ingestion run",
+  );
+  await rpcClient.schema().rpc("service_sofascore_collection_finish", {
+    p_holder: uid(9997),
+    p_summary: {
+      code: "collection_lease_expired",
+      fetched: 0,
+      validated: 0,
+      created: 0,
+      requests: 0,
+    },
+  });
+  await sql.unsafe(
+    "update app_private.sofascore_collection_queue set next_attempt_at=statement_timestamp()-interval '1 second' where fixture_id=$1",
+    [uid(3002)],
+  );
   await sql.unsafe(
     "select cron.alter_job(jobid,active:=true) from cron.job where jobname in ('football-season-refresh','fantasy-worker-tick')",
   );
@@ -423,6 +473,7 @@ async function main() {
     monitor,
     handlerRuns: handlerResults.length,
     rejectedEvidenceNotCached: true,
+    abandonedLeaseRecovered: true,
     passed: true,
   });
 }

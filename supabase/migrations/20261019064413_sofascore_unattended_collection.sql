@@ -85,7 +85,12 @@ begin
  plan:=api.service_sofascore_collection_plan();
  if jsonb_array_length(plan->'due')=0 then return jsonb_build_object('status','idle'); end if;
  if s.run_id is not null then
-   perform api.complete_football_ingestion(s.run_id,'failed',jsonb_build_object('reason','collection_lease_expired'));
+   if exists(select 1 from app_private.football_ingestion_runs where id=s.run_id and status in ('pending','running')) then
+    perform api.complete_football_ingestion(s.run_id,'failed',jsonb_build_object('reason','collection_lease_expired'));
+   end if;
+   -- A scorer may own the shared lease now. Clear the abandoned run even if
+   -- acquisition below returns busy, so the next claim can recover it once.
+   update app_private.sofascore_collection_settings set run_id=null,worker_token=null,last_error='collection_lease_expired' where id;
  end if;
  worker:=api.service_fantasy_worker_lease_acquire('edge:ratings-'||p_holder::text,240);
  if (worker->>'acquired')::boolean is not true then return jsonb_build_object('status','scoring_lease_held_or_disabled'); end if;
