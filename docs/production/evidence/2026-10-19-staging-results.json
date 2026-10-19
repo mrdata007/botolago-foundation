@@ -642,9 +642,206 @@
       "runId": 39222141596,
       "scope": "launch-sized",
       "sourceSha": "7729f9ba3b24d0828c404910d11f79975f0e1131",
-      "result": "running",
+      "result": "failed",
       "configurationChanges": false,
-      "ownershipRegressionFixed": true
+      "ownershipRegressionFixed": true,
+      "gate": {
+        "profile": {
+          "name": "launch_sized_gate",
+          "users": 1000,
+          "runners": 5,
+          "requests": 5000,
+          "traffic": {
+            "lineup": 3000,
+            "transfers": 1500,
+            "chips": 250,
+            "reads": 250
+          },
+          "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+          "fullGate": false
+        },
+        "overall": {
+          "readP50Ms": 15994.383,
+          "readP95Ms": 15999.392,
+          "readP99Ms": 16000.179,
+          "mutationP50Ms": 15988.909,
+          "mutationP95Ms": 15999.22,
+          "mutationP99Ms": 16000.326,
+          "expectedRejections": 27,
+          "unexpectedErrors": 3903,
+          "unexpectedErrorRate": 0.7806,
+          "lockTimeoutErrors": 0,
+          "lockTimeoutRate": 0.0
+        },
+        "operations": {
+          "chip": {
+            "count": 250,
+            "p50Ms": 15994.793,
+            "p95Ms": 15999.345,
+            "p99Ms": 15999.982
+          },
+          "lineup": {
+            "count": 3000,
+            "p50Ms": 15701.225,
+            "p95Ms": 15999.161,
+            "p99Ms": 16000.196
+          },
+          "team_read": {
+            "count": 250,
+            "p50Ms": 15995.303,
+            "p95Ms": 15999.529,
+            "p99Ms": 16000.25
+          },
+          "transfer_confirm": {
+            "count": 750,
+            "p50Ms": 15993.613,
+            "p95Ms": 15999.327,
+            "p99Ms": 16000.63
+          },
+          "transfer_preview": {
+            "count": 750,
+            "p50Ms": 15994.126,
+            "p95Ms": 15999.341,
+            "p99Ms": 16000.179
+          }
+        },
+        "errorCodes": {
+          "TimeoutError": 3893,
+          "chip_already_used": 16,
+          "non_json_response": 10,
+          "version_conflict": 11
+        },
+        "passCriteria": {
+          "readP95": false,
+          "mutationP95": false,
+          "mutationP99": false,
+          "unexpectedErrorRate": false,
+          "lockTimeoutRate": true
+        }
+      },
+      "soakShardsCompleted": 4,
+      "soakShardSummaries": [
+        {
+          "shard": 1,
+          "overall": {
+            "expectedRejections": 2548,
+            "mutationP95Ms": 15999.315,
+            "mutationP99Ms": 15999.993,
+            "readP95Ms": 15999.288,
+            "unexpectedErrorRate": 0.578333,
+            "unexpectedErrors": 4511
+          },
+          "errors": {
+            "TimeoutError": 4022,
+            "chip_already_used": 168,
+            "non_json_response": 489,
+            "version_conflict": 2380
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 2,
+          "overall": {
+            "expectedRejections": 2491,
+            "mutationP95Ms": 15999.318,
+            "mutationP99Ms": 15999.997,
+            "readP95Ms": 15999.312,
+            "unexpectedErrorRate": 0.587436,
+            "unexpectedErrors": 4582
+          },
+          "errors": {
+            "TimeoutError": 4055,
+            "chip_already_used": 163,
+            "non_json_response": 527,
+            "version_conflict": 2328
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 3,
+          "overall": {
+            "expectedRejections": 2539,
+            "mutationP95Ms": 15999.976,
+            "mutationP99Ms": 16000.674,
+            "readP95Ms": 15999.977,
+            "unexpectedErrorRate": 0.579103,
+            "unexpectedErrors": 4517
+          },
+          "errors": {
+            "TimeoutError": 4021,
+            "chip_already_used": 167,
+            "non_json_response": 496,
+            "version_conflict": 2372
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 4,
+          "overall": {
+            "expectedRejections": 2513,
+            "mutationP95Ms": 15999.556,
+            "mutationP99Ms": 16000.116,
+            "readP95Ms": 15999.586,
+            "unexpectedErrorRate": 0.584615,
+            "unexpectedErrors": 4560
+          },
+          "errors": {
+            "TimeoutError": 4050,
+            "chip_already_used": 169,
+            "non_json_response": 510,
+            "version_conflict": 2344
+          },
+          "requests": 7800
+        }
+      ],
+      "monitor": {
+        "scrapesAttempted": 15,
+        "scrapeErrors": 3,
+        "validScrapes": 12,
+        "complete": false,
+        "maxCpuPercentAcrossAdvancingCounters": 97.161,
+        "minimumAvailableMemoryBytes": 129826816,
+        "minimumFreeSwapBytes": 176230400,
+        "preRestartOomKillCounter": 0,
+        "hostBootTimeUtc": "2026-10-19T08:44:58Z",
+        "postgresStartedAt": "2026-10-19T08:45:12.366758Z",
+        "restartCause": "unverified"
+      },
+      "cleanup": {
+        "temporaryUsersRemoved": 1000,
+        "temporaryUsersRemaining": 0,
+        "temporaryGameweeksRemaining": 0,
+        "baselineRestored": true,
+        "cronRestored": true,
+        "cleanupErrors": []
+      },
+      "limitations": [
+        "Only four soak shards completed; cannot aggregate as the five-origin 65 RPS soak.",
+        "Cloudflare 520/521/525 responses and a host restart interrupted the run.",
+        "First-profile gate had 3903 unexpected errors out of 5000.",
+        "Monitor rejected incomplete metrics; final control report names FileNotFoundError for absent metrics.json. Raw artifacts and independently reconstructed measurements are preserved."
+      ]
+    },
+    {
+      "runId": 39226323258,
+      "scope": "rehearsal",
+      "sourceSha": "d286a5eac9a14f417c2f8e4821bb2b3ec34414c9",
+      "result": "preflight_refused_before_writes",
+      "reason": "Automatic/null pool: exact API reset contract not yet established",
+      "configurationChanged": false,
+      "temporaryUsersCreated": 0
+    },
+    {
+      "runId": 39226795624,
+      "scope": "rehearsal",
+      "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1",
+      "result": "automatic_pool_reset_refused",
+      "configurationChanged": false,
+      "temporaryUsersCreated": 0,
+      "baselineRestored": true,
+      "cronRestored": true,
+      "postgrestRestored": true,
+      "cleanupErrors": []
     }
   ],
   "ownerReadiness": {

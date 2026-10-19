@@ -102,7 +102,24 @@ the harness reset transfer ownership between profiles despite the canonical
 lineup retaining the acquired player. Commit `7729f9ba` restores that state
 from the lineup and adds a regression check. Because those rejected writes
 reduced successful work, the soak's faster latencies cannot establish capacity.
-The rerun preserves the traffic profile, thresholds and database configuration.
+The rerun preserved the traffic profile, thresholds and database configuration.
+
+Run 39222141596 also **failed**. Its 5,000-request gate had 3,903 unexpected
+errors (78.06%), including 3,893 timeouts; measured p95 reached the client's
+roughly 16-second timeout boundary. One shard could not prepare for the soak;
+four completed 31,200 requests, which cannot establish the five-origin 65 RPS
+soak. The collector rejected three failed scrapes, and the final verdict lacked
+its required metrics summary. Preserve these control failures alongside the raw
+measurements instead of substituting an incomplete aggregate.
+
+The host rebooted at approximately 08:44:58 UTC during that run. PostgreSQL's
+actual startup time is 08:45:12 UTC. Advancing CPU counters reached 97.161%;
+available memory fell to about 124 MiB, with substantial swap activity before
+the restart. Responses included Cloudflare 520, 521 and 525 errors. The restart's
+cause is unverified; a zero OOM counter before the gap does not prove an OOM or
+exclude a later one. No operator resize or restart was requested. Cleanup still
+removed all 1,000 users and their state, restored the saved fingerprints and
+schedules, and passed independent final counts.
 
 Raw exporter reanalysis handles duplicate cached CPU counters and measures the
 Data API's PostgREST pool instead of the unused PgBouncer admin pool. CPU peaked
