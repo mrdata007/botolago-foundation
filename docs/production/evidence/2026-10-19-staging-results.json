@@ -1197,5 +1197,126 @@
       "archivedEdgeTeams": 5000,
       "fixtureSeasonStatus": "completed"
     }
+  },
+  "ratingPublication": {
+    "planRun": 39229440723,
+    "rehearsalRun": 39229895200,
+    "applyRun": 39230031406,
+    "historyBefore": 272,
+    "historyAfter": 273,
+    "priorFingerprintsUnchanged": true,
+    "publications": 0
+  },
+  "fixtureGuard": {
+    "pr": 529,
+    "mergeSha": "5f8f1957e40bf9ece47d9f36e6bed1d21383bb16",
+    "testedHead": "6febe74eac766b071ba229059a2dd7fadcf4b692",
+    "ciRun": 39229353268,
+    "dbFiles": 185,
+    "dbAssertions": 6879,
+    "lockRaces": 4,
+    "deadlockDelta": 0,
+    "planRun": 39231087005,
+    "rehearsalRun": 39231203682,
+    "applyRun": 39231376873,
+    "hostedProof": {
+      "labels": [
+        "ordinary fixture correction succeeds before finalization",
+        "ordinary performance correction succeeds before finalization",
+        "the actual snapshot assertion accepts the baseline sealed document",
+        "score correction is refused while finalizing",
+        "source sequence cannot invalidate the seal",
+        "kickoff cannot change adaptive membership selection",
+        "fixture deletion is refused before any cascade",
+        "no-op fixture replay is accepted",
+        "fixture observation metadata is writable",
+        "performance correction cannot change a sealed input",
+        "an import cannot deactivate an active sealed row",
+        "an active row cannot be removed",
+        "new active performance is refused",
+        "performance observation metadata does not change the document",
+        "coverage cannot be downgraded",
+        "coverage cannot be removed",
+        "coverage heartbeat metadata is writable",
+        "all refused and permitted operations preserve the full document digest",
+        "the actual sealed snapshot still passes after all guarded and metadata writes",
+        "refused fixture correction rolls back",
+        "refused performance correction rolls back",
+        "refused coverage change rolls back",
+        "unassigned fixture refresh remains available",
+        "fixture correction is retryable after the finalizing window",
+        "performance correction is retryable after the finalizing window",
+        "control corrections really change the input document",
+        "the lock helper exposes no privileged API",
+        "existing observation RPC refuses a finalizing adaptive gameweek",
+        "the refused recorder inserted no new adaptive observation",
+        "the real recorder refusal preserves the complete adaptive input digest",
+        "the adaptive snapshot remains valid after the refused recorder call"
+      ],
+      "passed": true,
+      "assertions": 31
+    },
+    "postflight": {
+      "teams": 60005,
+      "users": 50008,
+      "gwsHash": "cfecb7c3c8350316a387ff8c4c7b8cf7",
+      "history": 274,
+      "teamsHash": "4d7558187cacf992be6ad4f55e535bc0",
+      "resultsHash": "864e4cca7f955b7b2cbb124649932161",
+      "guardTriggers": 3,
+      "testWorldAbsent": true,
+      "recipientRestored": true
+    },
+    "restoration": {
+      "tick": false,
+      "rivals": true,
+      "worker": false,
+      "pushMode": "off",
+      "emailMode": "off",
+      "leaseHeld": false,
+      "activeCron": 27
+    }
+  },
+  "runtimeRefresh": {
+    "run": 39230680918,
+    "sourceSha": "9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a",
+    "functions": 15,
+    "schedulerPresent": true,
+    "resendPresent": true,
+    "fromOverridePresent": false,
+    "appUrlOverridePresent": false,
+    "priorAttempt": {
+      "run": 39230292042,
+      "failedBeforeFirstDeployment": true,
+      "cause": "unverified"
+    }
+  },
+  "emailSmoke": {
+    "at": "2026-10-19T09:33:00Z",
+    "staging": true,
+    "requestId": 1,
+    "httpStatus": 200,
+    "sent": true,
+    "inboxReceiptConfirmedByOwner": true,
+    "recipientRestored": true,
+    "alertsEnabled": false,
+    "scope": "One explicitly labelled staging alert; reminder timing/preferences/deduplication are not yet established."
+  },
+  "frontendPreview": {
+    "vercelProjectsListed": ["botolago-preview", "botolago-foundation"],
+    "projectDetailReads": "404",
+    "deploymentList": "403",
+    "candidateUrls": [
+      {
+        "url": "https://botolago-preview.vercel.app",
+        "status": 402
+      },
+      {
+        "url": "https://botolago-foundation.vercel.app",
+        "status": 402
+      }
+    ],
+    "appDeploy": "Existing TanStack Start SSR cannot be deployed unchanged under the returned static frontend/router constraints; no app created.",
+    "deploymentPerformed": false
   }
 }

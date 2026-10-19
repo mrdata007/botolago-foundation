@@ -24,8 +24,8 @@ runbook, a seeded total or a green planning action does not prove acceptance.
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                  |
 | Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                   |
-| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows at the original catch-up; a new rating-publication migration on main requires another plan/rehearsal                  |
-| Staging Edge runtime | All 15 repository functions deployed by run 39173000678, source `ea5044d4e5ed5099f93ce9d4f3d4b11b727d2bfe`; scheduler credential present; email provider credential absent                                    |
+| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 274 history rows after the rating-publication and fixture-guard rehearsals/applications; final plan pending                            |
+| Staging Edge runtime | All 15 repository functions refreshed by run 39230680918, source `9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a`; scheduler and Resend credentials present                                                         |
 | Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                            |
 | Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source |
 | Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                      |
@@ -56,6 +56,31 @@ The first runtime attempts failed during the private Vault read. The fix uses th
 owner connection for that SELECT: the Management API's read-only role cannot
 decrypt Vault. No secret value was emitted into logs or committed files.
 
+### Additional main catch-up and input guard
+
+Main gained rating-publication migration `20261018215311`. Plan 39229440723,
+rollback rehearsal 39229895200 and apply 39230031406 passed. The full team,
+result and gameweek fingerprints remained unchanged; no rating publication was
+created. PR 529 then merged as `5f8f1957e40bf9ece47d9f36e6bed1d21383bb16` after
+combined-head CI passed 185 database files / 6,879 assertions and four lock races
+with zero new deadlocks, plus the application job.
+
+Its guard migration `20261019073221` passed plan 39231087005, rollback rehearsal
+39231203682 and apply 39231376873. A further real-staging rollback test passed
+31 assertions: refused corrections preserve the complete input digest and sealed
+snapshot, metadata remains writable, and imports retry after finalization. All
+three triggers are enabled. Existing fingerprints were unchanged and the test
+world was absent after rollback. Migration history is now 274 rows. All 27 cron
+flags and Rivals were restored; tick/worker/email/push remain OFF and no lease is
+held. No production migration was run by this operator.
+
+Runtime refresh 39230292042 stopped before the first function deployed; its
+cause is unverified. The subsequent instrumented run 39230680918 refreshed all
+15 functions successfully and verified the Resend key by name only. A clearly
+labelled staging alert returned HTTP 200 / sent and the owner confirmed inbox
+receipt. Its temporary recipient was removed and alerts remain OFF. This proves
+the staging sender/key delivery path, not reminder windows or worker alarms.
+
 ### Executable parity, beyond migration names
 
 Compared 928 production `api` / `app_private` functions against staging: none
@@ -80,10 +105,10 @@ six comment/format differences, and two substantive historical differences.
 | 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599) | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
 | Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                 | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
 | Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                               | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
-| Silent-worker alarms    | BLOCKED: owner supplied the private alert recipient; provider key/sender configuration still unconfirmed                                    | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
-| Two-account reminders   | BLOCKED by missing `RESEND_API_KEY`; sending remains OFF                                                                                    | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
+| Silent-worker alarms    | One labelled staging alert accepted (HTTP 200) and receipt confirmed by owner; 30/90-minute failure/recovery still NOT RUN                  | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
+| Two-account reminders   | Key/sender delivery smoke PASS; two-account timing/preferences/deduplication still NOT RUN; sending restored OFF                            | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
 | Morocco time            | Helper checks PASS                                                                                                                          | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
-| Real iPhone / push      | NOT RUN; owner confirmed phone availability; a reachable staging frontend is still needed                                                   | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
+| Real iPhone / push      | NOT RUN; owner confirmed phone availability; candidate Vercel previews return HTTP 402                                                      | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
 | Arabic skim             | Owner review outstanding                                                                                                                    | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
 | Production health       | Historical watchdog failed `fantasy_fixture_coverage`                                                                                       | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
 
