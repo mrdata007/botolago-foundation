@@ -1,0 +1,62 @@
+[
+  {
+    "offscreen": [],
+    "motion": {
+      "reduced": "none",
+      "animated": "spin"
+    },
+    "loops": 3,
+    "phase": "pending",
+    "lang": "fr",
+    "width": 390,
+    "url": "http://127.0.0.1:4327/fantasy/points?gw=14",
+    "errors": [],
+    "text": "Retour\n\nFANTASY\n\nAtlas XI\nJOURNÉE\n14\nPOINTS\n60\npts\nEN COURS\nMOYENNE\n46\nMEILLEUR\n92\n\nPoints recalculés à partir des notes des matchs.\n\nCertaines notes manquent encore. Les points affichés correspondent aux notes disponibles.\n\nNotes mises à jour : 18 o",
+    "dir": "ltr"
+  },
+  {
+    "offscreen": [],
+    "motion": {
+      "reduced": "none",
+      "animated": "spin"
+    },
+    "loops": 3,
+    "phase": "pending",
+    "lang": "fr",
+    "width": 1280,
+    "url": "http://127.0.0.1:4327/fantasy/points?gw=14",
+    "errors": [],
+    "text": "Retour\n\nFANTASY\n\nAtlas XI\nJOURNÉE\n14\nPOINTS\n60\npts\nEN COURS\nMOYENNE\n46\nMEILLEUR\n92\n\nPoints recalculés à partir des notes des matchs.\n\nCertaines notes manquent encore. Les points affichés correspondent aux notes disponibles.\n\nNotes mises à jour : 18 o",
+    "dir": "ltr"
+  },
+  {
+    "offscreen": [],
+    "motion": {
+      "reduced": "none",
+      "animated": "spin"
+    },
+    "loops": 3,
+    "phase": "pending",
+    "lang": "ar",
+    "width": 390,
+    "url": "http://127.0.0.1:4327/fantasy/points?gw=14",
+    "errors": [],
+    "text": "رجوع\n\nفانتازي\n\nAtlas XI\nالجولة\n14\nالنقاط\n60\nن\nجارية\nالمعدل\n46\nالأعلى\n92\n\nأُعيد احتساب النقاط انطلاقًا من تقييمات المباريات.\n\nبعض التقييمات لا تزال غير متوفرة. النقاط الظاهرة محسوبة من التقييمات المتوفرة.\n\nآخر تحديث للتقييمات: 18 أكتوبر، 21:56\n\nالملعب",
+    "dir": "rtl"
+  },
+  {
+    "offscreen": [],
+    "motion": {
+      "reduced": "none",
+      "animated": "spin"
+    },
+    "loops": 3,
+    "phase": "pending",
+    "lang": "ar",
+    "width": 1280,
+    "url": "http://127.0.0.1:4327/fantasy/points?gw=14",
+    "errors": [],
+    "text": "رجوع\n\nفانتازي\n\nAtlas XI\nالجولة\n14\nالنقاط\n60\nن\nجارية\nالمعدل\n46\nالأعلى\n92\n\nأُعيد احتساب النقاط انطلاقًا من تقييمات المباريات.\n\nبعض التقييمات لا تزال غير متوفرة. النقاط الظاهرة محسوبة من التقييمات المتوفرة.\n\nآخر تحديث للتقييمات: 18 أكتوبر، 21:56\n\nالملعب",
+    "dir": "rtl"
+  }
+]

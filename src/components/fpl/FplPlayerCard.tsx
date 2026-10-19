@@ -77,6 +77,7 @@ export function FplPlayerCard({
   player,
   club,
   sub,
+  pointsPending,
   captain,
   vice,
   highlighted,
@@ -101,6 +102,7 @@ export function FplPlayerCard({
    * the two. Every other caller still passes a plain string.
    */
   sub?: ReactNode;
+  pointsPending?: boolean;
   captain?: boolean;
   vice?: boolean;
   highlighted?: boolean;
@@ -155,7 +157,7 @@ export function FplPlayerCard({
       sub={sub ?? " "}
       state={highlighted ? "selected" : doubtful ? "doubtful" : "default"}
       onClick={onClick}
-      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}`}
+      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}${pointsPending ? `, ${t("fantasy.points.awaiting_rating")}` : ""}`}
       className={cn(dimmed && "opacity-45", (arrived || replacing) && "swap-in", className)}
       visual={
         // The marker rides inside the visual so it is placed against the
