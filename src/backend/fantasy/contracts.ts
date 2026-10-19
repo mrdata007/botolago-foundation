@@ -312,6 +312,7 @@ export const fantasyPointsSchema = z.object({
     z.object({
       fixtureScoring: z.array(fixtureScoringSchema).optional(),
       ratingPending: z.boolean().optional(),
+      notRated: z.boolean().optional(),
       fantasyPlayerId: postgresUuidSchema,
       /**
        * Who the player is, read by the server whether or not he is still in the
@@ -563,6 +564,7 @@ export const fantasyRulesSchema = z.object({
       fromGameweek: z.number().int().positive(),
       noRatingPoints: z.number().int().nullable(),
       waitForRating: z.boolean().optional(),
+      notRatedPolicyVersion: z.literal(1).optional(),
     })
     .optional(),
   seasonId: postgresUuidSchema,

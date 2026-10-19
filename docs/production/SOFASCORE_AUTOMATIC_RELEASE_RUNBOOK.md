@@ -917,3 +917,15 @@ Both are outside the older SofaScore automatic release bundle. Neither enables
 sending. Follow [the email release procedure](../backend/FANTASY_EMAIL_AUTOMATION_RELEASE.md)
 for guarded rehearsal, deployment and the scoped activation of the three Fantasy
 email moments. Historical provisional ratings never qualify as finalized points.
+
+## Owner-approved short appearances (separate release)
+
+`20261019172832_fantasy_not_rated_settlement.sql` implements the approved
+Not rated policy, with an immutable two-read evidence ledger and a disabled
+activation switch. It leaves every provider rating unchanged. A confirmed
+appearance of 1–9 minutes may contribute zero points only after two successful
+checks at least 24 hours apart and a finished match at least 24 hours old.
+Unknown participation, conflicting evidence and longer unrated appearances
+remain pending. Deploy and verify the scorer and FR/AR status interface before
+the separate guarded activation. This migration is outside the older automatic
+release bundle and does not authorize legacy identity guesses or compensation.

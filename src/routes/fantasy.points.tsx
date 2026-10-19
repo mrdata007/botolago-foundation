@@ -291,6 +291,9 @@ function PointsBody() {
       points={pointsFor(id)}
       pending={breakdown.get(id)?.ratingPending === true}
       awaitingLabel={t("fantasy.points.awaiting_rating")}
+      notRated={breakdown.get(id)?.notRated === true}
+      notRatedLabel={t("fantasy.points.not_rated_explanation")}
+      notRatedShortLabel={t("fantasy.points.not_rated_short")}
       none={none}
     />
   );

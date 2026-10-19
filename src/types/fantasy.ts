@@ -181,6 +181,8 @@ export interface PlayerPointsBreakdown {
   minutesPlayed: number;
   /** The server distinguishes missing ratings from a confirmed zero. */
   ratingPending?: boolean;
+  /** At least one appearance settled under the audited short-appearance rule. */
+  notRated?: boolean;
   pointsKnown?: boolean;
   isCaptain?: boolean;
   isViceCaptain?: boolean;

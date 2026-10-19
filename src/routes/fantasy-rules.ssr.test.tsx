@@ -191,6 +191,25 @@ describe("the rules page under the rating rule (docs/backend/FANTASY_RATING_POIN
     expect(ar["fantasy.rules.rating_rule_pending"]).not.toContain("5 نقاط");
   });
 
+  test("explains Not rated only when the backend exposes the approved policy", async () => {
+    const rules = await fantasyService.getRules();
+    const html = await render({
+      ...rules,
+      ratingScoring: {
+        fromGameweek: 1,
+        noRatingPoints: null,
+        waitForRating: true,
+        notRatedPolicyVersion: 1,
+      },
+    });
+    const page = text(html);
+    expect(page).toContain("moins de 10 minutes");
+    expect(page).toContain("au moins 24 h et deux vérifications");
+    expect(page).toContain("elle rapporte 0 point, sans note inventée");
+    expect(page).not.toContain("marque 5 points");
+    expect(ar["fantasy.rules.rating_rule_not_rated"]).toContain("دون اختلاق تقييم");
+  });
+
   test("states the rating rule from its first gameweek and keeps the earlier scale below it", async () => {
     const rules = await fantasyService.getRules();
     const html = await render({ ...rules, ratingScoring: { fromGameweek: 5, noRatingPoints: 5 } });

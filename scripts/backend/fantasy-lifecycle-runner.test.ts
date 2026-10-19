@@ -874,6 +874,83 @@ describe("rating gameweek (docs/backend/FANTASY_RATING_POINTS.md)", () => {
   // everyone else 6.0 -> 6. Starters 8+5+7+6+6+9+6+6+6+6+6 = 71, bench 24, hit 4.
   const ratings = { 0: 7.5, 2: 5, 3: 7.49, 7: 8.5 };
 
+  function settledShortAppearance() {
+    const doc = rating({ ...ratings, 7: null });
+    doc.apiNativeRatings = true;
+    doc.fixtures = [
+      {
+        fixtureId,
+        apiRatingSourceId: 41,
+        finalizedAt: "2026-10-17T20:00:00Z",
+        adaptiveReady: true,
+      },
+    ];
+    Object.assign(doc.playerFixtures[7]!, {
+      apiAppeared: true,
+      apiNotRated: true,
+      participationKnown: true,
+      notRatedEvidence: {
+        policyVersion: 1,
+        minutes: 7,
+        sourceId: 41,
+        firstCheckId: 10,
+        secondCheckId: 20,
+        firstCheckedAt: "2026-10-17T20:05:00Z",
+        secondCheckedAt: "2026-10-18T20:05:00Z",
+        settledAt: "2026-10-18T20:06:00Z",
+      },
+    });
+    doc.playerFixtures[7]!.stats.minutes = 7;
+    return scoringSnapshotSchema.parse(doc);
+  }
+
+  it("settles a proven short appearance without fabricating a rating or treating the captain as absent", () => {
+    const doc = settledShortAppearance();
+    const result = calculateSnapshotResults(doc);
+    expect(doc.playerFixtures[7]!.rating).toBeNull();
+    expect(result.playerResults[7]!.events).toEqual([]);
+    expect(result.teamResults[0]!.effectiveCaptainId).toBe(id(107));
+    expect(result.teamResults[0]!.substitutions).toEqual([]);
+    expect(result.teamResults[0]!.provisionalScore).toBe(58);
+  });
+
+  it("requires two checks, 24h, matching source, known participation and fewer than ten minutes", () => {
+    const mutate = [
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.notRatedEvidence!.secondCheckId = 10;
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.notRatedEvidence!.secondCheckedAt = "2026-10-18T19:59:59Z";
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.notRatedEvidence!.sourceId = 42;
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.participationKnown = false;
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.stats.minutes = 10;
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.apiNativeRatings = false;
+      },
+      (d: ReturnType<typeof settledShortAppearance>) => {
+        d.playerFixtures[7]!.notRatedEvidence = null;
+      },
+    ];
+    for (const change of mutate) {
+      const doc = settledShortAppearance();
+      change(doc);
+      expect(() => calculateSnapshotResults(doc)).toThrow("fantasy_ratings_pending");
+    }
+  });
+
+  it("uses a genuine later rating even when the old Not rated flag remains in a test payload", () => {
+    const doc = settledShortAppearance();
+    doc.playerFixtures[7]!.rating = 8.5;
+    expect(calculateSnapshotResults(doc).playerResults[7]!.events[0]!.points).toBe(9);
+  });
+
   it("gives each appearing player one event from his actual API rating, rounded half up", () => {
     const result = calculateSnapshotResults(scoringSnapshotSchema.parse(rating(ratings)));
     const eventsOf = (i: number) =>
