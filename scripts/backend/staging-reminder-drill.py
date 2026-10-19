@@ -233,7 +233,7 @@ def main():
     E.wait_idle(target,30)
     before=E.baseline(target)
     report('reminder_source',source=os.environ.get('GITHUB_SHA','unknown'),staging=True,extraSpending=0)
-    paused=fixture_started=secrets_added=False
+    paused=fixture_started=secrets_added=drill_passed=False
     # Owner-only durable recovery survives runner cancellation. It contains
     # settings and QA ids, never credentials; no public artifact is uploaded.
     state={'settings':settings,'ids':ids,'before':before,'origin':origin}
@@ -339,13 +339,18 @@ def main():
                 if evidence(target,ids)!=snapshot:
                     raise RuntimeError('staging_reminder_duplicate_delivery')
                 report('reminder_verdict',passed=True,realClockWindows=True,inboxReceipt='owner confirmation required',uiChecks='owner device pending')
+                drill_passed=True
                 break
             if time.monotonic()>until:
                 raise RuntimeError('staging_reminder_window_or_delivery_timeout')
             time.sleep(45)
     finally:
         if paused:
-            restore(target,settings,ids,before,fixture_started,secrets_added)
+            # Keep a successful world visible for the owner's email/UI comparison.
+            # Failed/partial worlds are retired. Sending and all settings still
+            # return to baseline in either case; retirement follows owner review.
+            restore(target,settings,ids,before,fixture_started and not drill_passed,secrets_added)
+            report('reminder_fixture_handoff',retainedForOwnerUi=drill_passed)
 
 
 if __name__=='__main__':

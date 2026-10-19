@@ -85,6 +85,7 @@ async function main() {
   });
   let token: string | null = null;
   let mayRelease = false;
+  let releaseUnconfirmed = false;
   try {
     const lease = await acquireWorkerLease(raw.rpc, "manual:staging-response-loss", 420);
     if (lease.kind !== "acquired") throw new Error("staging_loss_lease_unavailable");
@@ -164,8 +165,9 @@ async function main() {
     throw error;
   } finally {
     if (token && mayRelease && !(await releaseWorkerLease(raw.rpc, token)))
-      throw new Error("staging_loss_release_unconfirmed");
+      releaseUnconfirmed = true;
   }
+  if (releaseUnconfirmed) throw new Error("staging_loss_release_unconfirmed");
 }
 
 if (import.meta.main) {

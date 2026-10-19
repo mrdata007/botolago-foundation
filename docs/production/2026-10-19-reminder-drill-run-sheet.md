@@ -71,12 +71,20 @@ separate path and is not established by this test.
    the second match's real eligible event and require zero notification/email
    for either owner. Repeat ticks to prove the earlier events did not duplicate.
    This proves the endpoint, not a human tapping the email's link.
-8. Restore preferences, languages and all email settings; retire only the new
-   season/catalog/subscriptions; remove the temporary runtime overrides; verify
+8. Restore preferences, languages and all email settings; retire a failed or
+   partial world, but retain a successful world for the owner's email/UI comparison.
+   Remove the temporary runtime overrides; verify
    old fingerprints and exact restored flags. Actual delivery and score evidence
    remains. Restore cron/Rivals and remove the private recovery row only after
    successful verification. The empty owner-only recovery table remains for a
    future interrupted-run recovery; it is not a production migration.
+
+After the owner confirms received mail against the actual f970 points, deadline
+and match screens, take a new exclusive staging writer window and retire only
+that season/catalog/subscriptions with the script's scoped `retire` operation.
+Save and restore that window's current settings. Do not retire a successful
+fixture before the owner can inspect it, or mistake another season's 96 points
+for the actual recap. The separate f960 phone fixture is prepared afterward.
 
 The hosted run takes about 110 minutes, mainly real waiting. It uses a standard
 GitHub runner in this public repository. The 150-minute job limit leaves cleanup
