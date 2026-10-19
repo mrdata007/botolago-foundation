@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: 2559196a34d439135e64bd564ea42c85b19662dd2c780c7f9e20dd6a9355dd37
+-- Production V2 only. Canonical migration SHA256: f7f0e94fea4692e0145e68280bc3a9b756a5ee6c68ee85d9c08c50623500b85c
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -49,7 +49,11 @@ do $$ begin
  ('api.public_fantasy_gameweek_recap(text)','d27947346f61a3d1460b98921504841b'),
  ('api.get_round_recap(uuid,uuid)','a9d0e8d07521cb4cbd23283acbfe58b0'),
  ('api.get_my_rivals(text)','a308a0b615382f79c3496eff14cb62a6')
- ) expected(signature,digest) join pg_proc p on p.oid=expected.signature::regprocedure where md5(p.prosrc)<>expected.digest) then raise exception 'rating_publication_unexpected_reader_body'; end if;
+ ) expected(signature,digest) join pg_proc p on p.oid=expected.signature::regprocedure
+ -- The original season-stats migration contains three explanatory comments
+ -- omitted by its production promoter; both exact bodies have identical SQL.
+ where md5(p.prosrc)<>expected.digest and not(expected.signature='api.fantasy_player_season_stats(uuid,uuid)'
+ and md5(p.prosrc)='92abdd253aa8b1f51ce28b77bde13c5d')) then raise exception 'rating_publication_unexpected_reader_body'; end if;
 end $$;
 
 create table app_private.fantasy_rating_publications (
@@ -268,13 +272,14 @@ begin
  source:=replace(source,'g.status in (''finalized'', ''corrected'') as done,',
  'g.status in (''finalized'', ''corrected'') as done,
  exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) as revision,
+ (select proposal from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) as revision_doc,
  exists(select 1 from app_private.fantasy_api_rating_seasons x where x.season_id=g.fantasy_season_id and g.sequence_number>=x.from_gameweek) as native_rating,');
  source:=replace(source,'g.name, g.rating_rule, g.finalized_at as gw_at',
  'g.name, g.rating_rule, g.revision, g.native_rating, coalesce((select published_at from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id),g.finalized_at) as gw_at');
  source:=replace(source,'(g.done or pts.final_points is not null) as published',
- '(case when g.revision then coalesce(pts.final_points,pts.provisional_points) is not null else g.done or pts.final_points is not null end) as published');
+ '(case when g.revision then pts.provisional_points is not null or not app_private.fantasy_player_rating_pending(g.revision_doc,p.id) else g.done or pts.final_points is not null end) as published');
  source:=replace(source,'when pts.final_points is not null then pts.final_points when g.done then 0',
- 'when pts.final_points is not null then pts.final_points when g.revision then pts.provisional_points when g.done then 0');
+ 'when pts.final_points is not null then pts.final_points when g.revision then case when pts.provisional_points is not null then pts.provisional_points when not app_private.fantasy_player_rating_pending(g.revision_doc,p.id) then 0 end when g.done then 0');
  source:=replace(source,'when c.rating_rule and coalesce(c.did_play, false)',
  'when c.rating_rule and not c.revision and not c.native_rating and coalesce(c.did_play, false)');
  elsif sig='api.get_my_deadline_briefing(uuid)' then
@@ -527,7 +532,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'2559196a34d439135e64bd564ea42c85b19662dd2c780c7f9e20dd6a9355dd37' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'f7f0e94fea4692e0145e68280bc3a9b756a5ee6c68ee85d9c08c50623500b85c' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin

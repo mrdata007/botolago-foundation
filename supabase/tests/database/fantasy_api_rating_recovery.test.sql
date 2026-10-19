@@ -233,6 +233,8 @@ select extensions.is((select (f->>'points')::int from app_private.briefing_form(
 jsonb_array_elements(b.form) f where f->>'gameweekSequence'='5'),8,'deadline briefing form shows the published rating');
 select extensions.is((select f->>'state' from app_private.briefing_form(pg_temp.rid(5),6,array[pg_temp.rid(2023)]) b,
 jsonb_array_elements(b.form) f where f->>'gameweekSequence'='5'),'pending','the briefing does not turn a missing historical rating into zero');
+select extensions.is((select (f->>'points')::int from app_private.briefing_form(pg_temp.rid(5),6,array[pg_temp.rid(2001)]) b,
+jsonb_array_elements(b.form) f where f->>'gameweekSequence'='5'),0,'a player with no fixture retains a confirmed zero in the briefing');
 select extensions.is((select md5(jsonb_agg(to_jsonb(p) order by fantasy_player_id)::text)
 from app.fantasy_player_gameweek_points p where gameweek_id=pg_temp.rid(25)),current_setting('test.original_player_points'),
 'all secondary readers leave the sealed player rows untouched');
