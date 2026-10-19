@@ -67,7 +67,7 @@ export const Route = createFileRoute("/fantasy/fixtures")({
  */
 function FdrPage() {
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav width="wide">
       <FdrBody />
     </FantasyFrame>
   );

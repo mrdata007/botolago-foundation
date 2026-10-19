@@ -1,0 +1,1656 @@
+{
+  "stats": {
+    "startTime": "2026-10-18T22:46:26.639Z",
+    "duration": 105500.74100000001,
+    "expected": 36,
+    "skipped": 0,
+    "unexpected": 4,
+    "flaky": 0
+  },
+  "observations": [
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/matches",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 591.484375,
+        "right": 390,
+        "bottom": 656.484375
+      },
+      "column": {
+        "x": 0,
+        "y": 289,
+        "width": 390,
+        "height": 367.484375,
+        "right": 390,
+        "bottom": 656.484375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 230,
+          "x": 0,
+          "y": 178,
+          "width": 390,
+          "height": 52,
+          "right": 390
+        },
+        {
+          "tag": "DIV",
+          "bottom": 289,
+          "x": 0,
+          "y": 230,
+          "width": 390,
+          "height": 59,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "standings",
+      "path": "/matches/standings",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/matches/standings",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 863.21875,
+        "right": 390,
+        "bottom": 928.21875
+      },
+      "column": {
+        "x": 0,
+        "y": 230,
+        "width": 390,
+        "height": 698.21875,
+        "right": 390,
+        "bottom": 928.21875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 230,
+          "x": 0,
+          "y": 178,
+          "width": 390,
+          "height": 52,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "clubs",
+      "path": "/clubs",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/clubs",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 855.140625,
+        "right": 390,
+        "bottom": 920.140625
+      },
+      "column": {
+        "x": 0,
+        "y": 162.140625,
+        "width": 390,
+        "height": 758,
+        "right": 390,
+        "bottom": 920.140625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "news",
+      "path": "/news",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/news",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 1179.921875,
+        "right": 390,
+        "bottom": 1244.921875
+      },
+      "column": {
+        "x": 0,
+        "y": 194,
+        "width": 390,
+        "height": 1050.921875,
+        "right": 390,
+        "bottom": 1244.921875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/players",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2586.671875,
+        "right": 390,
+        "bottom": 2586.671875
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2586.671875,
+        "right": 390,
+        "bottom": 2586.671875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "rankings",
+      "path": "/fantasy/rankings",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/rankings",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2310.484375,
+        "right": 390,
+        "bottom": 2310.484375
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2310.484375,
+        "right": 390,
+        "bottom": 2310.484375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "difficulty",
+      "path": "/fantasy/fixtures",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/fixtures",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 795,
+        "right": 390,
+        "bottom": 795
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 795,
+        "right": 390,
+        "bottom": 795
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "TH",
+          "bottom": 163,
+          "x": 0,
+          "y": 77,
+          "width": 171.5625,
+          "height": 86,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 216.5,
+          "x": 0,
+          "y": 163.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 269.5,
+          "x": 0,
+          "y": 216.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 322.5,
+          "x": 0,
+          "y": 269.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 375.5,
+          "x": 0,
+          "y": 322.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 428.5,
+          "x": 0,
+          "y": 375.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 481.5,
+          "x": 0,
+          "y": 428.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 534.5,
+          "x": 0,
+          "y": 481.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 171.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 587,
+          "x": 0,
+          "y": 534.5,
+          "width": 171.5625,
+          "height": 52.5,
+          "right": 171.5625
+        }
+      ]
+    },
+    {
+      "screen": "curva",
+      "path": "/curva?mc=rated",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/curva",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 4245.84375,
+        "right": 390,
+        "bottom": 4310.84375
+      },
+      "column": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 4245.84375,
+        "right": 390,
+        "bottom": 4310.84375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "curva-card",
+      "path": "/curva/carte?mc=rated",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/curva/carte",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 4497.625,
+        "right": 390,
+        "bottom": 4497.625
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 4497.625,
+        "right": 390,
+        "bottom": 4497.625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "landing",
+      "path": "/jouer",
+      "language": "fr",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/jouer",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 6030.640625,
+        "right": 390,
+        "bottom": 6030.640625
+      },
+      "column": {
+        "x": 0,
+        "y": 900,
+        "width": 390,
+        "height": 73,
+        "right": 390,
+        "bottom": 973
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 0,
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 0,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 551.484375,
+        "right": 1440,
+        "bottom": 616.484375
+      },
+      "column": {
+        "x": 384,
+        "y": 289,
+        "width": 672,
+        "height": 327.484375,
+        "right": 1056,
+        "bottom": 616.484375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 230,
+          "x": 0,
+          "y": 178,
+          "width": 1440,
+          "height": 52,
+          "right": 1440
+        },
+        {
+          "tag": "DIV",
+          "bottom": 289,
+          "x": 0,
+          "y": 230,
+          "width": 1440,
+          "height": 59,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "standings",
+      "path": "/matches/standings",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches/standings",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 763.21875,
+        "right": 1440,
+        "bottom": 828.21875
+      },
+      "column": {
+        "x": 384,
+        "y": 230,
+        "width": 672,
+        "height": 598.21875,
+        "right": 1056,
+        "bottom": 828.21875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 230,
+          "x": 0,
+          "y": 178,
+          "width": 1440,
+          "height": 52,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "clubs",
+      "path": "/clubs",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/clubs",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 645.140625,
+        "right": 1440,
+        "bottom": 710.140625
+      },
+      "column": {
+        "x": 384,
+        "y": 162.140625,
+        "width": 672,
+        "height": 548,
+        "right": 1056,
+        "bottom": 710.140625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "news",
+      "path": "/news",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/news",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 1320,
+        "right": 1440,
+        "bottom": 1385
+      },
+      "column": {
+        "x": 384,
+        "y": 194,
+        "width": 672,
+        "height": 1191,
+        "right": 1056,
+        "bottom": 1385
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/players",
+      "direction": "ltr",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2498.53125,
+        "right": 1056,
+        "bottom": 2579.53125
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2498.53125,
+        "right": 1056,
+        "bottom": 2579.53125
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "rankings",
+      "path": "/fantasy/rankings",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/rankings",
+      "direction": "ltr",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2072.984375,
+        "right": 1056,
+        "bottom": 2153.984375
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2072.984375,
+        "right": 1056,
+        "bottom": 2153.984375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "difficulty",
+      "path": "/fantasy/fixtures",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/fixtures",
+      "direction": "ltr",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 788,
+        "right": 1056,
+        "bottom": 869
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 788,
+        "right": 1056,
+        "bottom": 869
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "TH",
+          "bottom": 244,
+          "x": 384,
+          "y": 158,
+          "width": 171.5625,
+          "height": 86,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 297.5,
+          "x": 384,
+          "y": 244.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 350.5,
+          "x": 384,
+          "y": 297.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 403.5,
+          "x": 384,
+          "y": 350.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 456.5,
+          "x": 384,
+          "y": 403.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 509.5,
+          "x": 384,
+          "y": 456.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 562.5,
+          "x": 384,
+          "y": 509.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 615.5,
+          "x": 384,
+          "y": 562.5,
+          "width": 171.5625,
+          "height": 53,
+          "right": 555.5625
+        },
+        {
+          "tag": "TH",
+          "bottom": 668,
+          "x": 384,
+          "y": 615.5,
+          "width": 171.5625,
+          "height": 52.5,
+          "right": 555.5625
+        }
+      ]
+    },
+    {
+      "screen": "curva",
+      "path": "/curva?mc=rated",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/curva",
+      "direction": "ltr",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4028.40625,
+        "right": 1056,
+        "bottom": 4109.40625
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4028.40625,
+        "right": 1056,
+        "bottom": 4109.40625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 824.109375,
+          "x": 408,
+          "y": 146,
+          "width": 352,
+          "height": 678.109375,
+          "right": 760
+        }
+      ]
+    },
+    {
+      "screen": "curva-card",
+      "path": "/curva/carte?mc=rated",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/curva/carte",
+      "direction": "ltr",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4260.890625,
+        "right": 1056,
+        "bottom": 4341.890625
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4260.890625,
+        "right": 1056,
+        "bottom": 4341.890625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 747.96875,
+          "x": 408,
+          "y": 150,
+          "width": 352,
+          "height": 597.96875,
+          "right": 760
+        }
+      ]
+    },
+    {
+      "screen": "landing",
+      "path": "/jouer",
+      "language": "fr",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/jouer",
+      "direction": "ltr",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 3873.875,
+        "right": 1440,
+        "bottom": 3873.875
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 0,
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 0,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/matches",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 656.34375,
+        "right": 390,
+        "bottom": 721.34375
+      },
+      "column": {
+        "x": 0,
+        "y": 311.296875,
+        "width": 390,
+        "height": 410.046875,
+        "right": 390,
+        "bottom": 721.34375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 252.296875,
+          "x": 0,
+          "y": 200.296875,
+          "width": 390,
+          "height": 52,
+          "right": 390
+        },
+        {
+          "tag": "DIV",
+          "bottom": 311.296875,
+          "x": 0,
+          "y": 252.296875,
+          "width": 390,
+          "height": 59,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "standings",
+      "path": "/matches/standings",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/matches/standings",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 905.75,
+        "right": 390,
+        "bottom": 970.75
+      },
+      "column": {
+        "x": 0,
+        "y": 252.296875,
+        "width": 390,
+        "height": 718.453125,
+        "right": 390,
+        "bottom": 970.75
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 252.296875,
+          "x": 0,
+          "y": 200.296875,
+          "width": 390,
+          "height": 52,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "clubs",
+      "path": "/clubs",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/clubs",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 881.984375,
+        "right": 390,
+        "bottom": 946.984375
+      },
+      "column": {
+        "x": 0,
+        "y": 188.984375,
+        "width": 390,
+        "height": 758,
+        "right": 390,
+        "bottom": 946.984375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "news",
+      "path": "/news",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/news",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 1280.921875,
+        "right": 390,
+        "bottom": 1345.921875
+      },
+      "column": {
+        "x": 0,
+        "y": 216.296875,
+        "width": 390,
+        "height": 1129.625,
+        "right": 390,
+        "bottom": 1345.921875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/players",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2997.890625,
+        "right": 390,
+        "bottom": 2997.890625
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2997.890625,
+        "right": 390,
+        "bottom": 2997.890625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "rankings",
+      "path": "/fantasy/rankings",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/rankings",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2623.09375,
+        "right": 390,
+        "bottom": 2623.09375
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 2623.09375,
+        "right": 390,
+        "bottom": 2623.09375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "difficulty",
+      "path": "/fantasy/fixtures",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/fantasy/fixtures",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 822.625,
+        "right": 390,
+        "bottom": 822.625
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 822.625,
+        "right": 390,
+        "bottom": 822.625
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "TH",
+          "bottom": 190.625,
+          "x": 242,
+          "y": 93.4375,
+          "width": 148,
+          "height": 97.1875,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 244.125,
+          "x": 242,
+          "y": 191.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 297.125,
+          "x": 242,
+          "y": 244.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 350.125,
+          "x": 242,
+          "y": 297.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 403.125,
+          "x": 242,
+          "y": 350.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 456.125,
+          "x": 242,
+          "y": 403.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 509.125,
+          "x": 242,
+          "y": 456.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 562.125,
+          "x": 242,
+          "y": 509.125,
+          "width": 148,
+          "height": 53,
+          "right": 390
+        },
+        {
+          "tag": "TH",
+          "bottom": 614.625,
+          "x": 242,
+          "y": 562.125,
+          "width": 148,
+          "height": 52.5,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "curva",
+      "path": "/curva?mc=rated",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/curva",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 4306.546875,
+        "right": 390,
+        "bottom": 4371.546875
+      },
+      "column": {
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 4306.546875,
+        "right": 390,
+        "bottom": 4371.546875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "curva-card",
+      "path": "/curva/carte?mc=rated",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/curva/carte",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 4629.75,
+        "right": 390,
+        "bottom": 4629.75
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 4629.75,
+        "right": 390,
+        "bottom": 4629.75
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "landing",
+      "path": "/jouer",
+      "language": "ar",
+      "theme": "light",
+      "width": 390,
+      "actualPath": "/jouer",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 6631.890625,
+        "right": 390,
+        "bottom": 6631.890625
+      },
+      "column": {
+        "x": 0,
+        "y": 900,
+        "width": 390,
+        "height": 73,
+        "right": 390,
+        "bottom": 973
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 0,
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 0,
+          "right": 390
+        }
+      ]
+    },
+    {
+      "screen": "calendar",
+      "path": "/matches",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 616.34375,
+        "right": 1440,
+        "bottom": 681.34375
+      },
+      "column": {
+        "x": 384,
+        "y": 311.296875,
+        "width": 672,
+        "height": 370.046875,
+        "right": 1056,
+        "bottom": 681.34375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 252.296875,
+          "x": 0,
+          "y": 200.296875,
+          "width": 1440,
+          "height": 52,
+          "right": 1440
+        },
+        {
+          "tag": "DIV",
+          "bottom": 311.296875,
+          "x": 0,
+          "y": 252.296875,
+          "width": 1440,
+          "height": 59,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "standings",
+      "path": "/matches/standings",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/matches/standings",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 805.75,
+        "right": 1440,
+        "bottom": 870.75
+      },
+      "column": {
+        "x": 384,
+        "y": 252.296875,
+        "width": 672,
+        "height": 618.453125,
+        "right": 1056,
+        "bottom": 870.75
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "SECTION",
+          "bottom": 252.296875,
+          "x": 0,
+          "y": 200.296875,
+          "width": 1440,
+          "height": 52,
+          "right": 1440
+        }
+      ]
+    },
+    {
+      "screen": "clubs",
+      "path": "/clubs",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/clubs",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 671.984375,
+        "right": 1440,
+        "bottom": 736.984375
+      },
+      "column": {
+        "x": 384,
+        "y": 188.984375,
+        "width": 672,
+        "height": 548,
+        "right": 1056,
+        "bottom": 736.984375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "news",
+      "path": "/news",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/news",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 65,
+        "width": 1440,
+        "height": 1373.078125,
+        "right": 1440,
+        "bottom": 1438.078125
+      },
+      "column": {
+        "x": 384,
+        "y": 216.296875,
+        "width": 672,
+        "height": 1221.78125,
+        "right": 1056,
+        "bottom": 1438.078125
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "players",
+      "path": "/fantasy/players",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/players",
+      "direction": "rtl",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2905.203125,
+        "right": 1056,
+        "bottom": 2986.203125
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2905.203125,
+        "right": 1056,
+        "bottom": 2986.203125
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "rankings",
+      "path": "/fantasy/rankings",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/rankings",
+      "direction": "rtl",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2346.34375,
+        "right": 1056,
+        "bottom": 2427.34375
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 2346.34375,
+        "right": 1056,
+        "bottom": 2427.34375
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": []
+    },
+    {
+      "screen": "difficulty",
+      "path": "/fantasy/fixtures",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/fantasy/fixtures",
+      "direction": "rtl",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 788,
+        "right": 1056,
+        "bottom": 869
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 788,
+        "right": 1056,
+        "bottom": 869
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "TH",
+          "bottom": 271.625,
+          "x": 908,
+          "y": 174.4375,
+          "width": 148,
+          "height": 97.1875,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 325.125,
+          "x": 908,
+          "y": 272.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 378.125,
+          "x": 908,
+          "y": 325.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 431.125,
+          "x": 908,
+          "y": 378.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 484.125,
+          "x": 908,
+          "y": 431.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 537.125,
+          "x": 908,
+          "y": 484.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 590.125,
+          "x": 908,
+          "y": 537.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 643.125,
+          "x": 908,
+          "y": 590.125,
+          "width": 148,
+          "height": 53,
+          "right": 1056
+        },
+        {
+          "tag": "TH",
+          "bottom": 695.625,
+          "x": 908,
+          "y": 643.125,
+          "width": 148,
+          "height": 52.5,
+          "right": 1056
+        }
+      ]
+    },
+    {
+      "screen": "curva",
+      "path": "/curva?mc=rated",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/curva",
+      "direction": "rtl",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 3925.046875,
+        "right": 1056,
+        "bottom": 4006.046875
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 3925.046875,
+        "right": 1056,
+        "bottom": 4006.046875
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 857,
+          "x": 680,
+          "y": 168.296875,
+          "width": 352,
+          "height": 688.703125,
+          "right": 1032
+        }
+      ]
+    },
+    {
+      "screen": "curva-card",
+      "path": "/curva/carte?mc=rated",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/curva/carte",
+      "direction": "rtl",
+      "main": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4209.03125,
+        "right": 1056,
+        "bottom": 4290.03125
+      },
+      "column": {
+        "x": 384,
+        "y": 81,
+        "width": 672,
+        "height": 4209.03125,
+        "right": 1056,
+        "bottom": 4290.03125
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 754.015625,
+          "x": 680,
+          "y": 150,
+          "width": 352,
+          "height": 604.015625,
+          "right": 1032
+        }
+      ]
+    },
+    {
+      "screen": "landing",
+      "path": "/jouer",
+      "language": "ar",
+      "theme": "light",
+      "width": 1440,
+      "actualPath": "/jouer",
+      "direction": "rtl",
+      "main": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 4089.5,
+        "right": 1440,
+        "bottom": 4089.5
+      },
+      "column": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "escaped": [],
+      "clipped": [],
+      "sticky": [
+        {
+          "tag": "DIV",
+          "bottom": 0,
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 0,
+          "right": 1440
+        }
+      ]
+    }
+  ]
+}

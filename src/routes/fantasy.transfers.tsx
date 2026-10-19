@@ -90,7 +90,7 @@ export const Route = createFileRoute("/fantasy/transfers")({
  */
 function TransfersPage() {
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav stickyBottomBar>
       <TransfersBody />
     </FantasyFrame>
   );

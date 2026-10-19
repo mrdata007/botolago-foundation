@@ -96,7 +96,7 @@ function PlayersRoute() {
   });
   if (isPlayerDetail) return <Outlet />;
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav width="wide">
       <PlayersPage />
     </FantasyFrame>
   );
@@ -342,249 +342,268 @@ function PlayersPage() {
           <Scale aria-hidden />
         </UiIconButton>,
       )}
-      <div className={cn("space-y-3 px-4 pb-8 pt-4", ui.surface.page)}>
-        <SearchField
-          value={q}
-          onChange={(next) => {
-            setQ(next);
-            // The list narrows as the reader types; the page goes with it
-            // rather than waiting for the URL to catch up.
-            if (page > 1) updateSearch({ page: undefined });
-          }}
-          label={t("fantasy.picker.search")}
-        />
+      <div
+        className={cn(
+          "px-4 pb-8 pt-4 lg:grid lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:items-start lg:gap-6",
+          ui.surface.page,
+        )}
+      >
+        <div className="min-w-0 space-y-3" data-testid="player-filters">
+          <SearchField
+            value={q}
+            onChange={(next) => {
+              setQ(next);
+              // The list narrows as the reader types; the page goes with it
+              // rather than waiting for the URL to catch up.
+              if (page > 1) updateSearch({ page: undefined });
+            }}
+            label={t("fantasy.picker.search")}
+          />
 
-        <div
-          className="grid grid-cols-5 gap-2"
-          role="group"
-          aria-label={t("fantasy.players.filter_position")}
-        >
-          <UiChip className="justify-center px-1" selected={pos === ""} onClick={() => setPos("")}>
-            {t("common.all")}
-          </UiChip>
-          {positions.map((p) => (
+          <div
+            className="grid grid-cols-5 gap-2 lg:grid-cols-3"
+            role="group"
+            aria-label={t("fantasy.players.filter_position")}
+          >
             <UiChip
-              key={p}
               className="justify-center px-1"
-              selected={pos === p}
-              // Tapping the selected chip clears it.
-              onClick={() => setPos(pos === p ? "" : p)}
+              selected={pos === ""}
+              onClick={() => setPos("")}
             >
-              {t(`player.pos.${p}` as TranslationKey)}
+              {t("common.all")}
             </UiChip>
-          ))}
-        </div>
+            {positions.map((p) => (
+              <UiChip
+                key={p}
+                className="justify-center px-1"
+                selected={pos === p}
+                // Tapping the selected chip clears it.
+                onClick={() => setPos(pos === p ? "" : p)}
+              >
+                {t(`player.pos.${p}` as TranslationKey)}
+              </UiChip>
+            ))}
+          </div>
 
-        {/* One swipeable row, not a wrapping block: with the full league (16
+          {/* One swipeable row, not a wrapping block: with the full league (16
             clubs) a wrap ran to eight rows of chips at 360px and pushed the
             player list below the fold. `-mx-4 px-4` lets the row bleed to the
             screen edge so a half-visible chip signals that it scrolls. */}
-        <div
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]"
-          role="group"
-          aria-label={t("fantasy.players.filter_club")}
-        >
-          <UiChip data-club-chip="" selected={clubId === ""} onClick={() => setClubId("")}>
-            {t("common.all")}
-          </UiChip>
-          {filterClubs.map((c) => (
-            <UiChip
-              key={c.id}
-              data-club-chip=""
-              selected={clubId === c.id}
-              onClick={() => setClubId(clubId === c.id ? "" : c.id)}
-            >
-              {/* No margin: `UiChip` spaces its children (gap-1.5). */}
-              <ClubCrest club={c} size="xs" />
-              <span className="whitespace-nowrap">{clubLabel(c, tr)}</span>
+          <div
+            className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
+            role="group"
+            aria-label={t("fantasy.players.filter_club")}
+          >
+            <UiChip data-club-chip="" selected={clubId === ""} onClick={() => setClubId("")}>
+              {t("common.all")}
             </UiChip>
-          ))}
-        </div>
-
-        {priceSteps.length > 0 ? (
-          <div className="flex items-center justify-between gap-3">
-            <label
-              htmlFor="players-price"
-              className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}
-            >
-              {t("fantasy.players.price_max")}
-            </label>
-            <UiSelect
-              id="players-price"
-              className="shrink-0"
-              fieldClassName={soft}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              options={[
-                { value: "", label: t("fantasy.players.price_any") },
-                ...priceSteps.map((v) => ({ value: String(v), label: nf.format(v) })),
-              ]}
-            />
+            {filterClubs.map((c) => (
+              <UiChip
+                key={c.id}
+                data-club-chip=""
+                selected={clubId === c.id}
+                onClick={() => setClubId(clubId === c.id ? "" : c.id)}
+              >
+                {/* No margin: `UiChip` spaces its children (gap-1.5). */}
+                <ClubCrest club={c} size="xs" />
+                <span className="whitespace-nowrap">{clubLabel(c, tr)}</span>
+              </UiChip>
+            ))}
           </div>
-        ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <p
-            className={cn(
-              "min-w-0",
-              ui.text.meta,
-              "[font-weight:var(--ui-weight-strong)]",
-              ui.tone.muted,
-            )}
-          >
-            {list.length > 0
-              ? playersShownLabel(visible.length, list.length, lang, t, nf.format)
-              : null}
-          </p>
-          <div className="flex items-center gap-1">
-            <label
-              htmlFor="players-sort"
-              className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
-            >
-              {t("fantasy.picker.sort")}
-            </label>
-            <UiSelect
-              id="players-sort"
-              className="shrink-0"
-              fieldClassName={soft}
-              value={sort}
-              onChange={(e) => pickSort(e.target.value as SortKey)}
-              options={SORT_KEYS.map((key) => ({ value: key, label: sortLabel(key) }))}
-            />
-            <UiIconButton
-              variant="ghost"
-              aria-label={dirLabel}
-              onClick={() => updateSearch({ dir: dir === "desc" ? "asc" : undefined })}
-            >
-              <DirGlyph aria-hidden />
-            </UiIconButton>
-          </div>
-        </div>
-
-        {compare.length === 2 ? (
-          <UiCard>
-            <div className="flex items-center justify-between gap-3">
-              <h2 className={cn("min-w-0 truncate", ui.display.section, ui.tone.default)}>
-                {t("fantasy.players.compare_title")}
-              </h2>
-              <UiButton size="sm" variant="ghost" onClick={() => setCompare([])}>
-                {t("common.reset")}
-              </UiButton>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {compare.map((id) => {
-                const p = playerOf(id);
-                if (!p) return null;
-                const c = clubOf(p.clubId);
-                const form = p.form === null ? t("fantasy.stat.none") : nf.format(p.form);
-                return (
-                  <div key={id} className={cn("min-w-0 p-3", ui.radius.card, ui.surface.sunken)}>
-                    <div className="flex min-w-0 items-center gap-2">
-                      {c ? <ClubCrest club={c} size="xs" /> : null}
-                      <span
-                        dir="auto"
-                        className={cn(
-                          "truncate",
-                          ui.text.meta,
-                          "[font-weight:var(--ui-weight-heavy)]",
-                        )}
-                      >
-                        {tr(p.name)}
-                      </span>
-                    </div>
-                    <dl
-                      className={cn(
-                        "mt-2 grid grid-cols-[1fr_auto] gap-x-2 gap-y-1",
-                        ui.text.micro,
-                      )}
-                    >
-                      <CompareRow label={t("fantasy.price")} value={priceNf.format(p.price)} />
-                      <CompareRow
-                        label={t("fantasy.total_points")}
-                        value={nf.format(p.totalPoints)}
-                      />
-                      {/* A real 0 must read "0"; only an unknown reads "–". */}
-                      <CompareRow label={t("fantasy.form")} value={form} />
-                      <CompareRow
-                        label={t("fantasy.ownership")}
-                        value={pctNf.format(p.ownership / 100)}
-                      />
-                      <CompareRow
-                        label={t("fantasy.expected_points")}
-                        value={
-                          p.expectedPoints === null || p.expectedPoints === undefined
-                            ? t("fantasy.stat.none")
-                            : nf.format(p.expectedPoints)
-                        }
-                      />
-                    </dl>
-                  </div>
-                );
-              })}
-            </div>
-          </UiCard>
-        ) : null}
-        {/* Only in compare mode: outside it the row control is the watchlist,
-            and a hint to "pick two" would point at nothing. */}
-        {compareMode && compare.length < 2 ? (
-          <p
-            role="status"
-            className={cn(
-              "px-4 py-3",
-              ui.radius.card,
-              ui.surface.sunken,
-              ui.text.meta,
-              ui.tone.default,
-            )}
-          >
-            {t("fantasy.players.pick_two")}
-          </p>
-        ) : null}
-
-        {list.length === 0 ? (
-          <UiEmptyState
-            illustration={noPlayersArt}
-            title={t("fantasy.players.no_match")}
-            body={t("fantasy.players.empty_filters")}
-            action={
-              hasFilters ? (
-                <UiButton variant="ink" className="mt-4" onClick={resetFilters}>
-                  {t("fantasy.players.reset_filters")}
-                </UiButton>
-              ) : undefined
-            }
-          />
-        ) : (
-          <>
-            <ul className={cn(ui.surface.card, "overflow-hidden")} onClickCapture={flushSearchText}>
-              {visible.map((p, index) => (
-                <PlayerListRow
-                  key={p.id}
-                  player={p}
-                  club={clubOf(p.clubId)}
-                  last={index === visible.length - 1}
-                  watched={watchlist.isWatched(p.id)}
-                  onToggleWatch={() => watchlist.toggle(p.id)}
-                  compareMode={compareMode}
-                  inCompare={compare.includes(p.id)}
-                  onToggleCompare={() => toggleCompare(p.id)}
-                  nf={nf}
-                  priceNf={priceNf}
-                  pctNf={pctNf}
-                />
-              ))}
-            </ul>
-
-            <div data-player-pager="">
-              <ListPager
-                page={currentPage}
-                pageCount={pageCount}
-                onPrevious={() => updateSearch({ page: Math.max(1, currentPage - 1) })}
-                onNext={() => updateSearch({ page: Math.min(pageCount, currentPage + 1) })}
+          {priceSteps.length > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label
+                htmlFor="players-price"
+                className={cn(
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.default,
+                )}
+              >
+                {t("fantasy.players.price_max")}
+              </label>
+              <UiSelect
+                id="players-price"
+                className="shrink-0"
+                fieldClassName={soft}
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                options={[
+                  { value: "", label: t("fantasy.players.price_any") },
+                  ...priceSteps.map((v) => ({ value: String(v), label: nf.format(v) })),
+                ]}
               />
             </div>
-          </>
-        )}
+          ) : null}
+        </div>
+        <div className="mt-3 min-w-0 space-y-3 lg:mt-0" data-testid="player-results">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <p
+              className={cn(
+                "min-w-0",
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-strong)]",
+                ui.tone.muted,
+              )}
+            >
+              {list.length > 0
+                ? playersShownLabel(visible.length, list.length, lang, t, nf.format)
+                : null}
+            </p>
+            <div className="flex items-center gap-1">
+              <label
+                htmlFor="players-sort"
+                className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
+              >
+                {t("fantasy.picker.sort")}
+              </label>
+              <UiSelect
+                id="players-sort"
+                className="shrink-0"
+                fieldClassName={soft}
+                value={sort}
+                onChange={(e) => pickSort(e.target.value as SortKey)}
+                options={SORT_KEYS.map((key) => ({ value: key, label: sortLabel(key) }))}
+              />
+              <UiIconButton
+                variant="ghost"
+                aria-label={dirLabel}
+                onClick={() => updateSearch({ dir: dir === "desc" ? "asc" : undefined })}
+              >
+                <DirGlyph aria-hidden />
+              </UiIconButton>
+            </div>
+          </div>
+
+          {compare.length === 2 ? (
+            <UiCard>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className={cn("min-w-0 truncate", ui.display.section, ui.tone.default)}>
+                  {t("fantasy.players.compare_title")}
+                </h2>
+                <UiButton size="sm" variant="ghost" onClick={() => setCompare([])}>
+                  {t("common.reset")}
+                </UiButton>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {compare.map((id) => {
+                  const p = playerOf(id);
+                  if (!p) return null;
+                  const c = clubOf(p.clubId);
+                  const form = p.form === null ? t("fantasy.stat.none") : nf.format(p.form);
+                  return (
+                    <div key={id} className={cn("min-w-0 p-3", ui.radius.card, ui.surface.sunken)}>
+                      <div className="flex min-w-0 items-center gap-2">
+                        {c ? <ClubCrest club={c} size="xs" /> : null}
+                        <span
+                          dir="auto"
+                          className={cn(
+                            "truncate",
+                            ui.text.meta,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                          )}
+                        >
+                          {tr(p.name)}
+                        </span>
+                      </div>
+                      <dl
+                        className={cn(
+                          "mt-2 grid grid-cols-[1fr_auto] gap-x-2 gap-y-1",
+                          ui.text.micro,
+                        )}
+                      >
+                        <CompareRow label={t("fantasy.price")} value={priceNf.format(p.price)} />
+                        <CompareRow
+                          label={t("fantasy.total_points")}
+                          value={nf.format(p.totalPoints)}
+                        />
+                        {/* A real 0 must read "0"; only an unknown reads "–". */}
+                        <CompareRow label={t("fantasy.form")} value={form} />
+                        <CompareRow
+                          label={t("fantasy.ownership")}
+                          value={pctNf.format(p.ownership / 100)}
+                        />
+                        <CompareRow
+                          label={t("fantasy.expected_points")}
+                          value={
+                            p.expectedPoints === null || p.expectedPoints === undefined
+                              ? t("fantasy.stat.none")
+                              : nf.format(p.expectedPoints)
+                          }
+                        />
+                      </dl>
+                    </div>
+                  );
+                })}
+              </div>
+            </UiCard>
+          ) : null}
+          {/* Only in compare mode: outside it the row control is the watchlist,
+            and a hint to "pick two" would point at nothing. */}
+          {compareMode && compare.length < 2 ? (
+            <p
+              role="status"
+              className={cn(
+                "px-4 py-3",
+                ui.radius.card,
+                ui.surface.sunken,
+                ui.text.meta,
+                ui.tone.default,
+              )}
+            >
+              {t("fantasy.players.pick_two")}
+            </p>
+          ) : null}
+
+          {list.length === 0 ? (
+            <UiEmptyState
+              illustration={noPlayersArt}
+              title={t("fantasy.players.no_match")}
+              body={t("fantasy.players.empty_filters")}
+              action={
+                hasFilters ? (
+                  <UiButton variant="ink" className="mt-4" onClick={resetFilters}>
+                    {t("fantasy.players.reset_filters")}
+                  </UiButton>
+                ) : undefined
+              }
+            />
+          ) : (
+            <>
+              <ul
+                className={cn(ui.surface.card, "overflow-hidden")}
+                onClickCapture={flushSearchText}
+              >
+                {visible.map((p, index) => (
+                  <PlayerListRow
+                    key={p.id}
+                    player={p}
+                    club={clubOf(p.clubId)}
+                    last={index === visible.length - 1}
+                    watched={watchlist.isWatched(p.id)}
+                    onToggleWatch={() => watchlist.toggle(p.id)}
+                    compareMode={compareMode}
+                    inCompare={compare.includes(p.id)}
+                    onToggleCompare={() => toggleCompare(p.id)}
+                    nf={nf}
+                    priceNf={priceNf}
+                    pctNf={pctNf}
+                  />
+                ))}
+              </ul>
+
+              <div data-player-pager="">
+                <ListPager
+                  page={currentPage}
+                  pageCount={pageCount}
+                  onPrevious={() => updateSearch({ page: Math.max(1, currentPage - 1) })}
+                  onNext={() => updateSearch({ page: Math.min(pageCount, currentPage + 1) })}
+                />
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </>
   );

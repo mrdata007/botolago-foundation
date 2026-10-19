@@ -1,0 +1,492 @@
+[
+  {
+    "path": "/.lovable/oauth/consent",
+    "file": "src/routes/[.]lovable.oauth.consent.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/approvals",
+    "file": "src/routes/admin.approvals.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/audit",
+    "file": "src/routes/admin.audit.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/football/player-mappings",
+    "file": "src/routes/admin.football.player-mappings.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/football/sofascore-players",
+    "file": "src/routes/admin.football.sofascore-players.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/news/$articleEditionId",
+    "file": "src/routes/admin.news.$articleEditionId.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/news/new",
+    "file": "src/routes/admin.news.new.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/news",
+    "file": "src/routes/admin.news.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/pepites/donnees",
+    "file": "src/routes/admin.pepites.donnees.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/pepites/",
+    "file": "src/routes/admin.pepites.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/pepites",
+    "file": "src/routes/admin.pepites.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/plus",
+    "file": "src/routes/admin.plus.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/prizes",
+    "file": "src/routes/admin.prizes.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/security",
+    "file": "src/routes/admin.security.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/staff/$principalId",
+    "file": "src/routes/admin.staff.$principalId.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/staff",
+    "file": "src/routes/admin.staff.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/stories",
+    "file": "src/routes/admin.stories.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin",
+    "file": "src/routes/admin.tsx",
+    "shells": ["AdminShell"]
+  },
+  {
+    "path": "/admin/users/$userId",
+    "file": "src/routes/admin.users.$userId.tsx",
+    "shells": []
+  },
+  {
+    "path": "/admin/users",
+    "file": "src/routes/admin.users.tsx",
+    "shells": []
+  },
+  {
+    "path": "/auth/callback",
+    "file": "src/routes/auth.callback.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/forgot-password",
+    "file": "src/routes/auth.forgot-password.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/",
+    "file": "src/routes/auth.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/auth/login",
+    "file": "src/routes/auth.login.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/mfa-challenge",
+    "file": "src/routes/auth.mfa-challenge.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/profile-setup",
+    "file": "src/routes/auth.profile-setup.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/register",
+    "file": "src/routes/auth.register.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth",
+    "file": "src/routes/auth.tsx",
+    "shells": []
+  },
+  {
+    "path": "/auth/update-password",
+    "file": "src/routes/auth.update-password.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/auth/verify",
+    "file": "src/routes/auth.verify.tsx",
+    "shells": ["AuthShell"]
+  },
+  {
+    "path": "/clubs/$clubId",
+    "file": "src/routes/clubs.$clubId.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/clubs/",
+    "file": "src/routes/clubs.index.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/curva/carte",
+    "file": "src/routes/curva.carte.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva/classement",
+    "file": "src/routes/curva.classement.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva/",
+    "file": "src/routes/curva.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva/les-votres",
+    "file": "src/routes/curva.les-votres.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva/plus",
+    "file": "src/routes/curva.plus.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva/saisons",
+    "file": "src/routes/curva.saisons.tsx",
+    "shells": []
+  },
+  {
+    "path": "/curva",
+    "file": "src/routes/curva.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/demo",
+    "file": "src/routes/demo.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/admin-shell-sample",
+    "file": "src/routes/dev.admin-shell-sample.tsx",
+    "shells": ["AdminShell"]
+  },
+  {
+    "path": "/dev/curva-ranking-sample",
+    "file": "src/routes/dev.curva-ranking-sample.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/dev/manager-card-editions",
+    "file": "src/routes/dev.manager-card-editions.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/manager-card-ovr-change-sample",
+    "file": "src/routes/dev.manager-card-ovr-change-sample.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/manager-card-sample",
+    "file": "src/routes/dev.manager-card-sample.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/player-mappings-sample",
+    "file": "src/routes/dev.player-mappings-sample.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/plus-admin-sample",
+    "file": "src/routes/dev.plus-admin-sample.tsx",
+    "shells": []
+  },
+  {
+    "path": "/dev/sofascore-players-sample",
+    "file": "src/routes/dev.sofascore-players-sample.tsx",
+    "shells": []
+  },
+  {
+    "path": "/fantasy/briefing",
+    "file": "src/routes/fantasy.briefing.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/create",
+    "file": "src/routes/fantasy.create.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/fixtures",
+    "file": "src/routes/fantasy.fixtures.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/help",
+    "file": "src/routes/fantasy.help.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/",
+    "file": "src/routes/fantasy.index.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/leagues/$leagueId",
+    "file": "src/routes/fantasy.leagues.$leagueId.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/leagues/join",
+    "file": "src/routes/fantasy.leagues.join.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/leagues",
+    "file": "src/routes/fantasy.leagues.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/players/$playerId",
+    "file": "src/routes/fantasy.players.$playerId.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/players",
+    "file": "src/routes/fantasy.players.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/points",
+    "file": "src/routes/fantasy.points.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/profile",
+    "file": "src/routes/fantasy.profile.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/rankings",
+    "file": "src/routes/fantasy.rankings.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/rules",
+    "file": "src/routes/fantasy.rules.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/team",
+    "file": "src/routes/fantasy.team.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/top-players",
+    "file": "src/routes/fantasy.top-players.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy/transfers",
+    "file": "src/routes/fantasy.transfers.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/fantasy",
+    "file": "src/routes/fantasy.tsx",
+    "shells": []
+  },
+  {
+    "path": "/",
+    "file": "src/routes/index.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/jouer",
+    "file": "src/routes/jouer.tsx",
+    "shells": []
+  },
+  {
+    "path": "/journee/$publicId",
+    "file": "src/routes/journee.$publicId.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/matches/$matchId",
+    "file": "src/routes/matches.$matchId.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/matches/",
+    "file": "src/routes/matches.index.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/matches/standings",
+    "file": "src/routes/matches.standings.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/news/$articleId",
+    "file": "src/routes/news.$articleId.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/news",
+    "file": "src/routes/news.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/notifications",
+    "file": "src/routes/notifications.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/pepites/classement",
+    "file": "src/routes/pepites.classement.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/comparer",
+    "file": "src/routes/pepites.comparer.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/",
+    "file": "src/routes/pepites.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/joueur/$playerId",
+    "file": "src/routes/pepites.joueur.$playerId.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/methode",
+    "file": "src/routes/pepites.methode.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/revelation",
+    "file": "src/routes/pepites.revelation.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites/semaine/$n",
+    "file": "src/routes/pepites.semaine.$n.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pepites",
+    "file": "src/routes/pepites.tsx",
+    "shells": []
+  },
+  {
+    "path": "/plus",
+    "file": "src/routes/plus.tsx",
+    "shells": []
+  },
+  {
+    "path": "/privacy",
+    "file": "src/routes/privacy.tsx",
+    "shells": []
+  },
+  {
+    "path": "/prizes/",
+    "file": "src/routes/prizes.index.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/prizes/terms",
+    "file": "src/routes/prizes.terms.tsx",
+    "shells": ["FantasyFrame"]
+  },
+  {
+    "path": "/profile/saved",
+    "file": "src/routes/profile.saved.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/profile/security",
+    "file": "src/routes/profile.security.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/profile",
+    "file": "src/routes/profile.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/pronostics/",
+    "file": "src/routes/pronostics.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pronostics/ligues/$leagueId",
+    "file": "src/routes/pronostics.ligues.$leagueId.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pronostics/ligues/",
+    "file": "src/routes/pronostics.ligues.index.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pronostics/ligues/rejoindre",
+    "file": "src/routes/pronostics.ligues.rejoindre.tsx",
+    "shells": []
+  },
+  {
+    "path": "/pronostics",
+    "file": "src/routes/pronostics.tsx",
+    "shells": []
+  },
+  {
+    "path": "/suppression-compte",
+    "file": "src/routes/suppression-compte.tsx",
+    "shells": ["AppShell"]
+  },
+  {
+    "path": "/terms",
+    "file": "src/routes/terms.tsx",
+    "shells": []
+  },
+  {
+    "path": "/unsubscribe",
+    "file": "src/routes/unsubscribe.tsx",
+    "shells": ["AppShell"]
+  }
+]
