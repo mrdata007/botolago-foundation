@@ -128,5 +128,5 @@ select app_private.fantasy_automation_configure(true);
 select app_private.fantasy_worker_configure(true);
 -- Suppress unrelated local jobs. Only the two real schedulers under test are
 -- accelerated by the harness, with their actual production SQL entry points.
-update cron.job set active=false;
+select cron.alter_job(jobid,active:=false) from cron.job;
 commit;

@@ -160,7 +160,7 @@ async function main() {
     "an existing scheduled writer is still running",
   );
   ownsDatabase = true;
-  await sql.unsafe("update cron.job set active=false");
+  await sql.unsafe("select cron.alter_job(jobid,active:=false) from cron.job");
   report.baseline = {
     fixtureCount: 0,
     schedulesInspected: schedules.length,
@@ -346,9 +346,23 @@ try {
   report.passed = false;
   report.error = error instanceof Error ? error.message : "e2e_failed";
   report.handlerResults = handlerResults;
+  if (ownsDatabase) {
+    report.databaseState = await sql
+      .unsafe(
+        `select jsonb_build_object(
+      'candidates',(select count(*) from app_private.sofascore_collection_candidates()),
+      'queue',(select coalesce(jsonb_agg(jsonb_build_object('attempts',attempts,'lastError',last_error,'nextAttemptAt',next_attempt_at,'missingRatings',missing_ratings)),'[]'::jsonb) from app_private.sofascore_collection_queue),
+      'cron',(select coalesce(jsonb_agg(jsonb_build_object('job',j.jobname,'status',d.status,'message',d.return_message)),'[]'::jsonb) from cron.job_run_details d join cron.job j using(jobid) where j.jobname in ('football-season-refresh','fantasy-worker-tick')),
+      'http',(select coalesce(jsonb_agg(jsonb_build_object('status',status_code,'error',error_msg,'timedOut',timed_out)),'[]'::jsonb) from net._http_response)
+    ) as state`,
+      )
+      .then((rows) => rows[0]?.state)
+      .catch(() => ({ unavailable: true }));
+  }
   throw error;
 } finally {
-  if (ownsDatabase) await sql.unsafe("update cron.job set active=false").catch(() => {});
+  if (ownsDatabase)
+    await sql.unsafe("select cron.alter_job(jobid,active:=false) from cron.job").catch(() => {});
   server?.stop(true);
   await sql.close();
   const out = process.env.SOFASCORE_E2E_REPORT ?? "/tmp/sofascore-automation-e2e.json";
