@@ -162,6 +162,31 @@ begin
  execute source;
 end $patch$;
 
+-- Already-published provisional historical revisions need fresh checks too.
+-- Keep the existing cadence and attempt throttle; do not poll fully ready
+-- historical fixtures or rewrite their sealed competition results.
+do $patch$
+declare source text;
+begin
+ if md5((select prosrc from pg_proc where oid='app_private.fantasy_api_rating_candidates()'::regprocedure))<>'17ad59b42c450b3092e96b512f7d91a1'then raise exception 'not_rated_poll_candidates_baseline_changed';end if;
+ source:=pg_get_functiondef('app_private.fantasy_api_rating_candidates()'::regprocedure);
+ if position('join app.fantasy_gameweeks g on g.id=a.gameweek_id and g.status in (''live'',''provisional'')'in source)=0 then raise exception 'not_rated_poll_candidates_anchor_missing';end if;
+ source:=replace(source,'join app.fantasy_gameweeks g on g.id=a.gameweek_id and g.status in (''live'',''provisional'')',
+ 'join app.fantasy_gameweeks g on g.id=a.gameweek_id');
+ source:=replace(source,'join app_private.fantasy_api_rating_seasons p on p.season_id=g.fantasy_season_id and g.sequence_number>=p.from_gameweek',
+ 'left join app_private.fantasy_api_rating_seasons p on p.season_id=g.fantasy_season_id');
+ source:=replace(source,'where f.status=''finished'' and f.finalized_at is not null',
+ 'where f.status=''finished'' and f.finalized_at is not null and (
+  (g.status in (''live'',''provisional'')and p.season_id is not null and g.sequence_number>=p.from_gameweek)
+  or(g.status in (''finalized'',''corrected'')and exists(
+   select 1 from app_private.fantasy_current_rating_publications publication
+   where publication.gameweek_id=g.id and not publication.complete)
+   and not coalesce((select ready from app_private.fantasy_api_rating_sources latest
+    where latest.fixture_id=f.id order by id desc limit 1),false)))');
+ if position('publication.gameweek_id=g.id'in source)=0 then raise exception 'not_rated_historical_poll_anchor_missing';end if;
+ execute source;
+end $patch$;
+
 do $patch$
 declare source text;
 begin
