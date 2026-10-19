@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7
+-- Production V2 only. Canonical migration SHA256: d57d81ba1815e693283ee44246eb83d143abf2dd9fe7c2635729664b3ad1322a
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -85,6 +85,9 @@ for each row execute function app_private.fantasy_rating_new_member_guard();
 do $$ declare source text; begin
  if md5((select prosrc from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure))<>'36dfa9ccf4ed6e085f3825694621f820' then raise exception 'rating_publication_unexpected_pool_body'; end if;
  source:=pg_get_functiondef('api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure);
+ -- The pool now has a caller-owned exception to its public catalogue filter.
+ -- Protect that private branch with the same step-up as other account reads.
+ source:=replace(source,E'begin\n',E'begin\n  perform app_private.assert_mfa_step_up();\n');
  source:=replace(source,'and fantasy_player.active and fantasy_player.eligible',
  'and fantasy_player.active and fantasy_player.eligible and (app_private.fantasy_native_player_selectable(fantasy_player.id)
  or exists(select 1 from app.fantasy_squad_memberships owned join app.fantasy_teams owner_team on owner_team.id=owned.fantasy_team_id
@@ -489,7 +492,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'d57d81ba1815e693283ee44246eb83d143abf2dd9fe7c2635729664b3ad1322a' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin

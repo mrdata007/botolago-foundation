@@ -243,5 +243,14 @@ update app.fantasy_gameweeks set status='provisional',points_state='provisional'
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '7 minutes',last_attempt_at=statement_timestamp()-interval '7 minutes' where fixture_id=pg_temp.rid(3002);
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'recent post-match ratings are polled within five minutes');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'a reserved recent poll cannot be claimed again immediately');
+select extensions.ok(
+ (select prosrc ~ 'perform app_private.assert_mfa_step_up\(\);' from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure),
+ 'the caller-owned pool exception requires ordinary-account MFA step-up');
+select extensions.is(
+ (select string_agg(distinct m[1],',' order by m[1]) from pg_proc p,
+ regexp_matches(p.prosrc,'app_private\.(manager_card_[a-z_]+|troph[a-z_]+)','g') m
+ where p.oid='app_private.fantasy_publish_rating_recovery(bigint,text,text)'::regprocedure),
+ 'manager_card_settings,trophy_settings',
+ 'publication reads only the card and trophy writer switches, never scores, tiers or awards');
 select * from extensions.finish();
 rollback;

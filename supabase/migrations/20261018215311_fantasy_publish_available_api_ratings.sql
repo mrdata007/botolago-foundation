@@ -53,6 +53,9 @@ for each row execute function app_private.fantasy_rating_new_member_guard();
 do $$ declare source text; begin
  if md5((select prosrc from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure))<>'36dfa9ccf4ed6e085f3825694621f820' then raise exception 'rating_publication_unexpected_pool_body'; end if;
  source:=pg_get_functiondef('api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure);
+ -- The pool now has a caller-owned exception to its public catalogue filter.
+ -- Protect that private branch with the same step-up as other account reads.
+ source:=replace(source,E'begin\n',E'begin\n  perform app_private.assert_mfa_step_up();\n');
  source:=replace(source,'and fantasy_player.active and fantasy_player.eligible',
  'and fantasy_player.active and fantasy_player.eligible and (app_private.fantasy_native_player_selectable(fantasy_player.id)
  or exists(select 1 from app.fantasy_squad_memberships owned join app.fantasy_teams owner_team on owner_team.id=owned.fantasy_team_id
