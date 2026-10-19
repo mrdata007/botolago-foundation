@@ -155,7 +155,9 @@ begin
      'outcome','pulled','coverage',p_meta->>'coverage','dataDigest',p_meta->>'digest',
      'requests',4,'matchData',p_meta->'matchData')
      ||case when result ? 'observationId' then jsonb_build_object('observationId',result->'observationId') else '{}'::jsonb end);
-   perform api.service_sync_sofascore_player_performances(p_fixture_id,1,coalesce(p_meta->'ratings','{}'::jsonb));
+   begin
+    perform api.service_sync_sofascore_player_performances(p_fixture_id,1,coalesce(p_meta->'ratings','{}'::jsonb));
+   exception when others then result:=result||jsonb_build_object('performanceSync','pending'); end;
   exception when others then
    code:=case when sqlerrm ~ '^(sofascore|fantasy|adaptive)_[a-z0-9_]{1,60}$' then sqlerrm else 'observation_rejected' end;
    valid:=false;
@@ -169,7 +171,9 @@ begin
  next_attempt_at=coalesce(case when staged->>'status'='PROVISIONAL' then
    case when missing=0 then (staged->>'nextPullAt')::timestamptz else least(next_at,(staged->>'nextPullAt')::timestamptz) end else next_at end,
    kick+app_private.sofascore_fantasy_hold_window()),
- complete=(valid and missing=0 and p_request is not null and coalesce(staged->>'status','FINAL')<>'PROVISIONAL'),
+ complete=(valid and missing=0 and p_request is not null and (coalesce(staged->>'status','FINAL')<>'PROVISIONAL' or not exists(
+   select 1 from app.fantasy_fixture_assignments a join app.fantasy_gameweeks g on g.id=a.gameweek_id
+   where a.fixture_id=p_fixture_id and a.superseded_at is null and app_private.fantasy_staged_enabled(g.id)))),
  last_success_at=case when valid then statement_timestamp() else last_success_at end,
  missing_ratings=missing,last_error=case when valid then null else code end,
  last_digest=coalesce(p_meta->>'digest',last_digest) where fixture_id=p_fixture_id;
@@ -239,7 +243,10 @@ end $$;
 create function app_private.sofascore_collection_health()
 returns jsonb language sql stable security definer set search_path='' as $$
  select jsonb_build_object('name','sofascore_collection','status',case when not s.enabled then 'ok'
-  when coalesce(s.last_success_at,s.last_attempt_at,s.enabled_at)<statement_timestamp()-interval '2 hours' and exists(select 1 from app_private.sofascore_collection_candidates()) then 'fail'
+  when coalesce(s.last_success_at,s.last_attempt_at,s.enabled_at)<statement_timestamp()-interval '2 hours' and s.enabled_at<statement_timestamp()-interval '2 hours' and exists(
+   select 1 from app_private.sofascore_collection_candidates() c left join app_private.sofascore_collection_queue q using(fixture_id)
+   where (q.fixture_id is null and c.kickoff_at<statement_timestamp()-interval '5 hours') or
+    (not q.complete and q.attempts<10 and q.next_attempt_at<statement_timestamp()-interval '2 hours')) then 'fail'
   when s.last_error is not null or exists(select 1 from app_private.sofascore_collection_queue q where not q.complete) then 'warn' else 'ok' end,
  'detail',jsonb_build_object('enabled',s.enabled,'lastSuccessfulCollectionAt',s.last_success_at,'lastAttemptAt',s.last_attempt_at,
  'lastError',s.last_error,'reservedMonthlyRequests',s.reserved_calls,'monthlyBudget',1600,'quotaRemaining',s.quota_remaining,

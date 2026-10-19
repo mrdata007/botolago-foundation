@@ -100,6 +100,7 @@ end $$;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select api.service_activate_adaptive_estimates(pg_temp.rid(5),4,api.service_adaptive_scoring_audit(pg_temp.rid(24))->>'activationDigest');
 select app_private.fantasy_rating_points_configure(pg_temp.rid(5),true,5);
+select app_private.fantasy_staged_stats_configure(pg_temp.rid(5),true,5);
 insert into app.fantasy_lineups(id,fantasy_team_id,gameweek_id,team_version,locked_at)
 values(pg_temp.rid(30),pg_temp.rid(9),pg_temp.rid(25),1,'2026-08-17 10:30Z');
 -- Starters: GK 23, DEF 24-27, MID 28-30, FWD 32, 33 and 45 (who does not play). Bench: GK 34,

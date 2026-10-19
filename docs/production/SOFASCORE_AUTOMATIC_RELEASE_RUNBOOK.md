@@ -852,3 +852,15 @@ script. The `noRatingPoints: null` response needs the updated client before the
 policy is enabled. This does not authorize changing GW4's already-started rules,
 finalizing without ratings, or applying PR #517. Evidence and scope:
 `docs/backend/FANTASY_ACTUAL_RATINGS_20261018.md`.
+
+
+## Later unattended collection (separate release, off by default)
+
+`20261019064413_sofascore_unattended_collection.sql` adds the durable approved-ID
+collector, scheduler integration, fenced lease, request reservations and operational
+health. It is not part of the older generated install script above. Review and
+apply it through the normal migration release path, then deploy the matching
+`football-live-refresh` code, before considering activation. No production
+activation is authorized by the collector PR. See
+[`SOFASCORE_AUTOMATION.md`](../backend/SOFASCORE_AUTOMATION.md) for cadence,
+budget, non-production evidence, diagnostics and explicit rollout prerequisites.

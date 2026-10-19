@@ -222,22 +222,25 @@ export async function handleFootballLiveRefreshRequest(
     // catch-up and staged pulls so there are not two observation workers.
     let ownsObservations = false;
     let approvedSeason: string | undefined;
-    try {
-      const plan = await dependencies.client
-        .schema("api")
-        .rpc("service_sofascore_collection_plan", {});
-      if (!plan.error && plan.data && typeof plan.data === "object") {
-        const season = (plan.data as { seasonId?: unknown }).seasonId;
-        if (typeof season === "string" && /^[1-9][0-9]{0,11}$/.test(season))
-          approvedSeason = season;
+    if (source === "sofascore" && job !== "catalog_weekly") {
+      try {
+        const plan = await dependencies.client
+          .schema("api")
+          .rpc("service_sofascore_collection_plan", {});
+        if (!plan.error && plan.data && typeof plan.data === "object") {
+          const season = (plan.data as { seasonId?: unknown }).seasonId;
+          if (typeof season === "string" && /^[1-9][0-9]{0,11}$/.test(season))
+            approvedSeason = season;
+        }
+        ownsObservations =
+          !plan.error &&
+          typeof plan.data === "object" &&
+          plan.data !== null &&
+          (plan.data as { enabled?: unknown }).enabled === true;
+      } catch {
+        if (job === "ratings_collection")
+          return json(503, { error: "collection_state_unavailable" });
       }
-      ownsObservations =
-        !plan.error &&
-        typeof plan.data === "object" &&
-        plan.data !== null &&
-        (plan.data as { enabled?: unknown }).enabled === true;
-    } catch {
-      if (job === "ratings_collection") return json(503, { error: "collection_state_unavailable" });
     }
     const collectionEnvironment = ownsObservations
       ? {
