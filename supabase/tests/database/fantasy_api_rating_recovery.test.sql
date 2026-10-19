@@ -167,6 +167,47 @@ select extensions.is((select count(*)::int from app.fantasy_squad_memberships wh
 select extensions.ok(not exists(select 1 from jsonb_array_elements(api.fantasy_player_pool(pg_temp.rid(5),null,null,null,null,null,null,100)->'items') item
  where item->>'id'=pg_temp.rid(2002)::text),'the public pool hides an unidentified new purchase before pagination');
 
+-- Exercise Not rated through the actual document, persistence, historical
+-- publication and customer reader, using an independent finished fixture.
+savepoint not_rated_end_to_end;
+update app_private.fantasy_not_rated_policy set enabled=true,approved_at=statement_timestamp(),owner_approval='Owner approved the reviewed Not rated rule after two checks over 24 hours'where id;
+insert into app.fixtures(id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,status,home_score,away_score,provider_updated_at,source_sequence,finalized_at)
+values(pg_temp.rid(3003),pg_temp.rid(2),pg_temp.rid(3),pg_temp.rid(15),pg_temp.rid(103),pg_temp.rid(104),now()-interval '50 hours','finished',0,0,now(),1,now()-interval '48 hours');
+insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at)
+values('sofascore','fixture','9003',pg_temp.rid(3003),'test',now());
+update app.fantasy_fixture_assignments set superseded_at=statement_timestamp()where fixture_id=pg_temp.rid(3002)and superseded_at is null;
+insert into app.fantasy_fixture_assignments(fantasy_season_id,fixture_id,gameweek_id,original_gameweek_id,original_kickoff_at,assigned_kickoff_at,frozen_at,source_version)
+values(pg_temp.rid(5),pg_temp.rid(3003),pg_temp.rid(25),pg_temp.rid(25),now()-interval '50 hours',now()-interval '50 hours',now()-interval '51 hours',1);
+select set_config('test.nr_players',(select jsonb_set(jsonb_set(players,'{5,minutes}','7'),'{5,rating}','null')::text from app_private.fantasy_api_rating_sources where fixture_id=pg_temp.rid(3002)order by id desc limit 1),true);
+insert into app_private.fantasy_api_rating_sources(fixture_id,event_id,digest,players,ready,captured_at,created_at)
+values(pg_temp.rid(3003),'9003',encode(extensions.digest(current_setting('test.nr_players'),'sha256'),'hex'),current_setting('test.nr_players')::jsonb,false,now()-interval '25 hours',now()-interval '25 hours');
+insert into app_private.fantasy_rating_checks(source_id,checked_at,captured_at,provenance)
+select id,created_at,captured_at,'source_receipt'from app_private.fantasy_api_rating_sources where fixture_id=pg_temp.rid(3003);
+select extensions.is(api.service_record_fantasy_api_ratings(pg_temp.rid(3003),'9003',current_setting('test.nr_players')::jsonb,statement_timestamp())->>'ready','true','two real check receipts settle the seven-minute captain');
+select set_config('test.nr_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select extensions.ok(exists(select 1 from jsonb_array_elements(current_setting('test.nr_preview')::jsonb->'playerFixtures')p where p->>'fantasyPlayerId'=pg_temp.rid(2028)::text and p->>'apiNotRated'='true'and p->'rating'='null'::jsonb),'actual native document retains the blank rating and verified settlement');
+select set_config('test.nr_results',jsonb_set(jsonb_set(jsonb_set(jsonb_set(current_setting('test.native_results')::jsonb,
+ '{teamResults,0,startingPoints}','80'),'{teamResults,0,captainPoints}','0'),'{teamResults,0,provisionalScore}','80'),'{playerResults}',
+ (select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->'fantasyPlayerId','fixtureId',p->'fixtureId','events',
+ case when p->>'apiNotRated'='true'or p->>'apiAppeared'<>'true'then '[]'::jsonb else jsonb_build_array(jsonb_build_object('category','rating','points',8,
+ 'sourceKey','fixture-stats:'||(p->>'fixtureId')||':'||(p->>'playerId')||':rating'))end))from jsonb_array_elements(current_setting('test.nr_preview')::jsonb->'playerFixtures')p))::text,true);
+select set_config('test.nr_snapshot',api.service_get_fantasy_scoring_snapshot(pg_temp.rid(25),(current_setting('test.nr_preview')::jsonb->>'calculationVersion')::bigint)::text,true);
+select extensions.is(api.service_persist_fantasy_scoring_results(pg_temp.rid(25),(current_setting('test.nr_snapshot')::jsonb->>'calculationVersion')::bigint,
+ current_setting('test.nr_snapshot')::jsonb->>'inputDigest',current_setting('test.nr_results')::jsonb->'playerResults',current_setting('test.nr_results')::jsonb->'teamResults')->>'teamsPersisted','1','the real persistence RPC accepts zero events for a proven Not rated appearance');
+select extensions.is((select provisional_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),80,'ten rated starters score 80 and the unrated captain contributes zero');
+select extensions.ok((select did_play and minutes_played=7 and provisional_points=0 from app.fantasy_player_gameweek_points where gameweek_id=pg_temp.rid(25)and fantasy_player_id=pg_temp.rid(2028)),'zero points preserve actual participation and minutes');
+select extensions.is((select effective_captain_id from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),pg_temp.rid(2028),'the armband stays on the participating captain');
+update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp()where id=pg_temp.rid(25);
+select set_config('test.nr_history_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
+select app_private.fantasy_stage_api_rating_recovery(pg_temp.rid(25),current_setting('test.nr_history_preview')::jsonb->>'inputDigest',current_setting('test.nr_results')::jsonb,'Owner approved the reviewed Not rated historical revision');
+select extensions.is(app_private.fantasy_publish_rating_recovery((select max(id)from app_private.fantasy_rating_recovery_plans where gameweek_id=pg_temp.rid(25)),
+ current_setting('test.nr_history_preview')::jsonb->>'inputDigest','Owner approved the reviewed Not rated historical revision')->>'published','true','historical publication independently accepts the immutable Not rated proof');
+select set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',pg_temp.rid(8))::text,true);
+select extensions.ok(exists(select 1 from jsonb_array_elements(api.get_my_fantasy_points(pg_temp.rid(9),pg_temp.rid(25))->'players')p
+ where p->>'fantasyPlayerId'=pg_temp.rid(2028)::text and p->>'notRated'='true'and p->>'ratingPending'='false'and(p->>'provisionalPoints')::integer=0),'the customer sees settled zero and Not rated without a pending spinner');
+select extensions.is((select md5(to_jsonb(s)::text)from app_private.fantasy_scoring_snapshots s where gameweek_id=pg_temp.rid(24)),current_setting('test.past_seal'),'end-to-end settlement and publication preserve the past seal byte for byte');
+rollback to not_rated_end_to_end;
+
 -- A later provider reply with one missing rating must still expose the other
 -- real ratings provisionally, without allowing sealing or a false GK swap.
 select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(true),statement_timestamp());
