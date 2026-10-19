@@ -230,7 +230,7 @@ async function main() {
   report.dryRunReadOnly = true;
   server = Bun.serve({
     hostname: "0.0.0.0",
-    port: 57890,
+    port: 0,
     fetch: async (request) => {
       let response: Response;
       if (new URL(request.url).pathname.endsWith("fantasy-lifecycle-worker"))
@@ -258,7 +258,7 @@ async function main() {
     throw new Error("isolated_docker_callback_required");
   await sql.unsafe(
     "update app_private.notification_email_settings set football_live_refresh_enabled=true,functions_base_url=$1 where id",
-    [`http://${callback}:57890/functions/v1`],
+    [`http://${callback}:${server.port}/functions/v1`],
   );
   await sql.unsafe(
     "update app_private.football_season_refresh_heartbeat set last_invoked_at=null,last_outcome='invoked' where id",
