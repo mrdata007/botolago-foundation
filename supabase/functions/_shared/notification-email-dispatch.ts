@@ -553,7 +553,7 @@ async function record(
 interface WithheldOutcome {
   readonly outcome: "cancelled";
   readonly providerMessageId: null;
-  readonly stableErrorCode: "delivery_body_changed";
+  readonly stableErrorCode: "delivery_body_changed" | "email_no_longer_eligible";
   readonly retryAfterSeconds: null;
   readonly rateLimitRemaining: null;
   readonly latencyMs: 0;
@@ -632,6 +632,24 @@ export async function runEmailDispatch(
         continue;
       }
       const bodySha256 = await sha256Hex(body);
+      // Re-read the live selection/result, consent, address and activation scope
+      // immediately before sending. A queue claim is not a delivery guarantee.
+      if ("automationVersion" in delivery.payload && delivery.payload.automationVersion === 1) {
+        const eligible = await rpc(dependencies.client, "service_validate_fantasy_email_delivery", {
+          p_delivery_id: delivery.id,
+          p_expected_payload: delivery.payload,
+          p_recipient_email: delivery.recipient.email,
+          p_time_zone: delivery.timezone,
+        });
+        if (eligible !== true) {
+          await record(dependencies.client, delivery.id, {
+            ...WITHHELD,
+            stableErrorCode: "email_no_longer_eligible",
+          });
+          counts.failed += 1;
+          continue;
+        }
+      }
       if (delivery.bodySha256 && delivery.bodySha256 !== bodySha256) {
         // Under the same key, a different body is either refused by the
         // provider (inside its window) or sent as a second, different email

@@ -116,6 +116,10 @@ const PAYLOADS: { readonly [K in EmailNotificationType]: EmailPayloadByType[K] }
     gameweek: { id: "gw-6", sequence: 6, name: "Journée 6" },
     deadlineAt: "2026-10-02T15:30:00Z",
   },
+  gameweek_opened: {
+    gameweek: { id: "gw-6", sequence: 6, name: "Journée 6" },
+    deadlineAt: "2026-10-02T15:30:00Z",
+  },
   gameweek_finalized: { gameweek: 5, points: 64, overallRank: 1287, totalPoints: 312 },
   // Sample names, not real players.
   pepites_weekly: {

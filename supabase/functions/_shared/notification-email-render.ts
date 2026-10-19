@@ -154,6 +154,7 @@ function linksFor(app: string) {
     matches: `${app}/matches`,
     match: (fixtureId: string) => `${app}/matches/${encodeURIComponent(fixtureId)}`,
     fantasyTransfers: `${app}/fantasy/transfers`,
+    fantasyTeam: `${app}/fantasy/team`,
     fantasyPoints: `${app}/fantasy/points`,
     profile: `${app}/profile`,
     pepites: `${app}/pepites`,
@@ -1063,6 +1064,28 @@ function buildContent(
       return deadline24h(delivery.payload, ctx, links);
     case "gameweek_finalized":
       return gameweekFinalized(delivery.payload, ctx, links);
+    case "gameweek_opened":
+      return {
+        ...deadline24h(delivery.payload, ctx, links),
+        subject: t(ctx, "À toi de jouer, coach !", "حان دورك يا مدرب!"),
+        title: t(ctx, "La sélection est ouverte", "اختيار التشكيلة متاح"),
+        blocks: [
+          {
+            kind: "paragraph",
+            runs: [
+              plain(
+                t(
+                  ctx,
+                  "Choisis ton onze, prépare ton banc et confirme ton capitaine avant la date limite.",
+                  "اختر لاعبيك الأساسيين، ورتّب البدلاء، وحدّد قائدك قبل الموعد النهائي.",
+                ),
+              ),
+            ],
+          },
+          ...deadline24h(delivery.payload, ctx, links).blocks.slice(1),
+        ],
+        cta: { label: t(ctx, "Choisir mon équipe", "اختر تشكيلتي"), url: links.fantasyTeam },
+      };
     case "pepites_weekly":
       return pepitesWeekly(delivery.payload, ctx, links);
     default: {

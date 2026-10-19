@@ -17,6 +17,7 @@ export const EMAIL_NOTIFICATION_TYPES = [
   "match_starting",
   "deadline_24h",
   "gameweek_finalized",
+  "gameweek_opened",
   "pepites_weekly",
 ] as const;
 
@@ -71,6 +72,10 @@ export interface MatchStartingPayload {
 export interface DeadlinePayload {
   readonly gameweek: { readonly id: string; readonly sequence: number; readonly name: string };
   readonly deadlineAt: string;
+  readonly automationVersion?: 1;
+  readonly opensAt?: string;
+  readonly selectionState?: "open";
+  readonly deadlineConfirmed?: boolean;
 }
 
 export interface GameweekFinalizedPayload {
@@ -80,6 +85,10 @@ export interface GameweekFinalizedPayload {
   /** Added at claim time; null when the ranking is not available. */
   readonly overallRank: number | null;
   readonly totalPoints: number | null;
+  readonly automationVersion?: 1;
+  readonly state?: "finalized";
+  readonly pendingPlayers?: number;
+  readonly calculationVersion?: number;
 }
 
 /** One line of a Pépites Top 10, fixed when the edition was published. */
@@ -116,6 +125,7 @@ export type EmailPayloadByType = {
   readonly match_starting: MatchStartingPayload;
   readonly deadline_24h: DeadlinePayload;
   readonly gameweek_finalized: GameweekFinalizedPayload;
+  readonly gameweek_opened: DeadlinePayload;
   readonly pepites_weekly: PepitesWeeklyPayload;
 };
 

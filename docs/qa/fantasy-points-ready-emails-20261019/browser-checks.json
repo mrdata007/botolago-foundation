@@ -1,0 +1,326 @@
+[
+  {
+    "variant": "score-reveal",
+    "lang": "fr",
+    "width": 390,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Découvrir mes points",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "manager-report",
+    "lang": "fr",
+    "width": 390,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Ouvrir mon débrief",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "full-time",
+    "lang": "fr",
+    "width": 390,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Voir le score de mon équipe",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "score-reveal",
+    "lang": "fr",
+    "width": 1280,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Découvrir mes points",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "manager-report",
+    "lang": "fr",
+    "width": 1280,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Ouvrir mon débrief",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "full-time",
+    "lang": "fr",
+    "width": 1280,
+    "dir": "ltr",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "Voir le score de mon équipe",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "Gérer mes notifications",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "Me désabonner",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "score-reveal",
+    "lang": "ar",
+    "width": 390,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "اكتشف نقاطي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "manager-report",
+    "lang": "ar",
+    "width": 390,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "افتح ملخصي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "full-time",
+    "lang": "ar",
+    "width": 390,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "شاهد رصيد فريقي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "score-reveal",
+    "lang": "ar",
+    "width": 1280,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "اكتشف نقاطي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "manager-report",
+    "lang": "ar",
+    "width": 1280,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "افتح ملخصي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  },
+  {
+    "variant": "full-time",
+    "lang": "ar",
+    "width": 1280,
+    "dir": "rtl",
+    "overflow": [],
+    "logoLoaded": true,
+    "links": [
+      {
+        "text": "BotolaGO",
+        "url": "https://botolago.com/"
+      },
+      {
+        "text": "شاهد رصيد فريقي",
+        "url": "https://botolago.com/fantasy/points"
+      },
+      {
+        "text": "إدارة إشعاراتي",
+        "url": "https://botolago.com/profile"
+      },
+      {
+        "text": "إلغاء الاشتراك",
+        "url": "https://botolago.com/unsubscribe?token=PREVIEW_NOT_A_REAL_TOKEN"
+      }
+    ],
+    "errors": []
+  }
+]

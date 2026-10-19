@@ -2489,6 +2489,15 @@ export type Database = {
         }
         Returns: string
       }
+      service_validate_fantasy_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_expected_payload: Json
+          p_recipient_email: string
+          p_time_zone: string
+        }
+        Returns: boolean
+      }
       service_verify_scheduler_token: {
         Args: { p_token: string }
         Returns: boolean
@@ -9481,6 +9490,7 @@ export type Database = {
         | "goal_cancelled"
         | "manager_card_ovr_change"
         | "rival_lead_change"
+        | "gameweek_opened"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -9907,6 +9917,7 @@ export const Constants = {
         "goal_cancelled",
         "manager_card_ovr_change",
         "rival_lead_change",
+        "gameweek_opened",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [
