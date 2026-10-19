@@ -127,6 +127,15 @@ class FreeGate(BASE.CapacityGate):
             state["temporaryMetricsKeyId"] = self.temp_key_id
             BASE.private_json(CONTEXT, state)
 
+    def analyze_metrics(self):
+        result = super().analyze_metrics()
+        records = [json.loads(line) for line in (self.artifact_dir / "metrics.ndjson").read_text().splitlines() if line]
+        actual = module("actual_free_metrics", "fantasy_free_metrics.py")
+        result.update(actual.cpu_intervals(records))
+        result.update(actual.pool_upper_bound(records))
+        BASE.private_json(self.artifact_dir / "metrics-analysis.json", result)
+        return result
+
     def await_metrics(self):
         stdout, _ = self.metrics_process.communicate(timeout=30)
         if self.metrics_process.returncode:
@@ -404,6 +413,7 @@ def finish():
                 criteria.update({f"{profile}_{k}": v for k, v in aggregate["passCriteria"].items()})
         analysis = metrics["analysis"]
         criteria.update(metrics["coverage"])
+        criteria["exporterInputsValid"] = analysis["invalidCpuIntervals"] == 0 and analysis["invalidPoolSamples"] == 0
         criteria.update({"metricsComplete": metrics_complete(metrics["summary"], scope() == "rehearsal"),
                          "cpu": analysis["maxCpuPercent"] is not None and analysis["maxCpuPercent"] < 80,
                          "connections": analysis["maxConnectionUtilizationPercent"] < 80,

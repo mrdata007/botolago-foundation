@@ -202,3 +202,14 @@ and compares the QA and result fingerprints with the saved baseline. Keep its
 require rerunning cleanup from the same run's context; do not start another
 staging writer before restoring it. A rehearsal is preparation evidence only;
 only a measured launch-sized run can close the launch load gate.
+
+The free route interprets raw exporter data with `fantasy_free_metrics.py`.
+Identical cached CPU counters are not fabricated into 100% utilisation: CPU is
+the busy fraction of advancing per-mode counters, and missing/reset counters
+prevent certification. Pool pressure uses the actual PostgREST pool, with a
+conservative occupancy upper bound: all `authenticator` connections minus the
+reported idle connections, divided by the configured maximum. This counts the
+listener as busy rather than assuming it away. The empty PgBouncer admin pool
+is not the API pool. The <80% requirements remain unchanged; inconsistent or
+missing exporter inputs fail the evidence check. PostgREST documents its gauges
+in [Observability](https://docs.postgrest.org/en/v14/references/observability.html).
