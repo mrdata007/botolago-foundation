@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { RatingPoints } from "@/components/fantasy/RatingPoints";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
@@ -43,6 +44,7 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { pointsUnit } from "@/lib/points-unit";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 interface PointsSearch {
   /** The round to open on (`/fantasy/points?gw=13`), as the hub's team card links it. */
@@ -276,7 +278,7 @@ function PointsBody() {
 
   const pointsFor = (id: string) => {
     const b = breakdown.get(id);
-    if (!b) return null;
+    if (!b || b.pointsKnown === false) return null;
     if (vm?.source === "server") return b.totalPoints * Math.max(1, b.multiplier ?? 1);
     if (vm && id === captainId) {
       const raw = b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints;
@@ -284,6 +286,14 @@ function PointsBody() {
     }
     return b.totalPoints;
   };
+  const ratingPoints = (id: string) => (
+    <RatingPoints
+      points={pointsFor(id)}
+      pending={breakdown.get(id)?.ratingPending === true}
+      awaitingLabel={t("fantasy.points.awaiting_rating")}
+      none={none}
+    />
+  );
   const card = (id: string, size?: "md" | "sm") => {
     const p = playerOf(id);
     if (!p) return <div key={id} />;
@@ -293,7 +303,8 @@ function PointsBody() {
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
+        sub={<PopOnChange value={pts}>{ratingPoints(id)}</PopOnChange>}
+        pointsPending={breakdown.get(id)?.ratingPending === true}
         captain={id === badgeCaptainId}
         vice={id === viceId && id !== badgeCaptainId}
         size={size}
@@ -442,6 +453,41 @@ function PointsBody() {
         ]}
       />
 
+      {resultQ.data?.authoritative?.ratingPublication ? (
+        <div className={cn("space-y-1 pt-3", ui.space.gutter, ui.text.meta, ui.tone.muted)}>
+          {resultQ.data.authoritative.ratingPublication.historicalRevision ? (
+            <p>{t("fantasy.points.rating_revision")}</p>
+          ) : null}
+          {resultQ.data.authoritative.ratingPublication.pending ? (
+            <p className="flex items-start gap-2">
+              <RatingPoints
+                points={null}
+                pending
+                awaitingLabel={t("fantasy.points.awaiting_rating")}
+              />
+              <span>
+                {resultQ.data.authoritative.ratingPublication.historicalRevision
+                  ? t("fantasy.points.revision_pending")
+                  : t("fantasy.points.ratings_pending")}
+              </span>
+            </p>
+          ) : null}
+          {resultQ.data.authoritative.ratingPublication.sourceUpdatedAt ? (
+            <p>
+              {t("fantasy.points.ratings_updated").replace(
+                "{time}",
+                moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(new Date(resultQ.data.authoritative.ratingPublication.sourceUpdatedAt)),
+              )}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div id="points-detail" className={cn("scroll-mt-20 pt-3", ui.space.gutter)}>
         <UiSegmented
           variant="pill"
@@ -559,10 +605,7 @@ function PointsBody() {
             {
               key: "pts",
               label: `GW${gw}`,
-              render: (p) => {
-                const pts = pointsFor(p.id);
-                return pts === null ? none : `${pts}${pointsUnit(pts, t)}`;
-              },
+              render: (p) => ratingPoints(p.id),
               // The column a reader came for: the heavy step of the ramp,
               // not the off-token `font-extrabold` it used to carry.
               className: "[font-weight:var(--ui-weight-heavy)]",

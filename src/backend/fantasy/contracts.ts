@@ -272,6 +272,14 @@ export const fixtureScoringSchema = z.object({
 });
 
 export const fantasyPointsSchema = z.object({
+  ratingPublication: z
+    .object({
+      historicalRevision: z.boolean(),
+      pending: z.boolean(),
+      pendingFixtures: z.number().int().nonnegative(),
+      sourceUpdatedAt: z.string().nullable(),
+    })
+    .optional(),
   incrementalScoring: z.boolean().optional(),
   /**
    * When the gameweek closed on provisional points (staged SofaScore statistics,
@@ -303,6 +311,7 @@ export const fantasyPointsSchema = z.object({
   players: z.array(
     z.object({
       fixtureScoring: z.array(fixtureScoringSchema).optional(),
+      ratingPending: z.boolean().optional(),
       fantasyPlayerId: postgresUuidSchema,
       /**
        * Who the player is, read by the server whether or not he is still in the

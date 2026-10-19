@@ -877,3 +877,22 @@ missing. The October 18 authorization covers all available gameweeks; it does
 not turn absent API ratings or unidentified selections into points and does not
 authorize prize payment or another launch stage. See
 `docs/backend/FANTASY_ALL_GAMEWEEK_RATINGS_20261018.md`.
+
+## Visible historical rating publications (2026-10-19 Dubai)
+
+Migration `20261018215311_fantasy_publish_available_api_ratings.sql` publishes
+available historical ratings through private read projections. It never reopens
+or rewrites a sealed calculation. The owner approved publication of GW1–3;
+incomplete rating revisions remain visibly provisional. Points, history,
+summaries and rankings read the same publication. Apply the canonical
+`scripts/backend/apply-rating-publication.sql` with rollback first and compare
+the raw data fingerprints independently. Then publish the exact reviewed staged
+plans with `app_private.fantasy_publish_rating_recovery`, in one guarded transaction.
+
+Deploy `fantasy-scoring-worker-deploy.yml` at the exact reviewed main commit,
+then enable the existing ten-minute worker using its owner switch. The global
+lease, scheduling token, input digests and strict pending/finalization guards
+remain unchanged. Recent finished fixtures use bounded five-minute polling;
+older fixtures back off. The UI displays a labelled loop for missing ratings,
+a static indicator for reduced motion, and real zeroes as numbers. No prizes,
+trophy retractions, player links or launch-stage changes are included.
