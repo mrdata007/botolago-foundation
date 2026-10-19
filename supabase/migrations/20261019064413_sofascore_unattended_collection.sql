@@ -216,14 +216,14 @@ alter table app_private.football_refresh_dispatch add constraint football_refres
 alter function app_private.football_refresh_invoke(text,text) rename to football_refresh_invoke_before_collection;
 create function app_private.football_refresh_invoke(p_functions_base_url text,p_job text)
 returns text language plpgsql volatile security definer set search_path='' as $$
-declare d app_private.football_refresh_dispatch%rowtype; request_id bigint;
+declare d app_private.football_refresh_dispatch%rowtype; v_request_id bigint;
 begin
  if p_job<>'ratings_collection' then return app_private.football_refresh_invoke_before_collection(p_functions_base_url,p_job); end if;
  select * into d from app_private.football_refresh_dispatch where id for update;
  if d.dispatched_at>statement_timestamp()-interval '4 minutes' and not exists(select 1 from net._http_response r where r.id=d.request_id and not coalesce(r.timed_out,false) and coalesce(r.error_msg,'') not ilike '%timeout%') then return 'busy'; end if;
- request_id:=app_private.invoke_scheduled_function(p_functions_base_url,'football-live-refresh',jsonb_build_object('job',p_job));
- if request_id is null then return 'not_configured'; end if;
- update app_private.football_refresh_dispatch set job=p_job,request_id=request_id,dispatched_at=statement_timestamp(),updated_at=statement_timestamp() where id;
+ v_request_id:=app_private.invoke_scheduled_function(p_functions_base_url,'football-live-refresh',jsonb_build_object('job',p_job));
+ if v_request_id is null then return 'not_configured'; end if;
+ update app_private.football_refresh_dispatch set job=p_job,request_id=v_request_id,dispatched_at=statement_timestamp(),updated_at=statement_timestamp() where id;
  return 'invoked';
 end $$;
 alter function app_private.football_season_refresh_tick() rename to football_season_refresh_tick_before_collection;

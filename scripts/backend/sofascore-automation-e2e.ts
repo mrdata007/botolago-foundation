@@ -24,6 +24,7 @@ const uid = (n: number) => `cb000000-0000-4000-8000-${String(n).padStart(12, "0"
 let rated = false,
   providerCalls = 0;
 const handlerResults: Record<string, unknown>[] = [];
+const rpcFailures: Record<string, unknown>[] = [];
 const argumentTypes = new Map<string, { name: string; type: string }[]>();
 const rpcClient = {
   schema: () => ({
@@ -64,6 +65,7 @@ const rpcClient = {
         });
       } catch (error) {
         const e = error as { code?: string; message?: string };
+        rpcFailures.push({ name, code: e.code, message: e.message });
         return {
           data: null,
           error: { code: e.code ?? "test_error", message: e.message ?? "test_rpc_failed" },
@@ -483,6 +485,7 @@ try {
   report.passed = false;
   report.error = error instanceof Error ? error.message : "e2e_failed";
   report.handlerResults = handlerResults;
+  report.rpcFailures = rpcFailures;
   if (ownsDatabase) {
     report.databaseState = await sql
       .unsafe(
