@@ -151,7 +151,21 @@ async function main() {
     0,
     "isolated empty database required",
   );
+  const schedules = await sql.unsafe("select jobname,active from cron.job order by jobname");
+  assert.equal(
+    (
+      await sql.unsafe("select count(*)::int as n from cron.job_run_details where status='running'")
+    )[0]!.n,
+    0,
+    "an existing scheduled writer is still running",
+  );
   ownsDatabase = true;
+  await sql.unsafe("update cron.job set active=false");
+  report.baseline = {
+    fixtureCount: 0,
+    schedulesInspected: schedules.length,
+    otherScheduledRuns: 0,
+  };
   await sql.unsafe(
     readFileSync(new URL("./sofascore-automation-e2e-seed.sql", import.meta.url), "utf8"),
   );
