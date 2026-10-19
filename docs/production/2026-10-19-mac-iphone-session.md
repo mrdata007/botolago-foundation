@@ -117,8 +117,8 @@ After the session, cleanup restores the former site/redirect URLs while keeping
 the six-digit code/template alignment. The callback allowlist also includes a
 query-only glob on the exact trusted callback path, so signup can preserve an
 encoded protected-page `next` value. Other hosts, ports and paths stay excluded.
-The source upgrade from the initially applied four entries to five is pending
-the active reminder writer's restoration; no Auth flow is certified yet.
+The source upgrade from four entries to five passed strict staging readback in
+run 39265408129 at 14:03 UTC. Signup/reset delivery remains unproven.
 Any generating AI job, claimed delivery or processing deletion blocks this
 action even if its lease expired or no database session is active. Inspect
 the corresponding Edge invocation logs and finish its reviewed recovery before

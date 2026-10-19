@@ -108,13 +108,13 @@ six comment/format differences, and two substantive historical differences.
 | Launch-sized load       | FAIL in measured runs 39216960815 and 39222141596; no launch-sized capacity pass                                                                               | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
 | 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599)                    | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
 | Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                                    | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
-| Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                                                  | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
+| Ambiguous 30 s write    | PASS for committed-reply loss in 39250029846: 30,001.682 ms boundary, retained lease, natural expiry and recovery; not a 30 s database statement               | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
 | Silent-worker alarms    | Real-clock drill 39234050429 PASS for detection, accepted failure/recovery emails and restoration; owner confirmed both alert emails in the inbox              | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
-| Two-account reminders   | RUNNING: French recap and Arabic reminders received with expected printed points/times; later opt-out, UI agreement and final restoration pending              | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
+| Two-account reminders   | Automated PASS: real windows, opt-out, deduplication and exact restoration; owner confirmed all three emails; actual UI agreement pending                      | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
 | Morocco time            | Helper checks PASS                                                                                                                                             | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
 | Real iPhone / push      | Owner reports iPhone 17 Pro / iOS 27 and Mac; local HTTPS French/Arabic login rendering passed, actual device session pending. Vercel previews return HTTP 402 | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
 | Arabic skim             | Owner review outstanding                                                                                                                                       | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
-| Production health       | Historical watchdog failed `fantasy_fixture_coverage`; subsequent production reads are retained privately                                                      | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
+| Production health       | Read-only check at 17:16 UTC fails `fantasy_fixture_coverage` and `provider_refresh`; diagnosis below                                                          | Resolve the missing core statistics and season-refresh provider error; verify actual successful ingestion and fresh health. A scheduler heartbeat alone does not close either failure                                  |
 
 The existing audited runner orchestration rents five AWS machines and estimates
 $18.75 with a $50 guard. It cannot be dispatched under a $0 authorisation.
@@ -331,7 +331,7 @@ privately in staging Vault; SMTP credentials were neither changed nor saved in
 that baseline. All 27 cron flags and Rivals were restored, counts and stored
 result/gameweek fingerprints unchanged. After the phone session, `authcleanup`
 restores the pre-session URLs while preserving the six-digit/code alignment.
-Custom Auth SMTP was absent at that run. The owner subsequently reports saving it securely; configuration readback and delivery remain pending the reminder writer’s release. The successful Resend Edge
+Custom Auth SMTP was absent at that run. The owner subsequently reported saving it securely, but read-only run 39265232739 at 14:01 UTC still found host, username and sender unset in Staging V2. This is broader than a redacted password. The owner is checking the exact project and enabled toggle; signup/reset delivery remains unproven. The successful Resend Edge
 smoke cannot establish Auth signup/reset; actual signup, receipt, confirmation
 and reset are still pending.
 
@@ -339,7 +339,7 @@ and reset are still pending.
 separate, protected f970 reminder/response-loss rehearsal. It merged as
 `c5aa137eb987f2d07d56d24439f8cd58fec06ae8` after both jobs passed on `51e4b015`
 in run 39247232363; its merge tree is identical to that tested tree. Hosted
-run 39250029846 is in progress; no final result is claimed. It waits for real 24-hour/match windows and natural lease expiry, verifies
+run 39250029846 passed its automated checks and restoration; actual owner UI comparison remains pending. It waits for real 24-hour/match windows and natural lease expiry, verifies
 both an email-off account and a later unsubscribe negative, and saves an
 owner-only recovery context before pausing schedules. The GitHub integration
 refused an environment-secret write (403); after the alarm writer restored staging,
@@ -353,7 +353,7 @@ The real fixture was applied at 12:11:35 UTC and test sending activated at
 eligible around 13:11 UTC, with the later opt-out negative around 13:56 UTC.
 At 12:13:14 UTC, an independent read found exactly two provisional results,
 zero final results/events and a retained lease genuinely extended to 12:19:15.
-This is an in-progress safety observation, not a recovery or reminder verdict.
+This was a pre-expiry safety observation; the completed recovery and reminder verdicts are recorded below.
 
 Subsequent independent reads found natural lease expiry and a new acquisition
 at 12:19:16 UTC, followed by two final 96-point results, 32 bench points each,
@@ -362,14 +362,13 @@ recap in their inbox. Before eligibility, the 13:10:20 read found zero reminder
 events. Arabic match/deadline events were created at 13:11:54 and accepted by
 the email provider at 13:11:55/56, 64.683 minutes before kickoff and 1,439.683
 minutes before the deadline. The owner confirmed both arrived and their printed
-14:16 kickoff / 20 October 13:11 deadline match expectations. UI agreement,
-the later opt-out negative and full restoration remain pending; receipt alone
-does not close the complete reminder gate.
+14:16 kickoff / 20 October 13:11 deadline match expectations. The later opt-out negative and full restoration subsequently passed. Actual
+owner UI agreement remains pending; inbox receipt alone does not close that
+part of the reminder gate.
 
-Read-only phone API inspection also found that two older future-dated QA
-seasons take precedence over the f970 default hub. The staged selection helper
-described in the phone run sheet prepares a reversible, guarded temporary
-parking of those two season headers. No hosted parking is yet claimed.
+Read-only phone API inspection initially found that two older future-dated QA
+seasons took precedence over f970. The selection helper described in the phone
+run sheet temporarily parks those two headers with a guarded private baseline. Hosted run 39265609258 rehearsed and applied the parking successfully; both language hubs now select f970. At 14:06 UTC the exact cron/Rivals settings were restored, sending remained OFF and existing user counts and complete team/result/gameweek digests were unchanged. Its private restore baseline remains for the later retirement.
 
 ## Production execution order — only after the gates permit it
 
@@ -417,3 +416,87 @@ another writer while an ambiguous write or unexpired lease remains.
 
 This pack prepares decisions and reviewable operations. It does not silently
 accept launch risk, approve production changes or certify the remaining gates.
+
+## Final reminder automation and independent restoration
+
+### Production refresh diagnosis — read-only, 17:22 UTC
+
+The 17:16 UTC health read still finds two counted GW4 matches without complete
+player statistics (oldest final 43 hours ago) and no successful season-wide
+refresh for 22 hours. Core points exist for all eight counted matches; that
+separate scoring check is OK and does not erase the coverage failure.
+
+The scheduler reaches the Edge handler: six retained hourly responses from
+11:40 through 16:40 UTC are HTTP 502, `invalid_provider_payload`, without network
+timeouts. Edge logs place the rejection at the first `get-next-matches` request,
+before any fixture write. The same path succeeded at 19:10 UTC on 18 October;
+the next observed call at 20:10 failed. Live fixture polling still succeeds.
+
+The database-free [provider probe 39293443010](https://github.com/mrdata007/botolago-foundation/actions/runs/39293443010),
+pinned to `4402a52a0e0eba527c4fdf0077818675f0d463ef`, confirms at 17:22 UTC:
+upcoming matches returns HTTP 200 with only an `error` object (`code` number,
+`message` string); recent matches returns HTTP 200 with an `events` array of
+30 entries and `hasNextPage`. Exactly two requests used existing quota; no
+database access, raw payload publication or extra spending was involved.
+
+This establishes a provider error envelope rather than a scheduler transport
+failure. Its underlying cause remains unverified. Do not coerce it to an empty
+schedule, mark a partial refresh successful, restart production, or change
+credentials speculatively. A fix needs the provider's documented semantics or
+verified replacement endpoint, regression coverage, staging rehearsal, and a
+separately authorised production deployment followed by successful ingestion.
+
+### Capacity diagnosis — preserved measurements
+
+The first failed run's preserved raw metrics show swapping and a sampled Data
+API pool queue (24 waiters, no idle connections), while database observers show
+no blocking pairs, lock waits or deadlocks. Its corrected maximum CPU measurement
+is 38.178%; coarse, sometimes cached scrapes cannot localise the short burst.
+The second run's high CPU, low memory and restart remain separate evidence;
+their causal chain is not established. Neither run passes the capacity gate.
+
+The proposed eight-connection diagnostic remains unapplied because restoring
+the automatic pool baseline could not be proved. PostgREST's configuration
+reference lists `db-pool` as non-reloadable and unavailable as an in-database
+setting; an `ALTER ROLE ... pgrst.db_pool` workaround would not establish a
+supported pool change. No pool, compute, disk or production setting was changed.
+
+Run 39250029846 completed successfully. The actual lost response reached
+30,001.682 ms after consuming the committed persistence reply. The normal grace
+remained unconfirmed; the lease was extended and retained, a competing claim
+was denied and no later data write preceded natural expiry. Recovery finalized
+two 96-point teams with 32 bench points, rankings, rollovers and successor lineups.
+
+The later match event occurred at 13:57:21.603371 UTC, 64.235 minutes before its
+stored kickoff. An independent read at 13:57:23 found zero notifications and
+zero sent emails. The real unsubscribe GET left preferences unchanged; both
+POSTs succeeded idempotently, and repeated planner ticks produced no duplicates.
+
+The job verified removal of temporary runtime overrides and exact restoration.
+A separate baseline comparison at 13:59:02 confirmed every saved cron flag,
+Rivals, email settings, both preferences and languages, Auth-user count and
+existing full team/result/gameweek digests; the recovery context was removed
+and the lease was free. The successful f970 world is retained for the owner's
+actual email/UI comparison. The owner confirmed inbox receipt of the French
+96-point recap and both Arabic reminders with their expected printed times.
+These results do not certify the remaining phone UI comparison, signup/reset,
+native push or launch-sized capacity.
+
+PR 532 merged as `f1aeca219b966e4c96aec72893018a23393c500d` after both CI jobs
+passed on `8c212cf955289bb7bf42e7f2467020d637b8d016` (39260965377), including
+the real local season-collision/park/restore contract. Its two review findings
+were resolved. Callback upgrade run 39265408129 verifies five trusted entries,
+six-digit codes and the code-bearing confirmation template; SMTP fields are
+preserved. Season-selection run 39265609258 then passed its rollback rehearsal and apply,
+with actual French/Arabic hubs selecting f970 and unchanged existing data digests.
+The exact saved cron/Rivals settings were restored at 14:06 UTC, sending OFF and
+lease free. The owner was handed the retained f970 points screen for comparison;
+no actual 96-point UI confirmation is claimed yet.
+
+The protected phone-fixture execution actions merged in PR 533 as
+`4402a52a0e0eba527c4fdf0077818675f0d463ef` after both CI jobs passed on
+`fee110f337b72eaef1bd6167fc702fa60e0c6fb6` (39265144317). They load the owners
+privately, reuse the complete idle-writer guard, rehearse the fixed reviewed SQL
+with rollback and verify existing data before apply. The f960 hosted fixture,
+its real scoring and its finish controls are still pending the f970 owner UI
+comparison and retirement. No phone-fixture application is implied by this merge.
