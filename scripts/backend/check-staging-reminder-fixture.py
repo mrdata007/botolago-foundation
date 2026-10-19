@@ -62,16 +62,8 @@ def main():
           ('f9700000-0000-4000-8000-000000000022','f9700000-0000-4000-8000-000000003020'))
         then raise exception 'reminder_planned_early'; end if;
       end $$;
-      -- Contract test advances only this local function argument. Hosted proof
-      -- must use the real clock and never treats this as elapsed-time evidence.
-      select app_private.notification_email_plan(now()+interval '61 minutes');
-      do $$ begin
-        if (select count(*) from app_private.notification_events where event_type='deadline_24h'
-          and source_entity_id='f9700000-0000-4000-8000-000000000022')<>1
-        or (select count(*) from app_private.notification_events where event_type='match_starting'
-          and source_entity_id='f9700000-0000-4000-8000-000000003020')<>1
-        then raise exception 'reminder_planner_contract_failed'; end if;
-      end $$;
+      -- Only genuine current-time planning is exercised. Positive delivery
+      -- windows are measured by the hosted run after real elapsed time.
       rollback;
     """
     query(setup+source+proof)
@@ -79,7 +71,7 @@ def main():
     absent=query("select not exists(select 1 from app.fantasy_seasons where id='f9700000-0000-4000-8000-000000000005')")[-1]=='t'
     if after!=before or not absent:
         raise RuntimeError('reminder_local_rollback_failed')
-    print(json.dumps({'passed':True,'localOnly':True,'plannerContract':True,'rollbackVerified':True,'realClockEvidence':False}))
+    print(json.dumps({'passed':True,'localOnly':True,'noEarlyEvents':True,'rollbackVerified':True,'realClockEvidence':False}))
 
 
 if __name__=='__main__':

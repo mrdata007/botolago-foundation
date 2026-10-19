@@ -95,9 +95,9 @@ over an unfinished one. An unresolved writer leaves the window paused.
 
 ## Evidence boundaries
 
-The local Docker CI check exercises the exact seed and planner, verifies no early
-event, exercises the planner with an explicitly advanced **local argument**, and
-rolls everything back. It does not prove elapsed time, email transport or receipt.
+The local Docker CI check exercises the exact seed and current-time planner,
+verifies no early event, and rolls everything back. It does not advance a clock
+or prove a positive window, elapsed time, email transport or receipt.
 Unit tests cover target/origin/owner guards and actual response-loss semantics.
 The hosted run must supply real timing and durable state evidence separately.
 

@@ -289,7 +289,7 @@ jobs:
       - name: Fixture import and finalization lock ordering (four real races)
         run: python3 scripts/backend/check-fixture-input-locking.py
 
-      - name: Reminder fixture and planner contract (local rollback only)
+      - name: Reminder fixture and early planning guard (local rollback only)
         run: python3 scripts/backend/check-staging-reminder-fixture.py
       # After the pgTAP suite: they leave append-only rows (editions, runs) and
       # a current season behind, which the pgTAP files do not expect to find.
