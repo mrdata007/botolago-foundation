@@ -79,13 +79,20 @@ class PendingTests(unittest.TestCase):
         pending = UPDATE.pending_migrations(migrations, history)
         self.assertEqual([m.name for m in pending], ["news_article_detail_not_found_status"])
 
-    def test_deferred_migrations_are_skipped(self) -> None:
+    def test_explicitly_deferred_migrations_are_skipped(self) -> None:
         migrations = [
             migration("20260925090400", "predictions_scoring"),
             migration("20260925090500", "fantasy_league_page_skip_empty"),
         ]
-        pending = UPDATE.pending_migrations(migrations, [])
+        with unittest.mock.patch.dict(UPDATE.DEFERRED, {
+            "20260925090500_fantasy_league_page_skip_empty.sql": "test deferral"
+        }):
+            pending = UPDATE.pending_migrations(migrations, [])
         self.assertEqual([m.name for m in pending], ["predictions_scoring"])
+
+    def test_production_applied_league_paging_is_no_longer_deferred(self) -> None:
+        item = migration("20260925090500", "fantasy_league_page_skip_empty")
+        self.assertEqual(UPDATE.pending_migrations([item], []), [item])
 
     def test_a_version_recorded_under_another_name_is_refused(self) -> None:
         migrations = [migration("20260921140000", "news_article_detail_not_found_status")]

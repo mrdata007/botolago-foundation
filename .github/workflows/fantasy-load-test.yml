@@ -23,11 +23,27 @@ on:
           - rehearsal
           - full
           - launch-sized
+      runner_backend:
+        description: AWS (paid) or five standard public GitHub runners ($0 extra)
+        required: true
+        type: choice
+        default: aws
+        options:
+          - aws
+          - github-free
       staging_compute:
         description: "Staging's compute size; must equal production's (e.g. Large)"
         required: true
         type: string
         default: Large
+      postgrest_pool:
+        description: "$0 route only: unchanged, or temporarily reduce an explicit Data API pool to 8 and restore exactly"
+        required: true
+        type: choice
+        default: unchanged
+        options:
+          - unchanged
+          - "8"
       confirmation:
         description: Type RUN_FANTASY_LOAD_TEST
         required: true
@@ -48,7 +64,7 @@ permissions:
 jobs:
   load-test:
     name: Rehearsal, load test, soak, and exact-zero cleanup
-    if: github.repository == 'mrdata007/botolago-foundation'
+    if: github.repository == 'mrdata007/botolago-foundation' && inputs.runner_backend != 'github-free'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     environment: staging-load-test
@@ -78,9 +94,11 @@ jobs:
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
           SCOPE: ${{ inputs.scope }}
+          POSTGREST_POOL: ${{ inputs.postgrest_pool || 'unchanged' }}
         run: |
           set -euo pipefail
           test "$CONFIRMATION" = "RUN_FANTASY_LOAD_TEST"
+          test "$POSTGREST_POOL" = "unchanged"
           case "$SCOPE" in rehearsal|full|launch-sized) ;; *) exit 2 ;; esac
 
       - name: Check out the repository
@@ -274,3 +292,182 @@ jobs:
         run: |
           set -euo pipefail
           python -c 'import json,os,sys; result=json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"phase6-workflow-result.json"))); sys.exit(0 if result["gatePassed"] else 2)'
+
+  free-prepare:
+    name: $0 isolated fixture and temporary accounts
+    if: github.repository == 'mrdata007/botolago-foundation' && inputs.runner_backend == 'github-free'
+    timeout-minutes: 15
+
+    runs-on: ubuntu-latest
+    environment: staging-load-test
+    env:
+      SCOPE: ${{ inputs.scope }}
+      POSTGREST_POOL: ${{ inputs.postgrest_pool || 'unchanged' }}
+      GITHUB_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+      SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
+
+      - name: Validate scope and confirmation before any mutation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$CONFIRMATION" = RUN_FANTASY_LOAD_TEST
+          case "$SCOPE" in rehearsal|launch-sized) ;; *) exit 2 ;; esac
+      - run: python scripts/backend/staging-writer-guard.py
+      - run: python scripts/backend/fantasy-load-test-free.py preflight
+      - run: python scripts/backend/fantasy-load-test-free.py prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: free-context-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence/context.json
+          if-no-files-found: error
+          retention-days: 1
+
+  free-runners:
+    name: $0 authenticated shard ${{ matrix.shard }}
+    needs: free-prepare
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+
+    runs-on: ubuntu-latest
+    environment: staging-load-test
+    env:
+      SCOPE: ${{ inputs.scope }}
+      GITHUB_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+      SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
+
+      - name: Provision independent sessions on this origin
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python scripts/backend/fantasy-load-test-free.py provision
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: free-ready-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence/ready.json
+          if-no-files-found: error
+          retention-days: 1
+      - name: Await five-origin barrier, then run the unchanged workload
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python scripts/backend/fantasy-load-test-free.py workload
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: free-result-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence
+          if-no-files-found: error
+          retention-days: 1
+
+  free-monitor:
+    name: $0 synchronization and independent database metrics
+    needs: free-prepare
+    timeout-minutes: 40
+
+    runs-on: ubuntu-latest
+    environment: staging-load-test
+    env:
+      SCOPE: ${{ inputs.scope }}
+      GITHUB_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+      SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: free-context-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence
+      - name: Require five distinct origins and independent sessions
+        run: python scripts/backend/fantasy-load-test-free.py barrier
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: free-schedule-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence/schedule.json
+          if-no-files-found: error
+          retention-days: 1
+      - name: Sample real CPU, pool, connections, locks and deadlocks
+        run: python scripts/backend/fantasy-load-test-free.py monitor
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: free-metrics-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence
+          if-no-files-found: error
+          retention-days: 1
+
+  free-finish:
+    name: $0 verdict, exact-zero cleanup and schedule restoration
+    if: always() && inputs.runner_backend == 'github-free'
+    needs: [free-prepare, free-runners, free-monitor]
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+    environment: staging-load-test
+    env:
+      SCOPE: ${{ inputs.scope }}
+      GITHUB_TOKEN: ${{ github.token }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+      SUPABASE_STAGING_URL: ${{ vars.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_STAGING_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --requirement scripts/backend/fantasy-capacity-requirements.txt
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: free-*-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/all
+      - name: Restore the recovery context
+        run: |
+          install -d -m 0700 "$RUNNER_TEMP/botolago-free/evidence"
+          if test -f "$RUNNER_TEMP/botolago-free/all/free-context-attempt-$GITHUB_RUN_ATTEMPT/context.json"; then
+            install -m 0600 "$RUNNER_TEMP/botolago-free/all/free-context-attempt-$GITHUB_RUN_ATTEMPT/context.json" "$RUNNER_TEMP/botolago-free/evidence/context.json"
+          fi
+      - name: Evaluate all criteria and restore staging even after failure
+        run: python scripts/backend/fantasy-load-test-free.py finish
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: free-final-evidence-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/botolago-free/evidence
+          if-no-files-found: error
+          retention-days: 1

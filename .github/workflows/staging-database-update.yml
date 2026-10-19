@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "plan (read only), rehearse (rolled back), apply, seed, or check (read only)"
+        description: "Plan/check, rehearse/apply/seed, deploy runtime, score5000, or workerprobe (staging only)"
         required: true
         type: choice
         default: plan
@@ -19,8 +19,14 @@ on:
           - apply
           - seed
           - check
+          - runtime
+          - score5000
+          - score5000edge
+          - edge5000
+          - workerprobe
+          - workeralarms
       confirmation:
-        description: "For rehearse, apply and seed: type UPDATE_STAGING_DATABASE"
+        description: "For every write action: type UPDATE_STAGING_DATABASE"
         required: false
         type: string
 
@@ -40,7 +46,7 @@ jobs:
     name: Staging database ${{ inputs.action }}
     if: github.repository == 'mrdata007/botolago-foundation'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     environment: staging-load-test
 
     steps:
@@ -53,7 +59,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check) ;;
-            rehearse|apply|seed) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime|score5000|score5000edge|edge5000|workerprobe|workeralarms) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -68,13 +74,33 @@ jobs:
           python-version: "3.12"
 
       - name: No other staging writer is running
-        if: inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed'
+        if: inputs.action != 'plan' && inputs.action != 'check'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/backend/staging-writer-guard.py
 
+      - name: Set up Bun for the staging runtime
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge' || inputs.action == 'edge5000'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install pinned runtime deployment tooling
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge' || inputs.action == 'edge5000'
+        run: |
+          node scripts/backend/check-config-integrity.mjs
+          bun install --frozen-lockfile
+
+      - name: Deploy staging runtime
+        if: inputs.action == 'runtime'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-release-runtime.py
+
       - name: Run ${{ inputs.action }}
+        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'score5000edge' && inputs.action != 'edge5000' && inputs.action != 'workerprobe' && inputs.action != 'workeralarms'
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
@@ -93,3 +119,32 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+
+      - name: Score the isolated 5000-team staging fixture
+        if: inputs.action == 'score5000' || inputs.action == 'score5000edge'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          STAGING_DRILL_FIXTURE: ${{ inputs.action == 'score5000edge' && 'edge-runtime' || 'operator' }}
+        run: python scripts/backend/staging-5000-rating-drill.py
+
+      - name: Probe the real staging Edge worker
+        if: inputs.action == 'workerprobe'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-worker-probe.py
+
+      - name: Measure two real Edge passes and the isolated operator fallback
+        if: inputs.action == 'edge5000'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-edge-runtime-drill.py
+
+      - name: Observe real 30 and 90 minute worker alarms and recovery
+        if: inputs.action == 'workeralarms'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-worker-alarm-drill.py

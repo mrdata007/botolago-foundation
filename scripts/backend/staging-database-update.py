@@ -65,11 +65,9 @@ ENUM_VALUE_ADDED = re.compile(r"(?is)\balter\s+type\s+\S+\s+add\s+value\b")
 # Repository migrations production has deliberately not applied yet. Staging
 # mirrors production, so the load test measures what production runs. Remove
 # an entry once production applies it.
-DEFERRED = {
-    "20260925090500_fantasy_league_page_skip_empty.sql": (
-        "production applies it only after Fantasy GW1 is locked and scored"
-    ),
-}
+# Production records fantasy_league_page_skip_empty as applied (verified
+# 2026-10-19). Keeping its former exception would leave staging's worker behind.
+DEFERRED: dict[str, str] = {}
 
 # What scripts/backend/fantasy-staging-seed.sql leaves behind on staging.
 SEED_PROFILE = {

@@ -1,7 +1,8 @@
 # Finalizing fixture and performance input guard
 
 Candidate migration `20261019073221_fantasy_finalizing_fixture_performance_guard`.
-Not applied to staging or production. This addresses the remaining fixture and
+Applied to staging on 2026-10-19 after plan and rollback rehearsal; not applied to
+production by this operator. This addresses the remaining fixture and
 performance-import gap described in
 [FANTASY_FINALIZING_GUARD_OWNER_RUNBOOK.md](FANTASY_FINALIZING_GUARD_OWNER_RUNBOOK.md).
 
@@ -66,8 +67,14 @@ performances, in both acquisition orders:
    unchanged.
 
 The PostgreSQL deadlock counter must not increase. CI runs this after pgTAP on
-its disposable stack. Current results will be recorded after execution; no local
-or hosted pass is implied by this runbook.
+its disposable stack. Combined-head CI run 39229353268 passed 185 files / 6,879
+assertions and all four races with zero new deadlocks. Staging plan 39231087005,
+rollback rehearsal 39231203682 and apply 39231376873 passed. A separate staging
+transaction exercised 31 functional assertions against the actual tables and
+rolled back completely; all three guard triggers are enabled, the test world is
+absent and existing team/result/gameweek fingerprints are unchanged. The saved
+27 cron flags and Rivals ON state were restored. See the dated
+[go-live pack](2026-10-19-go-live-pack.md) for the evidence and remaining gates.
 
 ## Staging and production sequence
 
