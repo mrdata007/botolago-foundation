@@ -74,6 +74,7 @@ function setup(
     missingMapping?: boolean;
     detail?: unknown;
     claim?: string;
+    homeTeamId?: string;
   } = {},
 ) {
   const writes: { name: string; args: Record<string, unknown> }[] = [];
@@ -93,6 +94,7 @@ function setup(
           return { data: options.reserve ?? true, error: null };
         if (name === "service_sofascore_fantasy_context") {
           const ctx = syntheticContext();
+          if (options.homeTeamId) ctx.homeTeamId = options.homeTeamId;
           if (options.missingMapping) ctx.players.shift();
           return { data: ctx, error: null };
         }
@@ -126,6 +128,20 @@ function setup(
   return { client, rapid, writes, paths, now: new Date("2026-10-19T00:00:00Z"), holder: U(999) };
 }
 describe("unattended collection worker (mock provider/RPC; not live evidence)", () => {
+  test("a corrected approved match binding is new evidence even with unchanged player statistics", async () => {
+    const original = setup();
+    const corrected = setup({ homeTeamId: U(888) });
+    await runSofascoreCollection(original);
+    await runSofascoreCollection(corrected);
+    const meta = (s: ReturnType<typeof setup>) =>
+      s.writes.find((w) => w.name === "service_sofascore_collection_commit")!.args.p_meta as {
+        validated: boolean;
+        digest: string;
+      };
+    expect(meta(original).validated).toBe(true);
+    expect(meta(corrected).validated).toBe(true);
+    expect(meta(corrected).digest).not.toBe(meta(original).digest);
+  });
   test("sanitizes unavailable database state and ambiguous finalizer failures", async () => {
     for (const failure of [
       "service_sofascore_collection_plan",

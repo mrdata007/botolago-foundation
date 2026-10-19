@@ -275,7 +275,20 @@ async function collect(deps: CollectionDependencies) {
           statistics: statisticsRaw === null ? [] : parseSofascoreStatistics(statisticsRaw),
           stoppage: parseSofascoreStoppage(incidentsRaw),
         };
-        const digest = await sha256Hex(canonicalJson({ parts, mappingDigest: snapshot.digest }));
+        const digest = await sha256Hex(
+          canonicalJson({
+            parts,
+            mappingDigest: snapshot.digest,
+            binding: {
+              fixtureId: c.fixture_id,
+              eventId: c.event_id,
+              homeTeamId: ctx.homeTeamId,
+              awayTeamId: ctx.awayTeamId,
+              homeScore: hs,
+              awayScore: as,
+            },
+          }),
+        );
         const prepared = await prepareSofascoreObservation({
           observedAt: deps.now.toISOString(),
           snapshot,
