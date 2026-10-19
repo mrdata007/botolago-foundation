@@ -16,9 +16,10 @@ import {
 
 const ref = "srdrflfrfpwixsllveid";
 const fixture = process.env.STAGING_DRILL_FIXTURE ?? "operator";
-if (!["operator", "edge-runtime"].includes(fixture))
+if (!["operator", "edge-runtime", "phone-qa"].includes(fixture))
   throw new Error("staging_drill_fixture_refused");
-const namespace = fixture === "edge-runtime" ? "f9510000" : "f9500000";
+const namespace =
+  fixture === "phone-qa" ? "f9600000" : fixture === "edge-runtime" ? "f9510000" : "f9500000";
 const gameweekId = `${namespace}-0000-4000-8000-000000000021`;
 const url = process.env.STAGING_DRILL_URL;
 if (url !== `https://${ref}.supabase.co` || !process.env.STAGING_DRILL_SERVICE_KEY)
