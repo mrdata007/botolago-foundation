@@ -248,7 +248,7 @@ async function main() {
   );
   // An actual pg_cron interval executes the unchanged scheduler entry points.
   await sql.unsafe(
-    "select cron.alter_job(jobid,schedule:='5 seconds',active:=true) from cron.job where jobname in ('football-season-refresh','fantasy-worker-tick')",
+    "select cron.alter_job(jobid,schedule:='5 seconds',active:=true) from cron.job where jobname='football-season-refresh'",
   );
   await waitFor(
     async () =>
@@ -261,6 +261,12 @@ async function main() {
         )[0]!.n,
       ) === 1,
     "first scheduled observation",
+  );
+  // Measure the strict-rating hold after appearances are known. The existing
+  // incremental scorer can publish an empty placeholder before any observation;
+  // that is a different state from an observed player whose rating is absent.
+  await sql.unsafe(
+    "select cron.alter_job(jobid,schedule:='5 seconds',active:=true) from cron.job where jobname='fantasy-worker-tick'",
   );
   await sql.unsafe("update app_private.fantasy_worker_dispatch set last_invoked_at=null where id");
   await waitFor(
