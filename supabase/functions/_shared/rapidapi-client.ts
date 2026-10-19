@@ -27,7 +27,13 @@ export type RapidApiErrorCode =
 
 export class RapidApiError extends Error {
   readonly code: RapidApiErrorCode;
-  constructor(code: RapidApiErrorCode, message: string, cause?: unknown) {
+  constructor(
+    code: RapidApiErrorCode,
+    message: string,
+    cause?: unknown,
+    readonly httpStatus?: number,
+    readonly retryAfterSeconds?: number,
+  ) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = "RapidApiError";
     this.code = code;
@@ -156,7 +162,12 @@ export class RapidApiClient {
     const response = await this.sendWithRetries(url, path);
 
     if (response.status === 401 || response.status === 403) {
-      throw new RapidApiError("provider_unavailable", "The provider refused the credentials.");
+      throw new RapidApiError(
+        "provider_unavailable",
+        "The provider refused the credentials.",
+        undefined,
+        response.status,
+      );
     }
     if (response.status === 404) {
       throw new RapidApiError("data_unavailable", `The provider has no data for ${path}.`);
@@ -168,14 +179,26 @@ export class RapidApiClient {
       );
     }
     let data: unknown;
+    let bodyTimer: ReturnType<typeof setTimeout> | undefined;
+    let bodyTimedOut = false;
     try {
-      data = await response.json();
-    } catch (error) {
+      data = await Promise.race([
+        response.json(),
+        new Promise<never>((_, reject) => {
+          bodyTimer = setTimeout(() => {
+            bodyTimedOut = true;
+            void response.body?.cancel().catch(() => undefined);
+            reject(new RapidApiError("provider_unavailable", "Provider body timed out."));
+          }, this.timeoutMs);
+        }),
+      ]);
+    } catch {
       throw new RapidApiError(
-        "invalid_provider_payload",
-        `The response for ${path} is not JSON.`,
-        error,
+        bodyTimedOut ? "provider_unavailable" : "invalid_provider_payload",
+        bodyTimedOut ? "Provider body timed out." : "Provider response is not JSON.",
       );
+    } finally {
+      if (bodyTimer) clearTimeout(bodyTimer);
     }
     return { data, quota: this.lastQuota, requestsSent: this.requestCount };
   }
@@ -198,12 +221,26 @@ export class RapidApiClient {
         const result = await this.fetchImpl(url, {
           headers: { "x-rapidapi-key": this.key, "x-rapidapi-host": this.host },
           signal: controller.signal,
+          redirect: "error",
         });
         counted = true;
         this.count(path, result.status);
         this.lastQuota = readQuota(result.headers, this.lastQuota);
         if (result.status === 429) {
-          throw new RapidApiError("provider_rate_limited", `Rate limited on ${path}.`);
+          const raw = result.headers.get("retry-after");
+          const seconds =
+            raw && /^\d+$/.test(raw)
+              ? Number(raw)
+              : raw
+                ? Math.max(0, Math.ceil((Date.parse(raw) - Date.now()) / 1000))
+                : undefined;
+          throw new RapidApiError(
+            "provider_rate_limited",
+            "Provider rate limited.",
+            undefined,
+            429,
+            Number.isFinite(seconds) ? seconds : undefined,
+          );
         }
         if (result.status >= 500) {
           throw new RapidApiError("provider_unavailable", `Provider error ${result.status}.`);
@@ -223,10 +260,12 @@ export class RapidApiClient {
                   ? "The provider request timed out."
                   : "The provider request failed.",
               );
-        if (attempt === this.maxRetries) throw lastError;
+        if (attempt === this.maxRetries || (lastError.retryAfterSeconds ?? 0) > 5) throw lastError;
         const exponential = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** attempt);
         const jitter = Math.floor(exponential * 0.25 * this.runtime.random());
-        await this.runtime.sleep(exponential + jitter);
+        await this.runtime.sleep(
+          Math.max(exponential + jitter, (lastError.retryAfterSeconds ?? 0) * 1000),
+        );
       } finally {
         clearTimeout(timeout);
       }

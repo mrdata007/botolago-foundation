@@ -30,13 +30,13 @@ on:
         required: false
       fixtures:
         description: >-
-          Optional, a match plan under tests/fixtures/providers/ (e.g. matches.json). Fetches every
+          Use sofascore-ratings for bounded fresh Botola collection; otherwise a match plan under tests/fixtures/providers/ (e.g. matches.json). Fetches every
           planned match and uploads TRIMMED copies (only the fields the adapters read) as a
           3-day artifact for review. Prints counts and dropped field names, never values.
         type: string
         required: false
       only:
-        description: Optional with fixtures, comma-separated plan keys to fetch (saves requests on a re-run).
+        description: "With sofascore-ratings: comma-separated event IDs. Otherwise comma-separated fixture plan keys."
         type: string
         required: false
       keys:
@@ -90,8 +90,39 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
+      - name: Install collector dependencies (no secrets)
+        if: ${{ inputs.fixtures == 'sofascore-ratings' }}
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Verify collector before using the provider secret
+        if: ${{ inputs.fixtures == 'sofascore-ratings' }}
+        run: |
+          bun run typecheck:sofascore-collection
+          bun test scripts/backend/sofascore-collect.test.ts scripts/backend/sofascore-ratings-audit.test.ts src/backend/football/provider/rapidapi-client.test.ts
+      - name: Collect fresh Botola ratings (read-only, no database)
+        if: ${{ (inputs.fixtures == 'sofascore-ratings') && inputs.provider == 'sofascore' }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          EVENT_IDS: ${{ inputs.only }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--out-dir "$RUNNER_TEMP/sofascore-collection" --fresh --recent-round
+            --max-pages 3 --max-age-days 30 --max-requests 64 --min-remaining 100
+            --player-statistics 1 --incidents)
+          if [[ -n "${EVENT_IDS:-}" ]]; then args+=(--event-ids "$EVENT_IDS"); fi
+          bun scripts/backend/sofascore-collect.ts "${args[@]}"
+      - name: Upload normalized ratings evidence (never raw cache)
+        if: ${{ always() && (inputs.fixtures == 'sofascore-ratings') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sofascore-collection-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/sofascore-collection/report.json
+            ${{ runner.temp }}/sofascore-collection/players.csv
+          if-no-files-found: warn
+          retention-days: 3
       - name: Probe
-        if: ${{ inputs.paths != '' && !inputs.collect_squads && inputs.corroborate_pairs == '' }}
+        if: ${{ inputs.paths != '' && !(inputs.fixtures == 'sofascore-ratings') && !inputs.collect_squads && inputs.corroborate_pairs == '' }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
@@ -112,20 +143,20 @@ jobs:
           done <<< "$ROWS"
           printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} ${KEYS:+"--keys=$KEYS"} "${rows[@]}"
       - name: Collect squad candidate evidence (read-only)
-        if: ${{ inputs.collect_squads }}
+        if: ${{ inputs.collect_squads && !(inputs.fixtures == 'sofascore-ratings') }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
         run: bun scripts/backend/provider-squad-collector.ts
       - name: Corroborate player identity by date of birth (read-only, sanitized)
-        if: ${{ inputs.corroborate_pairs != '' }}
+        if: ${{ inputs.corroborate_pairs != '' && !(inputs.fixtures == 'sofascore-ratings') }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
           PAIRS: ${{ inputs.corroborate_pairs }}
         run: bun scripts/backend/provider-identity-corroboration.ts
       - name: Build trimmed fixtures
-        if: ${{ inputs.fixtures != '' }}
+        if: ${{ inputs.fixtures != '' && !(inputs.fixtures == 'sofascore-ratings') }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
@@ -139,7 +170,7 @@ jobs:
           esac
           bun scripts/backend/provider-fixtures.ts "$PLAN" --out "$RUNNER_TEMP/provider-fixtures" ${ONLY:+"--only=$ONLY"}
       - name: Upload trimmed fixtures for review
-        if: ${{ inputs.fixtures != '' }}
+        if: ${{ inputs.fixtures != '' && !(inputs.fixtures == 'sofascore-ratings') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: provider-fixtures-trimmed

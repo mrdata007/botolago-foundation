@@ -1,7 +1,10 @@
 /** Read-only coverage audit. Never resolves players or ingests observations. */
 import { writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { RapidApiClient } from "../../src/backend/football/provider/rapidapi-client";
+import {
+  RapidApiClient,
+  RapidApiRequestError,
+} from "../../src/backend/football/provider/rapidapi-client";
 import { SofascorePerformanceProvider } from "../../src/backend/football/provider/sofascore-adapter";
 
 const PROJECT = "tkewgajrljbwgwedqsxn";
@@ -52,21 +55,34 @@ async function main() {
   const results: unknown[] = [];
   let failures = 0;
   for (const fixture of fixtures) {
+    const before = client.requestsSent();
     try {
       const lineups = await provider.getLineups(fixture.eventId);
       const audit = auditLineups(lineups);
       results.push({
         ...fixture,
         ...audit,
+        observedAt: new Date().toISOString(),
+        source: "sofascore:api-dojo-rapidapi",
+        requestsConsumed: client.requestsSent() - before,
+        quota: client.quota(),
         digest: createHash("sha256").update(JSON.stringify(audit.players)).digest("hex"),
       });
       console.log(
         `GW${fixture.gameweek} event ${fixture.eventId}: ${audit.rated}/${audit.participants} rated; ${audit.ready ? "ready" : "pending"}`,
       );
-    } catch {
+    } catch (error) {
       // Provider responses and credential-bearing errors never enter artifacts.
       failures += 1;
-      results.push({ ...fixture, ready: false, error: "ratings_fetch_or_payload_failed" });
+      results.push({
+        ...fixture,
+        ready: false,
+        error:
+          error instanceof RapidApiRequestError ? error.reason : "ratings_fetch_or_payload_failed",
+        httpStatus: error instanceof RapidApiRequestError ? error.httpStatus : null,
+        requestsConsumed: client.requestsSent() - before,
+        quota: client.quota(),
+      });
       console.log(`GW${fixture.gameweek} event ${fixture.eventId}: fetch/payload failed`);
     }
   }
@@ -77,6 +93,7 @@ async function main() {
         capturedAt: new Date().toISOString(),
         commit: process.env.GITHUB_SHA ?? null,
         requests: client.requestsSent(),
+        quota: client.quota(),
         failures,
         results,
       },

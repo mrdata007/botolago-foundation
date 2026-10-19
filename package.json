@@ -10,6 +10,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "typecheck:sofascore-collection": "tsc --noEmit -p tsconfig.sofascore-collection.json",
     "test": "bun test",
     "test:timezone-parity": "bun tests/timezone-parity/run.ts",
     "test:legal": "bun test src/content/legal/legal-content.test.ts",

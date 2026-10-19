@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "scripts/backend/sofascore-collect*.ts",
+    "scripts/backend/sofascore-automation-e2e.ts",
+    "supabase/functions/_shared/sofascore-collection*.ts"
+  ],
+  "exclude": [],
+  "compilerOptions": {
+    "types": ["bun"]
+  }
+}
