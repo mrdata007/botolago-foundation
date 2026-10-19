@@ -844,7 +844,6 @@ Owner decision of 2026-10-16: BotolaGO launches as a pilot capped at 1,000 manag
 
 Audit finding SEC-01 of 2026-10-16, second gap, proven real with two sessions on PostgreSQL 16. It has nothing to do with SofaScore. A new squad (`api.create_fantasy_team`) whose call started just before a deadline could commit after the lock step had moved the gameweek to `locked`, leaving an unlocked lineup that `api.service_get_fantasy_scoring_snapshot` refuses on every pass (`fantasy_lineup_not_locked`); a chip could likewise land after the lock. `20261016180000_fantasy_deadline_mutation_lock` comes after `20261016170000` (the pilot cap) and replaces four functions: `app_private.fantasy_assert_mutable_gameweek` (now `VOLATILE`: the same unlocked check, then `FOR KEY SHARE` on the gameweek row and the check again; no lock in a read-only transaction), `api.create_fantasy_team` as the pilot cap left it (the same lock and a second look at the gameweek a squad joins), and `api.activate_fantasy_chip` / `api.cancel_fantasy_chip` (refused once the team's lineup is locked). Managers' writes now wait while the lifecycle tick holds the gameweek rows (see that runbook, "What it costs"). Same refusals, codes and deadline; no table, trigger, job, setting or privilege changes and no data is written. It is not part of the bundled release script and is installed by its own guarded script, `scripts/backend/apply-20261016180000-fantasy-deadline-lock.sql` (see `docs/production/FANTASY_DEADLINE_LOCK_OWNER_RUNBOOK.md`), which needs the Fantasy lifecycle tick paused and refuses within 30 minutes of a deadline.
 
-
 ## Follow-up: wait for actual API ratings (`20261018153305`)
 
 Owner decision of 2026-10-18. `20261018153305_fantasy_require_actual_api_ratings`
@@ -877,3 +876,14 @@ missing. The October 18 authorization covers all available gameweeks; it does
 not turn absent API ratings or unidentified selections into points and does not
 authorize prize payment or another launch stage. See
 `docs/backend/FANTASY_ALL_GAMEWEEK_RATINGS_20261018.md`.
+
+## Follow-up: protect fixture and performance inputs while finalizing (`20261019073221`)
+
+Candidate migration `20261019073221_fantasy_finalizing_fixture_performance_guard`
+adds table guards for fixture corrections, active performance imports and coverage
+facts. It refuses changes while a gameweek is finalizing and uses a nonblocking
+gameweek key-share lock to avoid a fixture/finalizer lock-order cycle. It changes
+no existing function body or data and is separate from the bundled release.
+See [the candidate's runbook](FIXTURE_INPUT_GUARD_OWNER_RUNBOOK.md) for its exact
+scope, real-stack validation and the staging-first, separately approved production
+path. This entry records the migration; it does not claim hosted application.
