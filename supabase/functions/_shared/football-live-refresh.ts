@@ -243,6 +243,7 @@ export async function handleFootballLiveRefreshRequest(
       } catch {
         if (job === "ratings_collection")
           return json(503, { error: "collection_state_unavailable" });
+        ownsObservations = true;
       }
     }
     const collectionEnvironment = ownsObservations

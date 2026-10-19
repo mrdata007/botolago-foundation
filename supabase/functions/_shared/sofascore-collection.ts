@@ -131,6 +131,19 @@ export interface CollectionDependencies {
 }
 /** Dry-run is a read-only plan: no provider use, lease, observation or scoring writes. */
 export async function runSofascoreCollection(deps: CollectionDependencies) {
+  try {
+    return await collect(deps);
+  } catch {
+    // Includes plan/claim/finalizer failures. Keep the lease on an ambiguous
+    // write; the next claim can recover it after expiry. Never expose RPC text.
+    return {
+      status: 503,
+      body: { job: "ratings_collection", code: "collection_database_error" },
+    };
+  }
+}
+
+async function collect(deps: CollectionDependencies) {
   const rpc = async (name: string, args: Record<string, unknown> = {}) => {
     const r = await deps.client.schema("api").rpc(name, args);
     if (r.error) throw new CollectionFailure("collection_database_error");

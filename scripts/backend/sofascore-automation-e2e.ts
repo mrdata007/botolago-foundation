@@ -287,11 +287,26 @@ async function main() {
     2,
     "unchanged data cannot duplicate observations",
   );
+  const scoringRuns = handlerResults.filter((r) =>
+    String(r.path).endsWith("fantasy-lifecycle-worker"),
+  ).length;
+  await sql.unsafe("update app_private.fantasy_worker_dispatch set last_invoked_at=null where id");
+  await waitFor(
+    async () =>
+      handlerResults.filter((r) => String(r.path).endsWith("fantasy-lifecycle-worker")).length >
+      scoringRuns,
+    "scheduled worker rechecks unchanged input",
+  );
   const versions = await sql.unsafe(
     "select distinct calculation_version from app.fantasy_team_gameweek_results where gameweek_id=$1",
     [uid(25)],
   );
   assert.equal(versions.length, 1, "no repeated scoring version");
+  assert.equal(
+    versions[0]!.calculation_version,
+    score.version,
+    "unchanged input retains its scoring version",
+  );
   const runs = await sql.unsafe(
     "select jobname,count(*)::int as runs from cron.job_run_details d join cron.job j using(jobid) where j.jobname in ('football-season-refresh','fantasy-worker-tick') group by jobname",
   );

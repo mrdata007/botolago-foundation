@@ -126,6 +126,27 @@ function setup(
   return { client, rapid, writes, paths, now: new Date("2026-10-19T00:00:00Z"), holder: U(999) };
 }
 describe("unattended collection worker (mock provider/RPC; not live evidence)", () => {
+  test("sanitizes unavailable database state and ambiguous finalizer failures", async () => {
+    for (const failure of [
+      "service_sofascore_collection_plan",
+      "service_sofascore_collection_claim",
+      "service_sofascore_collection_finish",
+    ]) {
+      const s = setup();
+      const schema = s.client.schema.bind(s.client);
+      s.client.schema = () => ({
+        rpc: async (name, args) => {
+          if (name === failure) throw new Error("private upstream database details");
+          return schema("api").rpc(name, args);
+        },
+      });
+      const result = await runSofascoreCollection({ ...s, dryRun: failure.endsWith("plan") });
+      expect(result).toEqual({
+        status: 503,
+        body: { job: "ratings_collection", code: "collection_database_error" },
+      });
+    }
+  });
   test("discovers from durable state and sends validated approved-ID observations into the existing recorder", async () => {
     const s = setup();
     const result = await runSofascoreCollection(s);
