@@ -12,8 +12,8 @@ insert into app.seasons(id,competition_id,label,starts_on,ends_on,status,is_curr
 values(pg_temp.nrid(3),pg_temp.nrid(2),'Not rated season',current_date-30,current_date+200,'active',true);
 insert into app.teams(id,slug,name,short_name,code,country_id)
 select pg_temp.nrid(10+n),'not-rated-club-'||n,'NR Club '||n,'NR'||n,'NR'||n,pg_temp.nrid(1)from generate_series(1,2)n;
-insert into app.fixtures(id,competition_id,season_id,home_team_id,away_team_id,kickoff_at,status,finalized_at,provider_updated_at,source_sequence)
-values(pg_temp.nrid(20),pg_temp.nrid(2),pg_temp.nrid(3),pg_temp.nrid(11),pg_temp.nrid(12),now()-interval '50 hours','finished',now()-interval '48 hours',now(),1);
+insert into app.fixtures(id,competition_id,season_id,home_team_id,away_team_id,kickoff_at,status,home_score,away_score,finalized_at,provider_updated_at,source_sequence)
+values(pg_temp.nrid(20),pg_temp.nrid(2),pg_temp.nrid(3),pg_temp.nrid(11),pg_temp.nrid(12),now()-interval '50 hours','finished',0,0,now()-interval '48 hours',now(),1);
 insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at,active)
 values('sofascore','fixture','97710020',pg_temp.nrid(20),'test-not-rated',now(),true);
 create function pg_temp.nrplayers(p_minutes integer,p_rating numeric default null)returns jsonb language sql immutable as $$
