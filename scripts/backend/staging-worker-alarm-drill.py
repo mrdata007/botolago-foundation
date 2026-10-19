@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import sys
 import time
@@ -19,11 +20,40 @@ SPEC = importlib.util.spec_from_file_location('alarm_edge', ROOT/'scripts/backen
 E = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(E)
 R = E.R
-PREFIX = 'f9520000-0000-4000-8000-'
+PREFIX = 'f9530000-0000-4000-8000-'
 SEASON = PREFIX+'000000000005'
 GW = PREFIX+'000000000021'
 URL = 'https://srdrflfrfpwixsllveid.supabase.co/functions/v1'
 E.PREFIX, E.SEASON, E.GW = PREFIX, SEASON, GW
+LAST_PHASE='initialization'
+
+
+def phase(name):
+    global LAST_PHASE
+    LAST_PHASE=name
+    E.report('alarm_phase',name=name)
+
+
+def error_metadata(error):
+    # Fixed categories and identifier-only matches. Never report upstream text.
+    value=str(error).lower()
+    categories=[name for name,pattern in {
+        'permission':r'permission denied|not permitted|forbidden',
+        'read_only':r'read.only|non-volatile function',
+        'timeout':r'timeout|timed out|canceling statement',
+        'constraint':r'violates|constraint',
+        'missing_object':r'does not exist|undefined',
+        'configuration':r'not.configured|unreachable|channel.missing',
+        'network':r'network error|connection|\b50[0-9]\b',
+    }.items() if re.search(pattern,value)]
+    identifiers=[]
+    for pattern in (r'permission denied for (?:function|table|schema) ([a-z_][a-z0-9_.]*)',
+                    r'constraint "([a-z_][a-z0-9_]*)"',
+                    r'function ([a-z_][a-z0-9_.]*)\('):
+        identifiers.extend(re.findall(pattern,value))
+    http=re.search(r'http (\d{3})',value)
+    return {'phase':LAST_PHASE,'categories':categories,'identifiers':identifiers,
+            'httpStatus':int(http[1]) if http else None}
 
 
 def literal(value):
@@ -139,13 +169,13 @@ def main():
     ref=os.environ.get('SUPABASE_STAGING_PROJECT_REF','')
     R.validate_ref(ref)
     target=R.UPDATE.ManagementTarget(os.environ['SUPABASE_ACCESS_TOKEN'],ref)
-    E.report('alarm_phase',name='migration_and_secret_names')
+    phase('migration_and_secret_names')
     if R.UPDATE.pending_migrations(R.UPDATE.load_migrations(),R.UPDATE.read_history(target)):
         raise RuntimeError('staging_alarm_pending_migrations')
     names={v['name'] for v in target._request('GET',f'/v1/projects/{ref}/secrets',None,60)}
     if 'RESEND_API_KEY' not in names or names & {'FANTASY_WORKER_BUDGET_MS','FANTASY_WORKER_MAX_GAMEWEEKS','FANTASY_WORKER_MAX_CALLS'}:
         raise RuntimeError('staging_alarm_runtime_configuration')
-    E.report('alarm_phase',name='settings_metadata')
+    phase('settings_metadata')
     settings=target.rows("""select
       (select jsonb_agg(jsonb_build_object('jobid',jobid,'active',active) order by jobid) from cron.job) as cron,
       (select enabled from app_private.rivals_settings) as rivals,
@@ -171,8 +201,10 @@ def main():
         or settings['webhook'] or settings['functions_url']!=URL or settings['interval']!=10
         or any(c['pending_request_id'] is not None for c in settings['channels'])):
         raise RuntimeError('staging_alarm_preflight_refused')
+    phase('health_read_preflight')
+    health(target)
     E.wait_idle(target,30)
-    E.report('alarm_phase',name='baseline')
+    phase('baseline')
     before=E.baseline(target)
     E.report('alarm_baseline',state=before,sourceSha=os.environ.get('GITHUB_SHA'),waitMinutes=90)
     paused=False
@@ -182,24 +214,29 @@ def main():
         target.execute('select cron.alter_job(jobid,active:=false) from cron.job; select app_private.rivals_configure(false);',60)
         E.wait_idle(target,30)
         R.readiness(target)
-        E.report('alarm_phase',name='fixture_rehearsal')
+        phase('fixture_rehearsal')
         fixture=(ROOT/'scripts/backend/staging-worker-alarm-fixture.sql').read_text()
         guarded=f"select set_config('botolago.release_drill','{ref}',false);\n"+fixture
         target.execute(guarded.rsplit('commit;',1)[0]+'rollback;',180)
         if E.baseline(target)!=before or target.rows(f"select exists(select 1 from app.fantasy_seasons where id='{SEASON}') as present")[0]['present']:
             raise RuntimeError('staging_alarm_rehearsal_changed_baseline')
         fixture_started=True
-        E.report('alarm_phase',name='fixture_commit')
+        phase('fixture_commit')
         target.execute(guarded,180)
         # A real disabled tick resets the counting clock through production code.
+        phase('clock_reset')
         target.execute('select app_private.fantasy_worker_tick();',60)
         target.execute("""select app_private.fantasy_automation_configure(true);
           select app_private.fantasy_worker_configure(true);
           update app_private.notification_email_settings set functions_base_url=null where id;""",60)
+        phase('missing_url_probe')
         if target.execute('select app_private.fantasy_worker_tick() as outcome',60)[0]['outcome']!='not_configured':
             raise RuntimeError('staging_alarm_missing_url_probe_failed')
+        phase('alert_enable')
         target.execute(f"update app_private.notification_email_settings set functions_base_url='{URL}' where id; select app_private.ops_alert_configure(true);",60)
+        phase('maintenance')
         maintenance(target)
+        phase('initial_health')
         value=health(target)
         assert_health(value,'ok')
         if float(value['elapsed_minutes'])>2:
@@ -256,5 +293,5 @@ if __name__=='__main__':
         main()
     except Exception as error:
         code=str(error) if type(error) is RuntimeError and str(error).startswith('staging_alarm_') else 'staging_alarm_failed'
-        E.report('alarm_error',code=code,errorType=type(error).__name__)
+        E.report('alarm_error',code=code,errorType=type(error).__name__,**error_metadata(error))
         sys.exit(1)

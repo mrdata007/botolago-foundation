@@ -52,6 +52,14 @@ class AlarmTests(unittest.TestCase):
         self.assertNotIn('ops_alert_webhook()',source)
         self.assertNotIn('decrypted_secrets',source)
 
+    def test_diagnostics_never_repeat_provider_payloads_or_addresses(self):
+        import json
+        value=D.error_metadata(RuntimeError('HTTP 400: permission denied for function secret_read; recipient=private@example.invalid; token=opaque-value'))
+        self.assertEqual(value['categories'],['permission'])
+        self.assertEqual(value['identifiers'],['secret_read'])
+        self.assertNotIn('private@example.invalid',json.dumps(value))
+        self.assertNotIn('opaque-value',json.dumps(value))
+
 
 if __name__=='__main__':
     unittest.main()
