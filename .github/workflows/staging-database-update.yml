@@ -24,6 +24,8 @@ on:
           - authcleanup
           - parkphone
           - restorephone
+          - seedphone
+          - finishphone
           - runtime
           - score5000
           - score5000edge
@@ -72,7 +74,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check|authpreflight) ;;
-            rehearse|apply|seed|runtime|score5000|score5000edge|scorephoneqa|edge5000|workerprobe|workeralarms|authconfigure|authcleanup|parkphone|restorephone) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime|score5000|score5000edge|scorephoneqa|edge5000|workerprobe|workeralarms|authconfigure|authcleanup|parkphone|restorephone|seedphone|finishphone) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -178,3 +180,11 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
         run: python scripts/backend/staging-phone-season-selection.py
+
+      - name: Rehearse and apply the reviewed staging phone fixture
+        if: inputs.action == 'seedphone' || inputs.action == 'finishphone'
+        env:
+          ACTION: ${{ inputs.action }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-phone-fixture-apply.py
