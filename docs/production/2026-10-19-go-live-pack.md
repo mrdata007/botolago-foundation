@@ -322,19 +322,38 @@ certificate warning. No authenticated device check is claimed.
 
 GET-only Auth preflight 39238225342 found no custom SMTP, a localhost site URL,
 zero redirect allowlist entries, email confirmations required and Google/Apple
-providers disabled. No settings were changed. The successful Resend Edge smoke
-cannot establish Auth signup/reset. The exact local HTTPS callback and verified
-Auth SMTP sender still need configuring securely before those cases.
+providers disabled. The expanded read-only check 39248436124 additionally found
+eight-digit OTPs and a link-only confirmation template; the app requires six
+code digits. Guarded staging configuration run 39249633112 (source `bf71bfab`)
+now verifies six digits, code plus the existing confirmation link, the exact
+Mac site URL and four exact callbacks. The changed fields were backed up
+privately in staging Vault; SMTP credentials were neither changed nor saved in
+that baseline. All 27 cron flags and Rivals were restored, counts and stored
+result/gameweek fingerprints unchanged. After the phone session, `authcleanup`
+restores the pre-session URLs while preserving the six-digit/code alignment.
+Custom Auth SMTP remains absent as of that run. The successful Resend Edge
+smoke cannot establish Auth signup/reset; actual signup, receipt, confirmation
+and reset are still pending.
 
 [PR 531](https://github.com/mrdata007/botolago-foundation/pull/531) prepares a
-separate, protected f970 reminder/response-loss rehearsal; hosted results remain
-pending. It waits for real 24-hour/match windows and natural lease expiry, verifies
+separate, protected f970 reminder/response-loss rehearsal. It merged as
+`c5aa137eb987f2d07d56d24439f8cd58fec06ae8` after both jobs passed on `51e4b015`
+in run 39247232363; its merge tree is identical to that tested tree. Hosted
+run 39250029846 is in progress; no final result is claimed. It waits for real 24-hour/match windows and natural lease expiry, verifies
 both an email-off account and a later unsubscribe negative, and saves an
 owner-only recovery context before pausing schedules. The GitHub integration
 refused an environment-secret write (403); after the alarm writer restored staging,
 the two verified owner identifiers were saved privately in staging Vault. No
 account credential or email was included in a workflow input or public artifact. No extra API key,
 public personal-data artifact or paid infrastructure is required.
+
+The real fixture was applied at 12:11:35 UTC and test sending activated at
+12:11:41. The stored deadline is 20 October 13:11:35 UTC; match kickoffs are
+19 October 14:16:35 and 15:01:35 UTC. Both positive windows first become
+eligible around 13:11 UTC, with the later opt-out negative around 13:56 UTC.
+At 12:13:14 UTC, an independent read found exactly two provisional results,
+zero final results/events and a retained lease genuinely extended to 12:19:15.
+This is an in-progress safety observation, not a recovery or reminder verdict.
 
 ## Production execution order — only after the gates permit it
 
@@ -361,7 +380,11 @@ public personal-data artifact or paid infrastructure is required.
    then `select app_private.pilot_configure(true,1000);`. This caps active teams
    per season, excluding hidden QA accounts; Auth sign-up remains available.
    A team cap does not prove the request-rate capacity gate or waive its failure.
-8. If the selected application source needs publishing, the owner publishes the selected version in Lovable. Verify the live release
+8. Verify production Auth configuration privately against the selected app:
+   code length, code-bearing confirmation template, verified SMTP, exact trusted
+   callbacks and real signup/reset delivery. The staging fix does not authorize
+   a production Auth change; obtain its separate go if a correction is needed.
+9. If the selected application source needs publishing, the owner publishes the selected version in Lovable. Verify the live release
    header, French/Arabic signed-in flows and the relevant production read-only
    checks. A merge alone does not deploy the website or database.
 

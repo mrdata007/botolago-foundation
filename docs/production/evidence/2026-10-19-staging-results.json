@@ -1495,7 +1495,7 @@
   },
   "reminderPreparation": {
     "pr": 531,
-    "hostedRun": "not started",
+    "hostedRun": 39250029846,
     "extraSpending": 0,
     "windows": "fresh 25-hour deadline; 125/170-minute match kickoffs; real elapsed clock required",
     "recovery": "owner-only staging DB context",
@@ -1504,12 +1504,63 @@
     "inboxEvidence": false,
     "combinedHead": "51e4b0151b71ed4443cfbc3234f739a1c1661ed2",
     "combinedCiRun": 39247232363,
-    "combinedCi": "running",
+    "combinedCi": "PASS",
     "priorCombinedCi": {
       "run": 39246083973,
       "failedStep": "Existing Pépites publish/repoint concurrency test",
       "fixtureRehearsals": "both passed",
       "fix": "Observe the exact edition advisory-lock wait instead of assuming a pending promise after 400 ms reached that lock; result assertions unchanged"
+    },
+    "merge": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS"
+  },
+  "stagingAuthPhoneConfiguration": {
+    "planRun": 39248436124,
+    "applyRun": 39249633112,
+    "source": "bf71bfabf37a74961e807f9ba6ce06db128a18ef",
+    "before": {
+      "emailOtpLength": 8,
+      "confirmationTemplateKind": "confirmation_link",
+      "redirectCount": 0,
+      "siteUrlKind": "localhost"
+    },
+    "after": {
+      "emailOtpLength": 6,
+      "confirmationTemplateKind": "code_and_link",
+      "redirectCount": 4,
+      "siteUrlKind": "other_https",
+      "customSmtpConfigured": false
+    },
+    "smtpCredentialsChanged": false,
+    "privateBaselineSaved": true,
+    "cronRestored": 27,
+    "rivalsRestored": true,
+    "existingAccountAndTeamCountsUnchanged": true,
+    "resultAndGameweekFingerprintsUnchanged": true,
+    "temporaryLanUrlCleanup": "pending actual phone session; code alignment intentionally persists",
+    "signupAndResetEvidence": false
+  },
+  "reminderRun": {
+    "id": 39250029846,
+    "job": 118051281597,
+    "source": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+    "state": "RUNNING; final verdict pending",
+    "namespace": "f9700000-0000-4000-8000-",
+    "activatedAt": "2026-10-19T12:11:41.178422Z",
+    "deadline": "2026-10-20T13:11:35.730124Z",
+    "firstKickoff": "2026-10-19T14:16:35.730124Z",
+    "laterKickoff": "2026-10-19T15:01:35.730124Z",
+    "firstReminderWindowsExpectedAfter": "2026-10-19T13:11:35.730124Z",
+    "laterOptOutWindowExpectedAfter": "2026-10-19T13:56:35.730124Z",
+    "independentUnsettledRead": {
+      "at": "2026-10-19T12:13:14.69579Z",
+      "persistedResults": 2,
+      "finalResults": 0,
+      "events": 0,
+      "leaseRetained": true,
+      "leaseAcquiredAt": "2026-10-19T12:11:43.937602Z",
+      "leaseExtendedExpiresAt": "2026-10-19T12:19:15.120432Z"
     }
   }
 }

@@ -1,8 +1,8 @@
 # Mac and iPhone staging session ($0)
 
 Status: launcher prepared; owner device session pending. Wait for the operator's
-ready message before signing in or changing staging data. The worker-alarm
-workflow currently owns staging. This uses the existing TanStack SSR website,
+ready message before signing in or changing staging data. Automated staging
+drills own their exclusive database windows. This uses the existing TanStack SSR website,
 with public-key access and the same protected APIs as the website.
 
 Owner device: **iPhone 17 Pro, iOS 27**. Local operator verification on 19 October:
@@ -15,8 +15,16 @@ check (none were attempted). This is not authenticated journey or iPhone evidenc
 Read-only staging Auth inventory, run
 [39238225342](https://github.com/mrdata007/botolago-foundation/actions/runs/39238225342):
 custom SMTP absent, email confirmations required, localhost site URL, zero
-redirect allowlist entries, Google and Apple providers disabled. No settings
-were changed. A8 should check the graceful provider-unavailable wording.
+redirect allowlist entries, Google and Apple providers disabled. Expanded read
+39248436124 also found eight-digit codes and a link-only confirmation email,
+while the app requires six digits. Staging setup 39249633112 has corrected the
+code/template contract and installed the exact trusted Mac callbacks, with a
+private baseline in staging Vault. SMTP remains unconfigured; this does not
+claim signup/reset delivery. A8 checks the graceful provider-unavailable wording.
+
+The owner confirmed that Safari opens the local login without a certificate
+warning. Authenticated cases, language/layout checks and real inbox comparisons
+remain pending.
 
 ## Prepare the Mac
 
@@ -66,7 +74,7 @@ still name the public site; do not follow those into production during testing.
 
 ## Trust the certificate on this iPhone
 
-Find mkcert's directory with `mkcert -CAROOT`. AirDrop **only `rootCA.pem`** to
+Find mkcert's directory with `mkcert -CAROOT`. AirDrop **only `rootCA.pem` (or its `.cer` copy)** to
 the iPhone; never share `rootCA-key.pem` or the server key. On iPhone, install the
 downloaded certificate profile in Settings, then enable that certificate under
 General → About → Certificate Trust Settings. Open the printed
@@ -96,6 +104,19 @@ The alert-delivery smoke does not prove Auth mail. Product reminder links also
 need the staging Edge `APP_URL` override; defaults currently point at production.
 The operator must verify these separately before sending links. A LAN link
 works only while this Mac is reachable on the same network.
+
+The protected staging workflow provides `authpreflight` (GET-only),
+`authconfigure` and `authcleanup`. Configuration/cleanup require the exact
+private HTTPS origin and `UPDATE_STAGING_DATABASE`, saved cron/Rivals flags,
+an exclusive window with those writers paused, and verified restoration by
+the operator afterward. The script does not pause or restore schedules itself.
+It changes no SMTP password or provider credential. Setup saves only its changed
+fields privately in Vault, configures six digits, inserts the code into the
+existing confirmation template and allowlists the app's exact callbacks.
+After the session, cleanup restores the former site/redirect URLs while keeping
+the six-digit code/template alignment. An unexpected configuration change is
+refused. This is a guarded one-time repair of the observed initial baseline;
+do not force it against another environment or changed baseline.
 
 Safari proves website and in-app notification behavior. Native iPhone push uses
 APNs and requires an installed native build, permission/token registration and
