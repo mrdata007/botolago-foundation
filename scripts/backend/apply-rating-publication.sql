@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: f7f0e94fea4692e0145e68280bc3a9b756a5ee6c68ee85d9c08c50623500b85c
+-- Production V2 only. Canonical migration SHA256: 7d9d48c07b8d95e72fb3c1bc5429610a044321ea18a4b16731d183c9c8e3cabc
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -471,15 +471,13 @@ grant execute on function api.fantasy_rules(uuid) to anon,authenticated,service_
 
 -- Fair, bounded recent-match polling. Unchanged payloads only update poll
 -- freshness, never create a new source or erase a successful score.
-create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)
-returns jsonb language plpgsql volatile security definer set search_path='' as $$
-declare claimed jsonb;
-begin
- if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
- if p_limit is null or p_limit not between 0 and 12 then raise exception 'rating_due_limit_invalid'; end if;
- if not pg_try_advisory_xact_lock(hashtextextended('botolago:native-rating-polls',0)) then return '[]'::jsonb; end if;
- with eligible as (
- select distinct f.id,m.external_id,f.kickoff_at,f.finalized_at,poll.last_fetched_at,poll.last_attempt_at,
+-- Both the scheduler and reservation RPC read this predicate. Late ratings
+-- must still wake the fetcher after its ordinary two-hour post-match window.
+create function app_private.fantasy_api_rating_candidates()
+returns table(id uuid,external_id text,finalized_at timestamptz,last_attempt_at timestamptz)
+language sql stable security definer set search_path='' as $$
+ select e.id,e.external_id,e.finalized_at,e.last_attempt_at from (
+ select distinct f.id,m.external_id,f.finalized_at,poll.last_fetched_at,poll.last_attempt_at,
  case when f.finalized_at>statement_timestamp()-interval '6 hours' then interval '5 minutes'
  when f.finalized_at>statement_timestamp()-interval '2 days' then interval '30 minutes' else interval '2 hours' end as cadence
  from app.fixtures f join app.fantasy_fixture_assignments a on a.fixture_id=f.id and a.superseded_at is null
@@ -488,9 +486,28 @@ begin
  join app_private.football_provider_mappings m on m.provider_name='sofascore' and m.entity_type='fixture' and m.active and m.internal_entity_id=f.id
  left join app_private.fantasy_api_rating_polls poll on poll.fixture_id=f.id
  where f.status='finished' and f.finalized_at is not null
- ), candidates as materialized (
- select * from eligible where (last_fetched_at is null or last_fetched_at<statement_timestamp()-cadence)
- and (last_attempt_at is null or last_attempt_at<statement_timestamp()-interval '5 minutes')
+ ) e where (e.last_fetched_at is null or e.last_fetched_at<statement_timestamp()-e.cadence)
+ and (e.last_attempt_at is null or e.last_attempt_at<statement_timestamp()-interval '5 minutes');
+$$;
+revoke all on function app_private.fantasy_api_rating_candidates() from public,anon,authenticated,service_role;
+do $$ declare source text; begin
+ if md5((select prosrc from pg_proc where oid='app_private.football_live_refresh_tick()'::regprocedure))<>'3da4468919063f46500d338228403a40' then raise exception 'rating_publication_unexpected_fetch_clock'; end if;
+ source:=pg_get_functiondef('app_private.football_live_refresh_tick()'::regprocedure);
+ source:=replace(source,'select case',
+ 'select case when exists(select 1 from app_private.fantasy_api_rating_candidates()) then interval ''60 seconds''');
+ execute source;
+end $$;
+comment on function app_private.football_live_refresh_tick() is
+ 'Existing live-football cadence and guards; also wakes the fetcher when bounded native API rating polls are due, including beyond two hours after full time.';
+create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)
+returns jsonb language plpgsql volatile security definer set search_path='' as $$
+declare claimed jsonb;
+begin
+ if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
+ if p_limit is null or p_limit not between 0 and 12 then raise exception 'rating_due_limit_invalid'; end if;
+ if not pg_try_advisory_xact_lock(hashtextextended('botolago:native-rating-polls',0)) then return '[]'::jsonb; end if;
+ with candidates as materialized (
+ select * from app_private.fantasy_api_rating_candidates()
  order by coalesce(last_attempt_at,'-infinity'::timestamptz),finalized_at desc,id limit p_limit
  ), reserved as (
  insert into app_private.fantasy_api_rating_polls(fixture_id,last_attempt_at) select id,statement_timestamp() from candidates
@@ -532,7 +549,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'f7f0e94fea4692e0145e68280bc3a9b756a5ee6c68ee85d9c08c50623500b85c' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'7d9d48c07b8d95e72fb3c1bc5429610a044321ea18a4b16731d183c9c8e3cabc' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin

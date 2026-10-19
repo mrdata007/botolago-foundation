@@ -267,6 +267,17 @@ update app.fantasy_gameweeks set status='provisional',points_state='provisional'
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '7 minutes',last_attempt_at=statement_timestamp()-interval '7 minutes' where fixture_id=pg_temp.rid(3002);
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'recent post-match ratings are polled within five minutes');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'a reserved recent poll cannot be claimed again immediately');
+-- Ratings may appear long after the football clock's ordinary two-hour window.
+update app.fixtures set finalized_at=statement_timestamp()-interval '12 hours' where id=pg_temp.rid(3002);
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '31 minutes',last_attempt_at=statement_timestamp()-interval '31 minutes' where fixture_id=pg_temp.rid(3002);
+select app_private.notification_email_configure('off','https://late-rating.example.invalid/functions/v1',null,true);
+update app_private.football_live_refresh_heartbeat set last_invoked_at=null where id;
+select extensions.ok(exists(select 1 from app_private.fantasy_api_rating_candidates()),'a twelve-hour-old unfinished Fantasy fixture still has a due rating poll');
+select extensions.is(app_private.football_live_refresh_tick(),'invoked','late ratings wake the real football dispatcher even with no recent or live match');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'the woken fetcher claims the same due fixture');
+select extensions.ok(not exists(select 1 from app_private.fantasy_api_rating_candidates()),'the same retry reservation also suppresses further wake-ups');
+select extensions.is(app_private.football_live_refresh_tick(),'idle','the dispatcher sleeps again while no rating poll or football work is due');
+select extensions.ok(not has_function_privilege('authenticated','app_private.fantasy_api_rating_candidates()','execute'),'the late-rating scheduler predicate stays private');
 select extensions.ok(
  (select prosrc ~ 'perform app_private.assert_mfa_step_up\(\);' from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure),
  'the caller-owned pool exception requires ordinary-account MFA step-up');
