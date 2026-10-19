@@ -19,14 +19,15 @@ def main():
     target = runtime.UPDATE.ManagementTarget(os.environ["SUPABASE_ACCESS_TOKEN"], ref)
     runtime.readiness(target)
     fixture = os.environ.get("STAGING_DRILL_FIXTURE", "operator")
-    if fixture not in {"operator", "edge-runtime"}:
+    if fixture not in {"operator", "edge-runtime", "phone-qa"}:
         raise RuntimeError("staging_drill_fixture_refused")
-    namespace = "f9510000" if fixture == "edge-runtime" else "f9500000"
+    namespace = {"operator":"f9500000","edge-runtime":"f9510000","phone-qa":"f9600000"}[fixture]
+    team_count, league_count = (123,1) if fixture == "phone-qa" else (5000,500)
     counts = target.rows(f"""select
       (select count(*) from app.fantasy_teams where fantasy_season_id='{namespace}-0000-4000-8000-000000000005') as teams,
       (select count(*) from app.fantasy_leagues where fantasy_season_id='{namespace}-0000-4000-8000-000000000005' and active) as leagues,
       (select count(*) from app.fantasy_lineups where gameweek_id='{namespace}-0000-4000-8000-000000000021' and locked_at is not null) as lineups""")[0]
-    if counts != {"teams": 5000, "leagues": 500, "lineups": 5000}:
+    if counts != {"teams": team_count, "leagues": league_count, "lineups": team_count}:
         raise RuntimeError("staging_drill_fixture_incomplete")
     keys = target._request("GET", f"/v1/projects/{ref}/api-keys", None, 60)
     key = next(k["api_key"] for k in keys if k.get("name") == "service_role")
@@ -46,7 +47,7 @@ def main():
       (select count(*) from app.fantasy_rankings where gameweek_id='{namespace}-0000-4000-8000-000000000021'
         and league_id is null) as ranked
       from app.fantasy_team_gameweek_results where gameweek_id='{namespace}-0000-4000-8000-000000000021'""")[0]
-    expected = {"results":5000,"min_score":96,"max_score":96,"sum_score":480000,"final_rows":5000,"ranked":5000}
+    expected = {"results":team_count,"min_score":96,"max_score":96,"sum_score":96*team_count,"final_rows":team_count,"ranked":team_count}
     print(json.dumps({"kind":"independent_sql_proof", "passed":proof==expected, **proof}), flush=True)
     if proof != expected:
         raise RuntimeError("staging_drill_score_mismatch")
