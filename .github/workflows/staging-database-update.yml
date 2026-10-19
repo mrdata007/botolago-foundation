@@ -22,6 +22,7 @@ on:
           - runtime
           - score5000
           - score5000edge
+          - edge5000
           - workerprobe
       confirmation:
         description: "For every write action: type UPDATE_STAGING_DATABASE"
@@ -57,7 +58,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check) ;;
-            rehearse|apply|seed|runtime|score5000|score5000edge|workerprobe) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime|score5000|score5000edge|edge5000|workerprobe) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -79,13 +80,13 @@ jobs:
         run: python scripts/backend/staging-writer-guard.py
 
       - name: Set up Bun for the staging runtime
-        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge'
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge' || inputs.action == 'edge5000'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
       - name: Install pinned runtime deployment tooling
-        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge'
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge' || inputs.action == 'edge5000'
         run: |
           node scripts/backend/check-config-integrity.mjs
           bun install --frozen-lockfile
@@ -98,7 +99,7 @@ jobs:
         run: python scripts/backend/staging-release-runtime.py
 
       - name: Run ${{ inputs.action }}
-        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'score5000edge' && inputs.action != 'workerprobe'
+        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'score5000edge' && inputs.action != 'edge5000' && inputs.action != 'workerprobe'
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
@@ -132,3 +133,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
         run: python scripts/backend/staging-worker-probe.py
+
+      - name: Measure two real Edge passes and the isolated operator fallback
+        if: inputs.action == 'edge5000'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: python scripts/backend/staging-edge-runtime-drill.py
