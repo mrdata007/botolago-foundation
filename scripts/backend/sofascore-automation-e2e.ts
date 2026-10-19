@@ -261,7 +261,7 @@ async function main() {
     [`http://${callback}:57890/functions/v1`],
   );
   await sql.unsafe(
-    "update app_private.football_season_refresh_heartbeat set last_invoked_at=null,last_outcome='waiting' where id",
+    "update app_private.football_season_refresh_heartbeat set last_invoked_at=null,last_outcome='invoked' where id",
   );
   // An actual pg_cron interval executes the unchanged scheduler entry points.
   await sql.unsafe(
