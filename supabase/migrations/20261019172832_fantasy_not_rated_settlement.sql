@@ -162,6 +162,29 @@ begin
  execute source;
 end $patch$;
 
+-- The watchdog must measure the active scoring contract. Category statistics
+-- cannot certify or block a season that now scores only native API ratings.
+do $patch$
+declare item record; original_body text; wrapped_body text;
+begin
+ for item in select *from(values
+ ('fantasy_fixture_health_ready','97d63d75d01a07245e778841a451eed7'),
+ ('fantasy_fixture_full_stats','7352dba34862cb1b5a15283ba7b2f22c'))v(name,digest)
+ loop
+  select prosrc into original_body from pg_proc
+  where oid=('app_private.'||item.name||'(uuid,uuid,boolean)')::regprocedure;
+  if md5(original_body)<>item.digest then raise exception 'not_rated_health_baseline_changed: %',item.name;end if;
+  wrapped_body:='select case when exists(select 1 from app.fantasy_gameweeks g
+   join app_private.fantasy_api_rating_seasons policy on policy.season_id=g.fantasy_season_id
+   where g.id=p_gameweek_id and g.sequence_number>=policy.from_gameweek)
+   or exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek_id)
+   then coalesce((select ready from app_private.fantasy_api_rating_sources where fixture_id=p_fixture_id order by id desc limit 1),false)
+   else ('||regexp_replace(original_body,';\s*$','')||')end;';
+  execute format('create or replace function app_private.%I(p_gameweek_id uuid,p_fixture_id uuid,p_legacy_ready boolean)
+   returns boolean language sql stable security definer set search_path=''''as %L',item.name,wrapped_body);
+ end loop;
+end $patch$;
+
 -- Already-published provisional historical revisions need fresh checks too.
 -- Keep the existing cadence and attempt throttle; do not poll fully ready
 -- historical fixtures or rewrite their sealed competition results.

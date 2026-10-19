@@ -1,5 +1,5 @@
 -- Sole writer: staging srdrflfrfpwixsllveid first, then authorized production tkewgajrljbwgwedqsxn.
--- Canonical 20261019172832, SHA256 c50c3b288c79770e4030c08fb8b2a9fd1b271a3f014908051509c923766052c7. Policy ships OFF.
+-- Canonical 20261019172832, SHA256 b2147cbe44bb94e04b0ad0beb88598355abec1e4ff652930b020cc4b52d20365. Policy ships OFF.
 -- Rehearse, independently read back the rollback, then change only mode to apply.
 -- Record/pause Fantasy and football writers and drain leases/async requests first.
 begin;
@@ -189,6 +189,29 @@ begin
  execute source;
 end $patch$;
 
+-- The watchdog must measure the active scoring contract. Category statistics
+-- cannot certify or block a season that now scores only native API ratings.
+do $patch$
+declare item record; original_body text; wrapped_body text;
+begin
+ for item in select *from(values
+ ('fantasy_fixture_health_ready','97d63d75d01a07245e778841a451eed7'),
+ ('fantasy_fixture_full_stats','7352dba34862cb1b5a15283ba7b2f22c'))v(name,digest)
+ loop
+  select prosrc into original_body from pg_proc
+  where oid=('app_private.'||item.name||'(uuid,uuid,boolean)')::regprocedure;
+  if md5(original_body)<>item.digest then raise exception 'not_rated_health_baseline_changed: %',item.name;end if;
+  wrapped_body:='select case when exists(select 1 from app.fantasy_gameweeks g
+   join app_private.fantasy_api_rating_seasons policy on policy.season_id=g.fantasy_season_id
+   where g.id=p_gameweek_id and g.sequence_number>=policy.from_gameweek)
+   or exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek_id)
+   then coalesce((select ready from app_private.fantasy_api_rating_sources where fixture_id=p_fixture_id order by id desc limit 1),false)
+   else ('||regexp_replace(original_body,';\s*$','')||')end;';
+  execute format('create or replace function app_private.%I(p_gameweek_id uuid,p_fixture_id uuid,p_legacy_ready boolean)
+   returns boolean language sql stable security definer set search_path=''''as %L',item.name,wrapped_body);
+ end loop;
+end $patch$;
+
 -- Already-published provisional historical revisions need fresh checks too.
 -- Keep the existing cadence and attempt throttle; do not poll fully ready
 -- historical fixtures or rewrite their sealed competition results.
@@ -298,7 +321,7 @@ do $install$
 declare migration_source text;
 begin
  select statements[1]into migration_source from supabase_migrations.schema_migrations where version='20261019172832';
- if encode(extensions.digest(migration_source,'sha256'),'hex')<>'c50c3b288c79770e4030c08fb8b2a9fd1b271a3f014908051509c923766052c7'then raise exception 'not_rated_migration_checksum_mismatch';end if;
+ if encode(extensions.digest(migration_source,'sha256'),'hex')<>'b2147cbe44bb94e04b0ad0beb88598355abec1e4ff652930b020cc4b52d20365'then raise exception 'not_rated_migration_checksum_mismatch';end if;
  execute migration_source;
 end $install$;
 do $postflight$

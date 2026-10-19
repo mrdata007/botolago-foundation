@@ -159,6 +159,8 @@ select extensions.is((select final_score from app.fantasy_team_gameweek_results 
 select extensions.is((select status::text from app.fantasy_gameweeks where id=pg_temp.rid(25)),'provisional','gameweek status is preserved');
 select extensions.is((select count(*)::int from app.fantasy_player_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating' and superseded_at is null),0,'no goals, assists, cards or minute events enter the rating ledger');
 select extensions.is(api.service_fantasy_api_rating_context(pg_temp.rid(3001))->>'enabled','true','the season-wide native path also prevents old-match identity linking');
+select extensions.ok(app_private.fantasy_fixture_health_ready(pg_temp.rid(25),pg_temp.rid(3002),false),'watchdog core readiness uses complete API ratings despite absent category statistics');
+select extensions.ok(app_private.fantasy_fixture_full_stats(pg_temp.rid(25),pg_temp.rid(3002),false),'watchdog full readiness follows the active native rating contract');
 select extensions.ok(not app_private.fantasy_native_player_selectable(pg_temp.rid(2002)),'a native season cannot sell another unidentified legacy player');
 select extensions.ok(app_private.fantasy_native_player_selectable(pg_temp.rid(2024)),'an existing authoritative API ID remains selectable');
 select extensions.throws_ok($$insert into app.fantasy_squad_memberships(fantasy_team_id,fantasy_player_id,purchase_price,current_sale_price,acquired_gameweek_id)
@@ -211,6 +213,8 @@ rollback to not_rated_end_to_end;
 -- A later provider reply with one missing rating must still expose the other
 -- real ratings provisionally, without allowing sealing or a false GK swap.
 select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(true),statement_timestamp());
+select extensions.ok(not app_private.fantasy_fixture_health_ready(pg_temp.rid(25),pg_temp.rid(3002),true),'legacy statistics cannot certify an unrated native appearance');
+select extensions.ok(not app_private.fantasy_fixture_full_stats(pg_temp.rid(25),pg_temp.rid(3002),true),'native watchdog keeps missing real ratings pending');
 select set_config('test.partial_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
 select extensions.is(jsonb_array_length(current_setting('test.partial_preview')::jsonb->'fixtures'),1,'rated participants from an incomplete fixture remain scorable');
 select extensions.is(jsonb_array_length(current_setting('test.partial_preview')::jsonb->'pendingFixtures'),1,'the incomplete fixture remains explicitly pending');
