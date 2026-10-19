@@ -176,7 +176,7 @@ begin
    where a.fixture_id=p_fixture_id and a.superseded_at is null and app_private.fantasy_staged_enabled(g.id)))),
  last_success_at=case when valid then statement_timestamp() else last_success_at end,
  missing_ratings=missing,last_error=case when valid then null else code end,
- last_digest=coalesce(p_meta->>'digest',last_digest) where fixture_id=p_fixture_id;
+ last_digest=case when valid then coalesce(p_meta->>'digest',last_digest) else last_digest end where fixture_id=p_fixture_id;
  if valid then update app_private.sofascore_collection_settings set last_success_at=statement_timestamp(),last_error=null where id; end if;
  return result||jsonb_build_object('code',code,'validated',valid,'missingRatings',missing);
 end $$;

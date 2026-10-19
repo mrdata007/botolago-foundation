@@ -325,6 +325,91 @@ async function main() {
     "select jobname,count(*)::int as runs from cron.job_run_details d join cron.job j using(jobid) where j.jobname in ('football-season-refresh','fantasy-worker-tick') group by jobname",
   );
   assert.equal(runs.length, 2, "both real cron jobs executed");
+  // A rejected recorder request must not poison the successful-evidence cache.
+  // Pause the test schedulers and wait for their handlers before this failure
+  // injection; resume the real cron path to demonstrate recovery afterward.
+  await sql.unsafe("select cron.alter_job(jobid,active:=false) from cron.job");
+  await waitFor(
+    async () =>
+      (
+        await sql.unsafe(
+          "select (holder is null and not exists(select 1 from app_private.fantasy_worker_lease where released_at is null and expires_at>statement_timestamp())) as idle from app_private.sofascore_collection_settings where id",
+        )
+      )[0]!.idle,
+    "test workers drained before rejection check",
+  );
+  const goodDigest = (
+    await sql.unsafe(
+      "select last_digest from app_private.sofascore_collection_queue where fixture_id=$1",
+      [uid(3002)],
+    )
+  )[0]!.last_digest;
+  await sql.unsafe(
+    "update app_private.sofascore_collection_queue set next_attempt_at=statement_timestamp()-interval '1 second' where fixture_id=$1",
+    [uid(3002)],
+  );
+  const claim = await rpcClient
+    .schema()
+    .rpc("service_sofascore_collection_claim", { p_holder: uid(9999) });
+  assert.equal(claim.error, null);
+  assert.equal(claim.data.status, "claimed");
+  const rejected = await rpcClient.schema().rpc("service_sofascore_collection_commit", {
+    p_holder: uid(9999),
+    p_fixture_id: uid(3002),
+    p_request: { sofascoreEventId: "123" },
+    p_meta: {
+      code: "collected",
+      validated: true,
+      missingRatings: 0,
+      digest: "f".repeat(64),
+      coverage: "full",
+      matchData: {},
+    },
+  });
+  assert.equal(rejected.error, null);
+  assert.equal(rejected.data.validated, false);
+  assert.equal(
+    (
+      await sql.unsafe(
+        "select last_digest from app_private.sofascore_collection_queue where fixture_id=$1",
+        [uid(3002)],
+      )
+    )[0]!.last_digest,
+    goodDigest,
+    "rejected evidence cannot suppress a later valid retry",
+  );
+  const finished = await rpcClient.schema().rpc("service_sofascore_collection_finish", {
+    p_holder: uid(9999),
+    p_summary: { code: "observation_rejected", fetched: 0, validated: 0, created: 0, requests: 0 },
+  });
+  assert.equal(finished.error, null);
+  await sql.unsafe(
+    "update app_private.sofascore_collection_queue set next_attempt_at=statement_timestamp()-interval '1 second' where fixture_id=$1",
+    [uid(3002)],
+  );
+  await sql.unsafe(
+    "select cron.alter_job(jobid,active:=true) from cron.job where jobname in ('football-season-refresh','fantasy-worker-tick')",
+  );
+  await waitFor(
+    async () =>
+      providerCalls >= firstCalls + 12 &&
+      (
+        await sql.unsafe(
+          "select last_error is null and holder is null as recovered from app_private.sofascore_collection_settings where id",
+        )
+      )[0]!.recovered,
+    "scheduled recovery after recorder rejection",
+  );
+  assert.equal(
+    (
+      await sql.unsafe(
+        "select count(*)::int as n from app_private.fantasy_fixture_observations where fixture_id=$1",
+        [uid(3002)],
+      )
+    )[0]!.n,
+    2,
+    "recovery retains the same accepted observations",
+  );
   const monitor = (
     await sql.unsafe("select app_private.sofascore_collection_health() as health")
   )[0]!.health;
@@ -337,6 +422,7 @@ async function main() {
     cronRuns: runs,
     monitor,
     handlerRuns: handlerResults.length,
+    rejectedEvidenceNotCached: true,
     passed: true,
   });
 }
