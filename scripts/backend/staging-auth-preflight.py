@@ -5,12 +5,21 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 from urllib.parse import urlsplit
 
 ROOT=Path(__file__).resolve().parents[2]
 SPEC=importlib.util.spec_from_file_location('auth_preflight_runtime',ROOT/'scripts/backend/staging-release-runtime.py')
 R=importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(R)
+
+
+def template_kind(value):
+    if not value:
+        return 'default_or_unset'
+    code=bool(re.search(r'{{\s*\.Token\s*}}',value))
+    link=bool(re.search(r'{{\s*\.ConfirmationURL\s*}}',value))
+    return 'code_and_link' if code and link else 'code' if code else 'confirmation_link' if link else 'custom_other'
 
 
 def public_metadata(config):
@@ -30,6 +39,9 @@ def public_metadata(config):
         'siteUrlKind':kind,
         'redirectCount':len([v for v in str(config.get('uri_allow_list') or '').split(',') if v.strip()]),
         'emailRateLimit':config.get('rate_limit_email_sent'),
+        'emailOtpLength':config.get('mailer_otp_length'),
+        'confirmationTemplateKind':template_kind(config.get('mailer_templates_confirmation_content')),
+        'recoveryTemplateKind':template_kind(config.get('mailer_templates_recovery_content')),
     }
 
 

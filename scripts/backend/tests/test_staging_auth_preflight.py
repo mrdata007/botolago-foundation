@@ -30,3 +30,18 @@ class AuthPreflightTests(unittest.TestCase):
 
     def test_partial_smtp_configuration_is_not_a_delivery_pass(self):
         self.assertFalse(M.public_metadata({'smtp_host':'smtp.resend.com','smtp_user':'resend'})['customSmtpConfigured'])
+
+    def test_email_template_structure_without_disclosing_content(self):
+        source={'mailer_templates_confirmation_content':'Private wording {{ .Token }} and {{.ConfirmationURL}}',
+                'mailer_templates_recovery_content':'Private recovery {{ .ConfirmationURL }}',
+                'mailer_otp_length':6}
+        metadata=M.public_metadata(source)
+        self.assertEqual(metadata['confirmationTemplateKind'],'code_and_link')
+        self.assertEqual(metadata['recoveryTemplateKind'],'confirmation_link')
+        self.assertEqual(metadata['emailOtpLength'],6)
+        self.assertNotIn('Private',json.dumps(metadata))
+
+    def test_missing_or_link_only_template_is_not_a_code_confirmation(self):
+        self.assertEqual(M.template_kind(None),'default_or_unset')
+        self.assertEqual(M.template_kind('<a href="{{ .ConfirmationURL }}">Confirm</a>'),'confirmation_link')
+        self.assertEqual(M.template_kind('{{ .TokenHash }}'),'custom_other')

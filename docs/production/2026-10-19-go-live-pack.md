@@ -150,7 +150,7 @@ exclude a later one. No operator resize or restart was requested. Cleanup still
 removed all 1,000 users and their state, restored the saved fingerprints and
 schedules, and passed independent final counts.
 
-Raw exporter reanalysis handles duplicate cached CPU counters and measures the
+For the first run (39216960815), raw exporter reanalysis handles duplicate cached CPU counters and measures the
 Data API's PostgREST pool instead of the unused PgBouncer admin pool. CPU peaked
 at 38.178% across advancing intervals; database connections peaked at 26/60.
 The conservative PostgREST occupancy bound reached 105%, but cached and

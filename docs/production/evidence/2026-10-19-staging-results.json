@@ -1473,7 +1473,14 @@
     },
     "merge": "5773167cc51cdccc5e71b92720a9e965818b3d33",
     "ownerMacServerRunning": true,
-    "ownerSafariTrustedLoginConfirmed": true
+    "ownerSafariTrustedLoginConfirmed": true,
+    "anonymousApiRead": {
+      "staging": true,
+      "httpStatus": 200,
+      "teamIsNull": true,
+      "browserPublishableKey": true,
+      "scope": "Operator curl through the normal network proxy; not an authenticated or iPhone journey"
+    }
   },
   "stagingAuthPreflight": {
     "run": 39238225342,
@@ -1495,8 +1502,14 @@
     "privateOwnerHandoff": "Created privately in staging Vault after alarm restoration; identifiers only",
     "nativePushEvidence": false,
     "inboxEvidence": false,
-    "combinedHead": "c10e5b3a4a75d05afa3d0eccac2452bdad73c2fd",
-    "combinedCiRun": 39246083973,
-    "combinedCi": "pending"
+    "combinedHead": "51e4b0151b71ed4443cfbc3234f739a1c1661ed2",
+    "combinedCiRun": 39247232363,
+    "combinedCi": "running",
+    "priorCombinedCi": {
+      "run": 39246083973,
+      "failedStep": "Existing Pépites publish/repoint concurrency test",
+      "fixtureRehearsals": "both passed",
+      "fix": "Observe the exact edition advisory-lock wait instead of assuming a pending promise after 400 ms reached that lock; result assertions unchanged"
+    }
   }
 }
