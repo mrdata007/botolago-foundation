@@ -248,12 +248,17 @@ describe("apply-20261016110000-fantasy-finalizing-guard.sql", () => {
         `revoke all on function ${fn.signature}\n  from public, anon, authenticated, service_role;`,
       );
     }
-    // One error, distinct from every existing one, raised the same way as the existing guards.
+    // The original guard introduced this code; the reviewed fixture/performance
+    // follow-up deliberately uses the same stable refusal for frozen inputs.
     expect(
       occurrences(migration, "errcode = 'PT409', message = 'fantasy_scoring_inputs_frozen'"),
     ).toBe(3);
     for (const file of migrationFiles()) {
-      if (file.startsWith(VERSION)) continue;
+      if (
+        file.startsWith(VERSION) ||
+        file === "20261019073221_fantasy_finalizing_fixture_performance_guard.sql"
+      )
+        continue;
       expect({
         file,
         uses: read(`supabase/migrations/${file}`).includes("fantasy_scoring_inputs_frozen"),

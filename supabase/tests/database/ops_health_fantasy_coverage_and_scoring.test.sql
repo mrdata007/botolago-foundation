@@ -747,6 +747,10 @@ select pg_temp.publish('e9000000-0000-4000-8000-000000000011');
 select pg_temp.publish('e9000000-0000-4000-8000-000000000012');
 select pg_temp.publish('e9000000-0000-4000-8000-000000000013');
 select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'with the points published it is ok in every stage');
+-- Begin a new mutable health scenario after the finalizing-state assertion.
+-- Fixture facts cannot be rewritten underneath a real finalizing snapshot.
+update app.fantasy_gameweeks set status = 'provisional'
+where id = 'e7000000-0000-4000-8000-000000000002';
 delete from app.fantasy_player_point_events;
 update app.fixtures set kickoff_at = statement_timestamp() - interval '14 hours',
   finalized_at = statement_timestamp() - interval '12 hours 1 minute'
