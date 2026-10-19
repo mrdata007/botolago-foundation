@@ -39,6 +39,12 @@ def public_metadata(config):
         kind='unconfigured_or_invalid'
     return {
         'customSmtpConfigured':all(bool(config.get(k)) for k in ('smtp_host','smtp_user','smtp_pass','smtp_admin_email')),
+        # Presence only: distinguish absent routing fields from a password that
+        # an API may redact. Real inbox delivery still needs its own proof.
+        'smtpHostConfigured':bool(config.get('smtp_host')),
+        'smtpUserConfigured':bool(config.get('smtp_user')),
+        'smtpSenderConfigured':bool(config.get('smtp_admin_email')),
+        'smtpPasswordReturned':bool(config.get('smtp_pass')),
         'emailProviderEnabled':config.get('external_email_enabled'),
         'emailAutoConfirm':config.get('mailer_autoconfirm'),
         'googleProviderEnabled':config.get('external_google_enabled'),
