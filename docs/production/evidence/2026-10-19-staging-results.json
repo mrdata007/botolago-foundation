@@ -1329,6 +1329,174 @@
     "httpStatus": 200,
     "release": "19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2",
     "operatorPublished": false,
-    "htmlMetaVerification": "pending"
+    "htmlMetaVerification": "PASS: exact header/meta agreement",
+    "applicationSourceComparison": "src, public and supabase/functions trees byte-identical to selected checkout at 526646da"
+  },
+  "workerAlarmSetupAttempts": [
+    {
+      "run": 39232738915,
+      "source": "028b732a",
+      "result": "preflight failure before fixture creation; no clock started",
+      "cause": "Vault-reading helper used through the read-only connection; replaced with secret-name metadata"
+    },
+    {
+      "run": 39233216395,
+      "source": "c9d62ac9",
+      "result": "setup failed; two f952 teams retired; older baseline unchanged and settings restored",
+      "cause": "private health function permission refused to the read-only API role"
+    },
+    {
+      "run": 39233805204,
+      "source": "0fba3b7e",
+      "result": "health preflight refused before fixture creation",
+      "cause": "HTTP 400 permission denied for ops_health_checks; confirmed by identifier-only diagnostics"
+    }
+  ],
+  "workerAlarmActive": {
+    "run": 39234050429,
+    "source": "526646dac98a7971bfdf5468edbd50c4d805cf37",
+    "namespace": "f9530000-0000-4000-8000-",
+    "countingFrom": "2026-10-19T09:59:14.705052Z",
+    "warningExpectedAfter": "2026-10-19T10:29:14.705052Z",
+    "failureExpectedAfter": "2026-10-19T11:29:14.705052Z",
+    "initialHealth": "ok",
+    "state": "automated detection, sending, recovery and restoration passed; owner inbox confirmation pending",
+    "warningObserved": {
+      "at": "2026-10-19T10:30:00.9189538Z",
+      "elapsedMinutes": 30.7528989,
+      "status": "warn",
+      "pagingExpected": false
+    },
+    "latestIndependentRead": {
+      "at": "2026-10-19T11:08:26Z",
+      "status": "warn",
+      "channelPendingRequests": false,
+      "deliveredStatus": null
+    },
+    "failureObserved": {
+      "at": "2026-10-19T11:29:19.0785449Z",
+      "elapsedMinutes": 90.07026596666667,
+      "status": "fail"
+    },
+    "failureEmail": {
+      "at": "2026-10-19T11:29:23.3435018Z",
+      "httpStatus": 200,
+      "providerAccepted": true
+    },
+    "recoveryEmail": {
+      "at": "2026-10-19T11:29:42.5294973Z",
+      "httpStatus": 200,
+      "providerAccepted": true
+    },
+    "recovery": {
+      "elapsedMs": 7879,
+      "calls": 19,
+      "finalized": 2,
+      "correct96Bench32": 2,
+      "rankings": 8,
+      "rollovers": 2,
+      "nextLineups": 2,
+      "postwork": true,
+      "advanced": true
+    },
+    "restoration": {
+      "at": "2026-10-19T11:30:17.3412551Z",
+      "priorFingerprintsUnchanged": true,
+      "errors": []
+    },
+    "independentRestoration": {
+      "at": "2026-10-19T11:35:48Z",
+      "users": 50008,
+      "teams": 60009,
+      "activeCron": 27,
+      "rivals": true,
+      "tick": false,
+      "worker": false,
+      "emailMode": "off",
+      "pushMode": "off",
+      "alerts": false,
+      "leaseHeld": false,
+      "fixtureSeason": "completed"
+    },
+    "inboxReceiptConfirmedByOwner": false
+  },
+  "stagingOperationsMerge": {
+    "pr": 526,
+    "merge": "6139dddd91763f8fbed5565f262f06c5b1295594",
+    "testedHead": "16a0f015a8ad32578644df8c0013cfc314635e8c",
+    "ciRun": 39238225691,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS"
+  },
+  "phonePreparation": {
+    "pr": 530,
+    "hostedFixtureApplied": false,
+    "ownerDevice": {
+      "model": "iPhone 17 Pro",
+      "os": "iOS 27",
+      "source": "owner report"
+    },
+    "ownerMacCaInstalled": true,
+    "ciRun": 39243707232,
+    "testedHead": "b47a164eb1832aaa789e67d002b43c51c3bbb732",
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "dbAssertions": 6879,
+    "localSavedListProof": {
+      "ownerA": {
+        "items": 60,
+        "pages": 2
+      },
+      "ownerB": {
+        "items": 2001,
+        "pages": 41
+      },
+      "uniqueIds": true,
+      "terminatingCursors": true,
+      "rollbackVerified": true
+    },
+    "ancestryMerge": {
+      "head": "537236e0990648ae58778bbb70c715b4a01aa10c",
+      "treeIdenticalToTestedHead": true,
+      "checks": "rerunning"
+    },
+    "localHttpsAnonymousLogin": {
+      "browser": "Chromium 149",
+      "viewportWidth": 393,
+      "french": "PASS",
+      "arabicRtl": "PASS",
+      "horizontalOverflow": false,
+      "pageErrors": 0,
+      "externalBrowserRequests": 0,
+      "strictCurlCertificateValidation": "PASS",
+      "realIPhoneEvidence": false
+    },
+    "merge": "5773167cc51cdccc5e71b92720a9e965818b3d33",
+    "ownerMacServerRunning": true,
+    "ownerSafariTrustedLoginConfirmed": true
+  },
+  "stagingAuthPreflight": {
+    "run": 39238225342,
+    "readOnly": true,
+    "customSmtpConfigured": false,
+    "emailProviderEnabled": true,
+    "emailAutoConfirm": false,
+    "siteUrlKind": "localhost",
+    "redirectCount": 0,
+    "googleProviderEnabled": false,
+    "appleProviderEnabled": false
+  },
+  "reminderPreparation": {
+    "pr": 531,
+    "hostedRun": "not started",
+    "extraSpending": 0,
+    "windows": "fresh 25-hour deadline; 125/170-minute match kickoffs; real elapsed clock required",
+    "recovery": "owner-only staging DB context",
+    "privateOwnerHandoff": "Created privately in staging Vault after alarm restoration; identifiers only",
+    "nativePushEvidence": false,
+    "inboxEvidence": false,
+    "combinedHead": "c10e5b3a4a75d05afa3d0eccac2452bdad73c2fd",
+    "combinedCiRun": 39246083973,
+    "combinedCi": "pending"
   }
 }

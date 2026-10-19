@@ -20,15 +20,15 @@ runbook, a seeded total or a green planning action does not prove acceptance.
 
 ## Version and environment manifest
 
-| Component            | Observed version / state                                                                                                                                                                                         |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                     |
-| Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                      |
-| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 274 history rows after the rating-publication and fixture-guard rehearsals/applications; plan 39231620643 reports zero pending migrations |
-| Staging Edge runtime | All 15 repository functions refreshed by run 39230680918, source `9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a`; scheduler and Resend credentials present                                                            |
-| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                               |
-| Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source    |
-| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                         |
+| Component            | Observed version / state                                                                                                                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                                  |
+| Staging operations   | [PR 526](https://github.com/mrdata007/botolago-foundation/pull/526) merged as `6139dddd91763f8fbed5565f262f06c5b1295594`; both quality jobs passed on `16a0f015` (run 39238225691). Original scoring run pinned to `cb31e56d` |
+| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 274 history rows after the rating-publication and fixture-guard rehearsals/applications; plan 39231620643 reports zero pending migrations              |
+| Staging Edge runtime | All 15 repository functions refreshed by run 39230680918, source `9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a`; scheduler and Resend credentials present                                                                         |
+| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only in this task. Re-read its private history, definitions and flags before each proposed production operation; historical snapshots are not current authority                  |
+| Production website   | Public recheck at 2026-10-19 09:52 UTC: HTTP 200, release header and HTML meta both `19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2`. This operator did not publish it                                                              |
+| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                                      |
 
 Main and the website advanced through another release during this staging window.
 The tested source is pinned above; rerun the plan and compare backend files against
@@ -38,8 +38,9 @@ At the earlier snapshot the unknown release identifier required a hosting fix:
 set `VITE_RELEASE_SHA` to the selected source SHA before the authorised publish,
 then verify both its response header and HTML meta value. At 09:52 UTC a public
 HTTP recheck returned release `19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2`; this
-operator did not publish it. HTML-meta and chosen-final-release parity still need
-verification. The source's git
+operator did not publish it. Its HTML meta value matches the header. The checkout's `src`, `public` and
+`supabase/functions` trees are byte-identical to that release. The migration and
+operational components retain the separately pinned versions in this manifest. The source's git
 fallback cannot identify a build made without a Git checkout. This pack does
 not authorise changing production hosting configuration or publishing.
 
@@ -102,18 +103,18 @@ six comment/format differences, and two substantive historical differences.
 
 ## Acceptance ledger
 
-| Gate                    | Current disposition                                                                                                                         | What objectively closes it                                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Launch-sized load       | FAIL in measured runs 39216960815 and 39222141596; no launch-sized capacity pass                                                            | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
-| 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599) | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
-| Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                 | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
-| Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                               | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
-| Silent-worker alarms    | One labelled staging alert accepted (HTTP 200) and receipt confirmed by owner; 30/90-minute failure/recovery still NOT RUN                  | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
-| Two-account reminders   | Key/sender delivery smoke PASS; two-account timing/preferences/deduplication still NOT RUN; sending restored OFF                            | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
-| Morocco time            | Helper checks PASS                                                                                                                          | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
-| Real iPhone / push      | NOT RUN; owner confirmed phone availability; candidate Vercel previews return HTTP 402                                                      | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
-| Arabic skim             | Owner review outstanding                                                                                                                    | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
-| Production health       | Historical watchdog failed `fantasy_fixture_coverage`                                                                                       | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
+| Gate                    | Current disposition                                                                                                                                            | What objectively closes it                                                                                                                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Launch-sized load       | FAIL in measured runs 39216960815 and 39222141596; no launch-sized capacity pass                                                                               | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
+| 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599)                    | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
+| Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                                    | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
+| Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                                                  | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
+| Silent-worker alarms    | Real-clock drill 39234050429 PASS for detection, accepted failure/recovery emails and restoration; owner inbox confirmation pending                            | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
+| Two-account reminders   | Key/sender delivery smoke PASS; two-account timing/preferences/deduplication still NOT RUN; sending restored OFF                                               | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
+| Morocco time            | Helper checks PASS                                                                                                                                             | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
+| Real iPhone / push      | Owner reports iPhone 17 Pro / iOS 27 and Mac; local HTTPS French/Arabic login rendering passed, actual device session pending. Vercel previews return HTTP 402 | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
+| Arabic skim             | Owner review outstanding                                                                                                                                       | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
+| Production health       | Historical watchdog failed `fantasy_fixture_coverage`; subsequent production reads are retained privately                                                      | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
 
 The existing audited runner orchestration rents five AWS machines and estimates
 $18.75 with a $50 guard. It cannot be dispatched under a $0 authorisation.
@@ -220,7 +221,7 @@ Independent postflight found 50,008 Auth users, 60,005 retained teams, 27 active
 cron jobs, Rivals ON, all other application writers OFF and no held lease.
 No existing fixture was reopened and no production write was performed.
 
-## Final measurements and restoration
+## Recorded measurements and restoration by run
 
 Machine-readable observations: [staging-results.json](evidence/2026-10-19-staging-results.json).
 
@@ -258,12 +259,12 @@ Machine-readable observations: [staging-results.json](evidence/2026-10-19-stagin
   OFF. Rivals is restored ON; the Fantasy tick/worker, email, push and alerts are
   OFF; test allowlists empty; no lease held. The newly configured staging base
   URL intentionally persists.
-- Users remain **50,008**. Total teams are **55,005**, comprising the original
+- Historical first-drill postflight (18 October): users **50,008**. Total teams were **55,005**, comprising the original
   50,005 plus the 5,000 explicitly new archived drill teams. The drill season is
   completed and its competition/catalog entries inactive, preserving evidence
   while removing it from active default discovery. The retirement itself passed
   a rolled-back rehearsal before commit. Existing QA-team and result-row MD5s
-  below still match. Notifications and deliveries both remain **0**.
+  below still match. Notifications and deliveries were both **0** at that historical postflight. Later drill state must be read separately.
 
 Local validation: 39 staging operational tests and 52 worker-handler tests passed;
 typecheck passed. The first lint/CI application attempt found formatting errors in
@@ -281,33 +282,92 @@ Pre-drill fingerprints: non-load team rows `9e17d5ca2dd396487a7c5a15161de11d`;
 all existing result rows `fb327cfdc3d8bbb2c619e5fbe45b8bd7`. Both match after the
 drill, excluding only the explicitly new fixture. No account/password was changed.
 
+## Real-clock worker alarm: automated path passed
+
+Run [39234050429](https://github.com/mrdata007/botolago-foundation/actions/runs/39234050429)
+used source `526646da` and fresh isolated f953 work. Its genuine clock began at
+09:59:14.705052 UTC. Warning was observed after 30.753 minutes; failure after
+90.070 minutes. Warning did not page. The failure email returned HTTP 200 / sent
+at 11:29:23; a real Edge worker finalized both teams at 96 points / 32 bench
+points in 7,879 ms and 19 calls, with eight rankings, two rollovers and two next
+lineups. Worker health returned to OK and the recovery email returned HTTP 200 / sent
+at 11:29:42. Owner inbox confirmation for these two emails is still pending.
+
+Restoration passed at 11:30:17. Independent database reads at 11:35–11:36
+confirmed all 27 cron jobs active, Rivals ON, tick/worker/email/push/alerts OFF,
+no held lease or other busy client, no generating story job, and the f953 season
+completed. Users remain 50,008; total teams are now 60,009 including the two
+retired f952 setup teams and two archived f953 teams. The old team, result and
+gameweek fingerprints match the pre-run baseline exactly. This test establishes
+alarm behavior for two teams; the separate 5,000-team Edge capacity result
+remains failed.
+
+## Phone and remaining reminder preparation
+
+[PR 530](https://github.com/mrdata007/botolago-foundation/pull/530) adds the isolated
+123-team P1–P6 phone world and a public-key-only HTTPS Mac launcher. CI run
+39240130664 passed both jobs on `7953193c`, including 6,879 database assertions,
+four lock races and actual saved-list pagination: 60 / 2 pages and 2,001 / 41,
+unique ids, terminating cursors and verified rollback. The normal ancestry merge
+`537236e0` has the identical Git tree. The final concurrency fix passed both quality jobs in run 39243707232 on `b47a164e`; PR 530 merged as `5773167cc51cdccc5e71b92720a9e965818b3d33`.
+No hosted fixture application or owner-phone result is claimed yet.
+
+The anonymous local HTTPS login check passed French LTR and Arabic RTL at
+393 px without overflow or page errors in Chromium 149. Browser traffic outside
+the local server was blocked (none attempted); strict curl certificate validation
+also passed. This does not certify authenticated journeys or Safari/iOS. The
+owner reports an iPhone 17 Pro on iOS 27. Its Mac server runs the pinned checkout
+`537236e0`, and the owner confirmed Safari opens the login page without a
+certificate warning. No authenticated device check is claimed.
+
+GET-only Auth preflight 39238225342 found no custom SMTP, a localhost site URL,
+zero redirect allowlist entries, email confirmations required and Google/Apple
+providers disabled. No settings were changed. The successful Resend Edge smoke
+cannot establish Auth signup/reset. The exact local HTTPS callback and verified
+Auth SMTP sender still need configuring securely before those cases.
+
+[PR 531](https://github.com/mrdata007/botolago-foundation/pull/531) prepares a
+separate, protected f970 reminder/response-loss rehearsal; hosted results remain
+pending. It waits for real 24-hour/match windows and natural lease expiry, verifies
+both an email-off account and a later unsubscribe negative, and saves an
+owner-only recovery context before pausing schedules. The GitHub integration
+refused an environment-secret write (403); after the alarm writer restored staging,
+the two verified owner identifiers were saved privately in staging Vault. No
+account credential or email was included in a workflow input or public artifact. No extra API key,
+public personal-data artifact or paid infrastructure is required.
+
 ## Production execution order — only after the gates permit it
 
-1. Select and pin the release SHA. Review PR 526 and its final CI, review the
-   unrecovered fixture-guard work or an explicit replacement, and complete the
-   staging ledger. Check the current production watchdog and version manifest.
+1. Select and pin the release SHA. Review merged PR 526 and its final CI, review merged fixture guard PR 529 and its staged functional evidence, and
+   complete the staging ledger. Check the current production watchdog and version manifest.
 2. Recheck one-writer ownership, active workflows, cron and leases immediately
    before each production operation. Read and save the current settings rather
    than copying staging's OFF state to production.
-3. With explicit go for the pilot migration, use the reviewed
+3. For a still-pending pilot migration, with explicit go use the reviewed
    `scripts/backend/apply-20261016170000-pilot-cap.sql`: rehearsal ending in
    rollback, inspect its checks, then authorised commit. The cap must remain OFF.
    Follow `PILOT_CAP_OWNER_RUNBOOK.md`; never edit an MD5 precondition to pass.
-4. With separate explicit go for the deadline migration, pause the Fantasy
+4. For a still-pending deadline migration, with separate explicit go pause the Fantasy
    lifecycle, wait for lease release/expiry and keep at least 30 minutes clear
    of an open deadline. Rehearse then apply
    `scripts/backend/apply-20261016180000-fantasy-deadline-lock.sql`
    according to `FANTASY_DEADLINE_LOCK_OWNER_RUNBOOK.md`. Verify volatility,
    grants, history and unlocked-lineup detection; restore the prior tick flag.
-5. Deploy only the approved production Edge functions from the selected source,
+5. Check any still-pending fixture-input guard and rating-publication migrations separately against actual production history. Follow `FIXTURE_INPUT_GUARD_OWNER_RUNBOOK.md` and inspect the reviewed `scripts/backend/apply-rating-publication.sql` through the release migration workflow. Each production operation needs its own go, rollback rehearsal, verified baseline and reviewed apply. Never replay an already applied operation.
+6. Compare deployed Edge sources against the selected source. Deploy only approved functions that need updating,
    with reviewed JWT modes and securely configured same-project secrets. Staging
    deployment is not permission to deploy production. Verify logs and inventory.
-6. With separate go for activation, inspect active managers and QA exclusions,
+7. If the owner chooses pilot-cap activation, with a separate go inspect active managers and QA exclusions,
    then `select app_private.pilot_configure(true,1000);`. This caps active teams
    per season, excluding hidden QA accounts; Auth sign-up remains available.
-7. Owner publishes the selected version in Lovable. Verify the live release
+   A team cap does not prove the request-rate capacity gate or waive its failure.
+8. If the selected application source needs publishing, the owner publishes the selected version in Lovable. Verify the live release
    header, French/Arabic signed-in flows and the relevant production read-only
    checks. A merge alone does not deploy the website or database.
+
+Before proposing any production mutation, verify whether it has already been
+applied by another authorised operator; inspect its recorded history, actual
+function definitions and current flags rather than replaying it.
 
 If a guarded operation refuses, stop that operation and investigate its actual
 precondition. Keep sending features OFF if delivery evidence is missing. A schema
