@@ -83,8 +83,9 @@ behavior. Deploy and switch ownership while workers are paused according to
   reserves a slot transactionally **before** the request. A crash between
   reservation and sending conservatively consumes a slot rather than allowing
   an undercount.
-- **Shared subscription stop:** 9,000 counted/reserved requests across all Edge
-  jobs, below the 10,000-request subscription measured in the live audit. The
+- **Shared usage guard:** collection stops at 9,000 counted/reserved requests
+  across all Edge jobs, below the 10,000-request subscription measured in the
+  live audit. Other jobs retain their existing guards. The
   persisted provider quota floor is 1,000. Calendar-budget accounting and the
   provider's own header snapshot are separate guards; quota snapshots are not
   inferred by subtracting unrelated concurrent jobs' headers. A changed
@@ -92,7 +93,7 @@ behavior. Deploy and switch ownership while workers are paused according to
 
 The collector's 1,600 is an additional **hard allocation**, not a claim that all
 other jobs have a hard 7,400 cap. Their existing roughly 5,500/month estimate
-plus this worst-case allocation is roughly 7,100. The shared 9,000 stop and the
+plus this worst-case allocation is roughly 7,100. The collector's shared-usage stop at 9,000 and the
 provider's quota floor protect the remaining capacity. Diagnostics and jobs
 outside the Edge counter still consume subscription quota, so the provider
 header guard remains necessary.
@@ -107,8 +108,9 @@ or crashed worker leaves durable attempt state and a conservative reservation;
 a successor traces its abandoned ingestion run after lease expiry.
 
 A unique fixture queue, per-fixture attempt limits and future retry dates prevent
-repeated tick fetches. A semantic digest includes parsed evidence and the approved
-mapping snapshot. Unchanged evidence skips observation insertion, while the
+repeated tick fetches. A semantic digest includes parsed evidence, approved
+fixture/event/team bindings, final score and the approved player-mapping snapshot.
+Only an accepted observation can update the cached digest. Unchanged evidence skips observation insertion, while the
 existing recorder provides its own digest/version guards. A genuine change bumps
 the scoring-input version and reaches the existing worker. Replayed data cannot
 create duplicate point events or another calculation version. The existing
@@ -160,11 +162,15 @@ The prior fresh authenticated audit remains separately labeled.
 The harness creates a synthetic world in an empty loopback-only database, obtains
 its test-owned Vault token only in process, enables the existing two cron jobs
 at five-second test intervals, and waits for their HTTP callbacks. It verifies:
+hourly calendar discovery changes an approved scheduled fixture to finished →
 first unrated observation → scoring pending/no result → simulated next due time
 with actual synthetic ratings → a second observation → the existing scoring
 worker persists 84 points → another unchanged scheduled pull adds no observation
-or scoring version. It also checks actual cron run records and operational
-monitoring. Only test time is accelerated; production cadence/deadlines are not
+or scoring version. The collector runs before the first scorer tick so that the
+strict-rating check measures known appearances, rather than the existing empty
+incremental placeholder before any observation. It also checks rejected-evidence
+recovery, an expired lease while a scorer is busy, actual cron run records and
+operational monitoring. Only test time is accelerated; production cadence/deadlines are not
 changed. The harness stops its local schedules afterward and exports a sanitized
 JSON report artifact.
 
@@ -175,6 +181,9 @@ bun run typecheck:sofascore-collection
 bun test supabase/functions/_shared/sofascore-collection.test.ts
 # Requires the repository's standard local Supabase database on port 55322.
 bun scripts/backend/sofascore-automation-e2e.ts
+# Focused isolated CI diagnosis; normal PR checks still run both full suites.
+gh workflow run backend-quality.yml --repo mrdata007/botolago-foundation \
+  --ref feat/sofascore-readonly-collection -f collection_only=true
 ```
 
 Do not run the integration harness against a shared local database. It refuses

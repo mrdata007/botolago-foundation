@@ -125,6 +125,11 @@ collector uses provider identities only and cannot establish BotolaGO mappings.
 
 ## Tests and remaining limits
 
+This section describes the read-only capture revision. Subsequent scheduler,
+Edge-client and isolated database work is documented separately in
+[the automation audit](2026-10-19-sofascore-automation.md); those changes have
+not been deployed to production.
+
 **191 focused Bun tests passed** across provider clients/parsers, collection,
 audit, Fantasy observations, coverage, rating scoring and staged statistics.
 The tests include synthetic HTTP failures and two explicitly labeled October 1

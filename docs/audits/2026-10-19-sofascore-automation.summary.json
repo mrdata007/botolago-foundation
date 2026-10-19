@@ -1,0 +1,37 @@
+{
+  "evidenceKind": "isolated_scheduled_e2e_with_synthetic_provider",
+  "freshAuthenticatedPull": false,
+  "startedAt": "2026-10-19T10:09:47.954Z",
+  "baseline": {
+    "fixtureCount": 0,
+    "schedulesInspected": 27,
+    "otherScheduledRuns": 0
+  },
+  "dryRunReadOnly": true,
+  "finishedFixtureDiscovered": true,
+  "completedAt": "2026-10-19T10:10:23.868Z",
+  "providerCalls": 18,
+  "discoveryRequests": 2,
+  "observationCount": 2,
+  "score": 84,
+  "scoringVersion": "6",
+  "cronRuns": [
+    {
+      "jobname": "fantasy-worker-tick",
+      "runs": 5
+    },
+    {
+      "jobname": "football-season-refresh",
+      "runs": 7
+    }
+  ],
+  "monitor": {
+    "name": "sofascore_collection",
+    "detail": "{\"enabled\": true, \"lastError\": null, \"blockedUntil\": null, \"lastAttemptAt\": \"2026-10-19T10:10:23.317701+00:00\", \"monthlyBudget\": 1600, \"quotaRemaining\": 5000, \"pendingFixtures\": 1, \"reservedMonthlyRequests\": 16, \"lastSuccessfulCollectionAt\": \"2026-10-19T10:10:23.356723+00:00\"}",
+    "status": "warn"
+  },
+  "handlerRuns": 8,
+  "rejectedEvidenceNotCached": true,
+  "abandonedLeaseRecovered": true,
+  "passed": true
+}

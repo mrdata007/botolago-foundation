@@ -180,7 +180,7 @@ begin
    select 1 from app.fantasy_fixture_assignments a join app.fantasy_gameweeks g on g.id=a.gameweek_id
    where a.fixture_id=p_fixture_id and a.superseded_at is null and app_private.fantasy_staged_enabled(g.id)))),
  last_success_at=case when valid then statement_timestamp() else last_success_at end,
- missing_ratings=missing,last_error=case when valid then null else code end,
+ missing_ratings=case when valid then missing else missing_ratings end,last_error=case when valid then null else code end,
  last_digest=case when valid then coalesce(p_meta->>'digest',last_digest) else last_digest end where fixture_id=p_fixture_id;
  if valid then update app_private.sofascore_collection_settings set last_success_at=statement_timestamp(),last_error=null where id; end if;
  return result||jsonb_build_object('code',code,'validated',valid,'missingRatings',missing);
@@ -237,7 +237,7 @@ begin
  -- The private discovery function is safe here; the public plan requires a service JWT.
  perform app_private.sofascore_staged_settle_due(statement_timestamp());
  update app_private.sofascore_collection_queue q set complete=true
- from app_private.sofascore_staged_stats s where q.fixture_id=s.fixture_id and s.status='FINAL' and q.missing_ratings=0 and not q.complete;
+ from app_private.sofascore_staged_stats s where q.fixture_id=s.fixture_id and s.status='FINAL' and q.missing_ratings=0 and q.last_error is null and not q.complete;
  if not exists(select 1 from app_private.sofascore_collection_candidates() c left join app_private.sofascore_collection_queue q using(fixture_id)
   where q.fixture_id is null or (not q.complete and q.attempts<10 and q.next_attempt_at<=statement_timestamp())) then return 'idle'; end if;
  select functions_base_url into url from app_private.notification_email_settings where id;

@@ -432,7 +432,7 @@ async function main() {
     p_meta: {
       code: "collected",
       validated: true,
-      missingRatings: 0,
+      missingRatings: 77,
       digest: "f".repeat(64),
       coverage: "full",
       matchData: {},
@@ -440,6 +440,16 @@ async function main() {
   });
   assert.equal(rejected.error, null);
   assert.equal(rejected.data.validated, false);
+  assert.equal(
+    (
+      await sql.unsafe(
+        "select missing_ratings from app_private.sofascore_collection_queue where fixture_id=$1",
+        [uid(3002)],
+      )
+    )[0]!.missing_ratings,
+    0,
+    "rejected evidence cannot replace accepted rating coverage",
+  );
   assert.equal(
     (
       await sql.unsafe(
