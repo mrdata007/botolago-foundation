@@ -73,7 +73,8 @@ def phone_config(saved,origin):
     body=re.search(r'<body\b[^>]*>',content,re.IGNORECASE)
     template=content[:body.end()]+code+content[body.end():] if body else code+content
     paths=('/auth/callback','/auth/callback?next=%2F',
-           '/auth/callback?next=/auth/update-password','/auth/update-password')
+           '/auth/callback?next=/auth/update-password','/auth/update-password',
+           r'/auth/callback\?**')
     return {'mailer_otp_length':6,'mailer_templates_confirmation_content':template,
             'site_url':origin,'uri_allow_list':','.join(origin+p for p in paths)}
 
@@ -87,6 +88,18 @@ def configure_phone(target,ref,config,origin,cleanup=False):
       where released_at is null and expires_at>now())
       or exists(select 1 from cron.job where active)
       or exists(select 1 from app_private.rivals_settings where enabled)
+      or exists(select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled or lifecycle_worker_enabled)
+      or exists(select 1 from app_private.notification_email_settings where mode<>'off' or football_live_refresh_enabled)
+      or exists(select 1 from app_private.notification_push_settings where mode<>'off')
+      or exists(select 1 from app_private.ops_alert_state where enabled)
+      or exists(select 1 from app_private.ai_content_settings where enabled)
+      or exists(select 1 from app_private.ai_home_story_settings where enabled)
+      or exists(select 1 from app_private.ai_home_story_jobs where status='generating')
+      or exists(select 1 from app_private.account_deletion_settings where enabled)
+      or exists(select 1 from app_private.manager_card_settings where compute_enabled)
+      or exists(select 1 from app_private.trophy_settings where enabled)
+      or exists(select 1 from app_private.pepites_settings where mode<>'off')
+      or exists(select 1 from app_private.prediction_settings where mode<>'off')
       or exists(select 1 from pg_stat_activity where backend_type='client backend'
         and pid<>pg_backend_pid() and state<>'idle') as busy""")[0]['busy']
     if busy:
@@ -109,13 +122,18 @@ def configure_phone(target,ref,config,origin,cleanup=False):
         literal="'"+json.dumps(state,ensure_ascii=False).replace("'","''")+"'"
         target.execute(f"select vault.create_secret({literal},'{BASELINE_NAME}','Staging phone Auth URL and code-template baseline',null)",60)
     desired=phone_config(saved,origin)
+    # Recognize exactly the four-entry version already applied by this run.
+    # An unrelated redirect/template change still refuses rather than being
+    # overwritten. The extra glob fixes dynamic next= values on this same
+    # exact callback path and trusted origin; it cannot match another host.
+    legacy={**desired,'uri_allow_list':','.join(desired['uri_allow_list'].split(',')[:-1])}
     current={k:config.get(k) for k in FIELDS}
     if cleanup:
         cleaned={**desired,'site_url':saved['site_url'],'uri_allow_list':saved['uri_allow_list']}
-        if current not in (desired,cleaned):
+        if current not in (desired,legacy,cleaned):
             raise RuntimeError('staging_auth_cleanup_configuration_drift')
         desired=cleaned
-    elif current not in (saved,desired):
+    elif current not in (saved,legacy,desired):
         raise RuntimeError('staging_auth_configuration_drift')
     if current!=desired:
         target._request('PATCH',f'/v1/projects/{ref}/config/auth',desired,60)

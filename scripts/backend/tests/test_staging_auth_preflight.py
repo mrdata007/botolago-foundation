@@ -120,3 +120,35 @@ class AuthPreflightTests(unittest.TestCase):
             M.configure_phone(target,M.R.REF,{},'https://192.168.1.2:8443')
         target.execute.assert_not_called()
         target._request.assert_not_called()
+
+    def test_dispatched_ai_job_is_checked_even_when_sessions_and_leases_are_idle(self):
+        target=MagicMock()
+        def rows(query):
+            self.assertIn('app_private.ai_home_story_settings',query)
+            self.assertIn('app_private.ai_home_story_jobs',query)
+            self.assertIn("status='generating'",query)
+            return [{'busy':True}]
+        target.rows.side_effect=rows
+        with self.assertRaisesRegex(RuntimeError,'writer_not_idle'):
+            M.configure_phone(target,M.R.REF,{},'https://192.168.1.2:8443')
+        target.execute.assert_not_called()
+        target._request.assert_not_called()
+
+    def test_only_the_known_four_entry_configuration_can_be_upgraded(self):
+        origin='https://192.168.1.2:8443'
+        saved={'site_url':'http://localhost:3000','uri_allow_list':'','mailer_otp_length':8,
+               'mailer_templates_confirmation_content':'<a href="{{ .ConfirmationURL }}">Confirm</a>'}
+        desired=M.phone_config(saved,origin)
+        callback_glob=origin+r'/auth/callback\?**'
+        self.assertEqual(desired['uri_allow_list'].split(',')[-1],callback_glob)
+        self.assertNotIn('**',callback_glob.split('/auth/')[0])
+        legacy={**desired,'uri_allow_list':','.join(desired['uri_allow_list'].split(',')[:-1])}
+        target=MagicMock()
+        target.rows.return_value=[{'busy':False}]
+        target.execute.return_value=[{'state':json.dumps({'before':saved,'origin':origin})}]
+        target._request.return_value=dict(desired)
+        M.configure_phone(target,M.R.REF,legacy,origin)
+        self.assertEqual(target._request.call_args_list[0].args[0],'PATCH')
+        self.assertEqual(target._request.call_args_list[0].args[2],desired)
+        with self.assertRaisesRegex(RuntimeError,'configuration_drift'):
+            M.configure_phone(target,M.R.REF,{**legacy,'uri_allow_list':origin+'/**'},origin)
