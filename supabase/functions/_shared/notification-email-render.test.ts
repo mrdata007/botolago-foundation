@@ -85,6 +85,10 @@ function defaultPayload<K extends EmailNotificationType>(type: K): EmailPayloadB
       gameweek: { id: "gw-5", sequence: 5, name: "Journée 5" },
       deadlineAt: "2026-09-25T18:30:00Z",
     },
+    gameweek_opened: {
+      gameweek: { id: "gw-5", sequence: 5, name: "Journée 5" },
+      deadlineAt: "2026-09-25T18:30:00Z",
+    },
     gameweek_finalized: { gameweek: 5, points: 64, overallRank: 12, totalPoints: 312 },
     pepites_weekly: pepitesPayload(),
   };
@@ -654,6 +658,7 @@ describe("links", () => {
     /^https:\/\/botolago\.com\/matches\/[A-Za-z0-9%._~-]+$/,
     /^https:\/\/botolago\.com\/fantasy\/transfers$/,
     /^https:\/\/botolago\.com\/fantasy\/points$/,
+    /^https:\/\/botolago\.com\/fantasy\/team$/,
     /^https:\/\/botolago\.com\/profile$/,
     /^https:\/\/botolago\.com\/unsubscribe\?token=[A-Za-z0-9%._~-]+$/,
     /^https:\/\/botolago\.com\/unsubscribe\?token=[A-Za-z0-9%._~-]+(&|&amp;)topic=pepites_weekly$/,
@@ -666,6 +671,7 @@ describe("links", () => {
     round_preview: `${APP}/matches`,
     match_starting: `${APP}/matches/fx-`,
     deadline_24h: `${APP}/fantasy/transfers`,
+    gameweek_opened: `${APP}/fantasy/team`,
     gameweek_finalized: `${APP}/fantasy/points`,
     pepites_weekly: `${APP}/pepites/semaine/16`,
   };

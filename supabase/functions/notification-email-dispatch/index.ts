@@ -4,7 +4,8 @@ import {
   handleEmailDispatchRequest,
   type EmailRpcClient,
 } from "../_shared/notification-email-dispatch.ts";
-import { renderNotificationEmail, unsubscribeUrl } from "../_shared/notification-email-render.ts";
+import { unsubscribeUrl } from "../_shared/notification-email-render.ts";
+import { renderAutomatedNotificationEmail } from "../_shared/fantasy-email-render.ts";
 
 // Woken by pg_cron through pg_net (app_private.notification_email_tick). The
 // caller is authenticated with the scheduler token, not a JWT, so this
@@ -32,7 +33,7 @@ Deno.serve((request) =>
   handleEmailDispatchRequest(request, {
     environment,
     client: client as unknown as EmailRpcClient,
-    render: renderNotificationEmail,
+    render: renderAutomatedNotificationEmail,
     unsubscribeUrl,
   }),
 );

@@ -1,4 +1,4 @@
-import { EMAIL_COLORS as C, escapeHtml as e } from "./notification-email-render";
+import { EMAIL_COLORS as C, escapeHtml as e } from "./notification-email-render.ts";
 
 export const POINTS_READY_VARIANTS = ["score-reveal", "manager-report", "full-time"] as const;
 export type PointsReadyVariant = (typeof POINTS_READY_VARIANTS)[number];
