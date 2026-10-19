@@ -18,10 +18,14 @@ def main():
     runtime.validate_ref(ref)
     target = runtime.UPDATE.ManagementTarget(os.environ["SUPABASE_ACCESS_TOKEN"], ref)
     runtime.readiness(target)
-    counts = target.rows("""select
-      (select count(*) from app.fantasy_teams where fantasy_season_id='f9500000-0000-4000-8000-000000000005') as teams,
-      (select count(*) from app.fantasy_leagues where fantasy_season_id='f9500000-0000-4000-8000-000000000005' and active) as leagues,
-      (select count(*) from app.fantasy_lineups where gameweek_id='f9500000-0000-4000-8000-000000000021' and locked_at is not null) as lineups""")[0]
+    fixture = os.environ.get("STAGING_DRILL_FIXTURE", "operator")
+    if fixture not in {"operator", "edge-runtime"}:
+        raise RuntimeError("staging_drill_fixture_refused")
+    namespace = "f9510000" if fixture == "edge-runtime" else "f9500000"
+    counts = target.rows(f"""select
+      (select count(*) from app.fantasy_teams where fantasy_season_id='{namespace}-0000-4000-8000-000000000005') as teams,
+      (select count(*) from app.fantasy_leagues where fantasy_season_id='{namespace}-0000-4000-8000-000000000005' and active) as leagues,
+      (select count(*) from app.fantasy_lineups where gameweek_id='{namespace}-0000-4000-8000-000000000021' and locked_at is not null) as lineups""")[0]
     if counts != {"teams": 5000, "leagues": 500, "lineups": 5000}:
         raise RuntimeError("staging_drill_fixture_incomplete")
     keys = target._request("GET", f"/v1/projects/{ref}/api-keys", None, 60)
@@ -37,11 +41,11 @@ def main():
             print(line, flush=True)
     if result.returncode:
         raise RuntimeError("staging_drill_worker_failed")
-    proof = target.rows("""select count(*) as results,min(final_score) as min_score,max(final_score) as max_score,
+    proof = target.rows(f"""select count(*) as results,min(final_score) as min_score,max(final_score) as max_score,
       sum(final_score) as sum_score,count(*) filter(where state='final') as final_rows,
-      (select count(*) from app.fantasy_rankings where gameweek_id='f9500000-0000-4000-8000-000000000021'
+      (select count(*) from app.fantasy_rankings where gameweek_id='{namespace}-0000-4000-8000-000000000021'
         and league_id is null) as ranked
-      from app.fantasy_team_gameweek_results where gameweek_id='f9500000-0000-4000-8000-000000000021'""")[0]
+      from app.fantasy_team_gameweek_results where gameweek_id='{namespace}-0000-4000-8000-000000000021'""")[0]
     expected = {"results":5000,"min_score":96,"max_score":96,"sum_score":480000,"final_rows":5000,"ranked":5000}
     print(json.dumps({"kind":"independent_sql_proof", "passed":proof==expected, **proof}), flush=True)
     if proof != expected:

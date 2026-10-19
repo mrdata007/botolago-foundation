@@ -11,10 +11,15 @@ import {
   releaseWorkerLease,
   runFantasyLifecycle,
   isAmbiguousRpcTimeout,
+  holdLeaseForAmbiguousWrite,
 } from "../../supabase/functions/_shared/fantasy-lifecycle-worker";
 
 const ref = "srdrflfrfpwixsllveid";
-const gameweekId = "f9500000-0000-4000-8000-000000000021";
+const fixture = process.env.STAGING_DRILL_FIXTURE ?? "operator";
+if (!["operator", "edge-runtime"].includes(fixture))
+  throw new Error("staging_drill_fixture_refused");
+const namespace = fixture === "edge-runtime" ? "f9510000" : "f9500000";
+const gameweekId = `${namespace}-0000-4000-8000-000000000021`;
 const url = process.env.STAGING_DRILL_URL;
 if (url !== `https://${ref}.supabase.co` || !process.env.STAGING_DRILL_SERVICE_KEY)
   throw new Error("staging_drill_target_refused");
@@ -33,7 +38,7 @@ const scoped = {
       if (
         (key.includes("gameweek") || key === "p_season_id") &&
         typeof value === "string" &&
-        !value.startsWith("f9500000-0000-4000-8000-")
+        !value.startsWith(`${namespace}-0000-4000-8000-`)
       )
         throw new Error("staging_drill_scope_refused");
     }
@@ -52,6 +57,7 @@ const scoped = {
 const start = performance.now();
 let token: string | null = null;
 let release = true;
+let leaseLeftToExpire = false;
 try {
   const lease = await acquireWorkerLease(scoped.rpc, "manual:staging-rating-drill-5000", 420);
   if (lease.kind !== "acquired") throw new Error("staging_drill_lease_unavailable");
@@ -78,7 +84,11 @@ try {
     process.exitCode = 1;
 } catch (error) {
   if (isAmbiguousRpcTimeout(error)) {
-    release = (await error.settle(10_000)) === "answered";
+    const ambiguous = await holdLeaseForAmbiguousWrite(real.rpc, token, error, () => 10_000);
+    // The shared helper either released after a real database reply or left
+    // an extended lease. Never release it a second time in this adapter.
+    release = false;
+    leaseLeftToExpire = !ambiguous.leaseReleased;
   }
   const code =
     error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
@@ -90,7 +100,7 @@ try {
       error: code,
       elapsedMs: performance.now() - start,
       metrics,
-      leaseLeftToExpire: !release,
+      leaseLeftToExpire,
     }),
   );
   process.exitCode = 1;

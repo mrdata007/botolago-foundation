@@ -21,6 +21,7 @@ on:
           - check
           - runtime
           - score5000
+          - score5000edge
           - workerprobe
       confirmation:
         description: "For every write action: type UPDATE_STAGING_DATABASE"
@@ -56,7 +57,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check) ;;
-            rehearse|apply|seed|runtime|score5000|workerprobe) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime|score5000|score5000edge|workerprobe) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -78,13 +79,13 @@ jobs:
         run: python scripts/backend/staging-writer-guard.py
 
       - name: Set up Bun for the staging runtime
-        if: inputs.action == 'runtime' || inputs.action == 'score5000'
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge'
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
       - name: Install pinned runtime deployment tooling
-        if: inputs.action == 'runtime' || inputs.action == 'score5000'
+        if: inputs.action == 'runtime' || inputs.action == 'score5000' || inputs.action == 'score5000edge'
         run: |
           node scripts/backend/check-config-integrity.mjs
           bun install --frozen-lockfile
@@ -97,7 +98,7 @@ jobs:
         run: python scripts/backend/staging-release-runtime.py
 
       - name: Run ${{ inputs.action }}
-        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'workerprobe'
+        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'score5000edge' && inputs.action != 'workerprobe'
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
@@ -118,10 +119,11 @@ jobs:
           exit "$status"
 
       - name: Score the isolated 5000-team staging fixture
-        if: inputs.action == 'score5000'
+        if: inputs.action == 'score5000' || inputs.action == 'score5000edge'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          STAGING_DRILL_FIXTURE: ${{ inputs.action == 'score5000edge' && 'edge-runtime' || 'operator' }}
         run: python scripts/backend/staging-5000-rating-drill.py
 
       - name: Probe the real staging Edge worker
