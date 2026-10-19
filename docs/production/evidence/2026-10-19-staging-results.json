@@ -1329,6 +1329,497 @@
     "httpStatus": 200,
     "release": "19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2",
     "operatorPublished": false,
-    "htmlMetaVerification": "pending"
+    "htmlMetaVerification": "PASS: exact header/meta agreement",
+    "applicationSourceComparison": "src, public and supabase/functions trees byte-identical to selected checkout at 526646da"
+  },
+  "workerAlarmSetupAttempts": [
+    {
+      "run": 39232738915,
+      "source": "028b732a",
+      "result": "preflight failure before fixture creation; no clock started",
+      "cause": "Vault-reading helper used through the read-only connection; replaced with secret-name metadata"
+    },
+    {
+      "run": 39233216395,
+      "source": "c9d62ac9",
+      "result": "setup failed; two f952 teams retired; older baseline unchanged and settings restored",
+      "cause": "private health function permission refused to the read-only API role"
+    },
+    {
+      "run": 39233805204,
+      "source": "0fba3b7e",
+      "result": "health preflight refused before fixture creation",
+      "cause": "HTTP 400 permission denied for ops_health_checks; confirmed by identifier-only diagnostics"
+    }
+  ],
+  "workerAlarmActive": {
+    "run": 39234050429,
+    "source": "526646dac98a7971bfdf5468edbd50c4d805cf37",
+    "namespace": "f9530000-0000-4000-8000-",
+    "countingFrom": "2026-10-19T09:59:14.705052Z",
+    "warningExpectedAfter": "2026-10-19T10:29:14.705052Z",
+    "failureExpectedAfter": "2026-10-19T11:29:14.705052Z",
+    "initialHealth": "ok",
+    "state": "PASS: automated detection, accepted sending, lifecycle recovery, restoration and owner-confirmed inbox receipt of both alerts",
+    "warningObserved": {
+      "at": "2026-10-19T10:30:00.9189538Z",
+      "elapsedMinutes": 30.7528989,
+      "status": "warn",
+      "pagingExpected": false
+    },
+    "latestIndependentRead": {
+      "at": "2026-10-19T11:08:26Z",
+      "status": "warn",
+      "channelPendingRequests": false,
+      "deliveredStatus": null
+    },
+    "failureObserved": {
+      "at": "2026-10-19T11:29:19.0785449Z",
+      "elapsedMinutes": 90.07026596666667,
+      "status": "fail"
+    },
+    "failureEmail": {
+      "at": "2026-10-19T11:29:23.3435018Z",
+      "httpStatus": 200,
+      "providerAccepted": true,
+      "ownerInboxConfirmed": true
+    },
+    "recoveryEmail": {
+      "at": "2026-10-19T11:29:42.5294973Z",
+      "httpStatus": 200,
+      "providerAccepted": true,
+      "ownerInboxConfirmed": true
+    },
+    "recovery": {
+      "elapsedMs": 7879,
+      "calls": 19,
+      "finalized": 2,
+      "correct96Bench32": 2,
+      "rankings": 8,
+      "rollovers": 2,
+      "nextLineups": 2,
+      "postwork": true,
+      "advanced": true
+    },
+    "restoration": {
+      "at": "2026-10-19T11:30:17.3412551Z",
+      "priorFingerprintsUnchanged": true,
+      "errors": []
+    },
+    "independentRestoration": {
+      "at": "2026-10-19T11:35:48Z",
+      "users": 50008,
+      "teams": 60009,
+      "activeCron": 27,
+      "rivals": true,
+      "tick": false,
+      "worker": false,
+      "emailMode": "off",
+      "pushMode": "off",
+      "alerts": false,
+      "leaseHeld": false,
+      "fixtureSeason": "completed"
+    },
+    "inboxReceiptConfirmedByOwner": true
+  },
+  "stagingOperationsMerge": {
+    "pr": 526,
+    "merge": "6139dddd91763f8fbed5565f262f06c5b1295594",
+    "testedHead": "16a0f015a8ad32578644df8c0013cfc314635e8c",
+    "ciRun": 39238225691,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS"
+  },
+  "phonePreparation": {
+    "pr": 530,
+    "hostedFixtureApplied": false,
+    "ownerDevice": {
+      "model": "iPhone 17 Pro",
+      "os": "iOS 27",
+      "source": "owner report"
+    },
+    "ownerMacCaInstalled": true,
+    "ciRun": 39243707232,
+    "testedHead": "b47a164eb1832aaa789e67d002b43c51c3bbb732",
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "dbAssertions": 6879,
+    "localSavedListProof": {
+      "ownerA": {
+        "items": 60,
+        "pages": 2
+      },
+      "ownerB": {
+        "items": 2001,
+        "pages": 41
+      },
+      "uniqueIds": true,
+      "terminatingCursors": true,
+      "rollbackVerified": true
+    },
+    "ancestryMerge": {
+      "head": "537236e0990648ae58778bbb70c715b4a01aa10c",
+      "treeIdenticalToTestedHead": true,
+      "checks": "rerunning"
+    },
+    "localHttpsAnonymousLogin": {
+      "browser": "Chromium 149",
+      "viewportWidth": 393,
+      "french": "PASS",
+      "arabicRtl": "PASS",
+      "horizontalOverflow": false,
+      "pageErrors": 0,
+      "externalBrowserRequests": 0,
+      "strictCurlCertificateValidation": "PASS",
+      "realIPhoneEvidence": false
+    },
+    "merge": "5773167cc51cdccc5e71b92720a9e965818b3d33",
+    "ownerMacServerRunning": true,
+    "ownerSafariTrustedLoginConfirmed": true,
+    "anonymousApiRead": {
+      "staging": true,
+      "httpStatus": 200,
+      "teamIsNull": true,
+      "browserPublishableKey": true,
+      "scope": "Operator curl through the normal network proxy; not an authenticated or iPhone journey"
+    }
+  },
+  "stagingAuthPreflight": {
+    "run": 39238225342,
+    "readOnly": true,
+    "customSmtpConfigured": false,
+    "emailProviderEnabled": true,
+    "emailAutoConfirm": false,
+    "siteUrlKind": "localhost",
+    "redirectCount": 0,
+    "googleProviderEnabled": false,
+    "appleProviderEnabled": false
+  },
+  "reminderPreparation": {
+    "pr": 531,
+    "hostedRun": 39250029846,
+    "extraSpending": 0,
+    "windows": "fresh 25-hour deadline; 125/170-minute match kickoffs; real elapsed clock required",
+    "recovery": "owner-only staging DB context",
+    "privateOwnerHandoff": "Created privately in staging Vault after alarm restoration; identifiers only",
+    "nativePushEvidence": false,
+    "inboxEvidence": true,
+    "combinedHead": "51e4b0151b71ed4443cfbc3234f739a1c1661ed2",
+    "combinedCiRun": 39247232363,
+    "combinedCi": "PASS",
+    "priorCombinedCi": {
+      "run": 39246083973,
+      "failedStep": "Existing Pépites publish/repoint concurrency test",
+      "fixtureRehearsals": "both passed",
+      "fix": "Observe the exact edition advisory-lock wait instead of assuming a pending promise after 400 ms reached that lock; result assertions unchanged"
+    },
+    "merge": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "inboxEvidenceScope": "Owner confirmed recap96 and both Arabic reminders with matching printed times; actual UI agreement pending"
+  },
+  "stagingAuthPhoneConfiguration": {
+    "planRun": 39248436124,
+    "applyRun": 39249633112,
+    "source": "bf71bfabf37a74961e807f9ba6ce06db128a18ef",
+    "before": {
+      "emailOtpLength": 8,
+      "confirmationTemplateKind": "confirmation_link",
+      "redirectCount": 0,
+      "siteUrlKind": "localhost"
+    },
+    "after": {
+      "emailOtpLength": 6,
+      "confirmationTemplateKind": "code_and_link",
+      "redirectCount": 4,
+      "siteUrlKind": "other_https",
+      "customSmtpConfigured": false
+    },
+    "smtpCredentialsChanged": false,
+    "privateBaselineSaved": true,
+    "cronRestored": 27,
+    "rivalsRestored": true,
+    "existingAccountAndTeamCountsUnchanged": true,
+    "resultAndGameweekFingerprintsUnchanged": true,
+    "temporaryLanUrlCleanup": "pending actual phone session; code alignment intentionally persists",
+    "signupAndResetEvidence": false,
+    "ownerSmtpSavedReport": {
+      "reportedSaved": true,
+      "configurationReadback": "pending active reminder writer release",
+      "signupAndResetDeliveryProven": false
+    },
+    "smtpRecheck": {
+      "run": 39265232739,
+      "at": "2026-10-19T14:01:52.6051745Z",
+      "ownerReportedSaved": true,
+      "hostConfigured": false,
+      "userConfigured": false,
+      "senderConfigured": false,
+      "passwordReturned": false,
+      "emailRateLimit": 2,
+      "action": "Asked owner to verify exact staging project and enabled SMTP toggle; signup/reset not proven"
+    },
+    "queryCallbackUpgrade": {
+      "run": 39265408129,
+      "source": "f1aeca219b966e4c96aec72893018a23393c500d",
+      "at": "2026-10-19T14:03:11.7907964Z",
+      "redirectCount": 5,
+      "emailOtpLength": 6,
+      "confirmationTemplateKind": "code_and_link",
+      "strictReadback": "PASS"
+    }
+  },
+  "reminderRun": {
+    "id": 39250029846,
+    "job": 118051281597,
+    "source": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+    "state": "PASS automated real-clock, response-loss, opt-out, deduplication and restoration; owner inbox confirmed; actual UI agreement pending",
+    "namespace": "f9700000-0000-4000-8000-",
+    "activatedAt": "2026-10-19T12:11:41.178422Z",
+    "deadline": "2026-10-20T13:11:35.730124Z",
+    "firstKickoff": "2026-10-19T14:16:35.730124Z",
+    "laterKickoff": "2026-10-19T15:01:35.730124Z",
+    "firstReminderWindowsExpectedAfter": "2026-10-19T13:11:35.730124Z",
+    "laterOptOutWindowExpectedAfter": "2026-10-19T13:56:35.730124Z",
+    "independentUnsettledRead": {
+      "at": "2026-10-19T12:13:14.69579Z",
+      "persistedResults": 2,
+      "finalResults": 0,
+      "events": 0,
+      "leaseRetained": true,
+      "leaseAcquiredAt": "2026-10-19T12:11:43.937602Z",
+      "leaseExtendedExpiresAt": "2026-10-19T12:19:15.120432Z"
+    },
+    "ownerInboxConfirmation": {
+      "frenchRecapPoints": 96,
+      "arabicMatchReminder": true,
+      "arabicDeadlineReminder": true,
+      "printedKickoff": "2026-10-19 14:16 UTC",
+      "printedDeadline": "2026-10-20 13:11 UTC",
+      "uiAgreement": false
+    },
+    "firstWindowsIndependentRead": {
+      "at": "2026-10-19T13:12:35.178635Z",
+      "matchEventAt": "2026-10-19T13:11:54.749514Z",
+      "matchEmailSentAt": "2026-10-19T13:11:55.732391Z",
+      "deadlineEmailSentAt": "2026-10-19T13:11:56.194266Z",
+      "matchMinutesBeforeKickoff": 64.68301,
+      "deadlineMinutesBeforeDeadline": 1439.68301,
+      "eachEvents": 1,
+      "eachNotifications": 1,
+      "eachSentEmails": 1,
+      "language": "ar"
+    },
+    "defaultSeasonSelection": {
+      "run": 39265609258,
+      "source": "f1aeca219b966e4c96aec72893018a23393c500d",
+      "rehearsalRollbackVerified": true,
+      "appliedAt": "2026-10-19T14:04:41.5097463Z",
+      "legacySyntheticSeasonsParked": 2,
+      "bothActualLanguageHubsSelectF970": true,
+      "existingUserCountTeamResultGameweekDigestsUnchanged": true,
+      "exactCronAndRivalsRestoredAt": "2026-10-19T14:06:00.886407Z",
+      "emailAndPush": "off",
+      "legacyStatusRestoration": "pending retirement after actual phone session"
+    },
+    "completedEvidence": {
+      "run": 39250029846,
+      "job": 118051281597,
+      "source": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+      "responseLoss": {
+        "kind": "response_loss_boundary",
+        "elapsedMs": 30001.681961,
+        "realReplyConsumed": true,
+        "rpc": "service_persist_fantasy_scoring_results",
+        "leaseExtended": true,
+        "settled": false,
+        "leaseReleased": false
+      },
+      "exclusion": {
+        "kind": "response_loss_exclusion",
+        "competingLeaseDenied": true,
+        "expiresAt": "2026-10-19T12:19:15.120432+00:00"
+      },
+      "recovery": {
+        "kind": "response_loss_recovery",
+        "outcome": "finalized",
+        "noLaterWriteBeforeExpiry": true
+      },
+      "scoring": {
+        "kind": "reminder_independent_score_proof",
+        "status": "finalized",
+        "scored": 2,
+        "last_team": "f9700000-0000-4000-8000-000000010002",
+        "finalized": 2,
+        "rankings": 8,
+        "correct_results": 2,
+        "rollovers": 2,
+        "next_lineups": 2,
+        "postwork": true,
+        "advanced": true
+      },
+      "unsubscribe": {
+        "kind": "reminder_unsubscribed",
+        "getDidNotMutate": true,
+        "postPassed": true,
+        "repeatedPostIdempotent": true
+      },
+      "verdict": {
+        "kind": "reminder_verdict",
+        "passed": true,
+        "realClockWindows": true,
+        "inboxReceipt": "owner confirmation required",
+        "uiChecks": "owner device pending"
+      },
+      "restoration": {
+        "kind": "reminder_restoration",
+        "oldBaselineUnchanged": true,
+        "preferencesRestored": true,
+        "languagesRestored": true,
+        "emailSettingsRestored": true,
+        "runtimeOverridesRemoved": true,
+        "errors": []
+      },
+      "handoff": {
+        "kind": "reminder_fixture_handoff",
+        "retainedForOwnerUi": true
+      },
+      "finalObservation": {
+        "kind": "reminder_observation",
+        "evidence": [
+          {
+            "type": "match_starting",
+            "source": "f9700000-0000-4000-8000-000000003020",
+            "events": 1,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 13:11:55.732391+00",
+            "occurred_at": "2026-10-19 13:11:54.749514+00",
+            "minutes_before": "64.6830101666666667"
+          },
+          {
+            "type": "match_starting",
+            "source": "f9700000-0000-4000-8000-000000003021",
+            "events": 1,
+            "positive_notifications": 0,
+            "negative_notifications": 0,
+            "sent": 0,
+            "inbox": 0,
+            "sent_at": null,
+            "occurred_at": "2026-10-19 13:57:21.603371+00",
+            "minutes_before": "64.2354458833333333"
+          },
+          {
+            "type": "deadline_24h",
+            "source": "f9700000-0000-4000-8000-000000000022",
+            "events": 1,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 13:11:56.194266+00",
+            "occurred_at": "2026-10-19 13:11:54.749514+00",
+            "minutes_before": "1439.6830101666666667"
+          },
+          {
+            "type": "gameweek_finalized",
+            "source": "f9700000-0000-4000-8000-000000000021",
+            "events": 2,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 12:19:27.415623+00",
+            "occurred_at": "2026-10-19 12:19:19.826069+00",
+            "minutes_before": null
+          }
+        ]
+      }
+    },
+    "independentRestoration": {
+      "at": "2026-10-19T13:59:02.419893Z",
+      "cronRestored": true,
+      "rivalsRestored": true,
+      "emailRestored": true,
+      "preferencesRestored": true,
+      "languagesRestored": true,
+      "usersUnchanged": true,
+      "oldTeamResultAndGameweekDigestsUnchanged": true,
+      "recoveryContextRemoved": true,
+      "leaseFree": true
+    },
+    "laterOptOutIndependentRead": {
+      "at": "2026-10-19T13:57:23.66304Z",
+      "eventAt": "2026-10-19T13:57:21.603371Z",
+      "minutesBeforeKickoff": 64.23544588333333,
+      "notifications": 0,
+      "sentEmails": 0
+    },
+    "ownerClaimApiRead": {
+      "scope": "SQL API invocation under authenticated owner claims; not a real iPhone or token-transport result",
+      "points": 96,
+      "bench": 32,
+      "state": "final",
+      "season": "Staging Reminder Drill",
+      "deadline": "2026-10-20T13:11:35.730124Z",
+      "observedAfterPhoneSetupRestored": true
+    }
+  },
+  "stagingPhoneOperationsMerge": {
+    "pr": 532,
+    "merge": "f1aeca219b966e4c96aec72893018a23393c500d",
+    "testedHead": "8c212cf955289bb7bf42e7f2467020d637b8d016",
+    "ciRun": 39260965377,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "defaultSeasonCollisionParkRestoreContract": "PASS local rolled-back database test"
+  },
+  "phoneFixtureExecutionMerge": {
+    "pr": 533,
+    "merge": "4402a52a0e0eba527c4fdf0077818675f0d463ef",
+    "testedHead": "fee110f337b72eaef1bd6167fc702fa60e0c6fb6",
+    "ciRun": 39265144317,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "hostedSeedScoreFinish": "pending owner f970 UI comparison and retirement"
+  },
+  "productionReadOnlyDiagnosis": {
+    "observedAt": "2026-10-19T17:16:19.792750Z",
+    "status": "FAIL",
+    "failedChecks": ["fantasy_fixture_coverage", "provider_refresh"],
+    "missingStatisticsMatches": 2,
+    "oldestFinalHours": 43,
+    "seasonRefreshStaleHours": 22,
+    "seasonRefreshTransport": {
+      "status": 502,
+      "error": "invalid_provider_payload",
+      "networkTimeout": false,
+      "stage": "first get-next-matches response; before fixture writes"
+    },
+    "providerProbe": {
+      "run": 39293443010,
+      "source": "4402a52a0e0eba527c4fdf0077818675f0d463ef",
+      "observedAt": "2026-10-19T17:22:06Z",
+      "databaseAccess": false,
+      "requests": 2,
+      "nextMatches": {
+        "httpStatus": 200,
+        "topLevelKeys": ["error"],
+        "errorFieldTypes": {
+          "code": "number",
+          "message": "string"
+        }
+      },
+      "lastMatches": {
+        "httpStatus": 200,
+        "events": 30,
+        "topLevelKeys": ["events", "hasNextPage"]
+      }
+    },
+    "rootCause": "provider error envelope verified; underlying cause unverified",
+    "productionMutations": false,
+    "extraSpending": 0
   }
 }
