@@ -1509,7 +1509,7 @@
     "combinedCi": "PASS",
     "priorCombinedCi": {
       "run": 39246083973,
-      "failedStep": "Existing P\u00e9pites publish/repoint concurrency test",
+      "failedStep": "Existing Pépites publish/repoint concurrency test",
       "fixtureRehearsals": "both passed",
       "fix": "Observe the exact edition advisory-lock wait instead of assuming a pending promise after 400 ms reached that lock; result assertions unchanged"
     },
@@ -1784,5 +1784,42 @@
     "applicationQuality": "PASS",
     "databaseQuality": "PASS",
     "hostedSeedScoreFinish": "pending owner f970 UI comparison and retirement"
+  },
+  "productionReadOnlyDiagnosis": {
+    "observedAt": "2026-10-19T17:16:19.792750Z",
+    "status": "FAIL",
+    "failedChecks": ["fantasy_fixture_coverage", "provider_refresh"],
+    "missingStatisticsMatches": 2,
+    "oldestFinalHours": 43,
+    "seasonRefreshStaleHours": 22,
+    "seasonRefreshTransport": {
+      "status": 502,
+      "error": "invalid_provider_payload",
+      "networkTimeout": false,
+      "stage": "first get-next-matches response; before fixture writes"
+    },
+    "providerProbe": {
+      "run": 39293443010,
+      "source": "4402a52a0e0eba527c4fdf0077818675f0d463ef",
+      "observedAt": "2026-10-19T17:22:06Z",
+      "databaseAccess": false,
+      "requests": 2,
+      "nextMatches": {
+        "httpStatus": 200,
+        "topLevelKeys": ["error"],
+        "errorFieldTypes": {
+          "code": "number",
+          "message": "string"
+        }
+      },
+      "lastMatches": {
+        "httpStatus": 200,
+        "events": 30,
+        "topLevelKeys": ["events", "hasNextPage"]
+      }
+    },
+    "rootCause": "provider error envelope verified; underlying cause unverified",
+    "productionMutations": false,
+    "extraSpending": 0
   }
 }

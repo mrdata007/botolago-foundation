@@ -114,7 +114,7 @@ six comment/format differences, and two substantive historical differences.
 | Morocco time            | Helper checks PASS                                                                                                                                             | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
 | Real iPhone / push      | Owner reports iPhone 17 Pro / iOS 27 and Mac; local HTTPS French/Arabic login rendering passed, actual device session pending. Vercel previews return HTTP 402 | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
 | Arabic skim             | Owner review outstanding                                                                                                                                       | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
-| Production health       | Historical watchdog failed `fantasy_fixture_coverage`; subsequent production reads are retained privately                                                      | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
+| Production health       | Read-only check at 17:16 UTC fails `fantasy_fixture_coverage` and `provider_refresh`; diagnosis below                                                          | Resolve the missing core statistics and season-refresh provider error; verify actual successful ingestion and fresh health. A scheduler heartbeat alone does not close either failure                                  |
 
 The existing audited runner orchestration rents five AWS machines and estimates
 $18.75 with a $50 guard. It cannot be dispatched under a $0 authorisation.
@@ -418,6 +418,48 @@ This pack prepares decisions and reviewable operations. It does not silently
 accept launch risk, approve production changes or certify the remaining gates.
 
 ## Final reminder automation and independent restoration
+
+### Production refresh diagnosis — read-only, 17:22 UTC
+
+The 17:16 UTC health read still finds two counted GW4 matches without complete
+player statistics (oldest final 43 hours ago) and no successful season-wide
+refresh for 22 hours. Core points exist for all eight counted matches; that
+separate scoring check is OK and does not erase the coverage failure.
+
+The scheduler reaches the Edge handler: six retained hourly responses from
+11:40 through 16:40 UTC are HTTP 502, `invalid_provider_payload`, without network
+timeouts. Edge logs place the rejection at the first `get-next-matches` request,
+before any fixture write. The same path succeeded at 19:10 UTC on 18 October;
+the next observed call at 20:10 failed. Live fixture polling still succeeds.
+
+The database-free [provider probe 39293443010](https://github.com/mrdata007/botolago-foundation/actions/runs/39293443010),
+pinned to `4402a52a0e0eba527c4fdf0077818675f0d463ef`, confirms at 17:22 UTC:
+upcoming matches returns HTTP 200 with only an `error` object (`code` number,
+`message` string); recent matches returns HTTP 200 with an `events` array of
+30 entries and `hasNextPage`. Exactly two requests used existing quota; no
+database access, raw payload publication or extra spending was involved.
+
+This establishes a provider error envelope rather than a scheduler transport
+failure. Its underlying cause remains unverified. Do not coerce it to an empty
+schedule, mark a partial refresh successful, restart production, or change
+credentials speculatively. A fix needs the provider's documented semantics or
+verified replacement endpoint, regression coverage, staging rehearsal, and a
+separately authorised production deployment followed by successful ingestion.
+
+### Capacity diagnosis — preserved measurements
+
+The first failed run's preserved raw metrics show swapping and a sampled Data
+API pool queue (24 waiters, no idle connections), while database observers show
+no blocking pairs, lock waits or deadlocks. Its corrected maximum CPU measurement
+is 38.178%; coarse, sometimes cached scrapes cannot localise the short burst.
+The second run's high CPU, low memory and restart remain separate evidence;
+their causal chain is not established. Neither run passes the capacity gate.
+
+The proposed eight-connection diagnostic remains unapplied because restoring
+the automatic pool baseline could not be proved. PostgREST's configuration
+reference lists `db-pool` as non-reloadable and unavailable as an in-database
+setting; an `ALTER ROLE ... pgrst.db_pool` workaround would not establish a
+supported pool change. No pool, compute, disk or production setting was changed.
 
 Run 39250029846 completed successfully. The actual lost response reached
 30,001.682 ms after consuming the committed persistence reply. The normal grace
