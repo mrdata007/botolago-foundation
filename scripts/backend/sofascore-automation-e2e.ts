@@ -59,16 +59,19 @@ const rpcClient = {
             : "";
           const rows = await tx.unsafe(
             `select api.${name}(${argExpr}) as data${from}`,
-            entries.length ? [JSON.stringify(args)] : [],
+            entries.length ? [args] : [],
           );
           return { data: rows[0]?.data, error: null, status: 200 };
         });
       } catch (error) {
-        const e = error as { code?: string; message?: string };
-        rpcFailures.push({ name, code: e.code, message: e.message });
+        const e = error as { code?: string; errno?: string; message?: string };
+        rpcFailures.push({ name, code: e.errno ?? e.code, message: e.message });
         return {
           data: null,
-          error: { code: e.code ?? "test_error", message: e.message ?? "test_rpc_failed" },
+          error: {
+            code: e.errno ?? e.code ?? "test_error",
+            message: e.message ?? "test_rpc_failed",
+          },
           status: 400,
         };
       }
