@@ -224,9 +224,11 @@ a result is not assumed in advance. The workload and pass criteria are unchanged
 
 Preflight records only five public configuration fields. The Management API's
 GET response also contains a JWT secret: it is discarded and never enters the
-recovery artifact. Automatic/null pool configurations are refused because the
-documented PATCH schema does not establish exact null restoration. An explicit
-original value outside 8–40 is also refused. Unexpected configuration drift is
+recovery artifact. The documented PATCH schema does not establish null restoration. For an
+automatic/null setting, the paused rehearsal first writes the existing null
+value and verifies an unchanged snapshot. Only a successful no-op reset proof,
+saved before reduction, permits changing the value to eight. A rejected reset
+stops before the reduction. An explicit original value outside 8–40 is refused. Unexpected configuration drift is
 never overwritten.
 
 The collector must observe an eight-slot PostgREST pool throughout the measured

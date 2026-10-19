@@ -196,8 +196,26 @@ def restore_postgrest(gate, state):
         expected = {**original, "db_pool": 8}
         if state.get("postgrestPool") != "8" or actual != expected:
             raise RuntimeError("free_pool_configuration_drift")
+        if original["db_pool"] is None and not state.get("automaticPoolResetProven"):
+            raise RuntimeError("free_pool_automatic_reset_not_proven")
         gate.management("PATCH", f"/v1/projects/{REF}/postgrest", {"db_pool": original["db_pool"]})
     return public_postgrest_config(gate) == original
+
+
+def prove_automatic_pool_reset(gate, state):
+    if state["postgrest"]["db_pool"] is not None:
+        return
+    # Establish the reset contract by writing the *current* null value, before
+    # changing it to eight. Rejection leaves the original state in place. Do
+    # not infer support from the GET schema or attempt a resize as a fallback.
+    try:
+        gate.management("PATCH", f"/v1/projects/{REF}/postgrest", {"db_pool": None})
+    except Exception as error:
+        raise RuntimeError("free_pool_automatic_reset_refused") from error
+    if public_postgrest_config(gate) != state["postgrest"]:
+        raise RuntimeError("free_pool_reset_changed_configuration")
+    state["automaticPoolResetProven"] = True
+    BASE.private_json(CONTEXT, state)
 
 
 def preflight():
@@ -252,9 +270,9 @@ def preflight():
     pool = os.environ.get("POSTGREST_POOL", "unchanged")
     if pool not in {"unchanged", "8"}:
         raise RuntimeError("free_pool_choice_refused")
-    # Only a reversible reduction of an explicit value is supported. The API's
-    # documented PATCH does not promise null restoration of automatic settings.
-    if pool == "8" and (type(postgrest["db_pool"]) is not int or not 8 <= postgrest["db_pool"] <= 40):
+    # Null needs an actual no-op reset proof inside the paused writer window.
+    # An explicit setting must support a bounded reduction.
+    if pool == "8" and postgrest["db_pool"] is not None and (type(postgrest["db_pool"]) is not int or not 8 <= postgrest["db_pool"] <= 40):
         raise RuntimeError("free_pool_exact_restoration_not_supported")
     BASE.private_json(CONTEXT, {"emailProviderSecretPresent": "RESEND_API_KEY" in secret_names,
                                 "schedulerSecretPresent": "BOTOLAGO_SCHEDULER_TOKEN" in secret_names,
@@ -277,6 +295,7 @@ def prepare():
         if public_postgrest_config(gate) != state["postgrest"]:
             raise RuntimeError("free_pool_configuration_drift")
         if state["postgrestPool"] == "8":
+            prove_automatic_pool_reset(gate, state)
             gate.management("PATCH", f"/v1/projects/{REF}/postgrest", {"db_pool": 8})
             if public_postgrest_config(gate) != {**state["postgrest"], "db_pool": 8}:
                 raise RuntimeError("free_pool_configuration_not_applied")

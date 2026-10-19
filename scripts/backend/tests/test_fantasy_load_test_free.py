@@ -93,6 +93,32 @@ class FreeLoadSafetyTests(unittest.TestCase):
                 M.restore_postgrest(gate,state)
         gate.management.assert_not_called()
 
+    def test_automatic_reset_must_succeed_as_a_noop_before_pool_reduction(self):
+        from unittest.mock import Mock
+        original = {"db_pool":None,"db_schema":"api"}
+        state = {"postgrest":original,"postgrestPool":"8"}
+        gate = Mock()
+        with patch.object(M,'public_postgrest_config',return_value=original), patch.object(M.BASE,'private_json') as persist:
+            M.prove_automatic_pool_reset(gate,state)
+        gate.management.assert_called_once_with('PATCH',f'/v1/projects/{M.REF}/postgrest',{'db_pool':None})
+        self.assertTrue(state['automaticPoolResetProven'])
+        persist.assert_called_once()
+        gate = Mock()
+        gate.management.side_effect = RuntimeError('HTTP 400')
+        refused = {"postgrest":original,"postgrestPool":"8"}
+        with self.assertRaisesRegex(RuntimeError,'automatic_reset_refused'):
+            M.prove_automatic_pool_reset(gate,refused)
+        self.assertNotIn('automaticPoolResetProven',refused)
+
+    def test_automatic_original_cannot_be_restored_without_saved_reset_proof(self):
+        from unittest.mock import Mock
+        gate = Mock()
+        original = {'db_pool':None}
+        with patch.object(M,'public_postgrest_config',return_value={'db_pool':8}):
+            with self.assertRaisesRegex(RuntimeError,'automatic_reset_not_proven'):
+                M.restore_postgrest(gate,{'postgrest':original,'postgrestPool':'8'})
+        gate.management.assert_not_called()
+
     def test_cleanup_failure_still_restores_exact_original_cron_flags(self):
         import json
         with tempfile.TemporaryDirectory() as directory:
