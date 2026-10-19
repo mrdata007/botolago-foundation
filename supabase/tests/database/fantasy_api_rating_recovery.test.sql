@@ -188,6 +188,11 @@ select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),
 -- original final result or seal. Missing data stays NULL in the projection.
 update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp() where id=pg_temp.rid(25);
 update app.fantasy_team_gameweek_results set state='final',final_score=96,finalized_at=statement_timestamp() where gameweek_id=pg_temp.rid(25);
+-- Deliberately different sealed values expose a reader that bypasses revisions.
+update app.fantasy_player_gameweek_points set final_points=2,state='final'
+where gameweek_id=pg_temp.rid(25) and fantasy_player_id in(pg_temp.rid(2024),pg_temp.rid(2028));
+select set_config('test.original_player_points',(select md5(jsonb_agg(to_jsonb(p) order by fantasy_player_id)::text)
+from app.fantasy_player_gameweek_points p where gameweek_id=pg_temp.rid(25)),true);
 select set_config('test.history_before',(select md5(to_jsonb(r)::text) from app.fantasy_team_gameweek_results r where r.gameweek_id=pg_temp.rid(25)),true);
 select set_config('test.hist_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
 select set_config('test.hist_results',(select jsonb_build_object('playerResults',
@@ -214,6 +219,23 @@ select extensions.is((select provisional_points from app_private.fantasy_visible
 select extensions.is((select provisional_points from app_private.fantasy_visible_player_points where gameweek_id=pg_temp.rid(25) and fantasy_player_id=pg_temp.rid(2045)),0,'a confirmed nonparticipant stays a real zero even when a different player is unrated');
 select extensions.is((select count(*)::int from app_private.fantasy_visible_point_events where gameweek_id=pg_temp.rid(25) and category<>'rating'),0,'the historical projection contains only real rating events');
 select extensions.is((select gameweek_points from app.fantasy_rankings where gameweek_id=pg_temp.rid(25) and league_id is null and fantasy_team_id=pg_temp.rid(9)),88,'rankings use the same published total');
+select extensions.is((select (p->>'totalPoints')::int from jsonb_array_elements(api.fantasy_player_season_stats(pg_temp.rid(5))->'items') p
+where p->>'fantasyPlayerId'=pg_temp.rid(2024)::text),8,'season totals use the published rating, not the old sealed two points');
+select extensions.is((select (p->>'form')::numeric from jsonb_array_elements(api.fantasy_player_season_stats(pg_temp.rid(5))->'items') p
+where p->>'fantasyPlayerId'=pg_temp.rid(2024)::text),4::numeric,'form uses the same published total over the two scored rounds');
+select extensions.is((select (p->>'points')::int from jsonb_array_elements(api.fantasy_top_players(pg_temp.rid(25),20)) p
+where p->>'fantasyPlayerId'=pg_temp.rid(2024)::text),8,'top players show the revised rating points');
+select extensions.ok(not exists(select 1 from jsonb_array_elements(api.fantasy_top_players(pg_temp.rid(25),20)) p
+where p->'points'='null'::jsonb),'unknown ratings cannot sort ahead of actual top-player scores');
+select extensions.is((select points from app_private.round_recap_captain(pg_temp.rid(9),pg_temp.rid(25))),8,'the recap captain uses the same published points');
+select extensions.is((select counted from app_private.round_recap_captain(pg_temp.rid(9),pg_temp.rid(25))),16,'the recap counts the revised captain bonus once');
+select extensions.is((select (f->>'points')::int from app_private.briefing_form(pg_temp.rid(5),6,array[pg_temp.rid(2024)]) b,
+jsonb_array_elements(b.form) f where f->>'gameweekSequence'='5'),8,'deadline briefing form shows the published rating');
+select extensions.is((select f->>'state' from app_private.briefing_form(pg_temp.rid(5),6,array[pg_temp.rid(2023)]) b,
+jsonb_array_elements(b.form) f where f->>'gameweekSequence'='5'),'pending','the briefing does not turn a missing historical rating into zero');
+select extensions.is((select md5(jsonb_agg(to_jsonb(p) order by fantasy_player_id)::text)
+from app.fantasy_player_gameweek_points p where gameweek_id=pg_temp.rid(25)),current_setting('test.original_player_points'),
+'all secondary readers leave the sealed player rows untouched');
 select extensions.is(app_private.fantasy_publish_rating_recovery(current_setting('test.hist_plan')::bigint,
  current_setting('test.hist_preview')::jsonb->>'inputDigest','Owner approved historical available rating publication')->>'alreadyPublished','true','publication retries are idempotent');
 select extensions.throws_ok($$update app_private.fantasy_rating_recovery_plans set complete=true where id=current_setting('test.hist_plan')::bigint$$,

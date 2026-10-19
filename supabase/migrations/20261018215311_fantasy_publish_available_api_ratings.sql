@@ -6,6 +6,11 @@ do $$ begin
  ('api.get_my_fantasy_history(uuid,integer,integer)','b301fe39a0ac7aa7958afefcd443412a'),
  ('api.service_recalculate_fantasy_rankings(uuid,uuid,uuid,bigint)','3ed3f9906f79a9fa3aaf805c0f36a953'),
  ('api.fantasy_player_gameweek_history_v1(uuid)','f767f873c813291ba01fe3749ea7b81d'),
+ ('api.fantasy_player_season_stats(uuid,uuid)','1b141bf8a70e0db8e6ecd402b2f9beb9'),
+ ('api.fantasy_top_players(uuid,integer)','a90a0dcf309f2707b1cc3d9d07f5c98a'),
+ ('app_private.round_recap_captain(uuid,uuid)','61fd2a9bcdec5903b873ae2db6289356'),
+ ('app_private.briefing_form(uuid,integer,uuid[])','faa46f2ae24f6efa439df79a845a24a2'),
+ ('api.get_my_deadline_briefing(uuid)','c2ff58bac3a785be047c21e96ba2c41d'),
  ('api.fantasy_gameweek_summary(uuid)','96f6cbe0f8fa40c0ff3d440ce1ef2f09'),
  ('api.get_my_fantasy_points_before_staged(uuid,uuid)','1e22a7d2c3df525f7dcecf88f21f5838'),
  ('api.publish_fantasy_gameweek_recap(uuid,uuid,text)','fbe20029611542a9840240351e65bc93'),
@@ -203,6 +208,11 @@ begin
  'api.fantasy_gameweek_summary(uuid)',
  'api.service_recalculate_fantasy_rankings(uuid,uuid,uuid,bigint)',
  'api.fantasy_player_gameweek_history_v1(uuid)',
+ 'api.fantasy_player_season_stats(uuid,uuid)',
+ 'api.fantasy_top_players(uuid,integer)',
+ 'app_private.round_recap_captain(uuid,uuid)',
+ 'app_private.briefing_form(uuid,integer,uuid[])',
+ 'api.get_my_deadline_briefing(uuid)',
  'api.publish_fantasy_gameweek_recap(uuid,uuid,text)',
  'api.public_fantasy_gameweek_recap(text)',
  'api.get_round_recap(uuid,uuid)'
@@ -215,6 +225,31 @@ begin
  if sig='api.get_round_recap(uuid,uuid)' then
  source:=replace(source,'v_final := v_gw.points_state = ''final'';',
  'v_final := v_gw.points_state = ''final'' and v_res.state = ''final'';');
+ source:=regexp_replace(source,'\m(pt|po|pi)\.final_points\M',
+ 'coalesce(\1.final_points,case when exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=v_gw.id) then \1.provisional_points end)','g');
+ elsif sig='api.fantasy_top_players(uuid,integer)' then
+ source:=replace(source,'where target.gameweek_id = p_gameweek_id',
+ 'where target.gameweek_id = p_gameweek_id and coalesce(target.final_points,target.provisional_points) is not null');
+ elsif sig='app_private.round_recap_captain(uuid,uuid)' then
+ source:=replace(source,'pt.final_points','coalesce(pt.final_points,case when exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek) then pt.provisional_points end) as final_points');
+ elsif sig='app_private.briefing_form(uuid,integer,uuid[])' then
+ source:=replace(source,'g.status in (''finalized'', ''corrected'') as done,',
+ 'g.status in (''finalized'', ''corrected'') as done,
+ exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) as revision,
+ exists(select 1 from app_private.fantasy_api_rating_seasons x where x.season_id=g.fantasy_season_id and g.sequence_number>=x.from_gameweek) as native_rating,');
+ source:=replace(source,'g.name, g.rating_rule, g.finalized_at as gw_at',
+ 'g.name, g.rating_rule, g.revision, g.native_rating, coalesce((select published_at from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id),g.finalized_at) as gw_at');
+ source:=replace(source,'(g.done or pts.final_points is not null) as published',
+ '(case when g.revision then coalesce(pts.final_points,pts.provisional_points) is not null else g.done or pts.final_points is not null end) as published');
+ source:=replace(source,'when pts.final_points is not null then pts.final_points when g.done then 0',
+ 'when pts.final_points is not null then pts.final_points when g.revision then pts.provisional_points when g.done then 0');
+ source:=replace(source,'when c.rating_rule and coalesce(c.did_play, false)',
+ 'when c.rating_rule and not c.revision and not c.native_rating and coalesce(c.did_play, false)');
+ elsif sig='api.get_my_deadline_briefing(uuid)' then
+ source:=replace(source,'case when g.status in (''finalized'', ''corrected'') then ''published''',
+ 'case when exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) then ''partial'' when g.status in (''finalized'', ''corrected'') then ''published''');
+ source:=replace(source,'''publishedAt'', coalesce(g.finalized_at, (',
+ '''publishedAt'', coalesce((select published_at from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id),g.finalized_at, (');
  end if;
  execute source;
  end loop;

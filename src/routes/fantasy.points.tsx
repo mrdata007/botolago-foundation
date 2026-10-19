@@ -289,7 +289,7 @@ function PointsBody() {
   const ratingPoints = (id: string) => (
     <RatingPoints
       points={pointsFor(id)}
-      pending={breakdown.get(id)?.ratingPending === true || (isCloud && !vm && !resultQ.isPending)}
+      pending={breakdown.get(id)?.ratingPending === true}
       awaitingLabel={t("fantasy.points.awaiting_rating")}
       none={none}
     />
@@ -304,7 +304,7 @@ function PointsBody() {
         player={p}
         club={clubOf(p.clubId)}
         sub={<PopOnChange value={pts}>{ratingPoints(id)}</PopOnChange>}
-        pointsPending={breakdown.get(id)?.ratingPending === true || (isCloud && !vm)}
+        pointsPending={breakdown.get(id)?.ratingPending === true}
         captain={id === badgeCaptainId}
         vice={id === viceId && id !== badgeCaptainId}
         size={size}
