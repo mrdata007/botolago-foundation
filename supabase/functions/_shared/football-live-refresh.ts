@@ -32,7 +32,8 @@ import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sports
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
-import { RapidApiError } from "./rapidapi-client.ts";
+import { RapidApiError, createRapidApiClient } from "./rapidapi-client.ts";
+import { runSofascoreCollection } from "./sofascore-collection.ts";
 import {
   createCatalogRapidClient,
   runCatalogWeekly,
@@ -137,6 +138,10 @@ export async function handleFootballLiveRefreshRequest(
   const refusal = schedulerTokenRefusal(request, dependencies.environment);
   if (refusal) return refusal;
 
+  const payload = await request
+    .clone()
+    .json()
+    .catch(() => ({}));
   const job = await requestedJob(request);
   if (job === null) return json(400, { error: "invalid_request" });
 
@@ -150,6 +155,27 @@ export async function handleFootballLiveRefreshRequest(
   if (job === "catalog_weekly" && source === "sportsmonks") {
     return json(200, { status: "skipped", reason: "data_source_sportsmonks", job });
   }
+  if (job === "ratings_collection" && source !== "sofascore")
+    return json(200, { status: "disabled", reason: "data_source_not_sofascore" });
+  if (
+    job === "ratings_collection" &&
+    payload?.dryRun !== undefined &&
+    typeof payload.dryRun !== "boolean"
+  )
+    return json(400, { error: "dry_run_must_be_boolean" });
+  if (job === "ratings_collection" && payload?.dryRun === true) {
+    const outcome = await runSofascoreCollection({
+      client: dependencies.client,
+      rapid: {
+        getJson: async () => {
+          throw new Error("dry_run_no_provider");
+        },
+      },
+      now: (dependencies.now ?? (() => new Date()))(),
+      dryRun: true,
+    });
+    return json(outcome.status, outcome.body);
+  }
   if (source !== "sportsmonks") {
     let rapid = dependencies.rapidApi;
     // Every request this client sends is counted per job, endpoint and status
@@ -161,11 +187,22 @@ export async function handleFootballLiveRefreshRequest(
         counter = createRapidApiCallCounter({ client: dependencies.client, job });
         // The same RapidAPI client as ever; it can also return image bytes
         // for the catalog_weekly job (sofascore-catalog.ts).
-        rapid = createCatalogRapidClient(
-          dependencies.environment,
-          dependencies.fetch as Parameters<typeof createCatalogRapidClient>[1],
-          { onRequest: counter.record },
-        );
+        rapid =
+          job === "ratings_collection"
+            ? createRapidApiClient("sofascore", dependencies.environment, {
+                maxRetries: 0,
+                timeoutMs: 8000,
+                minRemaining: 1000,
+                onRequest: counter.record,
+                fetch: dependencies.fetch as NonNullable<
+                  Parameters<typeof createRapidApiClient>[2]
+                >["fetch"],
+              })
+            : createCatalogRapidClient(
+                dependencies.environment,
+                dependencies.fetch as Parameters<typeof createCatalogRapidClient>[1],
+                { onRequest: counter.record },
+              );
       } catch (error) {
         const code = error instanceof RapidApiError ? error.code : "provider_unavailable";
         console.log(
@@ -180,15 +217,55 @@ export async function handleFootballLiveRefreshRequest(
         return json(503, { error: "provider_not_configured", source, job });
       }
     }
+    // When the durable collector is enabled, it exclusively owns provider
+    // observations. Keep fixture discovery/details; stop legacy auto-mapping,
+    // catch-up and staged pulls so there are not two observation workers.
+    let ownsObservations = false;
+    let approvedSeason: string | undefined;
+    try {
+      const plan = await dependencies.client
+        .schema("api")
+        .rpc("service_sofascore_collection_plan", {});
+      if (!plan.error && plan.data && typeof plan.data === "object") {
+        const season = (plan.data as { seasonId?: unknown }).seasonId;
+        if (typeof season === "string" && /^[1-9][0-9]{0,11}$/.test(season))
+          approvedSeason = season;
+      }
+      ownsObservations =
+        !plan.error &&
+        typeof plan.data === "object" &&
+        plan.data !== null &&
+        (plan.data as { enabled?: unknown }).enabled === true;
+    } catch {
+      if (job === "ratings_collection") return json(503, { error: "collection_state_unavailable" });
+    }
+    const collectionEnvironment = ownsObservations
+      ? {
+          ...dependencies.environment,
+          SOFASCORE_FANTASY_ENABLED: "false",
+          ...(approvedSeason ? { SOFASCORE_SEASON_ID: approvedSeason } : {}),
+          SOFASCORE_STAGED_ENABLED: "false",
+        }
+      : dependencies.environment;
+
     const now = (dependencies.now ?? (() => new Date()))();
     try {
+      if (job === "ratings_collection") {
+        const outcome = await runSofascoreCollection({
+          client: dependencies.client,
+          rapid,
+          now,
+          dryRun: payload?.dryRun === true,
+        });
+        return json(outcome.status, outcome.body);
+      }
       if (job === "catalog_weekly") {
         const catalog = await runCatalogWeekly({
           mode: source,
           client: dependencies.client,
           rapid,
           storage: dependencies.storage,
-          environment: dependencies.environment,
+          environment: collectionEnvironment,
           now,
         });
         return json(catalog.status, catalog.body);
@@ -198,7 +275,7 @@ export async function handleFootballLiveRefreshRequest(
           mode: source,
           client: dependencies.client,
           rapid,
-          environment: dependencies.environment,
+          environment: collectionEnvironment,
           now,
         });
         return json(backfill.status, backfill.body);
@@ -208,7 +285,7 @@ export async function handleFootballLiveRefreshRequest(
         job,
         client: dependencies.client,
         rapid,
-        environment: dependencies.environment,
+        environment: collectionEnvironment,
         now,
       });
       return json(outcome.status, outcome.body);
@@ -310,7 +387,14 @@ const DETAILS_AFTER_ERRORS: ReadonlySet<string> = new Set([
  */
 async function requestedJob(
   request: Request,
-): Promise<"fixtures" | "season_fixtures" | "match_details_backfill" | "catalog_weekly" | null> {
+): Promise<
+  | "fixtures"
+  | "season_fixtures"
+  | "match_details_backfill"
+  | "catalog_weekly"
+  | "ratings_collection"
+  | null
+> {
   const source = await request.text();
   if (source.length > MAX_REQUEST_BYTES) return null;
   if (!source.trim()) return "fixtures";
@@ -324,6 +408,7 @@ async function requestedJob(
     if (job === "season_fixtures") return "season_fixtures";
     if (job === "match_details_backfill") return "match_details_backfill";
     if (job === "catalog_weekly") return "catalog_weekly";
+    if (job === "ratings_collection") return "ratings_collection";
     return null;
   } catch {
     return null;

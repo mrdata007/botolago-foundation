@@ -288,6 +288,16 @@ jobs:
       - run: bun run backend:db:test
       # After the pgTAP suite: they leave append-only rows (editions, runs) and
       # a current season behind, which the pgTAP files do not expect to find.
+      - name: Unattended SofaScore scheduled path (isolated database, synthetic provider)
+        run: bun scripts/backend/sofascore-automation-e2e.ts
+      - name: Upload scheduled automation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sofascore-automation-e2e-${{ github.run_id }}
+          path: /tmp/sofascore-automation-e2e.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Pépites editions concurrency and weekly email end to end
         run: bun test scripts/backend/pepites-editions-concurrency.test.ts scripts/backend/pepites-weekly-email-e2e.test.ts
         env:

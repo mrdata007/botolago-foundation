@@ -133,7 +133,10 @@ describe("sofascore live shadow compare", () => {
       runtime: { sleep: async () => undefined, random: () => 0 },
     });
     const { deps: d } = deps([], [prod()]);
-    await expect(runCompare({ ...d, client: api })).rejects.toThrow("Provider error 503");
+    await expect(runCompare({ ...d, client: api })).rejects.toMatchObject({
+      reason: "provider_error",
+      httpStatus: 503,
+    });
     expect(sent).toBe(1);
     expect(api.requestsSent()).toBe(1);
   });
@@ -150,7 +153,10 @@ describe("sofascore live shadow compare", () => {
       runtime: { sleep: async () => undefined, random: () => 0 },
     });
     const { deps: d } = deps([], [prod()]);
-    await expect(runCompare({ ...d, client: api })).rejects.toThrow("Provider error 503");
+    await expect(runCompare({ ...d, client: api })).rejects.toMatchObject({
+      reason: "provider_error",
+      httpStatus: 503,
+    });
     expect(sent).toBe(2);
     expect(api.requestsSent()).toBe(2);
   });
