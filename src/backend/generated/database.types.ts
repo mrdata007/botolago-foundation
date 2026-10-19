@@ -2376,6 +2376,28 @@ export type Database = {
         }
         Returns: Json
       }
+      service_sofascore_collection_claim: {
+        Args: { p_holder: string }
+        Returns: Json
+      }
+      service_sofascore_collection_commit: {
+        Args: {
+          p_fixture_id: string
+          p_holder: string
+          p_meta: Json
+          p_request: Json
+        }
+        Returns: Json
+      }
+      service_sofascore_collection_finish: {
+        Args: { p_holder: string; p_summary: Json }
+        Returns: undefined
+      }
+      service_sofascore_collection_plan: { Args: never; Returns: Json }
+      service_sofascore_collection_reserve: {
+        Args: { p_holder: string }
+        Returns: boolean
+      }
       service_sofascore_fantasy_context: {
         Args: { p_fixture_id: string; p_player_ids?: string[] }
         Returns: Json

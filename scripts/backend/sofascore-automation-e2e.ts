@@ -21,6 +21,8 @@ if (
   throw new Error("isolated_local_database_required");
 const sql = new SQL(target.toString(), { max: 5 });
 const uid = (n: number) => `cb000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+let kickoffSeconds = 0;
+const discoveryPaths: string[] = [];
 let rated = false,
   providerCalls = 0;
 const handlerResults: Record<string, unknown>[] = [];
@@ -85,21 +87,27 @@ const provider = async (input: string | URL | Request) => {
   const home = { id: 11, name: "Synthetic home" },
     away = { id: 22, name: "Synthetic away" };
   let data: unknown;
-  if (path.endsWith("/detail"))
-    data = {
-      event: {
-        id: 123,
-        startTimestamp: Math.floor(Date.now() / 1000) - 14400,
-        status: { type: "finished", code: 100 },
-        tournament: { uniqueTournament: { id: 937 } },
-        season: { id: 102220 },
-        homeTeam: home,
-        awayTeam: away,
-        homeScore: { current: 0 },
-        awayScore: { current: 0 },
-      },
+  if (path.endsWith("/get-next-matches")) {
+    discoveryPaths.push(path);
+    data = { events: [], hasNextPage: false };
+  } else if (path.endsWith("/detail") || path.endsWith("/get-last-matches")) {
+    const event = {
+      id: 123,
+      startTimestamp: kickoffSeconds,
+      roundInfo: { round: 5 },
+      status: { type: "finished", code: 100 },
+      tournament: { uniqueTournament: { id: 937 } },
+      season: { id: 102220 },
+      homeTeam: home,
+      awayTeam: away,
+      homeScore: { current: 0 },
+      awayScore: { current: 0 },
     };
-  else if (path.endsWith("/get-lineups")) {
+    if (path.endsWith("/get-last-matches")) {
+      discoveryPaths.push(path);
+      data = { events: [event], hasNextPage: false };
+    } else data = { event };
+  } else if (path.endsWith("/get-lineups")) {
     const side = (offset: number) => ({
       players: Array.from({ length: 11 }, (_, i) => ({
         player: {
@@ -174,6 +182,14 @@ async function main() {
   await sql.unsafe(
     readFileSync(new URL("./sofascore-automation-e2e-seed.sql", import.meta.url), "utf8"),
   );
+  kickoffSeconds = Number(
+    (
+      await sql.unsafe(
+        "select extract(epoch from kickoff_at)::bigint as ts from app.fixtures where id=$1",
+        [uid(3002)],
+      )
+    )[0]!.ts,
+  );
   const schedulerToken = (await sql.unsafe("select app_private.scheduler_token() as token"))[0]!
     .token as string;
   // Test-owned Vault value stays in process, never logs or artifacts.
@@ -181,6 +197,7 @@ async function main() {
     BOTOLAGO_SCHEDULER_TOKEN: schedulerToken,
     RAPIDAPI_KEY: "synthetic-provider-test-key",
     FANTASY_WORKER_BUDGET_MS: "10000",
+    SOFASCORE_STANDINGS_ENABLED: "false",
   };
   const dryRun = await handleFootballLiveRefreshRequest(
     new Request("http://localhost/football-live-refresh", {
@@ -244,7 +261,7 @@ async function main() {
     [`http://${callback}:57890/functions/v1`],
   );
   await sql.unsafe(
-    "update app_private.football_season_refresh_heartbeat set last_invoked_at=statement_timestamp(),last_outcome='invoked' where id",
+    "update app_private.football_season_refresh_heartbeat set last_invoked_at=null,last_outcome='waiting' where id",
   );
   // An actual pg_cron interval executes the unchanged scheduler entry points.
   await sql.unsafe(
@@ -262,6 +279,21 @@ async function main() {
       ) === 1,
     "first scheduled observation",
   );
+  assert.equal(
+    new Set(discoveryPaths).size,
+    2,
+    "hourly scheduler discovers the finished fixture from both calendar endpoints",
+  );
+  assert.equal(
+    (
+      await sql.unsafe(
+        "select status::text as status, finalized_at is not null as finalized from app.fixtures where id=$1",
+        [uid(3002)],
+      )
+    )[0]!.finalized,
+    true,
+  );
+  report.finishedFixtureDiscovered = true;
   // Measure the strict-rating hold after appearances are known. The existing
   // incremental scorer can publish an empty placeholder before any observation;
   // that is a different state from an observed player whose rating is absent.
@@ -506,6 +538,7 @@ async function main() {
   Object.assign(report, {
     completedAt: new Date().toISOString(),
     providerCalls,
+    discoveryRequests: discoveryPaths.length,
     observationCount: 2,
     score: Number(score.score),
     scoringVersion: score.version,

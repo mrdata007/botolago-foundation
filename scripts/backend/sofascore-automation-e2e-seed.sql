@@ -32,11 +32,11 @@ values(pg_temp.rid(5),pg_temp.rid(4),pg_temp.rid(3),'f6100000-0000-4000-8000-000
 -- GW4 closed on provisional points (so GW5 may be the current gameweek), GW5 open, GW6 scheduled.
 insert into app.fantasy_gameweeks(id,fantasy_season_id,football_round_id,sequence_number,name,deadline_at,starts_at,ends_at,status,closed_at,closed_calculation_version)
 values (pg_temp.rid(24),pg_temp.rid(5),pg_temp.rid(14),4,'GW4','2026-08-10 10:30Z','2026-08-10 12:00Z','2026-08-12 12:00Z','provisional','2026-08-12 12:00Z',1),
-  (pg_temp.rid(25),pg_temp.rid(5),pg_temp.rid(15),5,'GW5',statement_timestamp()-interval '5 hours 30 minutes',statement_timestamp()-interval '4 hours',statement_timestamp()+interval '1 day','open',null,null),
+  (pg_temp.rid(25),pg_temp.rid(5),pg_temp.rid(15),5,'GW5',date_trunc('second',statement_timestamp())-interval '5 hours 30 minutes',date_trunc('second',statement_timestamp())-interval '4 hours',statement_timestamp()+interval '1 day','open',null,null),
   (pg_temp.rid(26),pg_temp.rid(5),pg_temp.rid(16),6,'GW6',statement_timestamp()+interval '7 days',statement_timestamp()+interval '7 days 90 minutes',statement_timestamp()+interval '9 days','scheduled',null,null);
 insert into app.fixtures(id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,status,home_score,away_score,provider_updated_at,source_sequence,finalized_at)
 values (pg_temp.rid(3001),pg_temp.rid(2),pg_temp.rid(3),pg_temp.rid(14),pg_temp.rid(101),pg_temp.rid(102),'2026-08-10 12:00Z','finished',0,0,'2026-08-10 14:00Z',10,'2026-08-10 14:00Z'),
-  (pg_temp.rid(3002),pg_temp.rid(2),pg_temp.rid(3),pg_temp.rid(15),pg_temp.rid(103),pg_temp.rid(104),'2026-08-17 12:00Z','finished',0,0,'2026-08-17 14:00Z',10,'2026-08-17 14:00Z');
+  (pg_temp.rid(3002),pg_temp.rid(2),pg_temp.rid(3),pg_temp.rid(15),pg_temp.rid(103),pg_temp.rid(104),'2026-08-17 12:00Z','scheduled',null,null,'2026-08-17 14:00Z',10,null);
 insert into app.fantasy_fixture_assignments(fantasy_season_id,fixture_id,gameweek_id,original_gameweek_id,original_kickoff_at,assigned_kickoff_at,frozen_at,source_version)
 values (pg_temp.rid(5),pg_temp.rid(3001),pg_temp.rid(24),pg_temp.rid(24),'2026-08-10 12:00Z','2026-08-10 12:00Z','2026-08-10 10:30Z',1),
   (pg_temp.rid(5),pg_temp.rid(3002),pg_temp.rid(25),pg_temp.rid(25),'2026-08-17 12:00Z','2026-08-17 12:00Z','2026-08-17 10:30Z',1);
@@ -112,12 +112,13 @@ select pg_temp.rid(30),pg_temp.rid(2000+n),case when ord<=11 then 'starter'::app
 from unnest(array[23,24,25,26,27,28,29,30,32,33,45,34,31,35,43]) with ordinality as selected(n,ord);
 update app.fantasy_gameweeks set status='provisional' where id=pg_temp.rid(25);
 
-update app.fixtures set kickoff_at=statement_timestamp()-interval '4 hours',provider_updated_at=statement_timestamp(),finalized_at=statement_timestamp()-interval '2 hours'
+update app.fixtures set kickoff_at=date_trunc('second',statement_timestamp())-interval '4 hours',provider_updated_at=statement_timestamp()
  where id=pg_temp.rid(3002);
-update app.fantasy_fixture_assignments set original_kickoff_at=statement_timestamp()-interval '4 hours',assigned_kickoff_at=statement_timestamp()-interval '4 hours' where fixture_id=pg_temp.rid(3002);
+update app.fantasy_fixture_assignments set original_kickoff_at=date_trunc('second',statement_timestamp())-interval '4 hours',assigned_kickoff_at=date_trunc('second',statement_timestamp())-interval '4 hours' where fixture_id=pg_temp.rid(3002);
 insert into app_private.football_provider_mappings(provider_name,entity_type,external_id,internal_entity_id,source_version,last_seen_at) values
  ('sofascore','competition','937',pg_temp.rid(2),'e2e-approved',now()),
  ('sofascore','season','102220',pg_temp.rid(3),'e2e-approved',now()),
+ ('sofascore','round','102220:5',pg_temp.rid(15),'e2e-approved',now()),
  ('sofascore','team','11',pg_temp.rid(103),'e2e-approved',now()),
  ('sofascore','team','22',pg_temp.rid(104),'e2e-approved',now()),
  ('sofascore','fixture','123',pg_temp.rid(3002),'e2e-approved',now());
