@@ -30,6 +30,7 @@ const MAX_ECHO = 80;
 export const CONFIG_FILES = [
   "eslint.config.js",
   "vite.config.ts",
+  "vite.phone.config.ts",
   "playwright.config.ts",
   "bunfig.toml",
   "package.json",
