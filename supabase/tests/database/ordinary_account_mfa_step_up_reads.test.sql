@@ -426,7 +426,9 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  98,
+  -- 20261018215311: the player pool now includes the caller's existing legacy
+  -- selections, so this formerly public-only catalogue also runs the step-up.
+  99,
   'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000), the match-reminders read (20261002110000) and revoking a public gameweek recap (20261005130000), the three Manager Card reads and the acknowledgement (20261010120200), and the two BotolaGO+ functions that read or write the caller''s own membership state, api.get_my_premium and api.choose_card_design (20261013100100, 20261013100200), the four BotolaGO+ card read functions of 20261013100400 (career, duel and the two privacy switch functions), and the BotolaGO+ league context read of 20261014150000, and the round recap read of 20261015120000, and the two deadline briefing reads of 20261015140000, and the five trophies functions of 20261015150200 (the trophies read, choosing a frame, the frames read, the trophies visibility switch and the league mates'' trophies read), and the two Saison reads of 20261016150100 (where to pay and the caller''s payment code), run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
