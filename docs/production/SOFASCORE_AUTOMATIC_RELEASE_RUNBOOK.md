@@ -906,3 +906,14 @@ remain unchanged. Recent finished fixtures use bounded five-minute polling;
 older fixtures back off. The UI displays a labelled loop for missing ratings,
 a static indicator for reduced motion, and real zeroes as numbers. No prizes,
 trophy retractions, player links or launch-stage changes are included.
+
+## Fantasy manager email automation (separate release)
+
+`20261019111026_fantasy_manager_email_event_type.sql` adds the opening event
+enum value in a separate transaction. Its dependent migration,
+`20261019111217_fantasy_manager_email_automation.sql`, captures future opening
+transitions and adds trusted recipient-specific payloads and send-time checks.
+Both are outside the older SofaScore automatic release bundle. Neither enables
+sending. Follow [the email release procedure](../backend/FANTASY_EMAIL_AUTOMATION_RELEASE.md)
+for guarded rehearsal, deployment and the scoped activation of the three Fantasy
+email moments. Historical provisional ratings never qualify as finalized points.

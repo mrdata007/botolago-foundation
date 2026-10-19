@@ -31,8 +31,8 @@ values(pg_temp.eid(8),pg_temp.eid(2),pg_temp.eid(3),pg_temp.eid(4),pg_temp.eid(1
  date_trunc('hour',now())+interval '21 hours 13 minutes','not_started',now(),1);
 insert into app.fantasy_fixture_assignments(fantasy_season_id,fixture_id,gameweek_id,original_gameweek_id,original_kickoff_at,assigned_kickoff_at,source_version)
 select pg_temp.eid(6),id,pg_temp.eid(7),pg_temp.eid(7),kickoff_at,kickoff_at,1 from app.fixtures where id=pg_temp.eid(8);
-insert into app.fantasy_teams(id,user_id,fantasy_season_id,current_gameweek_id,name,status)
-select pg_temp.eid(300+n),pg_temp.eid(200+n),pg_temp.eid(6),pg_temp.eid(7),'Manager '||n,'active'from generate_series(1,6)n where n<>5;
+insert into app.fantasy_teams(id,user_id,fantasy_season_id,current_gameweek_id,name,status,bank,team_value,free_transfers)
+select pg_temp.eid(300+n),pg_temp.eid(200+n),pg_temp.eid(6),pg_temp.eid(7),'Manager '||n,'active',10,90,1 from generate_series(1,6)n where n<>5;
 
 select extensions.is((select manager_automation_enabled from app_private.notification_email_settings),false,'new manager automation ships off');
 select extensions.ok(not exists(select 1 from app_private.fantasy_email_openings where gameweek_id=pg_temp.eid(7)),'scheduled gameweeks have no fabricated opening timestamp');
