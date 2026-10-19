@@ -189,6 +189,7 @@ export function pointsDto(
         : undefined,
       multiplier: player.multiplier,
       ratingPending: player.ratingPending,
+      notRated: player.notRated,
       pointsKnown: player.finalPoints !== null || player.provisionalPoints !== null,
       totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
       minutesPlayed: player.minutesPlayed ?? 0,

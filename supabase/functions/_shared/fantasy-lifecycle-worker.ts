@@ -81,10 +81,20 @@ export const scoringSnapshotSchema = z.object({
   inputDigest: z.string().regex(/^[0-9a-f]{64}$/),
   scoringVersion: positive,
   adaptive: z.boolean().optional(),
+  apiNativeRatings: z.boolean().optional(),
   incremental: z.boolean().optional(),
   pendingPlayerIds: z.array(uuid).optional(),
   pendingFixtures: z.array(z.unknown()).optional(),
-  fixtures: z.array(z.object({ adaptiveReady: z.boolean().optional() })).optional(),
+  fixtures: z
+    .array(
+      z.object({
+        adaptiveReady: z.boolean().optional(),
+        fixtureId: uuid.optional(),
+        apiRatingSourceId: positive.optional(),
+        finalizedAt: z.string().nullable().optional(),
+      }),
+    )
+    .optional(),
   sealed: z.boolean(),
   ruleset: z.object({
     id: uuid,
@@ -143,6 +153,20 @@ export const scoringSnapshotSchema = z.object({
         scoringMode: z.enum(["full", "simple"]).nullable().optional(),
         participationKnown: z.boolean().optional(),
         apiAppeared: z.boolean().optional(),
+        apiNotRated: z.boolean().optional(),
+        notRatedEvidence: z
+          .object({
+            policyVersion: z.literal(1),
+            minutes: integer.min(1).max(9),
+            sourceId: positive,
+            firstCheckId: positive,
+            secondCheckId: positive,
+            firstCheckedAt: z.string(),
+            secondCheckedAt: z.string(),
+            settledAt: z.string(),
+          })
+          .nullable()
+          .optional(),
         // The SofaScore match rating, carried only in a rating gameweek
         // (migration 20261014090000): two decimals at most, null without one.
         rating: z.number().min(0).max(10).nullable().optional(),
@@ -255,13 +279,56 @@ function isRatingSnapshot(snapshot: ScoringSnapshot): boolean {
   return true;
 }
 
-/** Never turn an unrated appearance into points, a DNP, or an automatic substitute. */
+/** A terminal short appearance needs the database's audited two-read proof. */
+function approvedNotRated(
+  snapshot: ScoringSnapshot,
+  player: ScoringSnapshot["playerFixtures"][number],
+): boolean {
+  const proof = player.notRatedEvidence;
+  const fixture = snapshot.fixtures?.find((f) => f.fixtureId === player.fixtureId);
+  const minutes = player.stats.minutes;
+  if (
+    !snapshot.apiNativeRatings ||
+    player.apiNotRated !== true ||
+    player.rating != null ||
+    player.apiAppeared !== true ||
+    player.participationKnown !== true ||
+    minutes == null ||
+    minutes < 1 ||
+    minutes >= 10 ||
+    !proof ||
+    !fixture?.finalizedAt ||
+    proof.minutes !== minutes ||
+    proof.policyVersion !== 1 ||
+    proof.sourceId !== fixture.apiRatingSourceId ||
+    proof.firstCheckId === proof.secondCheckId
+  )
+    return false;
+  const [first, second, settled, finished] = [
+    proof.firstCheckedAt,
+    proof.secondCheckedAt,
+    proof.settledAt,
+    fixture.finalizedAt,
+  ].map(Date.parse);
+  const day = 24 * 60 * 60 * 1000;
+  return (
+    [first, second, settled, finished].every(Number.isFinite) &&
+    first! >= finished! &&
+    second! - first! >= day &&
+    settled! >= second! &&
+    settled! - finished! >= day
+  );
+}
+
+/** Missing ratings remain pending unless the approved policy has settled them. */
 export function hasPendingRatings(snapshot: ScoringSnapshot): boolean {
   return (
     isRatingSnapshot(snapshot) &&
     snapshot.playerFixtures.some(
       (player) =>
-        (player.apiAppeared === true || (player.stats.minutes ?? 0) > 0) && player.rating == null,
+        (player.apiAppeared === true || (player.stats.minutes ?? 0) > 0) &&
+        player.rating == null &&
+        !approvedNotRated(snapshot, player),
     )
   );
 }
@@ -285,39 +352,42 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const total = totals.get(player.fantasyPlayerId);
     if (!total) throw new Error("fantasy_scoring_player_missing");
     // Explicit zero events retract corrected statistics; never filter them.
-    const events = rating
-      ? scoreRatingPlayerFixture(
-          player.playerId,
-          player.fixtureId,
-          // He appeared when his minutes are established (as the adaptive
-          // scorer requires for `appearance`) and above zero.
-          player.apiAppeared ??
-            (certified(
-              "minutes",
-              player.stats,
-              (player.evidence ?? {}) as FieldEvidence,
-              player.scoringMode === "simple",
-            ) &&
-              (player.stats.minutes ?? 0) > 0),
-          player.rating ?? null,
-        )
-      : snapshot.adaptive
-        ? scoreCertifiedPlayerFixture(
-            player.playerId,
-            player.fixtureId,
-            player.position,
-            player.stats,
-            (player.evidence ?? {}) as FieldEvidence,
-            rules!,
-            player.scoringMode ?? null,
-          )
-        : scorePlayerFixture(
-            player.playerId,
-            player.fixtureId,
-            player.position,
-            statsSchema.parse(player.stats),
-            rules!,
-          );
+    const events =
+      rating && approvedNotRated(snapshot, player)
+        ? []
+        : rating
+          ? scoreRatingPlayerFixture(
+              player.playerId,
+              player.fixtureId,
+              // He appeared when his minutes are established (as the adaptive
+              // scorer requires for `appearance`) and above zero.
+              player.apiAppeared ??
+                (certified(
+                  "minutes",
+                  player.stats,
+                  (player.evidence ?? {}) as FieldEvidence,
+                  player.scoringMode === "simple",
+                ) &&
+                  (player.stats.minutes ?? 0) > 0),
+              player.rating ?? null,
+            )
+          : snapshot.adaptive
+            ? scoreCertifiedPlayerFixture(
+                player.playerId,
+                player.fixtureId,
+                player.position,
+                player.stats,
+                (player.evidence ?? {}) as FieldEvidence,
+                rules!,
+                player.scoringMode ?? null,
+              )
+            : scorePlayerFixture(
+                player.playerId,
+                player.fixtureId,
+                player.position,
+                statsSchema.parse(player.stats),
+                rules!,
+              );
     total.points += events.reduce((sum, event) => sum + event.points, 0);
     total.minutes += player.stats.minutes ?? 0;
     total.didPlay ||= player.apiAppeared ?? (player.stats.minutes ?? 0) > 0;
