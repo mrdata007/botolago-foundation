@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { UiTabs } from "@/components/ui-kit";
+import { ui, UiTabs } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import type { FootballSeason } from "@/services/football";
@@ -25,28 +26,31 @@ export function MatchesTabs({
   const { t } = useI18n();
   const navigate = useNavigate();
   return (
-    <UiTabs<MatchesView>
-      value={active}
-      onChange={(next) => {
-        if (next === "predictions") {
-          void navigate({ to: "/pronostics" });
-          return;
-        }
-        void navigate({
-          to: next === "standings" ? "/matches/standings" : "/matches",
-          search: seasonSearch(season),
-        });
-      }}
-      label={t("matches.a11y.views")}
-      idBase="matches-view"
-      options={[
-        { value: "calendar", label: t("matches.view.calendar") },
-        { value: "standings", label: t("matches.table_preview") },
-        // Pronostics (BG-0146), an entry point: shown once promoted.
-        ...(PRONOSTICS_PROMOTED
-          ? [{ value: "predictions" as const, label: t("matches.tab.predictions") }]
-          : []),
-      ]}
-    />
+    <div className={cn(ui.surface.bar, ui.rule.block)}>
+      <UiTabs<MatchesView>
+        className={cn(ui.space.content, "border-b-0")}
+        value={active}
+        onChange={(next) => {
+          if (next === "predictions") {
+            void navigate({ to: "/pronostics" });
+            return;
+          }
+          void navigate({
+            to: next === "standings" ? "/matches/standings" : "/matches",
+            search: seasonSearch(season),
+          });
+        }}
+        label={t("matches.a11y.views")}
+        idBase="matches-view"
+        options={[
+          { value: "calendar", label: t("matches.view.calendar") },
+          { value: "standings", label: t("matches.table_preview") },
+          // Pronostics (BG-0146), an entry point: shown once promoted.
+          ...(PRONOSTICS_PROMOTED
+            ? [{ value: "predictions" as const, label: t("matches.tab.predictions") }]
+            : []),
+        ]}
+      />
+    </div>
   );
 }

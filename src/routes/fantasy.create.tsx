@@ -108,7 +108,7 @@ const ANSWERED_BY_CAPTAIN_CHOICE: ReadonlySet<DraftValidationCode> = new Set([
  */
 function CreateTeamPage() {
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav stickyBottomBar>
       <CreateTeamBody />
     </FantasyFrame>
   );

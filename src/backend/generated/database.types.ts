@@ -1023,6 +1023,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      fantasy_gameweek_summary_before_publication: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       fantasy_gameweeks: {
         Args: {
           p_before_sequence?: number
@@ -1311,6 +1315,10 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_points_before_live: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_before_publication: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }

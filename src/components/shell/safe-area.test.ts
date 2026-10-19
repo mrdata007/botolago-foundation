@@ -615,7 +615,7 @@ describe("BG-0154: the Fantasy player page's action bar sticks at every width", 
     expect(frame).toContain("stickyBottomBar = false,");
   });
 
-  test("the player page and Pick Team ask for it, and are the only screens that do so far", () => {
+  test("every screen with a sticky bottom action bar opts in", () => {
     expect(player).toContain("<FantasyFrame stickyBottomBar>");
     // BG-0157 (1): Pick Team's confirmation bar (`PickTeamConfirmBar`)
     // sticks at the column's foot from md too.
@@ -629,7 +629,12 @@ describe("BG-0154: the Fantasy player page's action bar sticks at every width", 
         /<FantasyFrame\b[^>]*\bstickyBottomBar\b/.test(readFileSync(join(SRC, file), "utf8")),
       )
       .sort();
-    expect(askers).toEqual(["routes/fantasy.players.$playerId.tsx", "routes/fantasy.team.tsx"]);
+    expect(askers).toEqual([
+      "routes/fantasy.create.tsx",
+      "routes/fantasy.players.$playerId.tsx",
+      "routes/fantasy.team.tsx",
+      "routes/fantasy.transfers.tsx",
+    ]);
   });
 
   test("the bar is a child of the column itself, so it can travel up past the hero", () => {

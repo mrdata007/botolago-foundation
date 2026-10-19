@@ -186,6 +186,7 @@ function StandingsPage() {
 
   return (
     <AppShell
+      contentWidth="wide"
       backgroundVariant="matches"
       pageHeader={
         <>
