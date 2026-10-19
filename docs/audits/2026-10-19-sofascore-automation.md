@@ -7,16 +7,16 @@ neither result claims that this branch is deployed or enabled in production.
 
 ## Evidence categories
 
-| Evidence                                                                                                           | What was measured                                                                                                                                                                | Limits                                                                                                                                              |
-| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Fresh authenticated capture](2026-10-18-sofascore-live-collection.md)                                             | Current season 102220, both historical controls and a discovered complete recent round; 307 actual ratings, 42 requests, quota snapshot 7,957/10,000 at 2026-10-18T20:17:51.699Z | Read-only diagnostic; six unavailable/uncertain ratings; no deployed-worker or scoring claim                                                        |
-| [Scheduled integration run 39235105127](https://github.com/mrdata007/botolago-foundation/actions/runs/39235105127) | Actual PostgreSQL, pg_cron/pg_net, scheduler authentication, real handlers, reviewed-ID recording, staged state, scorer, leases and monitoring                                   | Synthetic provider; scheduled fixture became finished through the existing hourly discovery path; focused mode skipped application and pgTAP suites |
-| Historical fixtures and HTTP/RPC unit tests                                                                        | Parser regressions, limited coverage, access failures, retries and validation                                                                                                    | Replays/mocks; never live retrieval evidence                                                                                                        |
+| Evidence                                                                                                           | What was measured                                                                                                                                                                | Limits                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Fresh authenticated capture](2026-10-18-sofascore-live-collection.md)                                             | Current season 102220, both historical controls and a discovered complete recent round; 307 actual ratings, 42 requests, quota snapshot 7,957/10,000 at 2026-10-18T20:17:51.699Z | Read-only diagnostic; six unavailable/uncertain ratings; no deployed-worker or scoring claim                                                                                                                        |
+| [Scheduled integration run 39235753739](https://github.com/mrdata007/botolago-foundation/actions/runs/39235753739) | Actual PostgreSQL, pg_cron/pg_net, scheduler authentication, real handlers, reviewed-ID recording, staged state, scorer, leases and monitoring                                   | Synthetic provider; scheduled fixture became finished through the existing hourly discovery path; full database-quality gate passed, including pgTAP; application browser suites still running at this audit update |
+| Historical fixtures and HTTP/RPC unit tests                                                                        | Parser regressions, limited coverage, access failures, retries and validation                                                                                                    | Replays/mocks; never live retrieval evidence                                                                                                                                                                        |
 
 ## Scheduled collection and scoring proof
 
-At code `23ed7f3ccaa2101798a2db561f847ea0527c641a`, the scheduled integration
-step passed from `2026-10-19T10:09:47.954Z` to `10:10:23.868Z`:
+At code `290afcd9399f712aee45500fc0389a6941edbe3c`, the scheduled integration
+step passed from `2026-10-19T10:17:47.322Z` to `10:18:23.305Z`:
 
 - Empty database baseline: zero fixtures, 27 schedules inspected, zero running
   scheduled writers. The harness paused unrelated schedules and owned this
@@ -31,16 +31,16 @@ step passed from `2026-10-19T10:09:47.954Z` to `10:10:23.868Z`:
   calculation version **6**, using existing rounding, captain and substitution rules.
 - Another unchanged scheduled pull retained exactly **two accepted observations**;
   an actual subsequent scorer pass retained the same calculation version.
-- A rejected recorder request did not replace the accepted digest. An abandoned
+- A rejected recorder request did not replace the accepted digest or missing-rating count. An abandoned
   run recovered while a competing scorer held the shared lease, then collection
   resumed through cron after that lease was released.
 - **18 synthetic provider requests**: two discovery requests and 16 collection requests. Every collection request was reserved before sending. Seven season/collection scheduler ticks, five scorer ticks and eight handler runs executed.
-- Monitoring retained last success `2026-10-19T10:10:23.356723+00:00`, reservations
+- Monitoring retained last success `2026-10-19T10:18:23.183091+00:00`, reservations
   16/1,600 and no last error. Its `warn` state/pending fixture reflects the preserved
   three-day staged final pull. The reported 5,000 remaining quota is **synthetic**.
 
 The [durable JSON report](2026-10-19-sofascore-automation.summary.json) preserves
-these measurements. This focused CI job also passed SQL lint and the generated
+these measurements. This full database-quality job also passed SQL lint and the generated
 schema-type check. An earlier collection/scoring proof passed before the calendar
 extension, but its job failed afterward on generated type drift. CI's authoritative
 artifact supplied the five new RPC definitions, which were imported exactly.
@@ -60,10 +60,12 @@ updated collector/handler tests passed 29/29, and workflow/release regressions
 passed 96/96. Repository and strict collector/E2E typechecks, changed-code lint,
 migration filename checks and tracked-secret scans passed.
 
-Earlier full database-quality runs passed their pgTAP suites; focused scheduled
-runs explicitly skip that suite and cannot replace it. Read each run's individual
-step conclusions rather than interpreting a whole-workflow failure as a provider
-failure. Setup failures were not counted as successful automation evidence.
+The full database-quality job in run 39235753739 passed **6,704 pgTAP checks
+across 182 files**, the scheduled integration, the other database integration
+checks, SQL lint and generated database type verification. The application job
+passed unit tests, lint, typecheck and builds; its browser suites were still
+running at this audit update. Focused diagnostic runs explicitly skip application
+and pgTAP suites. Setup failures were not counted as successful automation evidence.
 
 Local Docker bootstrap failed twice while extracting the Supabase Postgres image
 with `no space left on device`; both attempts were stopped before a database was
