@@ -328,7 +328,7 @@ select extensions.is((select count(*)::integer from app_private.fantasy_worker_r
 
 -- 7 the health check -------------------------------------------------------------
 select extensions.is((select c ->> 'name' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks')
-  with ordinality t(c, o) order by o desc limit 1), 'fantasy_worker', '7.1 listed last, after every earlier check');
+  with ordinality t(c, o) order by o desc offset 1 limit 1), 'fantasy_worker', '7.1 retained immediately before the new collection health check');
 delete from app_private.fantasy_worker_runs;
 select app_private.fantasy_worker_configure(false);
 select pg_temp.gameweek('live');
