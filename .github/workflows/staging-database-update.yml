@@ -20,6 +20,8 @@ on:
           - seed
           - check
           - authpreflight
+          - authconfigure
+          - authcleanup
           - runtime
           - score5000
           - score5000edge
@@ -29,6 +31,10 @@ on:
           - workeralarms
       confirmation:
         description: "For every write action: type UPDATE_STAGING_DATABASE"
+        required: false
+        type: string
+      staging_app_origin:
+        description: "For Auth phone setup/cleanup only: https://PRIVATE_LAN_IP:8443"
         required: false
         type: string
 
@@ -64,7 +70,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check|authpreflight) ;;
-            rehearse|apply|seed|runtime|score5000|score5000edge|scorephoneqa|edge5000|workerprobe|workeralarms) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|runtime|score5000|score5000edge|scorephoneqa|edge5000|workerprobe|workeralarms|authconfigure|authcleanup) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -105,7 +111,7 @@ jobs:
         run: python scripts/backend/staging-release-runtime.py
 
       - name: Run ${{ inputs.action }}
-        if: inputs.action != 'runtime' && inputs.action != 'score5000' && inputs.action != 'score5000edge' && inputs.action != 'scorephoneqa' && inputs.action != 'edge5000' && inputs.action != 'workerprobe' && inputs.action != 'workeralarms' && inputs.action != 'authpreflight'
+        if: inputs.action == 'plan' || inputs.action == 'check' || inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed'
         shell: bash
         env:
           ACTION: ${{ inputs.action }}
@@ -154,9 +160,11 @@ jobs:
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
         run: python scripts/backend/staging-worker-alarm-drill.py
 
-      - name: Inspect Auth mail and callback metadata without changing configuration
-        if: inputs.action == 'authpreflight'
+      - name: Inspect or configure staging phone Auth
+        if: inputs.action == 'authpreflight' || inputs.action == 'authconfigure' || inputs.action == 'authcleanup'
         env:
+          ACTION: ${{ inputs.action }}
+          STAGING_APP_ORIGIN: ${{ inputs.staging_app_origin }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
         run: python scripts/backend/staging-auth-preflight.py
