@@ -5,7 +5,7 @@ import {
   emailDispatchConfiguration,
   type EmailRpcClient,
 } from "./notification-email-dispatch.ts";
-import { unsubscribeUrl } from "./notification-email-render.ts";
+import { renderNotificationEmail, unsubscribeUrl } from "./notification-email-render.ts";
 import type { ClaimedEmailDelivery } from "./notification-email-types.ts";
 
 const now = Date.parse("2026-10-24T18:00:00Z");
@@ -54,6 +54,17 @@ function delivery(
 }
 
 describe("trusted Fantasy email production adapter", () => {
+  for (const type of ["deadline_24h", "gameweek_finalized"] as const)
+    test(`${type} preserves the legacy claim contract during deployment before activation`, () => {
+      const base = delivery(type);
+      if (base.type === "gameweek_opened") throw new Error("fixture");
+      const payload = { ...base.payload };
+      delete payload.automationVersion;
+      const legacy = { ...base, payload } as ClaimedEmailDelivery;
+      expect(renderAutomatedNotificationEmail(legacy, links, now)).toEqual(
+        renderNotificationEmail(legacy, links),
+      );
+    });
   for (const type of ["gameweek_opened", "deadline_24h", "gameweek_finalized"] as const)
     for (const language of ["fr", "ar"] as const)
       test(`${type} in ${language} uses the selected brand, exact values and matching destination`, () => {
