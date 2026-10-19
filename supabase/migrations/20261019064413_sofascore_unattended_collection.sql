@@ -76,6 +76,14 @@ begin
  select * into s from app_private.sofascore_collection_settings where id for update;
  if not s.enabled or app_private.football_data_source() <> 'sofascore' then return jsonb_build_object('status','disabled'); end if;
  if s.lease_until>statement_timestamp() then return jsonb_build_object('status','busy'); end if;
+ if s.run_id is not null then
+   if exists(select 1 from app_private.football_ingestion_runs where id=s.run_id and status in ('pending','running')) then
+    perform api.complete_football_ingestion(s.run_id,'failed',jsonb_build_object('reason','collection_lease_expired'));
+   end if;
+   -- A scorer may own the shared lease now. Clear the abandoned run even if
+   -- acquisition below returns busy, so the next claim can recover it once.
+   update app_private.sofascore_collection_settings set run_id=null,worker_token=null,holder=null,lease_until=null,last_error='collection_lease_expired' where id;
+ end if;
  if s.blocked_until>statement_timestamp() then return jsonb_build_object('status','cooldown'); end if;
  if s.quota_month<>date_trunc('month',statement_timestamp())::date then
   s.reserved_calls:=0;
@@ -84,14 +92,6 @@ begin
  if s.reserved_calls>=1600 or (s.quota_month=date_trunc('month',statement_timestamp())::date and s.quota_remaining<=1000) or app_private.rapidapi_calls_this_month()>=9000 then return jsonb_build_object('status','budget_stop'); end if;
  plan:=api.service_sofascore_collection_plan();
  if jsonb_array_length(plan->'due')=0 then return jsonb_build_object('status','idle'); end if;
- if s.run_id is not null then
-   if exists(select 1 from app_private.football_ingestion_runs where id=s.run_id and status in ('pending','running')) then
-    perform api.complete_football_ingestion(s.run_id,'failed',jsonb_build_object('reason','collection_lease_expired'));
-   end if;
-   -- A scorer may own the shared lease now. Clear the abandoned run even if
-   -- acquisition below returns busy, so the next claim can recover it once.
-   update app_private.sofascore_collection_settings set run_id=null,worker_token=null,last_error='collection_lease_expired' where id;
- end if;
  worker:=api.service_fantasy_worker_lease_acquire('edge:ratings-'||p_holder::text,240);
  if (worker->>'acquired')::boolean is not true then return jsonb_build_object('status','scoring_lease_held_or_disabled'); end if;
  rid:=api.begin_football_ingestion('sofascore','player_ratings',jsonb_build_object('job','ratings_collection'), '{}');
