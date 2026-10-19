@@ -103,7 +103,11 @@ async function main() {
       // Do not release an unresolved write, including when later assertions fail.
       mayRelease = false;
       const held = await holdLeaseForAmbiguousWrite(raw.rpc, token, error, 10_000);
-      report("response_loss_boundary", { elapsedMs: elapsed, realReplyConsumed: true, ...held });
+      report("response_loss_boundary", {
+        elapsedMs: elapsed,
+        realReplyConsumed: faultAt !== null,
+        ...held,
+      });
       if (error.rpc !== targetRpc || faultAt === null || elapsed < 29_500)
         throw new Error("staging_loss_wrong_boundary");
       if (!held.leaseExtended || held.settled || held.leaseReleased)

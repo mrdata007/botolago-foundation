@@ -182,6 +182,8 @@ def restore(target,settings,ids,before,fixture_started,secrets_added):
 def main():
     ref=os.environ.get('SUPABASE_STAGING_PROJECT_REF','')
     R.validate_ref(ref)
+    if os.environ.get('ACTION') not in ('run','reminderrecover'):
+        raise RuntimeError('staging_reminder_action_refused')
     origin=validate_origin(os.environ.get('STAGING_APP_ORIGIN',''))
     ids=owner_ids(os.environ.get('STAGING_QA_OWNER_IDS',''))
     target=R.UPDATE.ManagementTarget(os.environ['SUPABASE_ACCESS_TOKEN'],ref)
