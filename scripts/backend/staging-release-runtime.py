@@ -30,6 +30,22 @@ def validate_ref(ref: str) -> None:
         raise RuntimeError("staging_runtime_refused_target")
 
 
+def deploy_failure_categories(stderr: str) -> list[str]:
+    """Report only fixed labels, never upstream text, paths or credentials."""
+    value = stderr.lower()
+    patterns = {
+        "authorization": r"unauthori[sz]ed|forbidden|access token|\b40[13]\b",
+        "network": r"timed? ?out|connection|error sending request|fetch failed|resolve host",
+        "docker": r"docker|daemon",
+        "dependency": r"module not found|cannot find|failed to resolve|failed to bundle|import|deno.lock",
+        "entrypoint": r"entrypoint|entry point|no such file",
+        "permission": r"permission denied|operation not permitted",
+        "rate_limit": r"rate limit|\b429\b",
+        "server": r"\b50[0-9]\b|internal server",
+    }
+    return [name for name, pattern in patterns.items() if re.search(pattern, value)]
+
+
 def readiness(target) -> dict:
     row = target.rows("""select
       (select count(*) from cron.job where active)::int as active_cron,
@@ -56,6 +72,11 @@ def deploy(target, ref: str, run=subprocess.run) -> dict:
     validate_ref(ref)
     print(json.dumps({"phase": "readiness"}), flush=True)
     readiness(target)
+    secret_names = {item["name"] for item in target._request("GET", f"/v1/projects/{ref}/secrets", None, 60)}
+    print(json.dumps({"phase": "secret_name_preflight",
+                      "email_provider_secret_present": "RESEND_API_KEY" in secret_names,
+                      "email_from_override_present": "EMAIL_FROM" in secret_names,
+                      "app_url_override_present": "APP_URL" in secret_names}), flush=True)
     config = tomllib.loads((ROOT / "supabase/config.toml").read_text())
     names = sorted(p.name for p in (ROOT / "supabase/functions").iterdir() if p.is_dir() and (p / "index.ts").is_file())
     print(json.dumps({"phase": "scheduler_transfer"}), flush=True)
@@ -80,6 +101,9 @@ def deploy(target, ref: str, run=subprocess.run) -> dict:
         result = run(command, cwd=ROOT, env={**os.environ, "SUPABASE_TELEMETRY_DISABLED": "1"},
                      capture_output=True, text=True, timeout=300)
         if result.returncode:
+            print(json.dumps({"phase": "deploy_failure", "function": name,
+                              "exit_code": result.returncode,
+                              "categories": deploy_failure_categories(getattr(result, "stderr", ""))}), flush=True)
             raise RuntimeError(f"staging_runtime_deploy_failed:{name}")
         deployed.append(name)
         print(json.dumps({"deployed": name}), flush=True)

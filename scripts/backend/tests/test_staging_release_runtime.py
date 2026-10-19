@@ -67,7 +67,8 @@ class RuntimeTests(unittest.TestCase):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             report = RUNTIME.deploy(target, RUNTIME.REF, run)
-        self.assertEqual(target.requests[0][2][0]["value"], TOKEN)
+        transfer = next(request for request in target.requests if request[0] == "POST")
+        self.assertEqual(transfer[2][0]["value"], TOKEN)
         self.assertNotIn(TOKEN, output.getvalue() + json.dumps(report))
         self.assertEqual(len(calls), len(report["functions"]))
         self.assertGreater(len(calls), 10)
@@ -83,6 +84,18 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,"writers_not_paused"):
             RUNTIME.deploy(target,RUNTIME.REF)
         self.assertEqual(target.requests,[])
+
+    def test_failed_deployment_reports_only_fixed_categories_and_presence(self):
+        output = io.StringIO()
+        def run(command, **kwargs):
+            return SimpleNamespace(returncode=1, stderr=f"Failed to bundle: import {TOKEN}; HTTP 403 forbidden")
+        with contextlib.redirect_stdout(output), self.assertRaisesRegex(RuntimeError, "deploy_failed"):
+            RUNTIME.deploy(Target(), RUNTIME.REF, run)
+        lines = [json.loads(line) for line in output.getvalue().splitlines()]
+        failure = next(line for line in lines if line["phase"] == "deploy_failure")
+        self.assertEqual(failure["categories"], ["authorization", "dependency"])
+        self.assertNotIn(TOKEN, output.getvalue())
+        self.assertTrue(any(line["phase"] == "secret_name_preflight" for line in lines))
 
 
 if __name__ == "__main__":

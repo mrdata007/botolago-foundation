@@ -849,5 +849,353 @@
     "emailProviderConfigurationConfirmed": false,
     "iphoneAvailableWhenReady": true,
     "phoneSessionRun": false
+  },
+  "edge5000Runtime": {
+    "workflowRun": 39227372118,
+    "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1",
+    "fixtureNamespace": "f9510000-0000-4000-8000-",
+    "state": "FAIL: two Edge passes did not advance the durable cursor; operator fallback passed; restoration verified",
+    "independentObservation": {
+      "at": "2026-10-19T09:22:00Z",
+      "finalizedTeams": 5000,
+      "rankings": 61900,
+      "leaseReleased": true
+    },
+    "runtimeLogs": {
+      "windowStart": "2026-10-19T09:05:00Z",
+      "windowEnd": "2026-10-19T09:12:00Z",
+      "passes": [
+        {
+          "executionId": "38e69dcb-86ff-4897-8117-e67339540a47",
+          "httpStatus": 200,
+          "executionTimeMs": 103997,
+          "cpuTimeUsed": 235,
+          "shutdownReason": "EarlyDrop",
+          "memoryBytes": 17423831
+        },
+        {
+          "executionId": "9ba16088-badc-4dbd-9285-eb745ed9266a",
+          "httpStatus": 200,
+          "executionTimeMs": 103078,
+          "cpuTimeUsed": 182,
+          "shutdownReason": "EarlyDrop",
+          "memoryBytes": 17423687
+        }
+      ],
+      "interpretation": "Both Edge requests returned; neither log reports a CPU-limit kill. Finalized results required the operator fallback; HTTP 200 alone does not prove lifecycle completion."
+    },
+    "events": [
+      {
+        "kind": "baseline",
+        "state": {
+          "users": 50008,
+          "oldTeams": "855339fc111c171b758f6b74eb8b7709",
+          "oldResults": "a6674d3c78cbd00958ebc52fb4eaacd1",
+          "oldGameweeks": "23d68d2b47c37e02bc318e77903c24f8"
+        },
+        "settings": {
+          "cron": [
+            {
+              "jobid": 1,
+              "active": true
+            },
+            {
+              "jobid": 2,
+              "active": true
+            },
+            {
+              "jobid": 3,
+              "active": true
+            },
+            {
+              "jobid": 4,
+              "active": true
+            },
+            {
+              "jobid": 5,
+              "active": true
+            },
+            {
+              "jobid": 6,
+              "active": true
+            },
+            {
+              "jobid": 7,
+              "active": true
+            },
+            {
+              "jobid": 9,
+              "active": true
+            },
+            {
+              "jobid": 10,
+              "active": true
+            },
+            {
+              "jobid": 11,
+              "active": true
+            },
+            {
+              "jobid": 12,
+              "active": true
+            },
+            {
+              "jobid": 14,
+              "active": true
+            },
+            {
+              "jobid": 17,
+              "active": true
+            },
+            {
+              "jobid": 18,
+              "active": true
+            },
+            {
+              "jobid": 21,
+              "active": true
+            },
+            {
+              "jobid": 22,
+              "active": true
+            },
+            {
+              "jobid": 23,
+              "active": true
+            },
+            {
+              "jobid": 24,
+              "active": true
+            },
+            {
+              "jobid": 25,
+              "active": true
+            },
+            {
+              "jobid": 26,
+              "active": true
+            },
+            {
+              "jobid": 27,
+              "active": true
+            },
+            {
+              "jobid": 31,
+              "active": true
+            },
+            {
+              "jobid": 32,
+              "active": true
+            },
+            {
+              "jobid": 35,
+              "active": true
+            },
+            {
+              "jobid": 36,
+              "active": true
+            },
+            {
+              "jobid": 39,
+              "active": true
+            },
+            {
+              "jobid": 40,
+              "active": true
+            }
+          ],
+          "rivals": true,
+          "other_writers": false
+        },
+        "freeDiskGb": 5.592067718505859,
+        "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1"
+      },
+      {
+        "kind": "real_edge_pass",
+        "number": 1,
+        "httpStatus": 200,
+        "elapsedMs": 104060,
+        "status": "partial",
+        "workerCode": "fantasy_worker_time_limit",
+        "recorded": true,
+        "calls": 32,
+        "progress": {
+          "status": "provisional",
+          "scored": 1500,
+          "last_team": "f9510000-0000-4000-8000-000000011500",
+          "finalized": 0,
+          "rankings": 0,
+          "correct_results": 0,
+          "rollovers": 0,
+          "next_lineups": 0,
+          "postwork": false,
+          "advanced": false
+        }
+      },
+      {
+        "kind": "real_edge_pass",
+        "number": 2,
+        "httpStatus": 200,
+        "elapsedMs": 103137,
+        "status": "partial",
+        "workerCode": "fantasy_worker_time_limit",
+        "recorded": true,
+        "calls": 33,
+        "progress": {
+          "status": "provisional",
+          "scored": 1500,
+          "last_team": "f9510000-0000-4000-8000-000000011500",
+          "finalized": 0,
+          "rankings": 0,
+          "correct_results": 0,
+          "rollovers": 0,
+          "next_lineups": 0,
+          "postwork": false,
+          "advanced": false
+        }
+      },
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "finalized",
+          "gameweekId": "f9510000-0000-4000-8000-000000000021",
+          "calculationVersion": 1,
+          "processedTeams": 5000,
+          "nextGameweekId": "f9510000-0000-4000-8000-000000000022",
+          "nextGameweekStatus": "open",
+          "prizes": {
+            "error": "staging_drill_unscoped_prizes_skipped"
+          },
+          "calls": 1315
+        },
+        "elapsedMs": 716507.0990030001,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 512.572855,
+            "maxMs": 512.572855
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 194.54938800000002,
+            "maxMs": 194.54938800000002
+          },
+          "service_get_fantasy_scoring_snapshot": {
+            "calls": 50,
+            "totalMs": 143466.95410499987,
+            "maxMs": 3844.8043780000007
+          },
+          "service_persist_fantasy_scoring_results": {
+            "calls": 50,
+            "totalMs": 159495.29910800015,
+            "maxMs": 4233.801806999982
+          },
+          "service_fantasy_worker_lease_extend": {
+            "calls": 6,
+            "totalMs": 1156.480851999935,
+            "maxMs": 220.77214200000162
+          },
+          "service_begin_fantasy_finalization": {
+            "calls": 1,
+            "totalMs": 3773.7889549999963,
+            "maxMs": 3773.7889549999963
+          },
+          "service_finalize_fantasy_team_results": {
+            "calls": 50,
+            "totalMs": 141857.41287700034,
+            "maxMs": 3150.595566999982
+          },
+          "service_restore_free_hit": {
+            "calls": 1,
+            "totalMs": 202.72395900002448,
+            "maxMs": 202.72395900002448
+          },
+          "service_roll_fantasy_free_transfers": {
+            "calls": 51,
+            "totalMs": 10595.622709999792,
+            "maxMs": 248.09653300000355
+          },
+          "service_recalculate_fantasy_rankings": {
+            "calls": 1002,
+            "totalMs": 193920.2962339981,
+            "maxMs": 1093.1340509999427
+          },
+          "service_fantasy_scoring_league_page": {
+            "calls": 5,
+            "totalMs": 907.7246829999494,
+            "maxMs": 193.39615899999626
+          },
+          "service_complete_fantasy_gameweek": {
+            "calls": 1,
+            "totalMs": 3884.905458000023,
+            "maxMs": 3884.905458000023
+          },
+          "service_run_fantasy_price_batch": {
+            "calls": 1,
+            "totalMs": 318.77683699992485,
+            "maxMs": 318.77683699992485
+          },
+          "service_enqueue_gameweek_finalized_notifications": {
+            "calls": 50,
+            "totalMs": 14028.31438400026,
+            "maxMs": 846.0443780000787
+          },
+          "service_complete_fantasy_postwork": {
+            "calls": 1,
+            "totalMs": 267.97964199993294,
+            "maxMs": 267.97964199993294
+          },
+          "service_prepare_next_fantasy_gameweek": {
+            "calls": 50,
+            "totalMs": 41593.12318900053,
+            "maxMs": 1316.7718680000398
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": true,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 5000
+      },
+      {
+        "kind": "worker_runtime_verdict",
+        "edgeCompleted": false,
+        "edgeProgressed": false,
+        "fallbackCompleted": true,
+        "progress": {
+          "status": "finalized",
+          "scored": 5000,
+          "last_team": "f9510000-0000-4000-8000-000000015000",
+          "finalized": 5000,
+          "rankings": 61900,
+          "correct_results": 5000,
+          "rollovers": 5000,
+          "next_lineups": 5000,
+          "postwork": true,
+          "advanced": true
+        }
+      },
+      {
+        "kind": "restoration",
+        "oldBaselineUnchanged": true,
+        "errors": []
+      }
+    ],
+    "independentRestoration": {
+      "at": "2026-10-19T09:23:55Z",
+      "users": 50008,
+      "teams": 60005,
+      "activeCron": 27,
+      "rivals": true,
+      "leaseHeld": false,
+      "otherWriters": false,
+      "archivedEdgeTeams": 5000,
+      "fixtureSeasonStatus": "completed"
+    }
   }
 }

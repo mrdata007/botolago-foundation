@@ -24,7 +24,7 @@ runbook, a seeded total or a green planning action does not prove acceptance.
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                  |
 | Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                   |
-| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows, zero pending repository migrations                                                                                   |
+| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows at the original catch-up; a new rating-publication migration on main requires another plan/rehearsal                  |
 | Staging Edge runtime | All 15 repository functions deployed by run 39173000678, source `ea5044d4e5ed5099f93ce9d4f3d4b11b727d2bfe`; scheduler credential present; email provider credential absent                                    |
 | Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                            |
 | Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source |
@@ -76,7 +76,7 @@ six comment/format differences, and two substantive historical differences.
 
 | Gate                    | Current disposition                                                                                                                         | What objectively closes it                                                                                                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Launch-sized load       | FAIL in measured free-runner attempt 39216960815; corrected-harness rerun 39222141596 in progress                                           | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
+| Launch-sized load       | FAIL in measured runs 39216960815 and 39222141596; no launch-sized capacity pass                                                            | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
 | 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599) | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
 | Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                 | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
 | Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                               | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
@@ -163,6 +163,30 @@ every scoring rule.
 The first scoring attempt rejected an unsupported lease-holder prefix before
 changing results. The corrected holder is `manual:staging-rating-drill-5000`.
 All attempts remain linked in GitHub; setup failures are not capacity failures.
+
+### Real Edge 5,000-team result: failed progress, safe fallback
+
+Run [39227372118](https://github.com/mrdata007/botolago-foundation/actions/runs/39227372118)
+used a fresh `f951` fixture and unchanged deployed Edge limits. The first pass
+scored 1,500 teams in 104 seconds; the second returned at the same 1,500 teams.
+Both returned `partial / fantasy_worker_time_limit`; zero teams finalized and
+zero rankings were published. The lifecycle starts its team cursor at null for
+each invocation. This is a reproducible completion blocker: recurring invocations
+repeat the first page range instead of finishing the remaining teams.
+
+The two requests returned HTTP 200, but that is not lifecycle success. Runtime
+shutdown logs report `EarlyDrop`, with CPU-time values 235 and 182 and about
+17.4 MB memory, rather than a CPU-limit kill. The operator fallback then used
+1,315 production-core calls over 716.507 seconds, independently proving all
+5,000 final scores of 96 (480,000 total), 61,900 ranking rows, 5,000 single
+rollovers, 5,000 next lineups and completed postwork/progression. The workflow
+correctly remains failed because the Edge passes did not progress.
+
+Retirement archived all 5,000 new teams and completed their synthetic season.
+The workflow verified the older team/result/gameweek fingerprints unchanged.
+Independent postflight found 50,008 Auth users, 60,005 retained teams, 27 active
+cron jobs, Rivals ON, all other application writers OFF and no held lease.
+No existing fixture was reopened and no production write was performed.
 
 ## Final measurements and restoration
 
