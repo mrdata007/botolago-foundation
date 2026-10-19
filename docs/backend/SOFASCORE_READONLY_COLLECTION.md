@@ -1,5 +1,7 @@
 # Read-only SofaScore player ratings collection
 
+Normal unattended operation is described in [SofaScore automation](SOFASCORE_AUTOMATION.md). This command remains a read-only diagnostic.
+
 Use `scripts/backend/sofascore-collect.ts` to retrieve API-native player evidence
 without a database connection. It does not resolve BotolaGO players, ingest,
 score, finalize, deploy, or change provider/scoring switches. The existing

@@ -192,7 +192,7 @@ export async function handleFootballLiveRefreshRequest(
             ? createRapidApiClient("sofascore", dependencies.environment, {
                 maxRetries: 0,
                 timeoutMs: 8000,
-                minRemaining: 1000,
+                minRemaining: 1001,
                 onRequest: counter.record,
                 fetch: dependencies.fetch as NonNullable<
                   Parameters<typeof createRapidApiClient>[2]
@@ -232,11 +232,14 @@ export async function handleFootballLiveRefreshRequest(
           if (typeof season === "string" && /^[1-9][0-9]{0,11}$/.test(season))
             approvedSeason = season;
         }
+        // A state read failure cannot silently re-enable the old auto-mapper.
+        const missing = plan.error && ["PGRST202", "42883"].includes(String(plan.error.code));
         ownsObservations =
-          !plan.error &&
-          typeof plan.data === "object" &&
-          plan.data !== null &&
-          (plan.data as { enabled?: unknown }).enabled === true;
+          (!!plan.error && !missing) ||
+          (!plan.error &&
+            typeof plan.data === "object" &&
+            plan.data !== null &&
+            (plan.data as { enabled?: unknown }).enabled === true);
       } catch {
         if (job === "ratings_collection")
           return json(503, { error: "collection_state_unavailable" });
