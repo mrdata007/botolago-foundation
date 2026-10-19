@@ -124,36 +124,42 @@ export async function expectNothingOffScreen(
   scope = "main",
   { scrollRails = false }: { scrollRails?: boolean } = {},
 ) {
-  const offscreen = await page.evaluate(
-    ([selector, skipRails]) => {
-      const viewport = document.documentElement.clientWidth;
-      const found: string[] = [];
-      const inRail = (node: Element, root: Element) => {
-        for (let parent = node.parentElement; parent && parent !== root; ) {
-          const overflowX = getComputedStyle(parent).overflowX;
-          if (overflowX === "auto" || overflowX === "scroll") return true;
-          parent = parent.parentElement;
+  const measure = () =>
+    page.evaluate(
+      ([selector, skipRails]) => {
+        const viewport = document.documentElement.clientWidth;
+        const found: string[] = [];
+        const inRail = (node: Element, root: Element) => {
+          for (let parent = node.parentElement; parent && parent !== root; ) {
+            const overflowX = getComputedStyle(parent).overflowX;
+            if (overflowX === "auto" || overflowX === "scroll") return true;
+            parent = parent.parentElement;
+          }
+          return false;
+        };
+        for (const root of document.querySelectorAll(selector)) {
+          for (const node of [root, ...root.querySelectorAll("*")]) {
+            if (node.parentElement?.closest("[data-swipe-row]")) continue;
+            const box = node.getBoundingClientRect();
+            if (box.width === 0 || box.height === 0) continue;
+            if (box.left >= -1 && box.right <= viewport + 1) continue;
+            if (skipRails && inRail(node, root)) continue;
+            const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
+            found.push(
+              `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
+            );
+          }
         }
-        return false;
-      };
-      for (const root of document.querySelectorAll(selector)) {
-        for (const node of [root, ...root.querySelectorAll("*")]) {
-          if (node.parentElement?.closest("[data-swipe-row]")) continue;
-          const box = node.getBoundingClientRect();
-          if (box.width === 0 || box.height === 0) continue;
-          if (box.left >= -1 && box.right <= viewport + 1) continue;
-          if (skipRails && inRail(node, root)) continue;
-          const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
-          found.push(
-            `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
-          );
-        }
-      }
-      return found;
-    },
-    [scope, scrollRails] as const,
-  );
-  expect(offscreen, `content outside the viewport under ${scope}`).toEqual([]);
+        return found;
+      },
+      [scope, scrollRails] as const,
+    );
+  // Hydration can change French layout to RTL between a DOM assertion and
+  // the next paint. Measure the settled boxes with Playwright's retrying
+  // assertion; persistent overflow still fails with the same offending nodes.
+  await expect
+    .poll(measure, { message: `content outside the viewport under ${scope}` })
+    .toEqual([]);
 }
 
 export async function expectNoClippedMatchCards(page: Page) {
