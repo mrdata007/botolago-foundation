@@ -25,6 +25,37 @@ def ready(count=200):
 
 
 class FreeLoadSafetyTests(unittest.TestCase):
+    def test_artifact_lookup_selects_only_the_current_attempt(self):
+        import json
+        listing = {'artifacts': [{'name': f'free-context-attempt-{n}', 'expired': False} for n in (1, 2)]}
+        with tempfile.TemporaryDirectory() as directory, patch.object(M, 'RUNTIME', Path(directory)), patch.dict(os.environ, {
+            'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_RUN_ID': '1', 'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(M, 'github', side_effect=[json.dumps(listing), '']) as github:
+            path = M.artifact('free-context')
+            self.assertEqual(path.name, 'free-context-attempt-2')
+            self.assertEqual(github.call_args.args[0][4], 'free-context-attempt-2')
+
+    def test_old_attempt_artifacts_are_never_downloaded(self):
+        import json
+        listing = {'artifacts': [{'name': 'free-context-attempt-1', 'expired': False}]}
+        with patch.dict(os.environ, {'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_RUN_ID': '1', 'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(M, 'github', return_value=json.dumps(listing)) as github, patch.object(M.time, 'monotonic', side_effect=[0, 0, 2]), patch.object(M.time, 'sleep'):
+            with self.assertRaisesRegex(RuntimeError, 'free_barrier_timeout'):
+                M.artifact('free-context', wait_seconds=1)
+            self.assertEqual(github.call_count, 1)
+
+    def test_duplicate_current_attempt_artifacts_are_refused(self):
+        import json
+        listing = {'artifacts': [{'name': 'free-context-attempt-2', 'expired': False}] * 2}
+        with patch.dict(os.environ, {'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_RUN_ID': '1', 'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(M, 'github', return_value=json.dumps(listing)) as github:
+            with self.assertRaisesRegex(RuntimeError, 'free_duplicate_artifact'):
+                M.artifact('free-context')
+            self.assertEqual(github.call_count, 1)
+
+    def test_context_from_another_attempt_is_refused(self):
+        with patch.dict(os.environ, {'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_SHA': 'source', 'SCOPE': 'launch-sized'}):
+            with self.assertRaisesRegex(RuntimeError, 'free_current_attempt_context_required'):
+                M.validate_context_identity({'runId': 'gha-1-1', 'source': 'source', 'scope': 'launch-sized'})
+            M.validate_context_identity({'runId': 'gha-1-2', 'source': 'source', 'scope': 'launch-sized'})
+
     def test_production_is_rejected_before_network(self):
         with patch.dict(os.environ, {'SUPABASE_STAGING_PROJECT_REF': 'tkewgajrljbwgwedqsxn'}), patch.object(M.UPDATE, 'ManagementTarget') as target:
             with self.assertRaisesRegex(RuntimeError, 'free_target_refused'):

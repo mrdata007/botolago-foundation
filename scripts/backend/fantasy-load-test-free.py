@@ -69,7 +69,21 @@ def github(arguments):
     return result.stdout
 
 
+def artifact_name(name):
+    attempt=os.environ['GITHUB_RUN_ATTEMPT']
+    if not re.fullmatch(r'[1-9][0-9]*',attempt):
+        raise RuntimeError('free_run_attempt_invalid')
+    return f'{name}-attempt-{attempt}'
+
+
+def validate_context_identity(state):
+    if (state.get('runId')!=f"gha-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}"
+        or state.get('source')!=os.environ['GITHUB_SHA'] or state.get('scope')!=scope()):
+        raise RuntimeError('free_current_attempt_context_required')
+
+
 def artifact(name, wait_seconds=1200):
+    name=artifact_name(name)
     target = RUNTIME / "downloads" / name
     until = time.monotonic() + wait_seconds
     while time.monotonic() < until:
@@ -284,6 +298,7 @@ def preflight():
 def prepare():
     gate = FreeGate()
     state = json.loads(CONTEXT.read_text())
+    validate_context_identity(state)
     if baseline(gate) != state["baseline"]:
         raise RuntimeError("free_baseline_changed")
     gate.sql("select cron.alter_job(jobid, active:=false) from cron.job; select app_private.rivals_configure(false);")
@@ -325,6 +340,7 @@ def provision():
     if index not in range(5):
         raise RuntimeError("free_shard_refused")
     state = json.loads((artifact("free-context") / "context.json").read_text())
+    validate_context_identity(state)
     expected = 25 if scope() == "rehearsal" else 200
     users = state["users"][index * expected:(index + 1) * expected]
     if len(users) != expected or state["source"] != os.environ["GITHUB_SHA"]:
@@ -410,6 +426,7 @@ def workload():
 
 
 def monitor():
+    validate_context_identity(json.loads(CONTEXT.read_text()))
     gate = FreeGate()
     try:
         schedule = json.loads((PUBLIC / "schedule.json").read_text())
@@ -461,15 +478,15 @@ def finish():
     verdict = {"scope": scope(), "fullGate": False, "passed": False}
     try:
         gate.integrity() if gate.users else None
-        schedule = json.loads((RUNTIME / "all" / "free-schedule" / "schedule.json").read_text())
-        metrics = json.loads((RUNTIME / "all" / "free-metrics" / "metrics.json").read_text())
+        schedule = json.loads((RUNTIME / "all" / artifact_name("free-schedule") / "schedule.json").read_text())
+        metrics = json.loads((RUNTIME / "all" / artifact_name("free-metrics") / "metrics.json").read_text())
         criteria = {}
         if scope() == "rehearsal":
-            shards = [json.loads((RUNTIME / "all" / f"free-result-{i}" / "setup_rehearsal.json").read_text()) for i in range(5)]
+            shards = [json.loads((RUNTIME / "all" / artifact_name(f"free-result-{i}") / "setup_rehearsal.json").read_text()) for i in range(5)]
             criteria["allPrepared"] = all(s["readiness"]["ready"] and s["profile"]["requests"] == 0 and s["readiness"]["preparedUsers"] == 25 for s in shards)
         else:
             for profile in ("launch_sized_gate", "launch_sized_soak"):
-                shards = [json.loads((RUNTIME / "all" / f"free-result-{i}" / f"{profile}.json").read_text()) for i in range(5)]
+                shards = [json.loads((RUNTIME / "all" / artifact_name(f"free-result-{i}") / f"{profile}.json").read_text()) for i in range(5)]
                 aggregate = gate.aggregate_profile(profile, shards)
                 verdict[profile] = aggregate
                 criteria.update({f"{profile}_{k}": v for k, v in aggregate["passCriteria"].items()})

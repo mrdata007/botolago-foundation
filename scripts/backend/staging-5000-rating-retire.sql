@@ -1,5 +1,8 @@
 -- Preserve the measured fixture for review, but remove it from active staging
 -- discovery/catalogs. Never deletes or changes the pre-existing 50,005 teams.
+-- APPLY path: the final COMMIT archives the verified fixture. First rehearse
+-- the unchanged transaction with only that final terminator changed to ROLLBACK
+-- and verify the saved baseline. Do not apply while another writer is active.
 begin;
 set local lock_timeout='10s';
 do $$ begin
@@ -33,4 +36,4 @@ select jsonb_build_object('teams',(select count(*) from app.fantasy_teams),
  'users',(select count(*) from auth.users),
  'non_load_fingerprint',(select md5(string_agg(to_jsonb(t)::text,'|' order by t.id))
    from app.fantasy_teams t join auth.users u on u.id=t.user_id where u.email not like 'fantasy-load-%@staging.botolago.invalid'));
-rollback;
+commit;

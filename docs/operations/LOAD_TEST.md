@@ -203,6 +203,25 @@ require rerunning cleanup from the same run's context; do not start another
 staging writer before restoring it. A rehearsal is preparation evidence only;
 only a measured launch-sized run can close the launch load gate.
 
+Every free-route artifact includes `-attempt-N`. Uploads, barriers and final
+downloads select only the current attempt; an older attempt cannot supply
+credentials or measurements to a new one. After verified cleanup, use **Re-run
+all jobs** for a fresh measured attempt. **Re-run failed jobs** may skip
+preparation and therefore fails closed when the current context is absent.
+For recovery of an interrupted attempt, explicitly use that attempt's saved
+context and verify its run/source ownership before cleanup; never combine its
+measurements with another attempt.
+
+`scripts/backend/staging-5000-rating-retire.sql` is the guarded **apply** path
+for the original f950 fixture and ends with `COMMIT`. In an exclusive staging
+writer window, save the baseline and exact scheduler settings, pause writers,
+and set `botolago.release_drill` to the staging project ref. First execute a copy
+with only its final `COMMIT` replaced by `ROLLBACK`, then verify the baseline is
+unchanged. Apply the unchanged checked-in script and verify all 5,000 teams are
+archived, the season completed, and all pre-existing data fingerprints unchanged
+before restoring the saved settings. The script refuses an already retired
+fixture; do not reactivate one to repeat this procedure.
+
 The free route interprets raw exporter data with `fantasy_free_metrics.py`.
 Identical cached CPU counters are not fabricated into 100% utilisation: CPU is
 the busy fraction of advancing per-mode counters, and missing/reset counters

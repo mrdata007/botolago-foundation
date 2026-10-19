@@ -329,7 +329,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: free-context
+          name: free-context-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence/context.json
           if-no-files-found: error
           retention-days: 1
@@ -367,7 +367,7 @@ jobs:
         run: python scripts/backend/fantasy-load-test-free.py provision
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: free-ready-${{ matrix.shard }}
+          name: free-ready-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence/ready.json
           if-no-files-found: error
           retention-days: 1
@@ -378,7 +378,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: free-result-${{ matrix.shard }}
+          name: free-result-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence
           if-no-files-found: error
           retention-days: 1
@@ -408,13 +408,13 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: free-context
+          name: free-context-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence
       - name: Require five distinct origins and independent sessions
         run: python scripts/backend/fantasy-load-test-free.py barrier
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: free-schedule
+          name: free-schedule-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence/schedule.json
           if-no-files-found: error
           retention-days: 1
@@ -423,7 +423,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: free-metrics
+          name: free-metrics-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence
           if-no-files-found: error
           retention-days: 1
@@ -454,20 +454,20 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: free-*
+          pattern: free-*-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/all
       - name: Restore the recovery context
         run: |
           install -d -m 0700 "$RUNNER_TEMP/botolago-free/evidence"
-          if test -f "$RUNNER_TEMP/botolago-free/all/free-context/context.json"; then
-            install -m 0600 "$RUNNER_TEMP/botolago-free/all/free-context/context.json" "$RUNNER_TEMP/botolago-free/evidence/context.json"
+          if test -f "$RUNNER_TEMP/botolago-free/all/free-context-attempt-$GITHUB_RUN_ATTEMPT/context.json"; then
+            install -m 0600 "$RUNNER_TEMP/botolago-free/all/free-context-attempt-$GITHUB_RUN_ATTEMPT/context.json" "$RUNNER_TEMP/botolago-free/evidence/context.json"
           fi
       - name: Evaluate all criteria and restore staging even after failure
         run: python scripts/backend/fantasy-load-test-free.py finish
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: free-final-evidence
+          name: free-final-evidence-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/botolago-free/evidence
           if-no-files-found: error
           retention-days: 1
