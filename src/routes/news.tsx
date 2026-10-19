@@ -216,6 +216,7 @@ function NewsPage() {
 
   return (
     <AppShell
+      contentWidth="wide"
       backgroundVariant="news"
       pageHeader={
         // The hub title band (A-News): the Changa h1 and one sideways line of
@@ -244,26 +245,28 @@ function NewsPage() {
     >
       {/* Lead + Top stories — editorial placements, degrade independently */}
       {homeQ.isLoading ? (
-        <div className="grid gap-2.5">
+        <div className="grid gap-2.5 lg:grid-cols-2">
           <NewsLeadSkeleton />
           <SkeletonList count={3}>{() => <NewsRowSkeleton />}</SkeletonList>
         </div>
       ) : homeQ.isError ? (
         <ErrorState onRetry={() => void homeQ.refetch()} />
       ) : (
-        <>
+        <div
+          className={lead && featured.length > 0 ? "lg:grid lg:grid-cols-2 lg:gap-6" : undefined}
+        >
           {lead && (
             // The first thing under the band, as the board sets it: no
             // visible heading (the card's own pill says "À la une"), but the
             // section keeps one for the page outline.
-            <Section className="mt-0 sm:mt-0">
+            <Section className="mt-0 min-w-0 sm:mt-0">
               <h2 className="sr-only">{t("news.section.lead")}</h2>
               <ArticleCard article={presentArticleForDisplay(lead)} variant="lead" clubs={clubs} />
             </Section>
           )}
 
           {featured.length > 0 && (
-            <Section>
+            <Section className={lead ? "min-w-0 lg:mt-0" : "min-w-0"}>
               <SectionHeader title={t("news.section.top_stories")} />
               <FeaturedGrid featured={featured} clubs={clubs} />
             </Section>
@@ -275,7 +278,7 @@ function NewsPage() {
               <LatestCarousel articles={carousel} clubs={clubs} />
             </Section>
           )}
-        </>
+        </div>
       )}
 
       {/* Latest — chronological feed with real keyset pagination */}

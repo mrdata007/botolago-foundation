@@ -83,7 +83,7 @@ type RankingsTab = RankingsSort | "leagues";
 function RankingsFramed() {
   const { t } = useI18n();
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav width="wide">
       <UiHeader kicker={t("nav.fantasy")} title={t("fantasy.tab.rankings")} backTo="/fantasy" />
       <RankingsPage />
     </FantasyFrame>

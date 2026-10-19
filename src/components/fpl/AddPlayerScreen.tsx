@@ -146,6 +146,13 @@ export function AddPlayerScreen({
    */
   initialSort?: SortKey;
 }) {
+  // This sheet mounts from route state rather than a Radix Trigger. Capture
+  // the opener before the portal moves focus, including pointer activation.
+  const [opener] = useState(() =>
+    typeof document !== "undefined" && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
@@ -459,6 +466,12 @@ export function AddPlayerScreen({
   return (
     <UiSheet
       open
+      onCloseAutoFocus={(event) => {
+        if (opener?.isConnected) {
+          event.preventDefault();
+          opener.focus({ preventScroll: true });
+        }
+      }}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}

@@ -22,6 +22,8 @@ import { Logo } from "@/components/brand/Logo";
 import { joinDeadlineToShow, joinTarget } from "@/components/fantasy/fantasy-hub-layout";
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { SkipLink } from "@/components/shell/SkipLink";
+import { MAIN_CONTENT_ID } from "@/lib/skip-link";
 import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -160,12 +162,13 @@ export function LandingPage({
   const showSticky = heroOut && !finalIn && cta.kind !== "pending";
 
   return (
-    <div className={cn("min-h-[100dvh]", ui.surface.page)} data-testid="landing-page">
+    <main className={cn("min-h-[100dvh]", ui.surface.page)} data-testid="landing-page">
       {/* STATUS BAR (BG-0154) — nothing at the top of this page sticks, so in
           the app its light sections scrolled up under the clock. A strip as
           tall as the status bar, in the hero's ink-deep, stays there and the
           page passes under it. 0px tall in a browser. */}
       <StatusBarStrip surface={STATUS_BAR_INK} />
+      <SkipLink />
       {/* ---------------------------------------------------------- */}
       {/* Hero: the promise, the button, and the game on its pitch    */}
       {/* ---------------------------------------------------------- */}
@@ -236,8 +239,10 @@ export function LandingPage({
         </header>
 
         <div
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
           className={cn(
-            "mx-auto grid w-full max-w-6xl items-center gap-x-12 gap-y-10 pb-12 pt-8 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:pb-20 lg:pt-16",
+            "outline-none mx-auto grid w-full max-w-6xl items-center gap-x-12 gap-y-10 pb-12 pt-8 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,27rem)] lg:pb-20 lg:pt-16",
             ui.space.gutter,
           )}
         >
@@ -637,7 +642,7 @@ export function LandingPage({
       >
         <PrimaryAction cta={cta} event="landing_cta_sticky" onLeave={onLeave} />
       </div>
-    </div>
+    </main>
   );
 }
 
