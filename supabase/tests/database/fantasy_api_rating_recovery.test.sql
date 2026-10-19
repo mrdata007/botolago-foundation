@@ -189,7 +189,7 @@ select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),
 update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp() where id=pg_temp.rid(25);
 update app.fantasy_team_gameweek_results set state='final',final_score=96,finalized_at=statement_timestamp() where gameweek_id=pg_temp.rid(25);
 -- Deliberately different sealed values expose a reader that bypasses revisions.
-update app.fantasy_player_gameweek_points set final_points=2
+update app.fantasy_player_gameweek_points set final_points=2,finalized_at=statement_timestamp()
 where gameweek_id=pg_temp.rid(25) and fantasy_player_id in(pg_temp.rid(2024),pg_temp.rid(2028));
 select set_config('test.original_player_points',(select md5(jsonb_agg(to_jsonb(p) order by fantasy_player_id)::text)
 from app.fantasy_player_gameweek_points p where gameweek_id=pg_temp.rid(25)),true);
