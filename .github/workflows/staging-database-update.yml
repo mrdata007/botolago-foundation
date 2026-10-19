@@ -36,10 +36,10 @@ on:
 # environment: one writer at a time (AGENTS.md). Staging writers outside the
 # group are checked by scripts/backend/staging-writer-guard.py.
 concurrency:
-  # Auth preflight calls GET configuration endpoints only. It can run while
-  # the real-clock drill owns the database; all mutation actions retain the
-  # original shared writer group.
-  group: ${{ inputs.action == 'authpreflight' && format('staging-auth-read-{0}', github.run_id) || 'phase6-staging-load-test' }}
+  # Keep the GET-only Auth preflight in this group too: the cross-workflow
+  # guard conservatively classifies every run of this workflow as a writer.
+  # Readers queue rather than spuriously causing a writer's guard to fail.
+  group: phase6-staging-load-test
   cancel-in-progress: false
 
 permissions:
