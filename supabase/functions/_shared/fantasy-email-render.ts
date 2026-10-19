@@ -18,6 +18,10 @@ export function renderAutomatedNotificationEmail(
 ): RenderedEmail {
   if (!["gameweek_opened", "deadline_24h", "gameweek_finalized"].includes(delivery.type))
     return renderNotificationEmail(delivery, links);
+  // Until activation, the claim RPC still emits the original reminder/results
+  // contract. An absent marker is legacy; a present but invalid marker fails closed.
+  if (delivery.type !== "gameweek_opened" && !("automationVersion" in delivery.payload))
+    return renderNotificationEmail(delivery, links);
   if (!("automationVersion" in delivery.payload) || delivery.payload.automationVersion !== 1)
     throw new Error("fantasy_email_requires_trusted_payload");
   const common = {
