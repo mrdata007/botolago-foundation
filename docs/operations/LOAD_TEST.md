@@ -172,3 +172,33 @@ previous size (Micro on 2026-09-25).
   staging's level, apply brought all 427 API functions in line with
   production's (421 identical; the 6 others differ only in comment lines, as
   `docs/backend/MIGRATION_DRIFT.md` records).
+
+## $0 route (19 October continuation)
+
+The existing **Fantasy load test** dispatch now accepts `runner_backend=github-free`.
+It uses only standard `ubuntu-latest` runners in this public repository, without
+AWS credentials, paid runners, compute resizing or disk expansion. GitHub's
+[public-repository billing rule](https://docs.github.com/en/billing/managing-billing-for-your-products/managing-billing-for-github-actions/about-billing-for-github-actions)
+is the basis for the runner cost. Start with scope `rehearsal`, then use
+`launch-sized`; the full 2,500-user profile is intentionally unavailable here.
+
+A protected preparation job saves the original schedules and QA fingerprints,
+pauses staging jobs, rehearses creation of an empty temporary GW3 with rollback,
+then creates run-owned temporary users and teams. Historical GW1/GW2 are never
+reopened or overwritten. Each of five protected jobs signs in only its assigned
+users at the existing 0.4 requests/second limit. No password, Auth token or
+provider/Management credential is uploaded. Readiness artifacts contain only
+identity/session fingerprints, expiry, source SHA and observed public origin.
+The coordinator refuses duplicate origins, sessions, source mismatches or
+insufficient session validity before publishing the common start schedule.
+
+The measured profiles, traffic mix, thresholds, database observer, 60-second
+Metrics API collector and integrity/cleanup checks reuse the existing harness.
+The AWS orchestrator itself remains byte-for-byte unchanged. The final job runs
+even after failure, removes run-owned users and their state, deletes temporary
+GW3 and the named temporary metrics key, restores exact cron flags and rivals,
+and compares the QA and result fingerprints with the saved baseline. Keep its
+`free-context` recovery artifact until cleanup is verified. Cancellation can
+require rerunning cleanup from the same run's context; do not start another
+staging writer before restoring it. A rehearsal is preparation evidence only;
+only a measured launch-sized run can close the launch load gate.

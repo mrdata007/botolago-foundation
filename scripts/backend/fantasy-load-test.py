@@ -36,6 +36,10 @@ except ModuleNotFoundError:
 
 SEASON_ID = "fa630000-0000-4000-8000-000000000001"
 GAMEWEEK_ID = "fa640000-0000-4000-8000-000000000002"
+# A fresh, disposable gameweek for the $0 runner route. Historical capacity
+# gameweeks are never reopened. No arbitrary target override is accepted.
+if os.getenv("BOTOLAGO_LOAD_FIXTURE") == "github-fresh":
+    GAMEWEEK_ID = "fa640000-0000-4000-8000-000000000003"
 EXPECTED_ERRORS = {
     "fantasy_gameweek_locked",
     "version_conflict",

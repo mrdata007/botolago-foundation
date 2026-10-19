@@ -1214,7 +1214,7 @@ class WorkflowTests(unittest.TestCase):
     def test_the_report_receives_the_same_scope(self) -> None:
         text = WORKFLOW.read_text()
         self.assertEqual(text.count('--scope "$SCOPE"'), 1)
-        self.assertEqual(text.count("SCOPE: ${{ inputs.scope }}"), 3)
+        self.assertEqual(text.count("SCOPE: ${{ inputs.scope }}"), 7)
 
 
 if __name__ == "__main__":
