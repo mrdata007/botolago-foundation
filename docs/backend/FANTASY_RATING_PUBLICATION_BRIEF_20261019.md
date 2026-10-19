@@ -20,6 +20,8 @@ Primary evidence: fresh API payloads, database source ledger, staged proposal/in
 
 Service objective: after a real rating is accepted, the existing scorer publishes within ten minutes in healthy operation; a newly available post-match rating is fetched within the bounded recent-match polling window. Measure both clocks separately. Provider availability is outside BotolaGO's control and is never represented as guaranteed.
 
+Direct operational verification found a second clock gap: the football dispatcher stops two hours after full time, while the native rating polling RPC can still have work. The Témara–Kawkab poll last fetched at 00:01 UTC although the 08:23 UTC API audit contained 31 newly available ratings. The dispatcher and reservation RPC must share one private due-candidate predicate, so late ratings wake the existing guarded fetcher even without a live match. Preserve dispatch serialization, switch checks, API limits and retry reservations. Verify a twelve-hour-old pending fixture wakes the real tick and a reservation suppresses further wake-ups.
+
 ## Expert framing and precise task
 
 Solve point visibility and source latency independently. Publish available GW1–3 API-rating results as auditable, clearly provisional revisions and use those same revisions across customer score surfaces. For GW4 onwards, use bounded automatic polling, the existing leased scorer, explicit pending states, and measurable freshness. Validate against raw sources, independent arithmetic, database replay/security tests, and French/Arabic browser checks. Retain the original sealed record and finalization safeguards; surface any remaining policy decision rather than inventing ratings.

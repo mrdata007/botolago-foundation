@@ -54,7 +54,7 @@ export function LatestFeed({
   if (items.length === 0 && !query.hasNextPage) return null;
 
   return (
-    <div className="grid gap-2.5">
+    <div className="grid gap-2.5 lg:grid-cols-2">
       {items.map((dto) => (
         <ArticleCard
           key={dto.id}
@@ -69,7 +69,7 @@ export function LatestFeed({
           variant="soft"
           onClick={() => void query.fetchNextPage()}
           disabled={query.isFetchingNextPage}
-          className="mt-1"
+          className="mt-1 lg:col-span-2"
         >
           {query.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {t("news.view_all")}

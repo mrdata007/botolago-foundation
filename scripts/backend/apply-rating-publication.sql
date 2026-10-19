@@ -1,4 +1,4 @@
--- Production V2 only. Canonical migration SHA256: e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7
+-- Production V2 only. Canonical migration SHA256: 7d9d48c07b8d95e72fb3c1bc5429610a044321ea18a4b16731d183c9c8e3cabc
 -- List workflows and scheduled jobs before writing. Stand down relevant
 -- writers, drain async requests, rehearse, independently verify rollback,
 -- then change ONLY the final rollback to commit. No points are published here.
@@ -38,13 +38,22 @@ do $$ begin
  ('api.get_my_fantasy_history(uuid,integer,integer)','b301fe39a0ac7aa7958afefcd443412a'),
  ('api.service_recalculate_fantasy_rankings(uuid,uuid,uuid,bigint)','3ed3f9906f79a9fa3aaf805c0f36a953'),
  ('api.fantasy_player_gameweek_history_v1(uuid)','f767f873c813291ba01fe3749ea7b81d'),
+ ('api.fantasy_player_season_stats(uuid,uuid)','1b141bf8a70e0db8e6ecd402b2f9beb9'),
+ ('api.fantasy_top_players(uuid,integer)','a90a0dcf309f2707b1cc3d9d07f5c98a'),
+ ('app_private.round_recap_captain(uuid,uuid)','61fd2a9bcdec5903b873ae2db6289356'),
+ ('app_private.briefing_form(uuid,integer,uuid[])','faa46f2ae24f6efa439df79a845a24a2'),
+ ('api.get_my_deadline_briefing(uuid)','c2ff58bac3a785be047c21e96ba2c41d'),
  ('api.fantasy_gameweek_summary(uuid)','96f6cbe0f8fa40c0ff3d440ce1ef2f09'),
  ('api.get_my_fantasy_points_before_staged(uuid,uuid)','1e22a7d2c3df525f7dcecf88f21f5838'),
  ('api.publish_fantasy_gameweek_recap(uuid,uuid,text)','fbe20029611542a9840240351e65bc93'),
  ('api.public_fantasy_gameweek_recap(text)','d27947346f61a3d1460b98921504841b'),
  ('api.get_round_recap(uuid,uuid)','a9d0e8d07521cb4cbd23283acbfe58b0'),
  ('api.get_my_rivals(text)','a308a0b615382f79c3496eff14cb62a6')
- ) expected(signature,digest) join pg_proc p on p.oid=expected.signature::regprocedure where md5(p.prosrc)<>expected.digest) then raise exception 'rating_publication_unexpected_reader_body'; end if;
+ ) expected(signature,digest) join pg_proc p on p.oid=expected.signature::regprocedure
+ -- The original season-stats migration contains three explanatory comments
+ -- omitted by its production promoter; both exact bodies have identical SQL.
+ where md5(p.prosrc)<>expected.digest and not(expected.signature='api.fantasy_player_season_stats(uuid,uuid)'
+ and md5(p.prosrc)='92abdd253aa8b1f51ce28b77bde13c5d')) then raise exception 'rating_publication_unexpected_reader_body'; end if;
 end $$;
 
 create table app_private.fantasy_rating_publications (
@@ -85,6 +94,9 @@ for each row execute function app_private.fantasy_rating_new_member_guard();
 do $$ declare source text; begin
  if md5((select prosrc from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure))<>'36dfa9ccf4ed6e085f3825694621f820' then raise exception 'rating_publication_unexpected_pool_body'; end if;
  source:=pg_get_functiondef('api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure);
+ -- The pool now has a caller-owned exception to its public catalogue filter.
+ -- Protect that private branch with the same step-up as other account reads.
+ source:=replace(source,E'begin\n',E'begin\n  perform app_private.assert_mfa_step_up();\n');
  source:=replace(source,'and fantasy_player.active and fantasy_player.eligible',
  'and fantasy_player.active and fantasy_player.eligible and (app_private.fantasy_native_player_selectable(fantasy_player.id)
  or exists(select 1 from app.fantasy_squad_memberships owned join app.fantasy_teams owner_team on owner_team.id=owned.fantasy_team_id
@@ -232,6 +244,11 @@ begin
  'api.fantasy_gameweek_summary(uuid)',
  'api.service_recalculate_fantasy_rankings(uuid,uuid,uuid,bigint)',
  'api.fantasy_player_gameweek_history_v1(uuid)',
+ 'api.fantasy_player_season_stats(uuid,uuid)',
+ 'api.fantasy_top_players(uuid,integer)',
+ 'app_private.round_recap_captain(uuid,uuid)',
+ 'app_private.briefing_form(uuid,integer,uuid[])',
+ 'api.get_my_deadline_briefing(uuid)',
  'api.publish_fantasy_gameweek_recap(uuid,uuid,text)',
  'api.public_fantasy_gameweek_recap(text)',
  'api.get_round_recap(uuid,uuid)'
@@ -244,6 +261,32 @@ begin
  if sig='api.get_round_recap(uuid,uuid)' then
  source:=replace(source,'v_final := v_gw.points_state = ''final'';',
  'v_final := v_gw.points_state = ''final'' and v_res.state = ''final'';');
+ source:=regexp_replace(source,'\m(pt|po|pi)\.final_points\M',
+ 'coalesce(\1.final_points,case when exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=v_gw.id) then \1.provisional_points end)','g');
+ elsif sig='api.fantasy_top_players(uuid,integer)' then
+ source:=replace(source,'where target.gameweek_id = p_gameweek_id',
+ 'where target.gameweek_id = p_gameweek_id and coalesce(target.final_points,target.provisional_points) is not null');
+ elsif sig='app_private.round_recap_captain(uuid,uuid)' then
+ source:=replace(source,'pt.final_points','coalesce(pt.final_points,case when exists(select 1 from app_private.fantasy_current_rating_publications where gameweek_id=p_gameweek) then pt.provisional_points end) as final_points');
+ elsif sig='app_private.briefing_form(uuid,integer,uuid[])' then
+ source:=replace(source,'g.status in (''finalized'', ''corrected'') as done,',
+ 'g.status in (''finalized'', ''corrected'') as done,
+ exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) as revision,
+ (select proposal from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) as revision_doc,
+ exists(select 1 from app_private.fantasy_api_rating_seasons x where x.season_id=g.fantasy_season_id and g.sequence_number>=x.from_gameweek) as native_rating,');
+ source:=replace(source,'g.name, g.rating_rule, g.finalized_at as gw_at',
+ 'g.name, g.rating_rule, g.revision, g.native_rating, coalesce((select published_at from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id),g.finalized_at) as gw_at');
+ source:=replace(source,'(g.done or pts.final_points is not null) as published',
+ '(case when g.revision then pts.provisional_points is not null or not app_private.fantasy_player_rating_pending(g.revision_doc,p.id) else g.done or pts.final_points is not null end) as published');
+ source:=replace(source,'when pts.final_points is not null then pts.final_points when g.done then 0',
+ 'when pts.final_points is not null then pts.final_points when g.revision then case when pts.provisional_points is not null then pts.provisional_points when not app_private.fantasy_player_rating_pending(g.revision_doc,p.id) then 0 end when g.done then 0');
+ source:=replace(source,'when c.rating_rule and coalesce(c.did_play, false)',
+ 'when c.rating_rule and not c.revision and not c.native_rating and coalesce(c.did_play, false)');
+ elsif sig='api.get_my_deadline_briefing(uuid)' then
+ source:=replace(source,'case when g.status in (''finalized'', ''corrected'') then ''published''',
+ 'case when exists(select 1 from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id) then ''partial'' when g.status in (''finalized'', ''corrected'') then ''published''');
+ source:=replace(source,'''publishedAt'', coalesce(g.finalized_at, (',
+ '''publishedAt'', coalesce((select published_at from app_private.fantasy_current_rating_publications x where x.gameweek_id=g.id),g.finalized_at, (');
  end if;
  execute source;
  end loop;
@@ -428,15 +471,13 @@ grant execute on function api.fantasy_rules(uuid) to anon,authenticated,service_
 
 -- Fair, bounded recent-match polling. Unchanged payloads only update poll
 -- freshness, never create a new source or erase a successful score.
-create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)
-returns jsonb language plpgsql volatile security definer set search_path='' as $$
-declare claimed jsonb;
-begin
- if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
- if p_limit is null or p_limit not between 0 and 12 then raise exception 'rating_due_limit_invalid'; end if;
- if not pg_try_advisory_xact_lock(hashtextextended('botolago:native-rating-polls',0)) then return '[]'::jsonb; end if;
- with eligible as (
- select distinct f.id,m.external_id,f.kickoff_at,f.finalized_at,poll.last_fetched_at,poll.last_attempt_at,
+-- Both the scheduler and reservation RPC read this predicate. Late ratings
+-- must still wake the fetcher after its ordinary two-hour post-match window.
+create function app_private.fantasy_api_rating_candidates()
+returns table(id uuid,external_id text,finalized_at timestamptz,last_attempt_at timestamptz)
+language sql stable security definer set search_path='' as $$
+ select e.id,e.external_id,e.finalized_at,e.last_attempt_at from (
+ select distinct f.id,m.external_id,f.finalized_at,poll.last_fetched_at,poll.last_attempt_at,
  case when f.finalized_at>statement_timestamp()-interval '6 hours' then interval '5 minutes'
  when f.finalized_at>statement_timestamp()-interval '2 days' then interval '30 minutes' else interval '2 hours' end as cadence
  from app.fixtures f join app.fantasy_fixture_assignments a on a.fixture_id=f.id and a.superseded_at is null
@@ -445,9 +486,28 @@ begin
  join app_private.football_provider_mappings m on m.provider_name='sofascore' and m.entity_type='fixture' and m.active and m.internal_entity_id=f.id
  left join app_private.fantasy_api_rating_polls poll on poll.fixture_id=f.id
  where f.status='finished' and f.finalized_at is not null
- ), candidates as materialized (
- select * from eligible where (last_fetched_at is null or last_fetched_at<statement_timestamp()-cadence)
- and (last_attempt_at is null or last_attempt_at<statement_timestamp()-interval '5 minutes')
+ ) e where (e.last_fetched_at is null or e.last_fetched_at<statement_timestamp()-e.cadence)
+ and (e.last_attempt_at is null or e.last_attempt_at<statement_timestamp()-interval '5 minutes');
+$$;
+revoke all on function app_private.fantasy_api_rating_candidates() from public,anon,authenticated,service_role;
+do $$ declare source text; begin
+ if md5((select prosrc from pg_proc where oid='app_private.football_live_refresh_tick()'::regprocedure))<>'3da4468919063f46500d338228403a40' then raise exception 'rating_publication_unexpected_fetch_clock'; end if;
+ source:=pg_get_functiondef('app_private.football_live_refresh_tick()'::regprocedure);
+ source:=replace(source,'select case',
+ 'select case when exists(select 1 from app_private.fantasy_api_rating_candidates()) then interval ''60 seconds''');
+ execute source;
+end $$;
+comment on function app_private.football_live_refresh_tick() is
+ 'Existing live-football cadence and guards; also wakes the fetcher when bounded native API rating polls are due, including beyond two hours after full time.';
+create or replace function api.service_fantasy_api_ratings_due(p_limit integer default 3)
+returns jsonb language plpgsql volatile security definer set search_path='' as $$
+declare claimed jsonb;
+begin
+ if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
+ if p_limit is null or p_limit not between 0 and 12 then raise exception 'rating_due_limit_invalid'; end if;
+ if not pg_try_advisory_xact_lock(hashtextextended('botolago:native-rating-polls',0)) then return '[]'::jsonb; end if;
+ with candidates as materialized (
+ select * from app_private.fantasy_api_rating_candidates()
  order by coalesce(last_attempt_at,'-infinity'::timestamptz),finalized_at desc,id limit p_limit
  ), reserved as (
  insert into app_private.fantasy_api_rating_polls(fixture_id,last_attempt_at) select id,statement_timestamp() from candidates
@@ -489,7 +549,7 @@ revoke all on function app_private.fantasy_prize_award(uuid,app.fantasy_prize_ti
 $rating_publication_source$]);
 do $$ declare source text; begin
  select statements[1] into source from supabase_migrations.schema_migrations where version='20261018215311';
- if encode(extensions.digest(source,'sha256'),'hex')<>'e2407992f38ed325e222c8be9c408a183e61d0f3662e116515d99c8cebecebb7' then raise exception 'publication_canonical_source_mismatch'; end if;
+ if encode(extensions.digest(source,'sha256'),'hex')<>'7d9d48c07b8d95e72fb3c1bc5429610a044321ea18a4b16731d183c9c8e3cabc' then raise exception 'publication_canonical_source_mismatch'; end if;
  execute source;
 end $$;
 do $$ begin

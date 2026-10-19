@@ -69,6 +69,7 @@ function ClubsPage() {
 
   return (
     <AppShell
+      contentWidth="wide"
       backgroundVariant="matches"
       pageHeader={
         <UiPageTitle title={t("clubs.title")}>
@@ -82,7 +83,7 @@ function ClubsPage() {
       }
     >
       {directoryQ.isPending ? (
-        <ul aria-hidden className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <ul aria-hidden className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 6 }, (_, index) => (
             <li key={index}>
               <UiSkeleton className={cn("h-36", ui.radius.card)} />
@@ -94,7 +95,7 @@ function ClubsPage() {
       ) : clubs.length === 0 ? (
         <EmptyState>{t("clubs.empty")}</EmptyState>
       ) : (
-        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
           {clubs.map((club) => (
             // A flex cell, so every tile fills its row's height and the
             // club-colour edges line up when one name wraps and its

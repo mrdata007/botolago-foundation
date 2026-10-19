@@ -55,7 +55,7 @@ export function CurvaCardPage(): JSX.Element {
     if (away) void navigate({ to: "/curva", replace: true });
   }, [away, navigate]);
   return (
-    <FantasyFrame bottomNav className={STICKY_COLUMN_CLASS}>
+    <FantasyFrame bottomNav width="wide" className={STICKY_COLUMN_CLASS}>
       <UiHeader title={copy.cardTitle} backTo="/curva" />
       {state.kind === "loading" || away ? <CurvaLoading /> : null}
       {state.kind === "error" ? <CurvaError retry={g.retry} /> : null}

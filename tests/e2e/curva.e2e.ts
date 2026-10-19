@@ -998,6 +998,7 @@ test.describe("G1 says what happens next", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
+    await emulateReducedMotion(page);
     await start(page, "fr");
     await withoutHero(page);
     await gotoHydrated(page, "/curva?mc=forming1", "fr");

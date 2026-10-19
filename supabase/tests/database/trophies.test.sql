@@ -680,7 +680,7 @@ select extensions.is(
   'api.choose_card_frame,api.get_league_member_trophies,api.get_my_trophies,api.get_trophy_card_frames,'
   || 'api.set_trophies_visibility,'
   -- Owner maintenance reads the writer switch, never trophy awards or card frames.
-  || 'app_private.card_frame_effective,app_private.fantasy_activate_api_ratings,app_private.trophies_evaluate_season,app_private.trophies_tick,'
+  || 'app_private.card_frame_effective,app_private.fantasy_activate_api_ratings,app_private.fantasy_publish_rating_recovery,app_private.trophies_evaluate_season,app_private.trophies_tick,'
   || 'app_private.trophy_configure,app_private.trophy_grant,app_private.trophy_pending_podium',
   'the only functions that name the trophy, frame or visibility tables: the five reads and writes, the evaluator and its helpers; no ranking, league, Fantasy, Pronostics or Manager Card calculation does');
 
