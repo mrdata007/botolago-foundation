@@ -80,11 +80,16 @@ separate path and is not established by this test.
    future interrupted-run recovery; it is not a production migration.
 
 After the owner confirms received mail against the actual f970 points, deadline
-and match screens, take a new exclusive staging writer window and retire only
-that season/catalog/subscriptions with the script's scoped `retire` operation.
-Save and restore that window's current settings. Do not retire a successful
+and match screens, dispatch the same workflow with action `reminderretire`.
+It takes a new exclusive staging writer window, requires this named active
+fixture and its two verified final results, and saves/restores that window's
+current settings. Its durable context also records whether runtime overrides
+were created, so interrupted retirement cannot delete pre-existing overrides.
+Do not retire a successful
 fixture before the owner can inspect it, or mistake another season's 96 points
 for the actual recap. The separate f960 phone fixture is prepared afterward.
+This is a fixed one-shot fixture. A future new measured run needs a reviewed
+fresh namespace; retirement does not reopen or recycle this season.
 
 The hosted run takes about 110 minutes, mainly real waiting. It uses a standard
 GitHub runner in this public repository. The 150-minute job limit leaves cleanup

@@ -5,10 +5,10 @@ on:
     inputs:
       action:
         type: choice
-        options: [run, reminderrecover]
+        options: [run, reminderrecover, reminderretire]
         default: run
         required: true
-        description: "Run the isolated real-clock drill, or restore its saved context"
+        description: "Run, recover an interrupted run, or retire its fixture after owner UI review"
       staging_app_origin:
         type: string
         required: true

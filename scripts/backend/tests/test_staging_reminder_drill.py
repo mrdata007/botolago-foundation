@@ -14,6 +14,22 @@ SPEC.loader.exec_module(D)
 
 
 class ReminderSafetyTests(unittest.TestCase):
+    def test_real_unsubscribe_protocol_is_plain_text_not_rpc_json(self):
+        response=Mock()
+        response.status=200
+        response.headers={}
+        response.read.return_value=b'Unsubscribed'
+        response.__enter__=Mock(return_value=response)
+        response.__exit__=Mock(return_value=False)
+        opener=Mock()
+        opener.open.return_value=response
+        with patch.object(D.urllib.request,'build_opener',return_value=opener):
+            status,location,body=D.unsubscribe_request('x'*32,'POST')
+        self.assertEqual((status,location,body),(200,None,'Unsubscribed'))
+        request=opener.open.call_args.args[0]
+        self.assertEqual(request.method,'POST')
+        self.assertEqual(request.data,b'List-Unsubscribe=One-Click')
+
     def test_missing_private_handoff_cannot_mutate_staging(self):
         target=Mock()
         target.execute.return_value=[]

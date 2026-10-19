@@ -118,7 +118,7 @@ def unsubscribe_request(token,method):
         headers={'Content-Type':'application/x-www-form-urlencoded'})
     try:
         with urllib.request.build_opener(NoRedirect()).open(request,timeout=30) as response:
-            return response.status,response.headers.get('Location'),json.load(response)
+            return response.status,response.headers.get('Location'),response.read().decode('utf-8')
     except urllib.error.HTTPError as error:
         if error.code==303:
             return 303,error.headers.get('Location'),None
@@ -167,7 +167,7 @@ def restore(target,settings,ids,before,fixture_started,secrets_added):
         email_now=target.rows("select to_jsonb(s)-'updated_at' as state from app_private.notification_email_settings s")[0]['state']
         email_restored=email_now=={k:v for k,v in email.items() if k!='updated_at'}
         remaining={v['name'] for v in target._request('GET',f'/v1/projects/{R.REF}/secrets',None,60)}
-        overrides_restored=not bool(remaining & {'APP_URL','EMAIL_FROM'})
+        overrides_restored=(remaining & {'APP_URL','EMAIL_FROM'})==set(settings.get('runtimeOverrides',[]))
     except Exception:
         unchanged=prefs_restored=profiles_restored=email_restored=overrides_restored=False
     errors.extend(E.restore(target,settings))
@@ -182,7 +182,8 @@ def restore(target,settings,ids,before,fixture_started,secrets_added):
 def main():
     ref=os.environ.get('SUPABASE_STAGING_PROJECT_REF','')
     R.validate_ref(ref)
-    if os.environ.get('ACTION') not in ('run','reminderrecover'):
+    action=os.environ.get('ACTION')
+    if action not in ('run','reminderrecover','reminderretire'):
         raise RuntimeError('staging_reminder_action_refused')
     origin=validate_origin(os.environ.get('STAGING_APP_ORIGIN',''))
     target=R.UPDATE.ManagementTarget(os.environ['SUPABASE_ACCESS_TOKEN'],ref)
@@ -200,10 +201,10 @@ def main():
             raise RuntimeError('staging_reminder_recovery_context_required')
         state=saved[0]['state']
         target.execute('select cron.alter_job(jobid,active:=false) from cron.job; select app_private.rivals_configure(false);',60)
-        restore(target,state['settings'],ids,state['before'],True,True)
+        restore(target,state['settings'],ids,state['before'],state.get('fixtureStarted',True),state.get('secretsAdded',True))
         return
     names={v['name'] for v in target._request('GET',f'/v1/projects/{ref}/secrets',None,60)}
-    if 'RESEND_API_KEY' not in names or names & {'APP_URL','EMAIL_FROM','FANTASY_WORKER_BUDGET_MS','FANTASY_WORKER_MAX_CALLS','FANTASY_WORKER_MAX_GAMEWEEKS'}:
+    if action=='run' and ('RESEND_API_KEY' not in names or names & {'APP_URL','EMAIL_FROM','FANTASY_WORKER_BUDGET_MS','FANTASY_WORKER_MAX_CALLS','FANTASY_WORKER_MAX_GAMEWEEKS'}):
         raise RuntimeError('staging_reminder_runtime_baseline_refused')
     settings=target.rows(f"""select
       (select jsonb_agg(jsonb_build_object('jobid',jobid,'active',active) order by jobid) from cron.job) as cron,
@@ -227,6 +228,14 @@ def main():
        or exists(select 1 from app.article_editions where status='scheduled')) as other_writers""")[0]
     if settings['other_writers'] or len(settings['preferences'] or [])!=2 or len(settings['profiles'] or [])!=2:
         raise RuntimeError('staging_reminder_preflight_refused')
+    settings['runtimeOverrides']=sorted(names & {'APP_URL','EMAIL_FROM'})
+    if action=='reminderretire':
+        ready=target.rows(f"""select exists(select 1 from app.fantasy_seasons where id='{SEASON}'
+          and name='Staging Reminder Drill' and status='active') as active,
+          (select count(*) from app.fantasy_team_gameweek_results where gameweek_id='{GW}'
+            and state='final' and final_score=96 and bench_points=32)::int as correct""")[0]
+        if ready!={'active':True,'correct':2}:
+            raise RuntimeError('staging_reminder_verified_fixture_required_for_retirement')
     pending=R.UPDATE.pending_migrations(R.UPDATE.load_migrations(),R.UPDATE.read_history(target))
     if pending:
         raise RuntimeError('staging_reminder_pending_migrations')
@@ -236,7 +245,8 @@ def main():
     paused=fixture_started=secrets_added=drill_passed=False
     # Owner-only durable recovery survives runner cancellation. It contains
     # settings and QA ids, never credentials; no public artifact is uploaded.
-    state={'settings':settings,'ids':ids,'before':before,'origin':origin}
+    state={'settings':settings,'ids':ids,'before':before,'origin':origin,
+           'fixtureStarted':action=='reminderretire','secretsAdded':False}
     target.execute(f"""begin; create table if not exists app_private.staging_reminder_recovery(
       id boolean primary key default true check(id), state jsonb not null);
       alter table app_private.staging_reminder_recovery enable row level security;
@@ -248,6 +258,10 @@ def main():
     try:
         E.wait_idle(target,30)
         R.readiness(target)
+        if action=='reminderretire':
+            fixture_started=True
+            report('reminder_retirement',ownerUiReviewComplete=True)
+            return
         fixture=(ROOT/'scripts/backend/staging-reminder-fixture.sql').read_text()
         if not fixture.endswith('commit;\n'):
             raise RuntimeError('staging_reminder_transaction_boundary_changed')
@@ -256,8 +270,10 @@ def main():
         if E.baseline(target)!=before or target.rows(f"select exists(select 1 from app.fantasy_seasons where id='{SEASON}') as present")[0]['present']:
             raise RuntimeError('staging_reminder_rollback_failed')
         fixture_started=True
+        target.execute("update app_private.staging_reminder_recovery set state=state||'{\"fixtureStarted\":true}'::jsonb where id",60)
         target.execute(guarded,180)
         secrets_added=True
+        target.execute("update app_private.staging_reminder_recovery set state=state||'{\"secretsAdded\":true}'::jsonb where id",60)
         target._request('POST',f'/v1/projects/{ref}/secrets',[
             {'name':'APP_URL','value':origin},
             {'name':'EMAIL_FROM','value':'BotolaGO STAGING <notifications@botolago.com>'}],60)
@@ -321,11 +337,12 @@ def main():
                 still_on=target.rows(f"select email_notifications_enabled as email_enabled from app.user_preferences where user_id='{ids[0]}'")[0]['email_enabled']
                 if status!=303 or not still_on or not location or not location.startswith(origin+'/unsubscribe?'):
                     raise RuntimeError('staging_reminder_link_scanner_mutated_or_wrong_origin')
-                status,_,body=unsubscribe_request(token,'POST')
-                status2,_,body2=unsubscribe_request(token,'POST')
+                for _ in range(2):
+                    status,_,body=unsubscribe_request(token,'POST')
+                    enabled=target.rows(f"select email_notifications_enabled as enabled from app.user_preferences where user_id='{ids[0]}'")[0]['enabled']
+                    if status!=200 or body.strip()!='Unsubscribed' or enabled:
+                        raise RuntimeError('staging_reminder_unsubscribe_failed')
                 del token
-                if status!=200 or body.get('status')!='unsubscribed' or status2!=200 or body2.get('status')!='already_unsubscribed':
-                    raise RuntimeError('staging_reminder_unsubscribe_failed')
                 unsubscribed=True
                 report('reminder_unsubscribed',getDidNotMutate=True,postPassed=True,repeatedPostIdempotent=True)
             later=by_key.get(('match_starting',LATER))
