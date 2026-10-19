@@ -248,6 +248,7 @@ def preflight():
         raise RuntimeError("free_stale_metrics_key")
     secret_names = {item["name"] for item in gate.management("GET", f"/v1/projects/{REF}/secrets")}
     postgrest = public_postgrest_config(gate)
+    print(json.dumps({"phase": "postgrest_baseline", "configuration": postgrest}), flush=True)
     pool = os.environ.get("POSTGREST_POOL", "unchanged")
     if pool not in {"unchanged", "8"}:
         raise RuntimeError("free_pool_choice_refused")
