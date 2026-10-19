@@ -196,7 +196,7 @@ select extensions.is(api.service_persist_fantasy_scoring_results(pg_temp.rid(25)
  current_setting('test.nr_snapshot')::jsonb->>'inputDigest',current_setting('test.nr_results')::jsonb->'playerResults',current_setting('test.nr_results')::jsonb->'teamResults')->>'teamsPersisted','1','the real persistence RPC accepts zero events for a proven Not rated appearance');
 select extensions.is((select provisional_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),80,'ten rated starters score 80 and the unrated captain contributes zero');
 select extensions.ok((select did_play and minutes_played=7 and provisional_points=0 from app.fantasy_player_gameweek_points where gameweek_id=pg_temp.rid(25)and fantasy_player_id=pg_temp.rid(2028)),'zero points preserve actual participation and minutes');
-select extensions.is((select effective_captain_id from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),pg_temp.rid(2028),'the armband stays on the participating captain');
+select extensions.is((select(scoring_details->>'effectiveCaptainId')::uuid from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.rid(25)),pg_temp.rid(2028),'the armband stays on the participating captain');
 update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp()where id=pg_temp.rid(25);
 select set_config('test.nr_history_preview',app_private.fantasy_api_rating_preview(pg_temp.rid(25))::text,true);
 select app_private.fantasy_stage_api_rating_recovery(pg_temp.rid(25),current_setting('test.nr_history_preview')::jsonb->>'inputDigest',current_setting('test.nr_results')::jsonb,'Owner approved the reviewed Not rated historical revision');
