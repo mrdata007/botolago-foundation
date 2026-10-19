@@ -238,6 +238,33 @@ async function waitingOnLock(text: string): Promise<number> {
   return row.n as number;
 }
 
+/** Wait for the competing statement to reach this edition's actual week lock. */
+async function waitingOnEditionWeek(text: string, editionId: string): Promise<boolean> {
+  const until = Date.now() + 10_000;
+  while (Date.now() < until) {
+    const [row] = await db(c)`
+      select exists (
+        select 1 from pg_locks lock
+        join pg_stat_activity activity on activity.pid = lock.pid
+        cross join app.pepites_editions edition
+        cross join lateral (
+          select hashtextextended(
+            'pepites_edition:' || edition.season_id || ':' || edition.week_number, 0
+          ) as key
+        ) week_lock
+        where edition.id = ${editionId}::uuid
+          and activity.query like ${"%" + text + "%"}
+          and lock.locktype = 'advisory' and not lock.granted and lock.objsubid = 1
+          and lock.classid::bigint = ((week_lock.key >> 32) & 4294967295::bigint)
+          and lock.objid::bigint = (week_lock.key & 4294967295::bigint)
+          and cardinality(pg_blocking_pids(activity.pid)) > 0
+      ) as waiting`;
+    if (row.waiting) return true;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  return false;
+}
+
 async function publishedMoves(editionId: string): Promise<number> {
   const [row] = await db(c)`
     select count(*)::integer as n from app_private.pepites_edition_moves
@@ -393,8 +420,14 @@ describeDb("Pépites editions with two writers", () => {
 
     const held = await holdOpen((tx) => publish(tx, week16));
     const racing = tick(db(b), "2026-10-12 15:00:00+00");
-    expect(await stillWaiting(racing)).toBe(true);
-    await held.finish(true);
+    try {
+      // Scoring can take longer than BLOCKED_CHECK_MS on a busy CI runner.
+      // Release only after the tick has selected the open edition and is
+      // genuinely blocked on its week lock; a pending promise proves neither.
+      expect(await waitingOnEditionWeek("pepites_tick", week16)).toBe(true);
+    } finally {
+      await held.finish(true);
+    }
 
     const result = await racing;
     expect(result.outcome).toBe("ok");
@@ -408,7 +441,7 @@ describeDb("Pépites editions with two writers", () => {
     const [run] = await db(c)`
       select status from app.pepites_runs where id = ${runs.runId as string}::uuid`;
     expect(run.status).toBe("succeeded");
-  });
+  }, 15_000);
 
   it("two drafts for one week share no row: the week lock alone makes the second wait and refuse", async () => {
     const [latest] = await db(c)`
