@@ -66,6 +66,42 @@ class FreeLoadSafetyTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 M.validate_ready(shards, 200, 'source', 1000)
 
+    def test_metrics_cadence_uses_the_existing_rehearsal_and_load_windows(self):
+        self.assertTrue(M.metrics_complete({'scrapeErrors': 0, 'scrapes': 6}, True))
+        self.assertFalse(M.metrics_complete({'scrapeErrors': 0, 'scrapes': 6}, False))
+        self.assertTrue(M.metrics_complete({'scrapeErrors': 0, 'scrapes': 16}, False))
+        self.assertFalse(M.metrics_complete({'scrapeErrors': 1, 'scrapes': 16}, False))
+
+    def test_cleanup_failure_still_restores_exact_original_cron_flags(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            context = Path(directory) / 'context.json'
+            context.write_text(json.dumps({'runId': 'gha-1-1', 'source': 'source',
+                'baseline': {}, 'settings': {'rivals': True, 'cron': [
+                    {'jobid': 11, 'active': True}, {'jobid': 12, 'active': False}]}}))
+            class Gate:
+                run_id = 'gha-1-2'
+                users = []
+                commands = []
+                def sql(self, query):
+                    self.commands.append(query)
+                    if query.startswith('select jobid'):
+                        return [{'jobid': 11, 'active': True}, {'jobid': 12, 'active': False}]
+                    return []
+                def delete_users_and_state(self):
+                    raise RuntimeError('simulated cleanup failure')
+            gate = Gate()
+            with patch.object(M, 'CONTEXT', context), patch.object(M, 'PUBLIC', Path(directory)), patch.object(M, 'FreeGate', return_value=gate), patch.dict(os.environ, {
+                'GITHUB_SHA': 'source', 'GITHUB_RUN_ID': '1', 'GITHUB_RUN_ATTEMPT': '2', 'SCOPE': 'rehearsal'}):
+                self.assertEqual(M.finish(), 2)
+            self.assertIn('select cron.alter_job(11, active:=true)', gate.commands)
+            self.assertIn('select cron.alter_job(12, active:=false)', gate.commands)
+            self.assertIn('select app_private.rivals_configure(true)', gate.commands)
+            verdict = json.loads((Path(directory) / 'verdict.json').read_text())
+            self.assertFalse(verdict['passed'])
+            self.assertTrue(verdict['cronRestored'])
+            self.assertEqual(verdict['cleanupErrors'], ['RuntimeError'])
+
 
 if __name__ == '__main__':
     unittest.main()

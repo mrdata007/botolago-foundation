@@ -13,6 +13,7 @@ import importlib.util
 import ipaddress
 import json
 import os
+import re
 import concurrent.futures
 import threading
 from collections import Counter
@@ -195,7 +196,10 @@ def preflight():
     keys = gate.management("GET", f"/v1/projects/{REF}/api-keys")
     if any(k.get("name") == BASE.TEMP_KEY_NAME for k in keys):
         raise RuntimeError("free_stale_metrics_key")
-    BASE.private_json(CONTEXT, {"baseline": baseline(gate), "settings": row, "runId": gate.run_id,
+    secret_names = {item["name"] for item in gate.management("GET", f"/v1/projects/{REF}/secrets")}
+    BASE.private_json(CONTEXT, {"emailProviderSecretPresent": "RESEND_API_KEY" in secret_names,
+                                "schedulerSecretPresent": "BOTOLAGO_SCHEDULER_TOKEN" in secret_names,
+                                "baseline": baseline(gate), "settings": row, "runId": gate.run_id,
                                 "source": os.environ["GITHUB_SHA"], "scope": scope(), "diskFreeGb": disk})
 
 
@@ -328,7 +332,7 @@ def monitor():
         gate.create_temporary_key()
         gate.start_database_observer()
         gate.start_metrics()
-        # The existing collector runs for 900 seconds. Observe its full lifetime.
+        # Existing collector: 300 seconds for rehearsal, 900 for measured load.
         while gate.metrics_process.poll() is None:
             time.sleep(5)
         summary = gate.await_metrics()
@@ -340,13 +344,20 @@ def monitor():
         gate.delete_temporary_key()
 
 
+def metrics_complete(summary, rehearsal):
+    return summary["scrapeErrors"] == 0 and summary["scrapes"] >= (5 if rehearsal else 15)
+
+
 def finish():
     gate = FreeGate()
     if not CONTEXT.exists():
         print(json.dumps({"passed": False, "status": "preflight_did_not_authorize_writes"}))
         return 2
     state = json.loads(CONTEXT.read_text())
-    if state["runId"] != gate.run_id or state["source"] != os.environ["GITHUB_SHA"]:
+    owned_run = re.fullmatch(r"gha-([0-9]+)-([0-9]+)", state["runId"])
+    if (not owned_run or owned_run[1] != os.environ["GITHUB_RUN_ID"]
+            or int(owned_run[2]) > int(os.environ["GITHUB_RUN_ATTEMPT"])
+            or state["source"] != os.environ["GITHUB_SHA"]):
         raise RuntimeError("free_recovery_context_refused")
     # Enumerate the exact owned prefix, including a partially failed creation.
     gate.users = gate.sql("select id::text as user_id from auth.users where email like "
@@ -367,7 +378,7 @@ def finish():
                 verdict[profile] = aggregate
                 criteria.update({f"{profile}_{k}": v for k, v in aggregate["passCriteria"].items()})
         analysis = metrics["analysis"]
-        criteria.update({"metricsComplete": metrics["summary"]["scrapeErrors"] == 0 and metrics["summary"]["scrapes"] >= 15,
+        criteria.update({"metricsComplete": metrics_complete(metrics["summary"], scope() == "rehearsal"),
                          "cpu": analysis["maxCpuPercent"] is not None and analysis["maxCpuPercent"] < 80,
                          "connections": analysis["maxConnectionUtilizationPercent"] < 80,
                          "pool": analysis["maxPoolUtilizationPercent"] is not None and analysis["maxPoolUtilizationPercent"] < 80,
