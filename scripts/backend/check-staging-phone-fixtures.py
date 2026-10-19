@@ -77,8 +77,8 @@ def main():
             exit when cursor is null or cursor='null'::jsonb;
             if pages>50 then raise exception 'phone_qa_saved_cursor_did_not_terminate'; end if;
           end loop;
-          if total<>case when who=0 then 60 else 2001 end or total<>(select count(distinct v) from unnest(ids) v)
-            or pages<>case when who=0 then 2 else 41 end then raise exception 'phone_qa_saved_pagination_mismatch'; end if;
+          if total<>(case when who=0 then 60 else 2001 end) or total<>(select count(distinct v) from unnest(ids) v)
+            or pages<>(case when who=0 then 2 else 41 end) then raise exception 'phone_qa_saved_pagination_mismatch'; end if;
         end loop;
       end $$;
       reset role;
