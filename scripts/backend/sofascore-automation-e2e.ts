@@ -179,6 +179,35 @@ async function main() {
     RAPIDAPI_KEY: "synthetic-provider-test-key",
     FANTASY_WORKER_BUDGET_MS: "10000",
   };
+  const dryRun = await handleFootballLiveRefreshRequest(
+    new Request("http://localhost/football-live-refresh", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-botolago-scheduler-token": schedulerToken },
+      body: JSON.stringify({ job: "ratings_collection", dryRun: true }),
+    }),
+    {
+      environment: { BOTOLAGO_SCHEDULER_TOKEN: schedulerToken },
+      client: rpcClient as FixtureRpcClient,
+    },
+  );
+  assert.equal(dryRun.status, 200, "diagnostic dry run requires no provider key");
+  assert.equal(providerCalls, 0);
+  assert.equal(
+    (await sql.unsafe("select count(*)::int as n from app_private.sofascore_collection_queue"))[0]!
+      .n,
+    0,
+    "dry run leaves the queue untouched",
+  );
+  assert.equal(
+    (
+      await sql.unsafe(
+        "select reserved_calls as n from app_private.sofascore_collection_settings where id",
+      )
+    )[0]!.n,
+    0,
+    "dry run consumes no quota",
+  );
+  report.dryRunReadOnly = true;
   server = Bun.serve({
     hostname: "0.0.0.0",
     port: 57890,
