@@ -1,0 +1,1334 @@
+{
+  "schemaVersion": 1,
+  "project": "srdrflfrfpwixsllveid",
+  "productionWrites": false,
+  "paidInfrastructureStarted": false,
+  "baseline": {
+    "users": 50008,
+    "teams": 50005,
+    "cronJobs": 25,
+    "nonLoadTeamMd5": "9e17d5ca2dd396487a7c5a15161de11d",
+    "existingResultsMd5": "fb327cfdc3d8bbb2c619e5fbe45b8bd7"
+  },
+  "scoringRun": {
+    "id": 39173465315,
+    "job": 117811198876,
+    "records": [
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "finalized",
+          "gameweekId": "f9500000-0000-4000-8000-000000000021",
+          "calculationVersion": 1,
+          "processedTeams": 5000,
+          "nextGameweekId": "f9500000-0000-4000-8000-000000000022",
+          "nextGameweekStatus": "open",
+          "prizes": {
+            "error": "staging_drill_unscoped_prizes_skipped"
+          },
+          "calls": 1315
+        },
+        "elapsedMs": 696347.123758,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 448.43499199999997,
+            "maxMs": 448.43499199999997
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 280.479102,
+            "maxMs": 280.479102
+          },
+          "service_get_fantasy_scoring_snapshot": {
+            "calls": 50,
+            "totalMs": 150596.61012399994,
+            "maxMs": 3352.5406340000336
+          },
+          "service_persist_fantasy_scoring_results": {
+            "calls": 50,
+            "totalMs": 170317.49222099993,
+            "maxMs": 3725.9803829999946
+          },
+          "service_fantasy_worker_lease_extend": {
+            "calls": 6,
+            "totalMs": 672.2511350000132,
+            "maxMs": 121.74542799999472
+          },
+          "service_begin_fantasy_finalization": {
+            "calls": 1,
+            "totalMs": 3884.669643000001,
+            "maxMs": 3884.669643000001
+          },
+          "service_finalize_fantasy_team_results": {
+            "calls": 50,
+            "totalMs": 146690.98677799996,
+            "maxMs": 3190.3073960000183
+          },
+          "service_restore_free_hit": {
+            "calls": 1,
+            "totalMs": 109.11013499996625,
+            "maxMs": 109.11013499996625
+          },
+          "service_roll_fantasy_free_transfers": {
+            "calls": 51,
+            "totalMs": 6937.55578200001,
+            "maxMs": 303.4873769999831
+          },
+          "service_recalculate_fantasy_rankings": {
+            "calls": 1002,
+            "totalMs": 157639.76421999995,
+            "maxMs": 2915.6090149999945
+          },
+          "service_fantasy_scoring_league_page": {
+            "calls": 5,
+            "totalMs": 551.8342810000177,
+            "maxMs": 127.30857300001662
+          },
+          "service_complete_fantasy_gameweek": {
+            "calls": 1,
+            "totalMs": 5611.306249000016,
+            "maxMs": 5611.306249000016
+          },
+          "service_run_fantasy_price_batch": {
+            "calls": 1,
+            "totalMs": 192.15695299999788,
+            "maxMs": 192.15695299999788
+          },
+          "service_enqueue_gameweek_finalized_notifications": {
+            "calls": 50,
+            "totalMs": 25918.988471999997,
+            "maxMs": 1243.9532180000097
+          },
+          "service_complete_fantasy_postwork": {
+            "calls": 1,
+            "totalMs": 1189.8192089999793,
+            "maxMs": 1189.8192089999793
+          },
+          "service_prepare_next_fantasy_gameweek": {
+            "calls": 50,
+            "totalMs": 24988.780341999955,
+            "maxMs": 782.2783570000902
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": false,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 0
+      }
+    ]
+  },
+  "scoringVerificationRun": {
+    "id": 39174387599,
+    "job": 117813941611,
+    "records": [
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "already_advanced",
+          "gameweekId": "f9500000-0000-4000-8000-000000000021",
+          "nextGameweekId": "f9500000-0000-4000-8000-000000000022",
+          "calls": 1
+        },
+        "elapsedMs": 1207.856021,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 704.973619,
+            "maxMs": 704.973619
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 497.18280300000004,
+            "maxMs": 497.18280300000004
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": true,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 5000
+      }
+    ]
+  },
+  "workerProbeRun": {
+    "id": 39174524941,
+    "job": 117814357575,
+    "records": [
+      {
+        "probe": "unauthorized",
+        "http_status": 401,
+        "duration_ms": 506,
+        "error": "unauthorized"
+      },
+      {
+        "probe": "disabled",
+        "http_status": 200,
+        "duration_ms": 847,
+        "status": "disabled",
+        "workerCode": null,
+        "recorded": false,
+        "calls": 0
+      },
+      {
+        "probe": "lease_held",
+        "http_status": 200,
+        "duration_ms": 660,
+        "status": "lease_held",
+        "workerCode": null,
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "missing_base_url",
+        "tick_outcome": "not_configured"
+      },
+      {
+        "probe": "held_row",
+        "http_status": 500,
+        "duration_ms": 9015,
+        "status": "failed",
+        "workerCode": "fantasy_worker_rpc_failed",
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "after_lock_release",
+        "http_status": 200,
+        "duration_ms": 1865,
+        "status": "ok",
+        "workerCode": null,
+        "recorded": true,
+        "calls": 0
+      },
+      {
+        "probe": "restoration",
+        "active_cron": 0,
+        "lease_held": false
+      }
+    ]
+  },
+  "final": {
+    "cron": [
+      {
+        "jobid": 24,
+        "active": true,
+        "jobname": "account-deletion-history-prune",
+        "schedule": "37 3 * * *"
+      },
+      {
+        "jobid": 23,
+        "active": true,
+        "jobname": "account-deletion-tick",
+        "schedule": "23 * * * *"
+      },
+      {
+        "jobid": 21,
+        "active": true,
+        "jobname": "ai-content-generate",
+        "schedule": "*/30 * * * *"
+      },
+      {
+        "jobid": 27,
+        "active": true,
+        "jobname": "ai-home-stories",
+        "schedule": "4,14,24,34,44,54 * * * *"
+      },
+      {
+        "jobid": 6,
+        "active": true,
+        "jobname": "fantasy-lifecycle-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 40,
+        "active": true,
+        "jobname": "fantasy-worker-tick",
+        "schedule": "*/10 * * * *"
+      },
+      {
+        "jobid": 39,
+        "active": true,
+        "jobname": "football-catalog-weekly",
+        "schedule": "17 4 * * 0"
+      },
+      {
+        "jobid": 4,
+        "active": true,
+        "jobname": "football-live-refresh",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 14,
+        "active": true,
+        "jobname": "football-season-refresh",
+        "schedule": "*/10 * * * *"
+      },
+      {
+        "jobid": 26,
+        "active": true,
+        "jobname": "manager-card-history-prune",
+        "schedule": "47 3 * * *"
+      },
+      {
+        "jobid": 25,
+        "active": true,
+        "jobname": "manager-card-tick",
+        "schedule": "*/15 * * * *"
+      },
+      {
+        "jobid": 1,
+        "active": true,
+        "jobname": "news-publish-due-editions",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 2,
+        "active": true,
+        "jobname": "news-publish-due-editions-history-prune",
+        "schedule": "17 3 * * *"
+      },
+      {
+        "jobid": 11,
+        "active": true,
+        "jobname": "news-sitemap-refresh",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 12,
+        "active": true,
+        "jobname": "news-sitemap-refresh-history-prune",
+        "schedule": "27 3 * * *"
+      },
+      {
+        "jobid": 5,
+        "active": true,
+        "jobname": "notification-email-history-prune",
+        "schedule": "37 3 * * *"
+      },
+      {
+        "jobid": 3,
+        "active": true,
+        "jobname": "notification-email-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 22,
+        "active": true,
+        "jobname": "notification-push-tick",
+        "schedule": "* * * * *"
+      },
+      {
+        "jobid": 7,
+        "active": true,
+        "jobname": "ops-alert-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 18,
+        "active": true,
+        "jobname": "pepites-history-prune",
+        "schedule": "41 3 * * *"
+      },
+      {
+        "jobid": 17,
+        "active": true,
+        "jobname": "pepites-tick",
+        "schedule": "*/15 * * * *"
+      },
+      {
+        "jobid": 10,
+        "active": true,
+        "jobname": "predictions-history-prune",
+        "schedule": "53 3 * * *"
+      },
+      {
+        "jobid": 9,
+        "active": true,
+        "jobname": "predictions-score-tick",
+        "schedule": "*/5 * * * *"
+      },
+      {
+        "jobid": 32,
+        "active": true,
+        "jobname": "rivals-history-prune",
+        "schedule": "59 3 * * *"
+      },
+      {
+        "jobid": 31,
+        "active": true,
+        "jobname": "rivals-tick",
+        "schedule": "7,22,37,52 * * * *"
+      },
+      {
+        "jobid": 36,
+        "active": true,
+        "jobname": "trophies-history-prune",
+        "schedule": "31 3 * * *"
+      },
+      {
+        "jobid": 35,
+        "active": true,
+        "jobname": "trophies-tick",
+        "schedule": "10,40 * * * *"
+      }
+    ],
+    "teams": 55005,
+    "users": 50008,
+    "settings": {
+      "ops": false,
+      "push": {
+        "mode": "off",
+        "test_user_ids": []
+      },
+      "email": {
+        "url": "https://srdrflfrfpwixsllveid.supabase.co/functions/v1",
+        "live": false,
+        "mode": "off",
+        "test_user_ids": []
+      },
+      "rivals": true,
+      "fantasy": {
+        "tick": false,
+        "worker": false
+      }
+    },
+    "deliveries": 0,
+    "lease_held": false,
+    "observed_at": "2026-10-18T23:03:24.129361+00:00",
+    "drill_season": "completed",
+    "notifications": 0,
+    "drill_archived": 5000,
+    "reconciled_md5": "c2906a3ca3643c73d30f0b7d15dfde4a",
+    "non_load_fingerprint": "9e17d5ca2dd396487a7c5a15161de11d",
+    "existing_results_fingerprint": "fb327cfdc3d8bbb2c619e5fbe45b8bd7"
+  },
+  "additionalIndependentProof": {
+    "progressions": 1,
+    "ranking_rows": 61900,
+    "player_totals": 66,
+    "ranking_scopes": 1002,
+    "wrong_rank_points": 0,
+    "free_transfers_two": 5000,
+    "invalid_rank_ranges": 0,
+    "wrong_player_totals": 0
+  },
+  "freeLoadAttempts": [
+    {
+      "runId": 39214760471,
+      "scope": "rehearsal",
+      "result": "monitor_summary_bug",
+      "paidInfrastructureStarted": false,
+      "temporaryUsersRemoved": 125,
+      "baselineRestored": true,
+      "cronRestored": true
+    },
+    {
+      "runId": 39216247567,
+      "scope": "launch-sized",
+      "result": "preflight_refused_before_writes"
+    },
+    {
+      "runId": 39216960815,
+      "scope": "launch-sized",
+      "sourceSha": "8998dbbf29ddbc51098b7e5dc896d1d1d59a6d77",
+      "result": "failed",
+      "profiles": {
+        "launch_sized_gate": {
+          "profile": {
+            "name": "launch_sized_gate",
+            "users": 1000,
+            "runners": 5,
+            "requests": 5000,
+            "traffic": {
+              "lineup": 3000,
+              "transfers": 1500,
+              "chips": 250,
+              "reads": 250
+            },
+            "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+            "fullGate": false
+          },
+          "overall": {
+            "readP50Ms": 1636.953,
+            "readP95Ms": 11253.051,
+            "readP99Ms": 15113.582,
+            "mutationP50Ms": 3009.4,
+            "mutationP95Ms": 11152.01,
+            "mutationP99Ms": 14449.389,
+            "expectedRejections": 262,
+            "unexpectedErrors": 34,
+            "unexpectedErrorRate": 0.0068,
+            "lockTimeoutErrors": 0,
+            "lockTimeoutRate": 0.0
+          },
+          "operations": {
+            "chip": {
+              "count": 250,
+              "p50Ms": 567.08,
+              "p95Ms": 10451.53,
+              "p99Ms": 12001.779
+            },
+            "lineup": {
+              "count": 3000,
+              "p50Ms": 3082.798,
+              "p95Ms": 11002.738,
+              "p99Ms": 14287.869
+            },
+            "team_read": {
+              "count": 250,
+              "p50Ms": 446.908,
+              "p95Ms": 10679.008,
+              "p99Ms": 13704.128
+            },
+            "transfer_confirm": {
+              "count": 750,
+              "p50Ms": 1086.342,
+              "p95Ms": 12129.815,
+              "p99Ms": 15059.177
+            },
+            "transfer_preview": {
+              "count": 750,
+              "p50Ms": 1642.585,
+              "p95Ms": 11428.761,
+              "p99Ms": 15185.382
+            }
+          },
+          "errorCodes": {
+            "TimeoutError": 34,
+            "chip_already_used": 199,
+            "version_conflict": 63
+          },
+          "passCriteria": {
+            "readP95": false,
+            "mutationP95": false,
+            "mutationP99": false,
+            "unexpectedErrorRate": false,
+            "lockTimeoutRate": true
+          }
+        },
+        "launch_sized_soak": {
+          "profile": {
+            "name": "launch_sized_soak",
+            "users": 1000,
+            "runners": 5,
+            "requests": 39000,
+            "traffic": {
+              "lineup": 23400,
+              "transfers": 11700,
+              "chips": 1950,
+              "reads": 1950
+            },
+            "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+            "fullGate": false
+          },
+          "overall": {
+            "readP50Ms": 225.978,
+            "readP95Ms": 351.8,
+            "readP99Ms": 447.189,
+            "mutationP50Ms": 333.28,
+            "mutationP95Ms": 507.362,
+            "mutationP99Ms": 647.005,
+            "expectedRejections": 1950,
+            "unexpectedErrors": 5616,
+            "unexpectedErrorRate": 0.144,
+            "lockTimeoutErrors": 0,
+            "lockTimeoutRate": 0.0
+          },
+          "operations": {
+            "chip": {
+              "count": 1950,
+              "p50Ms": 215.161,
+              "p95Ms": 299.745,
+              "p99Ms": 352.865
+            },
+            "lineup": {
+              "count": 23400,
+              "p50Ms": 379.19,
+              "p95Ms": 515.967,
+              "p99Ms": 837.294
+            },
+            "team_read": {
+              "count": 1950,
+              "p50Ms": 247.889,
+              "p95Ms": 377.315,
+              "p99Ms": 445.614
+            },
+            "transfer_confirm": {
+              "count": 5850,
+              "p50Ms": 215.778,
+              "p95Ms": 281.581,
+              "p99Ms": 327.478
+            },
+            "transfer_preview": {
+              "count": 5850,
+              "p50Ms": 220.006,
+              "p95Ms": 337.822,
+              "p99Ms": 456.977
+            }
+          },
+          "errorCodes": {
+            "chip_already_used": 1950,
+            "invalid_transfer": 5616
+          },
+          "passCriteria": {
+            "readP95": true,
+            "mutationP95": true,
+            "mutationP99": true,
+            "unexpectedErrorRate": false,
+            "lockTimeoutRate": true
+          }
+        }
+      },
+      "correctedRawMetricAnalysis": {
+        "conflictDelta": 0,
+        "deadlockDelta": 0,
+        "ioReadBytes": 4129930240,
+        "ioWriteBytes": 1885097984,
+        "maxConnectionUtilizationPercent": 43.333,
+        "maxConnections": 26,
+        "maxCpuPercent": 38.178,
+        "maxLockWaits": 0,
+        "maxPoolUtilizationPercent": 105.0,
+        "minimumCacheHitPercent": 99.974,
+        "scrapes": 15,
+        "cpuIntervals": 9,
+        "cachedCpuIntervals": 5,
+        "invalidCpuIntervals": 0,
+        "poolSamples": 15,
+        "invalidPoolSamples": 0,
+        "poolMeasurement": "conservative_postgrest_occupancy_upper_bound"
+      },
+      "monitor": {
+        "scrapes": 15,
+        "scrapeErrors": 0,
+        "durationSeconds": 900,
+        "metricsCoverWorkload": true,
+        "databaseObserverCoversWorkload": true
+      },
+      "limitations": [
+        "First-profile burst capacity failure is real and independently confirmed by staging gateway logs.",
+        "Second-profile 5616 invalid_transfer rejections trace to ownership reset in the harness; its reduced successful-write work cannot certify clean 65 RPS capacity.",
+        "Cached exporter samples limit the timing of peak-resource attribution."
+      ],
+      "cleanup": {
+        "temporaryUsersRemoved": 1000,
+        "remainingTemporaryUsers": 0,
+        "remainingTemporaryGameweeks": 0,
+        "baselineRestored": true,
+        "cronRestored": true,
+        "cleanupErrors": []
+      },
+      "independentRestoration": {
+        "users": 50008,
+        "teams": 55005,
+        "cronActive": 27,
+        "rivals": true,
+        "heldLease": false
+      }
+    },
+    {
+      "runId": 39222141596,
+      "scope": "launch-sized",
+      "sourceSha": "7729f9ba3b24d0828c404910d11f79975f0e1131",
+      "result": "failed",
+      "configurationChanges": false,
+      "ownershipRegressionFixed": true,
+      "gate": {
+        "profile": {
+          "name": "launch_sized_gate",
+          "users": 1000,
+          "runners": 5,
+          "requests": 5000,
+          "traffic": {
+            "lineup": 3000,
+            "transfers": 1500,
+            "chips": 250,
+            "reads": 250
+          },
+          "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+          "fullGate": false
+        },
+        "overall": {
+          "readP50Ms": 15994.383,
+          "readP95Ms": 15999.392,
+          "readP99Ms": 16000.179,
+          "mutationP50Ms": 15988.909,
+          "mutationP95Ms": 15999.22,
+          "mutationP99Ms": 16000.326,
+          "expectedRejections": 27,
+          "unexpectedErrors": 3903,
+          "unexpectedErrorRate": 0.7806,
+          "lockTimeoutErrors": 0,
+          "lockTimeoutRate": 0.0
+        },
+        "operations": {
+          "chip": {
+            "count": 250,
+            "p50Ms": 15994.793,
+            "p95Ms": 15999.345,
+            "p99Ms": 15999.982
+          },
+          "lineup": {
+            "count": 3000,
+            "p50Ms": 15701.225,
+            "p95Ms": 15999.161,
+            "p99Ms": 16000.196
+          },
+          "team_read": {
+            "count": 250,
+            "p50Ms": 15995.303,
+            "p95Ms": 15999.529,
+            "p99Ms": 16000.25
+          },
+          "transfer_confirm": {
+            "count": 750,
+            "p50Ms": 15993.613,
+            "p95Ms": 15999.327,
+            "p99Ms": 16000.63
+          },
+          "transfer_preview": {
+            "count": 750,
+            "p50Ms": 15994.126,
+            "p95Ms": 15999.341,
+            "p99Ms": 16000.179
+          }
+        },
+        "errorCodes": {
+          "TimeoutError": 3893,
+          "chip_already_used": 16,
+          "non_json_response": 10,
+          "version_conflict": 11
+        },
+        "passCriteria": {
+          "readP95": false,
+          "mutationP95": false,
+          "mutationP99": false,
+          "unexpectedErrorRate": false,
+          "lockTimeoutRate": true
+        }
+      },
+      "soakShardsCompleted": 4,
+      "soakShardSummaries": [
+        {
+          "shard": 1,
+          "overall": {
+            "expectedRejections": 2548,
+            "mutationP95Ms": 15999.315,
+            "mutationP99Ms": 15999.993,
+            "readP95Ms": 15999.288,
+            "unexpectedErrorRate": 0.578333,
+            "unexpectedErrors": 4511
+          },
+          "errors": {
+            "TimeoutError": 4022,
+            "chip_already_used": 168,
+            "non_json_response": 489,
+            "version_conflict": 2380
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 2,
+          "overall": {
+            "expectedRejections": 2491,
+            "mutationP95Ms": 15999.318,
+            "mutationP99Ms": 15999.997,
+            "readP95Ms": 15999.312,
+            "unexpectedErrorRate": 0.587436,
+            "unexpectedErrors": 4582
+          },
+          "errors": {
+            "TimeoutError": 4055,
+            "chip_already_used": 163,
+            "non_json_response": 527,
+            "version_conflict": 2328
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 3,
+          "overall": {
+            "expectedRejections": 2539,
+            "mutationP95Ms": 15999.976,
+            "mutationP99Ms": 16000.674,
+            "readP95Ms": 15999.977,
+            "unexpectedErrorRate": 0.579103,
+            "unexpectedErrors": 4517
+          },
+          "errors": {
+            "TimeoutError": 4021,
+            "chip_already_used": 167,
+            "non_json_response": 496,
+            "version_conflict": 2372
+          },
+          "requests": 7800
+        },
+        {
+          "shard": 4,
+          "overall": {
+            "expectedRejections": 2513,
+            "mutationP95Ms": 15999.556,
+            "mutationP99Ms": 16000.116,
+            "readP95Ms": 15999.586,
+            "unexpectedErrorRate": 0.584615,
+            "unexpectedErrors": 4560
+          },
+          "errors": {
+            "TimeoutError": 4050,
+            "chip_already_used": 169,
+            "non_json_response": 510,
+            "version_conflict": 2344
+          },
+          "requests": 7800
+        }
+      ],
+      "monitor": {
+        "scrapesAttempted": 15,
+        "scrapeErrors": 3,
+        "validScrapes": 12,
+        "complete": false,
+        "maxCpuPercentAcrossAdvancingCounters": 97.161,
+        "minimumAvailableMemoryBytes": 129826816,
+        "minimumFreeSwapBytes": 176230400,
+        "preRestartOomKillCounter": 0,
+        "hostBootTimeUtc": "2026-10-19T08:44:58Z",
+        "postgresStartedAt": "2026-10-19T08:45:12.366758Z",
+        "restartCause": "unverified"
+      },
+      "cleanup": {
+        "temporaryUsersRemoved": 1000,
+        "temporaryUsersRemaining": 0,
+        "temporaryGameweeksRemaining": 0,
+        "baselineRestored": true,
+        "cronRestored": true,
+        "cleanupErrors": []
+      },
+      "limitations": [
+        "Only four soak shards completed; cannot aggregate as the five-origin 65 RPS soak.",
+        "Cloudflare 520/521/525 responses and a host restart interrupted the run.",
+        "First-profile gate had 3903 unexpected errors out of 5000.",
+        "Monitor rejected incomplete metrics; final control report names FileNotFoundError for absent metrics.json. Raw artifacts and independently reconstructed measurements are preserved."
+      ]
+    },
+    {
+      "runId": 39226323258,
+      "scope": "rehearsal",
+      "sourceSha": "d286a5eac9a14f417c2f8e4821bb2b3ec34414c9",
+      "result": "preflight_refused_before_writes",
+      "reason": "Automatic/null pool: exact API reset contract not yet established",
+      "configurationChanged": false,
+      "temporaryUsersCreated": 0
+    },
+    {
+      "runId": 39226795624,
+      "scope": "rehearsal",
+      "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1",
+      "result": "automatic_pool_reset_refused",
+      "configurationChanged": false,
+      "temporaryUsersCreated": 0,
+      "baselineRestored": true,
+      "cronRestored": true,
+      "postgrestRestored": true,
+      "cleanupErrors": []
+    }
+  ],
+  "ownerReadiness": {
+    "alertRecipientSupplied": true,
+    "emailProviderConfigurationConfirmed": false,
+    "iphoneAvailableWhenReady": true,
+    "phoneSessionRun": false
+  },
+  "edge5000Runtime": {
+    "workflowRun": 39227372118,
+    "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1",
+    "fixtureNamespace": "f9510000-0000-4000-8000-",
+    "state": "FAIL: two Edge passes did not advance the durable cursor; operator fallback passed; restoration verified",
+    "independentObservation": {
+      "at": "2026-10-19T09:22:00Z",
+      "finalizedTeams": 5000,
+      "rankings": 61900,
+      "leaseReleased": true
+    },
+    "runtimeLogs": {
+      "windowStart": "2026-10-19T09:05:00Z",
+      "windowEnd": "2026-10-19T09:12:00Z",
+      "passes": [
+        {
+          "executionId": "38e69dcb-86ff-4897-8117-e67339540a47",
+          "httpStatus": 200,
+          "executionTimeMs": 103997,
+          "cpuTimeUsed": 235,
+          "shutdownReason": "EarlyDrop",
+          "memoryBytes": 17423831
+        },
+        {
+          "executionId": "9ba16088-badc-4dbd-9285-eb745ed9266a",
+          "httpStatus": 200,
+          "executionTimeMs": 103078,
+          "cpuTimeUsed": 182,
+          "shutdownReason": "EarlyDrop",
+          "memoryBytes": 17423687
+        }
+      ],
+      "interpretation": "Both Edge requests returned; neither log reports a CPU-limit kill. Finalized results required the operator fallback; HTTP 200 alone does not prove lifecycle completion."
+    },
+    "events": [
+      {
+        "kind": "baseline",
+        "state": {
+          "users": 50008,
+          "oldTeams": "855339fc111c171b758f6b74eb8b7709",
+          "oldResults": "a6674d3c78cbd00958ebc52fb4eaacd1",
+          "oldGameweeks": "23d68d2b47c37e02bc318e77903c24f8"
+        },
+        "settings": {
+          "cron": [
+            {
+              "jobid": 1,
+              "active": true
+            },
+            {
+              "jobid": 2,
+              "active": true
+            },
+            {
+              "jobid": 3,
+              "active": true
+            },
+            {
+              "jobid": 4,
+              "active": true
+            },
+            {
+              "jobid": 5,
+              "active": true
+            },
+            {
+              "jobid": 6,
+              "active": true
+            },
+            {
+              "jobid": 7,
+              "active": true
+            },
+            {
+              "jobid": 9,
+              "active": true
+            },
+            {
+              "jobid": 10,
+              "active": true
+            },
+            {
+              "jobid": 11,
+              "active": true
+            },
+            {
+              "jobid": 12,
+              "active": true
+            },
+            {
+              "jobid": 14,
+              "active": true
+            },
+            {
+              "jobid": 17,
+              "active": true
+            },
+            {
+              "jobid": 18,
+              "active": true
+            },
+            {
+              "jobid": 21,
+              "active": true
+            },
+            {
+              "jobid": 22,
+              "active": true
+            },
+            {
+              "jobid": 23,
+              "active": true
+            },
+            {
+              "jobid": 24,
+              "active": true
+            },
+            {
+              "jobid": 25,
+              "active": true
+            },
+            {
+              "jobid": 26,
+              "active": true
+            },
+            {
+              "jobid": 27,
+              "active": true
+            },
+            {
+              "jobid": 31,
+              "active": true
+            },
+            {
+              "jobid": 32,
+              "active": true
+            },
+            {
+              "jobid": 35,
+              "active": true
+            },
+            {
+              "jobid": 36,
+              "active": true
+            },
+            {
+              "jobid": 39,
+              "active": true
+            },
+            {
+              "jobid": 40,
+              "active": true
+            }
+          ],
+          "rivals": true,
+          "other_writers": false
+        },
+        "freeDiskGb": 5.592067718505859,
+        "sourceSha": "6a18a303895b03160a6f9c0065f13e383d1dc0d1"
+      },
+      {
+        "kind": "real_edge_pass",
+        "number": 1,
+        "httpStatus": 200,
+        "elapsedMs": 104060,
+        "status": "partial",
+        "workerCode": "fantasy_worker_time_limit",
+        "recorded": true,
+        "calls": 32,
+        "progress": {
+          "status": "provisional",
+          "scored": 1500,
+          "last_team": "f9510000-0000-4000-8000-000000011500",
+          "finalized": 0,
+          "rankings": 0,
+          "correct_results": 0,
+          "rollovers": 0,
+          "next_lineups": 0,
+          "postwork": false,
+          "advanced": false
+        }
+      },
+      {
+        "kind": "real_edge_pass",
+        "number": 2,
+        "httpStatus": 200,
+        "elapsedMs": 103137,
+        "status": "partial",
+        "workerCode": "fantasy_worker_time_limit",
+        "recorded": true,
+        "calls": 33,
+        "progress": {
+          "status": "provisional",
+          "scored": 1500,
+          "last_team": "f9510000-0000-4000-8000-000000011500",
+          "finalized": 0,
+          "rankings": 0,
+          "correct_results": 0,
+          "rollovers": 0,
+          "next_lineups": 0,
+          "postwork": false,
+          "advanced": false
+        }
+      },
+      {
+        "kind": "scoring_drill",
+        "result": {
+          "outcome": "finalized",
+          "gameweekId": "f9510000-0000-4000-8000-000000000021",
+          "calculationVersion": 1,
+          "processedTeams": 5000,
+          "nextGameweekId": "f9510000-0000-4000-8000-000000000022",
+          "nextGameweekStatus": "open",
+          "prizes": {
+            "error": "staging_drill_unscoped_prizes_skipped"
+          },
+          "calls": 1315
+        },
+        "elapsedMs": 716507.0990030001,
+        "metrics": {
+          "service_fantasy_worker_lease_acquire": {
+            "calls": 1,
+            "totalMs": 512.572855,
+            "maxMs": 512.572855
+          },
+          "service_fantasy_lifecycle_state": {
+            "calls": 1,
+            "totalMs": 194.54938800000002,
+            "maxMs": 194.54938800000002
+          },
+          "service_get_fantasy_scoring_snapshot": {
+            "calls": 50,
+            "totalMs": 143466.95410499987,
+            "maxMs": 3844.8043780000007
+          },
+          "service_persist_fantasy_scoring_results": {
+            "calls": 50,
+            "totalMs": 159495.29910800015,
+            "maxMs": 4233.801806999982
+          },
+          "service_fantasy_worker_lease_extend": {
+            "calls": 6,
+            "totalMs": 1156.480851999935,
+            "maxMs": 220.77214200000162
+          },
+          "service_begin_fantasy_finalization": {
+            "calls": 1,
+            "totalMs": 3773.7889549999963,
+            "maxMs": 3773.7889549999963
+          },
+          "service_finalize_fantasy_team_results": {
+            "calls": 50,
+            "totalMs": 141857.41287700034,
+            "maxMs": 3150.595566999982
+          },
+          "service_restore_free_hit": {
+            "calls": 1,
+            "totalMs": 202.72395900002448,
+            "maxMs": 202.72395900002448
+          },
+          "service_roll_fantasy_free_transfers": {
+            "calls": 51,
+            "totalMs": 10595.622709999792,
+            "maxMs": 248.09653300000355
+          },
+          "service_recalculate_fantasy_rankings": {
+            "calls": 1002,
+            "totalMs": 193920.2962339981,
+            "maxMs": 1093.1340509999427
+          },
+          "service_fantasy_scoring_league_page": {
+            "calls": 5,
+            "totalMs": 907.7246829999494,
+            "maxMs": 193.39615899999626
+          },
+          "service_complete_fantasy_gameweek": {
+            "calls": 1,
+            "totalMs": 3884.905458000023,
+            "maxMs": 3884.905458000023
+          },
+          "service_run_fantasy_price_batch": {
+            "calls": 1,
+            "totalMs": 318.77683699992485,
+            "maxMs": 318.77683699992485
+          },
+          "service_enqueue_gameweek_finalized_notifications": {
+            "calls": 50,
+            "totalMs": 14028.31438400026,
+            "maxMs": 846.0443780000787
+          },
+          "service_complete_fantasy_postwork": {
+            "calls": 1,
+            "totalMs": 267.97964199993294,
+            "maxMs": 267.97964199993294
+          },
+          "service_prepare_next_fantasy_gameweek": {
+            "calls": 50,
+            "totalMs": 41593.12318900053,
+            "maxMs": 1316.7718680000398
+          }
+        }
+      },
+      {
+        "kind": "independent_sql_proof",
+        "passed": true,
+        "results": 5000,
+        "min_score": 96,
+        "max_score": 96,
+        "sum_score": 480000,
+        "final_rows": 5000,
+        "ranked": 5000
+      },
+      {
+        "kind": "worker_runtime_verdict",
+        "edgeCompleted": false,
+        "edgeProgressed": false,
+        "fallbackCompleted": true,
+        "progress": {
+          "status": "finalized",
+          "scored": 5000,
+          "last_team": "f9510000-0000-4000-8000-000000015000",
+          "finalized": 5000,
+          "rankings": 61900,
+          "correct_results": 5000,
+          "rollovers": 5000,
+          "next_lineups": 5000,
+          "postwork": true,
+          "advanced": true
+        }
+      },
+      {
+        "kind": "restoration",
+        "oldBaselineUnchanged": true,
+        "errors": []
+      }
+    ],
+    "independentRestoration": {
+      "at": "2026-10-19T09:23:55Z",
+      "users": 50008,
+      "teams": 60005,
+      "activeCron": 27,
+      "rivals": true,
+      "leaseHeld": false,
+      "otherWriters": false,
+      "archivedEdgeTeams": 5000,
+      "fixtureSeasonStatus": "completed"
+    }
+  },
+  "ratingPublication": {
+    "planRun": 39229440723,
+    "rehearsalRun": 39229895200,
+    "applyRun": 39230031406,
+    "historyBefore": 272,
+    "historyAfter": 273,
+    "priorFingerprintsUnchanged": true,
+    "publications": 0
+  },
+  "fixtureGuard": {
+    "pr": 529,
+    "mergeSha": "5f8f1957e40bf9ece47d9f36e6bed1d21383bb16",
+    "testedHead": "6febe74eac766b071ba229059a2dd7fadcf4b692",
+    "ciRun": 39229353268,
+    "dbFiles": 185,
+    "dbAssertions": 6879,
+    "lockRaces": 4,
+    "deadlockDelta": 0,
+    "planRun": 39231087005,
+    "rehearsalRun": 39231203682,
+    "applyRun": 39231376873,
+    "hostedProof": {
+      "labels": [
+        "ordinary fixture correction succeeds before finalization",
+        "ordinary performance correction succeeds before finalization",
+        "the actual snapshot assertion accepts the baseline sealed document",
+        "score correction is refused while finalizing",
+        "source sequence cannot invalidate the seal",
+        "kickoff cannot change adaptive membership selection",
+        "fixture deletion is refused before any cascade",
+        "no-op fixture replay is accepted",
+        "fixture observation metadata is writable",
+        "performance correction cannot change a sealed input",
+        "an import cannot deactivate an active sealed row",
+        "an active row cannot be removed",
+        "new active performance is refused",
+        "performance observation metadata does not change the document",
+        "coverage cannot be downgraded",
+        "coverage cannot be removed",
+        "coverage heartbeat metadata is writable",
+        "all refused and permitted operations preserve the full document digest",
+        "the actual sealed snapshot still passes after all guarded and metadata writes",
+        "refused fixture correction rolls back",
+        "refused performance correction rolls back",
+        "refused coverage change rolls back",
+        "unassigned fixture refresh remains available",
+        "fixture correction is retryable after the finalizing window",
+        "performance correction is retryable after the finalizing window",
+        "control corrections really change the input document",
+        "the lock helper exposes no privileged API",
+        "existing observation RPC refuses a finalizing adaptive gameweek",
+        "the refused recorder inserted no new adaptive observation",
+        "the real recorder refusal preserves the complete adaptive input digest",
+        "the adaptive snapshot remains valid after the refused recorder call"
+      ],
+      "passed": true,
+      "assertions": 31
+    },
+    "postflight": {
+      "teams": 60005,
+      "users": 50008,
+      "gwsHash": "cfecb7c3c8350316a387ff8c4c7b8cf7",
+      "history": 274,
+      "teamsHash": "4d7558187cacf992be6ad4f55e535bc0",
+      "resultsHash": "864e4cca7f955b7b2cbb124649932161",
+      "guardTriggers": 3,
+      "testWorldAbsent": true,
+      "recipientRestored": true
+    },
+    "restoration": {
+      "tick": false,
+      "rivals": true,
+      "worker": false,
+      "pushMode": "off",
+      "emailMode": "off",
+      "leaseHeld": false,
+      "activeCron": 27
+    }
+  },
+  "runtimeRefresh": {
+    "run": 39230680918,
+    "sourceSha": "9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a",
+    "functions": 15,
+    "schedulerPresent": true,
+    "resendPresent": true,
+    "fromOverridePresent": false,
+    "appUrlOverridePresent": false,
+    "priorAttempt": {
+      "run": 39230292042,
+      "failedBeforeFirstDeployment": true,
+      "cause": "unverified"
+    }
+  },
+  "emailSmoke": {
+    "at": "2026-10-19T09:33:00Z",
+    "staging": true,
+    "requestId": 1,
+    "httpStatus": 200,
+    "sent": true,
+    "inboxReceiptConfirmedByOwner": true,
+    "recipientRestored": true,
+    "alertsEnabled": false,
+    "scope": "One explicitly labelled staging alert; reminder timing/preferences/deduplication are not yet established."
+  },
+  "frontendPreview": {
+    "vercelProjectsListed": ["botolago-preview", "botolago-foundation"],
+    "projectDetailReads": "404",
+    "deploymentList": "403",
+    "candidateUrls": [
+      {
+        "url": "https://botolago-preview.vercel.app",
+        "status": 402
+      },
+      {
+        "url": "https://botolago-foundation.vercel.app",
+        "status": 402
+      }
+    ],
+    "appDeploy": "Existing TanStack Start SSR cannot be deployed unchanged under the returned static frontend/router constraints; no app created.",
+    "deploymentPerformed": false
+  },
+  "finalPlan274": {
+    "run": 39231620643,
+    "recorded": 274,
+    "pending": []
+  },
+  "publicWebsiteRecheck": {
+    "at": "2026-10-19T09:52:49Z",
+    "httpStatus": 200,
+    "release": "19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2",
+    "operatorPublished": false,
+    "htmlMetaVerification": "pending"
+  }
+}

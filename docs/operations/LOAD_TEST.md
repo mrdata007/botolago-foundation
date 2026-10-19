@@ -1,5 +1,12 @@
 # Fantasy load test
 
+**Current operator record (19 October 2026):** staging migrations and Edge
+runtime were updated; the owner requires **$0 extra spending**. The AWS and
+resize steps below are not authorised under that budget. See
+[the go-live evidence pack](../production/2026-10-19-go-live-pack.md) for actual
+runs, remaining gates and the consumed legacy seed. Do not rerun that seed over
+the existing QA teams.
+
 A rehearsal of the busiest minute BotolaGO will have: the last minute before
 a Fantasy deadline. 2,500 fake managers, each with their own account and team,
 save lineups, make transfers and play chips all at once, and we measure
@@ -140,9 +147,9 @@ previous size (Micro on 2026-09-25).
   Staging counts a migration as recorded by its **name**, because its history
   was partly recorded under apply-time versions; it also holds a few
   staging-only news-engine migrations the repository never kept, which the
-  plan lists and leaves alone. `DEFERRED` holds the migrations production has
-  deliberately not applied yet (today `20260925090500`); remove an entry once
-  production applies it. A rehearsal stops after the first migration that
+  plan lists and leaves alone. `DEFERRED` is now empty: production had already
+  applied `20260925090500`, and staging rehearsed and applied it on 19 October.
+  A rehearsal stops after the first migration that
   adds an enum value, because Postgres cannot use a new enum value in the
   transaction that added it; apply checks the rest one at a time. To rehearse
   the script itself, point `BOTOLAGO_STAGING_DATABASE_URL` at a local
@@ -165,3 +172,88 @@ previous size (Micro on 2026-09-25).
   staging's level, apply brought all 427 API functions in line with
   production's (421 identical; the 6 others differ only in comment lines, as
   `docs/backend/MIGRATION_DRIFT.md` records).
+
+## $0 route (19 October continuation)
+
+The existing **Fantasy load test** dispatch now accepts `runner_backend=github-free`.
+It uses only standard `ubuntu-latest` runners in this public repository, without
+AWS credentials, paid runners, compute resizing or disk expansion. GitHub's
+[public-repository billing rule](https://docs.github.com/en/billing/managing-billing-for-your-products/managing-billing-for-github-actions/about-billing-for-github-actions)
+is the basis for the runner cost. Start with scope `rehearsal`, then use
+`launch-sized`; the full 2,500-user profile is intentionally unavailable here.
+
+A protected preparation job saves the original schedules and QA fingerprints,
+pauses staging jobs, rehearses creation of an empty temporary GW3 with rollback,
+then creates run-owned temporary users and teams. Historical GW1/GW2 are never
+reopened or overwritten. Each of five protected jobs signs in only its assigned
+users at the existing 0.4 requests/second limit. No password, Auth token or
+provider/Management credential is uploaded. Readiness artifacts contain only
+identity/session fingerprints, expiry, source SHA and observed public origin.
+The coordinator refuses duplicate origins, sessions, source mismatches or
+insufficient session validity before publishing the common start schedule.
+
+The measured profiles, traffic mix, thresholds, database observer, 60-second
+Metrics API collector and integrity/cleanup checks reuse the existing harness.
+The AWS orchestrator itself remains byte-for-byte unchanged. The final job runs
+even after failure, removes run-owned users and their state, deletes temporary
+GW3 and the named temporary metrics key, restores exact cron flags and rivals,
+and compares the QA and result fingerprints with the saved baseline. Keep its
+`free-context` recovery artifact until cleanup is verified. Cancellation can
+require rerunning cleanup from the same run's context; do not start another
+staging writer before restoring it. A rehearsal is preparation evidence only;
+only a measured launch-sized run can close the launch load gate.
+
+Every free-route artifact includes `-attempt-N`. Uploads, barriers and final
+downloads select only the current attempt; an older attempt cannot supply
+credentials or measurements to a new one. After verified cleanup, use **Re-run
+all jobs** for a fresh measured attempt. **Re-run failed jobs** may skip
+preparation and therefore fails closed when the current context is absent.
+For recovery of an interrupted attempt, explicitly use that attempt's saved
+context and verify its run/source ownership before cleanup; never combine its
+measurements with another attempt.
+
+`scripts/backend/staging-5000-rating-retire.sql` is the guarded **apply** path
+for the original f950 fixture and ends with `COMMIT`. In an exclusive staging
+writer window, save the baseline and exact scheduler settings, pause writers,
+and set `botolago.release_drill` to the staging project ref. First execute a copy
+with only its final `COMMIT` replaced by `ROLLBACK`, then verify the baseline is
+unchanged. Apply the unchanged checked-in script and verify all 5,000 teams are
+archived, the season completed, and all pre-existing data fingerprints unchanged
+before restoring the saved settings. The script refuses an already retired
+fixture; do not reactivate one to repeat this procedure.
+
+The free route interprets raw exporter data with `fantasy_free_metrics.py`.
+Identical cached CPU counters are not fabricated into 100% utilisation: CPU is
+the busy fraction of advancing per-mode counters, and missing/reset counters
+prevent certification. Pool pressure uses the actual PostgREST pool, with a
+conservative occupancy upper bound: all `authenticator` connections minus the
+reported idle connections, divided by the configured maximum. This counts the
+listener as busy rather than assuming it away. The empty PgBouncer admin pool
+is not the API pool. The <80% requirements remain unchanged; inconsistent or
+missing exporter inputs fail the evidence check. PostgREST documents its gauges
+in [Observability](https://docs.postgrest.org/en/v14/references/observability.html).
+
+### Reversible Data API pool experiment ($0 route)
+
+The optional `postgrest_pool=8` input reduces an explicitly configured PostgREST
+pool to eight connections during an owned staging window. It does not resize
+compute or change PostgreSQL's connection limit or any request timeout. This is
+a diagnostic experiment for the observed memory/swap and API queuing pressure;
+a result is not assumed in advance. The workload and pass criteria are unchanged.
+
+Preflight records only five public configuration fields. The Management API's
+GET response also contains a JWT secret: it is discarded and never enters the
+recovery artifact. The documented PATCH schema does not establish null restoration. For an
+automatic/null setting, the paused rehearsal first writes the existing null
+value and verifies an unchanged snapshot. Only a successful no-op reset proof,
+saved before reduction, permits changing the value to eight. A rejected reset
+stops before the reduction. An explicit original value outside 8–40 is refused. Unexpected configuration drift is
+never overwritten.
+
+The collector must observe an eight-slot PostgREST pool throughout the measured
+window. Cleanup restores the exact original value independently of temporary-row
+cleanup, verifies all five original fields, and restores the saved schedules and
+Rivals setting. The verdict records the experiment and restoration separately.
+A pass with this configuration would be conditional on a separately reviewed and
+approved production configuration change; it would not establish current
+production configuration parity.

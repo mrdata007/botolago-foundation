@@ -36,6 +36,10 @@ except ModuleNotFoundError:
 
 SEASON_ID = "fa630000-0000-4000-8000-000000000001"
 GAMEWEEK_ID = "fa640000-0000-4000-8000-000000000002"
+# A fresh, disposable gameweek for the $0 runner route. Historical capacity
+# gameweeks are never reopened. No arbitrary target override is accepted.
+if os.getenv("BOTOLAGO_LOAD_FIXTURE") == "github-fresh":
+    GAMEWEEK_ID = "fa640000-0000-4000-8000-000000000003"
 EXPECTED_ERRORS = {
     "fantasy_gameweek_locked",
     "version_conflict",
@@ -502,7 +506,15 @@ class FantasyLoadRunner:
                     }
                     for item in team["lineup"]
                 ]
-                return UserState(number, token, team["id"], int(team["version"]), selection)
+                # Profiles run sequentially against the same teams. Reload the
+                # actual ownership rather than assuming the seed's player 15
+                # survived the preceding profile's transfers.
+                transferred_in = any(
+                    item["fantasy_player_id"] == deterministic_uuid("fantasy-load-player-60")
+                    for item in selection
+                )
+                return UserState(number, token, team["id"], int(team["version"]), selection,
+                                 transferred_in=transferred_in)
 
         prepared = await asyncio.gather(
             *(prepare(number) for number in range(self.user_start, self.user_start + self.users))

@@ -232,6 +232,25 @@ class PreparationHardeningTests(unittest.TestCase):
         self.assertEqual(runner.states[0].team_id, "team-id")
         self.assertEqual(runner.states[0].version, 4)
 
+    def test_a_following_profile_uses_canonical_transfer_ownership(self) -> None:
+        for player, transferred in ((15, False), (60, True)):
+            with self.subTest(owned_player=player):
+                runner = self.runner()
+                runner.session_tokens = {1: "token"}
+                runner.user_start, runner.users, runner.states = 1, 1, []
+                runner.rpc = mock.AsyncMock(return_value={"id": "team-id", "version": 12,
+                    "lineup": [{"fantasyPlayerId": MODULE.deterministic_uuid(f"fantasy-load-player-{player}"),
+                                "slot": "bench", "slotOrder": 4, "captain": False, "viceCaptain": False}]})
+                asyncio.run(runner.prepare_users(object()))
+                self.assertEqual(runner.states[0].transferred_in, transferred)
+                # The first scheduled transfer must sell the player the real
+                # team owns, including one bought during the previous profile.
+                runner.rpc.reset_mock()
+                asyncio.run(runner.execute_operation(object(), runner.states[0], "transfer_preview"))
+                payload = runner.rpc.call_args.args[3]
+                self.assertEqual(payload["p_transfers"][0]["player_out_id"],
+                                 MODULE.deterministic_uuid(f"fantasy-load-player-{player}"))
+
 
 class ClientTransportTests(unittest.TestCase):
     def test_connector_configuration_is_explicit(self) -> None:

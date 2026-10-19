@@ -36,6 +36,27 @@ async function setMock(page: Page, value: Record<string, unknown>) {
   }, value);
 }
 
+// The preview starts a new development server. Compile and hydrate its first
+// client route before starting the four-second reveal clocks below. In CI run
+// 39223796431, cold module requests took 5.5 s and hydration crossed the usual
+// 10 s assertion window; all later cases used the already-compiled modules.
+// Keep every journey's assertions and timers unchanged.
+test.beforeAll(async ({ browser, baseURL }, testInfo) => {
+  const page = await browser.newPage({ baseURL });
+  const diagnostics = observePage(page);
+  try {
+    await initializeLanguage(page, "fr");
+    await page.goto("/pepites");
+    await expect(page.locator("html")).toHaveAttribute("data-lang", "fr", {
+      timeout: 30_000,
+    });
+    await expect(page.getByTestId("pepites-top-entry")).toHaveCount(10);
+    await diagnostics.verify(testInfo);
+  } finally {
+    await page.close();
+  }
+});
+
 for (const lang of ["fr", "ar"] as const) {
   test(`${lang}: the delayed reveal keeps checking and shows the new Top 10 without a reload`, async ({
     page,
