@@ -127,6 +127,16 @@ class FreeGate(BASE.CapacityGate):
             state["temporaryMetricsKeyId"] = self.temp_key_id
             BASE.private_json(CONTEXT, state)
 
+    def await_metrics(self):
+        stdout, _ = self.metrics_process.communicate(timeout=30)
+        if self.metrics_process.returncode:
+            raise RuntimeError("free_metrics_collector_failed")
+        summary = json.loads(stdout)
+        if not metrics_complete(summary, scope() == "rehearsal"):
+            raise RuntimeError("free_metrics_incomplete")
+        self.metrics_summary = summary
+        return summary
+
     def create_users(self):
         lock = threading.Lock()
         next_request = [time.monotonic()]
@@ -291,7 +301,7 @@ def barrier():
     shards = [json.loads((artifact(f"free-ready-{i}") / "ready.json").read_text()) for i in range(5)]
     validate_ready(shards, 25 if scope() == "rehearsal" else 200, os.environ["GITHUB_SHA"], time.time())
     gate_start = time.time() + 135
-    BASE.private_json(PUBLIC / "schedule.json", {"gateStart": gate_start, "soakStart": gate_start + 240,
+    BASE.private_json(PUBLIC / "schedule.json", {"gateStart": gate_start, "soakStart": gate_start + 180,
                                                "scope": scope(), "source": os.environ["GITHUB_SHA"], "runners": shards})
 
 
@@ -338,7 +348,13 @@ def monitor():
         summary = gate.await_metrics()
         gate.stop_database_observer()
         analysis = gate.analyze_metrics()
-        BASE.private_json(PUBLIC / "metrics.json", {"summary": summary, "analysis": analysis})
+        records = [json.loads(line) for line in (gate.artifact_dir / "metrics.ndjson").read_text().splitlines() if line]
+        expected_end = schedule["gateStart"] if scope() == "rehearsal" else schedule["soakStart"] + 600
+        timestamps = [BASE.datetime.fromisoformat(r["sampledAt"]).timestamp() for r in records]
+        observer_times = [BASE.datetime.fromisoformat(r["sampled_at"]).timestamp() for r in gate.sql_samples]
+        coverage = {"metricsCoverWorkload": bool(timestamps) and min(timestamps) <= schedule["gateStart"] and max(timestamps) >= expected_end,
+                    "databaseObserverCoversWorkload": bool(observer_times) and min(observer_times) <= schedule["gateStart"] and max(observer_times) >= expected_end}
+        BASE.private_json(PUBLIC / "metrics.json", {"summary": summary, "analysis": analysis, "coverage": coverage})
     finally:
         gate.stop_database_observer()
         gate.delete_temporary_key()
@@ -378,6 +394,7 @@ def finish():
                 verdict[profile] = aggregate
                 criteria.update({f"{profile}_{k}": v for k, v in aggregate["passCriteria"].items()})
         analysis = metrics["analysis"]
+        criteria.update(metrics["coverage"])
         criteria.update({"metricsComplete": metrics_complete(metrics["summary"], scope() == "rehearsal"),
                          "cpu": analysis["maxCpuPercent"] is not None and analysis["maxCpuPercent"] < 80,
                          "connections": analysis["maxConnectionUtilizationPercent"] < 80,
