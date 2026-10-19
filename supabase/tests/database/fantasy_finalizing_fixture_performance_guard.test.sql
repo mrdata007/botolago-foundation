@@ -161,5 +161,31 @@ select extensions.ok(not has_function_privilege('anon','app_private.fantasy_asse
  and not has_function_privilege('authenticated','app_private.fantasy_assert_fixture_inputs_writable(uuid[])','execute')
  and not has_function_privilege('service_role','app_private.fantasy_assert_fixture_inputs_writable(uuid[])','execute'),
  'the lock helper exposes no privileged API');
+-- Review regression: the observation RPC already takes gameweeks FOR UPDATE
+-- before the fixture and explicitly rejects finalizing/finalized/corrected.
+-- Exercise that actual entry point on an adaptive document, not just a source pin.
+insert into app_private.fantasy_adaptive_policy(season_id,from_gameweek,ruleset_id)
+values(pg_temp.id('c0',5),1,'f6200000-0000-4000-8000-000000000200');
+insert into app_private.fantasy_fixture_observations(fixture_id,source,digest,payload,full_ready,simple_ready)
+values(pg_temp.id('f0',1),'sportsmonks',repeat('b',64),'{"players":[],"references":["guard regression"]}',false,false);
+update app.fantasy_gameweeks set status='finalizing' where id=pg_temp.id('c0',6);
+select pg_temp.put('adaptive_digest',pg_temp.doc_digest());
+select pg_temp.put('adaptive_version',(select scoring_input_version::text from app.fantasy_gameweeks where id=pg_temp.id('c0',6)));
+insert into app_private.fantasy_scoring_snapshots(gameweek_id,calculation_version,input_digest,payload,sealed_at)
+values(pg_temp.id('c0',6),pg_temp.get('adaptive_version')::bigint,pg_temp.get('adaptive_digest'),
+ app_private.fantasy_scoring_input_document(pg_temp.id('c0',6)),now());
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select extensions.throws_ok(format($q$select api.service_record_fantasy_observation(%L,
+ jsonb_build_object('players',(select jsonb_agg('{}'::jsonb) from generate_series(1,18)),
+ 'references',jsonb_build_array('guard regression')),'sportsmonks')$q$,pg_temp.id('f0',1)),
+ 'PT409','adaptive_reviewed_correction_required','existing observation RPC refuses a finalizing adaptive gameweek');
+select extensions.is((select count(*)::int from app_private.fantasy_fixture_observations where fixture_id=pg_temp.id('f0',1)),1,
+ 'the refused recorder inserted no new adaptive observation');
+select extensions.is(pg_temp.doc_digest(),pg_temp.get('adaptive_digest'),
+ 'the real recorder refusal preserves the complete adaptive input digest');
+select extensions.lives_ok(format('select app_private.fantasy_assert_scoring_snapshot(%L,%s,%L)',
+ pg_temp.id('c0',6),pg_temp.get('adaptive_version'),pg_temp.get('adaptive_digest')),
+ 'the adaptive snapshot remains valid after the refused recorder call');
+
 select * from extensions.finish();
 rollback;
