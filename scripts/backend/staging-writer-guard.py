@@ -30,6 +30,7 @@ from typing import Any
 STAGING_WRITERS: dict[str, dict[str, str] | None] = {
     "fantasy-load-test.yml": None,
     "staging-database-update.yml": None,
+    "staging-reminder-drill.yml": None,
     "phase6-staging-cleanup.yml": None,
     "phase6-session-diagnostic-reproduction.yml": None,
     "staging-mapping-supporting-dependency-rehearsal.yml": None,
