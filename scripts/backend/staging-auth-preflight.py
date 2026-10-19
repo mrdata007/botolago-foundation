@@ -85,6 +85,8 @@ def configure_phone(target,ref,config,origin,cleanup=False):
     # the fields this action changes, never SMTP passwords or OAuth secrets.
     busy=target.rows("""select exists(select 1 from app_private.fantasy_worker_lease
       where released_at is null and expires_at>now())
+      or exists(select 1 from cron.job where active)
+      or exists(select 1 from app_private.rivals_settings where enabled)
       or exists(select 1 from pg_stat_activity where backend_type='client backend'
         and pid<>pg_backend_pid() and state<>'idle') as busy""")[0]['busy']
     if busy:
