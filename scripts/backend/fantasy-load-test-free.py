@@ -201,7 +201,16 @@ def preflight():
       exists(select 1 from app.fantasy_gameweeks where id='fa640000-0000-4000-8000-000000000003') as stale_fixture,
       exists(select 1 from pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid() and state<>'idle') as active_client
     """)[0]
-    if any(row[key] for key in ("lease", "generating", "fantasy", "email", "push", "alerts", "other_writers", "stale_users", "stale_fixture", "active_client")):
+    # A cron invocation can be active at the instant of this read. Wait for a
+    # quiet boundary; never ignore or cancel the in-flight transaction.
+    for _ in range(10):
+        if not row["active_client"]:
+            break
+        time.sleep(3)
+        row["active_client"] = gate.sql("select exists(select 1 from pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid() and state<>'idle') as busy")[0]["busy"]
+    refused = [key for key in ("lease", "generating", "fantasy", "email", "push", "alerts", "other_writers", "stale_users", "stale_fixture", "active_client") if row[key]]
+    if refused:
+        print(json.dumps({"refusedGuards": refused}), flush=True)
         raise RuntimeError("free_writer_or_stale_state_guard")
     keys = gate.management("GET", f"/v1/projects/{REF}/api-keys")
     if any(k.get("name") == BASE.TEMP_KEY_NAME for k in keys):
