@@ -35,7 +35,9 @@ const untouched = [
 ]
   .map(
     ([name, table, order]) =>
-      `select '${name}' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by ${order})::text,''))digest from ${table} t`,
+      // Keep every row and column in the comparison without materializing the
+      // million-row staging fixture as one enormous JSON value in memory.
+      `select '${name}' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by ${order}),''))digest from ${table} t`,
   )
   .join("\nunion all ");
 const paused = `if exists(select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled or lifecycle_worker_enabled)

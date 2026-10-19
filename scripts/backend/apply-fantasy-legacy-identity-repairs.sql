@@ -472,19 +472,19 @@ do $$declare m jsonb;begin
  perform g.id from app.fantasy_gameweeks g where g.fantasy_season_id=(m->>'seasonId')::uuid order by g.id for update;
  if exists(select 1 from app.fantasy_gameweeks where fantasy_season_id=(m->>'seasonId')::uuid and status='finalizing')then raise exception 'legacy_identity_finalization_active';end if;
 end $$;
-create temporary table legacy_before on commit drop as select 'players' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.players t
-union all select 'catalog' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_players t
-union all select 'teams' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_teams t
-union all select 'squads' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_squad_memberships t
-union all select 'lineups' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_lineups t
-union all select 'lineup_players' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by lineup_id,fantasy_player_id)::text,''))digest from app.fantasy_lineup_players t
-union all select 'transfers' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_transfer_batches t
-union all select 'results' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_team_gameweek_results t
-union all select 'points' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by gameweek_id,fantasy_player_id)::text,''))digest from app.fantasy_player_gameweek_points t
-union all select 'seals' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by gameweek_id,calculation_version)::text,''))digest from app_private.fantasy_scoring_snapshots t
-union all select 'aliases' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.sofascore_player_aliases t
-union all select 'publications' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.fantasy_rating_publications t
-union all select 'sources' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.fantasy_api_rating_sources t
+create temporary table legacy_before on commit drop as select 'players' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.players t
+union all select 'catalog' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_players t
+union all select 'teams' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_teams t
+union all select 'squads' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_squad_memberships t
+union all select 'lineups' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_lineups t
+union all select 'lineup_players' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by lineup_id,fantasy_player_id),''))digest from app.fantasy_lineup_players t
+union all select 'transfers' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_transfer_batches t
+union all select 'results' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_team_gameweek_results t
+union all select 'points' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by gameweek_id,fantasy_player_id),''))digest from app.fantasy_player_gameweek_points t
+union all select 'seals' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by gameweek_id,calculation_version),''))digest from app_private.fantasy_scoring_snapshots t
+union all select 'aliases' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.sofascore_player_aliases t
+union all select 'publications' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.fantasy_rating_publications t
+union all select 'sources' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.fantasy_api_rating_sources t
 union all select 'original_mappings',md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))from app_private.football_provider_mappings t
 union all select 'gameweek_state',md5(coalesce(jsonb_agg(to_jsonb(t)-'scoring_input_version'-'updated_at'order by id)::text,''))from app.fantasy_gameweeks t;
 create temporary table legacy_week_versions on commit drop as select id,scoring_input_version,
@@ -503,19 +503,19 @@ and g.status in('scheduled','open','locked','live','provisional');
 do $$begin
  if exists(select 1 from legacy_week_versions b join app.fantasy_gameweeks g on g.id=b.id
  where g.scoring_input_version is distinct from case when b.should_bump then greatest(0,b.scoring_input_version)+1 else b.scoring_input_version end)then raise exception 'legacy_identity_input_version_scope_changed';end if;
- if exists(select 1 from legacy_before b full join(select 'players' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.players t
-union all select 'catalog' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_players t
-union all select 'teams' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_teams t
-union all select 'squads' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_squad_memberships t
-union all select 'lineups' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_lineups t
-union all select 'lineup_players' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by lineup_id,fantasy_player_id)::text,''))digest from app.fantasy_lineup_players t
-union all select 'transfers' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_transfer_batches t
-union all select 'results' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app.fantasy_team_gameweek_results t
-union all select 'points' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by gameweek_id,fantasy_player_id)::text,''))digest from app.fantasy_player_gameweek_points t
-union all select 'seals' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by gameweek_id,calculation_version)::text,''))digest from app_private.fantasy_scoring_snapshots t
-union all select 'aliases' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.sofascore_player_aliases t
-union all select 'publications' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.fantasy_rating_publications t
-union all select 'sources' name,md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))digest from app_private.fantasy_api_rating_sources t
+ if exists(select 1 from legacy_before b full join(select 'players' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.players t
+union all select 'catalog' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_players t
+union all select 'teams' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_teams t
+union all select 'squads' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_squad_memberships t
+union all select 'lineups' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_lineups t
+union all select 'lineup_players' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by lineup_id,fantasy_player_id),''))digest from app.fantasy_lineup_players t
+union all select 'transfers' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_transfer_batches t
+union all select 'results' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app.fantasy_team_gameweek_results t
+union all select 'points' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by gameweek_id,fantasy_player_id),''))digest from app.fantasy_player_gameweek_points t
+union all select 'seals' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by gameweek_id,calculation_version),''))digest from app_private.fantasy_scoring_snapshots t
+union all select 'aliases' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.sofascore_player_aliases t
+union all select 'publications' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.fantasy_rating_publications t
+union all select 'sources' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by id),''))digest from app_private.fantasy_api_rating_sources t
  union all select 'original_mappings',md5(coalesce(jsonb_agg(to_jsonb(t)order by id)::text,''))from app_private.football_provider_mappings t
  where not(t.provider_name='sofascore'and t.entity_type='player'and t.internal_entity_id in(select "footballPlayerId"from repair_rows))
  union all select 'gameweek_state',md5(coalesce(jsonb_agg(to_jsonb(t)-'scoring_input_version'-'updated_at'order by id)::text,''))from app.fantasy_gameweeks t
