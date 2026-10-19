@@ -423,5 +423,234 @@
     "free_transfers_two": 5000,
     "invalid_rank_ranges": 0,
     "wrong_player_totals": 0
+  },
+  "freeLoadAttempts": [
+    {
+      "runId": 39214760471,
+      "scope": "rehearsal",
+      "result": "monitor_summary_bug",
+      "paidInfrastructureStarted": false,
+      "temporaryUsersRemoved": 125,
+      "baselineRestored": true,
+      "cronRestored": true
+    },
+    {
+      "runId": 39216247567,
+      "scope": "launch-sized",
+      "result": "preflight_refused_before_writes"
+    },
+    {
+      "runId": 39216960815,
+      "scope": "launch-sized",
+      "sourceSha": "8998dbbf29ddbc51098b7e5dc896d1d1d59a6d77",
+      "result": "failed",
+      "profiles": {
+        "launch_sized_gate": {
+          "profile": {
+            "name": "launch_sized_gate",
+            "users": 1000,
+            "runners": 5,
+            "requests": 5000,
+            "traffic": {
+              "lineup": 3000,
+              "transfers": 1500,
+              "chips": 250,
+              "reads": 250
+            },
+            "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+            "fullGate": false
+          },
+          "overall": {
+            "readP50Ms": 1636.953,
+            "readP95Ms": 11253.051,
+            "readP99Ms": 15113.582,
+            "mutationP50Ms": 3009.4,
+            "mutationP95Ms": 11152.01,
+            "mutationP99Ms": 14449.389,
+            "expectedRejections": 262,
+            "unexpectedErrors": 34,
+            "unexpectedErrorRate": 0.0068,
+            "lockTimeoutErrors": 0,
+            "lockTimeoutRate": 0.0
+          },
+          "operations": {
+            "chip": {
+              "count": 250,
+              "p50Ms": 567.08,
+              "p95Ms": 10451.53,
+              "p99Ms": 12001.779
+            },
+            "lineup": {
+              "count": 3000,
+              "p50Ms": 3082.798,
+              "p95Ms": 11002.738,
+              "p99Ms": 14287.869
+            },
+            "team_read": {
+              "count": 250,
+              "p50Ms": 446.908,
+              "p95Ms": 10679.008,
+              "p99Ms": 13704.128
+            },
+            "transfer_confirm": {
+              "count": 750,
+              "p50Ms": 1086.342,
+              "p95Ms": 12129.815,
+              "p99Ms": 15059.177
+            },
+            "transfer_preview": {
+              "count": 750,
+              "p50Ms": 1642.585,
+              "p95Ms": 11428.761,
+              "p99Ms": 15185.382
+            }
+          },
+          "errorCodes": {
+            "TimeoutError": 34,
+            "chip_already_used": 199,
+            "version_conflict": 63
+          },
+          "passCriteria": {
+            "readP95": false,
+            "mutationP95": false,
+            "mutationP99": false,
+            "unexpectedErrorRate": false,
+            "lockTimeoutRate": true
+          }
+        },
+        "launch_sized_soak": {
+          "profile": {
+            "name": "launch_sized_soak",
+            "users": 1000,
+            "runners": 5,
+            "requests": 39000,
+            "traffic": {
+              "lineup": 23400,
+              "transfers": 11700,
+              "chips": 1950,
+              "reads": 1950
+            },
+            "evidenceLabel": "LAUNCH-SIZED (1,000 users, 65 RPS sustained): NOT the full 2,500-user gate",
+            "fullGate": false
+          },
+          "overall": {
+            "readP50Ms": 225.978,
+            "readP95Ms": 351.8,
+            "readP99Ms": 447.189,
+            "mutationP50Ms": 333.28,
+            "mutationP95Ms": 507.362,
+            "mutationP99Ms": 647.005,
+            "expectedRejections": 1950,
+            "unexpectedErrors": 5616,
+            "unexpectedErrorRate": 0.144,
+            "lockTimeoutErrors": 0,
+            "lockTimeoutRate": 0.0
+          },
+          "operations": {
+            "chip": {
+              "count": 1950,
+              "p50Ms": 215.161,
+              "p95Ms": 299.745,
+              "p99Ms": 352.865
+            },
+            "lineup": {
+              "count": 23400,
+              "p50Ms": 379.19,
+              "p95Ms": 515.967,
+              "p99Ms": 837.294
+            },
+            "team_read": {
+              "count": 1950,
+              "p50Ms": 247.889,
+              "p95Ms": 377.315,
+              "p99Ms": 445.614
+            },
+            "transfer_confirm": {
+              "count": 5850,
+              "p50Ms": 215.778,
+              "p95Ms": 281.581,
+              "p99Ms": 327.478
+            },
+            "transfer_preview": {
+              "count": 5850,
+              "p50Ms": 220.006,
+              "p95Ms": 337.822,
+              "p99Ms": 456.977
+            }
+          },
+          "errorCodes": {
+            "chip_already_used": 1950,
+            "invalid_transfer": 5616
+          },
+          "passCriteria": {
+            "readP95": true,
+            "mutationP95": true,
+            "mutationP99": true,
+            "unexpectedErrorRate": false,
+            "lockTimeoutRate": true
+          }
+        }
+      },
+      "correctedRawMetricAnalysis": {
+        "conflictDelta": 0,
+        "deadlockDelta": 0,
+        "ioReadBytes": 4129930240,
+        "ioWriteBytes": 1885097984,
+        "maxConnectionUtilizationPercent": 43.333,
+        "maxConnections": 26,
+        "maxCpuPercent": 38.178,
+        "maxLockWaits": 0,
+        "maxPoolUtilizationPercent": 105.0,
+        "minimumCacheHitPercent": 99.974,
+        "scrapes": 15,
+        "cpuIntervals": 9,
+        "cachedCpuIntervals": 5,
+        "invalidCpuIntervals": 0,
+        "poolSamples": 15,
+        "invalidPoolSamples": 0,
+        "poolMeasurement": "conservative_postgrest_occupancy_upper_bound"
+      },
+      "monitor": {
+        "scrapes": 15,
+        "scrapeErrors": 0,
+        "durationSeconds": 900,
+        "metricsCoverWorkload": true,
+        "databaseObserverCoversWorkload": true
+      },
+      "limitations": [
+        "First-profile burst capacity failure is real and independently confirmed by staging gateway logs.",
+        "Second-profile 5616 invalid_transfer rejections trace to ownership reset in the harness; its reduced successful-write work cannot certify clean 65 RPS capacity.",
+        "Cached exporter samples limit the timing of peak-resource attribution."
+      ],
+      "cleanup": {
+        "temporaryUsersRemoved": 1000,
+        "remainingTemporaryUsers": 0,
+        "remainingTemporaryGameweeks": 0,
+        "baselineRestored": true,
+        "cronRestored": true,
+        "cleanupErrors": []
+      },
+      "independentRestoration": {
+        "users": 50008,
+        "teams": 55005,
+        "cronActive": 27,
+        "rivals": true,
+        "heldLease": false
+      }
+    },
+    {
+      "runId": 39222141596,
+      "scope": "launch-sized",
+      "sourceSha": "7729f9ba3b24d0828c404910d11f79975f0e1131",
+      "result": "running",
+      "configurationChanges": false,
+      "ownershipRegressionFixed": true
+    }
+  ],
+  "ownerReadiness": {
+    "alertRecipientSupplied": true,
+    "emailProviderConfigurationConfirmed": false,
+    "iphoneAvailableWhenReady": true,
+    "phoneSessionRun": false
   }
 }

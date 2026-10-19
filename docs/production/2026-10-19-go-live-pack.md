@@ -20,20 +20,25 @@ runbook, a seeded total or a green planning action does not prove acceptance.
 
 ## Version and environment manifest
 
-| Component            | Observed version / state                                                                                                                                                   |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                               |
-| Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                |
-| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows, zero pending repository migrations                                                |
-| Staging Edge runtime | All 15 repository functions deployed by run 39173000678, source `ea5044d4e5ed5099f93ce9d4f3d4b11b727d2bfe`; scheduler credential present; email provider credential absent |
-| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                         |
-| Production website   | At 2026-10-18 22:50 UTC, HTTP 200 with `x-botolago-release: 2b2d6b136d453a7725922c432a46aa65281ee097`; GitHub main matched that SHA                                        |
-| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                   |
+| Component            | Observed version / state                                                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                  |
+| Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                   |
+| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 272 history rows, zero pending repository migrations                                                                                   |
+| Staging Edge runtime | All 15 repository functions deployed by run 39173000678, source `ea5044d4e5ed5099f93ce9d4f3d4b11b727d2bfe`; scheduler credential present; email provider credential absent                                    |
+| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                            |
+| Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source |
+| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                      |
 
 Main and the website advanced through another release during this staging window.
 The tested source is pinned above; rerun the plan and compare backend files against
 the final selected release SHA before production. Do not present a mixed manifest
 as proof that all four deployment components run one commit.
+The current unknown release identifier must be resolved at the hosting build:
+set `VITE_RELEASE_SHA` to the selected source SHA before the authorised publish,
+then verify both its response header and HTML meta value. The source's git
+fallback cannot identify a build made without a Git checkout. This pack does
+not authorise changing production hosting configuration or publishing.
 
 ## Staging catch-up: completed
 
@@ -71,24 +76,43 @@ six comment/format differences, and two substantive historical differences.
 
 | Gate                    | Current disposition                                                                                                                         | What objectively closes it                                                                                                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Launch-sized load       | BLOCKED under the existing AWS workflow and $0 budget; no measured traffic claimed                                                          | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
+| Launch-sized load       | FAIL in measured free-runner attempt 39216960815; corrected-harness rerun 39222141596 in progress                                           | 1,000 independent sessions on five origins; 175 RPS for 10 s, then 65 for 50 s; 600 s at 65; existing latency/error/metrics/integrity/cleanup criteria all met                                                         |
 | 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599) | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
 | Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                 | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
 | Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                               | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
-| Silent-worker alarms    | BLOCKED: no test webhook or alert email destination; provider key also absent                                                               | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
+| Silent-worker alarms    | BLOCKED: owner supplied the private alert recipient; provider key/sender configuration still unconfirmed                                    | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
 | Two-account reminders   | BLOCKED by missing `RESEND_API_KEY`; sending remains OFF                                                                                    | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
 | Morocco time            | Helper checks PASS                                                                                                                          | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
-| Real iPhone / push      | NOT RUN                                                                                                                                     | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
+| Real iPhone / push      | NOT RUN; owner confirmed phone availability; a reachable staging frontend is still needed                                                   | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
 | Arabic skim             | Owner review outstanding                                                                                                                    | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
 | Production health       | Historical watchdog failed `fantasy_fixture_coverage`                                                                                       | Recheck the current named failure, identify affected fixtures and resolve or record an explicit release decision; this PR does not fix provider data                                                                   |
 
 The existing audited runner orchestration rents five AWS machines and estimates
 $18.75 with a $50 guard. It cannot be dispatched under a $0 authorisation.
-The repository is public, so standard GitHub-hosted runners are a plausible
-zero-cost replacement. A five-runner coordinator, session handoff, synchronized
-start, complete database/CPU/pool metrics and cleanup need implementation and
-validation first; a single local origin would not satisfy the existing evidence
-contract. No AWS charge or load-test pass is implied by this alternative.
+The public repository now has a five-runner route on standard GitHub-hosted
+runners. Run 39216960815 established 1,000 independently authenticated users,
+five distinct public origins, synchronized traffic and 15 successful metrics
+scrapes spanning the measured workload. It sent 5,000 gate requests and 39,000
+soak requests. No AWS resources or paid infrastructure were started.
+
+The gate **failed**: read p95 11,253 ms, mutation p95 11,152 ms, mutation p99
+14,449 ms, and 34 timeouts (0.68%). Independent staging gateway logs show the
+same slowdown. The soak also failed with 5,616 `invalid_transfer` rejections:
+the harness reset transfer ownership between profiles despite the canonical
+lineup retaining the acquired player. Commit `7729f9ba` restores that state
+from the lineup and adds a regression check. Because those rejected writes
+reduced successful work, the soak's faster latencies cannot establish capacity.
+The rerun preserves the traffic profile, thresholds and database configuration.
+
+Raw exporter reanalysis handles duplicate cached CPU counters and measures the
+Data API's PostgREST pool instead of the unused PgBouncer admin pool. CPU peaked
+at 38.178% across advancing intervals; database connections peaked at 26/60.
+The conservative PostgREST occupancy bound reached 105%, but cached and
+independently collected series limit precise attribution. Burst SQL samples
+show idle-in-transaction connections without lock waits; increased swap activity
+also warrants investigation. A larger connection pool is not yet justified.
+All temporary users/state were removed; independent counts and saved fingerprints
+confirmed baseline restoration, all 27 cron jobs and Rivals ON, with no lease.
 
 Existing launch-sized pass criteria, unchanged: read p95 ≤500 ms; save/transfer
 p95 ≤1,500 ms and p99 ≤3,000 ms; unexpected errors <0.5%; lock timeouts <0.1%;
