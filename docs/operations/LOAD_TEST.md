@@ -213,3 +213,26 @@ listener as busy rather than assuming it away. The empty PgBouncer admin pool
 is not the API pool. The <80% requirements remain unchanged; inconsistent or
 missing exporter inputs fail the evidence check. PostgREST documents its gauges
 in [Observability](https://docs.postgrest.org/en/v14/references/observability.html).
+
+### Reversible Data API pool experiment ($0 route)
+
+The optional `postgrest_pool=8` input reduces an explicitly configured PostgREST
+pool to eight connections during an owned staging window. It does not resize
+compute or change PostgreSQL's connection limit or any request timeout. This is
+a diagnostic experiment for the observed memory/swap and API queuing pressure;
+a result is not assumed in advance. The workload and pass criteria are unchanged.
+
+Preflight records only five public configuration fields. The Management API's
+GET response also contains a JWT secret: it is discarded and never enters the
+recovery artifact. Automatic/null pool configurations are refused because the
+documented PATCH schema does not establish exact null restoration. An explicit
+original value outside 8–40 is also refused. Unexpected configuration drift is
+never overwritten.
+
+The collector must observe an eight-slot PostgREST pool throughout the measured
+window. Cleanup restores the exact original value independently of temporary-row
+cleanup, verifies all five original fields, and restores the saved schedules and
+Rivals setting. The verdict records the experiment and restoration separately.
+A pass with this configuration would be conditional on a separately reviewed and
+approved production configuration change; it would not establish current
+production configuration parity.

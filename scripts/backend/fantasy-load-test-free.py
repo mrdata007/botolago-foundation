@@ -178,6 +178,28 @@ def baseline(gate):
       'oldGameweeks',(select jsonb_agg(to_jsonb(g) order by id) from app.fantasy_gameweeks g where fantasy_season_id='fa630000-0000-4000-8000-000000000001' and id<>'fa640000-0000-4000-8000-000000000003')) as state""")[0]["state"]
 
 
+def public_postgrest_config(gate):
+    # GET /postgrest also returns the JWT secret. Never retain that response.
+    raw = gate.management("GET", f"/v1/projects/{REF}/postgrest")
+    keys = ("db_schema", "max_rows", "db_extra_search_path", "db_pool", "db_pool_acquisition_timeout")
+    if not isinstance(raw, dict) or any(key not in raw for key in keys):
+        raise RuntimeError("free_pool_configuration_missing")
+    return {key: raw[key] for key in keys}
+
+
+def restore_postgrest(gate, state):
+    original = state.get("postgrest")
+    if original is None:  # Recovery of an older context never changes configuration.
+        return True
+    actual = public_postgrest_config(gate)
+    if actual != original:
+        expected = {**original, "db_pool": 8}
+        if state.get("postgrestPool") != "8" or actual != expected:
+            raise RuntimeError("free_pool_configuration_drift")
+        gate.management("PATCH", f"/v1/projects/{REF}/postgrest", {"db_pool": original["db_pool"]})
+    return public_postgrest_config(gate) == original
+
+
 def preflight():
     gate = FreeGate()
     repo = json.loads(github(["api", f"repos/{os.environ['GITHUB_REPOSITORY']}"]))
@@ -225,10 +247,19 @@ def preflight():
     if any(k.get("name") == BASE.TEMP_KEY_NAME for k in keys):
         raise RuntimeError("free_stale_metrics_key")
     secret_names = {item["name"] for item in gate.management("GET", f"/v1/projects/{REF}/secrets")}
+    postgrest = public_postgrest_config(gate)
+    pool = os.environ.get("POSTGREST_POOL", "unchanged")
+    if pool not in {"unchanged", "8"}:
+        raise RuntimeError("free_pool_choice_refused")
+    # Only a reversible reduction of an explicit value is supported. The API's
+    # documented PATCH does not promise null restoration of automatic settings.
+    if pool == "8" and (type(postgrest["db_pool"]) is not int or not 8 <= postgrest["db_pool"] <= 40):
+        raise RuntimeError("free_pool_exact_restoration_not_supported")
     BASE.private_json(CONTEXT, {"emailProviderSecretPresent": "RESEND_API_KEY" in secret_names,
                                 "schedulerSecretPresent": "BOTOLAGO_SCHEDULER_TOKEN" in secret_names,
                                 "baseline": baseline(gate), "settings": row, "runId": gate.run_id,
-                                "source": os.environ["GITHUB_SHA"], "scope": scope(), "diskFreeGb": disk})
+                                "source": os.environ["GITHUB_SHA"], "scope": scope(), "diskFreeGb": disk,
+                                "postgrest": postgrest, "postgrestPool": pool})
 
 
 def prepare():
@@ -242,6 +273,12 @@ def prepare():
         quiet = gate.sql("select count(*)::int as n from pg_stat_activity where backend_type='client backend' and pid<>pg_backend_pid() and state<>'idle'")[0]["n"]
         if quiet:
             raise RuntimeError("free_inflight_writer")
+        if public_postgrest_config(gate) != state["postgrest"]:
+            raise RuntimeError("free_pool_configuration_drift")
+        if state["postgrestPool"] == "8":
+            gate.management("PATCH", f"/v1/projects/{REF}/postgrest", {"db_pool": 8})
+            if public_postgrest_config(gate) != {**state["postgrest"], "db_pool": 8}:
+                raise RuntimeError("free_pool_configuration_not_applied")
         # A new empty GW, never an update of a finalized gameweek.
         sql = f"""begin; insert into app.fantasy_gameweeks
         (id,fantasy_season_id,sequence_number,name,deadline_at,starts_at,ends_at,status)
@@ -372,6 +409,11 @@ def monitor():
         observer_times = [BASE.datetime.fromisoformat(r["sampled_at"]).timestamp() for r in gate.sql_samples]
         coverage = {"metricsCoverWorkload": bool(timestamps) and min(timestamps) <= schedule["gateStart"] and max(timestamps) >= expected_end,
                     "databaseObserverCoversWorkload": bool(observer_times) and min(observer_times) <= schedule["gateStart"] and max(observer_times) >= expected_end}
+        state = json.loads(CONTEXT.read_text())
+        if state.get("postgrestPool") == "8":
+            pools = [[m["value"] for m in record["metrics"] if m["series"].startswith("pgrst_db_pool_max{")]
+                     for record in records]
+            coverage["postgrestPoolMatchesExperiment"] = bool(pools) and all(values == [8.0] for values in pools)
         BASE.private_json(PUBLIC / "metrics.json", {"summary": summary, "analysis": analysis, "coverage": coverage})
     finally:
         gate.stop_database_observer()
@@ -442,6 +484,11 @@ def finish():
         except Exception as error:
             errors.append(type(error).__name__)
         finally:
+            try:
+                postgrest_restored = restore_postgrest(gate, state)
+            except Exception as error:
+                errors.append(type(error).__name__)
+                postgrest_restored = False
             for job in state["settings"]["cron"]:
                 try:
                     gate.sql(f"select cron.alter_job({int(job['jobid'])}, active:={str(job['active']).lower()})")
@@ -456,7 +503,9 @@ def finish():
                 cron_restored = False
             verdict.update({"cleanup": cleanup, "cleanupErrors": errors,
                             "baselineRestored": restored, "cronRestored": cron_restored,
-                            "passed": verdict["passed"] and restored and cron_restored and not errors
+                            "postgrestRestored": postgrest_restored,
+                            "postgrestPoolExperiment": state.get("postgrestPool", "unchanged"),
+                            "passed": verdict["passed"] and restored and cron_restored and postgrest_restored and not errors
                             and bool(cleanup) and all(v == 0 for v in cleanup.values())})
             BASE.private_json(PUBLIC / "verdict.json", verdict)
     print(json.dumps(verdict, indent=2))

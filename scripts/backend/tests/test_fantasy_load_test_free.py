@@ -72,6 +72,27 @@ class FreeLoadSafetyTests(unittest.TestCase):
         self.assertTrue(M.metrics_complete({'scrapeErrors': 0, 'scrapes': 16}, False))
         self.assertFalse(M.metrics_complete({'scrapeErrors': 1, 'scrapes': 16}, False))
 
+    def test_postgrest_secret_never_enters_recovery_state(self):
+        from unittest.mock import Mock
+        original = {"db_schema":"api", "max_rows":1000, "db_extra_search_path":"public", "db_pool":20, "db_pool_acquisition_timeout":10}
+        gate = Mock()
+        gate.management.return_value = {**original,"jwt_secret":"never-print-this","unknown_secret":"also-private"}
+        self.assertEqual(M.public_postgrest_config(gate),original)
+
+    def test_pool_reduction_restores_exact_original_without_overwriting_drift(self):
+        from unittest.mock import Mock
+        original = {"db_schema":"api", "max_rows":1000, "db_extra_search_path":"public", "db_pool":20, "db_pool_acquisition_timeout":10}
+        gate = Mock()
+        state = {"postgrest":original,"postgrestPool":"8"}
+        with patch.object(M,'public_postgrest_config',side_effect=[{**original,'db_pool':8},original]):
+            self.assertTrue(M.restore_postgrest(gate,state))
+        gate.management.assert_called_once_with('PATCH',f'/v1/projects/{M.REF}/postgrest',{'db_pool':20})
+        gate.reset_mock()
+        with patch.object(M,'public_postgrest_config',return_value={**original,'db_pool':35}):
+            with self.assertRaisesRegex(RuntimeError,'configuration_drift'):
+                M.restore_postgrest(gate,state)
+        gate.management.assert_not_called()
+
     def test_cleanup_failure_still_restores_exact_original_cron_flags(self):
         import json
         with tempfile.TemporaryDirectory() as directory:

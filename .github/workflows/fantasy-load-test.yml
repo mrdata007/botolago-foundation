@@ -36,6 +36,14 @@ on:
         required: true
         type: string
         default: Large
+      postgrest_pool:
+        description: "$0 route only: unchanged, or temporarily reduce an explicit Data API pool to 8 and restore exactly"
+        required: true
+        type: choice
+        default: unchanged
+        options:
+          - unchanged
+          - "8"
       confirmation:
         description: Type RUN_FANTASY_LOAD_TEST
         required: true
@@ -86,9 +94,11 @@ jobs:
         env:
           CONFIRMATION: ${{ inputs.confirmation }}
           SCOPE: ${{ inputs.scope }}
+          POSTGREST_POOL: ${{ inputs.postgrest_pool || 'unchanged' }}
         run: |
           set -euo pipefail
           test "$CONFIRMATION" = "RUN_FANTASY_LOAD_TEST"
+          test "$POSTGREST_POOL" = "unchanged"
           case "$SCOPE" in rehearsal|full|launch-sized) ;; *) exit 2 ;; esac
 
       - name: Check out the repository
@@ -292,6 +302,7 @@ jobs:
     environment: staging-load-test
     env:
       SCOPE: ${{ inputs.scope }}
+      POSTGREST_POOL: ${{ inputs.postgrest_pool || 'unchanged' }}
       GITHUB_TOKEN: ${{ github.token }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
