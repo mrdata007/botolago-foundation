@@ -95,6 +95,8 @@ def configure_phone(target,ref,config,origin,cleanup=False):
       or exists(select 1 from app_private.ai_content_settings where enabled)
       or exists(select 1 from app_private.ai_home_story_settings where enabled)
       or exists(select 1 from app_private.ai_home_story_jobs where status='generating')
+      or exists(select 1 from app.notification_deliveries where status='claimed')
+      or exists(select 1 from app.account_deletion_requests where status='processing')
       or exists(select 1 from app_private.account_deletion_settings where enabled)
       or exists(select 1 from app_private.manager_card_settings where compute_enabled)
       or exists(select 1 from app_private.trophy_settings where enabled)

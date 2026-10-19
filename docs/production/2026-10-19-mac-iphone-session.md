@@ -114,8 +114,16 @@ It changes no SMTP password or provider credential. Setup saves only its changed
 fields privately in Vault, configures six digits, inserts the code into the
 existing confirmation template and allowlists the app's exact callbacks.
 After the session, cleanup restores the former site/redirect URLs while keeping
-the six-digit code/template alignment. An unexpected configuration change is
-refused. This is a guarded one-time repair of the observed initial baseline;
+the six-digit code/template alignment. The callback allowlist also includes a
+query-only glob on the exact trusted callback path, so signup can preserve an
+encoded protected-page `next` value. Other hosts, ports and paths stay excluded.
+The source upgrade from the initially applied four entries to five is pending
+the active reminder writer's restoration; no Auth flow is certified yet.
+Any generating AI job, claimed delivery or processing deletion blocks this
+action even if its lease expired or no database session is active. Inspect
+the corresponding Edge invocation logs and finish its reviewed recovery before
+clearing a residual job; disabling cron or waiting out a lease is insufficient.
+An unexpected configuration change is refused. This is a guarded one-time repair of the observed initial baseline;
 do not force it against another environment or changed baseline.
 
 Safari proves website and in-app notification behavior. Native iPhone push uses

@@ -127,6 +127,8 @@ class AuthPreflightTests(unittest.TestCase):
             self.assertIn('app_private.ai_home_story_settings',query)
             self.assertIn('app_private.ai_home_story_jobs',query)
             self.assertIn("status='generating'",query)
+            self.assertIn("app.notification_deliveries where status='claimed'",query)
+            self.assertIn("app.account_deletion_requests where status='processing'",query)
             return [{'busy':True}]
         target.rows.side_effect=rows
         with self.assertRaisesRegex(RuntimeError,'writer_not_idle'):
