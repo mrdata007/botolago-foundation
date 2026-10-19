@@ -46,6 +46,12 @@ class AlarmTests(unittest.TestCase):
         self.assertNotIn('generate_series(1,5000)',sql)
         self.assertIn('staging_drill_fixture_already_exists',sql)
 
+    def test_preflight_uses_vault_metadata_without_decrypting_a_webhook(self):
+        source=PATH.read_text()
+        self.assertIn("vault.secrets where name='botolago_ops_alert_webhook'",source)
+        self.assertNotIn('ops_alert_webhook()',source)
+        self.assertNotIn('decrypted_secrets',source)
+
 
 if __name__=='__main__':
     unittest.main()

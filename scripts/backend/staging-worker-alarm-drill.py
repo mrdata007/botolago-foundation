@@ -139,11 +139,13 @@ def main():
     ref=os.environ.get('SUPABASE_STAGING_PROJECT_REF','')
     R.validate_ref(ref)
     target=R.UPDATE.ManagementTarget(os.environ['SUPABASE_ACCESS_TOKEN'],ref)
+    E.report('alarm_phase',name='migration_and_secret_names')
     if R.UPDATE.pending_migrations(R.UPDATE.load_migrations(),R.UPDATE.read_history(target)):
         raise RuntimeError('staging_alarm_pending_migrations')
     names={v['name'] for v in target._request('GET',f'/v1/projects/{ref}/secrets',None,60)}
     if 'RESEND_API_KEY' not in names or names & {'FANTASY_WORKER_BUDGET_MS','FANTASY_WORKER_MAX_GAMEWEEKS','FANTASY_WORKER_MAX_CALLS'}:
         raise RuntimeError('staging_alarm_runtime_configuration')
+    E.report('alarm_phase',name='settings_metadata')
     settings=target.rows("""select
       (select jsonb_agg(jsonb_build_object('jobid',jobid,'active',active) order by jobid) from cron.job) as cron,
       (select enabled from app_private.rivals_settings) as rivals,
@@ -164,12 +166,13 @@ def main():
        or exists(select 1 from app_private.prediction_settings where mode<>'off')
        or exists(select 1 from app.fantasy_prizes where active)
        or exists(select 1 from app.article_editions where status='scheduled')) as other_writers,
-      app_private.ops_alert_webhook() is not null as webhook""")[0]
+      exists(select 1 from vault.secrets where name='botolago_ops_alert_webhook') as webhook""")[0]
     if (settings['other_writers'] or settings['ops']['enabled'] or not settings['ops']['email_to']
         or settings['webhook'] or settings['functions_url']!=URL or settings['interval']!=10
         or any(c['pending_request_id'] is not None for c in settings['channels'])):
         raise RuntimeError('staging_alarm_preflight_refused')
     E.wait_idle(target,30)
+    E.report('alarm_phase',name='baseline')
     before=E.baseline(target)
     E.report('alarm_baseline',state=before,sourceSha=os.environ.get('GITHUB_SHA'),waitMinutes=90)
     paused=False
@@ -179,12 +182,14 @@ def main():
         target.execute('select cron.alter_job(jobid,active:=false) from cron.job; select app_private.rivals_configure(false);',60)
         E.wait_idle(target,30)
         R.readiness(target)
+        E.report('alarm_phase',name='fixture_rehearsal')
         fixture=(ROOT/'scripts/backend/staging-worker-alarm-fixture.sql').read_text()
         guarded=f"select set_config('botolago.release_drill','{ref}',false);\n"+fixture
         target.execute(guarded.rsplit('commit;',1)[0]+'rollback;',180)
         if E.baseline(target)!=before or target.rows(f"select exists(select 1 from app.fantasy_seasons where id='{SEASON}') as present")[0]['present']:
             raise RuntimeError('staging_alarm_rehearsal_changed_baseline')
         fixture_started=True
+        E.report('alarm_phase',name='fixture_commit')
         target.execute(guarded,180)
         # A real disabled tick resets the counting clock through production code.
         target.execute('select app_private.fantasy_worker_tick();',60)
