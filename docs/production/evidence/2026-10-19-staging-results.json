@@ -1503,7 +1503,7 @@
     "recovery": "owner-only staging DB context",
     "privateOwnerHandoff": "Created privately in staging Vault after alarm restoration; identifiers only",
     "nativePushEvidence": false,
-    "inboxEvidence": "Owner confirmed French recap and both Arabic reminders; UI agreement pending",
+    "inboxEvidence": true,
     "combinedHead": "51e4b0151b71ed4443cfbc3234f739a1c1661ed2",
     "combinedCiRun": 39247232363,
     "combinedCi": "PASS",
@@ -1515,7 +1515,8 @@
     },
     "merge": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
     "applicationQuality": "PASS",
-    "databaseQuality": "PASS"
+    "databaseQuality": "PASS",
+    "inboxEvidenceScope": "Owner confirmed recap96 and both Arabic reminders with matching printed times; actual UI agreement pending"
   },
   "stagingAuthPhoneConfiguration": {
     "planRun": 39248436124,
@@ -1546,13 +1547,33 @@
       "reportedSaved": true,
       "configurationReadback": "pending active reminder writer release",
       "signupAndResetDeliveryProven": false
+    },
+    "smtpRecheck": {
+      "run": 39265232739,
+      "at": "2026-10-19T14:01:52.6051745Z",
+      "ownerReportedSaved": true,
+      "hostConfigured": false,
+      "userConfigured": false,
+      "senderConfigured": false,
+      "passwordReturned": false,
+      "emailRateLimit": 2,
+      "action": "Asked owner to verify exact staging project and enabled SMTP toggle; signup/reset not proven"
+    },
+    "queryCallbackUpgrade": {
+      "run": 39265408129,
+      "source": "f1aeca219b966e4c96aec72893018a23393c500d",
+      "at": "2026-10-19T14:03:11.7907964Z",
+      "redirectCount": 5,
+      "emailOtpLength": 6,
+      "confirmationTemplateKind": "code_and_link",
+      "strictReadback": "PASS"
     }
   },
   "reminderRun": {
     "id": 39250029846,
     "job": 118051281597,
     "source": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
-    "state": "RUNNING; final verdict pending",
+    "state": "PASS automated real-clock, response-loss, opt-out, deduplication and restoration; owner inbox confirmed; actual UI agreement pending",
     "namespace": "f9700000-0000-4000-8000-",
     "activatedAt": "2026-10-19T12:11:41.178422Z",
     "deadline": "2026-10-20T13:11:35.730124Z",
@@ -1590,9 +1611,178 @@
       "language": "ar"
     },
     "defaultSeasonSelection": {
-      "observed": "Older future-dated synthetic seasons win default hub",
-      "guardedParkingSourcePrepared": true,
-      "hostedApplied": false
+      "run": 39265609258,
+      "source": "f1aeca219b966e4c96aec72893018a23393c500d",
+      "rehearsalRollbackVerified": true,
+      "appliedAt": "2026-10-19T14:04:41.5097463Z",
+      "legacySyntheticSeasonsParked": 2,
+      "bothActualLanguageHubsSelectF970": true,
+      "existingUserCountTeamResultGameweekDigestsUnchanged": true,
+      "exactCronAndRivalsRestoredAt": "2026-10-19T14:06:00.886407Z",
+      "emailAndPush": "off",
+      "legacyStatusRestoration": "pending retirement after actual phone session"
+    },
+    "completedEvidence": {
+      "run": 39250029846,
+      "job": 118051281597,
+      "source": "c5aa137eb987f2d07d56d24439f8cd58fec06ae8",
+      "responseLoss": {
+        "kind": "response_loss_boundary",
+        "elapsedMs": 30001.681961,
+        "realReplyConsumed": true,
+        "rpc": "service_persist_fantasy_scoring_results",
+        "leaseExtended": true,
+        "settled": false,
+        "leaseReleased": false
+      },
+      "exclusion": {
+        "kind": "response_loss_exclusion",
+        "competingLeaseDenied": true,
+        "expiresAt": "2026-10-19T12:19:15.120432+00:00"
+      },
+      "recovery": {
+        "kind": "response_loss_recovery",
+        "outcome": "finalized",
+        "noLaterWriteBeforeExpiry": true
+      },
+      "scoring": {
+        "kind": "reminder_independent_score_proof",
+        "status": "finalized",
+        "scored": 2,
+        "last_team": "f9700000-0000-4000-8000-000000010002",
+        "finalized": 2,
+        "rankings": 8,
+        "correct_results": 2,
+        "rollovers": 2,
+        "next_lineups": 2,
+        "postwork": true,
+        "advanced": true
+      },
+      "unsubscribe": {
+        "kind": "reminder_unsubscribed",
+        "getDidNotMutate": true,
+        "postPassed": true,
+        "repeatedPostIdempotent": true
+      },
+      "verdict": {
+        "kind": "reminder_verdict",
+        "passed": true,
+        "realClockWindows": true,
+        "inboxReceipt": "owner confirmation required",
+        "uiChecks": "owner device pending"
+      },
+      "restoration": {
+        "kind": "reminder_restoration",
+        "oldBaselineUnchanged": true,
+        "preferencesRestored": true,
+        "languagesRestored": true,
+        "emailSettingsRestored": true,
+        "runtimeOverridesRemoved": true,
+        "errors": []
+      },
+      "handoff": {
+        "kind": "reminder_fixture_handoff",
+        "retainedForOwnerUi": true
+      },
+      "finalObservation": {
+        "kind": "reminder_observation",
+        "evidence": [
+          {
+            "type": "match_starting",
+            "source": "f9700000-0000-4000-8000-000000003020",
+            "events": 1,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 13:11:55.732391+00",
+            "occurred_at": "2026-10-19 13:11:54.749514+00",
+            "minutes_before": "64.6830101666666667"
+          },
+          {
+            "type": "match_starting",
+            "source": "f9700000-0000-4000-8000-000000003021",
+            "events": 1,
+            "positive_notifications": 0,
+            "negative_notifications": 0,
+            "sent": 0,
+            "inbox": 0,
+            "sent_at": null,
+            "occurred_at": "2026-10-19 13:57:21.603371+00",
+            "minutes_before": "64.2354458833333333"
+          },
+          {
+            "type": "deadline_24h",
+            "source": "f9700000-0000-4000-8000-000000000022",
+            "events": 1,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 13:11:56.194266+00",
+            "occurred_at": "2026-10-19 13:11:54.749514+00",
+            "minutes_before": "1439.6830101666666667"
+          },
+          {
+            "type": "gameweek_finalized",
+            "source": "f9700000-0000-4000-8000-000000000021",
+            "events": 2,
+            "positive_notifications": 1,
+            "negative_notifications": 0,
+            "sent": 1,
+            "inbox": 1,
+            "sent_at": "2026-10-19 12:19:27.415623+00",
+            "occurred_at": "2026-10-19 12:19:19.826069+00",
+            "minutes_before": null
+          }
+        ]
+      }
+    },
+    "independentRestoration": {
+      "at": "2026-10-19T13:59:02.419893Z",
+      "cronRestored": true,
+      "rivalsRestored": true,
+      "emailRestored": true,
+      "preferencesRestored": true,
+      "languagesRestored": true,
+      "usersUnchanged": true,
+      "oldTeamResultAndGameweekDigestsUnchanged": true,
+      "recoveryContextRemoved": true,
+      "leaseFree": true
+    },
+    "laterOptOutIndependentRead": {
+      "at": "2026-10-19T13:57:23.66304Z",
+      "eventAt": "2026-10-19T13:57:21.603371Z",
+      "minutesBeforeKickoff": 64.23544588333333,
+      "notifications": 0,
+      "sentEmails": 0
+    },
+    "ownerClaimApiRead": {
+      "scope": "SQL API invocation under authenticated owner claims; not a real iPhone or token-transport result",
+      "points": 96,
+      "bench": 32,
+      "state": "final",
+      "season": "Staging Reminder Drill",
+      "deadline": "2026-10-20T13:11:35.730124Z",
+      "observedAfterPhoneSetupRestored": true
     }
+  },
+  "stagingPhoneOperationsMerge": {
+    "pr": 532,
+    "merge": "f1aeca219b966e4c96aec72893018a23393c500d",
+    "testedHead": "8c212cf955289bb7bf42e7f2467020d637b8d016",
+    "ciRun": 39260965377,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "defaultSeasonCollisionParkRestoreContract": "PASS local rolled-back database test"
+  },
+  "phoneFixtureExecutionMerge": {
+    "pr": 533,
+    "merge": "4402a52a0e0eba527c4fdf0077818675f0d463ef",
+    "testedHead": "fee110f337b72eaef1bd6167fc702fa60e0c6fb6",
+    "ciRun": 39265144317,
+    "applicationQuality": "PASS",
+    "databaseQuality": "PASS",
+    "hostedSeedScoreFinish": "pending owner f970 UI comparison and retirement"
   }
 }
