@@ -1303,10 +1303,7 @@
     "scope": "One explicitly labelled staging alert; reminder timing/preferences/deduplication are not yet established."
   },
   "frontendPreview": {
-    "vercelProjectsListed": [
-      "botolago-preview",
-      "botolago-foundation"
-    ],
+    "vercelProjectsListed": ["botolago-preview", "botolago-foundation"],
     "projectDetailReads": "404",
     "deploymentList": "403",
     "candidateUrls": [
@@ -1363,7 +1360,7 @@
     "warningExpectedAfter": "2026-10-19T10:29:14.705052Z",
     "failureExpectedAfter": "2026-10-19T11:29:14.705052Z",
     "initialHealth": "ok",
-    "state": "automated detection, sending, recovery and restoration passed; owner inbox confirmation pending",
+    "state": "PASS: automated detection, accepted sending, lifecycle recovery, restoration and owner-confirmed inbox receipt of both alerts",
     "warningObserved": {
       "at": "2026-10-19T10:30:00.9189538Z",
       "elapsedMinutes": 30.7528989,
@@ -1384,12 +1381,14 @@
     "failureEmail": {
       "at": "2026-10-19T11:29:23.3435018Z",
       "httpStatus": 200,
-      "providerAccepted": true
+      "providerAccepted": true,
+      "ownerInboxConfirmed": true
     },
     "recoveryEmail": {
       "at": "2026-10-19T11:29:42.5294973Z",
       "httpStatus": 200,
-      "providerAccepted": true
+      "providerAccepted": true,
+      "ownerInboxConfirmed": true
     },
     "recovery": {
       "elapsedMs": 7879,
@@ -1421,7 +1420,7 @@
       "leaseHeld": false,
       "fixtureSeason": "completed"
     },
-    "inboxReceiptConfirmedByOwner": false
+    "inboxReceiptConfirmedByOwner": true
   },
   "stagingOperationsMerge": {
     "pr": 526,
@@ -1542,7 +1541,12 @@
     "existingAccountAndTeamCountsUnchanged": true,
     "resultAndGameweekFingerprintsUnchanged": true,
     "temporaryLanUrlCleanup": "pending actual phone session; code alignment intentionally persists",
-    "signupAndResetEvidence": false
+    "signupAndResetEvidence": false,
+    "ownerSmtpSavedReport": {
+      "reportedSaved": true,
+      "configurationReadback": "pending active reminder writer release",
+      "signupAndResetDeliveryProven": false
+    }
   },
   "reminderRun": {
     "id": 39250029846,

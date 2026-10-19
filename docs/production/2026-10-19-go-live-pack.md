@@ -109,8 +109,8 @@ six comment/format differences, and two substantive historical differences.
 | 5,000-team scoring      | PASS for the scoped operator-run drill; [validation 39174387599](https://github.com/mrdata007/botolago-foundation/actions/runs/39174387599)                    | 5,000 final rows × 96 = 480,000; both overall rank scopes complete; 5,000 single rollover records and next lineups; zero duplicate results                                                                             |
 | Worker stall / recovery | PASS for settled failure/recovery; [39174524941](https://github.com/mrdata007/botolago-foundation/actions/runs/39174524941)                                    | Real held row caused a recorded 8.555 s database failure; lease exclusion held; the next invocation after release returned ok without score repair. This is narrower than the ambiguous-write drill                    |
 | Ambiguous 30 s write    | NOT PROVEN by an 8 s settled database failure                                                                                                                  | A genuine unconfirmed write at the 30 s client boundary; lease retained/extended, no later write overlaps, expiry/recovery observed. Do not raise the database timeout just to manufacture it                          |
-| Silent-worker alarms    | Real-clock drill 39234050429 PASS for detection, accepted failure/recovery emails and restoration; owner inbox confirmation pending                            | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
-| Two-account reminders   | Key/sender delivery smoke PASS; two-account timing/preferences/deduplication still NOT RUN; sending restored OFF                                               | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
+| Silent-worker alarms    | Real-clock drill 39234050429 PASS for detection, accepted failure/recovery emails and restoration; owner confirmed both alert emails in the inbox              | Real pending work; `not_configured`; warn at 30 min, fail at 90 min, received alert and recovery message; no backdated timestamps                                                                                      |
+| Two-account reminders   | RUNNING: French recap and Arabic reminders received with expected printed points/times; later opt-out, UI agreement and final restoration pending              | Follow `docs/engineering/REMINDER_DELIVERY_EVIDENCE.md`: allowlist both accounts, genuine scheduling windows/finalization, one event/notification/delivery, received email and matching points/time, opt-out negatives |
 | Morocco time            | Helper checks PASS                                                                                                                                             | Observed `2026-10-15 12:00 UTC` → `12:00`; deadline helper → `12/10 18:30`. Received email/UI agreement still awaits reminder test                                                                                     |
 | Real iPhone / push      | Owner reports iPhone 17 Pro / iOS 27 and Mac; local HTTPS French/Arabic login rendering passed, actual device session pending. Vercel previews return HTTP 402 | Owner's actual device session, French/Arabic evidence and real delivery where supported                                                                                                                                |
 | Arabic skim             | Owner review outstanding                                                                                                                                       | Complete the remaining agreed wording review; no approval inferred here                                                                                                                                                |
@@ -291,7 +291,7 @@ used source `526646da` and fresh isolated f953 work. Its genuine clock began at
 at 11:29:23; a real Edge worker finalized both teams at 96 points / 32 bench
 points in 7,879 ms and 19 calls, with eight rankings, two rollovers and two next
 lineups. Worker health returned to OK and the recovery email returned HTTP 200 / sent
-at 11:29:42. Owner inbox confirmation for these two emails is still pending.
+at 11:29:42. The owner confirmed both emails arrived in the inbox.
 
 Restoration passed at 11:30:17. Independent database reads at 11:35–11:36
 confirmed all 27 cron jobs active, Rivals ON, tick/worker/email/push/alerts OFF,
@@ -331,7 +331,7 @@ privately in staging Vault; SMTP credentials were neither changed nor saved in
 that baseline. All 27 cron flags and Rivals were restored, counts and stored
 result/gameweek fingerprints unchanged. After the phone session, `authcleanup`
 restores the pre-session URLs while preserving the six-digit/code alignment.
-Custom Auth SMTP remains absent as of that run. The successful Resend Edge
+Custom Auth SMTP was absent at that run. The owner subsequently reports saving it securely; configuration readback and delivery remain pending the reminder writer’s release. The successful Resend Edge
 smoke cannot establish Auth signup/reset; actual signup, receipt, confirmation
 and reset are still pending.
 
@@ -357,7 +357,7 @@ This is an in-progress safety observation, not a recovery or reminder verdict.
 
 Subsequent independent reads found natural lease expiry and a new acquisition
 at 12:19:16 UTC, followed by two final 96-point results, 32 bench points each,
-eight ranking rows and an open GW2. The owner confirmed the French 96-point
+eight ranking rows and an open GW2. The owner also confirmed inbox receipt of both earlier failure/recovery alarm emails. The owner confirmed the French 96-point
 recap in their inbox. Before eligibility, the 13:10:20 read found zero reminder
 events. Arabic match/deadline events were created at 13:11:54 and accepted by
 the email provider at 13:11:55/56, 64.683 minutes before kickoff and 1,439.683

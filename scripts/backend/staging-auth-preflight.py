@@ -39,6 +39,12 @@ def public_metadata(config):
         kind='unconfigured_or_invalid'
     return {
         'customSmtpConfigured':all(bool(config.get(k)) for k in ('smtp_host','smtp_user','smtp_pass','smtp_admin_email')),
+        # Presence only: distinguish absent routing fields from a password that
+        # an API may redact. Real inbox delivery still needs its own proof.
+        'smtpHostConfigured':bool(config.get('smtp_host')),
+        'smtpUserConfigured':bool(config.get('smtp_user')),
+        'smtpSenderConfigured':bool(config.get('smtp_admin_email')),
+        'smtpPasswordReturned':bool(config.get('smtp_pass')),
         'emailProviderEnabled':config.get('external_email_enabled'),
         'emailAutoConfirm':config.get('mailer_autoconfirm'),
         'googleProviderEnabled':config.get('external_google_enabled'),
@@ -79,9 +85,7 @@ def phone_config(saved,origin):
             'site_url':origin,'uri_allow_list':','.join(origin+p for p in paths)}
 
 
-def configure_phone(target,ref,config,origin,cleanup=False):
-    R.validate_ref(ref)
-    origin=phone_origin(origin)
+def assert_idle_writer(target):
     # The shared workflow group/guard owns this staging window. Persist only
     # the fields this action changes, never SMTP passwords or OAuth secrets.
     busy=target.rows("""select exists(select 1 from app_private.fantasy_worker_lease
@@ -106,6 +110,12 @@ def configure_phone(target,ref,config,origin,cleanup=False):
         and pid<>pg_backend_pid() and state<>'idle') as busy""")[0]['busy']
     if busy:
         raise RuntimeError('staging_auth_writer_not_idle')
+
+
+def configure_phone(target,ref,config,origin,cleanup=False):
+    R.validate_ref(ref)
+    origin=phone_origin(origin)
+    assert_idle_writer(target)
     saved_rows=target.execute(f"select decrypted_secret as state from vault.decrypted_secrets where name='{BASELINE_NAME}'",60)
     if saved_rows:
         state=json.loads(saved_rows[0]['state'])
