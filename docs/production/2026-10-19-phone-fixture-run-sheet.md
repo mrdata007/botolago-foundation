@@ -53,7 +53,21 @@ profile or team is rewritten. The football catalog and season are new under
    separate reminder test owns them. The fixture then remains for the phone
    session; it is not retired before the tester uses it.
 
-The new default Fantasy season is `Staging Phone QA`. GW1 is past and finalized;
+The existing future-dated `Launch QA 2026-10-18` and `2089/90 Capacity`
+seasons currently win the default-season query. In an owned paused window,
+rehearse and apply `scripts/backend/staging-phone-season-selection.sql` with
+`botolago.phone_selection_action=park` and the usual exact staging ref. It
+temporarily sets only these two precisely identified synthetic season headers
+to `planned`, saving their complete business metadata and team/gameweek/result
+fingerprints privately in Vault. No dates or measured results change. Verify
+both actual hub languages select f970 for the reminder comparison; retain the
+parking through f970 retirement and f960 preparation. The script refuses drift
+or a default season outside these two new QA fixtures. After retiring both new
+fixtures, run the same script with action `restore`; it requires unchanged
+legacy content and restores original statuses before removing its baseline.
+
+Only after this verified selection is the default season `Staging Phone QA`.
+GW1 is past and finalized;
 GW2 opens about two days before kickoff. Confirm its actual deadline at the
 session start. This fixture does not prove a live match appears on the default
 football calendar, nor create a real provider event for it.

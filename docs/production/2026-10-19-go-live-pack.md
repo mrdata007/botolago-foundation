@@ -355,6 +355,22 @@ At 12:13:14 UTC, an independent read found exactly two provisional results,
 zero final results/events and a retained lease genuinely extended to 12:19:15.
 This is an in-progress safety observation, not a recovery or reminder verdict.
 
+Subsequent independent reads found natural lease expiry and a new acquisition
+at 12:19:16 UTC, followed by two final 96-point results, 32 bench points each,
+eight ranking rows and an open GW2. The owner confirmed the French 96-point
+recap in their inbox. Before eligibility, the 13:10:20 read found zero reminder
+events. Arabic match/deadline events were created at 13:11:54 and accepted by
+the email provider at 13:11:55/56, 64.683 minutes before kickoff and 1,439.683
+minutes before the deadline. The owner confirmed both arrived and their printed
+14:16 kickoff / 20 October 13:11 deadline match expectations. UI agreement,
+the later opt-out negative and full restoration remain pending; receipt alone
+does not close the complete reminder gate.
+
+Read-only phone API inspection also found that two older future-dated QA
+seasons take precedence over the f970 default hub. The staged selection helper
+described in the phone run sheet prepares a reversible, guarded temporary
+parking of those two season headers. No hosted parking is yet claimed.
+
 ## Production execution order — only after the gates permit it
 
 1. Select and pin the release SHA. Review merged PR 526 and its final CI, review merged fixture guard PR 529 and its staged functional evidence, and

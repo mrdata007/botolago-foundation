@@ -1303,7 +1303,10 @@
     "scope": "One explicitly labelled staging alert; reminder timing/preferences/deduplication are not yet established."
   },
   "frontendPreview": {
-    "vercelProjectsListed": ["botolago-preview", "botolago-foundation"],
+    "vercelProjectsListed": [
+      "botolago-preview",
+      "botolago-foundation"
+    ],
     "projectDetailReads": "404",
     "deploymentList": "403",
     "candidateUrls": [
@@ -1501,13 +1504,13 @@
     "recovery": "owner-only staging DB context",
     "privateOwnerHandoff": "Created privately in staging Vault after alarm restoration; identifiers only",
     "nativePushEvidence": false,
-    "inboxEvidence": false,
+    "inboxEvidence": "Owner confirmed French recap and both Arabic reminders; UI agreement pending",
     "combinedHead": "51e4b0151b71ed4443cfbc3234f739a1c1661ed2",
     "combinedCiRun": 39247232363,
     "combinedCi": "PASS",
     "priorCombinedCi": {
       "run": 39246083973,
-      "failedStep": "Existing Pépites publish/repoint concurrency test",
+      "failedStep": "Existing P\u00e9pites publish/repoint concurrency test",
       "fixtureRehearsals": "both passed",
       "fix": "Observe the exact edition advisory-lock wait instead of assuming a pending promise after 400 ms reached that lock; result assertions unchanged"
     },
@@ -1561,6 +1564,31 @@
       "leaseRetained": true,
       "leaseAcquiredAt": "2026-10-19T12:11:43.937602Z",
       "leaseExtendedExpiresAt": "2026-10-19T12:19:15.120432Z"
+    },
+    "ownerInboxConfirmation": {
+      "frenchRecapPoints": 96,
+      "arabicMatchReminder": true,
+      "arabicDeadlineReminder": true,
+      "printedKickoff": "2026-10-19 14:16 UTC",
+      "printedDeadline": "2026-10-20 13:11 UTC",
+      "uiAgreement": false
+    },
+    "firstWindowsIndependentRead": {
+      "at": "2026-10-19T13:12:35.178635Z",
+      "matchEventAt": "2026-10-19T13:11:54.749514Z",
+      "matchEmailSentAt": "2026-10-19T13:11:55.732391Z",
+      "deadlineEmailSentAt": "2026-10-19T13:11:56.194266Z",
+      "matchMinutesBeforeKickoff": 64.68301,
+      "deadlineMinutesBeforeDeadline": 1439.68301,
+      "eachEvents": 1,
+      "eachNotifications": 1,
+      "eachSentEmails": 1,
+      "language": "ar"
+    },
+    "defaultSeasonSelection": {
+      "observed": "Older future-dated synthetic seasons win default hub",
+      "guardedParkingSourcePrepared": true,
+      "hostedApplied": false
     }
   }
 }
