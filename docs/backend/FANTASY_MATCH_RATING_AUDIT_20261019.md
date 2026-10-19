@@ -2,6 +2,8 @@
 
 Captured 2026-10-18T22:17:42.931Z (UTC), 2026-10-19 Dubai.
 
+Rechecked every match at **2026-10-19 10:52 Dubai** (06:52:26.831 UTC), [read-only run 39212330537](https://github.com/mrdata007/botolago-foundation/actions/runs/39212330537), artifact 12168461060. All 30 requests succeeded. The rating values and missing-appearance counts below are unchanged: GW1 211 ratings, GW2 212, GW3 248, GW4 188 (859 total). Only the participant ordering changed in one GW4 response. No production data was written by either audit.
+
 [Read-only audit run 39171531945](https://github.com/mrdata007/botolago-foundation/actions/runs/39171531945). All assigned finished fixtures were fetched separately. No failed requests. No ratings were estimated or filled.
 
 | GW  | Match                               | Real ratings | Unrated appearances | Uncertain | Ready   | SofaScore event |
