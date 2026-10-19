@@ -60,6 +60,17 @@ class AlarmTests(unittest.TestCase):
         self.assertNotIn('private@example.invalid',json.dumps(value))
         self.assertNotIn('opaque-value',json.dumps(value))
 
+    def test_private_health_read_uses_the_owner_connection_without_mutating(self):
+        target=unittest.mock.Mock()
+        target.execute.return_value=[{'worker':{'status':'ok'}}]
+        D.health(target)
+        target.rows.assert_not_called()
+        sql,timeout=target.execute.call_args.args
+        self.assertTrue(sql.strip().startswith('select '))
+        self.assertNotIn('update ',sql)
+        self.assertNotIn('insert ',sql)
+        self.assertEqual(timeout,60)
+
 
 if __name__=='__main__':
     unittest.main()

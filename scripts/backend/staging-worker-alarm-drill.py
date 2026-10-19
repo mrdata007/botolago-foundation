@@ -76,11 +76,13 @@ def maintenance(target):
 
 
 def health(target):
-    return target.rows("""select app_private.ops_health_checks() as health,
+    # This private entrypoint is not granted to the Management API's read-only
+    # role. Use the owner connection for this SELECT; no health row is edited.
+    return target.execute("""select app_private.ops_health_checks() as health,
       app_private.fantasy_worker_health() as worker,
       extract(epoch from statement_timestamp()-greatest(d.counting_from,d.pending_since,
         (select max(finished_at) from app_private.fantasy_worker_runs where outcome='ok')))/60 as elapsed_minutes,
-      d.counting_from,d.pending_since,d.last_outcome from app_private.fantasy_worker_dispatch d where id""")[0]
+      d.counting_from,d.pending_since,d.last_outcome from app_private.fantasy_worker_dispatch d where id""",60)[0]
 
 
 def assert_health(value, expected):

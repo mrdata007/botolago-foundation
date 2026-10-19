@@ -1318,5 +1318,17 @@
     ],
     "appDeploy": "Existing TanStack Start SSR cannot be deployed unchanged under the returned static frontend/router constraints; no app created.",
     "deploymentPerformed": false
+  },
+  "finalPlan274": {
+    "run": 39231620643,
+    "recorded": 274,
+    "pending": []
+  },
+  "publicWebsiteRecheck": {
+    "at": "2026-10-19T09:52:49Z",
+    "httpStatus": 200,
+    "release": "19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2",
+    "operatorPublished": false,
+    "htmlMetaVerification": "pending"
   }
 }

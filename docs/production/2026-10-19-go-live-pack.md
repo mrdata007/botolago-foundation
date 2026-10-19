@@ -20,23 +20,26 @@ runbook, a seeded total or a green planning action does not prove acceptance.
 
 ## Version and environment manifest
 
-| Component            | Observed version / state                                                                                                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                  |
-| Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                   |
-| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 274 history rows after the rating-publication and fixture-guard rehearsals/applications; final plan pending                            |
-| Staging Edge runtime | All 15 repository functions refreshed by run 39230680918, source `9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a`; scheduler and Resend credentials present                                                         |
-| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                            |
-| Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source |
-| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                      |
+| Component            | Observed version / state                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR 517 integration   | Merged as `b545e386e3a43f70e514de365ddad8cafb795f72`; tested tree `3679dfd386d12bc327238e65040556e3d2a3b3de`                                                                                                     |
+| Staging operations   | [Draft PR 526](https://github.com/mrdata007/botolago-foundation/pull/526); scoring run pinned to `cb31e56d`                                                                                                      |
+| Staging database     | `srdrflfrfpwixsllveid`, PostgreSQL 17.6, Micro (`max_connections=60`); 274 history rows after the rating-publication and fixture-guard rehearsals/applications; plan 39231620643 reports zero pending migrations |
+| Staging Edge runtime | All 15 repository functions refreshed by run 39230680918, source `9bdaf4ca30dd1f3ca281685c27ddb1647a4c2e0a`; scheduler and Resend credentials present                                                            |
+| Production database  | `tkewgajrljbwgwedqsxn`; read-only inspection only. Pilot/deadline migrations remain unapplied in this operator's verified snapshot                                                                               |
+| Production website   | At 2026-10-19 08:25 UTC, HTTP 200 with `x-botolago-release: unknown`; the Lovable project reports synced source `2d60a817be607e76bee5ae3aa5fe74830550f431`, which does not prove the published build's source    |
+| Compute parity       | Both projects report 60 maximum connections / Micro; neither was resized                                                                                                                                         |
 
 Main and the website advanced through another release during this staging window.
 The tested source is pinned above; rerun the plan and compare backend files against
 the final selected release SHA before production. Do not present a mixed manifest
 as proof that all four deployment components run one commit.
-The current unknown release identifier must be resolved at the hosting build:
+At the earlier snapshot the unknown release identifier required a hosting fix:
 set `VITE_RELEASE_SHA` to the selected source SHA before the authorised publish,
-then verify both its response header and HTML meta value. The source's git
+then verify both its response header and HTML meta value. At 09:52 UTC a public
+HTTP recheck returned release `19cfafb24171f300a5b85ebd2f5d66d4dfbc4eb2`; this
+operator did not publish it. HTML-meta and chosen-final-release parity still need
+verification. The source's git
 fallback cannot identify a build made without a Git checkout. This pack does
 not authorise changing production hosting configuration or publishing.
 
@@ -196,8 +199,12 @@ used a fresh `f951` fixture and unchanged deployed Edge limits. The first pass
 scored 1,500 teams in 104 seconds; the second returned at the same 1,500 teams.
 Both returned `partial / fantasy_worker_time_limit`; zero teams finalized and
 zero rankings were published. The lifecycle starts its team cursor at null for
-each invocation. This is a reproducible completion blocker: recurring invocations
-repeat the first page range instead of finishing the remaining teams.
+each invocation. This is a reproducible limit of the Edge path: recurring invocations repeat the
+first page range instead of finishing the remaining teams. The existing worker
+runbook explicitly acknowledges this cursor gap and assigns large rounds to the
+GitHub fallback (5,000 RPCs / 40 minutes) after the last ok pass ages past
+30 minutes. Our scoped operator run fits those allowances, but it does not prove
+the actual scheduled fallback is dispatched and takes ownership in time.
 
 The two requests returned HTTP 200, but that is not lifecycle success. Runtime
 shutdown logs report `EarlyDrop`, with CPU-time values 235 and 182 and about
