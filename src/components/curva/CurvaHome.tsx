@@ -126,7 +126,7 @@ export function CurvaHomeView({
   // from ever drawing anything of Curva for one.
   if (state.kind === "guest") return <CurvaLockScreen />;
   return (
-    <FantasyFrame bottomNav topBar="always" className={STICKY_COLUMN_CLASS}>
+    <FantasyFrame bottomNav width="wide" topBar="always" className={STICKY_COLUMN_CLASS}>
       <UiPageTitle title={copy.nav} />
       {state.kind === "loading" ? <CurvaLoading /> : null}
       {state.kind === "error" ? <CurvaError retry={retry} /> : null}
