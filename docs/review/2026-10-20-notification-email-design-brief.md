@@ -20,6 +20,7 @@ wordmark, while manager emails use the official raster asset. Repeated large
 navy panels compete with the primary action. Typography and footers vary.
 
 Build five substantially different HTML directions for all eight types:
+
 1. Club — compact navy branding, mint/cyan highlight and rounded action.
 2. Journal — white editorial masthead, restrained borders and typographic data.
 3. Stadium — existing branded stadium image and a clean white reading area.
