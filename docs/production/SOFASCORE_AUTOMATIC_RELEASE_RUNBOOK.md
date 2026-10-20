@@ -929,3 +929,15 @@ Unknown participation, conflicting evidence and longer unrated appearances
 remain pending. Deploy and verify the scorer and FR/AR status interface before
 the separate guarded activation. This migration is outside the older automatic
 release bundle and does not authorize legacy identity guesses or compensation.
+<!-- Later, separate release; never part of the original automatic install. -->
+Migration `20261019194059` adds private controls for one-time legacy identity
+repairs and preserves the no-new-purchase rule until stale catalog listings
+are reviewed. It inserts no production identity or selection. Its guarded
+repair operation is separate from this original release.
+- `20261020015540_fantasy_legacy_hold_release_audit_pairing.sql` is a separate
+  forward-only follow-up to the legacy identity controls. It requires paired
+  release timestamps and audit reasons. Promote the exact-source guarded
+  `scripts/backend/apply-20261020015540-fantasy-legacy-release-audit.sql` after
+  `20261019194059`, rehearsing and independently checking rollback first. The
+  one-time identity repair refuses to run without this hardening. It releases
+  no hold and changes no identity, ownership or score.
