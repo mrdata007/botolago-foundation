@@ -4,7 +4,9 @@ This supplements the source-by-source investigation in
 [the identity audit](LEGACY_SELECTION_IDENTITY_AUDIT_20261019.md). The exact,
 checksummed operational scope is the
 [21-player evidence manifest](evidence/legacy-identity-repair-manifest-20261019.json).
-Production repair is pending; these documents do not claim an applied fix.
+The reviewed repair was applied on 20 October 2026. See the
+[production receipt](FANTASY_RECOVERY_RECEIPT_20261020.md) for the exact release,
+preservation checks and remaining provider gaps.
 
 The earlier blocker combined two questions: who a player is, and whether the
 old club/position listing is suitable for a new purchase. Those require separate
