@@ -1,0 +1,1210 @@
+{
+  "snapshot": {
+    "digest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18",
+    "capturedAt": "2026-10-10T15:50:09.036966+00:00",
+    "entries": 240,
+    "excluded": {
+      "inactive": 0,
+      "unreviewed": 0
+    }
+  },
+  "fixtures": [
+    {
+      "key": "touargaFus",
+      "sofascoreId": "16958239",
+      "flashscoreId": "88o4wcDb",
+      "score": {
+        "home": 2,
+        "away": 1
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 30,
+          "reviewed": 13,
+          "appearedReviewed": 12,
+          "appearedUnresolvedIds": [
+            "1015235",
+            "1140870",
+            "1182630",
+            "1459156",
+            "1461780",
+            "1655612",
+            "1919280",
+            "2077088",
+            "2162075",
+            "2267301",
+            "2605430",
+            "2786568",
+            "2786670",
+            "2786671",
+            "898070",
+            "919749",
+            "919942",
+            "971023"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 11,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 5
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 29,
+          "reviewed": 4,
+          "appearedReviewed": 4,
+          "appearedUnresolvedIds": [
+            "2P6FH20M",
+            "4W9zY5jn",
+            "84IAWyXH",
+            "8Wpl5TyG",
+            "8jeKcs9j",
+            "ANTNx4ng",
+            "C4iGf8t2",
+            "EBe6ZJTF",
+            "ENnRDcAC",
+            "IJc43I4O",
+            "Kfr4Uw45",
+            "M1QRYd5d",
+            "OCfnzQyo",
+            "SYfsMw6n",
+            "UDJ9aI0S",
+            "Y7ZKkYvM",
+            "f33B3Jdn",
+            "hWfHzfrt",
+            "htRXCojO",
+            "lhTF6Kpn",
+            "nusnqK1F",
+            "rDDfKMJc",
+            "tMOy3hAC",
+            "tnZ20jB7",
+            "zFJ45LbT"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 8
+        }
+      },
+      "before": {
+        "mode": "incomplete",
+        "scorableMode": "simple",
+        "heldBack": 1,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 2,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "info:penalty_label_differs": 1,
+          "player:timeline_disagrees": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 1,
+          "goalsConceded": 1,
+          "minutes": 1,
+          "saves": 2
+        },
+        "statusCounts": {
+          "unreviewed_legacy": 39
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "incomplete",
+        "scorableMode": "simple",
+        "heldBack": 1,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 2,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "info:penalty_label_differs": 1,
+          "player:timeline_disagrees": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 1,
+          "goalsConceded": 1,
+          "minutes": 1,
+          "saves": 2
+        },
+        "statusCounts": {
+          "partially_reviewed": 8,
+          "reviewed_pair": 4,
+          "unreviewed_legacy": 27
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": false,
+        "scoringFieldsReady": false,
+        "scoringReady": false,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 18 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 25 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).",
+        "EVIDENCE: 1 player(s) held back (cleanSheet unknown for 1, goalsConceded unknown for 1, minutes unknown for 1, saves unknown for 2)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "dhjCodm",
+      "sofascoreId": "16958236",
+      "flashscoreId": "vZ4vNyTH",
+      "score": {
+        "home": 2,
+        "away": 6
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 14,
+          "appearedReviewed": 12,
+          "appearedUnresolvedIds": [
+            "1008598",
+            "1017970",
+            "1140816",
+            "1140894",
+            "1140899",
+            "1140945",
+            "1140959",
+            "1140962",
+            "1416474",
+            "1469601",
+            "1475496",
+            "1525316",
+            "1919297",
+            "2217473",
+            "2451317",
+            "2606326",
+            "307470",
+            "880101",
+            "919699",
+            "919738"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 13,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 7
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 5,
+          "appearedReviewed": 5,
+          "appearedUnresolvedIds": [
+            "2eqdigzB",
+            "6yxEy9S7",
+            "A1vs5QhM",
+            "CY4cnRYK",
+            "E3YQDDn7",
+            "EL16d5Js",
+            "IwbD8fB0",
+            "K8DYJ8JE",
+            "KQXWbv4i",
+            "M5qsz213",
+            "M7pXwpYm",
+            "OhjODGhj",
+            "WIXJwiHI",
+            "bciRFtna",
+            "dKFoZAHD",
+            "fN5oxSRL",
+            "hYKCYol2",
+            "jgP8skkL",
+            "llRfH2xq",
+            "nXajO6Aq",
+            "nZoQztrf",
+            "pnXdiL4s",
+            "prkV7B9c",
+            "ttFiSTM7",
+            "vBmxY9Dd",
+            "vR0oDtdI",
+            "xpg1dh4G"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [
+            "QPi59dFa"
+          ],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 9,
+          "unresolvedWithScoringIncidents": 9
+        }
+      },
+      "before": {
+        "mode": "review",
+        "scorableMode": null,
+        "heldBack": 0,
+        "pairedRecords": 0,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 6,
+        "unmatchedAppeared": 4,
+        "discrepancyCounts": {
+          "fixture:goal_mismatch": 1,
+          "info:ambiguous_shirt": 1
+        },
+        "fixtureBlockers": [
+          "The providers do not name the same away scorer for the goal at minute 26."
+        ],
+        "unknownFields": {},
+        "statusCounts": {},
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "review",
+        "scorableMode": null,
+        "heldBack": 0,
+        "pairedRecords": 0,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 6,
+        "unmatchedAppeared": 4,
+        "discrepancyCounts": {
+          "fixture:goal_mismatch": 1,
+          "info:ambiguous_shirt": 1
+        },
+        "fixtureBlockers": [
+          "The providers do not name the same away scorer for the goal at minute 26."
+        ],
+        "unknownFields": {},
+        "statusCounts": {},
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": false,
+        "participationEstablished": false,
+        "scoringFieldsReady": false,
+        "scoringReady": false,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 20 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 27 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).",
+        "IDENTITY: 1 Flashscore id(s) named by an incident are in no lineup and have no reviewed mapping.",
+        "IDENTITY: 4 player(s) who appeared could not be paired across the providers.",
+        "EVENTS: The providers do not name the same away scorer for the goal at minute 26."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "wacTemara",
+      "sofascoreId": "17132472",
+      "flashscoreId": "pW7nLFcU",
+      "score": {
+        "home": 1,
+        "away": 3
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 19,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 9,
+          "appearedReviewed": 8,
+          "appearedUnresolvedIds": [
+            "1009247",
+            "1140815",
+            "1195802",
+            "1210560",
+            "1410431",
+            "1503256",
+            "1606559",
+            "1632065",
+            "1863859",
+            "2166971",
+            "2265493",
+            "2267304",
+            "2267331",
+            "2425983",
+            "2762916",
+            "2762918",
+            "2762923",
+            "2762924",
+            "2762930",
+            "2762931",
+            "2787354",
+            "2787361",
+            "880105"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 15,
+          "appearedUnresolvedSubstitutes": 8,
+          "unresolvedWithScoringIncidents": 6
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 5,
+          "appearedReviewed": 5,
+          "appearedUnresolvedIds": [
+            "069ajtHj",
+            "2L6YCKAr",
+            "6JHNTMrr",
+            "8I7HhU3r",
+            "8fg6c1WA",
+            "A1OYzgyd",
+            "AHn57hRH",
+            "E11CoFwS",
+            "E3jk41Ut",
+            "EezF02yg",
+            "EiKcHmw9",
+            "Iii04k16",
+            "MPci6BWg",
+            "Msve3iTc",
+            "OUlXS0p3",
+            "S2xIiCH0",
+            "SMAMBU2R",
+            "SUnJhrKL",
+            "UkFKaT7t",
+            "bVDTYKTq",
+            "bi4hra8D",
+            "j5k82TVI",
+            "jyOCDgvK",
+            "rL9klixJ",
+            "t4gDC7fJ",
+            "z9aq8X1s",
+            "zTNQKAom"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 9,
+          "unresolvedWithScoringIncidents": 6
+        }
+      },
+      "before": {
+        "mode": "review",
+        "scorableMode": null,
+        "heldBack": 0,
+        "pairedRecords": 0,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 11,
+        "unmatchedAppeared": 9,
+        "discrepancyCounts": {
+          "fixture:goal_mismatch": 1
+        },
+        "fixtureBlockers": [
+          "The providers do not name the same home scorer for the goal at minute 81."
+        ],
+        "unknownFields": {},
+        "statusCounts": {},
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "incomplete",
+        "scorableMode": "simple",
+        "heldBack": 13,
+        "pairedRecords": 35,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 9,
+        "unmatchedAppeared": 7,
+        "discrepancyCounts": {
+          "info:assist_unconfirmed": 1,
+          "info:minutes_differ": 2,
+          "player:minutes_mismatch": 1,
+          "player:participation_ambiguous": 2,
+          "player:substitution_mismatch": 6,
+          "player:unmatched_player": 7
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "assists": 17,
+          "cleanSheet": 6,
+          "goalsConceded": 6,
+          "minutes": 6,
+          "saves": 2
+        },
+        "statusCounts": {
+          "partially_reviewed": 3,
+          "reviewed_pair": 5,
+          "unreviewed_legacy": 27
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": false,
+        "scoringFieldsReady": false,
+        "scoringReady": false,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 23 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 27 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).",
+        "IDENTITY: 7 player(s) who appeared could not be paired across the providers.",
+        "EVIDENCE: 13 player(s) held back (assists unknown for 17, cleanSheet unknown for 6, goalsConceded unknown for 6, minutes unknown for 6, saves unknown for 2)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "tiznitTanger",
+      "sofascoreId": "16958238",
+      "flashscoreId": "0rrduJrn",
+      "score": {
+        "home": 1,
+        "away": 3
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 19,
+          "starters": 10
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 39,
+          "appeared": 30,
+          "reviewed": 13,
+          "appearedReviewed": 10,
+          "appearedUnresolvedIds": [
+            "1049187",
+            "1126845",
+            "1140914",
+            "1140920",
+            "1140925",
+            "1186787",
+            "1525285",
+            "1545330",
+            "1632047",
+            "1919291",
+            "2137652",
+            "2451593",
+            "2600941",
+            "2600944",
+            "2600947",
+            "2791567",
+            "281093",
+            "365552",
+            "884821",
+            "919491"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [
+            "2600941"
+          ],
+          "appearedUnresolvedStarters": 12,
+          "appearedUnresolvedSubstitutes": 8,
+          "unresolvedWithScoringIncidents": 7
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 31,
+          "reviewed": 4,
+          "appearedReviewed": 4,
+          "appearedUnresolvedIds": [
+            "0YVGIk3j",
+            "0YfJxhQi",
+            "4EzyR1Kc",
+            "4zLayxz4",
+            "6HyymDOq",
+            "6JID6yIj",
+            "8rlA8qhf",
+            "AN5erMzP",
+            "AanhVOS3",
+            "Gve8X4oc",
+            "IJ2UKSGN",
+            "KjzrHplI",
+            "M5DgvqtC",
+            "QHzQ6UrK",
+            "QknvZ5uF",
+            "S6zdF3fk",
+            "UBzLf4Qh",
+            "Uqzw9B03",
+            "UwyhZLnJ",
+            "W25cax8i",
+            "bgibvBYe",
+            "fDAK92cJ",
+            "hfHS3nG4",
+            "tKvqoWoL",
+            "vXqNlX5D",
+            "xCfC2Buh",
+            "zPifIIEi"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 9,
+          "unresolvedWithScoringIncidents": 7
+        }
+      },
+      "before": {
+        "mode": "incomplete",
+        "scorableMode": "full",
+        "heldBack": 3,
+        "pairedRecords": 39,
+        "singleSourceRecords": 1,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:lineup_fallback": 1,
+          "info:minutes_differ": 2,
+          "player:substitution_mismatch": 3
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 3,
+          "goalsConceded": 3,
+          "minutes": 3
+        },
+        "statusCounts": {
+          "single_source_unreviewed": 1,
+          "unreviewed_legacy": 39
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "incomplete",
+        "scorableMode": "full",
+        "heldBack": 3,
+        "pairedRecords": 39,
+        "singleSourceRecords": 1,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:lineup_fallback": 1,
+          "info:minutes_differ": 2,
+          "player:substitution_mismatch": 3
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 3,
+          "goalsConceded": 3,
+          "minutes": 3
+        },
+        "statusCounts": {
+          "partially_reviewed": 9,
+          "reviewed_pair": 4,
+          "single_source_unreviewed": 1,
+          "unreviewed_legacy": 26
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": false,
+        "scoringFieldsReady": false,
+        "scoringReady": false,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 20 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 27 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).",
+        "PARTICIPATION: 1 Sofascore player(s) have recorded minutes but no substitution incident.",
+        "EVIDENCE: 3 player(s) held back (cleanSheet unknown for 3, goalsConceded unknown for 3, minutes unknown for 3)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "masZemamra",
+      "sofascoreId": "17132481",
+      "flashscoreId": "W81WOcb5",
+      "score": {
+        "home": 2,
+        "away": 1
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 19,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 19,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 20,
+          "appearedReviewed": 16,
+          "appearedUnresolvedIds": [
+            "1004523",
+            "1213241",
+            "1525293",
+            "1528418",
+            "1866448",
+            "1894253",
+            "1919276",
+            "1939981",
+            "2150417",
+            "2161842",
+            "2776291",
+            "2776292",
+            "2790099",
+            "2790119",
+            "919753"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 10,
+          "appearedUnresolvedSubstitutes": 5,
+          "unresolvedWithScoringIncidents": 1
+        },
+        "flashscore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 7,
+          "appearedReviewed": 7,
+          "appearedUnresolvedIds": [
+            "2HWvWiAh",
+            "2uH4VobK",
+            "6qoLErCJ",
+            "8bFrnTun",
+            "C6xYAm9Q",
+            "G2mkNAAt",
+            "K26kxWp9",
+            "OhuwMnGF",
+            "Q1Q3etwS",
+            "QDdyhjdc",
+            "QyhgY0uA",
+            "SnhcX8Di",
+            "WhxNGMST",
+            "Y5ic9nvc",
+            "bqfwOHtS",
+            "dnjhjFGK",
+            "fPvOayMG",
+            "h48Fnz3K",
+            "hCCwZ5We",
+            "hQmap0Dd",
+            "lzfosEQs",
+            "tAk7omo9",
+            "tKReSnJ8",
+            "z7dlksCn"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 15,
+          "appearedUnresolvedSubstitutes": 9,
+          "unresolvedWithScoringIncidents": 3
+        }
+      },
+      "before": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 6
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "unreviewed_legacy": 39
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 6
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "partially_reviewed": 13,
+          "reviewed_pair": 7,
+          "unreviewed_legacy": 19
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": true,
+        "scoringFieldsReady": true,
+        "scoringReady": true,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 15 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 24 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "tetouanBerkane",
+      "sofascoreId": "17132482",
+      "flashscoreId": "nLBqJSRq",
+      "score": {
+        "home": 0,
+        "away": 0
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 19,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 31,
+          "reviewed": 23,
+          "appearedReviewed": 18,
+          "appearedUnresolvedIds": [
+            "1140960",
+            "1182584",
+            "1459150",
+            "1459151",
+            "1496358",
+            "1855946",
+            "1878240",
+            "1972600",
+            "2127601",
+            "2178618",
+            "2790062",
+            "2791084",
+            "845274"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 10,
+          "appearedUnresolvedSubstitutes": 3,
+          "unresolvedWithScoringIncidents": 1
+        },
+        "flashscore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 5,
+          "appearedReviewed": 5,
+          "appearedUnresolvedIds": [
+            "0KlwlDKr",
+            "2qofpVJ7",
+            "4OyLPcwH",
+            "4YE9ePSH",
+            "4lLSQLBn",
+            "6ZnHneKH",
+            "APB0nCJs",
+            "CGBHWOyD",
+            "ClKfKc08",
+            "G2h3w8H5",
+            "MuvjnXUg",
+            "S8TAFACU",
+            "U1kEZUt6",
+            "WYPHIt5g",
+            "Wn7EFg01",
+            "YLl9lHk5",
+            "bcvamusn",
+            "dvRiE70p",
+            "f5TvqtJe",
+            "fLzQK3ek",
+            "htz4G8Vu",
+            "lnMWyV1i",
+            "n30D04vf",
+            "nZ2gVc5o",
+            "p0lm5spL",
+            "tfb6fUa5"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 8,
+          "unresolvedWithScoringIncidents": 2
+        }
+      },
+      "before": {
+        "mode": "incomplete",
+        "scorableMode": "full",
+        "heldBack": 2,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 1,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 4,
+          "player:substitution_mismatch": 2
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 2,
+          "goalsConceded": 2,
+          "minutes": 2
+        },
+        "statusCounts": {
+          "unreviewed_legacy": 39
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "incomplete",
+        "scorableMode": "full",
+        "heldBack": 2,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 1,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 4,
+          "player:substitution_mismatch": 2
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "cleanSheet": 2,
+          "goalsConceded": 2,
+          "minutes": 2
+        },
+        "statusCounts": {
+          "partially_reviewed": 18,
+          "reviewed_pair": 5,
+          "unreviewed_legacy": 16
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": false,
+        "scoringFieldsReady": false,
+        "scoringReady": false,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 13 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 26 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).",
+        "EVIDENCE: 2 player(s) held back (cleanSheet unknown for 2, goalsConceded unknown for 2, minutes unknown for 2)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    },
+    {
+      "key": "kacmHusa",
+      "sofascoreId": "17132480",
+      "flashscoreId": "GYlCyyrB",
+      "score": {
+        "home": 2,
+        "away": 3
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 18,
+          "appearedReviewed": 14,
+          "appearedUnresolvedIds": [
+            "1004247",
+            "1008871",
+            "1140934",
+            "1168590",
+            "1170317",
+            "1392058",
+            "1401535",
+            "1418569",
+            "1488437",
+            "1494677",
+            "1519084",
+            "1525286",
+            "1952096",
+            "2161833",
+            "2228620",
+            "2293695",
+            "919954",
+            "980301"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 12,
+          "appearedUnresolvedSubstitutes": 6,
+          "unresolvedWithScoringIncidents": 6
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 12,
+          "appearedReviewed": 12,
+          "appearedUnresolvedIds": [
+            "2sSDGBcO",
+            "6ZjiWFfc",
+            "AB34XEoc",
+            "EF5z75qs",
+            "EupW0gD2",
+            "IZw30Qe2",
+            "MBpQdm62",
+            "SfFKElUJ",
+            "SjEj2NiO",
+            "UDsXGbxd",
+            "YcAMKfZR",
+            "YcvvHxCp",
+            "fTaGBfV8",
+            "hfctfBm2",
+            "j7b8WkOE",
+            "jZ9xJvwH",
+            "plpSHEu9",
+            "tb5oS4uU",
+            "txTRlHah",
+            "vLrPoo7T"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 13,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 7
+        }
+      },
+      "before": {
+        "mode": "simple",
+        "scorableMode": "simple",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "player:penalty_saved_unknown": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "penaltiesSaved": 1
+        },
+        "statusCounts": {
+          "unreviewed_legacy": 40
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "simple",
+        "scorableMode": "simple",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "player:penalty_saved_unknown": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "penaltiesSaved": 1
+        },
+        "statusCounts": {
+          "partially_reviewed": 6,
+          "reviewed_pair": 12,
+          "unreviewed_legacy": 22
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": true,
+        "scoringFieldsReady": true,
+        "scoringReady": true,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 18 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 20 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18"
+    }
+  ]
+}

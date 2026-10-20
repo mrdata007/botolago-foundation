@@ -81,15 +81,30 @@ Each match gets one outcome:
 
 ```
 bun scripts/backend/reconciled-scoring-ingestion.ts --plan plan.json \
-  --mappings rows.json --captured-at <ISO> [--mode local|dry-run|record] [--out report.json]
+  --mappings rows.json --captured-at <ISO> [--mode local|dry-run|record] \
+  [--source committed|live] [--out report.json]
 ```
 
 - **`plan.json`:** the provider match pair and its app fixture and teams, reviewed by a
   person.
 - **`rows.json`:** the output of `football-reviewed-mapping-snapshot.sql`, read from the same
   database the run writes to.
-- **Provider data:** the committed historical payloads only. The script makes no provider
-  call.
+- **Provider data (`--source`):**
+  - `committed` (default): the committed historical payloads. No provider call.
+  - `live`: downloads each match from Sofascore and Flashscore through the approved adapters
+    (4 requests per provider per match, against the monthly quotas). Needs `RAPIDAPI_KEY` and
+    `FLASHSCORE_RAPIDAPI_HOST`. `--observed-at` defaults to now. The staging-only rule for
+    the database modes is unchanged. A match that is not finished or whose providers
+    disagree is blocked by the same checks as before.
+  - One client per provider is reused across the whole plan, preserving quota state between
+    matches. `providerUsage` reports actual calls (including retries) and the latest quota
+    headers; unknown headers remain null. The CLI warns at 20% remaining. The client refuses
+    further requests below its 100-request reserve, including retries after a failed response.
+  - On 2026-10-10 a read-only probe downloaded three finished matches (24 provider requests),
+    and those fresh responses passed through this live loader and the reconciler offline.
+    All three remain blocked on reviewed identities. This verifies fresh response parsing,
+    not a database write or a directly credentialed CLI invocation. Details:
+    [provider migration evidence](../production/provider-migration-2026-10-10/README.md).
 - **Database modes:** need `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, and **refuse the
   production project**.
 - **`record`:** also needs `RECONCILED_INGESTION_CONFIRMATION=RECORD_RECONCILED_OBSERVATIONS_ON_STAGING`.
