@@ -1,0 +1,98 @@
+[
+  {
+    "phase": "before",
+    "lang": "fr",
+    "width": 390,
+    "view": "pitch",
+    "labels": 3,
+    "dir": "ltr",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "fr",
+    "width": 390,
+    "view": "list",
+    "labels": 3,
+    "dir": "ltr",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "fr",
+    "width": 1280,
+    "view": "pitch",
+    "labels": 3,
+    "dir": "ltr",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "fr",
+    "width": 1280,
+    "view": "list",
+    "labels": 3,
+    "dir": "ltr",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "ar",
+    "width": 390,
+    "view": "pitch",
+    "labels": 3,
+    "dir": "rtl",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "ar",
+    "width": 390,
+    "view": "list",
+    "labels": 3,
+    "dir": "rtl",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "ar",
+    "width": 1280,
+    "view": "pitch",
+    "labels": 3,
+    "dir": "rtl",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  },
+  {
+    "phase": "before",
+    "lang": "ar",
+    "width": 1280,
+    "view": "list",
+    "labels": 3,
+    "dir": "rtl",
+    "spinners": 3,
+    "clipping": [],
+    "offscreen": [],
+    "errors": []
+  }
+]

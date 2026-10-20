@@ -662,7 +662,7 @@ export const fr = {
   "fantasy.points.total": "Total",
   "fantasy.points.how_scored": "Comment les points sont calculés",
   "fantasy.points.status.provisional": "En cours",
-  "fantasy.points.awaiting_rating": "En attente de note",
+  "fantasy.points.awaiting_rating": "En attente des notes",
   "fantasy.rules.rating_rule_not_rated":
     "À partir de la journée {n}, les points sont la note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Une apparition de moins de 10 minutes sans note peut être confirmée « Non noté » après au moins 24 h et deux vérifications : elle rapporte 0 point, sans note inventée. Les autres notes manquantes restent en attente. Un joueur qui n’a pas joué marque 0. Le capitaine double ses points.",
   "fantasy.points.not_rated_short": "NN",

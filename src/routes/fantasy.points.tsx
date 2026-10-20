@@ -2,8 +2,8 @@ import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber"
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
@@ -25,6 +25,7 @@ import {
   UiErrorState,
   UiHeader,
   UiKeyValueRow,
+  UiModal,
   UiSegmented,
   UiSkeleton,
 } from "@/components/ui-kit";
@@ -153,6 +154,14 @@ function PointsBody() {
   const search = Route.useSearch();
   const [gw, setGw] = useState<number | null>(null);
   const [view, setView] = useState<"squad" | "list">("squad");
+  const [awaitingRatingOpen, setAwaitingRatingOpen] = useState(false);
+  const awaitingRatingTrigger = useRef<HTMLElement | null>(null);
+  const openAwaitingRating = (event?: MouseEvent<HTMLElement>) => {
+    awaitingRatingTrigger.current =
+      event?.currentTarget ??
+      (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setAwaitingRatingOpen(true);
+  };
 
   const gameweeksQ = useQuery({
     queryKey: ["fantasy-gameweeks-available"],
@@ -201,6 +210,13 @@ function PointsBody() {
     refetchInterval: (query) =>
       isCloud && query.state.data?.authoritative?.finalized !== true ? 30_000 : false,
   });
+  const hasPendingRatings =
+    resultQ.data?.authoritative?.ratingPublication?.pending === true ||
+    resultQ.data?.breakdown.some((player) => player.ratingPending === true) === true;
+  // A resolved rating or a different round must not leave a stale waiting popup.
+  useEffect(() => {
+    setAwaitingRatingOpen(false);
+  }, [gw, hasPendingRatings]);
 
   const lifecycle = isCloud
     ? (owned.snapshot?.lifecycle ?? fantasyStateStore.read())
@@ -287,11 +303,12 @@ function PointsBody() {
     }
     return b.totalPoints;
   };
-  const ratingPoints = (id: string) => (
+  const ratingPoints = (id: string, interactive = true) => (
     <RatingPoints
       points={pointsFor(id)}
       pending={breakdown.get(id)?.ratingPending === true}
       awaitingLabel={t("fantasy.points.awaiting_rating")}
+      onAwaitingClick={interactive ? openAwaitingRating : undefined}
       notRated={breakdown.get(id)?.notRated === true}
       notRatedLabel={t("fantasy.points.not_rated_explanation")}
       notRatedShortLabel={t("fantasy.points.not_rated_short")}
@@ -307,8 +324,9 @@ function PointsBody() {
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={<PopOnChange value={pts}>{ratingPoints(id)}</PopOnChange>}
+        sub={<PopOnChange value={pts}>{ratingPoints(id, false)}</PopOnChange>}
         pointsPending={breakdown.get(id)?.ratingPending === true}
+        onClick={breakdown.get(id)?.ratingPending === true ? openAwaitingRating : undefined}
         captain={id === badgeCaptainId}
         vice={id === viceId && id !== badgeCaptainId}
         size={size}
@@ -468,6 +486,7 @@ function PointsBody() {
                 points={null}
                 pending
                 awaitingLabel={t("fantasy.points.awaiting_rating")}
+                onAwaitingClick={openAwaitingRating}
               />
               <span>
                 {resultQ.data.authoritative.ratingPublication.historicalRevision
@@ -720,6 +739,24 @@ function PointsBody() {
           </UiCard>
         </section>
       ) : null}
+
+      <UiModal
+        open={awaitingRatingOpen && hasPendingRatings}
+        onOpenChange={setAwaitingRatingOpen}
+        title={t("fantasy.points.awaiting_rating")}
+        description={t("fantasy.points.ratings_pending")}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          awaitingRatingTrigger.current?.focus();
+        }}
+      >
+        <div className={cn("flex justify-center py-6", ui.tone.ink)}>
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-8 motion-safe:animate-spin motion-reduce:animate-none"
+          />
+        </div>
+      </UiModal>
 
       {resultQ.isError ? (
         <div className={cn("pt-4", ui.space.gutter)}>
