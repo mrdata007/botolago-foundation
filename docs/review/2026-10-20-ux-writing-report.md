@@ -70,6 +70,10 @@ sharing a generic message.
   and has not been applied to a shared database. Its pgTAP regression is included;
   local checks used an isolated PostgreSQL template fixture rather than the full
   Supabase stack.
+- **Release preparation:** after the owner requested merge and publication,
+  `scripts/backend/apply-20261020092736-ux-writing.sql` was added for the scoped
+  template migration. Its default full-path rehearsal deliberately rolls back;
+  apply requires the same guards and records the exact migration bytes.
 - **Verification:** existing exact-copy assertions were deliberately updated;
   amount, notification count and account/Plus browser scenarios exercise relevant
   behavior rather than snapshotting every sentence.
