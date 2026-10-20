@@ -1,4 +1,5 @@
-import { LoaderCircle } from "lucide-react";
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /** A pending rating is a state, not a zero. Partial points remain visible. */
 export function RatingPoints({
@@ -19,7 +20,7 @@ export function RatingPoints({
   none?: string;
 }) {
   return (
-    <span className="inline-flex items-center justify-center gap-1 align-middle">
+    <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-1 align-middle">
       {points !== null ? <span>{points}</span> : !pending ? none : null}
       {notRated ? (
         <span
@@ -32,11 +33,8 @@ export function RatingPoints({
         </span>
       ) : null}
       {pending ? (
-        <span role="img" aria-label={awaitingLabel} title={awaitingLabel}>
-          <LoaderCircle
-            aria-hidden="true"
-            className="size-3.5 motion-safe:animate-spin motion-reduce:animate-none"
-          />
+        <span className={cn("min-w-0 whitespace-normal text-center", ui.text.micro)}>
+          {awaitingLabel}
         </span>
       ) : null}
     </span>

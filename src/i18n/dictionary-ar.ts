@@ -635,7 +635,7 @@ export const ar = {
   "fantasy.points.total": "المجموع",
   "fantasy.points.how_scored": "كيف تُحتسب النقاط",
   "fantasy.points.status.provisional": "جارية",
-  "fantasy.points.awaiting_rating": "في انتظار التقييم",
+  "fantasy.points.awaiting_rating": "في انتظار التقييمات",
   "fantasy.rules.rating_rule_not_rated":
     "ابتداءً من الجولة {n}، تُحسب النقاط من تقييم SofaScore مقرّباً إلى أقرب عدد صحيح (7.5 تصبح 8، و7.4 تصبح 7). المشاركة لأقل من 10 دقائق دون تقييم يمكن تأكيدها «بلا تقييم» بعد 24 ساعة على الأقل وتحققين: صفر نقطة دون اختلاق تقييم. تبقى التقييمات الأخرى المفقودة قيد الانتظار. من لم يشارك يحصل على 0، والقائد يضاعف نقاطه.",
   "fantasy.points.not_rated_short": "بلا تقييم",

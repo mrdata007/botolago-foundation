@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RatingPoints } from "./RatingPoints";
 
 describe("awaiting real ratings", () => {
-  it("labels a settled zero as Not rated without showing the awaiting loop", () => {
+  it("labels a settled zero as Not rated without showing awaiting text", () => {
     const html = renderToStaticMarkup(
       <RatingPoints
         points={0}
@@ -11,13 +11,14 @@ describe("awaiting real ratings", () => {
         notRated
         notRatedLabel="Apparition non notée"
         notRatedShortLabel="NN"
-        awaitingLabel="En attente de note"
+        awaitingLabel="En attente des notes"
       />,
     );
     expect(html).toContain(">0<");
     expect(html).toContain('aria-label="Apparition non notée"');
     expect(html).toContain(">NN<");
     expect(html).not.toContain("animate-spin");
+    expect(html).not.toContain("En attente des notes");
   });
 
   it("can show a settled appearance beside earned points and another pending fixture", () => {
@@ -28,37 +29,38 @@ describe("awaiting real ratings", () => {
         notRated
         notRatedLabel="مشاركة بلا تقييم"
         notRatedShortLabel="بلا تقييم"
-        awaitingLabel="في انتظار التقييم"
+        awaitingLabel="في انتظار التقييمات"
       />,
     );
     expect(html).toContain(">7<");
     expect(html).toContain('aria-label="مشاركة بلا تقييم"');
-    expect(html).toContain('aria-label="في انتظار التقييم"');
+    expect(html).toContain(">في انتظار التقييمات<");
   });
-  it("shows a labelled loop without inventing a zero", () => {
+  it("shows visible awaiting text without a spinner or an invented zero", () => {
     const html = renderToStaticMarkup(
-      <RatingPoints points={null} pending awaitingLabel="En attente de note" />,
+      <RatingPoints points={null} pending awaitingLabel="En attente des notes" />,
     );
-    expect(html).toContain('aria-label="En attente de note"');
-    expect(html).toContain("motion-safe:animate-spin");
-    expect(html).toContain("motion-reduce:animate-none");
+    expect(html).toContain(">En attente des notes<");
+    expect(html).not.toContain("<svg");
+    expect(html).not.toContain("animate-spin");
     expect(html).not.toContain(">0<");
     expect(html).not.toContain("—");
   });
 
   it("keeps real zeroes distinct from missing ratings", () => {
     const html = renderToStaticMarkup(
-      <RatingPoints points={0} pending={false} awaitingLabel="في انتظار التقييم" />,
+      <RatingPoints points={0} pending={false} awaitingLabel="في انتظار التقييمات" />,
     );
     expect(html).toContain(">0<");
     expect(html).not.toContain("animate-spin");
+    expect(html).not.toContain("في انتظار التقييمات");
   });
 
   it("keeps earned points visible while another fixture is pending", () => {
     const html = renderToStaticMarkup(
-      <RatingPoints points={7} pending awaitingLabel="في انتظار التقييم" />,
+      <RatingPoints points={7} pending awaitingLabel="في انتظار التقييمات" />,
     );
     expect(html).toContain(">7<");
-    expect(html).toContain('aria-label="في انتظار التقييم"');
+    expect(html).toContain(">في انتظار التقييمات<");
   });
 });
