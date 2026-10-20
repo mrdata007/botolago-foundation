@@ -1961,6 +1961,10 @@ export type Database = {
         }
         Returns: string
       }
+      service_begin_fantasy_selection_close: {
+        Args: { p_expected_lock_version: number; p_gameweek_id: string }
+        Returns: Json
+      }
       service_cancel_notification_schedule: {
         Args: { p_schedule_id: string }
         Returns: boolean
