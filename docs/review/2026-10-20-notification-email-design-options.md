@@ -1,5 +1,8 @@
 # Branded notification email options
 
+> Historical options-stage report. The owner subsequently selected **Club for
+> all eight emails**. See the [production implementation report](2026-10-20-notification-email-club-implementation.md) for the current branch scope.
+
 The owner requested five versions for every notification email and an individual
 choice per type. This branch delivers a local review gallery, not a production
 renderer change. The [brief](2026-10-20-notification-email-design-brief.md) was

@@ -278,11 +278,13 @@ try {
         const greeting = after.findIndex((el) => /^(Bonjour|مرحب)/.test(el.textContent!.trim()));
         const data = after.slice(greeting);
         const cta = cell.querySelector<HTMLAnchorElement>("a[href]")!;
-        const action = cta.closest("table")!;
+        const action = siblings.find((element) => element.contains(cta))!;
         const actionIndex = data.indexOf(action);
-        const footer = generic
-          ? cell.parentElement!.nextElementSibling!.querySelector("td")!
-          : cell.closest("table")!.nextElementSibling!.querySelector("td")!;
+        const footer =
+          document.querySelector(".email-footer") ??
+          (generic
+            ? cell.parentElement!.nextElementSibling!.querySelector("td")!
+            : cell.closest("table")!.nextElementSibling!.querySelector("td")!);
         return {
           title: heading.textContent!.trim(),
           kicker: before.map((el) => el.textContent!.trim()).join(" "),
@@ -345,7 +347,8 @@ try {
                 if (node.style.backgroundColor || node.hasAttribute("bgcolor")) {
                   const hero =
                     node.style.backgroundColor === "rgb(12, 49, 100)" ||
-                    node.getAttribute("bgcolor") === "#0c3164";
+                    node.getAttribute("bgcolor") === "#0c3164" ||
+                    node.style.backgroundColor === "rgb(115, 237, 250)";
                   const tinted = node.style.backgroundColor === "rgb(233, 243, 254)";
                   const fill = dark
                     ? design.surface

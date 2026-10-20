@@ -4,6 +4,7 @@ import {
   formatDay,
   formatTime,
 } from "./notification-email-render.ts";
+import { renderClubEmail } from "./notification-email-club.ts";
 import { MOROCCO_TIME_ZONE, moroccoOffsetMs } from "./morocco-time.ts";
 
 export type TeamReminderKind = "selection-open" | "deadline-reminder";
@@ -154,36 +155,25 @@ export function renderTeamReminderEmail(input: TeamReminderEmailInput): {
   const iso = (value: string) =>
     `<span dir="ltr" style="unicode-bidi:isolate;display:inline-block;">${e(value)}</span>`;
   const table = (body: string, style = "") =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="${dir}" style="border-collapse:collapse;${style}">${body}</table>`;
-  const font = ar
-    ? "'Segoe UI',Tahoma,Arial,sans-serif"
-    : "-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif";
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="${dir}" style="width:100%;border-collapse:separate;border-spacing:0;${style}">${body}</table>`;
   const footer = t(
     "Vous recevez cet e-mail car vos rappels Fantasy et vos e-mails sont activés sur BotolaGO.",
     "تصلك هذه الرسالة لأن تذكيرات الفانتازي والبريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
   );
-  const html = `<!doctype html>
-<html lang="${input.language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title>${e(copy.subject)}</title><style>@media(max-width:620px){.outer{padding:12px 8px!important}.content{padding:24px 20px!important}h1{font-size:28px!important}}</style></head>
-<body dir="${dir}" style="margin:0;background:${C.page};font-family:${font};color:${C.text};">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${e(copy.preheader)}</div>
-${table(`<tr><td class="outer" align="center" style="padding:32px 12px;">
-<!--[if mso]><table role="presentation" width="600"><tr><td><![endif]-->
-${table(
-  `<tr><td bgcolor="${C.ink}" style="padding:26px 28px;background:${C.ink};border-radius:16px 16px 0 0;text-align:${start};"><a href="${app.origin}" style="text-decoration:none;"><img src="${app.origin}/email/botolago-wordmark-light.png" alt="BotolaGO" width="196" height="35" style="display:inline-block;border:0;width:196px;height:35px;max-width:100%;"></a></td></tr>
-<tr><td class="content" bgcolor="#ffffff" style="padding:30px 28px 32px;background:#ffffff;border-radius:0 0 16px 16px;text-align:${start};">
-<p style="margin:0 0 12px;color:${C.ink};font-size:12px;font-weight:700;line-height:1.6;">${e(copy.eyebrow)}</p>
-<h1 style="margin:0;font-size:34px;line-height:1.25;color:${C.ink};">${e(copy.title)}</h1>
-<p style="margin:22px 0 10px;font-size:16px;line-height:1.7;">${e(greeting)}</p>
-<p style="margin:0;font-size:16px;line-height:1.7;">${e(copy.body)}</p>
-${table(`<tr><td bgcolor="${C.ink}" style="padding:26px 18px;border-radius:12px;text-align:center;background:${C.ink};color:${C.onInk};"><p style="margin:0 0 12px;font-size:14px;color:#ffffff;">${e(gw)}</p><p style="margin:0 0 10px;font-size:12px;font-weight:700;line-height:1.7;color:#ffffff;">${e(deadlineLabel)}</p><p style="margin:0 0 8px;font-size:17px;line-height:1.7;color:#ffffff;">${e(day)}</p><div style="font-size:54px;font-weight:800;line-height:1.2;">${iso(time)}</div><p dir="ltr" style="margin:12px 0 0;font-size:12px;color:#ffffff;line-height:1.7;overflow-wrap:anywhere;">${e(zoneLabel)}</p></td></tr>`, "margin:24px 0;")}
-${table(`<tr><td bgcolor="${C.ink}" align="center" style="border-radius:9px;background:${C.ink};"><a href="${cta}" style="display:block;padding:16px 20px;color:#ffffff;font-weight:700;font-size:16px;line-height:24px;text-decoration:none;">${e(copy.cta)}</a></td></tr>`)}
-<p style="margin:22px 0 0;font-size:14px;line-height:1.7;color:${C.muted};">${e(copy.closer)}</p>
-</td></tr>`,
-  "max-width:600px;margin:0 auto;",
-)}
-${table(`<tr><td style="padding:22px 12px;text-align:${start};font-size:12px;line-height:1.8;color:${C.muted};"><p style="margin:0;">${e(footer)}</p><p style="margin:10px 0 0;"><a href="${prefs}" style="color:${C.ink};">${e(t("Gérer mes notifications", "إدارة إشعاراتي"))}</a> · <a href="${e(unsubscribe.href)}" style="color:${C.ink};">${e(t("Me désabonner", "إلغاء الاشتراك"))}</a></p><p dir="ltr" style="margin:10px 0 0;">© BotolaGO · botolago.com</p></td></tr>`, "max-width:600px;margin:0 auto;")}
-<!--[if mso]></td></tr></table><![endif]-->
-</td></tr>`)}</body></html>`;
+  const html = renderClubEmail({
+    language: input.language,
+    appUrl: app.origin,
+    subject: copy.subject,
+    preheader: copy.preheader,
+    kicker: copy.eyebrow,
+    title: copy.title,
+    bodyHtml: `<p style="margin:18px 0 0;">${e(greeting)}</p>
+<p style="margin:18px 0 0;">${e(copy.body)}</p>
+${table(`<tr><td bgcolor="${C.onInk}" style="padding:26px 18px;border:1px solid ${C.rule};border-radius:12px;text-align:center;background-color:${C.onInk};color:${C.ink};"><p style="margin:0 0 10px;font-size:14px;">${e(gw)}</p><p style="margin:0 0 10px;font-size:12px;font-weight:700;line-height:1.7;">${e(deadlineLabel)}</p><p style="margin:0 0 10px;font-size:17px;line-height:1.7;">${e(day)}</p><div style="font-size:64px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;">${iso(time)}</div><p dir="ltr" style="margin:12px 0 0;font-size:12px;line-height:1.7;overflow-wrap:anywhere;">${e(zoneLabel)}</p></td></tr>`, "margin:22px 0 0;table-layout:fixed;")}`,
+    cta: { label: copy.cta, url: cta },
+    closingHtml: `<p style="margin:18px 0 0;font-size:14px;color:${C.muted};">${e(copy.closer)}</p>`,
+    footerHtml: `<p style="margin:0;">${e(footer)}</p><p style="margin:10px 0 0;"><a href="${prefs}" style="color:${C.ink};display:inline-block;padding:5px 0;">${e(t("Gérer mes notifications", "إدارة إشعاراتي"))}</a> · <a href="${e(unsubscribe.href)}" style="color:${C.ink};display:inline-block;padding:5px 0;">${e(t("Me désabonner", "إلغاء الاشتراك"))}</a></p><p dir="ltr" style="margin:10px 0 0;">© BotolaGO · botolago.com</p>`,
+  });
   const text = [
     greeting,
     copy.title,

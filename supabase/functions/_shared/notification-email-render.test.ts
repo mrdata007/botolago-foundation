@@ -182,8 +182,13 @@ describe("renderNotificationEmail: every type in both languages", () => {
         expect(email.text).not.toMatch(/&(#\d+|[a-z]+);/i);
         expect(email.text).not.toContain("<");
 
-        // No scripts, no external resources.
-        expect(email.html).not.toMatch(/<script|<link|<img|@import|javascript:/i);
+        // No executable or arbitrary external resources. The only image is
+        // the official raster wordmark on the validated application origin.
+        expect(email.html).not.toMatch(/<script|<link|<iframe|@import|javascript:/i);
+        const images = [...email.html.matchAll(/<img\b[^>]*src="([^"]+)"[^>]*>/g)];
+        expect(images).toHaveLength(1);
+        expect(images[0]![1]).toBe(`${APP}/email/botolago-wordmark-light.png`);
+        expect(images[0]![0]).toContain('alt="BotolaGO"');
 
         // A hidden preheader carrying the preheader text.
         expect(email.html).toMatch(/<div style="display:none;max-height:0;[^"]*overflow:hidden;/);
@@ -248,7 +253,9 @@ describe("language and direction", () => {
     expect(tables.length).toBeGreaterThan(3);
     expect(tables.every((tag) => tag.includes('dir="rtl"'))).toBe(true);
     // The body card starts on the right.
-    expect(html).toMatch(/class="bg-card" dir="rtl" align="right" style="[^"]*text-align:right;/);
+    expect(html).toMatch(
+      /class="bg-card" dir="rtl" align="right"(?: bgcolor="[^"]+")? style="[^"]*text-align:right;/,
+    );
   });
 
   it("Arabic keeps times and scores in their own direction", () => {
@@ -654,6 +661,7 @@ describe("round preview", () => {
 
 describe("links", () => {
   const allowed = [
+    /^https:\/\/botolago\.com\/?$/,
     /^https:\/\/botolago\.com\/matches$/,
     /^https:\/\/botolago\.com\/matches\/[A-Za-z0-9%._~-]+$/,
     /^https:\/\/botolago\.com\/fantasy\/transfers$/,
@@ -682,13 +690,14 @@ describe("links", () => {
         const email = render(delivery(type, { language, favoriteTeamId: "raja" }));
         const hrefs = [...email.html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]!);
         const textUrls = email.text.match(/https?:\/\/\S+/g) ?? [];
-        // The button, manage, unsubscribe; Pépites adds its home page.
-        expect(hrefs.length).toBe(type === "pepites_weekly" ? 4 : 3);
+        // The wordmark, button, manage, unsubscribe; Pépites adds its home page.
+        expect(hrefs.length).toBe(type === "pepites_weekly" ? 5 : 4);
         for (const url of [...hrefs, ...textUrls]) {
           expect(allowed.some((pattern) => pattern.test(url))).toBe(true);
         }
-        expect(hrefs[0]!.startsWith(expectedCta[type])).toBe(true);
-        expect(textUrls).toContain(hrefs[0]!);
+        const cta = email.html.match(/<a data-email-cta href="([^"]+)"/)![1]!;
+        expect(cta.startsWith(expectedCta[type])).toBe(true);
+        expect(textUrls).toContain(cta);
       });
     }
   }
