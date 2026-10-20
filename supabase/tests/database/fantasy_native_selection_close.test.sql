@@ -317,6 +317,10 @@ select extensions.ok(not exists((select *from economics_before)except(select 'te
 -- A scheduled successor must not consume its manager reminder; opening inside
 -- the 24-hour window still creates exactly one actionable deadline event.
 savepoint reminder;
+update app_private.notification_email_settings set manager_automation_enabled=false where id;
+update app.fantasy_gameweeks set status='scheduled'where id='f6400000-0000-4000-8000-000000000002';
+select app_private.notification_email_plan((select deadline_at-interval'17 hours'from app.fantasy_gameweeks where id='f6400000-0000-4000-8000-000000000002'));
+select extensions.is((select count(*)::integer from app_private.notification_events where event_type='deadline_24h'and source_entity_id='f6400000-0000-4000-8000-000000000002'),0,'disabled manager automation cannot consume a scheduled successor reminder key');
 update app_private.notification_email_settings set manager_automation_enabled=true where id;
 update app.fantasy_gameweeks set status='scheduled'where id='f6400000-0000-4000-8000-000000000002';
 select app_private.notification_email_plan((select deadline_at-interval'17 hours'from app.fantasy_gameweeks where id='f6400000-0000-4000-8000-000000000002'));

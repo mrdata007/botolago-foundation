@@ -1003,3 +1003,13 @@ only after the migration is recorded. This release must leave the currently
 open GW5 and scheduled GW6 unchanged; use isolated rollback fixtures for
 finished-match and late-rating scenarios. Details and acceptance are in
 `docs/backend/FANTASY_SELECTION_CLOSE.md`.
+
+`20261020114031_fantasy_actionable_deadline_reminders.sql` is a forward
+review correction: every deadline reminder requires an open gameweek,
+including when manager-email automation is disabled. This prevents a dormant
+mode from consuming the global reminder key before activation. The original
+selection-close migration was already applied to staging and stays immutable.
+Promote this correction with
+`scripts/backend/apply-20261020114031-actionable-deadline-reminders.sql`
+after `20261020103533`, using its real rehearsal and independent rollback
+check. Deploy the worker only after both migrations are recorded.
