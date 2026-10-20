@@ -1,3 +1,4 @@
+import { AdSpace } from "@/components/advertising/AdSpace";
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
@@ -598,6 +599,8 @@ function ArticlePage() {
               )}
             </section>
           )}
+
+          <AdSpace placement="articleEnd" />
 
           {/* Related */}
           {related.length > 0 && (

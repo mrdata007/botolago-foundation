@@ -1,3 +1,4 @@
+import { AdSpace } from "@/components/advertising/AdSpace";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
@@ -623,6 +624,7 @@ function HomeContent() {
               ))}
             </div>
           )}
+          <AdSpace placement="homeFeed" className="order-6" />
           {/* -------------------------------------------------------- */}
           {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
           {/* -------------------------------------------------------- */}

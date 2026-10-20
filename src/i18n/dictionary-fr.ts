@@ -4,6 +4,12 @@
 // Arabic dictionary (dictionary-ar.ts) loads when a reader chooses Arabic.
 // `dictionaries.ts` puts both together for the tests and the i18n gate.
 export const fr = {
+  "ads.label": "Publicité",
+  "ads.sponsored": "Sponsorisé",
+  "ads.placeholder": "Votre marque ici",
+  "ads.available": "Espace partenaire disponible",
+  "ads.contact": "Nous contacter",
+
   "fantasy.scoring.incrementalPolicy":
     "Les points et le classement sont actualisés après chaque match admissible. Ils peuvent encore changer pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
   "fantasy.scoring.closedProvisional":

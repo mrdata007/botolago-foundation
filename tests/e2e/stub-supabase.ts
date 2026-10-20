@@ -132,6 +132,11 @@ const RPC: Record<string, Handler> = {
           teamId: text(args.p_team_id),
         }),
   news_team_filters: (args) => news.getTeamFilters(language(args)),
+  // The ad-placement journey also reads a complete article and its related
+  // cards through the same production repository, rather than a dev mock.
+  news_article_detail: (args) => news.getArticle(text(args.p_identifier) ?? "", language(args)),
+  news_related_articles: (args) =>
+    news.getRelated(text(args.p_article_edition_id) ?? "", limit(args, 3)),
   // One entry per edition, as the real RPC answers: an article's French and
   // Arabic editions are two ids, each naming the other. The mock feed gives
   // both languages one id, so the Arabic edition's is derived from it.

@@ -1,3 +1,4 @@
+import { AdSpace } from "@/components/advertising/AdSpace";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { unavailableHeaders } from "@/lib/page-availability";
 import {
@@ -280,6 +281,8 @@ function NewsPage() {
           )}
         </div>
       )}
+
+      <AdSpace placement="newsFeed" />
 
       {/* Latest — chronological feed with real keyset pagination */}
       <Section>
