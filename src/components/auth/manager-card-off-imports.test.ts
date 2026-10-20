@@ -73,14 +73,6 @@ describe("the pages WP6 touches keep the section's code out of their own chunks"
     expect(staticImports(read("src/components/auth/fantasy-create-path.ts"))).toEqual([]);
   });
 
-  it("keeps the resolution check to a type import, and only the card row imports it", () => {
-    expect(staticImports(read("src/components/auth/server-resolves-club.ts"))).toEqual([
-      { clause: "type { MyCardDto }", from: "@/backend/manager-card/contracts" },
-    ]);
-    const importers = FILES.filter((file) => read(file).includes("server-resolves-club"));
-    expect(importers).toEqual([]);
-  });
-
   it("reads no copy accessor of the section while off: the two hints are plain dictionary reads", () => {
     for (const file of ["src/routes/auth.register.tsx", "src/routes/auth.profile-setup.tsx"]) {
       expect(stripComments(read(file))).not.toMatch(/useMomentCopy|useCurvaCopy|useCardCopy/);

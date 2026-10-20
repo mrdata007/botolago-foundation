@@ -2747,6 +2747,7 @@ export const ar = {
   "curva.guest.body":
     "تبدأ بطاقتك كمدرّب مع فريقك: اسمك، وألوان ناديك، وتقييمٌ نابع من قراراتك، جولةً بعد جولة.",
   "curva.guest.sign_in": "تسجيل الدخول",
+  "curva.guest.continue_home": "المتابعة إلى الرئيسية",
   "curva.guest.try_title": "تجربة ألوان نادٍ",
   "curva.guest.try_hint": "معاينة فقط: يُختار ناديك عند إنشاء الحساب، ويمكن تغييره من ملفك الشخصي.",
   "curva.guest.point.name.title": "باسمك",

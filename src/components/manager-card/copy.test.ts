@@ -342,8 +342,9 @@ describe("the dictionary of the section", () => {
   // 184: Appendix A's 183 and « Vos moments » (finish review). 187: the waiting box's
   // « Statistiques remplies » title and its accessible sentence, and the league row's
   // « statistiques remplies 2/4 » (the card that waits for a statistic, 2026-10-10).
-  it("has the 207 keys of Appendix A (183, « Vos moments », the three of the statistics wait, the 18 of the pending strip and the two failed-renderer words), in both languages", () => {
-    expect(sectionKeys).toHaveLength(207);
+  // 208: the explicit way home after signup and card try-on (2026-10-20).
+  it("has the 208 section keys, including the signup way home, in both languages", () => {
+    expect(sectionKeys).toHaveLength(208);
     for (const key of sectionKeys) {
       expect(dictionaries.ar[key as keyof typeof dictionaries.ar]).toBeDefined();
     }

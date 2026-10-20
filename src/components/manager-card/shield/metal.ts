@@ -417,7 +417,7 @@ export const sigCss = (m: Metal): string => linear(100, m.sig);
 
 /**
  * Everything the stylesheet reads from the tier, as custom properties for the root's `style`.
- * Every value here is a literal of this file; nothing a manager supplies reaches it.
+ * Values come from this file, plus the base face's checked club hex mixed in `view.ts`.
  */
 export function cssVars(m: Metal): string {
   const vars: [string, string][] = [
