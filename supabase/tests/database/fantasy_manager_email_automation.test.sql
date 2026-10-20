@@ -117,17 +117,61 @@ values(pg_temp.eid(6),1,'Test owner approved actual API ratings only');
 insert into app_private.fantasy_rating_policy(season_id,from_gameweek,enabled)values(pg_temp.eid(6),1,true);
 insert into app_private.notification_events(id,event_type,source_domain,source_entity_id,target_user_id,occurred_at,schema_version,deduplication_key,correlation_id,safe_payload)
 values(pg_temp.eid(19),'gameweek_finalized','fantasy',pg_temp.eid(17),pg_temp.eid(201),now(),1,'test:manager-final-result',pg_temp.eid(17),'{"gameweek":2,"points":60}');
+-- Native-only production keeps the obsolete policy disabled. A complete,
+-- persisted and sealed current native snapshot is the authority instead.
+update app_private.fantasy_rating_policy set enabled=false where season_id=pg_temp.eid(6);
+select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'a final raw score without a native seal cannot email');
+insert into app_private.fantasy_scoring_snapshots(gameweek_id,calculation_version,input_digest,payload,players_persisted)
+values(pg_temp.eid(17),1,repeat('a',64),'{"apiNativeRatings":true,"ratingScoring":true,"scoringVersion":3,"ruleset":{"version":3},"pendingFixtures":[],"pendingPlayerIds":[],"playerFixtures":[],"fixtures":[]}',true);
+select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'an unsealed native calculation cannot email');
+update app_private.fantasy_scoring_snapshots set sealed_at=statement_timestamp()where gameweek_id=pg_temp.eid(17);
+select extensions.is((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())->>'points'from app_private.notification_events e where id=pg_temp.eid(19)),'60','verified native final points email while the legacy scoring policy remains disabled');
+create function pg_temp.native_email_rejects(p_change jsonb)returns boolean language plpgsql as $$
+declare original jsonb;rejected boolean;begin
+ select payload into original from app_private.fantasy_scoring_snapshots where gameweek_id=pg_temp.eid(17);
+ update app_private.fantasy_scoring_snapshots set payload=original||p_change where gameweek_id=pg_temp.eid(17);
+ select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null into rejected from app_private.notification_events e where id=pg_temp.eid(19);
+ update app_private.fantasy_scoring_snapshots set payload=original where gameweek_id=pg_temp.eid(17);
+ return rejected;end $$;
+select extensions.ok(pg_temp.native_email_rejects('{"apiNativeRatings":false}'),'a non-native seal cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"ruleset":{"version":2}}'),'an old scoring ruleset cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"pendingFixtures":[{}]}'),'a seal with pending fixtures cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"pendingPlayerIds":["missing"]}'),'a seal with pending players cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"pendingFixtures":null}'),'missing readiness evidence cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"playerFixtures":[{"apiAppeared":true,"rating":null,"stats":{"minutes":12}}]}'),'an unrated appearance without approved proof cannot email');
+select extensions.ok(pg_temp.native_email_rejects('{"playerFixtures":[{"apiAppeared":true,"rating":null,"apiNotRated":true,"participationKnown":true,"notRatedEvidence":{"policyVersion":1,"minutes":4},"stats":{"minutes":4}}]}'),'a forged Not rated flag cannot authorize email');
+update app_private.fantasy_scoring_snapshots set players_persisted=false where gameweek_id=pg_temp.eid(17);
+select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'unpersisted player results cannot email');
+update app_private.fantasy_scoring_snapshots set players_persisted=true where gameweek_id=pg_temp.eid(17);
+update app.fantasy_gameweeks set scoring_input_version=2 where id=pg_temp.eid(17);
+select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'a stale sealed calculation cannot email');
+update app.fantasy_gameweeks set scoring_input_version=1 where id=pg_temp.eid(17);
 select extensions.is((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())->>'points'from app_private.notification_events e where id=pg_temp.eid(19)),'60','ready payload agrees with the owned visible final result');
 select extensions.is((select app_private.fantasy_email_payload(e,pg_temp.eid(202),statement_timestamp())from app_private.notification_events e where id=pg_temp.eid(19)),null::jsonb,'another manager cannot receive the first manager score');
 update app.fantasy_player_gameweek_points set final_points=null,finalized_at=null where fantasy_player_id=pg_temp.eid(2001)and gameweek_id=pg_temp.eid(17);
 select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'one pending selected player blocks a final score email');
 update app.fantasy_player_gameweek_points set final_points=5,finalized_at=now()where fantasy_player_id=pg_temp.eid(2001)and gameweek_id=pg_temp.eid(17);
+-- Exercise fanout and claim with legacy scoring disabled, as in production.
+update app_private.notification_email_settings set activated_at=statement_timestamp()-interval '1 second';
+select app_private.notification_email_fanout(statement_timestamp(),'live','{}',(select activated_at from app_private.notification_email_settings),100);
+select extensions.is((select count(*)::integer from app.notifications where notification_type='gameweek_finalized'),1,'valid native final event reaches exactly its manager');
+select app_private.notification_email_fanout(statement_timestamp(),'live','{}',(select activated_at from app_private.notification_email_settings),100);
+select extensions.is((select count(*)::integer from app.notifications where notification_type='gameweek_finalized'),1,'native result fanout is idempotent');
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select set_config('test.native_final_claim',api.service_claim_email_deliveries(20,180)::text,true);
+select extensions.is((select count(*)::integer from jsonb_array_elements(current_setting('test.native_final_claim')::jsonb)x where x#>>'{payload,state}'='finalized'),1,'real dispatcher claim accepts the native final result');
+create function pg_temp.validate_native_final()returns boolean language plpgsql as $$
+declare x jsonb;begin
+ select value into strict x from jsonb_array_elements(current_setting('test.native_final_claim')::jsonb)where value#>>'{payload,state}'='finalized';
+ return api.service_validate_fantasy_email_delivery((x->>'id')::uuid,x->'payload',x#>>'{recipient,email}',x->>'timezone');end $$;
+select extensions.ok(pg_temp.validate_native_final(),'send boundary revalidates current native final points');
 insert into app_private.fantasy_rating_recovery_plans(gameweek_id,calculation_version,input_digest,owner_approval,previous_state,proposal,results,complete)
 values(pg_temp.eid(17),1,repeat('a',64),'Test publication preserving original final score','{}','{}',
 jsonb_build_object('playerResults','[]'::jsonb,'teamResults',jsonb_build_array(jsonb_build_object('teamId',pg_temp.eid(301),'lineupId',pg_temp.eid(18),'startingPoints',55,'benchPoints',20,'captainPoints',5,'transferHit',0,'provisionalScore',60))),false);
 insert into app_private.fantasy_rating_publications(gameweek_id,plan_id,owner_approval)
 select pg_temp.eid(17),id,'Test owner approved provisional visible revision'from app_private.fantasy_rating_recovery_plans where gameweek_id=pg_temp.eid(17);
 select extensions.ok((select app_private.fantasy_email_payload(e,pg_temp.eid(201),statement_timestamp())is null from app_private.notification_events e where id=pg_temp.eid(19)),'a visible provisional rating revision blocks an email despite the preserved raw final score');
+select extensions.ok(not pg_temp.validate_native_final(),'a provisional correction after claim blocks sending the old final score');
 set local role authenticated;
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 select extensions.throws_ok($$select api.service_validate_fantasy_email_delivery(pg_temp.eid(999),'{}','manager@example.test','Africa/Casablanca')$$,'42501',null,'a browser cannot invoke the service send authorization');
