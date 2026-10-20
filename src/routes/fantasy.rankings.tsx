@@ -1,7 +1,9 @@
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import rankingEmptyArt from "@/assets/illustrations/ranking-empty.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { skipToken, useQuery } from "@tanstack/react-query";
 import { LogIn, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -56,6 +58,25 @@ import type { LeagueStanding } from "@/types/fantasy";
 const PAGE_SIZE = 25;
 
 export const Route = createFileRoute("/fantasy/rankings")({
+  loader: async ({ context }) => {
+    await prefetchForSsr(context.queryClient, [
+      {
+        queryKey: ["fantasy-public-rankings"],
+        queryFn: async () => {
+          const { rows, total, podium } = await fantasyService.getGlobalRankings({
+            page: 1,
+            pageSize: PAGE_SIZE,
+            sort: "overall",
+            query: "",
+          });
+          // Deliberately never serialize myRank or an owned summary.
+          return { rows, total, podium };
+        },
+      },
+    ]);
+    return ssrAvailability(context.queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => fantasyHead("rankings"),
   component: RankingsFramed,
 });
@@ -169,7 +190,26 @@ function RankingsPage() {
     setPage(1);
   }, [sort, search]);
 
-  const data = rankingsQ.data;
+  // The anonymous first page remains readable while auth resolves. It is
+  // never used for another filter/page or as a signed-in manager's own rank.
+  const publicQ = useQuery<{
+    rows: LeagueStanding[];
+    total: number;
+    podium: LeagueStanding[];
+    myRank?: LeagueStanding;
+  }>({
+    queryKey: ["fantasy-public-rankings"],
+    queryFn: skipToken,
+    enabled: false,
+  });
+  const publicPage =
+    (status === "loading" || source === "guest") &&
+    sort === "overall" &&
+    page === 1 &&
+    search === ""
+      ? publicQ.data
+      : undefined;
+  const data = rankingsQ.data ?? publicPage;
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const onBoard = tab !== "leagues";
   const rankStep = rankFigure(Math.max(1, ...(data?.rows ?? []).map((row) => row.rank)));

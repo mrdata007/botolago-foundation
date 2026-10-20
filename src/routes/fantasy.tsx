@@ -56,7 +56,11 @@ function FantasyLayout() {
   const player = useRouterState({
     select: (state) => {
       const shown = state.matches.at(-1);
-      return shown?.routeId === FANTASY_PLAYER_ROUTE_ID ? shown.loaderData?.player.name : undefined;
+      return shown?.routeId === FANTASY_PLAYER_ROUTE_ID &&
+        shown.loaderData &&
+        "player" in shown.loaderData
+        ? shown.loaderData.player.name
+        : undefined;
     },
   });
   const headTitle = useRouterState({ select: (state) => shownHeadTitle(state.matches) });

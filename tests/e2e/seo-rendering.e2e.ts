@@ -51,3 +51,57 @@ test("the Fantasy rules answer is useful before hydration", async ({ request }) 
   expect(visible).toContain("Chaque transfert supplémentaire coûte 4 points.");
   expect(visible).toContain('rel="canonical" href="https://botolago.com/fantasy/rules"');
 });
+
+// The public tables must contain records, not just a title and a loading shell.
+for (const [path, record] of [
+  ["/fantasy/players", /href="\/fantasy\/players\/[^"?]+"/],
+  ["/fantasy/top-players", /El Kaabi/],
+  ["/fantasy/fixtures", /data-fdr-fixture=/],
+  ["/fantasy/rankings", /<tbody[\s\S]*?<tr/],
+  ["/pepites/classement", /data-testid="pepites-ranking-row"/],
+] as const) {
+  test(`${path} includes public records without JavaScript`, async ({ request }) => {
+    const response = await request.get(path);
+    expect(response.status()).toBe(200);
+    const visible = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+    expect(visible).toMatch(record);
+  });
+}
+
+test("a club's fixtures and selected squad are present before hydration", async ({ request }) => {
+  const directory = await (await request.get("/clubs")).text();
+  const path = directory.match(/href="(\/clubs\/[0-9a-f-]+)"/)?.[1];
+  expect(path).toBeTruthy();
+  const response = await request.get(path!);
+  expect(response.status()).toBe(200);
+  const visible = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+  expect(visible).toMatch(/href="\/matches\/[0-9a-f-]+"/);
+  const squad = await request.get(`${path}?tab=squad`);
+  expect(squad.status()).toBe(200);
+  const squadHtml = (await squad.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+  expect(squadHtml).toContain("<li");
+  expect(squadHtml).not.toContain("Chargement…");
+});
+
+test("an unknown Fantasy player returns an actual 404", async ({ request }) => {
+  expect(
+    (await request.get("/fantasy/players/00000000-0000-4000-8000-000000000000")).status(),
+  ).toBe(404);
+});
+
+test("help answers work with JavaScript disabled", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${baseURL}/fantasy/help`);
+    await expect(page.locator("details")).toHaveCount(10);
+    const first = page.locator("details").first();
+    await first.locator("summary").click();
+    await expect(first).toHaveAttribute("open", "");
+    await expect(first.locator("div")).toBeVisible();
+    await page.locator("details").nth(1).locator("summary").click();
+    await expect(page.locator("details[open]")).toHaveCount(1);
+  } finally {
+    await context.close();
+  }
+});

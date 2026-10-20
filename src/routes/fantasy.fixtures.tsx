@@ -1,3 +1,7 @@
+import { footballService } from "@/services/football";
+import type { FantasyAvailability } from "@/services/fantasy-availability";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Info } from "lucide-react";
@@ -29,6 +33,29 @@ import type { FixtureDifficulty } from "@/types/fantasy";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 export const Route = createFileRoute("/fantasy/fixtures")({
+  loader: async ({ context }) => {
+    const { queryClient } = context;
+    await prefetchForSsr(queryClient, [
+      { queryKey: ["fantasy", "availability"], queryFn: () => fantasyService.getAvailability() },
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+    ]);
+    if (
+      queryClient.getQueryData<FantasyAvailability>(["fantasy", "availability"])?.status === "ready"
+    ) {
+      await prefetchForSsr(queryClient, [
+        { queryKey: ["gameweek"], queryFn: () => fantasyService.getCurrentGameweek() },
+        {
+          queryKey: ["fantasy-fixture-difficulty"],
+          queryFn: () => fantasyService.getFixtureDifficulty(),
+        },
+      ]);
+    }
+    return ssrAvailability(queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => fantasyHead("fixtures"),
   component: FdrPage,
 });
