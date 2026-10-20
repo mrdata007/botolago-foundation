@@ -49,7 +49,7 @@ function PrizesRoute() {
     if (typeof window !== "undefined") window.document.title = title;
   }, [title]);
   return (
-    <FantasyFrame bottomNav>
+    <FantasyFrame bottomNav width="wide">
       <UiHeader kicker={t("nav.fantasy")} title={t("prizes.title")} backTo="/fantasy" />
       <PrizesPage />
     </FantasyFrame>
