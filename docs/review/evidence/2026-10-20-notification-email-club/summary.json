@@ -1,0 +1,17 @@
+{
+  "cases": 168,
+  "afterCases": 84,
+  "fallbackCases": 44,
+  "baselineOverflow": [
+    {
+      "id": "automated.points-123456.fr",
+      "width": 320
+    },
+    {
+      "id": "automated.points-123456.ar",
+      "width": 320
+    }
+  ],
+  "failures": [],
+  "fallbackFailures": []
+}
