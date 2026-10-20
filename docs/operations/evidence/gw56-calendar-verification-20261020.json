@@ -1,0 +1,451 @@
+{
+  "apiCapture": {
+    "run": 39404722376,
+    "at": "2026-10-20T10:00:16.685Z",
+    "artifactSha256": "7972e762f21ee53fc95fe10d8b4371175ac77de9a8c9b4c35c70fb59532d6342",
+    "nextMatchesRawSha256": "d106dabf72fd11341d1fa14cda923be8d98e74f85ee36fb2fe9dcae933325438"
+  },
+  "operation": {
+    "sqlSha256": "3878d69265ad07edaa833df260f73051d9f488c7f05deff7b59030909d1dfe7c",
+    "rehearsalPassed": true,
+    "independentRollbackVerified": true,
+    "countsBefore": {
+      "fixtures": 32,
+      "rounds": 4,
+      "gameweeks": 4
+    },
+    "countsAfter": {
+      "fixtures": 48,
+      "rounds": 6,
+      "gameweeks": 6
+    },
+    "all23ProtectedSetsPreserved": true
+  },
+  "progression": {
+    "run": 39405871483,
+    "verdict": "ok",
+    "openedAt": "2026-10-20T10:09:44.769188+00:00",
+    "gameweeks": [
+      {
+        "id": "7fcb28c5-9b69-4591-bcda-437c6c961c5c",
+        "status": "finalized",
+        "version": 20,
+        "deadline": "2026-09-24T13:30:00+00:00",
+        "sequence": 1
+      },
+      {
+        "id": "d4324127-ce55-4943-973f-4cf2f9a12780",
+        "status": "finalized",
+        "version": 2,
+        "deadline": "2026-10-02T14:30:00+00:00",
+        "sequence": 2
+      },
+      {
+        "id": "0b455d0b-7289-4c93-b237-8f16ce4b159e",
+        "status": "finalized",
+        "version": 20,
+        "deadline": "2026-10-08T14:30:00+00:00",
+        "sequence": 3
+      },
+      {
+        "id": "3c37ffb7-e2c8-4662-a1ee-4a52f76ad1c2",
+        "status": "finalized",
+        "version": 31,
+        "deadline": "2026-10-12T18:30:00+00:00",
+        "sequence": 4
+      },
+      {
+        "id": "6e2abae5-1d07-4e89-bd45-fed614c0538d",
+        "status": "open",
+        "version": 0,
+        "deadline": "2026-10-24T13:30:00+00:00",
+        "sequence": 5
+      },
+      {
+        "id": "40497944-ff53-49a3-bb49-6361dc6db57a",
+        "status": "scheduled",
+        "version": 0,
+        "deadline": "2026-10-30T17:30:00+00:00",
+        "sequence": 6
+      }
+    ],
+    "ownerReads": {
+      "count": 7,
+      "allGW5": true,
+      "allSquadsAndLineups15": true,
+      "allFreeTransfers2": true
+    },
+    "historical22SetsPreservedAfterProgression": true
+  },
+  "email": {
+    "openingAccepted": 7,
+    "inAppDelivered": 7,
+    "deadline": {
+      "readyNow": false,
+      "reminderAt": "2026-10-23T13:30:00+00:00",
+      "readyAt24Hours": true,
+      "prematureEvents": 0,
+      "refusedInside30Minutes": true
+    }
+  },
+  "health": {
+    "database": "ok",
+    "watchdogs": [
+      39405965085,
+      39406078190
+    ],
+    "watchdogsConclusion": "success"
+  },
+  "remainingRisk": "Current native-rating worker and database close guard wait for all rating inputs before closing and opening the successor. GW5 last kickoff 2026-10-29T20:00Z is less than 24 hours before GW6 deadline 2026-10-30T17:30Z. A late unrated appearance may keep GW6 closed beyond its deadline. Calendar admission does not solve this lifecycle dependency.",
+  "protectedBefore": [
+    {
+      "n": 5,
+      "name": "aliases",
+      "digest": "bd746851728503918a700af906089de3"
+    },
+    {
+      "n": 32,
+      "name": "assignments",
+      "digest": "4d1a154d538176a9d48a5877f006f106"
+    },
+    {
+      "n": 740,
+      "name": "catalog",
+      "digest": "e9c58e2224de4737b4abe5943e4cded4"
+    },
+    {
+      "n": 188,
+      "name": "checks",
+      "digest": "121c1ce8a9c151eedcf234974632940e"
+    },
+    {
+      "n": 25273,
+      "name": "events",
+      "digest": "a130b83cf9a4149efb918eb665e5ef80"
+    },
+    {
+      "n": 512,
+      "name": "fixtures",
+      "digest": "d53bb49e7e7a01801b49b30a7b4638f4"
+    },
+    {
+      "n": 4,
+      "name": "gameweeks",
+      "digest": "4418a9a0c0a53f9c64856c64e3aa7f1f"
+    },
+    {
+      "n": 405,
+      "name": "lineup_players",
+      "digest": "7af88147c0de73164b0ead2d0570a30f"
+    },
+    {
+      "n": 27,
+      "name": "lineups",
+      "digest": "3c81bd8c27eda01ea917b4649b79547e"
+    },
+    {
+      "n": 2229,
+      "name": "mappings",
+      "digest": "0cd3ddbeec67307e2b62bcc8a555f62f"
+    },
+    {
+      "n": 109,
+      "name": "memberships",
+      "digest": "306d81a03a845e41a8df697bc6412d60"
+    },
+    {
+      "n": 8,
+      "name": "plans",
+      "digest": "8b290452ba449575b88ac3e965e0c907"
+    },
+    {
+      "n": 2722,
+      "name": "points",
+      "digest": "52a891c046df33a54c5b6c42c6e3ba78"
+    },
+    {
+      "n": 4,
+      "name": "prizes",
+      "digest": "aa9debdc6eb8da5d913c74e486f724c8"
+    },
+    {
+      "n": 7,
+      "name": "publications",
+      "digest": "c2150c0dee469798ef85a460e93d2921"
+    },
+    {
+      "n": 27,
+      "name": "results",
+      "digest": "90b7afeac9d1bba31e264c0084f0422b"
+    },
+    {
+      "n": 64,
+      "name": "rounds",
+      "digest": "ad187910f2df3993fa90b6521974f5e8"
+    },
+    {
+      "n": 3,
+      "name": "seasons",
+      "digest": "a756cbd070766dbf14941d7c1b9f67d0"
+    },
+    {
+      "n": 21,
+      "name": "settlements",
+      "digest": "9ab90effd885832345bb315d13a35082"
+    },
+    {
+      "n": 52,
+      "name": "snapshots",
+      "digest": "c62a37477c114aeb977297b3fc929de8"
+    },
+    {
+      "n": 36,
+      "name": "sources",
+      "digest": "01dd582d0d4421d4cfef62a85f7b010d"
+    },
+    {
+      "n": 7,
+      "name": "teams",
+      "digest": "362014f2263a6118852c7194572cba3a"
+    },
+    {
+      "n": 4,
+      "name": "transfers",
+      "digest": "e50509ac660a0a078164eb49487a6e8f"
+    }
+  ],
+  "protectedAfterAdmission": [
+    {
+      "n": 5,
+      "name": "aliases",
+      "digest": "bd746851728503918a700af906089de3"
+    },
+    {
+      "n": 32,
+      "name": "assignments",
+      "digest": "4d1a154d538176a9d48a5877f006f106"
+    },
+    {
+      "n": 740,
+      "name": "catalog",
+      "digest": "e9c58e2224de4737b4abe5943e4cded4"
+    },
+    {
+      "n": 188,
+      "name": "checks",
+      "digest": "121c1ce8a9c151eedcf234974632940e"
+    },
+    {
+      "n": 25273,
+      "name": "events",
+      "digest": "a130b83cf9a4149efb918eb665e5ef80"
+    },
+    {
+      "n": 512,
+      "name": "fixtures",
+      "digest": "d53bb49e7e7a01801b49b30a7b4638f4"
+    },
+    {
+      "n": 4,
+      "name": "gameweeks",
+      "digest": "4418a9a0c0a53f9c64856c64e3aa7f1f"
+    },
+    {
+      "n": 405,
+      "name": "lineup_players",
+      "digest": "7af88147c0de73164b0ead2d0570a30f"
+    },
+    {
+      "n": 27,
+      "name": "lineups",
+      "digest": "3c81bd8c27eda01ea917b4649b79547e"
+    },
+    {
+      "n": 2229,
+      "name": "mappings",
+      "digest": "0cd3ddbeec67307e2b62bcc8a555f62f"
+    },
+    {
+      "n": 109,
+      "name": "memberships",
+      "digest": "306d81a03a845e41a8df697bc6412d60"
+    },
+    {
+      "n": 8,
+      "name": "plans",
+      "digest": "8b290452ba449575b88ac3e965e0c907"
+    },
+    {
+      "n": 2722,
+      "name": "points",
+      "digest": "52a891c046df33a54c5b6c42c6e3ba78"
+    },
+    {
+      "n": 4,
+      "name": "prizes",
+      "digest": "aa9debdc6eb8da5d913c74e486f724c8"
+    },
+    {
+      "n": 7,
+      "name": "publications",
+      "digest": "c2150c0dee469798ef85a460e93d2921"
+    },
+    {
+      "n": 27,
+      "name": "results",
+      "digest": "90b7afeac9d1bba31e264c0084f0422b"
+    },
+    {
+      "n": 64,
+      "name": "rounds",
+      "digest": "ad187910f2df3993fa90b6521974f5e8"
+    },
+    {
+      "n": 3,
+      "name": "seasons",
+      "digest": "a756cbd070766dbf14941d7c1b9f67d0"
+    },
+    {
+      "n": 21,
+      "name": "settlements",
+      "digest": "9ab90effd885832345bb315d13a35082"
+    },
+    {
+      "n": 52,
+      "name": "snapshots",
+      "digest": "c62a37477c114aeb977297b3fc929de8"
+    },
+    {
+      "n": 36,
+      "name": "sources",
+      "digest": "01dd582d0d4421d4cfef62a85f7b010d"
+    },
+    {
+      "n": 7,
+      "name": "teams",
+      "digest": "362014f2263a6118852c7194572cba3a"
+    },
+    {
+      "n": 4,
+      "name": "transfers",
+      "digest": "e50509ac660a0a078164eb49487a6e8f"
+    }
+  ],
+  "protectedAfterNormalProgression": [
+    {
+      "n": 5,
+      "name": "aliases",
+      "digest": "bd746851728503918a700af906089de3"
+    },
+    {
+      "n": 32,
+      "name": "assignments",
+      "digest": "4d1a154d538176a9d48a5877f006f106"
+    },
+    {
+      "n": 740,
+      "name": "catalog",
+      "digest": "e9c58e2224de4737b4abe5943e4cded4"
+    },
+    {
+      "n": 188,
+      "name": "checks",
+      "digest": "121c1ce8a9c151eedcf234974632940e"
+    },
+    {
+      "n": 25273,
+      "name": "events",
+      "digest": "a130b83cf9a4149efb918eb665e5ef80"
+    },
+    {
+      "n": 512,
+      "name": "fixtures",
+      "digest": "d53bb49e7e7a01801b49b30a7b4638f4"
+    },
+    {
+      "n": 4,
+      "name": "gameweeks",
+      "digest": "4418a9a0c0a53f9c64856c64e3aa7f1f"
+    },
+    {
+      "n": 405,
+      "name": "lineup_players",
+      "digest": "7af88147c0de73164b0ead2d0570a30f"
+    },
+    {
+      "n": 27,
+      "name": "lineups",
+      "digest": "3c81bd8c27eda01ea917b4649b79547e"
+    },
+    {
+      "n": 2229,
+      "name": "mappings",
+      "digest": "0cd3ddbeec67307e2b62bcc8a555f62f"
+    },
+    {
+      "n": 109,
+      "name": "memberships",
+      "digest": "306d81a03a845e41a8df697bc6412d60"
+    },
+    {
+      "n": 8,
+      "name": "plans",
+      "digest": "8b290452ba449575b88ac3e965e0c907"
+    },
+    {
+      "n": 2722,
+      "name": "points",
+      "digest": "52a891c046df33a54c5b6c42c6e3ba78"
+    },
+    {
+      "n": 4,
+      "name": "prizes",
+      "digest": "aa9debdc6eb8da5d913c74e486f724c8"
+    },
+    {
+      "n": 7,
+      "name": "publications",
+      "digest": "c2150c0dee469798ef85a460e93d2921"
+    },
+    {
+      "n": 27,
+      "name": "results",
+      "digest": "90b7afeac9d1bba31e264c0084f0422b"
+    },
+    {
+      "n": 64,
+      "name": "rounds",
+      "digest": "ad187910f2df3993fa90b6521974f5e8"
+    },
+    {
+      "n": 3,
+      "name": "seasons",
+      "digest": "a756cbd070766dbf14941d7c1b9f67d0"
+    },
+    {
+      "n": 21,
+      "name": "settlements",
+      "digest": "9ab90effd885832345bb315d13a35082"
+    },
+    {
+      "n": 52,
+      "name": "snapshots",
+      "digest": "c62a37477c114aeb977297b3fc929de8"
+    },
+    {
+      "n": 36,
+      "name": "sources",
+      "digest": "01dd582d0d4421d4cfef62a85f7b010d"
+    },
+    {
+      "n": 7,
+      "name": "teams",
+      "digest": "80fbe69f5795b19f93a98c878908837c"
+    },
+    {
+      "n": 4,
+      "name": "transfers",
+      "digest": "e50509ac660a0a078164eb49487a6e8f"
+    }
+  ]
+}
