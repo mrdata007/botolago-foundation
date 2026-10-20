@@ -980,3 +980,36 @@ requeue only the exact post-activation GW4 events cancelled by this predicate,
 while still current, consented, and with no existing delivery or attempt; keep
 event identity/timestamps and deduplication keys unchanged. Never backfill old
 gameweeks or manufacture a new points-ready event.
+
+### Native selection carry-over independent of ratings (20 October 2026)
+
+Migration `20261020103533_fantasy_native_selection_close.sql` introduces a
+service-only administrative close for native-rating gameweeks. It requires
+genuine finished matches, valid frozen assignments and locked lineups, records
+`close_kind='selection_only'`, and changes no rating, score or scoring version.
+The worker uses the existing resumable Free Hit, transfer, demand-price and
+next-gameweek journals before attempting scoring. Later finalization adopts
+that completed price pass. The complete-scoring close, native finalization
+and final-email seal guards remain unchanged. Manager deadline planning waits
+for an open selection window so a scheduled successor cannot consume its key.
+
+The exact-source guarded promoter is
+`scripts/backend/apply-20261020103533-native-selection-close.sql`. Rehearse on
+staging, independently verify rollback, and promote only after required CI.
+During production release follow the documented one-writer pause/drain and
+fingerprint procedure, apply the identical reviewed source/history, and
+restore every recorded switch. Deploy the source-pinned lifecycle worker
+only after the migration is recorded. This release must leave the currently
+open GW5 and scheduled GW6 unchanged; use isolated rollback fixtures for
+finished-match and late-rating scenarios. Details and acceptance are in
+`docs/backend/FANTASY_SELECTION_CLOSE.md`.
+
+`20261020114031_fantasy_actionable_deadline_reminders.sql` is a forward
+review correction: every deadline reminder requires an open gameweek,
+including when manager-email automation is disabled. This prevents a dormant
+mode from consuming the global reminder key before activation. The original
+selection-close migration was already applied to staging and stays immutable.
+Promote this correction with
+`scripts/backend/apply-20261020114031-actionable-deadline-reminders.sql`
+after `20261020103533`, using its real rehearsal and independent rollback
+check. Deploy the worker only after both migrations are recorded.

@@ -258,6 +258,156 @@ function stagedHarness(over: Partial<StagedState> = {}, pending = false) {
 const names = (calls: Call[]) => calls.map((c) => c.name);
 const index = (calls: Call[], name: string) => names(calls).indexOf(name);
 
+function nativeHarness(over: Partial<StagedState> = {}, pending = true) {
+  const base = stagedHarness(over);
+  let closedAt = over.closedAt ?? null;
+  let completed = over.closeCompleted ?? false;
+  let advanced = over.advancedToGameweekId ?? null;
+  const gateway: FantasyWorkerGateway = {
+    async rpc(name, args) {
+      if (name === "service_fantasy_lifecycle_state") {
+        const value = (await base.gateway.rpc(name, args)) as Record<string, unknown>;
+        return {
+          ...value,
+          adaptiveScoringEnabled: false,
+          stagedStatsEnabled: false,
+          selectionCloseEnabled: true,
+          selectionRatingsPending: pending,
+          closedAt,
+          closedCalculationVersion: closedAt ? closeVersion : null,
+          closeCompleted: completed,
+          advancedToGameweekId: advanced,
+          stagedLockBlocker: null,
+        };
+      }
+      if (name === "service_begin_fantasy_selection_close") {
+        base.calls.push({ name, args });
+        closedAt = "2026-10-20T10:00:00Z";
+        return { closed: true, closeVersion, ratingsPending: pending };
+      }
+      if (pending && name === "service_prepare_fantasy_live_scoring")
+        throw new Error("pending ratings must not prepare a scoring snapshot");
+      const result = await base.gateway.rpc(name, args);
+      if (name === "service_complete_fantasy_close") completed = true;
+      if (name === "service_prepare_next_fantasy_gameweek") advanced = nextId;
+      return result;
+    },
+  };
+  return { gateway, calls: base.calls };
+}
+
+describe("native selection close independent of rating settlement", () => {
+  it("opens the successor without preparing, persisting or finalizing pending scores", async () => {
+    const { gateway, calls } = nativeHarness();
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 });
+    expect(result).toMatchObject({ outcome: "closed", nextGameweekStatus: "open" });
+    expect(calls.find((c) => c.name === "service_begin_fantasy_selection_close")?.args).toEqual({
+      p_gameweek_id: gameweekId,
+      p_expected_lock_version: 4,
+    });
+    for (const name of [
+      "service_prepare_fantasy_live_scoring",
+      "service_get_fantasy_scoring_snapshot",
+      "service_persist_fantasy_scoring_results",
+      "service_begin_fantasy_finalization",
+      "service_enqueue_gameweek_finalized_notifications",
+      "service_evaluate_fantasy_prizes",
+    ])
+      expect(names(calls)).not.toContain(name);
+    expect(names(calls).filter((n) => n === "service_run_fantasy_close_price_batch")).toHaveLength(
+      1,
+    );
+    expect(index(calls, "service_complete_fantasy_close")).toBeLessThan(
+      index(calls, "service_prepare_next_fantasy_gameweek"),
+    );
+  });
+  it("finalizes already available ratings in the same pass and adopts the close prices", async () => {
+    const { gateway, calls } = nativeHarness({}, false);
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome,
+    ).toBe("finalized");
+    expect(index(calls, "service_begin_fantasy_selection_close")).toBeLessThan(
+      index(calls, "service_prepare_fantasy_live_scoring"),
+    );
+    expect(names(calls).filter((n) => n === "service_run_fantasy_close_price_batch")).toHaveLength(
+      1,
+    );
+    expect(names(calls)).toContain("service_adopt_fantasy_close_prices");
+    expect(names(calls)).not.toContain("service_run_fantasy_price_batch");
+  });
+  it("resumes an interrupted administrative close using its original version", async () => {
+    const { gateway, calls } = nativeHarness({
+      closedAt: "2026-10-20T10:00:00Z",
+      closedCalculationVersion: closeVersion,
+    });
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 4 })).outcome,
+    ).toBe("closed");
+    expect(names(calls)).not.toContain("service_begin_fantasy_selection_close");
+    expect(
+      calls.find((c) => c.name === "service_run_fantasy_close_price_batch")?.args
+        .p_calculation_version,
+    ).toBe(closeVersion);
+  });
+  it("waits normally after carry-over without repeating economics or publishing zero points", async () => {
+    const { gateway, calls } = nativeHarness({
+      closedAt: "2026-10-20T10:00:00Z",
+      closedCalculationVersion: closeVersion,
+      closeCompleted: true,
+      advancedToGameweekId: nextId,
+    });
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).toMatchObject(
+      { outcome: "waiting", reason: "fantasy_ratings_pending" },
+    );
+    expect(names(calls)).toEqual(["service_fantasy_lifecycle_state"]);
+  });
+  it("later ratings finalize without rerunning the administrative price pages", async () => {
+    const { gateway, calls } = nativeHarness(
+      {
+        closedAt: "2026-10-20T10:00:00Z",
+        closedCalculationVersion: closeVersion,
+        closeCompleted: true,
+        advancedToGameweekId: nextId,
+      },
+      false,
+    );
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome,
+    ).toBe("finalized");
+    expect(names(calls)).not.toContain("service_run_fantasy_close_price_batch");
+    expect(names(calls)).not.toContain("service_run_fantasy_price_batch");
+    expect(names(calls)).toContain("service_adopt_fantasy_close_prices");
+  });
+  it("retains the capability across a live-to-provisional state transition", async () => {
+    const base = nativeHarness({ status: "live" });
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        if (name === "service_advance_fantasy_lifecycle") {
+          base.calls.push({ name, args });
+          return {
+            gameweekId,
+            seasonId,
+            status: "provisional",
+            lockVersion: 5,
+            sequenceNumber: 1,
+            scoringInputVersion: 3,
+            changed: true,
+            hasMore: false,
+          };
+        }
+        return base.gateway.rpc(name, args);
+      },
+    };
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome,
+    ).toBe("closed");
+    expect(
+      base.calls.find((c) => c.name === "service_begin_fantasy_selection_close")?.args
+        .p_expected_lock_version,
+    ).toBe(5);
+  });
+});
+
 describe("staged statistics: closing a gameweek on provisional points", () => {
   it("every match has core data: scores, closes, carries over, opens the next gameweek, does not lock", async () => {
     const { gateway, calls } = stagedHarness();

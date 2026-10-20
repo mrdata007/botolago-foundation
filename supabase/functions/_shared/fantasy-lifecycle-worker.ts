@@ -49,6 +49,8 @@ const lifecycleSchema = z.object({
   advancedToGameweekId: uuid.nullable().optional(),
   // Staged SofaScore statistics (migration 20261013160200). Absent on an older database.
   stagedStatsEnabled: z.boolean().optional(),
+  selectionCloseEnabled: z.boolean().optional(),
+  selectionRatingsPending: z.boolean().optional(),
   closedAt: z.string().nullable().optional(),
   closedCalculationVersion: integer.nullable().optional(),
   closeCompleted: z.boolean().optional(),
@@ -849,7 +851,8 @@ export async function runFantasyLifecycle(
     if (fresh.gameweekId === gameweekId && fresh.seasonId === expectedSeasonId) state = fresh;
   }
   const staged = state.stagedStatsEnabled === true;
-  if (staged && state.status === "provisional" && state.closedAt) {
+  const selectionClose = state.selectionCloseEnabled === true;
+  if ((staged || selectionClose) && state.status === "provisional" && state.closedAt) {
     const closeVersion = positive.parse(state.closedCalculationVersion);
     // An interrupted close (or opening) is resumed with the close's own version.
     if (!state.closeCompleted || (nextGameweekId && !state.advancedToGameweekId)) {
@@ -872,6 +875,8 @@ export async function runFantasyLifecycle(
         blocker: state.stagedLockBlocker,
         calls,
       };
+    if (selectionClose && state.selectionRatingsPending)
+      return { outcome: "waiting", gameweekId, reason: "fantasy_ratings_pending", calls };
   }
   let staleRereads = 0;
   while (["open", "locked", "live"].includes(state.status)) {
@@ -927,6 +932,34 @@ export async function runFantasyLifecycle(
   )
     throw new Error("fantasy_lifecycle_not_activated");
 
+  // Carry-over is independent of scoring preparation, which correctly refuses
+  // unavailable native ratings. The database requires genuine finished matches.
+  if (selectionClose && state.status === "provisional" && !state.closedAt) {
+    const closed = z
+      .object({ closed: z.literal(true), closeVersion: positive, ratingsPending: z.boolean() })
+      .parse(
+        await call("service_begin_fantasy_selection_close", {
+          p_gameweek_id: gameweekId,
+          p_expected_lock_version: state.lockVersion,
+        }),
+      );
+    const progression = await runCloseSteps(closed.closeVersion);
+    if (closed.ratingsPending)
+      return {
+        outcome: "closed",
+        gameweekId,
+        calculationVersion: closed.closeVersion,
+        ...progression,
+        calls,
+      };
+    // Ratings already exist: continue final scoring in this pass, adopting the
+    // administrative price journal instead of repeating its economic changes.
+    state = lifecycleSchema.parse(
+      await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
+    );
+    if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId || !state.closedAt)
+      throw new Error("fantasy_worker_scope_mismatch");
+  }
   if (incrementalEnabled && state.status !== "finalizing") {
     const prepared = z
       .object({ calculationVersion: positive })

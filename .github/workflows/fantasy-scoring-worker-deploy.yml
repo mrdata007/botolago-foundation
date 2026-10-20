@@ -79,7 +79,8 @@ jobs:
           test -x ./node_modules/.bin/supabase
           ./node_modules/.bin/supabase --version
           bun test supabase/functions/_shared/fantasy-lifecycle-handler.test.ts \
-            scripts/backend/fantasy-lifecycle-runner.test.ts
+            scripts/backend/fantasy-lifecycle-runner.test.ts \
+            scripts/backend/fantasy-lifecycle-runner-staged.test.ts
 
       - name: Require the worker and native rating migrations (read-only)
         shell: bash
@@ -87,7 +88,7 @@ jobs:
           set -euo pipefail
           runtime_dir="$(mktemp -d)"
           trap 'rm -rf "$runtime_dir"' EXIT
-          query="select count(*)::int as n from supabase_migrations.schema_migrations where version in ('20261013170000', '20261018153305', '20261018173321', '20261018215311')"
+          query="select count(*)::int as n from supabase_migrations.schema_migrations where version in ('20261013170000', '20261018153305', '20261018173321', '20261018215311', '20261020103533', '20261020114031')"
           jq -n --arg query "$query" '{query: $query}' > "$runtime_dir/query.json"
           status="$(
             curl --silent --show-error --proto '=https' --tlsv1.2 \
@@ -103,11 +104,11 @@ jobs:
             exit 3
           fi
           n="$(jq -r 'if type == "array" then .[0].n else (.result // .data)[0].n end' "$runtime_dir/response.json")"
-          if [[ "$n" != "4" ]]; then
+          if [[ "$n" != "6" ]]; then
             echo "::error::Production lacks the reviewed worker/rating migrations. Nothing deployed."
             exit 3
           fi
-          echo "All four worker/rating migrations are recorded in production."
+          echo "All six worker/rating/selection migrations are recorded in production."
 
       - name: Deploy fantasy-lifecycle-worker
         shell: bash
