@@ -118,9 +118,13 @@ describe("transfers", () => {
     expect(transferRows(2)[1]!.hitPoints).toBe(0);
   });
 
-  it("writes millions with one decimal, a comma in French and a point in Arabic", () => {
+  it("writes millions with one decimal using the core Fantasy locale in both languages", () => {
     expect(formatMillions("fr", 7.8)).toBe("7,8");
-    expect(formatMillions("ar", 7.8)).toBe("7.8");
+    expect(formatMillions("ar", 7.8)).toBe(
+      new Intl.NumberFormat("ar-MA", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
+        7.8,
+      ),
+    );
     expect(formatMillions("fr", 7)).toBe("7,0");
   });
 });

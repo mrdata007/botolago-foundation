@@ -48,9 +48,9 @@ export const fr = {
   "nav.search.label": "Rechercher",
   "matches.matchday_strip": "Matchs du jour",
   "nav.search.placeholder": "Club, joueur…",
-  "nav.search.empty": "Aucun résultat",
+  "nav.search.empty": "Aucun club ni joueur trouvé",
   "nav.search.loading": "Recherche…",
-  "nav.search.unavailable": "La recherche est indisponible pour le moment.",
+  "nav.search.unavailable": "La recherche ne répond pas. Réessayez dans un instant.",
   "nav.search.partial": "Certains résultats sont indisponibles pour le moment.",
   "nav.search.club": "Club",
   "nav.search.player": "Joueur",
@@ -65,13 +65,13 @@ export const fr = {
   "notifications.filter.football": "Football",
   "notifications.filter.fantasy": "Fantasy",
   "notifications.filter.news": "Actualités",
-  "notifications.empty_title": "Rien de nouveau pour l'instant",
-  "notifications.empty_body": "C’est ici que s’affichent vos notifications.",
+  "notifications.empty_title": "Aucune notification",
+  "notifications.empty_body": "Vos alertes de match et rappels Fantasy s’affichent ici.",
   "notifications.dismiss": "Supprimer la notification",
   "notifications.dismiss_failed": "La notification n'a pas pu être supprimée. Réessayez.",
   "notifications.mark_all_failed":
     "Les notifications n'ont pas pu être marquées comme lues. Réessayez.",
-  "notifications.load_more": "Voir plus",
+  "notifications.load_more": "Voir plus de notifications",
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
   "notifications.signin_body": "Elles sont rattachées à votre compte BotolaGO.",
@@ -99,7 +99,7 @@ export const fr = {
   "home.deadline_fantasy": "Date limite Fantasy",
   "home.deadline_strip": "Fantasy J{gw} : plus que {time} · {when}",
   "home.fantasy_chip_players": "{n} joueurs",
-  "home.fantasy_chip_budget": "{n} M",
+  "home.fantasy_chip_budget": "{n} millions",
   "home.fantasy_chip_captain": "Capitaine ×2",
   "home.fantasy_chip_deadline": "Date limite : {when}",
   "home.deadline_in": "dans",
@@ -160,27 +160,26 @@ export const fr = {
   // (`aria-roledescription`), in place of the role's own name.
   "news.carousel.role": "carrousel",
   "news.carousel.slide_role": "diapositive",
-  "news.saved.empty":
-    "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
+  "news.saved.empty": "Enregistrez un article avec le signet pour le retrouver ici.",
   // The reading list page (/profile/saved).
   "news.saved.empty_title": "Aucun article enregistré",
   "news.saved.browse": "Parcourir les actualités",
-  "news.saved.signin_title": "Connectez-vous pour retrouver vos articles",
+  "news.saved.signin_title": "Connectez-vous pour retrouver vos articles enregistrés",
   "news.saved.signin_body": "Vos articles enregistrés sont liés à votre compte.",
   "news.saved.error":
     "Vos articles enregistrés n'ont pas pu être chargés. Vérifiez votre connexion et réessayez.",
   "news.saved.unavailable": "Cet article n'est plus disponible.",
   "news.saved.remove": "Retirer de la liste",
   "news.saved.more": "Voir plus d'articles",
-  "news.saved.more_error": "La suite n'a pas pu être chargée.",
+  "news.saved.more_error": "Les articles suivants n’ont pas pu être chargés. Réessayez.",
   "news.saved.remove_error": "Impossible de retirer cet article pour le moment. Réessayez.",
   "news.saved.save_error": "Impossible d'enregistrer cet article pour le moment. Réessayez.",
-  "news.saved.removed_announce": "Article retiré de vos articles enregistrés.",
+  "news.saved.removed_announce": "Article retiré de la liste.",
   "news.saved.count_unknown": "nombre inconnu",
   "news.saved.count_over": "plus de {count}",
   "news.saved.over_limit":
     "Vous avez plus de {count} articles enregistrés. Les plus récents s'affichent en premier.",
-  "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
+  "news.empty_category": "Aucun article dans cette rubrique pour le moment.",
   "news.view_all": "Tout voir",
   "news.breaking": "Dernière minute",
   "article.back": "Retour",
@@ -192,7 +191,8 @@ export const fr = {
   "article.published": "Publié",
   "article.updated": "Mis à jour",
   "article.not_found_title": "Article introuvable",
-  "article.not_found_desc": "Cet article a peut-être été retiré ou déplacé.",
+  "article.not_found_desc":
+    "Cet article n’est plus disponible. Retrouvez les autres dans Actualités.",
 
   "matches.title": "Matchs",
   "matches.tab.all": "Tous",
@@ -329,7 +329,7 @@ export const fr = {
   "club.view_season": "Voir la saison {season}",
   "club.news_empty": "Aucune actualité sur ce club pour le moment.",
   "club.matches_empty": "Aucun match pour cette saison.",
-  "club.squad_empty": "L'effectif n'est pas encore disponible.",
+  "club.squad_empty": "L’effectif de ce club n’est pas disponible.",
   "club.squad.number": "Numéro {n}",
   "club.squad.captain": "Capitaine",
   "club.squad.vice_captain": "Vice-capitaine",
@@ -452,7 +452,7 @@ export const fr = {
   "matches.stats.offsides": "Hors-jeu",
   "matches.stats.saves": "Arrêts",
   "matches.stats.passes": "Passes",
-  "matches.stats.pass_accuracy": "Précision de passes",
+  "matches.stats.pass_accuracy": "Précision des passes",
   "matches.stats.expected_goals": "Buts attendus (xG)",
   "matches.stats.expected_goals_on_target": "xG cadrés (xGOT)",
   "matches.pressure.title": "Pression",
@@ -494,7 +494,7 @@ export const fr = {
   "fantasy.overall_rank": "Classement général",
   "fantasy.gw_rank": "Classement de la journée",
   "fantasy.transfers": "Transferts",
-  "fantasy.bank": "Banque",
+  "fantasy.bank": "Budget restant",
   "fantasy.value": "Valeur",
   "fantasy.form": "Forme",
   // BG-0071 — the "no data yet" stat placeholder. An en dash, identical in
@@ -521,7 +521,7 @@ export const fr = {
   "fantasy.deadline_card.transfers_few": "Transferts · {n} gratuits",
   "fantasy.deadline_card.transfers_other": "Transferts · {n} gratuits",
   "fantasy.team_value": "Valeur de l'équipe",
-  "fantasy.free_transfers": "Transferts libres",
+  "fantasy.free_transfers": "Transferts gratuits",
   "fantasy.points_hit": "Pénalité de points",
   "fantasy.average": "Moyenne",
   "fantasy.highest": "Meilleur score",
@@ -564,7 +564,7 @@ export const fr = {
   "fantasy.rankings.create_team": "Créer mon équipe",
   "fantasy.rankings.no_rank_yet": "Pas encore de classement",
   "fantasy.rankings.no_rank_yet_desc":
-    "Votre équipe est enregistrée. Votre rang apparaîtra dès les premiers points marqués.",
+    "Votre équipe est enregistrée. Votre rang apparaîtra à la publication du classement.",
   "fantasy.rankings.sort_overall": "Général",
   "fantasy.rankings.sort_gameweek": "Journée",
   "fantasy.rankings.search": "Rechercher un manager ou une équipe",
@@ -611,29 +611,29 @@ export const fr = {
   "fantasy.transfers.out": "Sortant",
   "fantasy.transfers.in": "Entrant",
   "fantasy.transfers.select_out": "Sélectionnez un joueur à vendre",
-  "fantasy.transfers.select_in": "Sélectionnez un remplaçant",
+  "fantasy.transfers.select_in": "Choisissez le joueur à recruter",
   "fantasy.transfers.impact": "Impact budgétaire",
   "fantasy.transfers.free": "Transferts gratuits",
-  "fantasy.transfers.paid": "Transferts payants",
-  "fantasy.transfers.hit": "Pénalité",
+  "fantasy.transfers.paid": "Transferts avec déduction de points",
+  "fantasy.transfers.hit": "Points déduits",
   "fantasy.transfers.confirm": "Confirmer les transferts",
   "fantasy.transfers.reset": "Réinitialiser",
   "fantasy.transfers.review_title": "Résumé des transferts",
   "fantasy.transfers.success": "Transferts confirmés",
   "fantasy.transfers.transfers_total": "Transferts",
-  "fantasy.transfers.projected_bank": "Banque projetée",
-  "fantasy.transfers.chip_active": "Chip actif",
-  "fantasy.transfers.no_hit_chip": "Aucune pénalité — chip actif",
+  "fantasy.transfers.projected_bank": "Budget après transferts",
+  "fantasy.transfers.chip_active": "Jeton actif",
+  "fantasy.transfers.no_hit_chip": "Aucun point déduit grâce au jeton",
   "fantasy.transfers.deadline_locked": "Date limite dépassée — transferts indisponibles.",
   "fantasy.transfers.free_hit_snapshot_taken":
-    "Sauvegarde de l'équipe Free Hit effectuée. Elle sera restaurée à la fin de la journée.",
+    "Votre effectif précédent sera rétabli après cette journée de Free Hit.",
   "fantasy.transfers.error.over_budget": "Budget insuffisant pour ces transferts.",
   "fantasy.transfers.error.deadline": "La date limite est dépassée — impossible de confirmer.",
   "fantasy.transfers.error.no_changes": "Aucun transfert à confirmer.",
-  "fantasy.transfers.preview.pending": "Calcul du transfert en cours…",
-  "fantasy.transfers.preview.failed": "Le calcul du transfert a échoué. Réessayez.",
+  "fantasy.transfers.preview.pending": "Vérification des transferts…",
+  "fantasy.transfers.preview.failed": "Impossible de vérifier ces transferts. Réessayez.",
   "fantasy.transfers.preview.budget":
-    "Budget insuffisant : il manque {amount} M pour ces transferts. Choisissez un joueur moins cher.",
+    "Il manque {amount} M pour ces transferts. Choisissez un joueur moins cher.",
   "fantasy.transfers.preview.budget_changed":
     "Le budget ou les prix ont changé. Vérifiez vos choix, puis réessayez.",
   "fantasy.transfers.preview.stale":
@@ -648,7 +648,7 @@ export const fr = {
   "fantasy.picker.search": "Rechercher un joueur",
   "fantasy.picker.filter_club": "Club",
   "fantasy.picker.filter_position": "Poste",
-  "fantasy.picker.filter_price": "Prix max",
+  "fantasy.picker.filter_price": "Prix max (M)",
   "fantasy.picker.filter_status": "Disponibilité",
   "fantasy.picker.sort": "Trier par",
   "fantasy.picker.sort.price": "Prix",
@@ -691,7 +691,7 @@ export const fr = {
     "Certains joueurs de cette journée ne figurent plus dans la liste des joueurs : leur nom ne peut pas être affiché, mais leurs points comptent bien dans le total.",
   "fantasy.points.bench_boost_contrib": "Apport Bench Boost",
   "fantasy.points.triple_captain_contrib": "Apport Triple Capitaine",
-  "fantasy.points.hit": "Pénalité transferts",
+  "fantasy.points.hit": "Points déduits pour les transferts",
   "fantasy.points.multiplier": "Multiplicateur",
   "fantasy.points.active_chip": "Jeton actif",
   "fantasy.points.no_active_chip": "Aucun jeton actif",
@@ -748,16 +748,14 @@ export const fr = {
   "fantasy.leagues.of_members": "sur {n}",
   "fantasy.leagues.show_more": "Afficher la suite du classement",
   "fantasy.leagues.more_failed":
-    "La suite du classement n'a pas pu être chargée. Les rangs déjà affichés restent valables.",
+    "Impossible de charger la suite. Réessayez ; les rangs déjà affichés sont conservés.",
   "fantasy.leagues.stale":
-    "Mise à jour impossible pour le moment : ces données sont celles de la dernière lecture réussie.",
-  "fantasy.leagues.read_failed":
-    "Vos ligues n'ont pas pu être chargées. Elles n'ont pas disparu : réessayez.",
+    "Mise à jour impossible. Les derniers classements chargés restent affichés.",
+  "fantasy.leagues.read_failed": "Impossible de charger vos ligues. Réessayez.",
   "fantasy.leagues.public_read_failed": "Les ligues publiques n'ont pas pu être chargées.",
-  "fantasy.leagues.members_read_failed":
-    "La liste des managers n'a pas pu être chargée. Elle n'est pas vide : réessayez.",
+  "fantasy.leagues.members_read_failed": "Impossible de charger les membres. Réessayez.",
   "fantasy.leagues.joined_refresh_failed":
-    "Vous avez bien rejoint la ligue, mais ses informations n'ont pas pu être actualisées. Votre code est valide : réessayez.",
+    "Vous avez rejoint la ligue. Réessayez pour afficher son classement.",
   "fantasy.leagues.join_network":
     "Connexion impossible : le code n'est pas en cause. Vérifiez votre connexion et réessayez ; vous avez peut-être déjà rejoint la ligue, consultez vos ligues.",
   "fantasy.leagues.join_unavailable":
@@ -781,7 +779,7 @@ export const fr = {
   "fantasy.players.sort_desc": "Du plus grand au plus petit",
   "fantasy.players.sort_asc": "Du plus petit au plus grand",
   "fantasy.players.price_any": "Tous les prix",
-  "fantasy.players.price_max": "Prix maximum",
+  "fantasy.players.price_max": "Prix maximum (M)",
   "fantasy.players.filter_club": "Filtrer par club",
   "fantasy.players.filter_position": "Filtrer par poste",
   "fantasy.players.no_history": "Aucune journée jouée",
@@ -811,16 +809,18 @@ export const fr = {
   "fantasy.fixtures.blank": "Journée blanche",
   "fantasy.rules.title": "Règles",
   "fantasy.rules.intro":
-    "BotolaGO Fantasy se joue avec 15 joueurs de Botola Pro et un budget de 100 M. Alignez 11 titulaires, choisissez un capitaine dont les points comptent double, puis ajustez votre équipe avant la date limite de chaque journée. Les actions réalisées dans les vrais matchs déterminent votre score.",
+    "Choisissez 15 joueurs de Botola Pro avec un budget de jeu de 100 millions. Chaque journée, alignez 11 titulaires et un capitaine avant la date limite. Leurs performances en match vous rapportent des points.",
   "fantasy.rules.squad": "Composition d'équipe",
   "fantasy.rules.squad_desc": "15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux, 3 attaquants.",
   "fantasy.rules.budget": "Budget",
-  "fantasy.rules.budget_desc": "Budget initial de 100 M. Maximum 3 joueurs par club.",
+  "fantasy.rules.budget_desc":
+    "Budget de départ : 100 millions (M). Les prix et le budget restant utilisent la même unité. Maximum 3 joueurs par club.",
   "fantasy.rules.formation": "Formations",
-  "fantasy.rules.formation_desc": "Alignez 11 joueurs dans une formation valide chaque journée.",
+  "fantasy.rules.formation_desc":
+    "Alignez 11 titulaires : 1 gardien, 3 à 5 défenseurs, 2 à 5 milieux et 1 à 3 attaquants.",
   "fantasy.rules.captaincy": "Capitanat",
   "fantasy.rules.captaincy_desc":
-    "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
+    "Les points du capitaine sont doublés. S’il ne joue aucune minute, le vice-capitaine prend le relais.",
   "fantasy.rules.transfers_r": "Transferts",
   "fantasy.rules.deadlines": "Dates limites",
   "fantasy.rules.deadlines_desc":
@@ -878,7 +878,7 @@ export const fr = {
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
   "fantasy.rules.transfers_rule":
-    "{free} transfert gratuit par journée, cumulable jusqu'à {max}. Chaque transfert supplémentaire coûte {hit} points.",
+    "{free} transfert gratuit par journée, cumulable jusqu’à {max}. Chaque transfert supplémentaire déduit {hit} points du total de la journée.",
   "fantasy.rules.table_event": "Action",
   "fantasy.rules.table_na": "Ne s'applique pas",
   "fantasy.rules.row.appearance": "Participation",
@@ -916,35 +916,36 @@ export const fr = {
   "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
   "fantasy.onboarding.step1_title": "Composez votre équipe",
   "fantasy.onboarding.step1_body":
-    "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
+    "Choisissez 15 joueurs avec un budget de 100 millions, puis alignez 11 titulaires par journée.",
   "fantasy.onboarding.step2_title": "Marquez des points",
   "fantasy.onboarding.step2_body":
-    "Chaque joueur marque des points selon sa performance en match. Le barème en vigueur est détaillé dans le règlement.",
+    "Les performances de vos joueurs en match vous rapportent des points. Consultez les règles pour connaître le barème.",
   "fantasy.onboarding.step3_title": "Défiez vos amis",
-  "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
+  "fantasy.onboarding.step3_body":
+    "Créez une ligue privée, invitez vos amis et comparez vos points.",
   "fantasy.onboarding.skip": "Passer",
   "fantasy.onboarding.next": "Suivant",
   "fantasy.onboarding.start": "Commencer",
   // Audit 2026-09-25 (A16): the Fantasy hub's first-time proposition, shown
   // in place of the team card to a visitor without a team. {size}, {budget}
   // and {max} are filled from the squad rules the builder enforces.
-  "fantasy.intro.title": "Devenez manager en Botola Pro",
+  "fantasy.intro.title": "Composez votre équipe de Botola Pro",
   "fantasy.intro.lede":
-    "BotolaGO Fantasy est un jeu gratuit : vos joueurs de Botola Pro vous rapportent des points selon leurs vrais matchs, journée après journée, et vous défiez vos amis dans des ligues privées.",
+    "Choisissez vos joueurs de Botola Pro et gagnez des points selon leurs performances en match. Jouez gratuitement et comparez vos résultats avec vos amis.",
   "fantasy.intro.prizes": "Des lots récompensent les meilleurs managers.",
   "fantasy.intro.how_title": "Comment ça marche",
   "fantasy.intro.squad_title": "Un effectif de {size} joueurs",
   "fantasy.intro.squad_body":
     "2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, dont 11 titulaires à aligner à chaque journée.",
-  "fantasy.intro.budget_title": "Un budget de {budget} M",
+  "fantasy.intro.budget_title": "Un budget de {budget} millions",
   "fantasy.intro.budget_body":
-    "Chaque joueur a son prix, et {max} joueurs au maximum par club : à vous de trouver le bon équilibre.",
+    "Les prix et le budget du jeu sont exprimés en millions (M). Choisissez au maximum {max} joueurs par club.",
   "fantasy.intro.captain_title": "Un capitaine qui compte double",
   "fantasy.intro.captain_body":
     "Choisissez-le à chaque journée : ses points sont doublés. S’il ne joue pas, le vice-capitaine prend le relais.",
   "fantasy.intro.deadline_title": "Une date limite par journée",
   "fantasy.intro.deadline_body":
-    "Transferts, titulaires et capitaine se règlent avant la date limite. Ensuite, votre équipe est verrouillée jusqu’à la fin de la journée.",
+    "Effectuez vos transferts et choisissez vos titulaires et votre capitaine avant la date limite. Vos choix sont ensuite verrouillés pour cette journée.",
   "fantasy.intro.join_by": "Date limite pour jouer dès la Journée {n} :",
   "fantasy.intro.sign_in_note":
     "Composez votre équipe dès maintenant : un compte gratuit n’est demandé qu’au moment d’enregistrer.",
@@ -1091,7 +1092,7 @@ export const fr = {
   // takes "er" for the first place (Intl.PluralRules ordinal "one").
   "fantasy.hub.my_leagues": "Mes ligues",
   "fantasy.hub.stat_value": "Valeur",
-  "fantasy.hub.stat_bank": "Banque",
+  "fantasy.hub.stat_bank": "Budget restant",
   "fantasy.hub.stat_rank": "Rang",
   "fantasy.hub.my_points": "Mes points J{gw}",
   "fantasy.hub.points_before":
@@ -1105,7 +1106,7 @@ export const fr = {
   "fantasy.team.no_match_swap_same": "{name} n'a pas de match en J{gw}. Remplacez-le par {in}.",
   "fantasy.team.no_match_only": "{name} n'a pas de match en J{gw}.",
   "fantasy.team.no_match_apply": "Appliquer",
-  "fantasy.team.chip_bank": "Banque {n}",
+  "fantasy.team.chip_bank": "Budget restant : {n} M",
   "fantasy.team.chip_club_limit": "{n} max / club",
   "fantasy.hub.create_invite": "Créer une ligue et inviter",
   "fantasy.hub.invite_share": "Inviter des amis",
@@ -1129,9 +1130,11 @@ export const fr = {
   // The "i" beside a chip's name and the popup it opens (FplChipInfo).
   "fantasy.chip.info": "À propos de {chip}",
   "fantasy.chip.bench_boost_desc": "Les points de vos remplaçants comptent aussi.",
-  "fantasy.chip.free_hit_desc": "Transferts illimités pour une seule journée.",
+  "fantasy.chip.free_hit_desc":
+    "Transferts illimités sans déduction de points pour une journée. Votre effectif précédent revient ensuite.",
   "fantasy.chip.triple_captain_desc": "Les points du capitaine sont triplés, pas doublés.",
-  "fantasy.chip.wildcard_desc": "Transferts illimités et définitifs, sans pénalité.",
+  "fantasy.chip.wildcard_desc":
+    "Transferts illimités sans déduction de points. Vous gardez les joueurs choisis.",
   "fpl.back": "Retour",
   "fpl.help.section.account": "Votre compte BotolaGO",
   "fpl.help.q.signin": "Je n’arrive pas à me connecter. Que faire ?",
@@ -1145,12 +1148,12 @@ export const fr = {
   "fpl.help.q.multiple_teams": "Puis-je avoir plusieurs équipes ?",
   "fpl.help.a.multiple_teams":
     "Non. Chaque compte BotolaGO ne peut gérer qu’une seule équipe Fantasy par saison.",
-  "fpl.help.q.changes_after": "Puis-je modifier mon effectif après être entré dans le jeu ?",
+  "fpl.help.q.changes_after": "Puis-je changer mes joueurs après avoir créé mon équipe ?",
   "fpl.help.a.changes_after":
-    "Oui. Avant la date limite de chaque journée, vous pouvez effectuer des transferts (1 transfert gratuit par journée, cumulable jusqu’à 2 ; chaque transfert supplémentaire coûte 4 points) et modifier votre onze, votre capitaine et votre vice-capitaine depuis « Composer l’équipe ».",
+    "Oui, avant la date limite de chaque journée. Vous avez 1 transfert gratuit par journée, cumulable jusqu’à 2. Chaque transfert supplémentaire déduit 4 points du total de la journée. Vous pouvez aussi changer vos titulaires, votre capitaine et votre vice-capitaine dans « Composer l’équipe ».",
   "fpl.help.q.budget": "Quel est le budget et quelles sont les contraintes de l’effectif ?",
   "fpl.help.a.budget":
-    "Vous disposez de 100.0 pour 15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, avec au maximum 3 joueurs du même club de Botola Pro.",
+    "Votre budget de départ est de 100 millions, abrégés M dans le jeu. Les prix des joueurs et le budget restant utilisent cette unité. Choisissez 15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, avec au maximum 3 joueurs par club.",
   "fpl.help.section.manage": "Gérer votre équipe",
   "fpl.help.q.formation": "Quelles formations puis-je utiliser ?",
   "fpl.help.a.formation":
@@ -1163,7 +1166,7 @@ export const fr = {
     "Le nom de l’équipe est défini lors de la création. Contactez l’équipe BotolaGO depuis votre profil pour toute modification.",
   "fpl.help.q.during_gw": "Puis-je modifier mon équipe pendant une journée ?",
   "fpl.help.a.during_gw":
-    "Non. Les modifications sont verrouillées à la date limite (90 minutes avant le premier coup d’envoi de la journée) et rouvrent une fois la journée finalisée.",
+    "Non. Après la date limite, vous ne pouvez plus modifier votre équipe pour cette journée. Vous pourrez préparer la suivante dès son ouverture.",
   "fpl.help.q.chips":
     "Comment fonctionnent les jetons (Joker, Free Hit, Bench Boost, Triple Capitaine) ?",
   "fpl.help.a.chips":
@@ -1221,8 +1224,8 @@ export const fr = {
   "fpl.help_rules": "Aide & Règles",
   "fpl.free_transfers": "Transferts gratuits",
   "fpl.wildcard": "Joker",
-  "fpl.cost": "Coût",
-  "fpl.bank": "Banque",
+  "fpl.cost": "Points déduits",
+  "fpl.bank": "Budget restant",
   "fpl.unlimited": "Illimité",
   "fpl.reset": "Réinitialiser",
   "fpl.add_player": "Ajouter un joueur",
@@ -1249,17 +1252,16 @@ export const fr = {
   "fpl.about_to_transfer_one": "Vous allez effectuer 1 transfert.",
   "fpl.about_to_transfer_two": "Vous allez effectuer 2 transferts.",
   "fpl.about_to_transfer_few": "Vous allez effectuer {n} transferts.",
-  "fpl.transfer_out_player": "Transférer ce joueur (sortant)",
+  "fpl.transfer_out_player": "Vendre ce joueur",
   "fpl.undo_transfer": "Annuler ce transfert",
   "fpl.select_replacement": "Touchez le joueur du même poste à remplacer.",
   "fpl.no_empty_slot_for_position":
     "Aucune place libre à ce poste : touchez un joueur à remplacer.",
-  "fpl.transfers_active_note":
-    "Les transferts seront actifs pour la Journée {n} s’ils sont effectués avant la date limite.",
+  "fpl.transfers_active_note": "Ces transferts s’appliqueront à la journée {n}.",
   "fpl.points_overview": "Aperçu des points",
   "fpl.free_transfers_used": "Transferts gratuits utilisés",
   "fpl.additional_transfers_used": "Transferts supplémentaires",
-  "fpl.left_in_bank": "Reste en banque",
+  "fpl.left_in_bank": "Budget restant",
   "fpl.edit_transfers": "Modifier",
   "fpl.confirm": "Confirmer",
   "fpl.cancel": "Annuler",
@@ -1281,9 +1283,9 @@ export const fr = {
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":
     "Code invalide. Vérifiez le code et confirmez avec l’administrateur de la ligue si le problème persiste.",
-  "fpl.public_help": "Vous pouvez rejoindre jusqu’à 15 ligues privées et 3 ligues publiques.",
+  "fpl.public_help": "Comparez vos points avec d’autres managers dans une ligue publique.",
   "fpl.public_help2":
-    "Rejoignez une ligue publique pour affronter un petit groupe de joueurs tirés au sort.",
+    "Si aucune ligue n’est disponible, créez une ligue privée pour jouer entre amis.",
   "fpl.classic": "Classique",
   "fpl.classic_help":
     "Score classique — dans une ligue classique, les équipes sont classées selon leur total de points.",
@@ -1344,9 +1346,10 @@ export const fr = {
   "fpl.pick.blocked.no_slot": "Aucun emplacement libre",
   "fpl.pick.position_locked": "Poste imposé par l’emplacement choisi.",
   "fpl.pick.no_match": "Aucun joueur ne correspond à ces filtres.",
-  "fpl.pick.replacing": "Remplacer {name} · {position} · vendu {price} M",
-  "fpl.pick.budget_available": "Disponible",
-  "fpl.pick.budget_used": "Valeur de l’équipe {value} / {total} M",
+  "fpl.pick.replacing": "Remplacer {name} · {position} · prix de vente : {price} M",
+  "fpl.pick.budget_available": "Budget disponible",
+  "fpl.pick.budget_used":
+    "Valeur de l’effectif : {value} millions · budget initial : {total} millions",
   "fpl.pick.transfer_cost_one": "1 transfert gratuit, ensuite −{hit} pts",
   "fpl.pick.transfer_cost_two": "2 transferts gratuits, ensuite −{hit} pts",
   "fpl.pick.transfer_cost_few": "{n} transferts gratuits, ensuite −{hit} pts",
@@ -1421,7 +1424,7 @@ export const fr = {
   "fpl.player_info": "Informations joueur",
   "fpl.select_position_first": "Choisissez un poste sur le terrain pour ajouter un joueur.",
   "fpl.club_limit": "Maximum 3 joueurs du même club.",
-  "fpl.budget_exceeded": "Budget dépassé.",
+  "fpl.budget_exceeded": "Budget insuffisant. Choisissez un joueur moins cher.",
   "fpl.complete_squad_first": "Complétez les 15 joueurs pour continuer.",
   "fpl.team_saved": "Équipe enregistrée",
   "fpl.transfers_confirmed": "Transferts confirmés",
@@ -1598,13 +1601,13 @@ export const fr = {
   "auth.register.strength_medium": "Moyenne",
   "auth.register.strength_strong": "Forte",
 
-  "auth.verify.title": "Vérification",
+  "auth.verify.title": "Confirmez votre e-mail",
   "auth.verify.subtitle": "Nous avons envoyé un code à 6 chiffres à",
   "auth.verify.code_label": "Code de vérification",
   "auth.verify.cta": "Vérifier",
   "auth.verify.resend": "Renvoyer le code",
   "auth.verify.resend_in": "Renvoyer dans",
-  "auth.verify.change_email": "Changer d'adresse",
+  "auth.verify.change_email": "Changer d’e-mail",
   "auth.verify.demo_hint": "Démo : le code est 123456",
 
   "auth.mfa.title": "Authentification à deux facteurs",
@@ -1628,10 +1631,11 @@ export const fr = {
   "auth.mfa.cancel_cta": "Annuler",
   "auth.mfa.success_toast": "Authentification à deux facteurs activée.",
   "auth.mfa.aal_label": "Niveau de sécurité de la session",
-  "auth.mfa.aal2_value": "Renforcé (AAL2)",
-  "auth.mfa.aal1_value": "Standard (AAL1)",
+  "auth.mfa.aal2_value": "Renforcé",
+  "auth.mfa.aal1_value": "Standard",
   "auth.mfa.demo_unavailable": "Indisponible en mode démonstration.",
-  "auth.mfa.error.invalid_code": "Code invalide. Réessayez.",
+  "auth.mfa.error.invalid_code":
+    "Code incorrect. Entrez le code actuel de votre application d’authentification.",
   "auth.mfa.error.challenge_expired": "La vérification a expiré. Réessayez.",
   "auth.mfa.error.rate_limited": "Trop de tentatives. Réessayez plus tard.",
   "auth.mfa.error.network": "Service indisponible. Vérifiez votre connexion.",
@@ -1642,8 +1646,10 @@ export const fr = {
   "auth.mfa_challenge.subtitle": "Entrez le code généré par votre application d'authentification.",
   "auth.mfa_challenge.code_label": "Code de vérification",
   "auth.mfa_challenge.cta": "Vérifier",
-  "auth.mfa_challenge.error_invalid": "Code invalide.",
-  "auth.mfa_challenge.error_expired": "Code expiré. Réessayez.",
+  "auth.mfa_challenge.error_invalid":
+    "Entrez les 6 chiffres affichés dans votre application d’authentification.",
+  "auth.mfa_challenge.error_expired":
+    "La vérification a expiré. Entrez le code actuel de votre application et réessayez.",
   "auth.mfa_challenge.error_generic": "Une erreur est survenue. Réessayez.",
   "auth.mfa_challenge.error_no_factor":
     "Aucune application d'authentification n'est associée à ce compte.",
@@ -1667,10 +1673,10 @@ export const fr = {
   "auth.forgot.title": "Mot de passe oublié",
   "auth.forgot.subtitle":
     "Indiquez votre e-mail. Si un compte existe, vous recevrez un lien de réinitialisation.",
-  "auth.forgot.cta": "Envoyer le lien",
+  "auth.forgot.cta": "Envoyer le lien de réinitialisation",
   "auth.forgot.success_title": "Vérifiez votre boîte de réception",
   "auth.forgot.success_body":
-    "Si un compte est associé à cet e-mail, vous recevrez un message contenant les instructions.",
+    "Si un compte utilise cet e-mail, vous recevrez un lien pour changer son mot de passe. Pensez à vérifier les courriers indésirables.",
   "auth.forgot.back_to_login": "Retour à la connexion",
 
   "auth.callback.title": "Connexion en cours",
@@ -1688,14 +1694,14 @@ export const fr = {
   "auth.consent.error_title": "Erreur d'autorisation",
 
   "auth.update.title": "Nouveau mot de passe",
-  "auth.update.subtitle": "Choisissez un mot de passe fort pour sécuriser votre compte.",
+  "auth.update.subtitle": "Au moins 8 caractères.",
   "auth.update.new_password": "Nouveau mot de passe",
   "auth.update.confirm_password": "Confirmer le mot de passe",
-  "auth.update.cta": "Mettre à jour",
+  "auth.update.cta": "Enregistrer le mot de passe",
   "auth.update.success": "Mot de passe mis à jour",
   "auth.update.success_title": "Mot de passe mis à jour",
   "auth.update.success_body": "Vous pouvez maintenant continuer avec votre nouveau mot de passe.",
-  "auth.update.continue": "Continuer",
+  "auth.update.continue": "Retour à l’accueil",
   "auth.update.no_session": "Le lien de réinitialisation a expiré. Demandez-en un nouveau.",
   "auth.update.request_new_link": "Demander un nouveau lien",
 
@@ -1715,11 +1721,11 @@ export const fr = {
   "auth.setup.fav_club_hint": "Nous mettrons ses actualités en avant.",
   "auth.setup.notifications": "Notifications",
   "auth.setup.notif_match": "Alertes match",
-  "auth.setup.notif_match_desc": "Coups de sifflet, buts et fins de match.",
+  "auth.setup.notif_match_desc": "Coups d’envoi, buts et résultats.",
   "auth.setup.notif_news": "Actualités importantes",
   "auth.setup.notif_news_desc": "Titres et transferts majeurs.",
   "auth.setup.notif_deadline": "Rappels Fantasy",
-  "auth.setup.notif_deadline_desc": "Date limite avant chaque journée.",
+  "auth.setup.notif_deadline_desc": "Un rappel avant le verrouillage de votre équipe.",
   "auth.setup.notif_email": "Recevoir par e-mail",
   "auth.setup.notif_email_desc": "Avant et après les matchs, et vos rappels Fantasy.",
   "auth.setup.notif_push": "Alertes sur ce téléphone",
@@ -1732,10 +1738,10 @@ export const fr = {
   "auth.setup.language_confirm": "Langue des notifications",
   "auth.setup.language_hint":
     "Langue de vos e-mails, alertes et notifications. Le français est la langue par défaut. La langue de l’application sur cet appareil se règle depuis Profil.",
-  "auth.setup.skip": "Passer",
+  "auth.setup.skip": "Enregistrer et quitter",
   "auth.setup.next": "Suivant",
   "auth.setup.previous": "Précédent",
-  "auth.setup.finish": "Terminer",
+  "auth.setup.finish": "Enregistrer mon profil",
   "auth.setup.success": "Profil mis à jour",
 
   "auth.prompt.title": "Compte requis",
@@ -1747,17 +1753,19 @@ export const fr = {
   "auth.prompt.cancel": "Continuer à explorer",
 
   "auth.error.email_required": "Adresse e-mail requise.",
-  "auth.error.email_invalid": "Adresse e-mail invalide.",
+  "auth.error.email_invalid": "Entrez une adresse e-mail valide.",
   "auth.error.password_required": "Mot de passe requis.",
   "auth.error.password_short": "Au moins 8 caractères.",
   "auth.error.password_weak": "Ajoutez chiffres et majuscules pour un mot de passe plus fort.",
-  "auth.error.password_mismatch": "Les mots de passe ne correspondent pas.",
-  "auth.error.name_required": "Nom complet requis.",
+  "auth.error.password_mismatch":
+    "Les mots de passe sont différents. Saisissez le même dans les deux champs.",
+  "auth.error.name_required": "Entrez un nom d’au moins 2 caractères.",
   "auth.error.username_required": "Nom d'utilisateur requis.",
   "auth.error.username_invalid":
     "3 à 20 caractères : lettres latines sans accent (a–z), chiffres, tiret (-) ou tiret bas (_). Commencez par une lettre ou un chiffre.",
-  "auth.error.username_taken": "Ce nom d'utilisateur est déjà pris.",
-  "auth.error.email_taken": "Un compte existe déjà avec cet e-mail.",
+  "auth.error.username_taken": "Ce nom d’utilisateur est déjà pris. Choisissez-en un autre.",
+  "auth.error.email_taken":
+    "Un compte utilise déjà cet e-mail. Connectez-vous ou réinitialisez votre mot de passe.",
   "auth.error.terms_required": "Vous devez accepter les conditions.",
   "auth.error.credentials": "E-mail ou mot de passe incorrect.",
   "auth.error.account_closed":
@@ -1768,8 +1776,8 @@ export const fr = {
   "auth.error.network": "Connexion impossible. Vérifiez votre réseau et réessayez.",
   "auth.error.rate_limited": "Trop de tentatives. Patientez un moment avant de réessayer.",
   "auth.error.otp_required": "Entrez le code à 6 chiffres.",
-  "auth.error.otp_invalid": "Code invalide.",
-  "auth.error.otp_expired": "Code expiré. Renvoyez un nouveau code.",
+  "auth.error.otp_invalid": "Ce code n’est pas valide. Vérifiez les 6 chiffres et réessayez.",
+  "auth.error.otp_expired": "Ce code a expiré. Demandez-en un nouveau.",
 
   "auth.success.login": "Connexion réussie",
   "auth.success.register": "Compte créé. Vérifiez votre e-mail.",
@@ -1782,7 +1790,7 @@ export const fr = {
     "Créez un compte pour sauvegarder votre équipe Fantasy, suivre vos clubs et rejoindre des ligues privées.",
   "profile.guest_title": "Vous naviguez en {accent}invité{/accent}",
   "profile.guest_body":
-    "Certaines actions comme l'édition de votre équipe Fantasy ou la création de ligues nécessitent un compte.",
+    "Créez un compte gratuit pour enregistrer votre équipe Fantasy et rejoindre des ligues.",
   "profile.email": "E-mail",
   "profile.username": "Nom d'utilisateur",
   "profile.fav_club": "Club favori",
@@ -1793,9 +1801,10 @@ export const fr = {
   "profile.edit": "Modifier le profil",
   "profile.sign_out": "Se déconnecter",
   "profile.sign_out_title": "Se déconnecter ?",
-  "profile.sign_out_body": "Voulez-vous conserver votre équipe Fantasy sur cet appareil ?",
-  "profile.sign_out_keep": "Conserver les données",
-  "profile.sign_out_reset": "Effacer et se déconnecter",
+  "profile.sign_out_body":
+    "Conserver les données Fantasy sur cet appareil ? Les effacer ici ne supprime pas votre compte.",
+  "profile.sign_out_keep": "Conserver et me déconnecter",
+  "profile.sign_out_reset": "Effacer et me déconnecter",
   "profile.notif.match": "Alertes match",
   "profile.notif.news": "Actualités",
   "profile.notif.deadline": "Dates limites Fantasy",
@@ -1805,7 +1814,7 @@ export const fr = {
   "profile.section.preferences": "Préférences",
   "profile.language.device": "Langue sur cet appareil",
   "profile.language.help":
-    "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
+    "Ce choix s’applique à cet appareil. Pour la langue des alertes et e-mails, ouvrez Notifications.",
   "profile.language.help_guest": "Ce choix change l’application sur cet appareil.",
   "profile.section.security": "Sécurité du compte",
   "profile.section.account": "Compte",
@@ -1918,14 +1927,15 @@ export const fr = {
   "fantasy.cloud.reload_latest": "Recharger",
 
   // Pass 3 — import prompt
-  "fantasy.import.title": "Équipe locale détectée",
+  "fantasy.import.title": "Votre équipe est sur cet appareil",
   "fantasy.import.subtitle":
     "Retrouvez votre équipe sur tous vos appareils en l'enregistrant sur votre compte.",
   "fantasy.import.cta_save": "Enregistrer mon équipe",
   "fantasy.import.cta_start_new": "Commencer une nouvelle équipe",
   "fantasy.import.cta_later": "Plus tard",
   "fantasy.import.success": "Votre équipe a été enregistrée.",
-  "fantasy.import.failure": "L'enregistrement a échoué. Vos données restent intactes.",
+  "fantasy.import.failure":
+    "Impossible d’enregistrer l’équipe. Vos choix sont conservés : réessayez.",
   "fantasy.import.mapping_gaps": "Certains joueurs ne sont pas encore synchronisables : {ids}",
   // Pass 3 — empty cloud state
   "fantasy.empty.title": "Aucune équipe enregistrée",
@@ -1971,11 +1981,10 @@ export const fr = {
   "fantasy.team.unsaved.leave_confirm":
     "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
-  "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
+  "fantasy.empty.builder_open": "Créer mon équipe",
   "fantasy.error.import_validation":
-    "Votre équipe locale ne respecte pas les règles (15 joueurs, formation légale, capitaine et vice-capitaine).",
-  "fantasy.error.gameweek_unresolved":
-    "La journée en cours n'a pas pu être identifiée dans le cloud.",
+    "Vérifiez vos 15 joueurs, votre formation, votre capitaine et votre vice-capitaine avant d’enregistrer.",
+  "fantasy.error.gameweek_unresolved": "Impossible de charger la journée en cours. Réessayez.",
   "fantasy.error.import_generic":
     "L'importation a échoué. Aucune modification n'a été enregistrée.",
   "fantasy.result.cloud_stable": "Résultat officiel enregistré.",
@@ -1997,9 +2006,9 @@ export const fr = {
   "fantasy.create.discard": "Réinitialiser",
   "fantasy.create.discard_title": "Réinitialiser l'équipe ?",
   "fantasy.create.discard_desc":
-    "Tous les joueurs sélectionnés seront retirés. Le brouillon local sera effacé.",
+    "Tous les joueurs sélectionnés seront retirés et votre brouillon sera effacé.",
   "fantasy.create.discarded": "Brouillon réinitialisé.",
-  "fantasy.create.success": "Équipe créée avec succès.",
+  "fantasy.create.success": "Votre équipe est prête !",
   "fantasy.create.cta_primary": "Enregistrer mon équipe",
   "fantasy.create.captain_title": "Choisissez votre capitaine — ses points comptent double",
   "fantasy.create.captain_hint":
@@ -2018,11 +2027,12 @@ export const fr = {
     "Nom d’équipe invalide : 3 à 30 caractères, lettres, chiffres, espaces et - ’ . _ uniquement, sans symbole au début ni à la fin.",
   "fantasy.create.error.size": "Sélectionnez exactement 15 joueurs.",
   "fantasy.create.error.position_count":
-    "Répartition par poste invalide (2 GK, 5 DEF, 5 MID, 3 FWD).",
+    "Choisissez 2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants.",
   "fantasy.create.error.duplicate": "Un joueur ne peut être sélectionné qu'une seule fois.",
   "fantasy.create.error.club_limit": "Maximum 3 joueurs par club.",
-  "fantasy.create.error.budget": "Budget dépassé.",
-  "fantasy.create.error.formation": "Formation des titulaires invalide.",
+  "fantasy.create.error.budget": "Budget dépassé. Choisissez un joueur moins cher.",
+  "fantasy.create.error.formation":
+    "Alignez 11 titulaires : 1 gardien, au moins 3 défenseurs, 2 milieux et 1 attaquant.",
   "fantasy.create.error.captain_missing": "Choisissez un capitaine.",
   "fantasy.create.error.vice_missing": "Choisissez un vice-capitaine.",
   "fantasy.create.error.captain_vice_same":
@@ -2278,16 +2288,16 @@ export const fr = {
   "predictions.save.saving": "Enregistrement…",
   "predictions.save.saved": "Enregistré",
   "predictions.save.offline": "Hors connexion · nouvel essai automatique",
-  "predictions.save.failed": "Échec de l'enregistrement",
+  "predictions.save.failed": "Pronostic non enregistré",
   // The save was refused until the one-time code is in (`PT403
   // mfa_required`): not a failure, the picks wait. Short, for the bar; the
   // toast (`auth.step_up.toast`) says where the code comes from.
   "predictions.save.step_up": "Code requis pour enregistrer",
   "predictions.save.locked": "Match commencé : pronostic verrouillé",
-  "predictions.guest.saved_local": "Enregistré sur ce téléphone",
+  "predictions.guest.saved_local": "Enregistré sur cet appareil",
   "predictions.guest.cta_title": "Entrez au classement",
   "predictions.guest.cta_body":
-    "Créez un compte gratuit avant le coup d'envoi pour que vos pronostics comptent et vous suivent partout.",
+    "Créez un compte gratuit avant le coup d’envoi pour enregistrer vos pronostics et entrer au classement.",
   "predictions.guest.cta_button": "Créer mon compte",
   "predictions.guest.unranked": "Vous : {points} (non classé)",
   "predictions.guest.storage_blocked":
@@ -2331,10 +2341,10 @@ export const fr = {
   "predictions.claim.kept_two": "2 pronostics déjà sur votre compte ont été gardés",
   "predictions.claim.kept_few": "{n} pronostics déjà sur votre compte ont été gardés",
   "predictions.claim.kept_other": "{n} pronostics déjà sur votre compte ont été gardés",
-  "predictions.claim.started_one": "1 match déjà commencé n'a pas pu être ajouté",
-  "predictions.claim.started_two": "2 matchs déjà commencés n'ont pas pu être ajoutés",
-  "predictions.claim.started_few": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
-  "predictions.claim.started_other": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
+  "predictions.claim.started_one": "1 pronostic non ajouté : le match a commencé",
+  "predictions.claim.started_two": "2 pronostics non ajoutés : les matchs ont commencé",
+  "predictions.claim.started_few": "{n} pronostics non ajoutés : les matchs ont commencé",
+  "predictions.claim.started_other": "{n} pronostics non ajoutés : les matchs ont commencé",
   "predictions.claim.pending": "Ajout de vos pronostics de visiteur à votre compte…",
   "predictions.claim.unsaved_one":
     "1 pronostic fait avant la connexion n'est pas encore sur votre compte",
@@ -2345,11 +2355,11 @@ export const fr = {
   "predictions.claim.unsaved_other":
     "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
   "predictions.claim.failed_body":
-    "Rien n'est perdu : vos pronostics restent sur ce téléphone. Réessayez avant le coup d'envoi : un match commencé ne peut plus être ajouté.",
+    "Vos pronostics restent sur cet appareil. Réessayez avant le coup d’envoi pour les ajouter à votre compte.",
   "predictions.claim.retrying": "Nouvel essai automatique en cours…",
   "predictions.personal.loading": "Chargement de vos pronostics enregistrés…",
   "predictions.personal.failed":
-    "Vos pronostics enregistrés n'ont pas pu être chargés. La modification est suspendue pour ne pas écraser vos scores.",
+    "Impossible de charger vos pronostics. L’édition est suspendue pour les préserver. Réessayez.",
   "predictions.personal.unknown_pick": "Pronostic pas encore chargé",
 
   /* Pronostics (BG-0146): leagues and invitations */
@@ -2413,7 +2423,7 @@ export const fr = {
   /* Pronostics (BG-0146): entry points and sharing */
   "matches.tab.predictions": "Pronostics",
   "home.discover.predictions": "Pronostics",
-  "predictions.home.guest_line": "Devinez les scores de la journée en 1 minute",
+  "predictions.home.guest_line": "Pronostiquez les scores de la journée",
   "predictions.home.cta": "Pronostiquer",
   "predictions.match.title": "Votre pronostic",
   "predictions.match.all_round": "Pronostiquer toute la journée",
@@ -2485,10 +2495,11 @@ export const fr = {
   "pepites.ranking.scope_filter": "Joueurs affichés",
   "pepites.ranking.all": "Tous",
   "pepites.ranking.followed": "Suivis",
-  "pepites.ranking.followed_empty": "Vous ne suivez aucun joueur de ce classement.",
+  "pepites.ranking.followed_empty":
+    "Aucun joueur suivi dans ce classement. Suivez un joueur depuis sa fiche pour le retrouver ici.",
   "pepites.ranking.desktop_title": "Classement U23",
   "pepites.ranking.desktop_lede":
-    "Les joueurs de moins de 23 ans qui montent le plus vite, classés par le Rising score : note, forme, contribution, progression et temps de jeu.",
+    "Les moins de 23 ans de Botola Pro, classés selon leurs notes, leur forme, leur contribution, leur progression et leur temps de jeu.",
   "pepites.ranking.club": "Club",
   "pepites.ranking.min_minutes": "Minutes min.",
   "pepites.ranking.second_half": "2de moitié",
@@ -2502,14 +2513,13 @@ export const fr = {
   "pepites.table.goals_assists_long": "Buts / passes décisives",
   "pepites.table.rating": "Note",
   "pepites.table.score": "Score",
-  "pepites.state.error_body":
-    "Vérifiez votre connexion. Le classement est mis à jour chaque lundi à 20:00.",
+  "pepites.state.error_body": "Vérifiez votre connexion, puis réessayez.",
   "pepites.state.retry": "Réessayer",
   "pepites.state.first_title": "Premier Top 10 de la saison après la journée {round}",
   "pepites.state.first_body":
     "Il faut au moins {round} journées pour classer les joueurs de façon juste. En attendant, voici le classement final {season}.",
   "pepites.state.season_started": "La saison {season} a commencé",
-  "pepites.method.title": "Méthode",
+  "pepites.method.title": "Comment le classement est calculé",
   "pepites.player.back": "Prospects",
   "pepites.player.foot_short": "Pied :",
   "pepites.player.not_set_short": "N.R.",
@@ -2577,7 +2587,7 @@ export const fr = {
     "Prospects, c'est le classement des joueurs de Botola Pro de moins de 23 ans, établi à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
   "pepites.email.title": "Le Top 10 par e-mail",
   "pepites.email.body":
-    "Un e-mail par semaine avec le nouveau Top 10. Désactivé tant que vous ne l'activez pas.",
+    "Recevez chaque semaine un e-mail avec le nouveau Top 10. Activez l’option pour vous inscrire.",
   "pepites.email.sign_in": "Se connecter pour l'activer",
   "pepites.email.sign_in_reason": "Connectez-vous pour recevoir le Top 10 Prospects par e-mail.",
   "pepites.email.on_toast": "Inscription enregistrée.",
@@ -2587,7 +2597,7 @@ export const fr = {
   "pepites.email.blocker_guest": "Créez un compte avec une adresse e-mail pour recevoir le Top 10.",
   "pepites.email.blocker_off":
     "Vos e-mails BotolaGO sont désactivés : activez-les dans votre profil pour recevoir le Top 10.",
-  "pepites.email.settings": "Mes réglages",
+  "pepites.email.settings": "Régler mes notifications",
   "pepites.filter.position": "Poste",
   "pepites.filter.all_positions": "Tous",
   "pepites.sort.minutes": "Minutes",
@@ -2596,7 +2606,7 @@ export const fr = {
   "pepites.sort.rating": "Note moyenne",
   "pepites.sort.form": "Forme",
   "pepites.sort.ga90": "Buts + passes / 90 min",
-  "pepites.ranking.load_more": "Voir plus",
+  "pepites.ranking.load_more": "Voir plus de joueurs",
   "pepites.ranking.no_match": "Aucun joueur classé ne correspond à ces filtres.",
   "pepites.ranking.meta_title":
     "Classement Prospects — les moins de 23 ans de Botola Pro | BotolaGO",
@@ -2609,7 +2619,7 @@ export const fr = {
   "pepites.player.tab_matches": "Matchs",
   "pepites.player.tab_stats": "Stats",
   "pepites.player.photo_credit": "Photo : {credit}",
-  "pepites.player.fantasy_button": "＋ Fantasy",
+  "pepites.player.fantasy_button": "Voir dans les transferts",
   "pepites.player.breakthrough_title": "Percée",
   "pepites.player.breakthrough_subtitle": "minutes par demi-saison",
   "pepites.player.breakthrough_half1": "1re moitié",
@@ -2618,19 +2628,19 @@ export const fr = {
   "pepites.player.breakthrough_unavailable": "Pas encore assez de journées jouées cette saison.",
   "pepites.compare.no_results": "Aucun joueur trouvé.",
   "pepites.follow.button_unknown": "＋ Suivre",
-  "pepites.follow.read_failed": "Suivi indisponible.",
+  "pepites.follow.read_failed": "Impossible de vérifier si vous suivez ce joueur.",
   "pepites.follow.button": "＋ Suivre · {n}",
   "pepites.follow.button_active": "Suivi · {n}",
   "pepites.follow.sheet_title": "Suivez {name}",
   "pepites.follow.sheet_body":
-    "Créez un compte gratuit pour suivre ses matchs, recevoir le Top 10 du lundi et l'ajouter à votre équipe Fantasy.",
+    "Créez un compte gratuit pour retrouver ce joueur parmi vos joueurs suivis.",
   "pepites.follow.create_account": "Créer un compte",
-  "pepites.follow.have_account": "J'ai déjà un compte",
+  "pepites.follow.have_account": "Se connecter",
   "pepites.follow.followed": "Vous suivez {name}.",
   "pepites.follow.unfollowed": "Vous ne suivez plus {name}.",
   "pepites.follow.limit": "Vous suivez déjà 100 joueurs. Retirez-en un pour en suivre un autre.",
   "pepites.follow.account_required": "Créez un compte pour suivre des joueurs.",
-  "pepites.follow.failed": "Cette action n'a pas pu être faite. Réessayez.",
+  "pepites.follow.failed": "Le suivi n’a pas pu être modifié. Réessayez.",
   "pepites.stats.title": "Statistiques",
   "pepites.stats.subtitle": "Saison du classement",
   "pepites.stats.apps": "Matchs",
@@ -2641,26 +2651,26 @@ export const fr = {
   "pepites.stats.saves": "Arrêts",
   "pepites.stats.clean_sheets": "Cages inviolées",
   "pepites.stats.goals_conceded": "Buts encaissés",
-  "pepites.stats.penalties_saved": "Pénaltys arrêtés",
-  "pepites.stats.penalties_missed": "Pénaltys manqués",
+  "pepites.stats.penalties_saved": "Penalties arrêtés",
+  "pepites.stats.penalties_missed": "Penalties manqués",
   "pepites.stats.yellow_cards": "Cartons jaunes",
   "pepites.stats.red_cards": "Cartons rouges",
   "pepites.stats.own_goals": "Buts contre son camp",
-  "pepites.stats.not_applicable": "N/A",
+  "pepites.stats.not_applicable": "Sans objet",
   "pepites.compare.title": "Face à face",
   "pepites.compare.action": "⇄ Comparer",
   "pepites.compare.season": "Saison du classement",
   "pepites.compare.scope": "Joueurs U23",
   "pepites.compare.choose_prompt": "Choisissez deux joueurs à comparer.",
   "pepites.compare.choose_first": "Choisir un joueur",
-  "pepites.compare.choose_second": "Choisir un adversaire",
+  "pepites.compare.choose_second": "Choisir un second joueur",
   "pepites.compare.picker_title": "Choisir un joueur",
   "pepites.compare.picker_description":
     "Sélectionnez un joueur du classement U23 pour le comparer.",
   "pepites.compare.search_placeholder": "Rechercher un joueur",
   "pepites.compare.share": "Partager le face à face",
   "pepites.compare.copied": "Lien de comparaison copié.",
-  "pepites.compare.copy_failed": "Impossible de copier le lien.",
+  "pepites.compare.copy_failed": "Le lien n’a pas pu être copié. Réessayez.",
   "pepites.compare.score": "Rising",
   "pepites.compare.minutes": "Minutes",
   "pepites.compare.starts": "Titulaire",
@@ -2705,10 +2715,10 @@ export const fr = {
   "pepites.edition.meta_title": "Prospects · Top 10 de la semaine {n} | BotolaGO",
   "pepites.edition.not_found": "Pas de Top 10 publié pour cette semaine.",
   "pepites.edition.withdrawn_title": "Ce Top 10 a été retiré",
-  "pepites.edition.withdrawn_body": "La rédaction a retiré cette édition.",
+  "pepites.edition.withdrawn_body": "Cette édition n’est plus disponible.",
   "pepites.edition.corrected_title": "Ce Top 10 a été corrigé",
   "pepites.edition.corrected_body":
-    "Une erreur a été corrigée après la publication. La version corrigée fait foi.",
+    "Une erreur a été corrigée après publication. Consultez la version corrigée.",
   "pepites.edition.see_correction": "Voir la correction",
   "pepites.edition.is_correction": "Version corrigée de ce Top 10.",
   "pepites.method.meta_title": "Méthode Prospects — comment le classement est calculé | BotolaGO",
@@ -2743,8 +2753,8 @@ export const fr = {
   "pepites.coverage.height": "Taille connue",
   "pepites.report.button": "Signaler une erreur",
   "pepites.report.title": "Signaler une erreur",
-  "pepites.report.body": "Dites-nous ce qui est faux. La rédaction vérifie chaque signalement.",
-  "pepites.report.field_label": "Ce qui est faux",
+  "pepites.report.body": "Indiquez l’information à corriger et la correction proposée.",
+  "pepites.report.field_label": "Information à corriger",
   "pepites.report.field.name": "Nom",
   "pepites.report.field.date_of_birth": "Date de naissance",
   "pepites.report.field.nationality": "Nationalité",
@@ -2754,11 +2764,12 @@ export const fr = {
   "pepites.report.field.club": "Club",
   "pepites.report.field.photo": "Photo",
   "pepites.report.field.stats": "Statistiques",
-  "pepites.report.message_label": "Ce qui est correct",
-  "pepites.report.message_hint": "Avec une source si possible (500 caractères au plus).",
+  "pepites.report.message_label": "Correction proposée",
+  "pepites.report.message_hint":
+    "Indiquez la bonne information et, si possible, une source. 500 caractères maximum.",
   "pepites.report.privacy":
     "Votre signalement est lié à votre compte ; il n'est jamais affiché publiquement.",
-  "pepites.report.send": "Envoyer",
+  "pepites.report.send": "Envoyer le signalement",
   "pepites.report.sent": "Merci, votre signalement a été envoyé.",
   "pepites.report.failed": "Le signalement n'a pas pu être envoyé. Réessayez.",
   "pepites.report.rate_limited":
@@ -2828,7 +2839,7 @@ export const fr = {
   "landing.how_title": "Trois gestes à chaque journée",
   "landing.step1_title": "Composez votre effectif",
   "landing.step1_body":
-    "{size} joueurs de Botola Pro, un budget de {budget} M et {max} joueurs au maximum par club.",
+    "Choisissez {size} joueurs avec un budget de jeu de {budget} millions, dont {max} au maximum par club.",
   "landing.step1_positions": "2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants",
   "landing.step2_title": "Choisissez votre capitaine",
   "landing.step2_body":
@@ -2900,7 +2911,7 @@ export const fr = {
   "nav.curva": "Curva",
   "curva.meta.home": "Curva — BotolaGO",
   "curva.meta.card": "Votre carte — BotolaGO",
-  "curva.meta.people": "Les vôtres — BotolaGO",
+  "curva.meta.people": "Vos ligues — BotolaGO",
   "curva.meta.seasons": "Vos saisons — BotolaGO",
   "curva.meta.description": "Votre carte de manager BotolaGO, vos ligues et vos saisons.",
   "curva.unavailable": "Votre carte n’est pas disponible pour ce compte.",
@@ -2937,8 +2948,8 @@ export const fr = {
   "curva.round.title": "Cette journée",
   "curva.round.line": "J{gw} · date limite {deadline}",
   "curva.round.recalc": "Votre note est recalculée après chaque journée terminée.",
-  "curva.stats.title": "Ce que dit votre carte",
-  "curva.people.title": "Les vôtres",
+  "curva.stats.title": "Vos statistiques de manager",
+  "curva.people.title": "Vos ligues",
   "curva.people.view_league": "Voir les cartes de la ligue",
   "curva.people.you": "Vous",
   "curva.people.empty":
@@ -2992,14 +3003,14 @@ export const fr = {
   /* Curva G2, G3, G4, G6 and the share sheet; the Fantasy hub's two new lines. */
   "curva.card.title": "Votre carte",
   "curva.card.where": "D’où vient votre note",
-  "curva.card.intro": "Votre note vient de vos décisions, journée après journée.",
+  "curva.card.intro": "Capitaine, titulaires, transferts et régularité composent votre note.",
   "curva.card.intro_forming":
     "Pas encore de note. Les quatre statistiques se remplissent avec vos journées terminées.",
   "curva.card.tier": "Votre palier",
   "curva.card.tier_now": "Actuel",
   "curva.card.tier_best": "Meilleur cette saison",
   "curva.card.tier_none": "Le palier arrive avec votre première note.",
-  "curva.card.tier_explain": "Le palier suit votre note, journée après journée.",
+  "curva.card.tier_explain": "Votre palier évolue avec votre note.",
   "curva.card.serial": "Numéro {serial} : il ne changera jamais.",
   "curva.h2h.title": "Face à face",
   "curva.seasons.counted_zero": "Aucune journée comptée",
@@ -3013,7 +3024,8 @@ export const fr = {
   "curva.seasons.col_tier": "Palier",
   "curva.seasons.more": "Afficher plus",
   "curva.seasons.empty": "Votre première journée comptée apparaîtra ici.",
-  "curva.seasons.error": "Impossible de charger votre historique.",
+  "curva.seasons.error":
+    "Impossible de charger votre historique. Actualisez la page pour réessayer.",
   "curva.share.label": "Ma carte BotolaGO",
   "curva.share.caption": "Ma carte BotolaGO",
   "fantasy.hub.pepites_body":
@@ -3041,8 +3053,8 @@ export const fr = {
   "card.tier.pro": "PRO",
   "card.tier.champion": "CHAMPION",
   "card.tier.legend": "LEGEND",
-  "card.stats_filled.title": "Statistiques remplies",
-  "card.stats_filled.a11y": "Statistiques remplies : {k} sur {n}",
+  "card.stats_filled.title": "Statistiques disponibles",
+  "card.stats_filled.a11y": "Statistiques disponibles : {k} sur {n}",
   "card.a11y.card_of": "Carte de manager",
   "card.a11y.no_rating": "pas encore de note",
   "card.a11y.separator": ", ",
@@ -3152,8 +3164,7 @@ export const fr = {
   "card.onboarding.m6.msg.plain_provisional": "Ma carte BotolaGO : {ovr}. Et toi ? {link}",
   "card.onboarding.m7.line": "Votre note n’est plus provisoire : {ovr} après {final}.",
   "card.onboarding.m8.up.heading": "Votre carte passe {tier}.",
-  "card.onboarding.m8.up.line":
-    "{ovr} OVR après la J{gw}. Le palier suit votre note, journée après journée.",
+  "card.onboarding.m8.up.line": "{ovr} OVR après la J{gw}. Nouveau palier !",
   "card.onboarding.m8.view": "Voir ma carte",
   "card.onboarding.m8.down.line": "Palier actuel : {tier}. Meilleur cette saison : {best}.",
   "card.onboarding.m9.heading": "Fondateur 2026",
@@ -3183,16 +3194,16 @@ export const fr = {
   "plus.meta.offer": "Saison BotolaGO+",
   "plus.meta.description":
     "Les éditions de votre carte, votre carrière en détail et vos duels détaillés, sans publicité.",
-  "plus.progress": "Progression de votre parcours",
+  "plus.progress": "Étapes de présentation",
   "plus.step_of": "Écran {n} sur {total}",
   "plus.prices": "Voir les prix",
   "plus.note.guest": "Exemple · créez votre compte gratuit",
-  "plus.note.example": "Exemple · une illustration de ce que vous verrez",
+  "plus.note.example": "Aperçu avec des données d’exemple",
   "plus.with": "Avec {logo}",
-  "plus.s1.title": "Votre carte, à votre style",
+  "plus.s1.title": "Votre carte, à votre image",
   "plus.s1.cta": "Voir les avantages",
   "plus.s1.live": "Style : {style}",
-  "plus.rule": "Votre note ne change jamais, seul le style change.",
+  "plus.rule": "Changer de style ne modifie pas votre note.",
   "plus.style.label": "Style de votre carte",
   "plus.style.holo": "Holo",
   "plus.style.electric": "Électrique",
@@ -3274,7 +3285,7 @@ export const fr = {
   "plus.s2.m_better": "Meilleure valeur",
   "plus.s2.m_bonus": "Bonus du capitaine",
   "plus.s2.m_made": "Transferts faits",
-  "plus.s2.m_paid": "{n} payants",
+  "plus.s2.m_paid": "Avec pénalité : {n}",
   "plus.s2.m_gain": "Gain",
   "plus.s2.m_net": "Gain net",
   "plus.s2.m_std": "Écart entre journées",
@@ -3290,7 +3301,7 @@ export const fr = {
   "plus.s2.a_src": "{t} points : {a} des titulaires, plus {b} du capitaine, moins {c} de pénalités",
   "plus.s2.a_cap": "Points de votre capitaine et du meilleur titulaire, journée par journée",
   "plus.s2.a_trf":
-    "Gain net des transferts, après pénalités, pour les journées {weeks} ({penalty} points par transfert payant)",
+    "Gain net des transferts, après pénalités, pour les journées {weeks} ({penalty} points par transfert supplémentaire)",
   "plus.s2.a_reg": "Écart de vos points à la moyenne de la ligue, journée par journée",
   "plus.s2.a_ovr": "OVR de {a} à {b} en {n} journées, la ligue à {l}",
   "plus.s2.a_stat": "{name} : {v} sur 99, la ligue {l}",
@@ -3309,11 +3320,11 @@ export const fr = {
   "plus.season.l2_nodate": "Valable jusqu'à la fin de la saison",
   "plus.s3.feat_title": "Ce que comprend la Saison",
   "plus.s3.f0.t": "Sans publicité",
-  "plus.s3.f0.d": "Vous ne verrez jamais de publicité dans l'application.",
+  "plus.s3.f0.d": "Sans publicité pendant votre Saison.",
   "plus.s3.f1.t": "Les éditions de votre carte",
   "plus.s3.f1.d": "Holo, Électrique, Pixels, Chrome. Visibles dans les classements.",
   "plus.s3.f2.t": "Votre carrière en détail",
-  "plus.s3.f2.d": "Chaque statistique, journée après journée, et vos meilleures semaines.",
+  "plus.s3.f2.d": "Vos statistiques et vos meilleures journées, sur toute la saison.",
   "plus.s3.f3.t": "Duels détaillés",
   "plus.s3.f3.d":
     "Votre face-à-face avec vos amis, statistique par statistique, sur toute la saison.",
@@ -3334,11 +3345,11 @@ export const fr = {
   "plus.pay.code_t": "Votre code",
   "plus.pay.code_d": "À écrire dans le motif du virement ou à donner à l'agence.",
   "plus.pay.wa_cta": "Envoyer le reçu sur WhatsApp",
-  "plus.pay.wa_hint": "Votre reçu et votre code partent ensemble : nous retrouvons votre compte.",
+  "plus.pay.wa_hint": "Ajoutez votre reçu dans WhatsApp. Votre code est déjà dans le message.",
   "plus.pay.wa_message":
     "Bonjour, voici mon reçu de paiement pour la Saison 2026/27. Mon code : {code}",
-  "plus.pay.soon": "Les coordonnées de paiement arrivent bientôt.",
-  "plus.pay.soon_d": "Revenez dans quelques jours : le paiement n'est pas encore ouvert.",
+  "plus.pay.soon": "Paiement indisponible pour le moment",
+  "plus.pay.soon_d": "Actualisez la page pour réessayer.",
   "plus.pay.loading": "Chargement des coordonnées de paiement",
   "plus.s3.cta": "Payer ma Saison",
   "plus.s3.terms_link": "Conditions de la Saison",
@@ -3348,7 +3359,7 @@ export const fr = {
   "plus.terms.until_end": "Votre accès à {logo} court jusqu'à la fin de la saison.",
   "plus.terms.norenew":
     "Rien ne se reconduit tout seul : aucun prélèvement automatique, rien à annuler.",
-  "plus.terms.check": "Votre accès commence dès que l'équipe a vérifié votre paiement.",
+  "plus.terms.check": "Votre accès commence après vérification de votre paiement.",
   "plus.terms.after": "À la fin de la saison, votre carte repasse au style de base.",
   "plus.terms.keep":
     "Votre carte et l'historique que vous avez gagné restent visibles. L'analyse détaillée (vues détaillées de l'historique, duels détaillés, styles de carte) n'est plus disponible.",
@@ -3376,7 +3387,7 @@ export const fr = {
   "plus.in.duel_empty": "Ce duel apparaît après une journée jouée à deux.",
   "plus.in.duel_private": "Ce manager garde son historique pour lui.",
   "plus.in.loading": "Chargement de votre saison",
-  "plus.in.failed": "Votre saison n’est pas disponible pour le moment.",
+  "plus.in.failed": "Impossible de charger votre saison. Actualisez la page pour réessayer.",
   "plus.in.member_aria": "Saison {name} active",
   "plus.lock.aria": "Avec la Saison {name}",
   "plus.profile.intro":
@@ -3388,8 +3399,7 @@ export const fr = {
   "plus.profile.discover": "Découvrir",
   // plus member side (lane 2)
   "plus.hub.title": "Ma saison",
-  "plus.hub.active_note":
-    "Votre accès reste ouvert jusqu'à cette date. Il n'y a rien à régler ni à annuler d'ici là.",
+  "plus.hub.active_note": "Votre accès est actif jusqu’à cette date, sans prélèvement automatique.",
   "plus.hub.status_t": "Votre Saison",
   "plus.hub.status_d": "Active jusqu'au {date}",
   "plus.hub.status_d_nodate": "Active",
@@ -3479,13 +3489,12 @@ export const fr = {
   "plus.rv.share_msg_level": "Journée {n} : {a} contre {b}. Au total, égalité avec {name}.",
   "plus.rv.img_alt": "Affiche : {me} contre {name}, journée {n}",
   "plus.rv.remove": "Ne plus suivre {name}",
-  "plus.rv.toggle_t": "Me prévenir quand la tête change",
-  "plus.rv.toggle_d": "Après publication, jamais pendant les matchs.",
+  "plus.rv.toggle_t": "Me prévenir si l’avance change de camp",
+  "plus.rv.toggle_d": "Une fois les résultats publiés, hors des matchs en direct.",
   "plus.rv.foot_secret": "Vos rivaux ne savent pas que vous les suivez.",
-  "plus.rv.foot_leave": "Quitter la ligue retire le rival.",
-  "plus.rv.foot_correct": "Un résultat publié peut être corrigé, et la tête avec lui.",
-  "plus.rv.foot_live":
-    "Les résultats arrivent quand les notes sont publiées, 5 à 16 jours après les matchs.",
+  "plus.rv.foot_leave": "Un rival est retiré lorsque vous ne partagez plus de ligue privée.",
+  "plus.rv.foot_correct": "Une correction de résultat peut modifier votre avance.",
+  "plus.rv.foot_live": "Les résultats du duel apparaissent après publication des notes.",
   "plus.rv.foot_full": "Trois rivaux au plus : retirez-en un pour en ajouter un autre.",
   "plus.rv.limit":
     "Seuls les managers de vos ligues privées peuvent devenir vos rivaux, jusqu'à 3.",
@@ -3501,13 +3510,13 @@ export const fr = {
   "plus.rv.add_failed": "Ce rival n'a pas pu être ajouté. Réessayez.",
   "plus.rv.empty": "Ajoutez un ami de ligue pour suivre votre duel journée après journée.",
   "plus.rv.loading": "Chargement de vos rivaux",
-  "plus.rv.failed": "Vos rivaux ne sont pas disponibles pour le moment.",
+  "plus.rv.failed": "Impossible de charger vos rivaux. Actualisez la page pour réessayer.",
   "plus.rv.dot": "Rival {i} sur {n}",
   "plus.rv.ex_a": "Sami",
   "plus.rv.ex_b": "Yassine",
   // plus round recap (Votre journée expliquée)
   "plus.recap.title": "Votre journée expliquée",
-  "plus.recap.locked_title": "Pourquoi cette journée a tourné ainsi",
+  "plus.recap.locked_title": "Comprenez votre score de la journée",
   "plus.recap.journee": "Journée {n}",
   "plus.recap.published": "Publié le {date}",
   "plus.recap.waiting_chip": "Notes en attente",
@@ -3534,10 +3543,11 @@ export const fr = {
   "plus.recap.legend_lit": "Liseré : 8 pts et plus",
   "plus.recap.legend_wait": "Hachuré : note en attente",
   "plus.recap.causes_title": "Ce qui explique l'écart",
-  "plus.recap.causes_hint": "Touchez une cause pour la voir sur le terrain",
+  "plus.recap.causes_hint": "Sélectionnez un élément pour le repérer sur le terrain.",
   "plus.recap.league_avg": "Moyenne de la ligue",
   "plus.recap.cause_captain": "Capitaine",
-  "plus.recap.captain_line": "{name} : {formula} pts, {gap} vs les capitaines de la ligue",
+  "plus.recap.captain_line":
+    "{name} : {formula} pts, {gap} par rapport aux capitaines de votre ligue",
   "plus.recap.captain_plain": "{name} : {formula} pts",
   "plus.recap.captain_plain_few": "{name} : {formula} pts",
   "plus.recap.captain_vice": "Brassard repris par le vice-capitaine",
@@ -3547,7 +3557,7 @@ export const fr = {
   "plus.recap.transfer_wait": "{out} → {in} : en attente",
   "plus.recap.cause_others": "Vos autres choix",
   "plus.recap.others_line":
-    "Reste calculé : l'écart moins le capitaine et le transfert. Pas encore mesuré joueur par joueur.",
+    "Écart restant après le capitaine et les transferts, sans détail par joueur.",
   "plus.recap.you": "Vous",
   "plus.recap.part_starters": "Titulaires {n}",
   "plus.recap.part_captain": "Capitaine {n}",
@@ -3559,7 +3569,7 @@ export const fr = {
   "plus.recap.bench_note_boost": "Banc : {pts} pts comptés (Bench Boost)",
   "plus.recap.part_bench": "Banc {n}",
   "plus.recap.league_note":
-    "Moyenne de votre ligue privée ({n} managers). Les notes arrivent 5 à 16 jours après le match.",
+    "Moyenne de votre ligue privée ({n} managers), calculée sur les résultats publiés.",
   "plus.recap.no_league":
     "Sans ligue privée, pas de comparaison : rejoignez-en une pour voir l'écart.",
   "plus.recap.small_league":
@@ -3573,11 +3583,11 @@ export const fr = {
   "plus.recap.share_message": "Ma journée {n} sur BotolaGO : {points} pts.",
   "plus.recap.share_footer": "botolago.com · Fantasy Botola Pro",
   "plus.recap.image_alt": "Ma journée {n} expliquée",
-  "plus.recap.share_waiting": "{n} note en attente",
+  "plus.recap.share_waiting": "Notes en attente : {n}",
   "plus.recap.select_label": "Choisir la journée",
   "plus.recap.loading": "Chargement de votre journée",
-  "plus.recap.empty": "Votre journée s'explique dès que ses résultats sont publiés.",
-  "plus.recap.failed": "Votre journée n'est pas disponible pour le moment.",
+  "plus.recap.empty": "Le bilan de votre journée apparaîtra après publication des résultats.",
+  "plus.recap.failed": "Impossible de charger cette journée. Actualisez la page pour réessayer.",
   "plus.recap.season_title": "Votre saison jusqu'ici : {pts} pts, {rank} après {n} journées",
   "plus.recap.season_title_plain": "Votre saison jusqu'ici : {pts} pts après {n} journées",
   "plus.recap.tile_best_week": "Meilleure journée",
@@ -3609,7 +3619,7 @@ export const fr = {
   "plus.brief.cell_free": "Transferts gratuits",
   "plus.brief.cell_rank": "Rang en ligue",
   "plus.brief.loading": "Chargement de votre briefing",
-  "plus.brief.failed": "Votre briefing n’est pas disponible pour le moment.",
+  "plus.brief.failed": "Impossible de charger votre briefing. Actualisez la page pour réessayer.",
   "plus.brief.empty":
     "Votre briefing apparaît dès que votre équipe est créée et qu’une journée est ouverte aux changements.",
   "plus.brief.guest_cta": "Créez un compte pour préparer votre équipe",
@@ -3619,7 +3629,7 @@ export const fr = {
   "plus.brief.device": "sur cet appareil",
   "plus.brief.ticker_pause": "Mettre le défilement en pause",
   "plus.brief.ticker_play": "Reprendre le défilement",
-  "plus.brief.chg_first": "Nous noterons ici ce qui change d’une visite à l’autre.",
+  "plus.brief.chg_first": "Les changements depuis votre dernière visite apparaîtront ici.",
   "plus.brief.chg_none": "Rien de nouveau depuis votre dernière visite.",
   "plus.brief.chg_published":
     "{gw} publiée le {date} · joueurs notés : {rated} · en attente : {waiting}",
@@ -3636,25 +3646,24 @@ export const fr = {
   "plus.brief.abs_injury": "Absent · blessure",
   "plus.brief.abs_injury_short": "absent",
   "plus.brief.abs_suspension": "Absent · suspension",
-  "plus.brief.abs_source": "liste du fournisseur, {date}",
+  "plus.brief.abs_source": "Source : fournisseur de données, {date}",
   "plus.brief.abs_return": "retour prévu le {date}",
   "plus.brief.abs_noinfo": "Aucune information confirmée · {n} min en {gw}",
-  "plus.brief.abs_none_listed": "Le fournisseur ne liste aucune absence dans votre équipe.",
-  "plus.brief.abs_no_feed":
-    "Aucune liste d’absences n’est disponible pour le moment. Nous n’en inventons pas.",
+  "plus.brief.abs_none_listed": "Aucune absence signalée dans votre équipe.",
+  "plus.brief.abs_no_feed": "Aucune liste d’absences n’est disponible pour le moment.",
   "plus.brief.abs_others": "Autres joueurs ({n})",
   "plus.brief.abs_others_ok": "aucune absence signalée",
   "plus.brief.abs_others_nofeed": "pas de liste d’absences disponible",
   "plus.brief.abs_honest":
-    "Seules les absences listées par notre fournisseur apparaissent ici ; aucune information ne veut pas dire disponible.",
+    "Seules les absences signalées sont affichées. Sans information, la participation du joueur reste incertaine.",
   "plus.brief.abs_honest_nofeed":
-    "Notre fournisseur n’a listé aucune absence pour cette journée. Aucune information ne veut pas dire disponible : seuls les minutes jouées et les points publiés sont des faits.",
+    "Aucune liste d’absences pour cette journée. Cela ne garantit pas que vos joueurs joueront.",
   "plus.brief.swap_title": "Remplacer {name}",
   "plus.brief.swap_pick": "Joueur à remplacer",
   "plus.brief.swap_budget":
-    "Budget : {sale} {unit} à la vente + {bank} {unit} en banque = {max} {unit}",
-  "plus.brief.swap_list": "Joueurs que vous pouvez vous offrir",
-  "plus.brief.swap_none": "Aucun joueur de ce poste dans votre budget et la limite par club.",
+    "Budget : vente {sale} {unit} + budget restant {bank} {unit} = {max} {unit}",
+  "plus.brief.swap_list": "Joueurs dans votre budget",
+  "plus.brief.swap_none": "Aucun joueur à ce poste ne respecte votre budget et la limite par club.",
   "plus.brief.swap_footnote":
     ": la note n’est pas publiée, aucun chiffre n’est affiché. Les points passés ne prédisent pas la prochaine journée.",
   "plus.brief.swap_cta": "Préparer ce transfert",
@@ -3667,10 +3676,11 @@ export const fr = {
   "plus.brief.stamp_pending": "{gw} en attente",
   "plus.brief.pending": "en attente",
   "plus.brief.no_rating": "sans note",
-  "plus.brief.opens_transfers": "Ouvre votre écran Transferts ; rien n’est enregistré ici.",
-  "plus.brief.opens_team": "Ouvre votre écran Équipe ; rien n’est enregistré ici.",
-  "plus.brief.cap_title": "Capitaine {gw} : comparez sur les journées publiées",
-  "plus.brief.cap_x2": "Le capitaine multiplie ses points par {m} sur {gw}",
+  "plus.brief.opens_transfers":
+    "Ouvre les transferts. Vous pourrez vérifier votre choix avant de le confirmer.",
+  "plus.brief.opens_team": "Ouvre votre équipe pour choisir le capitaine.",
+  "plus.brief.cap_title": "Capitaine {gw} : comparez les points déjà publiés",
+  "plus.brief.cap_x2": "Les points du capitaine sont multipliés par {m} en {gw}",
   "plus.brief.cap_list": "Candidats au brassard",
   "plus.brief.cap_total": "total publié · {k}/{n} journées",
   "plus.brief.cap_current": "Capitaine actuel",
@@ -3688,7 +3698,7 @@ export const fr = {
   "plus.brief.conf_medium": "estimation · confiance moyenne",
   "plus.brief.conf_low": "estimation · confiance faible",
   "plus.brief.tr_title": "Transferts avant {gw}",
-  "plus.brief.tr_bank": "M en banque",
+  "plus.brief.tr_bank": "Budget restant",
   "plus.brief.tr_one": "1 transfert",
   "plus.brief.tr_two": "2 transferts",
   "plus.brief.tr_many": "{n} transferts",
@@ -3727,7 +3737,7 @@ export const fr = {
   "plus.tr.not_yet": "Pas encore",
   "plus.tr.prog_gameweeks": "{have} sur {need}",
   "plus.tr.prog_rating": "Note {need} requise, la vôtre {have}",
-  "plus.tr.prog_rating_none": "Note {need} requise, vous êtes sans note",
+  "plus.tr.prog_rating_none": "Note requise : {need}. Votre note n’est pas encore disponible.",
   "plus.tr.prog_points": "Meilleure : {have} sur {need} pts",
   "plus.tr.prog_points_none": "{need} pts requis",
   "plus.tr.rule":
@@ -3741,7 +3751,7 @@ export const fr = {
   "plus.tr.empty":
     "Votre vitrine est vide pour l’instant. Les trophées arrivent avec vos premiers résultats publiés.",
   "plus.tr.loading": "Chargement de vos trophées",
-  "plus.tr.failed": "Vos trophées ne sont pas disponibles pour le moment.",
+  "plus.tr.failed": "Impossible de charger vos trophées. Actualisez la page pour réessayer.",
   "plus.tr.locked_headline": "Votre vitrine de trophées",
   "plus.tr.locked_tag": "Avec la Saison",
   "plus.tr.back": "Trophées",
@@ -3750,7 +3760,7 @@ export const fr = {
   "plus.tr.detail_headline": "{label} : {what}",
   "plus.tr.detail_headline_plain": "{label}, journée {n}",
   "plus.tr.detail_note": "Un résultat corrigé ne retire jamais ce trophée.",
-  "plus.tr.detail_free": "Image standard et WhatsApp : gratuits",
+  "plus.tr.detail_free": "Image standard et partage WhatsApp gratuits",
   "plus.tr.chip_standard": "Standard",
   "plus.tr.chip_framed": "Cadre {name}",
   "plus.tr.chip_post": "Format 4:5",
@@ -3761,7 +3771,7 @@ export const fr = {
   "plus.tr.share_footer": "botolago.com · Fantasy Botola Pro",
   "plus.tr.frames_title": "Choisissez le cadre de votre carte parmi vos {n} cadres gagnés",
   "plus.tr.frames_title_one": "Choisissez le cadre de votre carte : un cadre gagné",
-  "plus.tr.frame_standard_sub": "Toujours",
+  "plus.tr.frame_standard_sub": "Disponible sans condition",
   "plus.tr.frame_chosen": "Choisi",
   "plus.tr.frame_earned": "Publié le {date}",
   "plus.tr.to_earn": "À gagner",
@@ -3792,4 +3802,29 @@ export const fr = {
   "plus.tr.mate_sub": "Cette saison, dans votre ligue privée",
   "plus.tr.mate_note":
     "Seuls les trophées gagnés sont montrés, jamais les points, les notes ni les paliers.",
+
+  // Context-specific UX writing (2026-10-20).
+  "auth.verify.resend_sent": "Nouveau code envoyé.",
+  "auth.verify.resend_countdown": "Renvoyer dans {seconds} s",
+  "auth.setup.edit_title": "Modifier votre profil",
+  "auth.setup.save": "Enregistrer",
+  "auth.setup.email_save_failed":
+    "Votre profil est enregistré, mais pas votre choix d’e-mail. Réessayez pour l’enregistrer.",
+  "news.load_failed": "Les actualités n’ont pas pu être chargées. Réessayez.",
+  "news.empty": "Aucun article disponible pour le moment.",
+  "clubs.load_failed": "Les clubs n’ont pas pu être chargés. Réessayez.",
+  "club.load_failed": "Les informations du club n’ont pas pu être chargées. Réessayez.",
+  "news.load_more": "Voir plus d’articles",
+  "news.no_matching_articles": "Aucun article ne correspond à ces filtres.",
+  "matches.standings_failed": "Le classement n’a pas pu être chargé. Réessayez.",
+
+  // Context-specific UX writing (2026-10-20).
+  "fantasy.amount.millions": "En millions : {amount}",
+  "fantasy.rules.deadline_timing":
+    "{minutes} minutes avant le premier match de la journée. Après cette heure, la composition et les transferts sont verrouillés.",
+  "fantasy.create.name_step": "Nom et capitaine",
+  "fantasy.team.activate_chip": "Activer le jeton",
+  "fantasy.team.save_lineup": "Enregistrer l’équipe",
+  "fantasy.import.players_unavailable":
+    "Certains joueurs de ce brouillon ne peuvent pas encore être enregistrés. Réessayez plus tard ou créez une nouvelle équipe.",
 } as const satisfies Record<string, string>;

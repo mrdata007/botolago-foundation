@@ -316,7 +316,7 @@ function ClubPage() {
       <AppShell hideBottomNav backgroundVariant="matches" topBar={bar}>
         {clubQ.isError ? (
           <div className="mt-8">
-            <ErrorState onRetry={() => void clubQ.refetch()} />
+            <ErrorState message={t("club.load_failed")} onRetry={() => void clubQ.refetch()} />
           </div>
         ) : (
           <LoadingState />
@@ -415,6 +415,7 @@ function ClubPage() {
             <SectionHeader title={t("matches.table_preview")} eyebrow={seasonLine} />
             {seasonsQ.isError || standingsQ.isError ? (
               <ErrorState
+                message={t("matches.standings_failed")}
                 onRetry={() => void (seasonsQ.isError ? seasonsQ.refetch() : standingsQ.refetch())}
               />
             ) : seasonsQ.isPending || (season !== undefined && standingsQ.isPending) ? (

@@ -474,7 +474,14 @@ export const BASELINES: Baselines = {
   // All new keys of all three lanes are referenced. 247 -> 244.
   // Sweep fixes B (2026-10-16): `auth.error.provider_unavailable` gets its first call
   // sites (sign-in pages and the callback), 244 -> 243.
-  W3: 243,
+  // UX writing (2026-10-20): preserve existing keys while removing redundant
+  // auth subtitles (callback, MFA, register, setup), replacing the fragmented
+  // resend countdown, technical import IDs and static deadline explanation,
+  // contextualizing news empty/pagination labels, and removing visible recap
+  // calculation-version jargon. Those ten old keys become unused. Reusing
+  // fantasy.transfers.confirm and fantasy.transfers.review_title removes two
+  // existing findings. All new keys have call sites: 243 + 10 - 2 = 251.
+  W3: 251,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

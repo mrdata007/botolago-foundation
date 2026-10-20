@@ -42,14 +42,18 @@ export function LatestFeed({
   }
 
   if (query.isError) {
-    return <ErrorState onRetry={() => void query.refetch()} />;
+    return <ErrorState message={t("news.load_failed")} onRetry={() => void query.refetch()} />;
   }
 
   // "No articles" only when there are none: when every article fetched so
   // far is already shown above (a lead, top stories, or the carousel of the
   // newest), the rail simply has nothing more to add.
   if (fetched.length === 0) {
-    return <EmptyState illustration={emptyNewsArt}>{t("news.empty_category")}</EmptyState>;
+    return (
+      <EmptyState illustration={emptyNewsArt}>
+        {categorySlug || teamId ? t("news.no_matching_articles") : t("news.empty")}
+      </EmptyState>
+    );
   }
   if (items.length === 0 && !query.hasNextPage) return null;
 
@@ -72,7 +76,7 @@ export function LatestFeed({
           className="mt-1 lg:col-span-2"
         >
           {query.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {t("news.view_all")}
+          {t("news.load_more")}
         </UiButton>
       )}
     </div>

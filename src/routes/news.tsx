@@ -250,7 +250,7 @@ function NewsPage() {
           <SkeletonList count={3}>{() => <NewsRowSkeleton />}</SkeletonList>
         </div>
       ) : homeQ.isError ? (
-        <ErrorState onRetry={() => void homeQ.refetch()} />
+        <ErrorState message={t("news.load_failed")} onRetry={() => void homeQ.refetch()} />
       ) : (
         <div
           className={lead && featured.length > 0 ? "lg:grid lg:grid-cols-2 lg:gap-6" : undefined}

@@ -444,8 +444,9 @@ describe("empty, unavailable and failed are three different things (batch 4)", (
     const home = read("src/routes/index.tsx");
     expect(home).toContain('t("home.upcoming_empty")');
     expect(home).toContain('t("home.mine_empty")');
-    // What is left of it on Home is the news rail's (hidden at launch).
-    expect(home.match(/t\("state\.empty"\)/g)).toHaveLength(1);
+    // The news rail also names what is missing instead of saying "content".
+    expect(home).toContain('t("news.empty")');
+    expect(home).not.toContain('t("state.empty")');
     expect(read("src/routes/matches.index.tsx")).not.toContain('t("state.empty")');
   });
 

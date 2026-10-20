@@ -12,6 +12,7 @@ import { ShareButton } from "@/components/fantasy-lists/ShareButton";
 import { splitPlayerName, surnameStep } from "@/components/fantasy-lists/player-name";
 import { recentPointsBars } from "@/components/fantasy-lists/points-chart";
 import { clubLabel, findClub } from "@/components/fantasy/club-identity";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
@@ -271,10 +272,7 @@ function PlayerDetailPage() {
                 )}
               >
                 <span className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.price")}</span>
-                <bdi className={ui.stat.md}>{priceNf.format(p.price)}</bdi>
-                <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
-                  {t("fantasy.players.price_unit")}
-                </span>
+                <FantasyAmount value={p.price} className={ui.stat.md} />
               </span>
               {p.status !== "available" ? <PlayerStatusBadge status={p.status} /> : null}
             </div>

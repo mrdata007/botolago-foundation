@@ -90,7 +90,7 @@ describe("GuestClaimNotice", () => {
       started: 2,
       appliedAt: 1,
     });
-    expect(started).toContain("2 matchs déjà commencés");
+    expect(started).toContain("2 pronostics non ajoutés : les matchs ont commencé");
     const clean = notice({
       phase: "done",
       owner: "A",

@@ -99,7 +99,11 @@ export function PickTeamConfirmBar({
           {t("fpl.cancel")}
         </UiButton>
         <UiButton variant="ink" onClick={onConfirm} disabled={saving}>
-          {saving ? t("fpl.saving") : t("fpl.confirm")}
+          {saving
+            ? t("fpl.saving")
+            : pendingChip
+              ? t("fantasy.team.activate_chip")
+              : t("fantasy.team.save_lineup")}
         </UiButton>
       </div>
     </div>

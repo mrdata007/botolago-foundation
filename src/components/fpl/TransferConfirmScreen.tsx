@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { ui, UiButton, UiCard, UiHeader, UiKeyValueRow } from "@/components/ui-kit";
 import type { ChipKey, ChipState } from "@/lib/fantasy-engine";
 import { useI18n } from "@/i18n/provider";
@@ -73,8 +74,7 @@ export function TransferConfirmScreen({
 }) {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
+    maximumFractionDigits: 0,
   });
 
   const clubOf = (id: string) => findClub(clubs, id);
@@ -129,7 +129,12 @@ export function TransferConfirmScreen({
               {club ? tr(club.shortName) : ""}
             </div>
           </div>
-          <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>{nf.format(value)}</span>
+          <span className="shrink-0 text-end">
+            <span className={cn("block", ui.text.micro, ui.tone.muted)}>
+              {side === "out" ? t("fpl.selling_price") : t("fpl.purchase_price")}
+            </span>
+            <FantasyAmount value={value} className={cn(ui.stat.sm, ui.tone.default)} />
+          </span>
         </div>
       </div>
     );
@@ -175,16 +180,25 @@ export function TransferConfirmScreen({
       {notice}
 
       <section className={cn("mt-6", ui.space.gutter)}>
-        <SectionHeader title={t("fpl.points_overview")} />
+        <SectionHeader title={t("fantasy.transfers.review_title")} />
         <UiCard padding="none" className="px-3">
           <UiKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
+          <UiKeyValueRow label={t("fpl.additional_transfers_used")} value={nf.format(paidUsed)} />
           <UiKeyValueRow
-            label={t("fpl.additional_transfers_used")}
-            value={`${paidUsed} (${hitPoints} ${pointsUnit(hitPoints, t)})`}
+            label={t("fpl.cost")}
+            value={
+              <span className="whitespace-nowrap">
+                <bdi dir="ltr">
+                  {hitPoints > 0 ? "−" : ""}
+                  {nf.format(hitPoints)}
+                </bdi>{" "}
+                {pointsUnit(hitPoints, t)}
+              </span>
+            }
           />
           <UiKeyValueRow
             label={t("fpl.left_in_bank")}
-            value={nf.format(bankAfter)}
+            value={<FantasyAmount value={bankAfter} />}
             className="border-b-0"
           />
         </UiCard>
@@ -204,7 +218,7 @@ export function TransferConfirmScreen({
           {t("fpl.edit_transfers")}
         </UiButton>
         <UiButton variant="ink" onClick={onConfirm} disabled={busy}>
-          {busy ? t("fpl.saving") : t("fpl.confirm")}
+          {busy ? t("fpl.saving") : t("fantasy.transfers.confirm")}
         </UiButton>
       </div>
     </div>

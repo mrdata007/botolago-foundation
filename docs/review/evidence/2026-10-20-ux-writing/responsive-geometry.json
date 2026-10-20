@@ -1,0 +1,5726 @@
+[
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2427.21875,
+      "right": 390,
+      "bottom": 2492.21875
+    },
+    "column": {
+      "x": 0,
+      "y": 117,
+      "width": 390,
+      "height": 2375.21875,
+      "right": 390,
+      "bottom": 2492.21875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "calendar",
+    "path": "/matches",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 672.484375,
+      "right": 390,
+      "bottom": 737.484375
+    },
+    "column": {
+      "x": 0,
+      "y": 289,
+      "width": 390,
+      "height": 448.484375,
+      "right": 390,
+      "bottom": 737.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 230,
+        "x": 0,
+        "y": 178,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      },
+      {
+        "tag": "DIV",
+        "bottom": 289,
+        "x": 0,
+        "y": 230,
+        "width": 390,
+        "height": 59,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "standings",
+    "path": "/matches/standings",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches/standings",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 863.21875,
+      "right": 390,
+      "bottom": 928.21875
+    },
+    "column": {
+      "x": 0,
+      "y": 230,
+      "width": 390,
+      "height": 698.21875,
+      "right": 390,
+      "bottom": 928.21875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 230,
+        "x": 0,
+        "y": 178,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "match",
+    "path": "/matches/00000020-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches/00000020-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 960.109375,
+      "right": 390,
+      "bottom": 1025.109375
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 960.109375,
+      "right": 390,
+      "bottom": 1025.109375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 299.78125,
+        "x": 0,
+        "y": 250.78125,
+        "width": 390,
+        "height": 49,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "clubs",
+    "path": "/clubs",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/clubs",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 855.140625,
+      "right": 390,
+      "bottom": 920.140625
+    },
+    "column": {
+      "x": 0,
+      "y": 162.140625,
+      "width": 390,
+      "height": 758,
+      "right": 390,
+      "bottom": 920.140625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/clubs/00000010-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1948.90625,
+      "right": 390,
+      "bottom": 2013.90625
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1948.90625,
+      "right": 390,
+      "bottom": 2013.90625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 370.890625,
+        "x": 0,
+        "y": 321.890625,
+        "width": 390,
+        "height": 49,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "news",
+    "path": "/news",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/news",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1179.921875,
+      "right": 390,
+      "bottom": 1244.921875
+    },
+    "column": {
+      "x": 0,
+      "y": 194,
+      "width": 390,
+      "height": 1050.921875,
+      "right": 390,
+      "bottom": 1244.921875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "article",
+    "path": "/news/a0000000-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/news/a0000000-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 805.46875,
+      "right": 390,
+      "bottom": 874.46875
+    },
+    "column": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 805.46875,
+      "right": 390,
+      "bottom": 874.46875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "fantasy",
+    "path": "/fantasy",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 3368.90625,
+      "right": 390,
+      "bottom": 3433.90625
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 3368.90625,
+      "right": 390,
+      "bottom": 3433.90625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "team",
+    "path": "/fantasy/team",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/team",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1014.28125,
+      "right": 390,
+      "bottom": 1014.28125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1014.28125,
+      "right": 390,
+      "bottom": 1014.28125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/transfers",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 918.796875,
+      "right": 390,
+      "bottom": 918.796875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 918.796875,
+      "right": 390,
+      "bottom": 918.796875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 806.796875,
+        "x": 0,
+        "y": 737.796875,
+        "width": 390,
+        "height": 69,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "squad-builder",
+    "path": "/fantasy/create",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/team",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1014.28125,
+      "right": 390,
+      "bottom": 1014.28125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1014.28125,
+      "right": 390,
+      "bottom": 1014.28125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/players",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2586.671875,
+      "right": 390,
+      "bottom": 2586.671875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2586.671875,
+      "right": 390,
+      "bottom": 2586.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "points",
+    "path": "/fantasy/points",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/points",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1261.78125,
+      "right": 390,
+      "bottom": 1261.78125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1261.78125,
+      "right": 390,
+      "bottom": 1261.78125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rankings",
+    "path": "/fantasy/rankings",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/rankings",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2310.484375,
+      "right": 390,
+      "bottom": 2310.484375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2310.484375,
+      "right": 390,
+      "bottom": 2310.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "leagues",
+    "path": "/fantasy/leagues",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/leagues",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 692,
+      "right": 390,
+      "bottom": 692
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 692,
+      "right": 390,
+      "bottom": 692
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "difficulty",
+    "path": "/fantasy/fixtures",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/fixtures",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 795,
+      "right": 390,
+      "bottom": 795
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 795,
+      "right": 390,
+      "bottom": 795
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "TH",
+        "bottom": 163,
+        "x": 0,
+        "y": 77,
+        "width": 171.5625,
+        "height": 86,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 216.5,
+        "x": 0,
+        "y": 163.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 269.5,
+        "x": 0,
+        "y": 216.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 322.5,
+        "x": 0,
+        "y": 269.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 375.5,
+        "x": 0,
+        "y": 322.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 428.5,
+        "x": 0,
+        "y": 375.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 481.5,
+        "x": 0,
+        "y": 428.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 534.5,
+        "x": 0,
+        "y": 481.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 171.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 587,
+        "x": 0,
+        "y": 534.5,
+        "width": 171.5625,
+        "height": 52.5,
+        "right": 171.5625
+      }
+    ]
+  },
+  {
+    "screen": "top-players",
+    "path": "/fantasy/top-players",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/top-players",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1751.890625,
+      "right": 390,
+      "bottom": 1751.890625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1751.890625,
+      "right": 390,
+      "bottom": 1751.890625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/rules",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3129.546875,
+      "right": 390,
+      "bottom": 3129.546875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3129.546875,
+      "right": 390,
+      "bottom": 3129.546875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "help",
+    "path": "/fantasy/help",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/help",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1324.5,
+      "right": 390,
+      "bottom": 1324.5
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1324.5,
+      "right": 390,
+      "bottom": 1324.5
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1659.484375,
+      "right": 390,
+      "bottom": 1724.484375
+    },
+    "column": {
+      "x": 0,
+      "y": 130,
+      "width": 390,
+      "height": 1594.484375,
+      "right": 390,
+      "bottom": 1724.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "security",
+    "path": "/profile/security",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile/security",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 211.25,
+      "right": 390,
+      "bottom": 280.25
+    },
+    "column": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 211.25,
+      "right": 390,
+      "bottom": 280.25
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "saved",
+    "path": "/profile/saved",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile/saved",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 423.171875,
+      "right": 390,
+      "bottom": 492.171875
+    },
+    "column": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 423.171875,
+      "right": 390,
+      "bottom": 492.171875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "notifications",
+    "path": "/notifications",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/notifications",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 429.765625,
+      "right": 390,
+      "bottom": 494.765625
+    },
+    "column": {
+      "x": 0,
+      "y": 130,
+      "width": 390,
+      "height": 364.765625,
+      "right": 390,
+      "bottom": 494.765625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "predictions",
+    "path": "/pronostics",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pronostics",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1027.671875,
+      "right": 390,
+      "bottom": 1092.671875
+    },
+    "column": {
+      "x": 0,
+      "y": 190,
+      "width": 390,
+      "height": 902.671875,
+      "right": 390,
+      "bottom": 1092.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prediction-leagues",
+    "path": "/pronostics/ligues",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pronostics",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 900.546875,
+      "right": 390,
+      "bottom": 965.546875
+    },
+    "column": {
+      "x": 0,
+      "y": 190,
+      "width": 390,
+      "height": 775.546875,
+      "right": 390,
+      "bottom": 965.546875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects",
+    "path": "/pepites",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2528.6875,
+      "right": 390,
+      "bottom": 2593.6875
+    },
+    "column": {
+      "x": 0,
+      "y": 323.9375,
+      "width": 390,
+      "height": 2269.75,
+      "right": 390,
+      "bottom": 2593.6875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-ranking",
+    "path": "/pepites/classement",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/classement",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2348.75,
+      "right": 390,
+      "bottom": 2413.75
+    },
+    "column": {
+      "x": 0,
+      "y": 286.9375,
+      "width": 390,
+      "height": 2126.8125,
+      "right": 390,
+      "bottom": 2413.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-compare",
+    "path": "/pepites/comparer",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/comparer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 494.75,
+      "right": 390,
+      "bottom": 559.75
+    },
+    "column": {
+      "x": 0,
+      "y": 130,
+      "width": 390,
+      "height": 429.75,
+      "right": 390,
+      "bottom": 559.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-method",
+    "path": "/pepites/methode",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/methode",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1706.15625,
+      "right": 390,
+      "bottom": 1771.15625
+    },
+    "column": {
+      "x": 0,
+      "y": 271.9375,
+      "width": 390,
+      "height": 1499.21875,
+      "right": 390,
+      "bottom": 1771.15625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 4225.84375,
+      "right": 390,
+      "bottom": 4290.84375
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 4225.84375,
+      "right": 390,
+      "bottom": 4290.84375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-card",
+    "path": "/curva/carte?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/carte",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 4497.625,
+      "right": 390,
+      "bottom": 4497.625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 4497.625,
+      "right": 390,
+      "bottom": 4497.625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-friends",
+    "path": "/curva/les-votres?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/les-votres",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 429,
+      "right": 390,
+      "bottom": 429
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 429,
+      "right": 390,
+      "bottom": 429
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-seasons",
+    "path": "/curva/saisons?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/saisons",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 856.265625,
+      "right": 390,
+      "bottom": 856.265625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 856.265625,
+      "right": 390,
+      "bottom": 856.265625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/plus",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 900,
+      "right": 390,
+      "bottom": 900
+    },
+    "column": {
+      "x": 175,
+      "y": 780,
+      "width": 40,
+      "height": 24,
+      "right": 215,
+      "bottom": 804
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prizes",
+    "path": "/prizes",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/prizes",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3546.3125,
+      "right": 390,
+      "bottom": 3546.3125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3546.3125,
+      "right": 390,
+      "bottom": 3546.3125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/jouer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 6030.640625,
+      "right": 390,
+      "bottom": 6030.640625
+    },
+    "column": {
+      "x": 0,
+      "y": 900,
+      "width": 390,
+      "height": 73,
+      "right": 390,
+      "bottom": 973
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 0,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "login",
+    "path": "/auth/login",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/login",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 187,
+      "width": 390,
+      "height": 802.65625,
+      "right": 390,
+      "bottom": 989.65625
+    },
+    "column": {
+      "x": 16,
+      "y": 879.5625,
+      "width": 358,
+      "height": 86.09375,
+      "right": 374,
+      "bottom": 965.65625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "register",
+    "path": "/auth/register",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/register",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 187,
+      "width": 390,
+      "height": 1070.03125,
+      "right": 390,
+      "bottom": 1257.03125
+    },
+    "column": {
+      "x": 16,
+      "y": 1146.9375,
+      "width": 358,
+      "height": 86.09375,
+      "right": 374,
+      "bottom": 1233.03125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/forgot-password",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 96,
+      "width": 390,
+      "height": 804,
+      "right": 390,
+      "bottom": 900
+    },
+    "column": {
+      "x": 16,
+      "y": 235.875,
+      "width": 358,
+      "height": 154.328125,
+      "right": 374,
+      "bottom": 390.203125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "terms",
+    "path": "/terms",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/terms",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 6294,
+      "right": 390,
+      "bottom": 6359
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 6294,
+      "right": 390,
+      "bottom": 6359
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "privacy",
+    "path": "/privacy",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/privacy",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5519.8125,
+      "right": 390,
+      "bottom": 5584.8125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5519.8125,
+      "right": 390,
+      "bottom": 5584.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin",
+    "path": "/dev/admin-shell-sample",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 174.796875,
+      "width": 390,
+      "height": 1910.390625,
+      "right": 390,
+      "bottom": 2085.1875
+    },
+    "column": {
+      "x": 16,
+      "y": 1588.5,
+      "width": 358,
+      "height": 432.6875,
+      "right": 374,
+      "bottom": 2021.1875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-plus",
+    "path": "/dev/admin-shell-sample?view=plus",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 166.796875,
+      "width": 390,
+      "height": 4311.140625,
+      "right": 390,
+      "bottom": 4477.9375
+    },
+    "column": {
+      "x": 16,
+      "y": 166.796875,
+      "width": 358,
+      "height": 4247.140625,
+      "right": 374,
+      "bottom": 4413.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-mappings",
+    "path": "/dev/player-mappings-sample?scale=small",
+    "language": "fr",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/player-mappings-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 16,
+      "y": 128,
+      "width": 358,
+      "height": 4275.546875,
+      "right": 374,
+      "bottom": 4403.546875
+    },
+    "column": {
+      "x": 16,
+      "y": 1142.0625,
+      "width": 358,
+      "height": 3261.484375,
+      "right": 374,
+      "bottom": 4403.546875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1172.5,
+      "right": 1440,
+      "bottom": 1237.5
+    },
+    "column": {
+      "x": 60,
+      "y": 178,
+      "width": 1320,
+      "height": 1059.5,
+      "right": 1380,
+      "bottom": 1237.5
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 178,
+        "x": 0,
+        "y": 126,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "calendar",
+    "path": "/matches",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 632.484375,
+      "right": 1440,
+      "bottom": 697.484375
+    },
+    "column": {
+      "x": 384,
+      "y": 289,
+      "width": 672,
+      "height": 408.484375,
+      "right": 1056,
+      "bottom": 697.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 230,
+        "x": 0,
+        "y": 178,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      },
+      {
+        "tag": "DIV",
+        "bottom": 289,
+        "x": 0,
+        "y": 230,
+        "width": 1440,
+        "height": 59,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "standings",
+    "path": "/matches/standings",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches/standings",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 763.21875,
+      "right": 1440,
+      "bottom": 828.21875
+    },
+    "column": {
+      "x": 208,
+      "y": 230,
+      "width": 1024,
+      "height": 598.21875,
+      "right": 1232,
+      "bottom": 828.21875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 230,
+        "x": 0,
+        "y": 178,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "match",
+    "path": "/matches/00000020-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches/00000020-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 977.796875,
+      "right": 1440,
+      "bottom": 1042.796875
+    },
+    "column": {
+      "x": 60,
+      "y": 65,
+      "width": 1320,
+      "height": 977.796875,
+      "right": 1380,
+      "bottom": 1042.796875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 335.78125,
+        "x": 76,
+        "y": 286.78125,
+        "width": 924,
+        "height": 49,
+        "right": 1000
+      }
+    ]
+  },
+  {
+    "screen": "clubs",
+    "path": "/clubs",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/clubs",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 491.140625,
+      "right": 1440,
+      "bottom": 556.140625
+    },
+    "column": {
+      "x": 208,
+      "y": 162.140625,
+      "width": 1024,
+      "height": 394,
+      "right": 1232,
+      "bottom": 556.140625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/clubs/00000010-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1889.84375,
+      "right": 1440,
+      "bottom": 1954.84375
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 1889.84375,
+      "right": 1056,
+      "bottom": 1954.84375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 394.890625,
+        "x": 400,
+        "y": 345.890625,
+        "width": 640,
+        "height": 49,
+        "right": 1040
+      }
+    ]
+  },
+  {
+    "screen": "news",
+    "path": "/news",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/news",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 918.640625,
+      "right": 1440,
+      "bottom": 983.640625
+    },
+    "column": {
+      "x": 208,
+      "y": 194,
+      "width": 1024,
+      "height": 789.640625,
+      "right": 1232,
+      "bottom": 983.640625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "article",
+    "path": "/news/a0000000-0000-4000-8000-000000000001",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/news/a0000000-0000-4000-8000-000000000001",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 1440,
+      "height": 824.6875,
+      "right": 1440,
+      "bottom": 893.6875
+    },
+    "column": {
+      "x": 384,
+      "y": 69,
+      "width": 672,
+      "height": 824.6875,
+      "right": 1056,
+      "bottom": 893.6875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "fantasy",
+    "path": "/fantasy",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2597.9375,
+      "right": 1056,
+      "bottom": 2678.9375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2597.9375,
+      "right": 1056,
+      "bottom": 2678.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "team",
+    "path": "/fantasy/team",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/team",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/transfers",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 840,
+      "right": 1056,
+      "bottom": 921
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 840,
+      "right": 1056,
+      "bottom": 921
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 873,
+        "x": 384,
+        "y": 802,
+        "width": 672,
+        "height": 71,
+        "right": 1056
+      }
+    ]
+  },
+  {
+    "screen": "squad-builder",
+    "path": "/fantasy/create",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/team",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 950.28125,
+      "right": 1056,
+      "bottom": 1031.28125
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 950.28125,
+      "right": 1056,
+      "bottom": 1031.28125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/players",
+    "direction": "ltr",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2270.53125,
+      "right": 1232,
+      "bottom": 2351.53125
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2270.53125,
+      "right": 1232,
+      "bottom": 2351.53125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "points",
+    "path": "/fantasy/points",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/points",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rankings",
+    "path": "/fantasy/rankings",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/rankings",
+    "direction": "ltr",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2072.984375,
+      "right": 1232,
+      "bottom": 2153.984375
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2072.984375,
+      "right": 1232,
+      "bottom": 2153.984375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "leagues",
+    "path": "/fantasy/leagues",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/leagues",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "difficulty",
+    "path": "/fantasy/fixtures",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/fixtures",
+    "direction": "ltr",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 788,
+      "right": 1232,
+      "bottom": 869
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 788,
+      "right": 1232,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "TH",
+        "bottom": 244,
+        "x": 208,
+        "y": 158,
+        "width": 171.5625,
+        "height": 86,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 297.5,
+        "x": 208,
+        "y": 244.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 350.5,
+        "x": 208,
+        "y": 297.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 403.5,
+        "x": 208,
+        "y": 350.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 456.5,
+        "x": 208,
+        "y": 403.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 509.5,
+        "x": 208,
+        "y": 456.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 562.5,
+        "x": 208,
+        "y": 509.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 615.5,
+        "x": 208,
+        "y": 562.5,
+        "width": 171.5625,
+        "height": 53,
+        "right": 379.5625
+      },
+      {
+        "tag": "TH",
+        "bottom": 668,
+        "x": 208,
+        "y": 615.5,
+        "width": 171.5625,
+        "height": 52.5,
+        "right": 379.5625
+      }
+    ]
+  },
+  {
+    "screen": "top-players",
+    "path": "/fantasy/top-players",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/top-players",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1400.3125,
+      "right": 1056,
+      "bottom": 1481.3125
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1400.3125,
+      "right": 1056,
+      "bottom": 1481.3125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/rules",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2721.203125,
+      "right": 1056,
+      "bottom": 2802.203125
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2721.203125,
+      "right": 1056,
+      "bottom": 2802.203125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "help",
+    "path": "/fantasy/help",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/help",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1134,
+      "right": 1056,
+      "bottom": 1215
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1134,
+      "right": 1056,
+      "bottom": 1215
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 842.015625,
+      "right": 1440,
+      "bottom": 907.015625
+    },
+    "column": {
+      "x": 384,
+      "y": 130,
+      "width": 672,
+      "height": 777.015625,
+      "right": 1056,
+      "bottom": 907.015625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "security",
+    "path": "/profile/security",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile/security",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 1440,
+      "height": 155.25,
+      "right": 1440,
+      "bottom": 224.25
+    },
+    "column": {
+      "x": 384,
+      "y": 69,
+      "width": 672,
+      "height": 155.25,
+      "right": 1056,
+      "bottom": 224.25
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "saved",
+    "path": "/profile/saved",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile/saved",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 1440,
+      "height": 345.484375,
+      "right": 1440,
+      "bottom": 414.484375
+    },
+    "column": {
+      "x": 384,
+      "y": 69,
+      "width": 672,
+      "height": 345.484375,
+      "right": 1056,
+      "bottom": 414.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "notifications",
+    "path": "/notifications",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/notifications",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 352.078125,
+      "right": 1440,
+      "bottom": 417.078125
+    },
+    "column": {
+      "x": 384,
+      "y": 130,
+      "width": 672,
+      "height": 287.078125,
+      "right": 1056,
+      "bottom": 417.078125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "predictions",
+    "path": "/pronostics",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pronostics",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 971.671875,
+      "right": 1440,
+      "bottom": 1036.671875
+    },
+    "column": {
+      "x": 384,
+      "y": 190,
+      "width": 672,
+      "height": 846.671875,
+      "right": 1056,
+      "bottom": 1036.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prediction-leagues",
+    "path": "/pronostics/ligues",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pronostics",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 820.75,
+      "right": 1440,
+      "bottom": 885.75
+    },
+    "column": {
+      "x": 384,
+      "y": 190,
+      "width": 672,
+      "height": 695.75,
+      "right": 1056,
+      "bottom": 885.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects",
+    "path": "/pepites",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 2286.296875,
+      "right": 1440,
+      "bottom": 2351.296875
+    },
+    "column": {
+      "x": 384,
+      "y": 282.9375,
+      "width": 672,
+      "height": 2068.359375,
+      "right": 1056,
+      "bottom": 2351.296875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-ranking",
+    "path": "/pepites/classement",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/classement",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1855.0625,
+      "right": 1440,
+      "bottom": 1920.0625
+    },
+    "column": {
+      "x": 60,
+      "y": 337.4375,
+      "width": 1320,
+      "height": 1582.625,
+      "right": 1380,
+      "bottom": 1920.0625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-compare",
+    "path": "/pepites/comparer",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/comparer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 423.5,
+      "right": 1440,
+      "bottom": 488.5
+    },
+    "column": {
+      "x": 384,
+      "y": 130,
+      "width": 672,
+      "height": 358.5,
+      "right": 1056,
+      "bottom": 488.5
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-method",
+    "path": "/pepites/methode",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/methode",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1300.828125,
+      "right": 1440,
+      "bottom": 1365.828125
+    },
+    "column": {
+      "x": 384,
+      "y": 230.9375,
+      "width": 672,
+      "height": 1134.890625,
+      "right": 1056,
+      "bottom": 1365.828125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva",
+    "direction": "ltr",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3339,
+      "right": 1232,
+      "bottom": 3420
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3339,
+      "right": 1232,
+      "bottom": 3420
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 824.109375,
+        "x": 232,
+        "y": 146,
+        "width": 352,
+        "height": 678.109375,
+        "right": 584
+      }
+    ]
+  },
+  {
+    "screen": "curva-card",
+    "path": "/curva/carte?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/carte",
+    "direction": "ltr",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3760.046875,
+      "right": 1232,
+      "bottom": 3841.046875
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3760.046875,
+      "right": 1232,
+      "bottom": 3841.046875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 747.96875,
+        "x": 232,
+        "y": 150,
+        "width": 352,
+        "height": 597.96875,
+        "right": 584
+      }
+    ]
+  },
+  {
+    "screen": "curva-friends",
+    "path": "/curva/les-votres?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/les-votres",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-seasons",
+    "path": "/curva/saisons?mc=rated",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/saisons",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 792.265625,
+      "right": 1056,
+      "bottom": 873.265625
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 792.265625,
+      "right": 1056,
+      "bottom": 873.265625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/plus",
+    "direction": "ltr",
+    "main": {
+      "x": 240,
+      "y": 24,
+      "width": 960,
+      "height": 852,
+      "right": 1200,
+      "bottom": 876
+    },
+    "column": {
+      "x": 700,
+      "y": 756,
+      "width": 40,
+      "height": 24,
+      "right": 740,
+      "bottom": 780
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prizes",
+    "path": "/prizes",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/prizes",
+    "direction": "ltr",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2224.765625,
+      "right": 1056,
+      "bottom": 2305.765625
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2224.765625,
+      "right": 1056,
+      "bottom": 2305.765625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/jouer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 3873.875,
+      "right": 1440,
+      "bottom": 3873.875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "right": 0,
+      "bottom": 0
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 0,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "login",
+    "path": "/auth/login",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/login",
+    "direction": "ltr",
+    "main": {
+      "x": 480,
+      "y": 235,
+      "width": 480,
+      "height": 768.15625,
+      "right": 960,
+      "bottom": 1003.15625
+    },
+    "column": {
+      "x": 504,
+      "y": 885.0625,
+      "width": 432,
+      "height": 86.09375,
+      "right": 936,
+      "bottom": 971.15625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "register",
+    "path": "/auth/register",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/register",
+    "direction": "ltr",
+    "main": {
+      "x": 480,
+      "y": 235,
+      "width": 480,
+      "height": 1078.03125,
+      "right": 960,
+      "bottom": 1313.03125
+    },
+    "column": {
+      "x": 504,
+      "y": 1194.9375,
+      "width": 432,
+      "height": 86.09375,
+      "right": 936,
+      "bottom": 1281.03125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/forgot-password",
+    "direction": "ltr",
+    "main": {
+      "x": 480,
+      "y": 338.890625,
+      "width": 480,
+      "height": 326.203125,
+      "right": 960,
+      "bottom": 665.09375
+    },
+    "column": {
+      "x": 504,
+      "y": 478.765625,
+      "width": 432,
+      "height": 154.328125,
+      "right": 936,
+      "bottom": 633.09375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "terms",
+    "path": "/terms",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/terms",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 4200.5,
+      "right": 1440,
+      "bottom": 4265.5
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 4200.5,
+      "right": 1056,
+      "bottom": 4265.5
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "privacy",
+    "path": "/privacy",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/privacy",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 3999.796875,
+      "right": 1440,
+      "bottom": 4064.796875
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 3999.796875,
+      "right": 1056,
+      "bottom": 4064.796875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin",
+    "path": "/dev/admin-shell-sample",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 272,
+      "y": 328.390625,
+      "width": 896,
+      "height": 1286.015625,
+      "right": 1168,
+      "bottom": 1614.40625
+    },
+    "column": {
+      "x": 288,
+      "y": 1307.796875,
+      "width": 864,
+      "height": 242.609375,
+      "right": 1152,
+      "bottom": 1550.40625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-plus",
+    "path": "/dev/admin-shell-sample?view=plus",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 272,
+      "y": 320.390625,
+      "width": 896,
+      "height": 2848.6875,
+      "right": 1168,
+      "bottom": 3169.078125
+    },
+    "column": {
+      "x": 288,
+      "y": 320.390625,
+      "width": 864,
+      "height": 2784.6875,
+      "right": 1152,
+      "bottom": 3105.078125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-mappings",
+    "path": "/dev/player-mappings-sample?scale=small",
+    "language": "fr",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/player-mappings-sample",
+    "direction": "ltr",
+    "main": {
+      "x": 288,
+      "y": 76,
+      "width": 864,
+      "height": 3671.734375,
+      "right": 1152,
+      "bottom": 3747.734375
+    },
+    "column": {
+      "x": 288,
+      "y": 661.703125,
+      "width": 864,
+      "height": 3086.03125,
+      "right": 1152,
+      "bottom": 3747.734375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2662.359375,
+      "right": 390,
+      "bottom": 2727.359375
+    },
+    "column": {
+      "x": 0,
+      "y": 117,
+      "width": 390,
+      "height": 2610.359375,
+      "right": 390,
+      "bottom": 2727.359375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "calendar",
+    "path": "/matches",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 742.53125,
+      "right": 390,
+      "bottom": 807.53125
+    },
+    "column": {
+      "x": 0,
+      "y": 311.296875,
+      "width": 390,
+      "height": 496.234375,
+      "right": 390,
+      "bottom": 807.53125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 252.296875,
+        "x": 0,
+        "y": 200.296875,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      },
+      {
+        "tag": "DIV",
+        "bottom": 311.296875,
+        "x": 0,
+        "y": 252.296875,
+        "width": 390,
+        "height": 59,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "standings",
+    "path": "/matches/standings",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches/standings",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 905.75,
+      "right": 390,
+      "bottom": 970.75
+    },
+    "column": {
+      "x": 0,
+      "y": 252.296875,
+      "width": 390,
+      "height": 718.453125,
+      "right": 390,
+      "bottom": 970.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 252.296875,
+        "x": 0,
+        "y": 200.296875,
+        "width": 390,
+        "height": 52,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "match",
+    "path": "/matches/00000020-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/matches/00000020-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1082.828125,
+      "right": 390,
+      "bottom": 1147.828125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1082.828125,
+      "right": 390,
+      "bottom": 1147.828125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 355.40625,
+        "x": 0,
+        "y": 306.40625,
+        "width": 390,
+        "height": 49,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "clubs",
+    "path": "/clubs",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/clubs",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 881.984375,
+      "right": 390,
+      "bottom": 946.984375
+    },
+    "column": {
+      "x": 0,
+      "y": 188.984375,
+      "width": 390,
+      "height": 758,
+      "right": 390,
+      "bottom": 946.984375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/clubs/00000010-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2252.8125,
+      "right": 390,
+      "bottom": 2317.8125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2252.8125,
+      "right": 390,
+      "bottom": 2317.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 419.96875,
+        "x": 0,
+        "y": 370.96875,
+        "width": 390,
+        "height": 49,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "news",
+    "path": "/news",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/news",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1280.921875,
+      "right": 390,
+      "bottom": 1345.921875
+    },
+    "column": {
+      "x": 0,
+      "y": 216.296875,
+      "width": 390,
+      "height": 1129.625,
+      "right": 390,
+      "bottom": 1345.921875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "article",
+    "path": "/news/a0000000-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/news/a0000000-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 854.921875,
+      "right": 390,
+      "bottom": 923.921875
+    },
+    "column": {
+      "x": 0,
+      "y": 69,
+      "width": 390,
+      "height": 854.921875,
+      "right": 390,
+      "bottom": 923.921875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "fantasy",
+    "path": "/fantasy",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 3473.3125,
+      "right": 390,
+      "bottom": 3538.3125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 3473.3125,
+      "right": 390,
+      "bottom": 3538.3125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "team",
+    "path": "/fantasy/team",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/team",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1136.609375,
+      "right": 390,
+      "bottom": 1136.609375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1136.609375,
+      "right": 390,
+      "bottom": 1136.609375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/transfers",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1031.28125,
+      "right": 390,
+      "bottom": 1031.28125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1031.28125,
+      "right": 390,
+      "bottom": 1031.28125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 817.5625,
+        "x": 0,
+        "y": 748.5625,
+        "width": 390,
+        "height": 69,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "squad-builder",
+    "path": "/fantasy/create",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/team",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1136.609375,
+      "right": 390,
+      "bottom": 1136.609375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1136.609375,
+      "right": 390,
+      "bottom": 1136.609375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/players",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2997.890625,
+      "right": 390,
+      "bottom": 2997.890625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2997.890625,
+      "right": 390,
+      "bottom": 2997.890625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "points",
+    "path": "/fantasy/points",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/points",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1402.078125,
+      "right": 390,
+      "bottom": 1402.078125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1402.078125,
+      "right": 390,
+      "bottom": 1402.078125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rankings",
+    "path": "/fantasy/rankings",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/rankings",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2623.09375,
+      "right": 390,
+      "bottom": 2623.09375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2623.09375,
+      "right": 390,
+      "bottom": 2623.09375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "leagues",
+    "path": "/fantasy/leagues",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/leagues",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 765.359375,
+      "right": 390,
+      "bottom": 765.359375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 765.359375,
+      "right": 390,
+      "bottom": 765.359375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "difficulty",
+    "path": "/fantasy/fixtures",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/fixtures",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 822.625,
+      "right": 390,
+      "bottom": 822.625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 822.625,
+      "right": 390,
+      "bottom": 822.625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "TH",
+        "bottom": 190.625,
+        "x": 242,
+        "y": 93.4375,
+        "width": 148,
+        "height": 97.1875,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 244.125,
+        "x": 242,
+        "y": 191.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 297.125,
+        "x": 242,
+        "y": 244.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 350.125,
+        "x": 242,
+        "y": 297.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 403.125,
+        "x": 242,
+        "y": 350.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 456.125,
+        "x": 242,
+        "y": 403.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 509.125,
+        "x": 242,
+        "y": 456.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 562.125,
+        "x": 242,
+        "y": 509.125,
+        "width": 148,
+        "height": 53,
+        "right": 390
+      },
+      {
+        "tag": "TH",
+        "bottom": 614.625,
+        "x": 242,
+        "y": 562.125,
+        "width": 148,
+        "height": 52.5,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "top-players",
+    "path": "/fantasy/top-players",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/top-players",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2061.84375,
+      "right": 390,
+      "bottom": 2061.84375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 2061.84375,
+      "right": 390,
+      "bottom": 2061.84375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/rules",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3282.515625,
+      "right": 390,
+      "bottom": 3282.515625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3282.515625,
+      "right": 390,
+      "bottom": 3282.515625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "help",
+    "path": "/fantasy/help",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/fantasy/help",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1297,
+      "right": 390,
+      "bottom": 1297
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 1297,
+      "right": 390,
+      "bottom": 1297
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1797.296875,
+      "right": 390,
+      "bottom": 1862.296875
+    },
+    "column": {
+      "x": 0,
+      "y": 152.296875,
+      "width": 390,
+      "height": 1710,
+      "right": 390,
+      "bottom": 1862.296875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "security",
+    "path": "/profile/security",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile/security",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 390,
+      "height": 216.5,
+      "right": 390,
+      "bottom": 301.9375
+    },
+    "column": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 390,
+      "height": 216.5,
+      "right": 390,
+      "bottom": 301.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "saved",
+    "path": "/profile/saved",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/profile/saved",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 390,
+      "height": 415.734375,
+      "right": 390,
+      "bottom": 501.171875
+    },
+    "column": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 390,
+      "height": 415.734375,
+      "right": 390,
+      "bottom": 501.171875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "notifications",
+    "path": "/notifications",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/notifications",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 471.671875,
+      "right": 390,
+      "bottom": 536.671875
+    },
+    "column": {
+      "x": 0,
+      "y": 152.296875,
+      "width": 390,
+      "height": 384.375,
+      "right": 390,
+      "bottom": 536.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "predictions",
+    "path": "/pronostics",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pronostics",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1079.59375,
+      "right": 390,
+      "bottom": 1144.59375
+    },
+    "column": {
+      "x": 0,
+      "y": 212.296875,
+      "width": 390,
+      "height": 932.296875,
+      "right": 390,
+      "bottom": 1144.59375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prediction-leagues",
+    "path": "/pronostics/ligues",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pronostics",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 982.03125,
+      "right": 390,
+      "bottom": 1047.03125
+    },
+    "column": {
+      "x": 0,
+      "y": 212.296875,
+      "width": 390,
+      "height": 834.734375,
+      "right": 390,
+      "bottom": 1047.03125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects",
+    "path": "/pepites",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 2829.890625,
+      "right": 390,
+      "bottom": 2894.890625
+    },
+    "column": {
+      "x": 0,
+      "y": 434.671875,
+      "width": 390,
+      "height": 2460.21875,
+      "right": 390,
+      "bottom": 2894.890625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-ranking",
+    "path": "/pepites/classement",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/classement",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 3125.0625,
+      "right": 390,
+      "bottom": 3190.0625
+    },
+    "column": {
+      "x": 0,
+      "y": 372.375,
+      "width": 390,
+      "height": 2817.6875,
+      "right": 390,
+      "bottom": 3190.0625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-compare",
+    "path": "/pepites/comparer",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/comparer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 498.4375,
+      "right": 390,
+      "bottom": 563.4375
+    },
+    "column": {
+      "x": 0,
+      "y": 146.4375,
+      "width": 390,
+      "height": 417,
+      "right": 390,
+      "bottom": 563.4375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-method",
+    "path": "/pepites/methode",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/pepites/methode",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 1692.9375,
+      "right": 390,
+      "bottom": 1757.9375
+    },
+    "column": {
+      "x": 0,
+      "y": 264.375,
+      "width": 390,
+      "height": 1493.5625,
+      "right": 390,
+      "bottom": 1757.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 4306.546875,
+      "right": 390,
+      "bottom": 4371.546875
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 4306.546875,
+      "right": 390,
+      "bottom": 4371.546875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-card",
+    "path": "/curva/carte?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/carte",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 4656.34375,
+      "right": 390,
+      "bottom": 4656.34375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 4656.34375,
+      "right": 390,
+      "bottom": 4656.34375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-friends",
+    "path": "/curva/les-votres?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/les-votres",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 871.671875,
+      "right": 390,
+      "bottom": 871.671875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 871.671875,
+      "right": 390,
+      "bottom": 871.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-seasons",
+    "path": "/curva/saisons?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/curva/saisons",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 919.8125,
+      "right": 390,
+      "bottom": 919.8125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 919.8125,
+      "right": 390,
+      "bottom": 919.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/plus",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 900,
+      "right": 390,
+      "bottom": 900
+    },
+    "column": {
+      "x": 175,
+      "y": 780,
+      "width": 40,
+      "height": 24,
+      "right": 215,
+      "bottom": 804
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prizes",
+    "path": "/prizes",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/prizes",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3782.484375,
+      "right": 390,
+      "bottom": 3782.484375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 3782.484375,
+      "right": 390,
+      "bottom": 3782.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/jouer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 6634.703125,
+      "right": 390,
+      "bottom": 6634.703125
+    },
+    "column": {
+      "x": 0,
+      "y": 900,
+      "width": 390,
+      "height": 73,
+      "right": 390,
+      "bottom": 973
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 0,
+        "right": 390
+      }
+    ]
+  },
+  {
+    "screen": "login",
+    "path": "/auth/login",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/login",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 217.78125,
+      "width": 390,
+      "height": 787.96875,
+      "right": 390,
+      "bottom": 1005.75
+    },
+    "column": {
+      "x": 16,
+      "y": 908.859375,
+      "width": 358,
+      "height": 72.890625,
+      "right": 374,
+      "bottom": 981.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "register",
+    "path": "/auth/register",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/register",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 217.78125,
+      "width": 390,
+      "height": 1136,
+      "right": 390,
+      "bottom": 1353.78125
+    },
+    "column": {
+      "x": 16,
+      "y": 1256.890625,
+      "width": 358,
+      "height": 72.890625,
+      "right": 374,
+      "bottom": 1329.78125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/auth/forgot-password",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 96,
+      "width": 390,
+      "height": 804,
+      "right": 390,
+      "bottom": 900
+    },
+    "column": {
+      "x": 16,
+      "y": 269.484375,
+      "width": 358,
+      "height": 166.03125,
+      "right": 374,
+      "bottom": 435.515625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "terms",
+    "path": "/terms",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/terms",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5831.21875,
+      "right": 390,
+      "bottom": 5896.21875
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5831.21875,
+      "right": 390,
+      "bottom": 5896.21875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "privacy",
+    "path": "/privacy",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/privacy",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5310.453125,
+      "right": 390,
+      "bottom": 5375.453125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 5310.453125,
+      "right": 390,
+      "bottom": 5375.453125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin",
+    "path": "/dev/admin-shell-sample",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 181.390625,
+      "width": 390,
+      "height": 2177.140625,
+      "right": 390,
+      "bottom": 2358.53125
+    },
+    "column": {
+      "x": 16,
+      "y": 1790.0625,
+      "width": 358,
+      "height": 504.46875,
+      "right": 374,
+      "bottom": 2294.53125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-plus",
+    "path": "/dev/admin-shell-sample?view=plus",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 173.390625,
+      "width": 390,
+      "height": 4623.25,
+      "right": 390,
+      "bottom": 4796.640625
+    },
+    "column": {
+      "x": 16,
+      "y": 173.390625,
+      "width": 358,
+      "height": 4559.25,
+      "right": 374,
+      "bottom": 4732.640625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-mappings",
+    "path": "/dev/player-mappings-sample?scale=small",
+    "language": "ar",
+    "theme": "light",
+    "width": 390,
+    "actualPath": "/dev/player-mappings-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 16,
+      "y": 128,
+      "width": 358,
+      "height": 4705.640625,
+      "right": 374,
+      "bottom": 4833.640625
+    },
+    "column": {
+      "x": 16,
+      "y": 1121.90625,
+      "width": 358,
+      "height": 3711.734375,
+      "right": 374,
+      "bottom": 4833.640625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1238.953125,
+      "right": 1440,
+      "bottom": 1303.953125
+    },
+    "column": {
+      "x": 60,
+      "y": 177.984375,
+      "width": 1320,
+      "height": 1125.96875,
+      "right": 1380,
+      "bottom": 1303.953125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 178,
+        "x": 0,
+        "y": 126,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "calendar",
+    "path": "/matches",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 702.53125,
+      "right": 1440,
+      "bottom": 767.53125
+    },
+    "column": {
+      "x": 384,
+      "y": 311.296875,
+      "width": 672,
+      "height": 456.234375,
+      "right": 1056,
+      "bottom": 767.53125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 252.296875,
+        "x": 0,
+        "y": 200.296875,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      },
+      {
+        "tag": "DIV",
+        "bottom": 311.296875,
+        "x": 0,
+        "y": 252.296875,
+        "width": 1440,
+        "height": 59,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "standings",
+    "path": "/matches/standings",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches/standings",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 805.75,
+      "right": 1440,
+      "bottom": 870.75
+    },
+    "column": {
+      "x": 208,
+      "y": 252.296875,
+      "width": 1024,
+      "height": 618.453125,
+      "right": 1232,
+      "bottom": 870.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 252.296875,
+        "x": 0,
+        "y": 200.296875,
+        "width": 1440,
+        "height": 52,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "match",
+    "path": "/matches/00000020-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/matches/00000020-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1052.953125,
+      "right": 1440,
+      "bottom": 1117.953125
+    },
+    "column": {
+      "x": 60,
+      "y": 65,
+      "width": 1320,
+      "height": 1052.953125,
+      "right": 1380,
+      "bottom": 1117.953125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 391.40625,
+        "x": 440,
+        "y": 342.40625,
+        "width": 924,
+        "height": 49,
+        "right": 1364
+      }
+    ]
+  },
+  {
+    "screen": "clubs",
+    "path": "/clubs",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/clubs",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 517.984375,
+      "right": 1440,
+      "bottom": 582.984375
+    },
+    "column": {
+      "x": 208,
+      "y": 188.984375,
+      "width": 1024,
+      "height": 394,
+      "right": 1232,
+      "bottom": 582.984375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "club",
+    "path": "/clubs/00000010-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/clubs/00000010-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 2133.765625,
+      "right": 1440,
+      "bottom": 2198.765625
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 2133.765625,
+      "right": 1056,
+      "bottom": 2198.765625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 443.96875,
+        "x": 400,
+        "y": 394.96875,
+        "width": 640,
+        "height": 49,
+        "right": 1040
+      }
+    ]
+  },
+  {
+    "screen": "news",
+    "path": "/news",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/news",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 969.078125,
+      "right": 1440,
+      "bottom": 1034.078125
+    },
+    "column": {
+      "x": 208,
+      "y": 216.296875,
+      "width": 1024,
+      "height": 817.78125,
+      "right": 1232,
+      "bottom": 1034.078125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "article",
+    "path": "/news/a0000000-0000-4000-8000-000000000001",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/news/a0000000-0000-4000-8000-000000000001",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 69,
+      "width": 1440,
+      "height": 849.65625,
+      "right": 1440,
+      "bottom": 918.65625
+    },
+    "column": {
+      "x": 384,
+      "y": 69,
+      "width": 672,
+      "height": 849.65625,
+      "right": 1056,
+      "bottom": 918.65625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "fantasy",
+    "path": "/fantasy",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 3257.375,
+      "right": 1056,
+      "bottom": 3338.375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 3257.375,
+      "right": 1056,
+      "bottom": 3338.375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "team",
+    "path": "/fantasy/team",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/team",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1072.609375,
+      "right": 1056,
+      "bottom": 1153.609375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1072.609375,
+      "right": 1056,
+      "bottom": 1153.609375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/transfers",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 944.59375,
+      "right": 1056,
+      "bottom": 1025.59375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 944.59375,
+      "right": 1056,
+      "bottom": 1025.59375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 900,
+        "x": 384,
+        "y": 829,
+        "width": 672,
+        "height": 71,
+        "right": 1056
+      }
+    ]
+  },
+  {
+    "screen": "squad-builder",
+    "path": "/fantasy/create",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/team",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1072.609375,
+      "right": 1056,
+      "bottom": 1153.609375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1072.609375,
+      "right": 1056,
+      "bottom": 1153.609375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/players",
+    "direction": "rtl",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2677.203125,
+      "right": 1232,
+      "bottom": 2758.203125
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2677.203125,
+      "right": 1232,
+      "bottom": 2758.203125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "points",
+    "path": "/fantasy/points",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/points",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rankings",
+    "path": "/fantasy/rankings",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/rankings",
+    "direction": "rtl",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2346.34375,
+      "right": 1232,
+      "bottom": 2427.34375
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 2346.34375,
+      "right": 1232,
+      "bottom": 2427.34375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "leagues",
+    "path": "/fantasy/leagues",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/leagues",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "difficulty",
+    "path": "/fantasy/fixtures",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/fixtures",
+    "direction": "rtl",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 788,
+      "right": 1232,
+      "bottom": 869
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 788,
+      "right": 1232,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "TH",
+        "bottom": 271.625,
+        "x": 1084,
+        "y": 174.4375,
+        "width": 148,
+        "height": 97.1875,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 325.125,
+        "x": 1084,
+        "y": 272.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 378.125,
+        "x": 1084,
+        "y": 325.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 431.125,
+        "x": 1084,
+        "y": 378.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 484.125,
+        "x": 1084,
+        "y": 431.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 537.125,
+        "x": 1084,
+        "y": 484.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 590.125,
+        "x": 1084,
+        "y": 537.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 643.125,
+        "x": 1084,
+        "y": 590.125,
+        "width": 148,
+        "height": 53,
+        "right": 1232
+      },
+      {
+        "tag": "TH",
+        "bottom": 695.625,
+        "x": 1084,
+        "y": 643.125,
+        "width": 148,
+        "height": 52.5,
+        "right": 1232
+      }
+    ]
+  },
+  {
+    "screen": "top-players",
+    "path": "/fantasy/top-players",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/top-players",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1654.921875,
+      "right": 1056,
+      "bottom": 1735.921875
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1654.921875,
+      "right": 1056,
+      "bottom": 1735.921875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/rules",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2821.640625,
+      "right": 1056,
+      "bottom": 2902.640625
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2821.640625,
+      "right": 1056,
+      "bottom": 2902.640625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "help",
+    "path": "/fantasy/help",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/fantasy/help",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1191,
+      "right": 1056,
+      "bottom": 1272
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 1191,
+      "right": 1056,
+      "bottom": 1272
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1760.109375,
+      "right": 1440,
+      "bottom": 1825.109375
+    },
+    "column": {
+      "x": 384,
+      "y": 152.296875,
+      "width": 672,
+      "height": 1672.8125,
+      "right": 1056,
+      "bottom": 1825.109375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "security",
+    "path": "/profile/security",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile/security",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 1440,
+      "height": 160.5,
+      "right": 1440,
+      "bottom": 245.9375
+    },
+    "column": {
+      "x": 384,
+      "y": 85.4375,
+      "width": 672,
+      "height": 160.5,
+      "right": 1056,
+      "bottom": 245.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "saved",
+    "path": "/profile/saved",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/profile/saved",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 85.4375,
+      "width": 1440,
+      "height": 359.734375,
+      "right": 1440,
+      "bottom": 445.171875
+    },
+    "column": {
+      "x": 384,
+      "y": 85.4375,
+      "width": 672,
+      "height": 359.734375,
+      "right": 1056,
+      "bottom": 445.171875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "notifications",
+    "path": "/notifications",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/notifications",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 389.078125,
+      "right": 1440,
+      "bottom": 454.078125
+    },
+    "column": {
+      "x": 384,
+      "y": 152.296875,
+      "width": 672,
+      "height": 301.78125,
+      "right": 1056,
+      "bottom": 454.078125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "predictions",
+    "path": "/pronostics",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pronostics",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1023.59375,
+      "right": 1440,
+      "bottom": 1088.59375
+    },
+    "column": {
+      "x": 384,
+      "y": 212.296875,
+      "width": 672,
+      "height": 876.296875,
+      "right": 1056,
+      "bottom": 1088.59375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prediction-leagues",
+    "path": "/pronostics/ligues",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pronostics",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 892.890625,
+      "right": 1440,
+      "bottom": 957.890625
+    },
+    "column": {
+      "x": 384,
+      "y": 212.296875,
+      "width": 672,
+      "height": 745.59375,
+      "right": 1056,
+      "bottom": 957.890625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects",
+    "path": "/pepites",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 2578.703125,
+      "right": 1440,
+      "bottom": 2643.703125
+    },
+    "column": {
+      "x": 384,
+      "y": 316.375,
+      "width": 672,
+      "height": 2327.328125,
+      "right": 1056,
+      "bottom": 2643.703125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-ranking",
+    "path": "/pepites/classement",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/classement",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 2179.359375,
+      "right": 1440,
+      "bottom": 2244.359375
+    },
+    "column": {
+      "x": 60,
+      "y": 381.375,
+      "width": 1320,
+      "height": 1862.984375,
+      "right": 1380,
+      "bottom": 2244.359375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-compare",
+    "path": "/pepites/comparer",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/comparer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 450.4375,
+      "right": 1440,
+      "bottom": 515.4375
+    },
+    "column": {
+      "x": 384,
+      "y": 146.4375,
+      "width": 672,
+      "height": 369,
+      "right": 1056,
+      "bottom": 515.4375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prospects-method",
+    "path": "/pepites/methode",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/pepites/methode",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 1410.9375,
+      "right": 1440,
+      "bottom": 1475.9375
+    },
+    "column": {
+      "x": 384,
+      "y": 264.375,
+      "width": 672,
+      "height": 1211.5625,
+      "right": 1056,
+      "bottom": 1475.9375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva",
+    "direction": "rtl",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3529.390625,
+      "right": 1232,
+      "bottom": 3610.390625
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3529.390625,
+      "right": 1232,
+      "bottom": 3610.390625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 857,
+        "x": 856,
+        "y": 168.296875,
+        "width": 352,
+        "height": 688.703125,
+        "right": 1208
+      }
+    ]
+  },
+  {
+    "screen": "curva-card",
+    "path": "/curva/carte?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/carte",
+    "direction": "rtl",
+    "main": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3987,
+      "right": 1232,
+      "bottom": 4068
+    },
+    "column": {
+      "x": 208,
+      "y": 81,
+      "width": 1024,
+      "height": 3987,
+      "right": 1232,
+      "bottom": 4068
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 754.015625,
+        "x": 856,
+        "y": 150,
+        "width": 352,
+        "height": 604.015625,
+        "right": 1208
+      }
+    ]
+  },
+  {
+    "screen": "curva-friends",
+    "path": "/curva/les-votres?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/les-votres",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 788,
+      "right": 1056,
+      "bottom": 869
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva-seasons",
+    "path": "/curva/saisons?mc=rated",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/curva/saisons",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 855.8125,
+      "right": 1056,
+      "bottom": 936.8125
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 855.8125,
+      "right": 1056,
+      "bottom": 936.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/plus",
+    "direction": "rtl",
+    "main": {
+      "x": 240,
+      "y": 24,
+      "width": 960,
+      "height": 852,
+      "right": 1200,
+      "bottom": 876
+    },
+    "column": {
+      "x": 700,
+      "y": 756,
+      "width": 40,
+      "height": 24,
+      "right": 740,
+      "bottom": 780
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "prizes",
+    "path": "/prizes",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/prizes",
+    "direction": "rtl",
+    "main": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2449.734375,
+      "right": 1056,
+      "bottom": 2530.734375
+    },
+    "column": {
+      "x": 384,
+      "y": 81,
+      "width": 672,
+      "height": 2449.734375,
+      "right": 1056,
+      "bottom": 2530.734375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/jouer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 4089.5,
+      "right": 1440,
+      "bottom": 4089.5
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "right": 0,
+      "bottom": 0
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 0,
+        "right": 1440
+      }
+    ]
+  },
+  {
+    "screen": "login",
+    "path": "/auth/login",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/login",
+    "direction": "rtl",
+    "main": {
+      "x": 480,
+      "y": 265.78125,
+      "width": 480,
+      "height": 795.96875,
+      "right": 960,
+      "bottom": 1061.75
+    },
+    "column": {
+      "x": 504,
+      "y": 956.859375,
+      "width": 432,
+      "height": 72.890625,
+      "right": 936,
+      "bottom": 1029.75
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "register",
+    "path": "/auth/register",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/register",
+    "direction": "rtl",
+    "main": {
+      "x": 480,
+      "y": 265.78125,
+      "width": 480,
+      "height": 1144,
+      "right": 960,
+      "bottom": 1409.78125
+    },
+    "column": {
+      "x": 504,
+      "y": 1304.890625,
+      "width": 432,
+      "height": 72.890625,
+      "right": 936,
+      "bottom": 1377.78125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/auth/forgot-password",
+    "direction": "rtl",
+    "main": {
+      "x": 480,
+      "y": 329.53125,
+      "width": 480,
+      "height": 344.921875,
+      "right": 960,
+      "bottom": 674.453125
+    },
+    "column": {
+      "x": 504,
+      "y": 476.421875,
+      "width": 432,
+      "height": 166.03125,
+      "right": 936,
+      "bottom": 642.453125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "terms",
+    "path": "/terms",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/terms",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 3996.546875,
+      "right": 1440,
+      "bottom": 4061.546875
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 3996.546875,
+      "right": 1056,
+      "bottom": 4061.546875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "privacy",
+    "path": "/privacy",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/privacy",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 1440,
+      "height": 4052.5,
+      "right": 1440,
+      "bottom": 4117.5
+    },
+    "column": {
+      "x": 384,
+      "y": 65,
+      "width": 672,
+      "height": 4052.5,
+      "right": 1056,
+      "bottom": 4117.5
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin",
+    "path": "/dev/admin-shell-sample",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 272,
+      "y": 348.171875,
+      "width": 896,
+      "height": 1460.9375,
+      "right": 1168,
+      "bottom": 1809.109375
+    },
+    "column": {
+      "x": 288,
+      "y": 1460.90625,
+      "width": 864,
+      "height": 284.203125,
+      "right": 1152,
+      "bottom": 1745.109375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-plus",
+    "path": "/dev/admin-shell-sample?view=plus",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/admin-shell-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 272,
+      "y": 340.171875,
+      "width": 896,
+      "height": 3158.09375,
+      "right": 1168,
+      "bottom": 3498.265625
+    },
+    "column": {
+      "x": 288,
+      "y": 340.171875,
+      "width": 864,
+      "height": 3094.09375,
+      "right": 1152,
+      "bottom": 3434.265625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "admin-mappings",
+    "path": "/dev/player-mappings-sample?scale=small",
+    "language": "ar",
+    "theme": "light",
+    "width": 1440,
+    "actualPath": "/dev/player-mappings-sample",
+    "direction": "rtl",
+    "main": {
+      "x": 288,
+      "y": 76,
+      "width": 864,
+      "height": 4105.65625,
+      "right": 1152,
+      "bottom": 4181.65625
+    },
+    "column": {
+      "x": 288,
+      "y": 649.28125,
+      "width": 864,
+      "height": 3532.375,
+      "right": 1152,
+      "bottom": 4181.65625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  }
+]

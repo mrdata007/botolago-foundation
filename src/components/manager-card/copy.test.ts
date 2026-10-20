@@ -254,10 +254,10 @@ describe("cardStrings and cardLabel", () => {
   it("says how many statistics are filled once every journée is counted, never « 3 sur 3 »", () => {
     const waiting = fromMyCard(FIXTURES.insufficient3.card!, { sample: false });
     expect(cardLabel(waiting, cardStrings(fr, "fr"))).toBe(
-      "Carte de manager, Ali, pas encore de note, Statistiques remplies : 2 sur 4, Raja CA",
+      "Carte de manager, Ali, pas encore de note, Statistiques disponibles : 2 sur 4, Raja CA",
     );
     const arLabel = cardLabel(waiting, cardStrings(ar, "ar"));
-    expect(arLabel).toContain("الإحصاءات المكتملة: 2 من 4");
+    expect(arLabel).toContain("الإحصاءات المتاحة: 2 من 4");
     expect(arLabel).not.toContain("⁨");
     // A renderer's own strings without the sentence keep the journée count.
     const { statsFilled: _omit, ...bare } = cardStrings(fr, "fr").a11y;
@@ -286,8 +286,8 @@ describe("cardStrings and cardLabel", () => {
       "Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.",
     );
     expect(fill(momentCopy(ar).m3.insufficient)).toBe("يظهر تقييمك فور اكتمال 3 إحصاءات من 4.");
-    expect(cardCopy(fr, "fr").statsFilled).toBe("Statistiques remplies");
-    expect(cardCopy(ar, "ar").statsFilled).toBe("الإحصاءات المكتملة");
+    expect(cardCopy(fr, "fr").statsFilled).toBe("Statistiques disponibles");
+    expect(cardCopy(ar, "ar").statsFilled).toBe("الإحصاءات المتاحة");
   });
 });
 
@@ -340,7 +340,7 @@ describe("the dictionary of the section", () => {
   // failed retry (audit 2026-10-14, SEC-04).
   // 205: the 18 keys of the strip under a pending card (statistic words, short reasons, panel).
   // 184: Appendix A's 183 and « Vos moments » (finish review). 187: the waiting box's
-  // « Statistiques remplies » title and its accessible sentence, and the league row's
+  // « Statistiques disponibles » title and its accessible sentence, and the league row's
   // « statistiques remplies 2/4 » (the card that waits for a statistic, 2026-10-10).
   it("has the 207 keys of Appendix A (183, « Vos moments », the three of the statistics wait, the 18 of the pending strip and the two failed-renderer words), in both languages", () => {
     expect(sectionKeys).toHaveLength(207);

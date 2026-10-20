@@ -21,6 +21,7 @@ import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/ui-kit";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { emailRoute } from "@/lib/delivery-promise";
 import { cn } from "@/lib/utils";
@@ -451,11 +452,7 @@ function TeamCard({
 
 /** "Transferts — Transferts gratuits 1 · Banque 1,4 ›" */
 function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: number }) {
-  const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  const { t } = useI18n();
   return (
     <Link
       to="/fantasy/transfers"
@@ -486,7 +483,7 @@ function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: nu
             {t("fpl.free_transfers")} <span className={ui.text.tabular}>{freeTransfers}</span> ·
           </span>{" "}
           <span className="whitespace-nowrap">
-            {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
+            {t("fpl.bank")} <FantasyAmount value={bank} className={ui.text.tabular} />
           </span>
         </span>
       </span>

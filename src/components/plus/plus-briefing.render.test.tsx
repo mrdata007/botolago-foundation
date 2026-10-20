@@ -60,12 +60,12 @@ describe("« Briefing avant la deadline »: a member", () => {
     // Absent means the provider listed it, with its date; the others are facts about minutes.
     expect(visible).toContain("Abdelilah Hafidi");
     expect(visible).toContain("Absent · blessure");
-    expect(visible).toContain("liste du fournisseur");
+    expect(visible).toContain("Source : fournisseur de données");
     expect(visible).toContain("Aucune information confirmée · 0 min en J10");
-    expect(visible).toContain("aucune information ne veut pas dire disponible");
+    expect(visible).toContain("Sans information, la participation du joueur reste incertaine.");
     // Replacement: the budget is sale price plus bank, pending ratings are words.
     expect(visible).toContain("Remplacer Abdelilah Hafidi");
-    expect(visible).toContain("Budget : 7,0 M à la vente + 0,8 M en banque = 7,8 M");
+    expect(visible).toContain("Budget : vente 7,0 M + budget restant 0,8 M = 7,8 M");
     expect(visible).toContain("en attente");
     expect(visible).toContain("sans note");
     expect(visible).toContain("Ce transfert serait gratuit");
@@ -77,7 +77,7 @@ describe("« Briefing avant la deadline »: a member", () => {
     // Nothing is saved here: the buttons open the existing screens.
     expect(html).toContain('href="/fantasy/transfers"');
     expect(html).toContain('href="/fantasy/team"');
-    expect(visible).toContain("rien n’est enregistré ici");
+    expect(visible).toContain("Vous pourrez vérifier votre choix avant de le confirmer.");
   });
 
   it("never prints the words the owner removed, a card serial, or a fallback 5 as a rating", async () => {

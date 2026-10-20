@@ -20,6 +20,7 @@ import type {
   FormCell,
 } from "@/backend/premium/briefing";
 import { countdownText, useDeadlineCountdown } from "@/components/fpl/deadline";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -843,12 +844,7 @@ function FormCells({ view, form }: { view: BriefingMember; form: FormCell[] }) {
 }
 
 function MoneyText({ value }: { value: number }) {
-  const { t, lang } = usePlusCopy();
-  return (
-    <>
-      <bdi className="pb-num">{formatMillions(lang, value)}</bdi> {t("fantasy.players.price_unit")}
-    </>
-  );
+  return <FantasyAmount value={value} className="pb-num" />;
 }
 
 // ---- 2. Remplacer -----------------------------------------------------------
@@ -942,8 +938,7 @@ function SwapCard({
                 </small>
               </span>
               <span className="pb-p">
-                <bdi>{formatMillions(lang, item.price)}</bdi>
-                <small>{t("fantasy.players.price_unit")}</small>
+                <FantasyAmount value={item.price} />
               </span>
               <FormCells view={view} form={item.form} />
             </button>
@@ -1122,7 +1117,7 @@ function TransfersCard({
   number: number;
   preview: boolean;
 }) {
-  const { t, f, text, count, lang } = usePlusCopy();
+  const { t, f, text, count } = usePlusCopy();
   const gw = useGw();
   const rows = transferRows(view.team.freeTransfers);
   return (
@@ -1135,7 +1130,7 @@ function TransfersCard({
           <small>{t("plus.brief.cell_free")}</small>
         </div>
         <div>
-          <span className="pb-num">{formatMillions(lang, view.team.bank)}</span>
+          <FantasyAmount value={view.team.bank} className="pb-num" />
           <small>{t("plus.brief.tr_bank")}</small>
         </div>
       </div>
