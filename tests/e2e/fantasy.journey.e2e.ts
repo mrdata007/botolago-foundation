@@ -144,7 +144,7 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await expect(page.getByRole("heading", { name: /^Transferts$/ })).toBeVisible();
     // Reference flow: tap a player → "Transfer out" → Add Player locked to that position.
     await page.locator("main .relative > button[aria-label]").last().click();
-    await page.getByRole("button", { name: /Transférer ce joueur/ }).click();
+    await page.getByRole("button", { name: /^Vendre ce joueur$/ }).click();
     await pickFromAddPlayer(page);
     const incoming = page.locator("main .relative > button[aria-label]").last();
     const incomingLabel = (await incoming.getAttribute("aria-label")) ?? "";
