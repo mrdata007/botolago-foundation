@@ -1,0 +1,686 @@
+{
+  "sourceRun": 39361261157,
+  "capturedAt": "2026-10-20T02:52:52.525Z",
+  "lineupsBodySha256": "1d95ce2ff2526a7d68527a62bb15526454dd2455baf2d000720dbf5f5ddfd6df",
+  "incidentsBodySha256": "791a6b1cf0e5983f9df954df20055a0ceada581b1d95d787a30e0760f42ea86e",
+  "lineups": {
+    "confirmed": true,
+    "home": {
+      "players": [
+        {
+          "player": {
+            "id": 970630,
+            "name": "El Mehdi Benabid",
+            "position": "G"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.3
+          }
+        },
+        {
+          "player": {
+            "id": 1140872,
+            "name": "Mohamed Moufid",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.1
+          }
+        },
+        {
+          "player": {
+            "id": 1140815,
+            "name": "Salah Moussadak",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 6.8
+          }
+        },
+        {
+          "player": {
+            "id": 364758,
+            "name": "Issoufou Dayo",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.5
+          }
+        },
+        {
+          "player": {
+            "id": 919677,
+            "name": "Yahia Attiyat Allah",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 6.6
+          }
+        },
+        {
+          "player": {
+            "id": 2267304,
+            "name": "Adil Khalloufi",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.3
+          }
+        },
+        {
+          "player": {
+            "id": 1195802,
+            "name": "Naïm Byar",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 71,
+            "rating": 6.9
+          }
+        },
+        {
+          "player": {
+            "id": 1095732,
+            "name": "Oussama Zemraoui",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 48,
+            "rating": 6.5
+          }
+        },
+        {
+          "player": {
+            "id": 880105,
+            "name": "Aymane El Hassouni",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 48,
+            "rating": 6.6
+          }
+        },
+        {
+          "player": {
+            "id": 1863859,
+            "name": "Mouad Enzo",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 81,
+            "rating": 6.9
+          }
+        },
+        {
+          "player": {
+            "id": 787448,
+            "name": "Silvère Ganvoula",
+            "position": "F"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7
+          }
+        },
+        {
+          "player": {
+            "id": 1014324,
+            "name": "Nizar Al-Rashdan",
+            "position": "M"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 49,
+            "rating": 6.5
+          }
+        },
+        {
+          "player": {
+            "id": 2637442,
+            "name": "Haitam Hamani",
+            "position": "F"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 49,
+            "rating": 7
+          }
+        },
+        {
+          "player": {
+            "id": 933770,
+            "name": "Hamza Hannouri",
+            "position": "F"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 26,
+            "rating": 6.8
+          }
+        },
+        {
+          "player": {
+            "id": 2265493,
+            "name": "Yassine Jabrane",
+            "position": "M"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 15,
+            "rating": 6.8
+          }
+        },
+        {
+          "player": {
+            "id": 2143826,
+            "name": "Abderrazak El Wadi",
+            "position": "G"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 1214792,
+            "name": "Cofi Salaheddine",
+            "position": "D"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 1387222,
+            "name": "Hamza Janan Allah",
+            "position": "D"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 919712,
+            "name": "Yahya Jabrane",
+            "position": "M"
+          },
+          "substitute": true,
+          "statistics": {
+            "totalShots": 0,
+            "statisticsType": {
+              "sportSlug": "football",
+              "statisticsType": "player"
+            }
+          }
+        },
+        {
+          "player": {
+            "id": 2142026,
+            "name": "Rayane Mahtou",
+            "position": "M"
+          },
+          "substitute": true
+        }
+      ]
+    },
+    "away": {
+      "players": [
+        {
+          "player": {
+            "id": 307470,
+            "name": "Anas Zniti",
+            "position": "G"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 8
+          }
+        },
+        {
+          "player": {
+            "id": 1924082,
+            "name": "Ayoub Lourhraz",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 6.4
+          }
+        },
+        {
+          "player": {
+            "id": 1401580,
+            "name": "Anass Nouader",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.1
+          }
+        },
+        {
+          "player": {
+            "id": 1619134,
+            "name": "Driss El-Jabli",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 24,
+            "rating": 6.9
+          }
+        },
+        {
+          "player": {
+            "id": 919699,
+            "name": "Saad Morsli",
+            "position": "D"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7
+          }
+        },
+        {
+          "player": {
+            "id": 880101,
+            "name": "Hamza El Wasti",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 7.2
+          }
+        },
+        {
+          "player": {
+            "id": 1919284,
+            "name": "Adnane Berdad",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 6.5
+          }
+        },
+        {
+          "player": {
+            "id": 1416474,
+            "name": "Taoufik Razko",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 48,
+            "rating": 6
+          }
+        },
+        {
+          "player": {
+            "id": 1140945,
+            "name": "Hamza El Janati",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 90,
+            "rating": 6.6
+          }
+        },
+        {
+          "player": {
+            "id": 1008598,
+            "name": "Mohamed Zrida",
+            "position": "M"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 68,
+            "rating": 6.8
+          }
+        },
+        {
+          "player": {
+            "id": 1140894,
+            "name": "Zakaria Bahrou",
+            "position": "F"
+          },
+          "substitute": false,
+          "statistics": {
+            "minutesPlayed": 68,
+            "rating": 6.1
+          }
+        },
+        {
+          "player": {
+            "id": 882322,
+            "name": "Badr Gaddarine",
+            "position": "D"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 73,
+            "rating": 6.6
+          }
+        },
+        {
+          "player": {
+            "id": 1584851,
+            "name": "Essomba Onana",
+            "position": "M"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 49,
+            "rating": 6.5
+          }
+        },
+        {
+          "player": {
+            "id": 919761,
+            "name": "Larbi Naji",
+            "position": "M"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 29,
+            "rating": 6.8
+          }
+        },
+        {
+          "player": {
+            "id": 1004434,
+            "name": "Joseph Guede Gnadou",
+            "position": "F"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 29,
+            "rating": 6.1
+          }
+        },
+        {
+          "player": {
+            "id": 1526456,
+            "name": "Ayoub Lakhlifi",
+            "position": "D"
+          },
+          "substitute": true,
+          "statistics": {
+            "minutesPlayed": 6
+          }
+        },
+        {
+          "player": {
+            "id": 2045637,
+            "name": "Soufiane Taher",
+            "position": "G"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 1525316,
+            "name": "Oussama Daoui",
+            "position": "D"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 1919295,
+            "name": "Mohamed Zinaf",
+            "position": "M"
+          },
+          "substitute": true
+        },
+        {
+          "player": {
+            "id": 1130502,
+            "name": "Karim L'Koucha",
+            "position": "M"
+          },
+          "substitute": true
+        }
+      ]
+    }
+  },
+  "incidents": {
+    "incidents": [
+      {
+        "incidentType": "period",
+        "text": "FT",
+        "time": 90,
+        "addedTime": 999,
+        "isLive": false
+      },
+      {
+        "id": 127082493,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 88,
+        "isHome": false,
+        "playerIn": {
+          "id": 1526456,
+          "name": "Ayoub Lakhlifi"
+        },
+        "playerOut": {
+          "id": 1140945,
+          "name": "Hamza El Janati"
+        }
+      },
+      {
+        "id": 125764064,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 83,
+        "isHome": false,
+        "player": {
+          "id": 1004434,
+          "name": "Joseph Guede Gnadou"
+        }
+      },
+      {
+        "id": 125764063,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 81,
+        "isHome": false,
+        "player": {
+          "id": 1924082,
+          "name": "Ayoub Lourhraz"
+        }
+      },
+      {
+        "id": 127082497,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 79,
+        "isHome": true,
+        "playerIn": {
+          "id": 2265493,
+          "name": "Yassine Jabrane"
+        },
+        "playerOut": {
+          "id": 1863859,
+          "name": "Mouad Enzo"
+        }
+      },
+      {
+        "id": 127082496,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 69,
+        "isHome": true,
+        "playerIn": {
+          "id": 933770,
+          "name": "Hamza Hannouri"
+        },
+        "playerOut": {
+          "id": 1195802,
+          "name": "Naïm Byar"
+        }
+      },
+      {
+        "id": 127082492,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 65,
+        "isHome": false,
+        "playerIn": {
+          "id": 919761,
+          "name": "Larbi Naji"
+        },
+        "playerOut": {
+          "id": 1140894,
+          "name": "Zakaria Bahrou"
+        }
+      },
+      {
+        "id": 127082491,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 65,
+        "isHome": false,
+        "playerIn": {
+          "id": 1004434,
+          "name": "Joseph Guede Gnadou"
+        },
+        "playerOut": {
+          "id": 1008598,
+          "name": "Mohamed Zrida"
+        }
+      },
+      {
+        "id": 127082495,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 46,
+        "isHome": true,
+        "playerIn": {
+          "id": 2637442,
+          "name": "Haitam Hamani"
+        },
+        "playerOut": {
+          "id": 880105,
+          "name": "Aymane El Hassouni"
+        }
+      },
+      {
+        "id": 127082494,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 46,
+        "isHome": true,
+        "playerIn": {
+          "id": 1014324,
+          "name": "Nizar Al-Rashdan"
+        },
+        "playerOut": {
+          "id": 1095732,
+          "name": "Oussama Zemraoui"
+        }
+      },
+      {
+        "id": 127082490,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 46,
+        "isHome": false,
+        "playerIn": {
+          "id": 1584851,
+          "name": "Essomba Onana"
+        },
+        "playerOut": {
+          "id": 1416474,
+          "name": "Taoufik Razko"
+        }
+      },
+      {
+        "incidentType": "period",
+        "text": "HT",
+        "time": 45,
+        "addedTime": 999,
+        "isLive": false
+      },
+      {
+        "id": 125764062,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 33,
+        "isHome": true,
+        "player": {
+          "id": 1140815,
+          "name": "Salah Moussadak"
+        }
+      },
+      {
+        "id": 125764061,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 32,
+        "isHome": false,
+        "player": {
+          "id": 1919284,
+          "name": "Adnane Berdad"
+        }
+      },
+      {
+        "id": 127082489,
+        "incidentType": "substitution",
+        "incidentClass": "regular",
+        "time": 24,
+        "isHome": false,
+        "playerIn": {
+          "id": 882322,
+          "name": "Badr Gaddarine"
+        },
+        "playerOut": {
+          "id": 1619134,
+          "name": "Driss El-Jabli"
+        }
+      },
+      {
+        "id": 125764060,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 17,
+        "isHome": false,
+        "player": {
+          "id": 1416474,
+          "name": "Taoufik Razko"
+        }
+      },
+      {
+        "id": 125764059,
+        "incidentType": "card",
+        "incidentClass": "yellow",
+        "time": 13,
+        "isHome": true,
+        "player": {
+          "id": 880105,
+          "name": "Aymane El Hassouni"
+        }
+      }
+    ]
+  }
+}

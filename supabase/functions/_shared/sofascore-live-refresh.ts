@@ -182,6 +182,10 @@ function isoDay(date: Date, offsetDays: number): string {
   return new Date(date.getTime() + offsetDays * 86_400_000).toISOString().slice(0, 10);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function envId(value: string | undefined, fallback: string): string {
   const candidate = value?.trim() || fallback;
   return /^[1-9][0-9]{0,9}$/.test(candidate) ? candidate : fallback;
@@ -462,14 +466,27 @@ export async function runSofascoreRefresh(
   const seasonId = envId(environment.SOFASCORE_SEASON_ID, DEFAULT_SOFASCORE_SEASON_ID);
   const parseOptions = { uniqueTournamentId: Number(tournamentId) };
 
-  // 2. Provider reads. Any failure stops here, before anything is written.
+  // 2. Independent season feeds: unavailable upcoming data never becomes an
+  // empty schedule, and cannot suppress validated completed-match updates.
   const dailyPass = job === "season_fixtures" && isDailyStandingsHour(now, environment);
+  const readErrors: { path: string; code: string }[] = [];
+  let firstSeasonError: unknown;
   /** `hasNextPage` of the last page read per endpoint (the daily full pull). */
   const seasonHasNextPage = new Map<string, boolean>();
   const fetchList = async (path: string): Promise<SofascoreParsedEvents> => {
     const result = await rapid.getJson(path);
     const quota: RapidApiQuota = result.quota;
     requests.push({ path, quotaRemaining: quota.remaining, quotaLimit: quota.limit });
+    if (
+      isRecord(result.data) &&
+      isRecord(result.data.error) &&
+      result.data.error.code === 404 &&
+      result.data.error.message === "Not Found"
+    )
+      throw new RapidApiError(
+        "data_unavailable",
+        "The provider has no fixture response for this endpoint.",
+      );
     const endpoint = /^tournaments\/(get-next-matches|get-last-matches)\?/.exec(path)?.[1];
     if (endpoint) {
       const next = (result.data as { hasNextPage?: unknown } | null)?.hasNextPage;
@@ -478,6 +495,20 @@ export async function runSofascoreRefresh(
     return parseSofascoreEvents(result.data, parseOptions);
   };
   const parsedLists: SofascoreParsedEvents[] = [];
+  const readSeasonPage = async (path: string): Promise<boolean> => {
+    try {
+      parsedLists.push(await fetchList(path));
+      return true;
+    } catch (error) {
+      if (error instanceof RapidApiError && error.code === "provider_rate_limited") throw error;
+      firstSeasonError ??= error;
+      readErrors.push({
+        path,
+        code: error instanceof RapidApiError ? error.code : "invalid_provider_payload",
+      });
+      return false;
+    }
+  };
   try {
     if (job === "fixtures") {
       const live = await fetchList(SOFASCORE_LIVE_EVENTS_PATH);
@@ -490,8 +521,9 @@ export async function runSofascoreRefresh(
         );
       }
     } else {
-      parsedLists.push(await fetchList(eventListPath("get-next-matches", tournamentId, seasonId)));
-      parsedLists.push(await fetchList(eventListPath("get-last-matches", tournamentId, seasonId)));
+      await readSeasonPage(eventListPath("get-next-matches", tournamentId, seasonId));
+      await readSeasonPage(eventListPath("get-last-matches", tournamentId, seasonId));
+      if (parsedLists.length === 0) throw firstSeasonError;
       if (dailyPass) {
         // Once a day (the hour SOFASCORE_DAILY_HOUR_UTC, default 03 UTC) the
         // whole season schedule: the hourly pass above reads page 0 of each
@@ -506,9 +538,8 @@ export async function runSofascoreRefresh(
         for (const endpoint of ["get-next-matches", "get-last-matches"] as const) {
           let more = seasonHasNextPage.get(endpoint) === true;
           for (let page = 1; more && page < maxPages; page += 1) {
-            parsedLists.push(
-              await fetchList(eventListPath(endpoint, tournamentId, seasonId, page)),
-            );
+            if (!(await readSeasonPage(eventListPath(endpoint, tournamentId, seasonId, page))))
+              break;
             more = seasonHasNextPage.get(endpoint) === true;
           }
         }
@@ -562,6 +593,7 @@ export async function runSofascoreRefresh(
   const unknownStatus = parsedLists.flatMap((list) => list.unknownStatus);
   const summary = {
     requests,
+    ...(readErrors.length > 0 ? { readErrors } : {}),
     ...(periodStart.length > 0 ? { periodStart } : {}),
     polledEvents: parsedLists.reduce((total, list) => total + list.polledCount, 0),
     botolaEvents: collapsed.events.length,
@@ -720,6 +752,7 @@ export async function runSofascoreRefresh(
         job,
         wouldIngest: toWrite.length,
         written: 0,
+        ...(readErrors.length > 0 ? { incomplete: true, readErrors } : {}),
         standings,
         matchDetails,
         fantasy: fantasySummary,
@@ -777,14 +810,29 @@ export async function runSofascoreRefresh(
   }
 
   const finalStatus =
-    counts.rejected === 0 ? "succeeded" : counts.updated > 0 ? "partial" : "failed";
-  const errorCode = counts.rejected === 0 ? null : "fixture_item_rejected";
+    counts.rejected > 0
+      ? counts.updated > 0
+        ? "partial"
+        : "failed"
+      : readErrors.length > 0
+        ? "partial"
+        : "succeeded";
+  const errorCode =
+    counts.rejected > 0
+      ? "fixture_item_rejected"
+      : readErrors.length > 0
+        ? "fixture_feed_incomplete"
+        : null;
   let completionFailed = false;
   try {
     const completion = await rpc("complete_football_ingestion", {
       p_run_id: runId,
       p_status: finalStatus,
-      p_checkpoint: { source: SOFASCORE_PROVIDER_NAME, job },
+      p_checkpoint: {
+        source: SOFASCORE_PROVIDER_NAME,
+        job,
+        ...(readErrors.length > 0 ? { readErrors } : {}),
+      },
       p_records_fetched: counts.fetched,
       p_records_validated: toWrite.length + skipped.unchanged.length,
       p_records_inserted: 0,
@@ -793,9 +841,12 @@ export async function runSofascoreRefresh(
       p_records_rejected: counts.rejected,
       p_retry_count: 0,
       p_error_code: errorCode,
-      p_error_summary: errorCode
-        ? "A SofaScore fixture update was rejected by the database."
-        : null,
+      p_error_summary:
+        errorCode === "fixture_feed_incomplete"
+          ? "A provider fixture endpoint was unavailable; only independently validated results were retained."
+          : errorCode
+            ? "A SofaScore fixture update was rejected by the database."
+            : null,
     });
     if (completion.error) completionFailed = true;
   } catch {
@@ -814,7 +865,7 @@ export async function runSofascoreRefresh(
       ? counts.updated > 0
         ? "partial"
         : "error"
-      : counts.rejected === 0
+      : finalStatus === "succeeded"
         ? "ok"
         : "partial",
     ...summary,
@@ -852,6 +903,19 @@ export async function runSofascoreRefresh(
       },
     };
   }
+  if (readErrors.length > 0)
+    return {
+      status: 502,
+      body: {
+        error: "fixture_feed_incomplete",
+        mode,
+        job,
+        written: counts.updated,
+        readErrors,
+        matchDetails,
+        fantasy: fantasySummary,
+      },
+    };
   return {
     status: 200,
     body: {

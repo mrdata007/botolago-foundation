@@ -953,7 +953,30 @@ SofaScore automatic release bundle. It retires the reviewed French v1
 interface and email copy. Arabic, variables, limits and delivery flags remain
 unchanged; existing notifications retain their original text and template row.
 The migration refuses an unexpected active edition or repeat application.
+Use `scripts/backend/apply-20261020092736-ux-writing.sql` for its guarded
+full-path rollback rehearsal and exact migration-history recording.
 It is prepared for separate review and has not been applied to a shared
 database. See [the UX writing report](../review/2026-10-20-ux-writing-report.md)
 and its isolated PostgreSQL validation evidence before promotion. It enables
 no event, channel, job or sending switch.
+### Native final email authority (20 October 2026)
+
+`20261020091926_fantasy_native_final_email_gate.sql` replaces the obsolete
+legacy-rating-policy prerequisite in the points-ready email payload with the
+current persisted, sealed native-rating snapshot. Native season activation,
+correct scoring/rules versions, no pending inputs and independently valid
+Not rated proof are required. Ownership, current final score, selected-player
+values, consent, historical-revision suppression, cutoff and dedup stay intact.
+Do not reactivate the old scoring policy to send a valid native final result.
+
+Promote only this exact migration with
+`scripts/backend/apply-20261020091926-native-final-email.sql`, after required CI
+and the staging probe. Follow the one-writer pause/drain procedure; run the
+real rehearsal, independently verify rollback, then change only its mode to
+apply. The operation pins both old and new function hashes and writes the exact
+CLI-compatible migration history atomically. Restore the recorded switches.
+It does not send or replay any event. A separately guarded owner recovery may
+requeue only the exact post-activation GW4 events cancelled by this predicate,
+while still current, consented, and with no existing delivery or attempt; keep
+event identity/timestamps and deduplication keys unchanged. Never backfill old
+gameweeks or manufacture a new points-ready event.
