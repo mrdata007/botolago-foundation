@@ -32,7 +32,10 @@ function inspect(path: string, raw: unknown) {
   return { parsed: true, incidents: parseSofascoreIncidents(raw).length };
 }
 
-export async function collectRecoveryDiagnostic(client: Pick<RapidApiClient, "getJson">) {
+export async function collectRecoveryDiagnostic(
+  client: Pick<RapidApiClient, "getJson">,
+  transport: (path: string) => unknown = () => null,
+) {
   const results: Record<string, unknown>[] = [];
   for (const path of DIAGNOSTIC_PATHS) {
     try {
@@ -50,6 +53,7 @@ export async function collectRecoveryDiagnostic(client: Pick<RapidApiClient, "ge
         sha256: createHash("sha256").update(JSON.stringify(raw)).digest("hex"),
         inspection,
         raw,
+        transport: transport(path),
       });
     } catch {
       // Credential-bearing errors and request/response headers are never saved.
@@ -58,6 +62,7 @@ export async function collectRecoveryDiagnostic(client: Pick<RapidApiClient, "ge
         capturedAt: new Date().toISOString(),
         fetched: false,
         error: "provider_read_failed",
+        transport: transport(path),
       });
     }
   }
@@ -75,12 +80,33 @@ async function main() {
   const outputIndex = process.argv.indexOf("--out");
   const output = process.argv[outputIndex + 1];
   if (!key || outputIndex < 0 || !output) throw new Error("diagnostic_configuration_required");
+  const evidence = new Map<string, unknown>();
   const client = new RapidApiClient({
     host: "sofascore.p.rapidapi.com",
     key,
     policy: { maxRetries: 0 },
+    fetch: async (input, init) => {
+      const response = await fetch(input, init);
+      const body = await response.clone().text();
+      if (Buffer.byteLength(body) > 2_000_000) throw new Error("diagnostic_response_too_large");
+      const url = new URL(input);
+      let nonJsonBodyPreview: string | null = null;
+      try {
+        JSON.parse(body);
+      } catch {
+        nonJsonBodyPreview = body.slice(0, 2000);
+      }
+      evidence.set(url.pathname.slice(1) + url.search, {
+        httpStatus: response.status,
+        contentType: response.headers.get("content-type"),
+        bodySha256: createHash("sha256").update(body).digest("hex"),
+        bodyBytes: Buffer.byteLength(body),
+        nonJsonBodyPreview,
+      });
+      return response;
+    },
   });
-  const report = await collectRecoveryDiagnostic(client);
+  const report = await collectRecoveryDiagnostic(client, (path) => evidence.get(path) ?? null);
   writeFileSync(output, serializeDiagnostic(report, key));
   console.log(
     JSON.stringify({

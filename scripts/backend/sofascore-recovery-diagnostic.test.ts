@@ -37,3 +37,24 @@ test("credential echoes are redacted from the artifact", () => {
     "secret-example-key",
   );
 });
+
+test("non-JSON transport evidence survives a client parse failure", async () => {
+  const report = await collectRecoveryDiagnostic(
+    {
+      getJson: async () => {
+        throw new Error("non-JSON response");
+      },
+    },
+    () => ({
+      httpStatus: 200,
+      contentType: "text/html",
+      nonJsonBodyPreview: "<html>provider unavailable</html>",
+    }),
+  );
+  expect(report.results[0]?.fetched).toBe(false);
+  expect(report.results[0]?.transport).toEqual({
+    httpStatus: 200,
+    contentType: "text/html",
+    nonJsonBodyPreview: "<html>provider unavailable</html>",
+  });
+});
