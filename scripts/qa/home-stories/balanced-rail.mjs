@@ -92,7 +92,7 @@ for (const lang of ["fr", "ar"])
       const gaps = await rail.evaluate((el) => {
         const li = el.querySelector("li").getBoundingClientRect();
         const rail = el.getBoundingClientRect();
-        const main = el.closest("main").getBoundingClientRect();
+        const screen = el.parentElement.getBoundingClientRect();
         const band = document
           .querySelector('[data-testid="home-gameweek-band"]')
           .getBoundingClientRect();
@@ -100,10 +100,10 @@ for (const lang of ["fr", "ar"])
           above:
             li.top -
             (document.querySelector('[data-testid="deadline-strip"]')?.getBoundingClientRect()
-              .bottom ?? main.top),
+              .bottom ?? screen.top),
           below: band.top - li.bottom,
           railTop: rail.top,
-          mainTop: main.top,
+          screenTop: screen.top,
           railBottom: rail.bottom,
           bandTop: band.top,
         };
@@ -177,17 +177,18 @@ for (const width of [320, 1440]) {
       if (deadline) await page.getByTestId("deadline-strip").waitFor();
       const layout = await page.evaluate(() => {
         const band = document.querySelector('[data-testid="home-gameweek-band"]');
-        const main = band.closest("main");
+        const screen = band.closest("main").lastElementChild;
         const rail = document.querySelector('[data-testid="home-stories"]');
         const strip = document.querySelector('[data-testid="deadline-strip"]');
         const item = rail?.querySelector("li").getBoundingClientRect();
         return {
           hasStrip: !!strip,
           hasRail: !!rail,
-          padding: parseFloat(getComputedStyle(main).paddingTop),
+          padding: parseFloat(getComputedStyle(screen).paddingTop),
           margin: parseFloat(getComputedStyle(band).marginTop),
           above: item
-            ? item.top - (strip?.getBoundingClientRect().bottom ?? main.getBoundingClientRect().top)
+            ? item.top -
+              (strip?.getBoundingClientRect().bottom ?? screen.getBoundingClientRect().top)
             : null,
           below: item ? band.getBoundingClientRect().top - item.bottom : null,
         };

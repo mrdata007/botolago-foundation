@@ -545,8 +545,9 @@ function HomeContent() {
       contentWidth="desktop"
       className={cn(
         // A populated rail owns its spacing. Keep the screen's original
-        // padding when the deadline strip needs it, or when the feed is empty.
-        !(stripTime && gwQ.data) && "[&>main:has([data-testid=home-stories])]:pt-0",
+        // padding on AppShell's inner UiScreen when the deadline strip needs it,
+        // or when the feed is empty.
+        !(stripTime && gwQ.data) && "[&>main>div:has([data-testid=home-stories])]:pt-0",
         "[&>main:has([data-testid=home-stories])_[data-testid=home-gameweek-band]]:mt-0",
       )}
     >
