@@ -86,14 +86,25 @@ export function TopBar({
             320px phone, or a large text size on a narrow one — the "GO" of the
             same wordmark, which keeps the buttons on screen and the brand in
             the bar. */}
-        {plusMember && PlusHeaderLogo ? (
-          <Suspense fallback={<Logo size="sm" className="hidden @min-[20rem]:flex" />}>
-            <PlusHeaderLogo className="hidden @min-[20rem]:flex" />
-          </Suspense>
-        ) : (
-          <Logo size="sm" className="hidden @min-[20rem]:flex" />
-        )}
-        <Logo variant="icon" className="shrink @min-[20rem]:hidden" />
+        <Link
+          to="/"
+          aria-label={`BotolaGO — ${t("nav.home")}`}
+          data-testid="header-logo-home"
+          className={cn(
+            "inline-flex min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)] shrink-0 items-center @max-[10rem]:[--ui-tap-min:1.375rem]",
+            ui.radius.control,
+            ui.focus,
+          )}
+        >
+          {plusMember && PlusHeaderLogo ? (
+            <Suspense fallback={<Logo size="sm" className="hidden @min-[20rem]:flex" />}>
+              <PlusHeaderLogo className="hidden @min-[20rem]:flex" />
+            </Suspense>
+          ) : (
+            <Logo size="sm" className="hidden @min-[20rem]:flex" />
+          )}
+          <Logo variant="icon" className="shrink @min-[20rem]:hidden" />
+        </Link>
 
         <PrimaryNavLinks />
 

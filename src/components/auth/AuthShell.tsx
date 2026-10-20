@@ -38,6 +38,7 @@
 // (§2.3).
 
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { Eye, EyeOff } from "lucide-react";
 import stadiumPhoto from "@/assets/photos/stadium-night-800.webp";
 import { Logo } from "@/components/brand/Logo";
@@ -169,7 +170,18 @@ export function AuthShell({
               ) : null}
               {/* The wordmark, not an icon tile beside "BotolaGO" typed in the
                   label style: this is the product naming itself. */}
-              <Logo tone="light" size="sm" className="min-w-0" />
+              <Link
+                to="/"
+                aria-label={`BotolaGO — ${t("nav.home")}`}
+                data-testid="header-logo-home"
+                className={cn(
+                  "inline-flex min-h-[var(--ui-tap-min)] min-w-0 items-center",
+                  ui.radius.control,
+                  ui.focusOnMesh,
+                )}
+              >
+                <Logo tone="light" size="sm" className="min-w-0" />
+              </Link>
               <div className="ms-auto shrink-0">
                 <LanguageSwitcher tone="onMesh" />
               </div>

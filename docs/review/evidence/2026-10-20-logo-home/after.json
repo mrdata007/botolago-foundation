@@ -1,0 +1,158 @@
+[
+  {
+    "lang": "fr",
+    "width": 320,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 16,
+      "y": 12,
+      "width": 44,
+      "height": 44
+    }
+  },
+  {
+    "lang": "fr",
+    "width": 320,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 72,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 16,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 72,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 76,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 560,
+      "y": 60,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 260,
+      "y": 12,
+      "width": 44,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 135.90625,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 261.90625,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 205.90625,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "path": "/matches",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 1251.90625,
+      "y": 12,
+      "width": 112.09375,
+      "height": 44
+    }
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "path": "/auth/login",
+    "linked": 1,
+    "errors": [],
+    "box": {
+      "x": 767.90625,
+      "y": 60,
+      "width": 112.09375,
+      "height": 44
+    }
+  }
+]
