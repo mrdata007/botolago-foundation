@@ -1,0 +1,86 @@
+[
+  {
+    "lang": "fr",
+    "width": 320,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 320,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "path": "/matches",
+    "linked": 0,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "path": "/auth/login",
+    "linked": 0,
+    "errors": []
+  }
+]
