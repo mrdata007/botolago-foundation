@@ -55,19 +55,20 @@ export function buildConfirmedApiRatingLineups(rawLineups: unknown, rawIncidents
       !record(rawLineups) ||
       rawLineups.confirmed !== true ||
       !record(rawIncidents) ||
-      !Array.isArray(rawIncidents.incidents) ||
-      !rawIncidents.incidents.some(
-        (i) =>
-          record(i) &&
-          i.incidentType === "period" &&
-          i.text === "FT" &&
-          i.isLive === false &&
-          typeof i.time === "number" &&
-          i.time >= 90 &&
-          i.time <= 120,
-      )
+      !Array.isArray(rawIncidents.incidents)
     )
       return baseline;
+    const fullTime = rawIncidents.incidents.find(
+      (i) =>
+        record(i) &&
+        i.incidentType === "period" &&
+        i.text === "FT" &&
+        i.isLive === false &&
+        typeof i.time === "number" &&
+        i.time >= 90 &&
+        i.time <= 120,
+    );
+    if (!record(fullTime) || typeof fullTime.time !== "number") return baseline;
     const incidents = parseSofascoreIncidents(rawIncidents);
     if (incidents.some((i) => ["unknown", "red_card", "second_yellow"].includes(i.kind)))
       return baseline;
@@ -91,7 +92,7 @@ export function buildConfirmedApiRatingLineups(rawLineups: unknown, rawIncidents
         entering === leaving ||
         !Number.isInteger(i.minute) ||
         i.minute < 0 ||
-        i.minute > 120 ||
+        i.minute > fullTime.time ||
         byId.get(entering)?.side !== i.side ||
         byId.get(leaving)?.side !== i.side ||
         !active.has(leaving) ||

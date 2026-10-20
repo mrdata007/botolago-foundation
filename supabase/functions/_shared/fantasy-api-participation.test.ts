@@ -40,6 +40,7 @@ test("names cannot merge Yahya with Yassine", () => {
 
 test.each([
   "missing FT",
+  "substitution after FT",
   "unconfirmed",
   "missing substitution",
   "wrong entering ID",
@@ -51,6 +52,8 @@ test.each([
   const x = sample();
   if (scenario === "missing FT")
     x.incidents.incidents = x.incidents.incidents.filter((i) => i.incidentType !== "period");
+  if (scenario === "substitution after FT")
+    x.incidents.incidents.find((i) => i.id === 127082497)!.time = 91;
   if (scenario === "unconfirmed") x.lineups.confirmed = false;
   if (scenario === "missing substitution")
     x.incidents.incidents = x.incidents.incidents.filter((i) => i.id !== 127082497);
