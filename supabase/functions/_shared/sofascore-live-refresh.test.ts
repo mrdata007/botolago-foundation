@@ -173,6 +173,69 @@ function run(
 
 const ingests = (db: FakeDb) => db.calls.filter((c) => c.name === "ingest_football_fixture");
 
+describe("independent season feeds", () => {
+  test("the observed upcoming 404 preserves valid completed updates and records partial freshness", async () => {
+    const db = fakeDb("sofascore", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
+    const { fetch, paths } = fakeFetch({
+      "tournaments/get-next-matches": { error: { code: 404, message: "Not Found" } },
+      "tournaments/get-last-matches": { events: [event(1, 101, 102, FINISHED)] },
+    });
+    const { outcome } = await run("sofascore", "season_fixtures", db, fetch);
+    expect(paths).toHaveLength(2);
+    expect(ingests(db)).toHaveLength(1);
+    expect(outcome.status).toBe(502);
+    expect(outcome.body).toMatchObject({
+      error: "fixture_feed_incomplete",
+      written: 1,
+      readErrors: [{ code: "data_unavailable" }],
+    });
+    const completed = db.calls.find((c) => c.name === "complete_football_ingestion")!;
+    expect(completed.args).toMatchObject({
+      p_status: "partial",
+      p_error_code: "fixture_feed_incomplete",
+      p_records_updated: 1,
+    });
+  });
+  test("a malformed last feed cannot suppress validated upcoming fixtures", async () => {
+    const db = fakeDb("sofascore", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
+    const { fetch } = fakeFetch({
+      "tournaments/get-next-matches": { events: [event(1, 101, 102, LIVE)] },
+      "tournaments/get-last-matches": { unexpected: true },
+    });
+    const { outcome } = await run("sofascore", "season_fixtures", db, fetch);
+    expect(ingests(db)).toHaveLength(1);
+    expect(outcome.body).toMatchObject({
+      error: "fixture_feed_incomplete",
+      readErrors: [{ code: "invalid_provider_payload" }],
+    });
+  });
+  test("two unavailable feeds write no fixture and cannot claim an empty schedule", async () => {
+    const db = fakeDb("sofascore", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
+    const { fetch } = fakeFetch({
+      "tournaments/get-next-matches": { error: { code: 404, message: "Not Found" } },
+      "tournaments/get-last-matches": { error: { code: 404, message: "Not Found" } },
+    });
+    const { outcome } = await run("sofascore", "season_fixtures", db, fetch);
+    expect(outcome.status).toBe(502);
+    expect(ingests(db)).toHaveLength(0);
+    expect(db.calls.some((c) => c.name === "begin_football_ingestion")).toBe(false);
+  });
+  test("the quota stop still ends the pass before any writes", async () => {
+    const db = fakeDb("sofascore", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
+    const { fetch, paths } = fakeFetch(
+      {
+        "tournaments/get-next-matches": { error: { code: 404, message: "Not Found" } },
+        "tournaments/get-last-matches": { events: [event(1, 101, 102, FINISHED)] },
+      },
+      0,
+    );
+    const { outcome } = await run("sofascore", "season_fixtures", db, fetch);
+    expect(paths).toHaveLength(1);
+    expect(outcome.status).toBe(429);
+    expect(ingests(db)).toHaveLength(0);
+  });
+});
+
 describe("sofascore live refresh", () => {
   for (const mode of ["shadow", "sofascore"] as const) {
     test(`${mode} skips a changed fixture with no round instead of erasing its gameweek`, async () => {

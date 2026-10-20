@@ -2,7 +2,8 @@
 import { writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { RapidApiClient } from "../../src/backend/football/provider/rapidapi-client";
-import { SofascorePerformanceProvider } from "../../src/backend/football/provider/sofascore-adapter";
+import { parseSofascoreLineups } from "../../src/backend/football/provider/sofascore-adapter";
+import { buildConfirmedApiRatingLineups } from "../../supabase/functions/_shared/fantasy-api-ratings.ts";
 
 const PROJECT = "tkewgajrljbwgwedqsxn";
 export const FIXTURES_SQL = `select coalesce(jsonb_agg(jsonb_build_object(
@@ -48,16 +49,30 @@ async function main() {
     key,
     policy: { maxRetries: 0 },
   });
-  const provider = new SofascorePerformanceProvider(client);
   const results: unknown[] = [];
   let failures = 0;
   for (const fixture of fixtures) {
     try {
-      const lineups = await provider.getLineups(fixture.eventId);
-      const audit = auditLineups(lineups);
+      if (!/^\d{1,12}$/.test(fixture.eventId)) throw new Error("ratings_event_id_invalid");
+      const rawLineups = await client.getJson(`matches/get-lineups?matchId=${fixture.eventId}`);
+      let audit = auditLineups(parseSofascoreLineups(rawLineups));
+      let participationCheck = "not_needed";
+      if (audit.players.some((p) => p.uncertain)) {
+        try {
+          const rawIncidents = await client.getJson(
+            `matches/get-incidents?matchId=${fixture.eventId}`,
+          );
+          audit = buildConfirmedApiRatingLineups(rawLineups, rawIncidents);
+          participationCheck = "confirmed_timeline_checked";
+        } catch {
+          failures += 1;
+          participationCheck = "unavailable";
+        }
+      }
       results.push({
         ...fixture,
         ...audit,
+        participationCheck,
         digest: createHash("sha256").update(JSON.stringify(audit.players)).digest("hex"),
       });
       console.log(

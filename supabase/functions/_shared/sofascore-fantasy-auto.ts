@@ -54,7 +54,7 @@
 //
 // Dependency-free apart from sibling shared modules (Bun tests, Deno runtime).
 
-import { buildApiRatingLineups } from "./fantasy-api-ratings.ts";
+import { buildApiRatingLineups, buildConfirmedApiRatingLineups } from "./fantasy-api-ratings.ts";
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
 import type {
   PerformanceIncident,
@@ -562,11 +562,17 @@ export class SofascoreFantasyRun {
       this.done.add(item.fixtureId);
       try {
         const reply = await this.deps.rapid.getJson(`matches/get-lineups?matchId=${item.eventId}`);
+        this.requestLog.push({
+          path: `matches/get-lineups?matchId=${item.eventId}`,
+          quotaRemaining: reply.quota.remaining,
+          quotaLimit: reply.quota.limit,
+        });
         await this.recordNative(
           item.fixtureId,
           item.eventId,
           "catch_up",
           parseSofascoreLineups(reply.data),
+          { lineups: reply.data },
         );
       } catch {
         this.finish({
@@ -659,6 +665,7 @@ export class SofascoreFantasyRun {
     eventId: string,
     source: FantasySource,
     lineups: PerformanceLineups,
+    evidence?: { lineups: unknown; incidents?: unknown },
   ): Promise<boolean> {
     if (!(await this.nativeEnabled(fixtureId))) return false;
     if (source === "stored") {
@@ -669,7 +676,24 @@ export class SofascoreFantasyRun {
       this.finish({ fixtureId, eventId, source, outcome: "skipped:shadow_api_ratings" });
       return true;
     }
-    const payload = buildApiRatingLineups(lineups);
+    let payload = buildApiRatingLineups(lineups);
+    if (evidence && payload.players.some((p) => p.uncertain)) {
+      try {
+        let incidents = evidence.incidents;
+        if (!Object.prototype.hasOwnProperty.call(evidence, "incidents")) {
+          const reply = await this.deps.rapid.getJson(`matches/get-incidents?matchId=${eventId}`);
+          this.requestLog.push({
+            path: `matches/get-incidents?matchId=${eventId}`,
+            quotaRemaining: reply.quota.remaining,
+            quotaLimit: reply.quota.limit,
+          });
+          incidents = reply.data;
+        }
+        payload = buildConfirmedApiRatingLineups(evidence.lineups, incidents);
+      } catch {
+        // A supplemental failure cannot convert uncertainty into non-appearance.
+      }
+    }
     const answer = await this.call("service_record_fantasy_api_ratings", {
       p_fixture_id: fixtureId,
       p_event_id: eventId,
@@ -702,7 +726,13 @@ export class SofascoreFantasyRun {
       if (replies.lineups === null)
         throw new SofascoreParseError("lineups", ["lineups: not provided"]);
       const lineups = parseSofascoreLineups(replies.lineups);
-      if (await this.recordNative(fixtureId, eventId, source, lineups)) return;
+      if (
+        await this.recordNative(fixtureId, eventId, source, lineups, {
+          lineups: replies.lineups,
+          incidents: replies.incidents,
+        })
+      )
+        return;
       parts = {
         lineups,
         incidents: parseSofascoreIncidents(replies.incidents),

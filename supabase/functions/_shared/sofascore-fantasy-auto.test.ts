@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import nativeCapture from "./fixtures/native-participation-17256972.json";
 import type { LiveRefreshRpcClient } from "./football-live-refresh.ts";
 import { createRapidApiClient } from "./rapidapi-client.ts";
 import { BOTOLA_UNIQUE_TOURNAMENT_ID, SOFASCORE_LIVE_EVENTS_PATH } from "./sofascore-fixtures.ts";
@@ -93,6 +94,7 @@ interface Attempt {
 }
 interface Options {
   native?: boolean | "unavailable";
+  nativeDue?: { fixtureId: string; eventId: string }[];
   world?: World;
   /** undefined: function missing (PGRST202); otherwise its answer. */
   autoMap?: "missing" | ((args: Record<string, unknown>, world: World) => unknown);
@@ -126,7 +128,7 @@ function fakeDb(options: Options = {}) {
             case "service_record_fantasy_api_ratings":
               return Promise.resolve({ data: { sourceId: 1, ready: true }, error: null });
             case "service_fantasy_api_ratings_due":
-              return Promise.resolve({ data: [], error: null });
+              return Promise.resolve({ data: options.nativeDue ?? [], error: null });
             case "service_sofascore_fantasy_context": {
               if (options.contextMissing) return Promise.resolve(missing);
               const ids = args.p_player_ids as string[];
@@ -1487,6 +1489,64 @@ describe("automatic Fantasy: stoppage time is kept with the stored replies", () 
 });
 
 describe("API-native ratings bypass canonical player matching", () => {
+  test("fresh replies reconcile metadata-only unused players without another request or canonical matching", async () => {
+    const db = fakeDb({ native: true });
+    const { run, net } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, {
+      lineups: nativeCapture.lineups,
+      incidents: nativeCapture.incidents,
+      statistics: null,
+    });
+    const write = db.calls.find((c) => c.name === "service_record_fantasy_api_ratings")!;
+    expect(
+      (write.args.p_players as Record<string, unknown>[]).find((p) => p.externalId === "919712"),
+    ).toMatchObject({ appeared: false, uncertain: false, rating: null, minutes: null });
+    expect(names(db)).toEqual([
+      "service_fantasy_api_rating_context",
+      "service_record_fantasy_api_ratings",
+    ]);
+    expect(net.paths).toHaveLength(0);
+  });
+
+  test.each([false, true])(
+    "native polling supplements uncertainty and preserves it on an incident failure=%s",
+    async (fail) => {
+      const db = fakeDb({ native: true, nativeDue: [{ fixtureId: FIXTURE, eventId: EVENT }] });
+      const requested: string[] = [];
+      const run = new SofascoreFantasyRun({
+        mode: "sofascore",
+        client: db.client,
+        now: NOW,
+        environment: {
+          SOFASCORE_FANTASY_RETRIES_PER_TICK: "0",
+          SOFASCORE_FANTASY_CATCHUP_PER_TICK: "1",
+          SOFASCORE_PEPITES_SYNC_PER_TICK: "0",
+        },
+        log: () => {},
+        rapid: {
+          getJson: async (path) => {
+            requested.push(path);
+            if (path.includes("get-incidents") && fail) throw new Error("unavailable");
+            return {
+              data: path.includes("get-lineups") ? nativeCapture.lineups : nativeCapture.incidents,
+              quota: { limit: 10000, remaining: 5000 },
+              requestsSent: requested.length,
+            };
+          },
+        },
+      });
+      await run.sweep();
+      expect(requested.map((p) => p.split("?")[0])).toEqual([
+        "matches/get-lineups",
+        "matches/get-incidents",
+      ]);
+      const write = db.calls.find((c) => c.name === "service_record_fantasy_api_ratings")!;
+      expect(
+        (write.args.p_players as Record<string, unknown>[]).find((p) => p.externalId === "919712"),
+      ).toMatchObject({ appeared: false, uncertain: fail, rating: null, minutes: null });
+      expect(names(db)).not.toContain("service_sofascore_auto_map_players");
+    },
+  );
   test("rated unknown API IDs are recorded without a mapping call", async () => {
     const db = fakeDb({ native: true, world: newWorld({ mapped: new Set() }) });
     const { run, lines } = makeRun(db);
