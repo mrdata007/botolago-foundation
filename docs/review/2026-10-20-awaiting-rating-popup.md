@@ -16,3 +16,11 @@ Use existing UI primitives, 44px touch targets, French/Arabic including RTL,
 reduced-motion support, and no nested buttons. Verify pitch/list views on
 mobile/desktop, keyboard opening, Escape/close dismissal and focus return.
 Capture screenshots and run the relevant existing tests and type checks.
+
+Validation completed: all eight French/Arabic × mobile/desktop × pitch/list
+browser cases passed. Measured targets are at least 44×44px; keyboard opening,
+focus trapping, Escape/translated-close dismissal, focus restoration and
+reduced motion passed. The popup automatically closes when ratings resolve.
+The React review confirmed one shared modal, unconditional hooks, no new
+network requests and no nested buttons. Existing tests (23), TypeScript,
+scoped lint and formatting passed. See [the evidence report](2026-10-20-awaiting-rating-labels.md).

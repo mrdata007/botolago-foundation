@@ -34,14 +34,21 @@ describe("awaiting real ratings", () => {
     );
     expect(html).toContain(">7<");
     expect(html).toContain('aria-label="مشاركة بلا تقييم"');
-    expect(html).toContain(">في انتظار التقييمات<");
+    expect(html).toContain('aria-label="في انتظار التقييمات"');
   });
-  it("shows visible awaiting text without a spinner or an invented zero", () => {
+  it("offers a labelled pending-rating popup without inventing a zero", () => {
     const html = renderToStaticMarkup(
-      <RatingPoints points={null} pending awaitingLabel="En attente des notes" />,
+      <RatingPoints
+        points={null}
+        pending
+        awaitingLabel="En attente des notes"
+        onAwaitingClick={() => undefined}
+      />,
     );
-    expect(html).toContain(">En attente des notes<");
-    expect(html).not.toContain("<svg");
+    expect(html).toContain('aria-label="En attente des notes"');
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain("<button");
+    expect(html).not.toContain(">En attente des notes<");
     expect(html).not.toContain("animate-spin");
     expect(html).not.toContain(">0<");
     expect(html).not.toContain("—");
@@ -49,11 +56,17 @@ describe("awaiting real ratings", () => {
 
   it("keeps real zeroes distinct from missing ratings", () => {
     const html = renderToStaticMarkup(
-      <RatingPoints points={0} pending={false} awaitingLabel="في انتظار التقييمات" />,
+      <RatingPoints
+        points={0}
+        pending={false}
+        awaitingLabel="في انتظار التقييمات"
+        onAwaitingClick={() => undefined}
+      />,
     );
     expect(html).toContain(">0<");
     expect(html).not.toContain("animate-spin");
     expect(html).not.toContain("في انتظار التقييمات");
+    expect(html).not.toContain("<button");
   });
 
   it("keeps earned points visible while another fixture is pending", () => {
@@ -61,6 +74,6 @@ describe("awaiting real ratings", () => {
       <RatingPoints points={7} pending awaitingLabel="في انتظار التقييمات" />,
     );
     expect(html).toContain(">7<");
-    expect(html).toContain(">في انتظار التقييمات<");
+    expect(html).toContain('aria-label="في انتظار التقييمات"');
   });
 });

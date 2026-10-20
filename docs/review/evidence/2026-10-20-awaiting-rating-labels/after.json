@@ -1,98 +1,270 @@
 [
   {
-    "phase": "after",
     "lang": "fr",
     "width": 390,
     "view": "pitch",
-    "labels": 3,
     "dir": "ltr",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 76,
+        "height": 91.421875
+      },
+      {
+        "width": 76,
+        "height": 92.109375
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
     "errors": []
   },
   {
-    "phase": "after",
     "lang": "fr",
     "width": 390,
     "view": "list",
-    "labels": 3,
     "dir": "ltr",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
-    "errors": []
+    "errors": [],
+    "closesWhenRatingsResolve": true
   },
   {
-    "phase": "after",
     "lang": "fr",
     "width": 1280,
     "view": "pitch",
-    "labels": 3,
     "dir": "ltr",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 84,
+        "height": 91.421875
+      },
+      {
+        "width": 84,
+        "height": 92.109375
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
     "errors": []
   },
   {
-    "phase": "after",
     "lang": "fr",
     "width": 1280,
     "view": "list",
-    "labels": 3,
     "dir": "ltr",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
-    "errors": []
+    "errors": [],
+    "closesWhenRatingsResolve": true
   },
   {
-    "phase": "after",
     "lang": "ar",
     "width": 390,
     "view": "pitch",
-    "labels": 3,
     "dir": "rtl",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 76,
+        "height": 105.875
+      },
+      {
+        "width": 76,
+        "height": 106.15625
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
     "errors": []
   },
   {
-    "phase": "after",
     "lang": "ar",
     "width": 390,
     "view": "list",
-    "labels": 3,
     "dir": "rtl",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
-    "errors": []
+    "errors": [],
+    "closesWhenRatingsResolve": true
   },
   {
-    "phase": "after",
     "lang": "ar",
     "width": 1280,
     "view": "pitch",
-    "labels": 3,
     "dir": "rtl",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 84,
+        "height": 105.875
+      },
+      {
+        "width": 84,
+        "height": 106.15625
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
     "errors": []
   },
   {
-    "phase": "after",
     "lang": "ar",
     "width": 1280,
     "view": "list",
-    "labels": 3,
     "dir": "rtl",
-    "spinners": 0,
-    "clipping": [],
+    "triggers": 3,
+    "targets": [
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      },
+      {
+        "width": 44,
+        "height": 44
+      }
+    ],
+    "compact": true,
+    "loopOnlyInPopup": true,
+    "reducedMotion": "none",
+    "normalMotion": "spin",
+    "keyboardOpen": true,
+    "escapeClose": true,
+    "translatedClose": true,
+    "focusRestored": true,
+    "focusTrapped": true,
+    "nestedButtons": 0,
     "offscreen": [],
-    "errors": []
+    "errors": [],
+    "closesWhenRatingsResolve": true
   }
 ]
