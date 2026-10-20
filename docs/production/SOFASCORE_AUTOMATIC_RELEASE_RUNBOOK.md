@@ -929,11 +929,14 @@ Unknown participation, conflicting evidence and longer unrated appearances
 remain pending. Deploy and verify the scorer and FR/AR status interface before
 the separate guarded activation. This migration is outside the older automatic
 release bundle and does not authorize legacy identity guesses or compensation.
+
 <!-- Later, separate release; never part of the original automatic install. -->
+
 Migration `20261019194059` adds private controls for one-time legacy identity
 repairs and preserves the no-new-purchase rule until stale catalog listings
 are reviewed. It inserts no production identity or selection. Its guarded
 repair operation is separate from this original release.
+
 - `20261020015540_fantasy_legacy_hold_release_audit_pairing.sql` is a separate
   forward-only follow-up to the legacy identity controls. It requires paired
   release timestamps and audit reasons. Promote the exact-source guarded
@@ -941,3 +944,25 @@ repair operation is separate from this original release.
   `20261019194059`, rehearsing and independently checking rollback first. The
   one-time identity repair refuses to run without this hardening. It releases
   no hold and changes no identity, ownership or score.
+
+### Native final email authority (20 October 2026)
+
+`20261020091926_fantasy_native_final_email_gate.sql` replaces the obsolete
+legacy-rating-policy prerequisite in the points-ready email payload with the
+current persisted, sealed native-rating snapshot. Native season activation,
+correct scoring/rules versions, no pending inputs and independently valid
+Not rated proof are required. Ownership, current final score, selected-player
+values, consent, historical-revision suppression, cutoff and dedup stay intact.
+Do not reactivate the old scoring policy to send a valid native final result.
+
+Promote only this exact migration with
+`scripts/backend/apply-20261020091926-native-final-email.sql`, after required CI
+and the staging probe. Follow the one-writer pause/drain procedure; run the
+real rehearsal, independently verify rollback, then change only its mode to
+apply. The operation pins both old and new function hashes and writes the exact
+CLI-compatible migration history atomically. Restore the recorded switches.
+It does not send or replay any event. A separately guarded owner recovery may
+requeue only the exact post-activation GW4 events cancelled by this predicate,
+while still current, consented, and with no existing delivery or attempt; keep
+event identity/timestamps and deduplication keys unchanged. Never backfill old
+gameweeks or manufacture a new points-ready event.
