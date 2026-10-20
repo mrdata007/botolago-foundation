@@ -1,0 +1,24 @@
+CREATE SCHEMA
+CREATE TABLE
+CREATE INDEX
+INSERT 0 2
+SELECT 2
+SELECT 2
+SELECT 2
+  phase   | templates 
+----------+-----------
+ baseline |         2
+(1 row)
+
+DO
+DO
+ phase | templates 
+-------+-----------
+ after |         3
+(1 row)
+
+                                       result                                       
+------------------------------------------------------------------------------------
+ PASS: edition, metadata, variables, original rows, Arabic and stored notifications
+(1 row)
+

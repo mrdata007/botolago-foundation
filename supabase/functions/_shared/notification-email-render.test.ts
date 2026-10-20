@@ -556,7 +556,7 @@ describe("time zones", () => {
 
   it("writes the Fantasy deadline as a day and a 24-hour time", () => {
     const email = render(delivery("deadline_24h"));
-    expect(email.subject).toBe("Plus que 24 h pour valider votre équipe Fantasy");
+    expect(email.subject).toBe("Vérifiez votre équipe Fantasy avant la date limite");
     expect(email.text).toContain("Journée : 5");
     expect(email.text).toContain("Date limite : vendredi 25 septembre à 18:30");
     expect(email.preheader).toBe("Journée 5 · date limite : vendredi 25 septembre à 18:30");

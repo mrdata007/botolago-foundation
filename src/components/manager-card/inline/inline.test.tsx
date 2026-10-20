@@ -325,7 +325,7 @@ describe("HubCardBlockView", () => {
       await render(<HubCardBlockView card={card("insufficient3")} gameweek={GAMEWEEK} />),
     );
     expect(plain).toContain("2/4");
-    expect(plain).toContain("Statistiques remplies");
+    expect(plain).toContain("Statistiques disponibles");
     expect(plain).toContain("Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.");
     // Every journée is counted: the full journée counter with no number reads as broken.
     expect(plain).not.toContain("3/3");

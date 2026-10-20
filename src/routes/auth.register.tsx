@@ -202,7 +202,6 @@ function RegisterPage() {
   return (
     <AuthShell
       title={t("auth.register.title")}
-      subtitle={t("auth.register.subtitle")}
       footer={
         <>
           <p

@@ -74,7 +74,7 @@ test.describe("staging-backed critical journeys", () => {
     if (await welcome.isVisible()) {
       await welcome.getByRole("button", { name: "Passer" }).click();
     }
-    const importPrompt = page.getByRole("dialog", { name: "Équipe locale détectée" });
+    const importPrompt = page.getByRole("dialog", { name: "Votre équipe est sur cet appareil" });
     if (await importPrompt.isVisible()) {
       await importPrompt.getByRole("button", { name: "Commencer une nouvelle équipe" }).click();
     }

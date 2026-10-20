@@ -945,6 +945,20 @@ repair operation is separate from this original release.
   one-time identity repair refuses to run without this hardening. It releases
   no hold and changes no identity, ownership or score.
 
+## UX writing: round-opening notification (separate release)
+
+`20261020092736_ux_writing_gameweek_opened_template.sql` is outside the
+SofaScore automatic release bundle. It retires the reviewed French v1
+`gameweek_opened` in-app template and creates v2 using **vous**, matching the
+interface and email copy. Arabic, variables, limits and delivery flags remain
+unchanged; existing notifications retain their original text and template row.
+The migration refuses an unexpected active edition or repeat application.
+Use `scripts/backend/apply-20261020092736-ux-writing.sql` for its guarded
+full-path rollback rehearsal and exact migration-history recording.
+It is prepared for separate review and has not been applied to a shared
+database. See [the UX writing report](../review/2026-10-20-ux-writing-report.md)
+and its isolated PostgreSQL validation evidence before promotion. It enables
+no event, channel, job or sending switch.
 ### Native final email authority (20 October 2026)
 
 `20261020091926_fantasy_native_final_email_gate.sql` replaces the obsolete

@@ -12,10 +12,10 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 // Numbers and dates
 // ---------------------------------------------------------------------------
 
-/** Western digits in both languages; the decimal is a comma in French and a point in Arabic. */
-const locale = (lang: string) => (lang === "ar" ? "en-US" : "fr-FR");
+/** Western digits and the same number format as the core Fantasy budget and player prices. */
+const locale = (lang: string) => (lang === "ar" ? "ar-MA" : "fr-FR");
 
-/** A price in millions, one decimal, Western digits: « 7,8 » / « 7.8 ». */
+/** A price in millions, one decimal and Western digits. */
 export function formatMillions(lang: string, value: number): string {
   return new Intl.NumberFormat(locale(lang), {
     minimumFractionDigits: 1,

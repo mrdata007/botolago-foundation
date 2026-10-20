@@ -1051,7 +1051,8 @@
     align-items: center;
     column-gap: var(--po-space-8);
   }
-  .pb-board > .pb-cells {
+  .pb-board > .pb-cells,
+  .pb-board > .pb-passed {
     grid-column: 1 / -1;
   }
   .pb-card {

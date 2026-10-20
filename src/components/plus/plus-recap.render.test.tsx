@@ -138,6 +138,9 @@ describe("« Votre journée expliquée » on the card page", () => {
     // No absence list is invented: the screen says there is none.
     expect(visible).toContain(fr["plus.recap.absences"]);
     expect(visible).toContain("Moyenne de votre ligue privée (5 managers)");
+    // The scoring version remains available for diagnostics, outside the user's explanation.
+    expect(html).toContain('data-calculation-version="4"');
+    expect(visible).not.toContain("Calcul v");
     // No serial number of a card.
     expect(visible).not.toMatch(/n°\s*\d|BOT\s*#/);
   });
@@ -152,6 +155,7 @@ describe("« Votre journée expliquée » on the card page", () => {
     const client = new QueryClient();
     const small = toRoundRecapView({
       ...EXAMPLE_RECAP_J11,
+      gameweek: { ...EXAMPLE_RECAP_J11.gameweek, corrected: true },
       leagueFigures: { scored: 2, average: null, best: 81, settled: false, captainAverage: null },
       explain: {
         ...EXAMPLE_RECAP_J11.explain,
@@ -166,6 +170,7 @@ describe("« Votre journée expliquée » on the card page", () => {
     expect(visible).toContain("Journée 11 : 75 pts");
     expect(visible).not.toContain("de plus que la moyenne");
     expect(visible).toContain(fr["plus.recap.small_league"]);
+    expect(visible).toContain(fr["plus.recap.corrected"]);
     expect(html).not.toContain('data-testid="plus-recap-cause-others"');
   });
 });

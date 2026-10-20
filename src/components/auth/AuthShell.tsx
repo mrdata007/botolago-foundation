@@ -80,7 +80,7 @@ const BAND_SPANS_SCREEN = "(max-width: 480px)";
 
 interface Props {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   children: ReactNode;
   /** Rendered at the end of the sheet: the "no account yet?" line, the consent notice. */
   footer?: ReactNode;

@@ -102,7 +102,7 @@ describe("the rules page with the v1 ruleset", () => {
   test("states the transfers from the ruleset's own numbers", async () => {
     const html = await render(await fantasyService.getRules());
     expect(text(html)).toContain(
-      "1 transfert gratuit par journée, cumulable jusqu'à 2. Chaque transfert supplémentaire coûte 4 points.",
+      "1 transfert gratuit par journée, cumulable jusqu’à 2. Chaque transfert supplémentaire déduit 4 points du total de la journée.",
     );
   });
 

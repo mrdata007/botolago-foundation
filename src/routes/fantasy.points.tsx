@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { RatingPoints } from "@/components/fantasy/RatingPoints";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -597,7 +598,8 @@ function PointsBody() {
               key: "price",
               label: t("fpl.current_price"),
               // A player today's pool no longer offers has no current price.
-              render: (p) => (round.missingFromCatalogIds.has(p.id) ? none : nf.format(p.price)),
+              render: (p) =>
+                round.missingFromCatalogIds.has(p.id) ? none : <FantasyAmount value={p.price} />,
             },
             {
               key: "sel",

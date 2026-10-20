@@ -32,6 +32,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import {
@@ -152,7 +153,20 @@ function RulesPage() {
           },
         ]
       : []),
-    { icon: Timer, titleKey: "fantasy.rules.deadlines", descKey: "fantasy.rules.deadlines_desc" },
+    {
+      icon: Timer,
+      titleKey: "fantasy.rules.deadlines",
+      body: rules ? (
+        <RuleText>
+          {t("fantasy.rules.deadline_timing").replace(
+            "{minutes}",
+            nf.format(rules.deadline.minutesBeforeFirstFixture),
+          )}
+        </RuleText>
+      ) : (
+        <RulesPending failed={rulesQ.isError} />
+      ),
+    },
     {
       icon: Trophy,
       titleKey: "fantasy.rules.scoring",
@@ -203,7 +217,10 @@ function RulesPage() {
       ) : (
         <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <RuleValue label={t("fantasy.rules.squad")} value={nf.format(rulesQ.data.squadSize)} />
-          <RuleValue label={t("fantasy.rules.budget")} value={nf.format(rulesQ.data.budget)} />
+          <RuleValue
+            label={t("fantasy.rules.budget")}
+            value={<FantasyAmount value={rulesQ.data.budget} />}
+          />
           <RuleValue
             label={t("fantasy.rules.transfers_r")}
             value={

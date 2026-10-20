@@ -125,14 +125,16 @@ describe("the bar", () => {
     expect(html.indexOf('role="status"')).toBeLessThan(html.indexOf("<button"));
   });
 
-  it("holds Annuler then Confirmer, side by side, and nothing else to press", () => {
-    expect(buttons(html).map((b) => b.label)).toEqual(["Annuler", "Confirmer"]);
+  it("names the save action, beside Annuler, with nothing else to press", () => {
+    expect(buttons(html).map((b) => b.label)).toEqual(["Annuler", "Enregistrer l’équipe"]);
     expect(html).toContain("grid grid-cols-2 gap-2");
     for (const b of buttons(html)) expect(b.attrs).not.toMatch(DISABLED);
   });
 
   it("names a pending chip instead", () => {
-    expect(render({ pendingChip: "free_hit", saving: false })).toContain("Free Hit : à confirmer");
+    const chip = render({ pendingChip: "free_hit", saving: false });
+    expect(chip).toContain("Free Hit : à confirmer");
+    expect(buttons(chip).map((b) => b.label)).toEqual(["Annuler", "Activer le jeton"]);
   });
 
   it("while saving, says so and takes no second tap on either button", () => {

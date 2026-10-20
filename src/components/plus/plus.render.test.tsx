@@ -100,7 +100,7 @@ describe("the offer (screen 3)", () => {
     expect(visible).toContain("Paiement unique de 200 MAD");
     expect(visible).toContain("court jusqu'au 31 mai 2027");
     expect(visible).toContain("aucun prélèvement automatique");
-    expect(visible).toContain("dès que l'équipe a vérifié votre paiement");
+    expect(visible).toContain("après vérification de votre paiement");
   });
   it("never types the product name as text on screen", () => {
     expect(visible).not.toContain("BotolaGO+");
@@ -166,7 +166,7 @@ describe("the other screens", () => {
       />,
     );
     const visible = text(html);
-    expect(visible).toContain("Votre carte, à votre style");
+    expect(visible).toContain("Votre carte, à votre image");
     for (const style of ["Holo", "Électrique", "Pixels", "Chrome"])
       expect(visible).toContain(style);
     expect(html).toContain('role="radiogroup"');
@@ -349,8 +349,10 @@ describe("the plus.* dictionary", () => {
     expect(ar["plus.s3.f1.d"]).toContain("كهربائية");
     expect(ar["plus.s3.f1.d"]).not.toMatch(/كهربائي(?!ة)/);
   });
-  it("says « Sans publicité » as a promise about the future, not as a claim about today", () => {
-    expect(fr["plus.s3.f0.d"]).toContain("ne verrez jamais");
-    expect(ar["plus.s3.f0.d"]).toContain("أبدًا");
+  it("ties the ad-free benefit to the paid access period in both languages", () => {
+    expect(fr["plus.s3.f0.d"]).toContain("pendant votre Saison");
+    expect(ar["plus.s3.f0.d"]).toContain("طوال مدة اشتراكك");
+    expect(fr["plus.s3.f0.d"]).not.toContain("jamais");
+    expect(ar["plus.s3.f0.d"]).not.toContain("أبدًا");
   });
 });

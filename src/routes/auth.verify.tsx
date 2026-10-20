@@ -82,7 +82,7 @@ function VerifyPage() {
       if (!sent.ran) return;
       if (sent.value.ok) {
         setCooldown(30);
-        toast.success(t("auth.verify.resend"));
+        toast.success(t("auth.verify.resend_sent"));
       } else {
         // Never pretend a mail went out; the cooldown and the server's rate
         // limit are unchanged, and the button is free to try again. Shown in
@@ -100,7 +100,11 @@ function VerifyPage() {
     <AuthShell
       compact
       title={t("auth.verify.title")}
-      subtitle={`${t("auth.verify.subtitle")} ${email}`}
+      subtitle={
+        <>
+          {t("auth.verify.subtitle")} <bdi dir="ltr">{email}</bdi>
+        </>
+      }
     >
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         <div className="flex flex-col items-center gap-3">
@@ -175,7 +179,9 @@ function VerifyPage() {
             aria-busy={resending}
           >
             {resending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            {cooldown > 0 ? `${t("auth.verify.resend_in")} ${cooldown}s` : t("auth.verify.resend")}
+            {cooldown > 0
+              ? t("auth.verify.resend_countdown").replace("{seconds}", `\u2068${cooldown}\u2069`)
+              : t("auth.verify.resend")}
           </UiButton>
         </div>
       </form>

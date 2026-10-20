@@ -634,11 +634,14 @@ function HomeContent() {
               />
               <div className="grid gap-2.5">
                 {newsQ.isError ? (
-                  <ErrorState onRetry={() => void newsQ.refetch()} />
+                  <ErrorState
+                    message={t("news.load_failed")}
+                    onRetry={() => void newsQ.refetch()}
+                  />
                 ) : !newsPreview ? (
                   <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
                 ) : newsPreview.length === 0 ? (
-                  <EmptyState compact>{t("state.empty")}</EmptyState>
+                  <EmptyState compact>{t("news.empty")}</EmptyState>
                 ) : (
                   newsPreview.map((a, index) => (
                     <div key={a.id} className="min-w-0">
@@ -679,7 +682,10 @@ function HomeContent() {
                   <MatchCardSkeleton flat />
                 </UiCard>
               ) : matchesQ.isError ? (
-                <ErrorState onRetry={() => void matchesQ.refetch()} />
+                <ErrorState
+                  message={t("state.error_matches")}
+                  onRetry={() => void matchesQ.refetch()}
+                />
               ) : upcomingDays.length === 0 ? (
                 // Nothing scheduled, which is not a failure: say so in the
                 // competition's words, and lead on to the results.

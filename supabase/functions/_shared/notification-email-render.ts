@@ -854,12 +854,12 @@ function deadline24h(payload: DeadlinePayload, ctx: RenderContext, links: Links)
   return {
     subject: t(
       ctx,
-      "Plus que 24 h pour valider votre équipe Fantasy",
-      "بقيت 24 ساعة فقط لتأكيد فريقك في فانتازي",
+      "Vérifiez votre équipe Fantasy avant la date limite",
+      "راجع فريقك في الفانتازي قبل الموعد النهائي",
     ),
     preheader: `${gameweek} · ${labelled(ctx, t(ctx, "date limite", "الموعد النهائي"), runsText(when))}`,
     kicker: copy(ctx, "fantasy"),
-    title: t(ctx, "Plus que 24 h avant la date limite", "بقيت 24 ساعة على الموعد النهائي"),
+    title: t(ctx, "La date limite approche", "الموعد النهائي يقترب"),
     dateline: null,
     blocks: [
       {
@@ -949,7 +949,7 @@ function gameweekFinalized(
             "اكتشف تفاصيل نقاطك على BotolaGO",
           ),
     kicker: copy(ctx, "fantasy"),
-    title: t(ctx, `${gameweek} : vos points sont définitifs`, `${gameweek}: نقاطك نهائية`),
+    title: t(ctx, `${gameweek} : vos points sont publiés`, `${gameweek}: نُشرت نقاطك`),
     dateline: null,
     blocks,
     cta: { label: t(ctx, "Voir mes points", "عرض نقاطي"), url: links.fantasyPoints },
@@ -1067,7 +1067,11 @@ function buildContent(
     case "gameweek_opened":
       return {
         ...deadline24h(delivery.payload, ctx, links),
-        subject: t(ctx, "À toi de jouer, coach !", "حان دورك يا مدرب!"),
+        subject: t(
+          ctx,
+          "Préparez votre équipe pour la prochaine journée",
+          "جهّز فريقك للجولة المقبلة",
+        ),
         title: t(ctx, "La sélection est ouverte", "اختيار التشكيلة متاح"),
         blocks: [
           {
@@ -1076,7 +1080,7 @@ function buildContent(
               plain(
                 t(
                   ctx,
-                  "Choisis ton onze, prépare ton banc et confirme ton capitaine avant la date limite.",
+                  "Choisissez vos titulaires, classez vos remplaçants et désignez votre capitaine avant la date limite.",
                   "اختر لاعبيك الأساسيين، ورتّب البدلاء، وحدّد قائدك قبل الموعد النهائي.",
                 ),
               ),
@@ -1084,7 +1088,7 @@ function buildContent(
           },
           ...deadline24h(delivery.payload, ctx, links).blocks.slice(1),
         ],
-        cta: { label: t(ctx, "Choisir mon équipe", "اختر تشكيلتي"), url: links.fantasyTeam },
+        cta: { label: t(ctx, "Choisir mon équipe", "اختيار تشكيلتي"), url: links.fantasyTeam },
       };
     case "pepites_weekly":
       return pepitesWeekly(delivery.payload, ctx, links);

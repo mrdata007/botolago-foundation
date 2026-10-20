@@ -15,6 +15,7 @@ import {
   UiSelect,
   UiSheet,
 } from "@/components/ui-kit";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
@@ -265,9 +266,12 @@ export function AddPlayerScreen({
         <p aria-hidden className={cn("min-w-0 flex-1 truncate", ui.display.header)}>
           {t("fpl.add_player")}
         </p>
-        <UiPill className="shrink-0">
-          {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
-        </UiPill>
+        {!budget ? (
+          <UiPill className="shrink-0">
+            {t("fpl.pick.budget_available")}{" "}
+            <FantasyAmount value={bank} className={ui.text.tabular} />
+          </UiPill>
+        ) : null}
         <UiIconButton aria-label={t("fpl.close")} onClick={onClose}>
           <X aria-hidden />
         </UiIconButton>
@@ -318,7 +322,7 @@ export function AddPlayerScreen({
                 {t("fpl.pick.budget_available")}
               </span>
               <span className={cn(ui.stat.lg, ui.text.tabular, ui.tone.default)}>
-                <bdi>{nf.format(bank)}</bdi>
+                <FantasyAmount value={bank} />
               </span>
             </div>
             {budget.teamValue !== undefined ? (
@@ -637,7 +641,7 @@ export function AddPlayerScreen({
                           block && !owned ? ui.tone.muted : ui.tone.default,
                         )}
                       >
-                        {nf.format(player.price)}
+                        <FantasyAmount value={player.price} />
                       </span>
                       <span className={cn(ui.text.micro, ui.tone.muted)}>
                         <span className={ui.text.tabular}>{whole.format(player.totalPoints)}</span>{" "}

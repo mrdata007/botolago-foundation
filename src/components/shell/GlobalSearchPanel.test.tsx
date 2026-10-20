@@ -197,7 +197,10 @@ describe("the announcement, in both languages", () => {
   });
 
   it("says searching, and no result, with the panel's own words", () => {
-    expect(searchAnnouncementText({ kind: "empty" }, "fr", frT)).toBe("Aucun résultat");
+    expect(searchAnnouncementText({ kind: "empty" }, "fr", frT)).toBe(
+      "Aucun club ni joueur trouvé",
+    );
+    expect(searchAnnouncementText({ kind: "empty" }, "ar", arT)).toBe("لم يُعثر على نادٍ أو لاعب");
     expect(searchAnnouncementText({ kind: "loading" }, "ar", arT)).toBe(
       dictionaries.ar["nav.search.loading"],
     );

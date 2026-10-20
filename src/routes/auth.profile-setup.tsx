@@ -198,7 +198,7 @@ function ProfileSetupPage() {
         setSubmitting(false);
         refresh();
         if (isMfaStepUpError(error)) showStepUpNotice(t);
-        else toast.error(t("auth.error.generic"));
+        else toast.error(t("auth.setup.email_save_failed"));
         return;
       }
     }
@@ -218,8 +218,7 @@ function ProfileSetupPage() {
   return (
     <AuthShell
       compact
-      title={t("auth.setup.title")}
-      subtitle={t("auth.setup.subtitle")}
+      title={user?.profileComplete ? t("auth.setup.edit_title") : t("auth.setup.title")}
       showBack={false}
     >
       <div className="mb-5">
@@ -560,7 +559,7 @@ function ProfileSetupPage() {
             className="max-w-[200px]"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            {t("auth.setup.finish")}
+            {user?.profileComplete ? t("auth.setup.save") : t("auth.setup.finish")}
           </AuthPrimaryButton>
         )}
       </div>

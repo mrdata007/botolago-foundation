@@ -1,0 +1,1150 @@
+[
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 2653.1875,
+      "right": 320,
+      "bottom": 2718.1875
+    },
+    "column": {
+      "x": 0,
+      "y": 117,
+      "width": 320,
+      "height": 2601.1875,
+      "right": 320,
+      "bottom": 2718.1875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 52,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/transfers",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 918.796875,
+      "right": 320,
+      "bottom": 918.796875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 918.796875,
+      "right": 320,
+      "bottom": 918.796875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 806.796875,
+        "x": 0,
+        "y": 737.796875,
+        "width": 320,
+        "height": 69,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/players",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 2971.4375,
+      "right": 320,
+      "bottom": 2971.4375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 2971.4375,
+      "right": 320,
+      "bottom": 2971.4375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/rules",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3522.625,
+      "right": 320,
+      "bottom": 3522.625
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3522.625,
+      "right": 320,
+      "bottom": 3522.625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/profile",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 1755.375,
+      "right": 320,
+      "bottom": 1820.375
+    },
+    "column": {
+      "x": 0,
+      "y": 130,
+      "width": 320,
+      "height": 1690.375,
+      "right": 320,
+      "bottom": 1820.375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/curva",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 2287.125,
+      "right": 320,
+      "bottom": 2352.125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 2287.125,
+      "right": 320,
+      "bottom": 2352.125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/plus",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 900,
+      "right": 320,
+      "bottom": 900
+    },
+    "column": {
+      "x": 140,
+      "y": 780,
+      "width": 40,
+      "height": 24,
+      "right": 180,
+      "bottom": 804
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/jouer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 6760.875,
+      "right": 320,
+      "bottom": 6760.875
+    },
+    "column": {
+      "x": 0,
+      "y": 900,
+      "width": 320,
+      "height": 73,
+      "right": 320,
+      "bottom": 973
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 0,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "fr",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/auth/forgot-password",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 96,
+      "width": 320,
+      "height": 804,
+      "right": 320,
+      "bottom": 900
+    },
+    "column": {
+      "x": 16,
+      "y": 278.375,
+      "width": 288,
+      "height": 154.328125,
+      "right": 304,
+      "bottom": 432.703125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 768,
+      "height": 1859.25,
+      "right": 768,
+      "bottom": 1924.25
+    },
+    "column": {
+      "x": 0,
+      "y": 117,
+      "width": 768,
+      "height": 1807.25,
+      "right": 768,
+      "bottom": 1924.25
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 768,
+        "height": 52,
+        "right": 768
+      }
+    ]
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/transfers",
+    "direction": "ltr",
+    "main": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 840,
+      "right": 720,
+      "bottom": 921
+    },
+    "column": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 840,
+      "right": 720,
+      "bottom": 921
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 873,
+        "x": 48,
+        "y": 802,
+        "width": 672,
+        "height": 71,
+        "right": 720
+      }
+    ]
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/players",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 2498.53125,
+      "right": 768,
+      "bottom": 2579.53125
+    },
+    "column": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 2498.53125,
+      "right": 768,
+      "bottom": 2579.53125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/rules",
+    "direction": "ltr",
+    "main": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 2721.203125,
+      "right": 720,
+      "bottom": 2802.203125
+    },
+    "column": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 2721.203125,
+      "right": 720,
+      "bottom": 2802.203125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/profile",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 768,
+      "height": 1615.0625,
+      "right": 768,
+      "bottom": 1680.0625
+    },
+    "column": {
+      "x": 48,
+      "y": 130,
+      "width": 672,
+      "height": 1550.0625,
+      "right": 720,
+      "bottom": 1680.0625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/curva",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 3558.375,
+      "right": 768,
+      "bottom": 3639.375
+    },
+    "column": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 3558.375,
+      "right": 768,
+      "bottom": 3639.375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 824.109375,
+        "x": 24,
+        "y": 146,
+        "width": 352,
+        "height": 678.109375,
+        "right": 376
+      }
+    ]
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/plus",
+    "direction": "ltr",
+    "main": {
+      "x": 144,
+      "y": 24,
+      "width": 480,
+      "height": 852,
+      "right": 624,
+      "bottom": 876
+    },
+    "column": {
+      "x": 364,
+      "y": 756,
+      "width": 40,
+      "height": 24,
+      "right": 404,
+      "bottom": 780
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/jouer",
+    "direction": "ltr",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 768,
+      "height": 5175.53125,
+      "right": 768,
+      "bottom": 5175.53125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "right": 0,
+      "bottom": 0
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 0,
+        "right": 768
+      }
+    ]
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "fr",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/auth/forgot-password",
+    "direction": "ltr",
+    "main": {
+      "x": 144,
+      "y": 338.890625,
+      "width": 480,
+      "height": 326.203125,
+      "right": 624,
+      "bottom": 665.09375
+    },
+    "column": {
+      "x": 168,
+      "y": 478.765625,
+      "width": 432,
+      "height": 154.328125,
+      "right": 600,
+      "bottom": 633.09375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 2773.96875,
+      "right": 320,
+      "bottom": 2838.96875
+    },
+    "column": {
+      "x": 0,
+      "y": 117,
+      "width": 320,
+      "height": 2721.96875,
+      "right": 320,
+      "bottom": 2838.96875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 320,
+        "height": 52,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/transfers",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 1054.671875,
+      "right": 320,
+      "bottom": 1054.671875
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 1054.671875,
+      "right": 320,
+      "bottom": 1054.671875
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 817.5625,
+        "x": 0,
+        "y": 748.5625,
+        "width": 320,
+        "height": 69,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/players",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3533.828125,
+      "right": 320,
+      "bottom": 3533.828125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3533.828125,
+      "right": 320,
+      "bottom": 3533.828125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/fantasy/rules",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3698.234375,
+      "right": 320,
+      "bottom": 3698.234375
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 3698.234375,
+      "right": 320,
+      "bottom": 3698.234375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/profile",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 1863.984375,
+      "right": 320,
+      "bottom": 1928.984375
+    },
+    "column": {
+      "x": 0,
+      "y": 152.296875,
+      "width": 320,
+      "height": 1776.6875,
+      "right": 320,
+      "bottom": 1928.984375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/curva",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 4348.8125,
+      "right": 320,
+      "bottom": 4413.8125
+    },
+    "column": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 4348.8125,
+      "right": 320,
+      "bottom": 4413.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/plus",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 900,
+      "right": 320,
+      "bottom": 900
+    },
+    "column": {
+      "x": 140,
+      "y": 780,
+      "width": 40,
+      "height": 24,
+      "right": 180,
+      "bottom": 804
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/jouer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 6822.328125,
+      "right": 320,
+      "bottom": 6822.328125
+    },
+    "column": {
+      "x": 0,
+      "y": 900,
+      "width": 320,
+      "height": 73,
+      "right": 320,
+      "bottom": 973
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 0,
+        "right": 320
+      }
+    ]
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "ar",
+    "theme": "dark",
+    "width": 320,
+    "actualPath": "/auth/forgot-password",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 96,
+      "width": 320,
+      "height": 804,
+      "right": 320,
+      "bottom": 900
+    },
+    "column": {
+      "x": 16,
+      "y": 335.78125,
+      "width": 288,
+      "height": 166.03125,
+      "right": 304,
+      "bottom": 501.8125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "home",
+    "path": "/",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 768,
+      "height": 1996.65625,
+      "right": 768,
+      "bottom": 2061.65625
+    },
+    "column": {
+      "x": 0,
+      "y": 116.671875,
+      "width": 768,
+      "height": 1944.984375,
+      "right": 768,
+      "bottom": 2061.65625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "SECTION",
+        "bottom": 117,
+        "x": 0,
+        "y": 65,
+        "width": 768,
+        "height": 52,
+        "right": 768
+      }
+    ]
+  },
+  {
+    "screen": "transfers",
+    "path": "/fantasy/transfers",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/transfers",
+    "direction": "rtl",
+    "main": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 944.59375,
+      "right": 720,
+      "bottom": 1025.59375
+    },
+    "column": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 944.59375,
+      "right": 720,
+      "bottom": 1025.59375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 900,
+        "x": 48,
+        "y": 829,
+        "width": 672,
+        "height": 71,
+        "right": 720
+      }
+    ]
+  },
+  {
+    "screen": "players",
+    "path": "/fantasy/players",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/players",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 2905.203125,
+      "right": 768,
+      "bottom": 2986.203125
+    },
+    "column": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 2905.203125,
+      "right": 768,
+      "bottom": 2986.203125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "rules",
+    "path": "/fantasy/rules",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/fantasy/rules",
+    "direction": "rtl",
+    "main": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 2821.640625,
+      "right": 720,
+      "bottom": 2902.640625
+    },
+    "column": {
+      "x": 48,
+      "y": 81,
+      "width": 672,
+      "height": 2821.640625,
+      "right": 720,
+      "bottom": 2902.640625
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "profile",
+    "path": "/profile",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/profile",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 65,
+      "width": 768,
+      "height": 1760.109375,
+      "right": 768,
+      "bottom": 1825.109375
+    },
+    "column": {
+      "x": 48,
+      "y": 152.296875,
+      "width": 672,
+      "height": 1672.8125,
+      "right": 720,
+      "bottom": 1825.109375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "curva",
+    "path": "/curva?mc=rated",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/curva",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 3648.484375,
+      "right": 768,
+      "bottom": 3729.484375
+    },
+    "column": {
+      "x": 0,
+      "y": 81,
+      "width": 768,
+      "height": 3648.484375,
+      "right": 768,
+      "bottom": 3729.484375
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 857,
+        "x": 392,
+        "y": 168.296875,
+        "width": 352,
+        "height": 688.703125,
+        "right": 744
+      }
+    ]
+  },
+  {
+    "screen": "plus",
+    "path": "/plus",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/plus",
+    "direction": "rtl",
+    "main": {
+      "x": 144,
+      "y": 24,
+      "width": 480,
+      "height": 852,
+      "right": 624,
+      "bottom": 876
+    },
+    "column": {
+      "x": 364,
+      "y": 756,
+      "width": 40,
+      "height": 24,
+      "right": 404,
+      "bottom": 780
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  },
+  {
+    "screen": "landing",
+    "path": "/jouer",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/jouer",
+    "direction": "rtl",
+    "main": {
+      "x": 0,
+      "y": 0,
+      "width": 768,
+      "height": 5652.078125,
+      "right": 768,
+      "bottom": 5652.078125
+    },
+    "column": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "right": 0,
+      "bottom": 0
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": [
+      {
+        "tag": "DIV",
+        "bottom": 0,
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 0,
+        "right": 768
+      }
+    ]
+  },
+  {
+    "screen": "reset",
+    "path": "/auth/forgot-password",
+    "language": "ar",
+    "theme": "dark",
+    "width": 768,
+    "actualPath": "/auth/forgot-password",
+    "direction": "rtl",
+    "main": {
+      "x": 144,
+      "y": 329.53125,
+      "width": 480,
+      "height": 344.921875,
+      "right": 624,
+      "bottom": 674.453125
+    },
+    "column": {
+      "x": 168,
+      "y": 476.421875,
+      "width": 432,
+      "height": 166.03125,
+      "right": 600,
+      "bottom": 642.453125
+    },
+    "escaped": [],
+    "clipped": [],
+    "sticky": []
+  }
+]

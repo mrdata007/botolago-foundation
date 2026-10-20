@@ -17,6 +17,7 @@ import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { UiHeader } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import {
   activateChip,
@@ -27,6 +28,7 @@ import {
   type ChipsState,
 } from "@/lib/fantasy-engine";
 import { fantasyHead } from "@/lib/fantasy-meta";
+import { pointsUnit } from "@/lib/points-unit";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { scopedFantasyKey } from "@/services/fantasy-data-source";
@@ -872,10 +874,21 @@ function TransfersBody() {
                   : t("fpl.state.unavailable")
             }`,
           },
-          { label: t("fpl.cost"), value: String(preview.hitPoints) },
+          {
+            label: t("fpl.cost"),
+            value: (
+              <bdi dir="ltr">
+                {preview.hitPoints > 0 ? "−" : ""}
+                {preview.hitPoints}
+              </bdi>
+            ),
+            unit: pointsUnit(preview.hitPoints, t),
+          },
           {
             label: t("fpl.bank"),
-            value: nf.format(completePairs.length > 0 ? preview.bankAfter : pickerBank),
+            value: (
+              <FantasyAmount value={completePairs.length > 0 ? preview.bankAfter : pickerBank} />
+            ),
           },
         ]}
         slots={slots}
@@ -918,16 +931,22 @@ function TransfersBody() {
             // BG-0071: a dash, not 0.0, while no gameweek has scored.
             render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
           },
-          { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
+          {
+            key: "price",
+            label: t("fpl.current_price"),
+            render: (p) => <FantasyAmount value={p.price} />,
+          },
           {
             key: "sell",
             label: t("fpl.selling_price"),
-            render: (p) => nf.format(valueOut(p.id)),
+            render: (p) => <FantasyAmount value={valueOut(p.id)} />,
           },
           {
             key: "buy",
             label: t("fpl.purchase_price"),
-            render: (p) => nf.format(owned.snapshot?.purchasePrices[p.id] ?? p.price),
+            render: (p) => (
+              <FantasyAmount value={owned.snapshot?.purchasePrices[p.id] ?? p.price} />
+            ),
           },
         ]}
       >

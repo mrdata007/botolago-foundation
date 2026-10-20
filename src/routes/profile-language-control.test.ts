@@ -34,12 +34,12 @@ describe("profile language control: wording", () => {
     expect(ar["profile.language.device"]).toBe("اللغة على هذا الجهاز");
   });
 
-  it("says what the row changes and what notifications follow", () => {
+  it("limits the choice to this device and points to notification language settings", () => {
     expect(fr["profile.language.help"]).toBe(
-      "Ce choix change l’application sur cet appareil. Les notifications utilisent la langue de votre compte. Modifiable dans Notifications.",
+      "Ce choix s’applique à cet appareil. Pour la langue des alertes et e-mails, ouvrez Notifications.",
     );
     expect(ar["profile.language.help"]).toBe(
-      "يغيّر هذا الاختيار لغة التطبيق على هذا الجهاز. تستخدم الإشعارات اللغة المحفوظة في حسابك. يمكن تغييرها من الإشعارات.",
+      "هذا الاختيار يخص هذا الجهاز. لتغيير لغة التنبيهات ورسائل البريد، افتح الإشعارات.",
     );
   });
 

@@ -2,7 +2,7 @@ import noPlayersArt from "@/assets/illustrations/empty-watchlist.webp";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Plus, Scale } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { crestStyle } from "@/components/common/club-crest-style";
@@ -19,6 +19,7 @@ import {
 } from "@/components/fantasy-lists/players-search";
 import { SearchField } from "@/components/fantasy-lists/SearchField";
 import { clubLabel, findClub, isClubKey } from "@/components/fantasy/club-identity";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { playersShownLabel } from "@/components/fpl/count-copy";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -136,10 +137,6 @@ function PlayersPage() {
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   // Prices read "8,0", like the picker and the pitch plates, never "8".
-  const priceNf = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
   const pctNf = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
@@ -513,7 +510,10 @@ function PlayersPage() {
                           ui.text.micro,
                         )}
                       >
-                        <CompareRow label={t("fantasy.price")} value={priceNf.format(p.price)} />
+                        <CompareRow
+                          label={t("fantasy.price")}
+                          value={<FantasyAmount value={p.price} />}
+                        />
                         <CompareRow
                           label={t("fantasy.total_points")}
                           value={nf.format(p.totalPoints)}
@@ -587,7 +587,6 @@ function PlayersPage() {
                     inCompare={compare.includes(p.id)}
                     onToggleCompare={() => toggleCompare(p.id)}
                     nf={nf}
-                    priceNf={priceNf}
                     pctNf={pctNf}
                   />
                 ))}
@@ -609,12 +608,12 @@ function PlayersPage() {
   );
 }
 
-function CompareRow({ label, value }: { label: string; value: string }) {
+function CompareRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <>
       <dt className={cn("min-w-0", ui.tone.muted)}>{label}</dt>
       <dd className={cn("text-end", ui.stat.sm, ui.tone.default)}>
-        <bdi>{value}</bdi>
+        {typeof value === "string" ? <bdi>{value}</bdi> : value}
       </dd>
     </>
   );
@@ -630,7 +629,6 @@ function PlayerListRow({
   inCompare,
   onToggleCompare,
   nf,
-  priceNf,
   pctNf,
 }: {
   player: FantasyPlayer;
@@ -642,7 +640,6 @@ function PlayerListRow({
   inCompare: boolean;
   onToggleCompare: () => void;
   nf: Intl.NumberFormat;
-  priceNf: Intl.NumberFormat;
   pctNf: Intl.NumberFormat;
 }) {
   const { t, tr } = useI18n();
@@ -714,14 +711,7 @@ function PlayerListRow({
       </Link>
 
       <span className="flex shrink-0 flex-col items-end">
-        <span className="flex items-baseline gap-1">
-          <bdi className={cn(ui.stat.md, ui.tone.default)}>{priceNf.format(player.price)}</bdi>
-          <span
-            className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}
-          >
-            {t("fantasy.players.price_unit")}
-          </span>
-        </span>
+        <FantasyAmount value={player.price} className={cn(ui.stat.md, ui.tone.default)} />
         <span className={cn(ui.text.meta, ui.tone.muted)}>
           <bdi className={ui.stat.sm}>{nf.format(player.totalPoints)}</bdi>{" "}
           {pointsUnit(player.totalPoints, t)}
