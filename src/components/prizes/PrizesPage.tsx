@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { BookOpen, ChevronRight, Gift, Medal, Trophy, Users } from "lucide-react";
+import { BookOpen, ChevronRight, Gift, Medal, Target, Trophy, Users } from "lucide-react";
 import { useState, type ComponentType } from "react";
 
 import type { PrizeTier, PrizeWinnerCursor, PublicPrizeDto } from "@/backend/prizes/contracts";
@@ -50,7 +50,7 @@ export function PrizesPage() {
     // to the widest unbreakable line inside it (a truncated winner row is one),
     // which pushed the whole column past the screen at 390px. A column flex
     // item takes its width from the container instead.
-    <div className={cn("flex min-w-0 flex-col gap-6 pb-8 pt-4", ui.space.gutter)}>
+    <div className={cn("flex min-w-0 flex-col gap-8 pb-8 pt-4 md:gap-10 md:pt-6", ui.space.gutter)}>
       <PrizesHero />
 
       {prizes.isPending ? (
@@ -64,8 +64,11 @@ export function PrizesPage() {
           testId="prizes-empty"
         />
       ) : (
-        <section aria-label={t("prizes.title")} className="flex min-w-0 flex-col gap-3">
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
+        <section aria-labelledby="prizes-catalog-heading" className="flex min-w-0 flex-col gap-4">
+          <h2 id="prizes-catalog-heading" className={cn(ui.display.section, ui.tone.default)}>
+            {t("prizes.title")}
+          </h2>
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 md:gap-5">
             {prizes.data.map((prize) => (
               <li key={prize.id} className="min-w-0">
                 <PrizeCard prize={prize} />
@@ -80,7 +83,7 @@ export function PrizesPage() {
       <Link
         to="/prizes/terms"
         className={cn(
-          "flex items-center gap-3 px-3 py-2",
+          "flex items-center gap-3 px-4 py-3",
           ui.surface.card,
           ui.space.row,
           ui.text.bodyStrong,
@@ -116,11 +119,7 @@ function PrizesHero() {
   const { t } = useI18n();
   return (
     <section
-      className={cn(
-        "relative isolate overflow-hidden text-center",
-        ui.radius.sheet,
-        ui.shadow.lifted,
-      )}
+      className={cn("relative isolate overflow-hidden", ui.radius.sheet, ui.shadow.lifted)}
       data-testid="prizes-hero"
     >
       <img
@@ -135,34 +134,43 @@ function PrizesHero() {
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 40%, transparent), color-mix(in oklab, var(--ui-ink-deep) 94%, transparent) 70%)",
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 68%, transparent), color-mix(in oklab, var(--ui-ink-deep) 96%, transparent))",
         }}
       />
-      <div className={cn("flex flex-col items-center gap-2 px-4 pb-5 pt-5", ui.tone.onInkPlain)}>
+      <div
+        className={cn(
+          "relative grid items-center gap-5 px-5 py-6 sm:grid-cols-[minmax(0,1fr)_160px] sm:gap-8 sm:p-8 lg:grid-cols-[minmax(0,1fr)_208px]",
+          ui.tone.onInkPlain,
+        )}
+      >
+        <div className="flex min-w-0 flex-col items-start gap-4">
+          <span
+            className={cn(
+              "inline-flex max-w-full items-center gap-2 px-3 py-1.5",
+              ui.radius.full,
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)] text-[color:var(--ui-ink-deep)]",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
+            data-testid="prizes-free-to-play"
+          >
+            <Gift className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>{t("prizes.free_to_play")}</span>
+          </span>
+          <h2 className={cn("max-w-xl text-balance", ui.display.title)}>
+            {t("prizes.welcome.title")}
+          </h2>
+          <p className={cn("max-w-lg text-pretty", ui.text.body, ui.tone.onInkMuted)}>
+            {t("prizes.intro")}
+          </p>
+        </div>
         <img
           src={PRIZE_HERO_ART}
           alt=""
           aria-hidden
           decoding="async"
-          className="h-32 w-auto object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.5)]"
+          className="hidden h-44 w-full object-contain drop-shadow-[0_12px_20px_rgba(0,0,0,0.35)] sm:block lg:h-52"
         />
-        <span
-          className={cn(
-            "mt-1 inline-flex px-3 py-1",
-            ui.radius.full,
-            ui.text.micro,
-            "[font-weight:var(--ui-weight-heavy)]",
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-          data-testid="prizes-free-to-play"
-        >
-          {t("prizes.free_to_play")}
-        </span>
-        <h2 className={cn("text-balance", ui.display.section)}>{t("prizes.welcome.title")}</h2>
-        <p className={cn("text-balance", ui.text.secondary, ui.tone.onInkMuted)}>
-          {t("prizes.intro")}
-        </p>
       </div>
     </section>
   );
@@ -180,16 +188,20 @@ function PrizeArt({ prize }: { prize: PublicPrizeDto }) {
         src={prize.imageUrl}
         alt=""
         onFailed={() => setFailed(true)}
-        className="aspect-[16/9] w-full object-cover"
+        className="h-44 w-full object-cover sm:h-48"
       />
     );
   }
   return (
     <div
       className={cn(
-        "flex aspect-[16/9] items-center justify-center px-6 pb-2 pt-4",
+        "flex h-44 items-center justify-center overflow-hidden px-6 pb-2 pt-10 sm:h-48",
         ui.surface.sunken,
       )}
+      style={{
+        backgroundImage:
+          "radial-gradient(ellipse at 50% 100%, color-mix(in oklab, var(--ui-ink-fg) 12%, transparent), transparent 75%)",
+      }}
       aria-hidden
     >
       <img
@@ -208,39 +220,53 @@ function PrizeCard({ prize }: { prize: PublicPrizeDto }) {
   const Icon = TIER_ICONS[prize.tier];
   return (
     <UiCard padding="none" className="flex h-full flex-col overflow-hidden" testId="prize-card">
-      <PrizeArt prize={prize} />
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center",
-              ui.radius.full,
-              "text-[color:var(--ui-ink-deep)]",
-            )}
-            style={{ backgroundImage: "var(--ui-grad-action)" }}
-            aria-hidden
-          >
-            <Icon className="h-[18px] w-[18px]" />
-          </span>
-          <h2 className={cn(ui.text.label, ui.tone.muted)}>{tierLabel(t, prize.tier)}</h2>
+      <div className="relative">
+        <PrizeArt prize={prize} />
+        <div
+          className={cn(
+            "absolute start-4 top-4 inline-flex max-w-[calc(100%-2rem)] items-center gap-2 px-3 py-1.5",
+            ui.surface.bar,
+            ui.radius.full,
+            ui.shadow.card,
+          )}
+        >
+          <Icon className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
+          <p className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}>
+            {tierLabel(t, prize.tier)}
+          </p>
         </div>
-        <p className={cn("text-balance", ui.display.section, ui.tone.default)}>{tr(prize.name)}</p>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
+        <h3 className={cn("text-balance", ui.display.section, ui.tone.default)}>
+          {tr(prize.name)}
+        </h3>
         {tr(prize.description) ? (
           <p className={cn(ui.text.secondary, ui.tone.muted)}>{tr(prize.description)}</p>
         ) : null}
         <p
-          className={cn(ui.text.bodyStrong, ui.tone.default)}
+          className={cn(
+            "self-start px-3 py-2",
+            ui.radius.control,
+            ui.surface.sunken,
+            ui.text.bodyStrong,
+            ui.tone.default,
+          )}
           data-testid={prize.estimatedValueMad === null ? "prize-merch" : "prize-value"}
         >
           {prize.estimatedValueMad === null
             ? t("prizes.merch_only")
             : formatMad(t, prize.estimatedValueMad, lang)}
         </p>
-        <div className={cn("mt-auto pt-3", ui.rule.blockStart)}>
-          <p className={cn(ui.text.label, ui.tone.muted)}>{t("prizes.how_to_win")}</p>
-          <p className={cn("mt-1", ui.text.secondary, ui.tone.default)}>
-            {howToWin(t, prize.tier)}
-          </p>
+        <div
+          className={cn("mt-auto flex items-start gap-3 p-3", ui.radius.control, ui.surface.sunken)}
+        >
+          <Target className={cn("mt-0.5 h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
+          <div className="min-w-0">
+            <p className={cn(ui.text.label, ui.tone.muted)}>{t("prizes.how_to_win")}</p>
+            <p className={cn("mt-1 text-pretty", ui.text.secondary, ui.tone.default)}>
+              {howToWin(t, prize.tier)}
+            </p>
+          </div>
         </div>
         {prize.sponsorName ? (
           <div className="flex items-center gap-2 pt-1">
@@ -274,13 +300,26 @@ function WinnersWall() {
   const items = winners.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
-    <section aria-labelledby="prizes-winners-heading" className="flex min-w-0 flex-col gap-3">
-      <h2
-        id="prizes-winners-heading"
-        className={cn("text-balance", ui.display.section, ui.tone.default)}
-      >
-        {t("prizes.winners.title")}
-      </h2>
+    <section aria-labelledby="prizes-winners-heading" className="flex min-w-0 flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "grid h-10 w-10 shrink-0 place-items-center",
+            ui.radius.full,
+            ui.surface.sunken,
+            ui.tone.ink,
+          )}
+          aria-hidden
+        >
+          <Trophy className="h-5 w-5" />
+        </span>
+        <h2
+          id="prizes-winners-heading"
+          className={cn("text-balance", ui.display.section, ui.tone.default)}
+        >
+          {t("prizes.winners.title")}
+        </h2>
+      </div>
       {winners.isPending ? (
         <UiStatePanel kind="loading" />
       ) : winners.isError ? (

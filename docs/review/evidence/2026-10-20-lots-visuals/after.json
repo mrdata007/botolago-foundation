@@ -1,0 +1,434 @@
+[
+  {
+    "lang": "fr",
+    "width": 390,
+    "theme": "light",
+    "cards": [
+      {
+        "box": {
+          "x": 16,
+          "y": 422.640625,
+          "width": 358,
+          "height": 477.796875
+        },
+        "text": "Lot de la journée\n\nRecharge mobile + maillot d'un club de la Botola\n\nLe meilleur score de la journée remporte une recharge mobile et un maillot officiel d'un club de la Botola Pro.\n\nValeur estimée : 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur score de la journée."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 916.4375,
+          "width": 358,
+          "height": 450.296875
+        },
+        "text": "Lot du mois\n\nSmartphone\n\nLe meilleur total sur un bloc de 4 journées remporte un smartphone.\n\nValeur estimée : 2 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total sur un bloc de 4 journées (J1–J4, J5–J8…)."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1382.734375,
+          "width": 358,
+          "height": 499.484375
+        },
+        "text": "Lot de la saison\n\nVoyage pour le derby + smartphone haut de gamme\n\nLe champion de la saison remporte un voyage pour assister au derby et un smartphone haut de gamme.\n\nValeur estimée : 25 000 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total de la saison, après la dernière journée."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1898.21875,
+          "width": 358,
+          "height": 428.609375
+        },
+        "text": "Lot de ligue\n\nPack supporter\n\nLe leader de chaque ligue privée d'au moins 10 membres reçoit un pack supporter.\n\nLot en produits officiels\n\nCOMMENT GAGNER\n\nTerminer la saison en tête de sa ligue."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 16,
+      "y": 85,
+      "width": 358,
+      "height": 262.140625
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "theme": "dark",
+    "cards": [
+      {
+        "box": {
+          "x": 16,
+          "y": 422.640625,
+          "width": 358,
+          "height": 477.796875
+        },
+        "text": "Lot de la journée\n\nRecharge mobile + maillot d'un club de la Botola\n\nLe meilleur score de la journée remporte une recharge mobile et un maillot officiel d'un club de la Botola Pro.\n\nValeur estimée : 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur score de la journée."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 916.4375,
+          "width": 358,
+          "height": 450.296875
+        },
+        "text": "Lot du mois\n\nSmartphone\n\nLe meilleur total sur un bloc de 4 journées remporte un smartphone.\n\nValeur estimée : 2 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total sur un bloc de 4 journées (J1–J4, J5–J8…)."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1382.734375,
+          "width": 358,
+          "height": 499.484375
+        },
+        "text": "Lot de la saison\n\nVoyage pour le derby + smartphone haut de gamme\n\nLe champion de la saison remporte un voyage pour assister au derby et un smartphone haut de gamme.\n\nValeur estimée : 25 000 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total de la saison, après la dernière journée."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1898.21875,
+          "width": 358,
+          "height": 428.609375
+        },
+        "text": "Lot de ligue\n\nPack supporter\n\nLe leader de chaque ligue privée d'au moins 10 membres reçoit un pack supporter.\n\nLot en produits officiels\n\nCOMMENT GAGNER\n\nTerminer la saison en tête de sa ligue."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 16,
+      "y": 85,
+      "width": 358,
+      "height": 262.140625
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "theme": "light",
+    "cards": [
+      {
+        "box": {
+          "x": 224,
+          "y": 529.5,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de la journée\n\nRecharge mobile + maillot d'un club de la Botola\n\nLe meilleur score de la journée remporte une recharge mobile et un maillot officiel d'un club de la Botola Pro.\n\nValeur estimée : 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur score de la journée."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 529.5,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot du mois\n\nSmartphone\n\nLe meilleur total sur un bloc de 4 journées remporte un smartphone.\n\nValeur estimée : 2 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total sur un bloc de 4 journées (J1–J4, J5–J8…)."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 1021.609375,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de la saison\n\nVoyage pour le derby + smartphone haut de gamme\n\nLe champion de la saison remporte un voyage pour assister au derby et un smartphone haut de gamme.\n\nValeur estimée : 25 000 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total de la saison, après la dernière journée."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 1021.609375,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de ligue\n\nPack supporter\n\nLe leader de chaque ligue privée d'au moins 10 membres reçoit un pack supporter.\n\nLot en produits officiels\n\nCOMMENT GAGNER\n\nTerminer la saison en tête de sa ligue."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 224,
+      "y": 174,
+      "width": 992,
+      "height": 272
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "theme": "dark",
+    "cards": [
+      {
+        "box": {
+          "x": 224,
+          "y": 529.5,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de la journée\n\nRecharge mobile + maillot d'un club de la Botola\n\nLe meilleur score de la journée remporte une recharge mobile et un maillot officiel d'un club de la Botola Pro.\n\nValeur estimée : 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur score de la journée."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 529.5,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot du mois\n\nSmartphone\n\nLe meilleur total sur un bloc de 4 journées remporte un smartphone.\n\nValeur estimée : 2 500 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total sur un bloc de 4 journées (J1–J4, J5–J8…)."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 1021.609375,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de la saison\n\nVoyage pour le derby + smartphone haut de gamme\n\nLe champion de la saison remporte un voyage pour assister au derby et un smartphone haut de gamme.\n\nValeur estimée : 25 000 MAD\n\nCOMMENT GAGNER\n\nLe meilleur total de la saison, après la dernière journée."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 1021.609375,
+          "width": 486,
+          "height": 472.109375
+        },
+        "text": "Lot de ligue\n\nPack supporter\n\nLe leader de chaque ligue privée d'au moins 10 membres reçoit un pack supporter.\n\nLot en produits officiels\n\nCOMMENT GAGNER\n\nTerminer la saison en tête de sa ligue."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 224,
+      "y": 174,
+      "width": 992,
+      "height": 272
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "theme": "light",
+    "cards": [
+      {
+        "box": {
+          "x": 16,
+          "y": 495.359375,
+          "width": 358,
+          "height": 513.453125
+        },
+        "text": "جائزة الجولة\n\nرصيد هاتفي + قميص نادٍ من البطولة\n\nصاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي لأحد أندية البطولة الاحترافية.\n\nالقيمة التقديرية: 500 درهم\n\nكيف تفوز\n\nأعلى نقاط في الجولة."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1024.8125,
+          "width": 358,
+          "height": 497.15625
+        },
+        "text": "الجائزة الشهرية\n\nهاتف ذكي\n\nصاحب أعلى مجموع نقاط خلال 4 جولات متتالية يفوز بهاتف ذكي.\n\nالقيمة التقديرية: 2.500 درهم\n\nكيف تفوز\n\nأعلى مجموع خلال 4 جولات متتالية (ج1–ج4، ج5–ج8…)."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1537.96875,
+          "width": 358,
+          "height": 513.453125
+        },
+        "text": "جائزة الموسم\n\nرحلة لحضور الديربي + هاتف ذكي من الفئة الراقية\n\nبطل الموسم يفوز برحلة لحضور الديربي وهاتف ذكي من الفئة الراقية.\n\nالقيمة التقديرية: 25.000 درهم\n\nكيف تفوز\n\nأعلى مجموع في الموسم بعد الجولة الأخيرة."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 2067.421875,
+          "width": 358,
+          "height": 470.5625
+        },
+        "text": "جائزة الدوري\n\nحزمة المشجع\n\nمتصدر كل دوري خاص يضم 10 أعضاء على الأقل يحصل على حزمة المشجع.\n\nجائزة من المنتجات الرسمية\n\nكيف تفوز\n\nإنهاء الموسم في صدارة دوريك."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 16,
+      "y": 101.4375,
+      "width": 358,
+      "height": 303.03125
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "theme": "dark",
+    "cards": [
+      {
+        "box": {
+          "x": 16,
+          "y": 495.359375,
+          "width": 358,
+          "height": 513.453125
+        },
+        "text": "جائزة الجولة\n\nرصيد هاتفي + قميص نادٍ من البطولة\n\nصاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي لأحد أندية البطولة الاحترافية.\n\nالقيمة التقديرية: 500 درهم\n\nكيف تفوز\n\nأعلى نقاط في الجولة."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1024.8125,
+          "width": 358,
+          "height": 497.15625
+        },
+        "text": "الجائزة الشهرية\n\nهاتف ذكي\n\nصاحب أعلى مجموع نقاط خلال 4 جولات متتالية يفوز بهاتف ذكي.\n\nالقيمة التقديرية: 2.500 درهم\n\nكيف تفوز\n\nأعلى مجموع خلال 4 جولات متتالية (ج1–ج4، ج5–ج8…)."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 1537.96875,
+          "width": 358,
+          "height": 513.453125
+        },
+        "text": "جائزة الموسم\n\nرحلة لحضور الديربي + هاتف ذكي من الفئة الراقية\n\nبطل الموسم يفوز برحلة لحضور الديربي وهاتف ذكي من الفئة الراقية.\n\nالقيمة التقديرية: 25.000 درهم\n\nكيف تفوز\n\nأعلى مجموع في الموسم بعد الجولة الأخيرة."
+      },
+      {
+        "box": {
+          "x": 16,
+          "y": 2067.421875,
+          "width": 358,
+          "height": 470.5625
+        },
+        "text": "جائزة الدوري\n\nحزمة المشجع\n\nمتصدر كل دوري خاص يضم 10 أعضاء على الأقل يحصل على حزمة المشجع.\n\nجائزة من المنتجات الرسمية\n\nكيف تفوز\n\nإنهاء الموسم في صدارة دوريك."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 16,
+      "y": 101.4375,
+      "width": 358,
+      "height": 303.03125
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "theme": "light",
+    "cards": [
+      {
+        "box": {
+          "x": 730,
+          "y": 561.328125,
+          "width": 486,
+          "height": 486.5625
+        },
+        "text": "جائزة الجولة\n\nرصيد هاتفي + قميص نادٍ من البطولة\n\nصاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي لأحد أندية البطولة الاحترافية.\n\nالقيمة التقديرية: 500 درهم\n\nكيف تفوز\n\nأعلى نقاط في الجولة."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 561.328125,
+          "width": 486,
+          "height": 486.5625
+        },
+        "text": "الجائزة الشهرية\n\nهاتف ذكي\n\nصاحب أعلى مجموع نقاط خلال 4 جولات متتالية يفوز بهاتف ذكي.\n\nالقيمة التقديرية: 2.500 درهم\n\nكيف تفوز\n\nأعلى مجموع خلال 4 جولات متتالية (ج1–ج4، ج5–ج8…)."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 1067.890625,
+          "width": 486,
+          "height": 502.859375
+        },
+        "text": "جائزة الموسم\n\nرحلة لحضور الديربي + هاتف ذكي من الفئة الراقية\n\nبطل الموسم يفوز برحلة لحضور الديربي وهاتف ذكي من الفئة الراقية.\n\nالقيمة التقديرية: 25.000 درهم\n\nكيف تفوز\n\nأعلى مجموع في الموسم بعد الجولة الأخيرة."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 1067.890625,
+          "width": 486,
+          "height": 502.859375
+        },
+        "text": "جائزة الدوري\n\nحزمة المشجع\n\nمتصدر كل دوري خاص يضم 10 أعضاء على الأقل يحصل على حزمة المشجع.\n\nجائزة من المنتجات الرسمية\n\nكيف تفوز\n\nإنهاء الموسم في صدارة دوريك."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 224,
+      "y": 190.4375,
+      "width": 992,
+      "height": 272
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "theme": "dark",
+    "cards": [
+      {
+        "box": {
+          "x": 730,
+          "y": 561.328125,
+          "width": 486,
+          "height": 486.5625
+        },
+        "text": "جائزة الجولة\n\nرصيد هاتفي + قميص نادٍ من البطولة\n\nصاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي لأحد أندية البطولة الاحترافية.\n\nالقيمة التقديرية: 500 درهم\n\nكيف تفوز\n\nأعلى نقاط في الجولة."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 561.328125,
+          "width": 486,
+          "height": 486.5625
+        },
+        "text": "الجائزة الشهرية\n\nهاتف ذكي\n\nصاحب أعلى مجموع نقاط خلال 4 جولات متتالية يفوز بهاتف ذكي.\n\nالقيمة التقديرية: 2.500 درهم\n\nكيف تفوز\n\nأعلى مجموع خلال 4 جولات متتالية (ج1–ج4، ج5–ج8…)."
+      },
+      {
+        "box": {
+          "x": 730,
+          "y": 1067.890625,
+          "width": 486,
+          "height": 502.859375
+        },
+        "text": "جائزة الموسم\n\nرحلة لحضور الديربي + هاتف ذكي من الفئة الراقية\n\nبطل الموسم يفوز برحلة لحضور الديربي وهاتف ذكي من الفئة الراقية.\n\nالقيمة التقديرية: 25.000 درهم\n\nكيف تفوز\n\nأعلى مجموع في الموسم بعد الجولة الأخيرة."
+      },
+      {
+        "box": {
+          "x": 224,
+          "y": 1067.890625,
+          "width": 486,
+          "height": 502.859375
+        },
+        "text": "جائزة الدوري\n\nحزمة المشجع\n\nمتصدر كل دوري خاص يضم 10 أعضاء على الأقل يحصل على حزمة المشجع.\n\nجائزة من المنتجات الرسمية\n\nكيف تفوز\n\nإنهاء الموسم في صدارة دوريك."
+      }
+    ],
+    "outside": [],
+    "cuts": [],
+    "hero": {
+      "x": 224,
+      "y": 190.4375,
+      "width": 992,
+      "height": 272
+    },
+    "brokenImages": 0,
+    "winners": 6,
+    "errors": []
+  }
+]
