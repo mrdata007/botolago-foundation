@@ -9,6 +9,10 @@
 -- applying. To apply, change only rehearsal boolean := true to false.
 -- A failure means stop and diagnose; never weaken a guard.
 
+begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '60s';
+
 do $ux_release$
 declare
   rehearsal boolean := true;
@@ -67,8 +71,6 @@ $ux_migration$;
   old_edition jsonb;
   expected_meta jsonb;
 begin
-  perform set_config('lock_timeout', '5s', true);
-  perform set_config('statement_timeout', '60s', true);
   perform pg_advisory_xact_lock(hashtext('botolago-ux-writing-20261020092736'));
   lock table app.notification_templates in share row exclusive mode;
 
@@ -91,7 +93,7 @@ begin
   end if;
   select * into strict original from app.notification_templates
     where template_key='gameweek_opened' and channel='in_app' and language='fr';
-  old_edition := to_jsonb(original) - array['active','retired_at'];
+  old_edition := to_jsonb(original) - array['active','retired_at','updated_at'];
   expected_meta := jsonb_build_array(original.template_key,original.notification_type,original.category,
     original.channel,original.language,original.required_variables,original.max_title_length,
     original.max_body_length,original.is_mandatory,original.bypass_quiet_hours);
@@ -107,8 +109,9 @@ begin
     values ('20261020092736','ux_writing_gameweek_opened_template',array[migration_sql]);
 
   select * into strict current_template from app.notification_templates where id=original.id;
-  if current_template.active or current_template.retired_at is null
-    or to_jsonb(current_template) - array['active','retired_at'] is distinct from old_edition then
+  if current_template.active or current_template.retired_at is distinct from statement_timestamp()
+    or current_template.updated_at is distinct from statement_timestamp()
+    or to_jsonb(current_template) - array['active','retired_at','updated_at'] is distinct from old_edition then
     raise exception 'stop: original edition not retired with all other values preserved';
   end if;
   select * into strict current_template from app.notification_templates
@@ -144,3 +147,5 @@ begin
   end if;
 end
 $ux_release$;
+
+commit;
