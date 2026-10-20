@@ -1,7 +1,7 @@
 -- Owner-approved native selection carry-over. Default: real-path rollback rehearsal.
 -- Exact migration SHA256: f873e94a16948b32937791cc66325785bc05c96a2d123c772ee6ed0a1cd454ee
 begin;
-set local lock_timeout='5s';set local statement_timeout='90s';
+set local lock_timeout='5s';set local statement_timeout='90s';set local work_mem='16MB';
 select set_config('bg.selection_release_mode','rehearsal',true);
 select app_private.hold_scheduled_jobs();
 lock table app_private.fantasy_worker_lease in exclusive mode;
@@ -27,48 +27,48 @@ do $baseline$begin
  if md5((select prosrc from pg_proc where oid='app_private.notification_email_plan(timestamptz)'::regprocedure))is distinct from 'b686fb3d2000279349c4d1afbb9f7edf'then raise exception 'selection_release_planner_baseline_changed';end if;
  if md5((select prosrc from pg_proc where oid='app_private.fantasy_rating_display_document(uuid)'::regprocedure))is distinct from '170b50ccb53c653bad1eaaddcd054a79'then raise exception 'selection_release_display_baseline_changed';end if;
 end $baseline$;
-create temporary table protected_selection_release on commit drop as select 'app.fixtures' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fixtures t
-union all select 'app.rounds' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.rounds t
-union all select 'app.seasons' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.seasons t
-union all select 'app.fantasy_gameweeks' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_gameweeks t
-union all select 'app.fantasy_fixture_assignments' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_fixture_assignments t
-union all select 'app.fantasy_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_players t
-union all select 'app.fantasy_teams' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_teams t
-union all select 'app.fantasy_squad_memberships' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_squad_memberships t
-union all select 'app.fantasy_lineups' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_lineups t
-union all select 'app.fantasy_lineup_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_lineup_players t
-union all select 'app.fantasy_transfer_batches' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_transfer_batches t
-union all select 'app.fantasy_transfers' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_transfers t
-union all select 'app.fantasy_player_point_events' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_point_events t
-union all select 'app.fantasy_player_gameweek_points' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_gameweek_points t
-union all select 'app.fantasy_team_gameweek_results' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_team_gameweek_results t
-union all select 'app_private.fantasy_scoring_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_scoring_snapshots t
-union all select 'app_private.fantasy_rating_publications' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_publications t
-union all select 'app_private.fantasy_published_rating_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_published_rating_players t
-union all select 'app_private.fantasy_rating_recovery_plans' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_recovery_plans t
-union all select 'app_private.fantasy_api_rating_sources' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_sources t
-union all select 'app_private.fantasy_api_rating_polls' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_polls t
-union all select 'app_private.fantasy_not_rated_settlements' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_not_rated_settlements t
-union all select 'app_private.fantasy_rating_checks' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_checks t
-union all select 'app_private.fantasy_legacy_identity_repairs' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_legacy_identity_repairs t
-union all select 'app_private.football_provider_mappings' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.football_provider_mappings t
-union all select 'app_private.sofascore_player_aliases' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.sofascore_player_aliases t
-union all select 'app_private.notification_events' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.notification_events t
-union all select 'app.notifications' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.notifications t
-union all select 'app.notification_deliveries' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.notification_deliveries t
-union all select 'app_private.fantasy_free_transfer_rollovers' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_free_transfer_rollovers t
-union all select 'app_private.fantasy_gameweek_progressions' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_gameweek_progressions t
-union all select 'app_private.fantasy_gameweek_postwork' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_gameweek_postwork t
-union all select 'app_private.fantasy_gameweek_close' name,count(*)n,md5(coalesce(string_agg(((to_jsonb(t)-'close_kind'))::text,E'\n' order by ((to_jsonb(t)-'close_kind'))::text),''))digest from app_private.fantasy_gameweek_close t
-union all select 'app.fantasy_free_hit_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_free_hit_snapshots t
-union all select 'app.fantasy_free_hit_snapshot_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_free_hit_snapshot_players t
-union all select 'app_private.fantasy_free_hit_lineup_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_free_hit_lineup_snapshots t
-union all select 'app.fantasy_player_price_history' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_price_history t
-union all select 'app.fantasy_prize_winners' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_prize_winners t
-union all select 'app_private.fantasy_api_rating_seasons' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_seasons t
-union all select 'app_private.fantasy_not_rated_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_not_rated_policy t
-union all select 'app_private.fantasy_staged_stats_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_staged_stats_policy t
-union all select 'app_private.fantasy_rating_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_policy t
+create temporary table protected_selection_release on commit drop as select 'app.fixtures' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fixtures t
+union all select 'app.rounds' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.rounds t
+union all select 'app.seasons' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.seasons t
+union all select 'app.fantasy_gameweeks' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_gameweeks t
+union all select 'app.fantasy_fixture_assignments' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_fixture_assignments t
+union all select 'app.fantasy_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_players t
+union all select 'app.fantasy_teams' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_teams t
+union all select 'app.fantasy_squad_memberships' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_squad_memberships t
+union all select 'app.fantasy_lineups' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_lineups t
+union all select 'app.fantasy_lineup_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by lineup_id,fantasy_player_id),''))digest from app.fantasy_lineup_players t
+union all select 'app.fantasy_transfer_batches' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_transfer_batches t
+union all select 'app.fantasy_transfers' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_transfers t
+union all select 'app.fantasy_player_point_events' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_player_point_events t
+union all select 'app.fantasy_player_gameweek_points' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,fantasy_player_id),''))digest from app.fantasy_player_gameweek_points t
+union all select 'app.fantasy_team_gameweek_results' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_team_gameweek_results t
+union all select 'app_private.fantasy_scoring_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,calculation_version),''))digest from app_private.fantasy_scoring_snapshots t
+union all select 'app_private.fantasy_rating_publications' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_publications t
+union all select 'app_private.fantasy_published_rating_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by publication_id,fantasy_player_id),''))digest from app_private.fantasy_published_rating_players t
+union all select 'app_private.fantasy_rating_recovery_plans' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_recovery_plans t
+union all select 'app_private.fantasy_api_rating_sources' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_api_rating_sources t
+union all select 'app_private.fantasy_api_rating_polls' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by fixture_id),''))digest from app_private.fantasy_api_rating_polls t
+union all select 'app_private.fantasy_not_rated_settlements' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by source_id,api_player_id),''))digest from app_private.fantasy_not_rated_settlements t
+union all select 'app_private.fantasy_rating_checks' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_checks t
+union all select 'app_private.fantasy_legacy_identity_repairs' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by fantasy_player_id),''))digest from app_private.fantasy_legacy_identity_repairs t
+union all select 'app_private.football_provider_mappings' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.football_provider_mappings t
+union all select 'app_private.sofascore_player_aliases' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.sofascore_player_aliases t
+union all select 'app_private.notification_events' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.notification_events t
+union all select 'app.notifications' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.notifications t
+union all select 'app.notification_deliveries' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.notification_deliveries t
+union all select 'app_private.fantasy_free_transfer_rollovers' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,fantasy_team_id),''))digest from app_private.fantasy_free_transfer_rollovers t
+union all select 'app_private.fantasy_gameweek_progressions' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by previous_gameweek_id),''))digest from app_private.fantasy_gameweek_progressions t
+union all select 'app_private.fantasy_gameweek_postwork' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,calculation_version),''))digest from app_private.fantasy_gameweek_postwork t
+union all select 'app_private.fantasy_gameweek_close' name,count(*)n,md5(coalesce(string_agg(md5((to_jsonb(t)-'close_kind')::text),'' order by gameweek_id),''))digest from app_private.fantasy_gameweek_close t
+union all select 'app.fantasy_free_hit_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_free_hit_snapshots t
+union all select 'app.fantasy_free_hit_snapshot_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by snapshot_id,fantasy_player_id),''))digest from app.fantasy_free_hit_snapshot_players t
+union all select 'app_private.fantasy_free_hit_lineup_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by snapshot_id),''))digest from app_private.fantasy_free_hit_lineup_snapshots t
+union all select 'app.fantasy_player_price_history' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_player_price_history t
+union all select 'app.fantasy_prize_winners' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_prize_winners t
+union all select 'app_private.fantasy_api_rating_seasons' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_api_rating_seasons t
+union all select 'app_private.fantasy_not_rated_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_not_rated_policy t
+union all select 'app_private.fantasy_staged_stats_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_staged_stats_policy t
+union all select 'app_private.fantasy_rating_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_rating_policy t
 union all select 'scoring_and_economic_guards',count(*),md5(string_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),p.prosrc,p.prosecdef,p.proconfig,p.proacl)::text,E'\n'order by p.oid))from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('api','app_private')and p.proname in('service_begin_fantasy_close','service_begin_fantasy_finalization','service_complete_fantasy_gameweek','service_persist_fantasy_scoring_results','fantasy_validate_scoring_document','fantasy_api_rating_document','fantasy_actual_ratings_pending','fantasy_email_payload','service_prepare_next_fantasy_gameweek','service_run_fantasy_close_price_batch','service_restore_free_hit','service_roll_fantasy_free_transfers','service_apply_fantasy_price_changes','service_adopt_fantasy_close_prices');
 -- Selection carry-over does not require a rating or a published score.
 -- The original complete-scoring close and all finalization guards stay intact.
@@ -318,48 +318,48 @@ do $verify$begin
  if md5((select prosrc from pg_proc where oid='api.service_begin_fantasy_selection_close(uuid,bigint)'::regprocedure))is distinct from 'a8ff68656a09cf6a52c30197f42c6cc8'then raise exception 'selection_release_new_function_mismatch:api.service_begin_fantasy_selection_close';end if;
  if md5((select prosrc from pg_proc where oid='api.service_fantasy_lifecycle_state(uuid)'::regprocedure))is distinct from '8e9a265974f70ad129c7019a63bccd2b'then raise exception 'selection_release_new_function_mismatch:api.service_fantasy_lifecycle_state';end if;
  if md5((select prosrc from pg_proc where oid='app_private.notification_email_plan(timestamptz)'::regprocedure))<>'32a1b9efafe7ea0308390e2bb6de3e5f'then raise exception 'selection_release_new_planner_mismatch';end if;
- if exists(select 1 from protected_selection_release b full join(select 'app.fixtures' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fixtures t
-union all select 'app.rounds' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.rounds t
-union all select 'app.seasons' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.seasons t
-union all select 'app.fantasy_gameweeks' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_gameweeks t
-union all select 'app.fantasy_fixture_assignments' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_fixture_assignments t
-union all select 'app.fantasy_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_players t
-union all select 'app.fantasy_teams' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_teams t
-union all select 'app.fantasy_squad_memberships' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_squad_memberships t
-union all select 'app.fantasy_lineups' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_lineups t
-union all select 'app.fantasy_lineup_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_lineup_players t
-union all select 'app.fantasy_transfer_batches' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_transfer_batches t
-union all select 'app.fantasy_transfers' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_transfers t
-union all select 'app.fantasy_player_point_events' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_point_events t
-union all select 'app.fantasy_player_gameweek_points' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_gameweek_points t
-union all select 'app.fantasy_team_gameweek_results' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_team_gameweek_results t
-union all select 'app_private.fantasy_scoring_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_scoring_snapshots t
-union all select 'app_private.fantasy_rating_publications' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_publications t
-union all select 'app_private.fantasy_published_rating_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_published_rating_players t
-union all select 'app_private.fantasy_rating_recovery_plans' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_recovery_plans t
-union all select 'app_private.fantasy_api_rating_sources' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_sources t
-union all select 'app_private.fantasy_api_rating_polls' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_polls t
-union all select 'app_private.fantasy_not_rated_settlements' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_not_rated_settlements t
-union all select 'app_private.fantasy_rating_checks' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_checks t
-union all select 'app_private.fantasy_legacy_identity_repairs' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_legacy_identity_repairs t
-union all select 'app_private.football_provider_mappings' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.football_provider_mappings t
-union all select 'app_private.sofascore_player_aliases' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.sofascore_player_aliases t
-union all select 'app_private.notification_events' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.notification_events t
-union all select 'app.notifications' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.notifications t
-union all select 'app.notification_deliveries' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.notification_deliveries t
-union all select 'app_private.fantasy_free_transfer_rollovers' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_free_transfer_rollovers t
-union all select 'app_private.fantasy_gameweek_progressions' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_gameweek_progressions t
-union all select 'app_private.fantasy_gameweek_postwork' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_gameweek_postwork t
-union all select 'app_private.fantasy_gameweek_close' name,count(*)n,md5(coalesce(string_agg(((to_jsonb(t)-'close_kind'))::text,E'\n' order by ((to_jsonb(t)-'close_kind'))::text),''))digest from app_private.fantasy_gameweek_close t
-union all select 'app.fantasy_free_hit_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_free_hit_snapshots t
-union all select 'app.fantasy_free_hit_snapshot_players' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_free_hit_snapshot_players t
-union all select 'app_private.fantasy_free_hit_lineup_snapshots' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_free_hit_lineup_snapshots t
-union all select 'app.fantasy_player_price_history' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_player_price_history t
-union all select 'app.fantasy_prize_winners' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app.fantasy_prize_winners t
-union all select 'app_private.fantasy_api_rating_seasons' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_api_rating_seasons t
-union all select 'app_private.fantasy_not_rated_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_not_rated_policy t
-union all select 'app_private.fantasy_staged_stats_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_staged_stats_policy t
-union all select 'app_private.fantasy_rating_policy' name,count(*)n,md5(coalesce(string_agg((to_jsonb(t))::text,E'\n' order by (to_jsonb(t))::text),''))digest from app_private.fantasy_rating_policy t
+ if exists(select 1 from protected_selection_release b full join(select 'app.fixtures' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fixtures t
+union all select 'app.rounds' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.rounds t
+union all select 'app.seasons' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.seasons t
+union all select 'app.fantasy_gameweeks' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_gameweeks t
+union all select 'app.fantasy_fixture_assignments' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_fixture_assignments t
+union all select 'app.fantasy_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_players t
+union all select 'app.fantasy_teams' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_teams t
+union all select 'app.fantasy_squad_memberships' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_squad_memberships t
+union all select 'app.fantasy_lineups' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_lineups t
+union all select 'app.fantasy_lineup_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by lineup_id,fantasy_player_id),''))digest from app.fantasy_lineup_players t
+union all select 'app.fantasy_transfer_batches' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_transfer_batches t
+union all select 'app.fantasy_transfers' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_transfers t
+union all select 'app.fantasy_player_point_events' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_player_point_events t
+union all select 'app.fantasy_player_gameweek_points' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,fantasy_player_id),''))digest from app.fantasy_player_gameweek_points t
+union all select 'app.fantasy_team_gameweek_results' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_team_gameweek_results t
+union all select 'app_private.fantasy_scoring_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,calculation_version),''))digest from app_private.fantasy_scoring_snapshots t
+union all select 'app_private.fantasy_rating_publications' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_publications t
+union all select 'app_private.fantasy_published_rating_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by publication_id,fantasy_player_id),''))digest from app_private.fantasy_published_rating_players t
+union all select 'app_private.fantasy_rating_recovery_plans' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_recovery_plans t
+union all select 'app_private.fantasy_api_rating_sources' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_api_rating_sources t
+union all select 'app_private.fantasy_api_rating_polls' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by fixture_id),''))digest from app_private.fantasy_api_rating_polls t
+union all select 'app_private.fantasy_not_rated_settlements' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by source_id,api_player_id),''))digest from app_private.fantasy_not_rated_settlements t
+union all select 'app_private.fantasy_rating_checks' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_rating_checks t
+union all select 'app_private.fantasy_legacy_identity_repairs' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by fantasy_player_id),''))digest from app_private.fantasy_legacy_identity_repairs t
+union all select 'app_private.football_provider_mappings' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.football_provider_mappings t
+union all select 'app_private.sofascore_player_aliases' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.sofascore_player_aliases t
+union all select 'app_private.notification_events' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.notification_events t
+union all select 'app.notifications' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.notifications t
+union all select 'app.notification_deliveries' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.notification_deliveries t
+union all select 'app_private.fantasy_free_transfer_rollovers' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,fantasy_team_id),''))digest from app_private.fantasy_free_transfer_rollovers t
+union all select 'app_private.fantasy_gameweek_progressions' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by previous_gameweek_id),''))digest from app_private.fantasy_gameweek_progressions t
+union all select 'app_private.fantasy_gameweek_postwork' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by gameweek_id,calculation_version),''))digest from app_private.fantasy_gameweek_postwork t
+union all select 'app_private.fantasy_gameweek_close' name,count(*)n,md5(coalesce(string_agg(md5((to_jsonb(t)-'close_kind')::text),'' order by gameweek_id),''))digest from app_private.fantasy_gameweek_close t
+union all select 'app.fantasy_free_hit_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_free_hit_snapshots t
+union all select 'app.fantasy_free_hit_snapshot_players' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by snapshot_id,fantasy_player_id),''))digest from app.fantasy_free_hit_snapshot_players t
+union all select 'app_private.fantasy_free_hit_lineup_snapshots' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by snapshot_id),''))digest from app_private.fantasy_free_hit_lineup_snapshots t
+union all select 'app.fantasy_player_price_history' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_player_price_history t
+union all select 'app.fantasy_prize_winners' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app.fantasy_prize_winners t
+union all select 'app_private.fantasy_api_rating_seasons' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_api_rating_seasons t
+union all select 'app_private.fantasy_not_rated_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by id),''))digest from app_private.fantasy_not_rated_policy t
+union all select 'app_private.fantasy_staged_stats_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_staged_stats_policy t
+union all select 'app_private.fantasy_rating_policy' name,count(*)n,md5(coalesce(string_agg(md5(t::text),'' order by season_id),''))digest from app_private.fantasy_rating_policy t
 union all select 'scoring_and_economic_guards',count(*),md5(string_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),p.prosrc,p.prosecdef,p.proconfig,p.proacl)::text,E'\n'order by p.oid))from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in('api','app_private')and p.proname in('service_begin_fantasy_close','service_begin_fantasy_finalization','service_complete_fantasy_gameweek','service_persist_fantasy_scoring_results','fantasy_validate_scoring_document','fantasy_api_rating_document','fantasy_actual_ratings_pending','fantasy_email_payload','service_prepare_next_fantasy_gameweek','service_run_fantasy_close_price_batch','service_restore_free_hit','service_roll_fantasy_free_transfers','service_apply_fantasy_price_changes','service_adopt_fantasy_close_prices'))a using(name)where a.n is distinct from b.n or a.digest is distinct from b.digest)then raise exception 'selection_release_protected_data_changed';end if;
  if exists(select 1 from app_private.fantasy_gameweek_close where close_kind<>'scoring_complete')
  or has_function_privilege('anon','api.service_begin_fantasy_selection_close(uuid,bigint)','execute')
