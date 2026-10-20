@@ -37,7 +37,9 @@ const untouched = [
     ([name, table, order]) =>
       // Keep every row and column in the comparison without materializing the
       // million-row staging fixture as one enormous JSON value in memory.
-      `select '${name}' name,md5(coalesce(string_agg(md5(to_jsonb(t)::text),''order by ${order}),''))digest from ${table} t`,
+      // PostgreSQL's composite text output includes every field with escaping;
+      // avoiding JSONB conversion makes this practical on the retained dataset.
+      `select '${name}' name,md5(coalesce(string_agg(md5(t::text),''order by ${order}),''))digest from ${table} t`,
   )
   .join("\nunion all ");
 const paused = `if exists(select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled or lifecycle_worker_enabled)
