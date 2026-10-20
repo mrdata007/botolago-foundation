@@ -183,8 +183,6 @@ function SecurityPage() {
         />
       }
     >
-      <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("auth.mfa.subtitle")}</p>
-
       {IS_MOCK_AUTH ? (
         <UiCard padding="lg" className={cn("mt-5", ui.text.body, ui.tone.muted)}>
           {t("auth.mfa.demo_unavailable")}

@@ -114,45 +114,40 @@ export function renderTeamReminderEmail(input: TeamReminderEmailInput): {
   const zoneLabel = `${zone === MOROCCO_TIME_ZONE ? t("Heure du Maroc", "توقيت المغرب") : zone} · ${offset}`;
   const copy = opening
     ? {
-        subject: t(`${gw} : à toi de jouer, coach !`, `${gw}: حان دورك يا مدرب!`),
+        subject: t(`${gw} : préparez votre équipe`, `${gw}: جهّز فريقك`),
         preheader: t(
-          "La sélection est ouverte. Prépare ton équipe avant la date limite.",
-          "اختيار التشكيلة متاح. جهّز فريقك قبل الموعد النهائي.",
+          "Vous pouvez modifier votre équipe jusqu’à la date limite indiquée.",
+          "يمكنك تعديل فريقك حتى الموعد النهائي الموضّح أدناه.",
         ),
-        eyebrow: t("UNE NOUVELLE JOURNÉE T’ATTEND", "جولة جديدة تنتظرك"),
-        title: t("À toi de jouer, coach !", "حان دورك يا مدرب!"),
+        eyebrow: t("NOUVELLE JOURNÉE", "جولة جديدة"),
+        title: t("À vous de jouer !", "حان دورك!"),
         body: t(
-          "La sélection est ouverte ! Choisis ton onze, prépare ton banc et confie le brassard à ton capitaine. Ton prochain défi BotolaGO commence ici.",
-          "اختيار التشكيلة متاح! اختر لاعبيك الأساسيين، ورتّب دكة البدلاء، وحدّد قائد فريقك. تحدّيك القادم على BotolaGO يبدأ من هنا.",
+          "Choisissez vos 11 titulaires, classez vos remplaçants et désignez votre capitaine avant la date limite.",
+          "اختر لاعبيك الأساسيين، ورتّب البدلاء، وحدّد قائدك قبل الموعد النهائي.",
         ),
-        cta: t("Choisir mon équipe", "اختر تشكيلتي"),
-        closer: t("Une nouvelle journée. Tes choix. Ton équipe.", "جولة جديدة. اختياراتك. فريقك."),
+        cta: t("Choisir mon équipe", "اختيار تشكيلتي"),
+        closer: t("Bonne journée de Fantasy !", "بالتوفيق في الجولة!"),
       }
     : {
         subject: t(
-          `${gw} : dernier appel pour ton équipe !`,
-          `${gw}: لا تنسَ تشكيلتك قبل الإغلاق!`,
+          `${gw} : vérifiez votre équipe avant la date limite`,
+          `${gw}: راجع فريقك قبل الموعد النهائي`,
         ),
         preheader: t(
-          "La date limite approche. Vérifie ton onze et ton capitaine avant le verrouillage.",
-          "الموعد النهائي يقترب. راجع تشكيلتك وقائدك قبل إغلاق الاختيارات.",
+          "Vérifiez vos titulaires, vos remplaçants et votre capitaine.",
+          "راجع لاعبيك الأساسيين وترتيب البدلاء وقائدك.",
         ),
-        eyebrow: t("AVANT LE VERROUILLAGE", "قبل إغلاق الاختيارات"),
-        title: t("Ton équipe est prête ?", "هل تشكيلتك جاهزة؟"),
+        eyebrow: t("AVANT LA DATE LIMITE", "قبل الموعد النهائي"),
+        title: t("Votre équipe est prête ?", "هل فريقك جاهز؟"),
         body: t(
-          "Dernière vérification, coach ! Passe ton onze en revue, ajuste l’ordre de tes remplaçants et confirme ton capitaine. Après la date limite, les changements pour cette journée seront verrouillés.",
-          "مراجعة أخيرة يا مدرب! راجع لاعبيك الأساسيين، واضبط ترتيب البدلاء، وتأكّد من اختيار قائدك. بعد الموعد النهائي، تُغلق التغييرات الخاصة بهذه الجولة.",
+          "Vous pouvez encore modifier votre équipe. Après la date limite ci-dessous, les changements pour cette journée ne seront plus possibles.",
+          "ما زال بإمكانك تعديل فريقك. بعد الموعد النهائي أدناه، لن تتمكن من تغييره لهذه الجولة.",
         ),
-        cta: t("Vérifier mon équipe", "راجع تشكيلتي"),
-        closer: t(
-          "Le prochain coup d’envoi se prépare maintenant.",
-          "الاستعداد لصافرة البداية يبدأ الآن.",
-        ),
+        cta: t("Vérifier mon équipe", "مراجعة تشكيلتي"),
+        closer: t("Bonne journée de Fantasy !", "بالتوفيق في الجولة!"),
       };
   const name = clean(input.managerName ?? "");
-  const greeting = name
-    ? t(`Salut ${name},`, `مرحباً ${name}،`)
-    : t("Salut coach,", "مرحباً يا مدرب،");
+  const greeting = name ? t(`Bonjour ${name},`, `مرحبًا ${name}،`) : t("Bonjour,", "مرحبًا،");
   const deadlineLabel = t("DATE LIMITE DE SÉLECTION", "الموعد النهائي لاختيار التشكيلة");
   const cta = `${app.origin}/fantasy/team`;
   const prefs = `${app.origin}/profile`;
@@ -164,7 +159,7 @@ export function renderTeamReminderEmail(input: TeamReminderEmailInput): {
     ? "'Segoe UI',Tahoma,Arial,sans-serif"
     : "-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif";
   const footer = t(
-    "Tu reçois cet e-mail car tes rappels Fantasy et tes e-mails sont activés sur BotolaGO.",
+    "Vous recevez cet e-mail car vos rappels Fantasy et vos e-mails sont activés sur BotolaGO.",
     "تصلك هذه الرسالة لأن تذكيرات الفانتازي والبريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
   );
   const html = `<!doctype html>

@@ -91,7 +91,7 @@ function ClubsPage() {
           ))}
         </ul>
       ) : directoryQ.isError ? (
-        <ErrorState onRetry={() => void directoryQ.refetch()} />
+        <ErrorState message={t("clubs.load_failed")} onRetry={() => void directoryQ.refetch()} />
       ) : clubs.length === 0 ? (
         <EmptyState>{t("clubs.empty")}</EmptyState>
       ) : (

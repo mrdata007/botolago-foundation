@@ -19,6 +19,7 @@ import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuil
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiAlert, UiButton, UiCard, UiHeader, UiInput } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
@@ -444,7 +445,7 @@ function CreateTeamBody() {
       <>
         <UiHeader
           kicker={t("fantasy.title")}
-          title={t("fpl.squad_selection")}
+          title={t("fantasy.create.name_step")}
           onBack={() => setStep("squad")}
         />
         {/* The squad and the budget it leaves, on the same navy strip as the
@@ -456,7 +457,10 @@ function CreateTeamBody() {
               value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
               text: true,
             },
-            { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
+            {
+              label: t("fpl.left_in_bank"),
+              value: <FantasyAmount value={summary.bankRemaining} />,
+            },
           ]}
         />
         {enrolmentNotice ? (
@@ -584,7 +588,7 @@ function CreateTeamBody() {
             value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
             text: true,
           },
-          { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
+          { label: t("fpl.left_in_bank"), value: <FantasyAmount value={summary.bankRemaining} /> },
         ]}
         showBench
         slots={slots}
@@ -614,7 +618,11 @@ function CreateTeamBody() {
             // BG-0071: a dash, not 0.0, while no gameweek has scored.
             render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
           },
-          { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
+          {
+            key: "price",
+            label: t("fpl.current_price"),
+            render: (p) => <FantasyAmount value={p.price} />,
+          },
           {
             key: "sel",
             label: t("fantasy.picker.sort.ownership"),

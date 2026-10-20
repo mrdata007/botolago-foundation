@@ -26,6 +26,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { chipDisplayState, type ChipKey } from "@/lib/fantasy-engine";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
@@ -70,10 +71,6 @@ function TeamProfileBody() {
   const owned = useFantasyOwned();
   const { key } = useFantasyDataSource();
   const [tab, setTab] = useState<"season" | "manager">("season");
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
   const intNf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
   const summaryQ = useQuery({
@@ -176,11 +173,19 @@ function TeamProfileBody() {
                       once the DTO carries it -- not before. */}
                   <UiKeyValueRow
                     label={t("fpl.bank")}
-                    value={<Figure>{nf.format(team.bank)}</Figure>}
+                    value={
+                      <Figure>
+                        <FantasyAmount value={team.bank} />
+                      </Figure>
+                    }
                   />
                   <UiKeyValueRow
                     label={t("fpl.team_value")}
-                    value={<Figure>{nf.format(summary?.teamValue ?? 0)}</Figure>}
+                    value={
+                      <Figure>
+                        <FantasyAmount value={summary?.teamValue ?? 0} />
+                      </Figure>
+                    }
                   />
                   {CHIPS.map((chip) => {
                     const name = t(`fantasy.chip.${chip}` as never);

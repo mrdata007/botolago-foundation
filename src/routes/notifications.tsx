@@ -85,9 +85,6 @@ function SignInPrompt() {
       <h2 className={cn("mt-3", ui.display.section, ui.tone.default)}>
         {t("notifications.signin_title")}
       </h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
-        {t("notifications.signin_body")}
-      </p>
       <div className="mt-5 grid gap-2.5">
         <UiLinkButton to="/auth/register" search={returnSearch}>
           <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}

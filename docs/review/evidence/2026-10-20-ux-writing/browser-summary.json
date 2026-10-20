@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "startTime": "2026-10-20T09:07:10.975Z",
+    "duration": 98080.62800000001,
+    "expected": 50,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0,
+    "renderedScenarios": 40,
+    "routeFamilies": 10,
+    "escapedControls": 0,
+    "clippedControls": 0,
+    "redirects": []
+  },
+  "responsive": {
+    "startTime": "2026-10-20T09:16:22.828Z",
+    "duration": 399538.53,
+    "expected": 190,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0,
+    "renderedScenarios": 180,
+    "routeFamilies": 45,
+    "escapedControls": 0,
+    "clippedControls": 0,
+    "redirects": [
+      ["/fantasy/create", "/fantasy/team"],
+      ["/pronostics/ligues", "/pronostics"]
+    ]
+  },
+  "narrow-dark": {
+    "startTime": "2026-10-20T09:24:28.348Z",
+    "duration": 126295.05900000001,
+    "expected": 46,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0,
+    "renderedScenarios": 36,
+    "routeFamilies": 9,
+    "escapedControls": 0,
+    "clippedControls": 0,
+    "redirects": []
+  }
+}

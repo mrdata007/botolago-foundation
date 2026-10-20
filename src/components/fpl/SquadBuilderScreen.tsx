@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiBanner, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
 import { ExitSwap } from "@/lib/motion-exit";
@@ -134,11 +135,7 @@ export function SquadBuilderScreen({
   showBench?: boolean;
   children?: ReactNode;
 }) {
-  const { t, tr, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  const { t, tr } = useI18n();
   const clubOf = (id: string) => findClub(clubs, id);
   const replaceMode = !!incoming;
   const positionLabel = (value: Position) =>
@@ -161,7 +158,7 @@ export function SquadBuilderScreen({
           <FplPlayerCard
             player={s.player}
             club={clubOf(s.player.clubId)}
-            sub={s.sub ?? nf.format(s.player.price)}
+            sub={s.sub ?? <FantasyAmount value={s.player.price} />}
             captain={s.isCaptain}
             vice={s.isViceCaptain}
             highlighted={s.highlighted}
@@ -318,7 +315,7 @@ export function SquadBuilderScreen({
                 <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
                   {incomingClub ? tr(incomingClub.shortName) : ""} ·{" "}
                   {positionLabel(incoming.position)} ·{" "}
-                  <span className={ui.text.tabular}>{nf.format(incoming.price)}</span>
+                  <FantasyAmount value={incoming.price} className={ui.text.tabular} />
                 </span>
               </span>
               {onCancelIncoming ? (

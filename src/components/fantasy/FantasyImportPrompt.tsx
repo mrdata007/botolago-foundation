@@ -245,7 +245,7 @@ export function FantasyImportPrompt() {
         )}
         {phase === "error" && missingIds && missingIds.length > 0 && (
           <span className={cn("whitespace-normal break-words", ui.tone.negative)}>
-            {t("fantasy.import.mapping_gaps").replace("{ids}", missingIds.join(", "))}
+            {t("fantasy.import.players_unavailable")}
           </span>
         )}
       </div>

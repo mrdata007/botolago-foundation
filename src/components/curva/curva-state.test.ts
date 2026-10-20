@@ -331,7 +331,7 @@ describe("an earlier season's token", () => {
       token,
       cardStrings((key) => dictionaries.fr[key], "fr"),
     );
-    expect(label).not.toContain("Statistiques remplies");
+    expect(label).not.toContain("Statistiques disponibles");
     expect(label).toContain("5 journées comptées sur 3");
     // The manager's own card and a league member's carry the server's stats.
     expect(fromMyCard(FIXTURES.insufficient3.card!).statsKnown).toBe(true);

@@ -47,7 +47,11 @@ test("the Fantasy rules answer is useful before hydration", async ({ request }) 
   const html = await response.text();
   const visible = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
 
-  expect(visible).toContain("BotolaGO Fantasy se joue avec 15 joueurs");
-  expect(visible).toContain("Chaque transfert supplémentaire coûte 4 points.");
+  expect(visible).toContain(
+    "Choisissez 15 joueurs de Botola Pro avec un budget de jeu de 100 millions.",
+  );
+  expect(visible).toContain(
+    "Chaque transfert supplémentaire déduit 4 points du total de la journée.",
+  );
   expect(visible).toContain('rel="canonical" href="https://botolago.com/fantasy/rules"');
 });

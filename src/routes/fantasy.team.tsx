@@ -29,6 +29,7 @@ import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { ui, UiButton, UiHeader, UiSegmented } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
@@ -494,7 +495,7 @@ function PickTeamBody() {
         key={s.playerId}
         player={p}
         club={clubOf(p.clubId)}
-        sub={fixtures.labels.get(p.clubId) ?? nf.format(p.price)}
+        sub={fixtures.labels.get(p.clubId) ?? <FantasyAmount value={p.price} />}
         captain={!!s.isCaptain}
         vice={!!s.isViceCaptain}
         highlighted={selectedId === s.playerId}
@@ -689,7 +690,11 @@ function PickTeamBody() {
               // BG-0071: a dash, not 0.0, while no gameweek has scored.
               render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
             },
-            { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
+            {
+              key: "price",
+              label: t("fpl.current_price"),
+              render: (p) => <FantasyAmount value={p.price} />,
+            },
             { key: "sel", label: t("fpl.selected"), render: (p) => `${nf.format(p.ownership)}%` },
           ]}
         />

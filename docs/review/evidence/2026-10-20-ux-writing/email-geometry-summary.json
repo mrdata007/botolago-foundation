@@ -1,0 +1,818 @@
+[
+  {
+    "phase": "before",
+    "kind": "selection-open",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "À toi de jouer, coach !",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "Choisir mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 653.59375,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 709.59375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/before-selection-open-fr-390.png"
+  },
+  {
+    "phase": "before",
+    "kind": "selection-open",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "À toi de jouer, coach !",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "Choisir mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 632.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 688.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "selection-open",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "حان دورك يا مدرب!",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "اختر تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 639.40625,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 695.40625
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "selection-open",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "حان دورك يا مدرب!",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "اختر تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 645.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 701.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/before-selection-open-ar-1280.png"
+  },
+  {
+    "phase": "before",
+    "kind": "deadline-reminder",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "Ton équipe est prête ?",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "Vérifier mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 680.78125,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 736.78125
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "deadline-reminder",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "Ton équipe est prête ?",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "Vérifier mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 659.90625,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 715.90625
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/before-deadline-reminder-fr-1280.png"
+  },
+  {
+    "phase": "before",
+    "kind": "deadline-reminder",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "هل تشكيلتك جاهزة؟",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "راجع تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 639.40625,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 695.40625
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "deadline-reminder",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "هل تشكيلتك جاهزة؟",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "راجع تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 645.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 701.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "points-ready",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "C’est prêt, coach !",
+      "x": 28,
+      "y": 159.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 194.1875
+    },
+    "ctas": [
+      {
+        "text": "Découvrir mes points",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 28,
+        "y": 727.3125,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 783.3125
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "points-ready",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "C’est prêt, coach !",
+      "x": 368,
+      "y": 185.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 227.6875
+    },
+    "ctas": [
+      {
+        "text": "Découvrir mes points",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 368,
+        "y": 706.4375,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 762.4375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": null
+  },
+  {
+    "phase": "before",
+    "kind": "points-ready",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "نقاطك جاهزة يا مدرب!",
+      "x": 28,
+      "y": 159.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 194.1875
+    },
+    "ctas": [
+      {
+        "text": "اكتشف نقاطي",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 28,
+        "y": 697.9375,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 753.9375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": "/tmp/botolago-email-evidence/before-points-ready-ar-390.png"
+  },
+  {
+    "phase": "before",
+    "kind": "points-ready",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "نقاطك جاهزة يا مدرب!",
+      "x": 368,
+      "y": 185.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 227.6875
+    },
+    "ctas": [
+      {
+        "text": "اكتشف نقاطي",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 368,
+        "y": 731.4375,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 787.4375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": null
+  },
+  {
+    "phase": "after",
+    "kind": "selection-open",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "À vous de jouer !",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "Choisir mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 626.40625,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 682.40625
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-selection-open-fr-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "selection-open",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "À vous de jouer !",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "Choisir mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 632.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 688.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-selection-open-fr-1280.png"
+  },
+  {
+    "phase": "after",
+    "kind": "selection-open",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "حان دورك!",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "اختيار تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 612.21875,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 668.21875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-selection-open-ar-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "selection-open",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "حان دورك!",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "اختيار تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 618.53125,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 674.53125
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-selection-open-ar-1280.png"
+  },
+  {
+    "phase": "after",
+    "kind": "deadline-reminder",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "Votre équipe est prête ?",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "Vérifier mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 653.59375,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 709.59375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-deadline-reminder-fr-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "deadline-reminder",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "Votre équipe est prête ?",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "Vérifier mon équipe",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 632.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 688.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-deadline-reminder-fr-1280.png"
+  },
+  {
+    "phase": "after",
+    "kind": "deadline-reminder",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "هل فريقك جاهز؟",
+      "x": 28,
+      "y": 158.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 193.1875
+    },
+    "ctas": [
+      {
+        "text": "مراجعة تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 28,
+        "y": 612.21875,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 668.21875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-deadline-reminder-ar-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "deadline-reminder",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "هل فريقك جاهز؟",
+      "x": 368,
+      "y": 184.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 226.6875
+    },
+    "ctas": [
+      {
+        "text": "مراجعة تشكيلتي",
+        "href": "https://botolago.com/fantasy/team",
+        "x": 368,
+        "y": 645.71875,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 701.71875
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["18:00"],
+    "screenshot": "/tmp/botolago-email-evidence/after-deadline-reminder-ar-1280.png"
+  },
+  {
+    "phase": "after",
+    "kind": "points-ready",
+    "language": "fr",
+    "width": 390,
+    "direction": "ltr",
+    "heading": {
+      "text": "Vos points sont prêts !",
+      "x": 28,
+      "y": 159.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 194.1875
+    },
+    "ctas": [
+      {
+        "text": "Voir mes points",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 28,
+        "y": 700.125,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 756.125
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": "/tmp/botolago-email-evidence/after-points-ready-fr-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "points-ready",
+    "language": "fr",
+    "width": 1280,
+    "direction": "ltr",
+    "heading": {
+      "text": "Vos points sont prêts !",
+      "x": 368,
+      "y": 185.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 227.6875
+    },
+    "ctas": [
+      {
+        "text": "Voir mes points",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 368,
+        "y": 706.4375,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 762.4375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": "/tmp/botolago-email-evidence/after-points-ready-fr-1280.png"
+  },
+  {
+    "phase": "after",
+    "kind": "points-ready",
+    "language": "ar",
+    "width": 390,
+    "direction": "rtl",
+    "heading": {
+      "text": "نقاطك جاهزة!",
+      "x": 28,
+      "y": 159.1875,
+      "width": 334,
+      "height": 35,
+      "right": 362,
+      "bottom": 194.1875
+    },
+    "ctas": [
+      {
+        "text": "عرض نقاطي",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 28,
+        "y": 697.9375,
+        "width": 334,
+        "height": 56,
+        "right": 362,
+        "bottom": 753.9375
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": "/tmp/botolago-email-evidence/after-points-ready-ar-390.png"
+  },
+  {
+    "phase": "after",
+    "kind": "points-ready",
+    "language": "ar",
+    "width": 1280,
+    "direction": "rtl",
+    "heading": {
+      "text": "نقاطك جاهزة!",
+      "x": 368,
+      "y": 185.1875,
+      "width": 544,
+      "height": 42.5,
+      "right": 912,
+      "bottom": 227.6875
+    },
+    "ctas": [
+      {
+        "text": "عرض نقاطي",
+        "href": "https://botolago.com/fantasy/points",
+        "x": 368,
+        "y": 704.25,
+        "width": 544,
+        "height": 56,
+        "right": 912,
+        "bottom": 760.25
+      }
+    ],
+    "escaped": 0,
+    "clipped": 0,
+    "loadedImages": true,
+    "pageErrors": 0,
+    "isolatedNumbers": ["76", "284", "#128"],
+    "screenshot": "/tmp/botolago-email-evidence/after-points-ready-ar-1280.png"
+  }
+]

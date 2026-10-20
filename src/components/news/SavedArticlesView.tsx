@@ -138,7 +138,6 @@ function SavedArticlesBody({
     return (
       <UiEmptyState
         title={t("news.saved.signin_title")}
-        body={t("news.saved.signin_body")}
         action={
           <div className="mt-4 grid gap-2.5">
             <UiLinkButton to="/auth/login" search={{ next: "/profile/saved" }}>

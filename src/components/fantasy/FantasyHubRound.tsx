@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { clubLabel, findClub } from "@/components/fantasy/club-identity";
 import { ui, UiCard, UiDifficultyCell, UiLivePill, UiSkeleton } from "@/components/ui-kit";
+import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
 import { hubRound } from "@/lib/hub-round";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -47,10 +49,6 @@ export function FantasyHubRound({
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const nf = new Intl.NumberFormat(locale);
-  const money = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
   const none = t("fantasy.stat.none");
   const round = hubRound(team, players, fixtures, gameweek.number);
   const playerById = new Map(players.map((player) => [player.id, player] as const));
@@ -79,11 +77,11 @@ export function FantasyHubRound({
   const roundPoints =
     summary && summary.pointsGameweek === gameweek.number ? summary.gameweekPoints : null;
 
-  const tile = (label: string, value: string) => (
+  const tile = (label: string, value: ReactNode) => (
     <div className={cn("flex flex-col items-center px-1 py-3 text-center", ui.surface.card)}>
       <dt className={cn(ui.text.label, ui.tone.muted)}>{label}</dt>
       <dd className={cn("mt-0.5", ui.stat.lg, ui.text.tabular, ui.tone.default)}>
-        <bdi>{value}</bdi>
+        {typeof value === "string" ? <bdi>{value}</bdi> : value}
       </dd>
     </div>
   );
@@ -99,8 +97,14 @@ export function FantasyHubRound({
           </>
         ) : (
           <>
-            {tile(t("fantasy.hub.stat_value"), summary ? money.format(summary.teamValue) : none)}
-            {tile(t("fantasy.hub.stat_bank"), money.format(summary?.bankValue ?? team.bank))}
+            {tile(
+              t("fantasy.hub.stat_value"),
+              summary ? <FantasyAmount value={summary.teamValue} /> : none,
+            )}
+            {tile(
+              t("fantasy.hub.stat_bank"),
+              <FantasyAmount value={summary?.bankValue ?? team.bank} />,
+            )}
             {tile(
               t("fantasy.hub.stat_rank"),
               summary?.overallRank != null ? nf.format(summary.overallRank) : none,

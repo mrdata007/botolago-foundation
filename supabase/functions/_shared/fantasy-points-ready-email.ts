@@ -91,71 +91,64 @@ export function renderPointsReadyEmail(input: PointsReadyEmailInput): {
   const t = (fr: string, arabic: string) => (ar ? arabic : fr);
   const gw = t(`Journée ${number(input.gameweek)}`, `الجولة ${number(input.gameweek)}`);
   const points = number(input.points);
-  const pointsLabel = t("POINTS", "نقطة");
+  const pointUnit = Math.abs(input.points) === 1 ? "point" : "points";
+  const pointsLabel = t(pointUnit.toUpperCase(), "النقاط");
   const idx = POINTS_READY_VARIANTS.indexOf(input.variant);
   const copy = [
     {
       subject: t(
-        `${gw} : tes ${points} points sont prêts !`,
-        `${gw}: نقاطك جاهزة — ${points} نقطة!`,
+        `${gw} : votre score est prêt (${points} ${pointUnit})`,
+        `${gw}: نقاطك جاهزة (${points})`,
       ),
       preheader: t(
-        "Le moment de découvrir le score de ton équipe est arrivé. À toi de jouer, coach !",
-        "حان وقت اكتشاف رصيد فريقك. افتح الملخص يا مدرب!",
+        "Consultez les points de vos joueurs et le classement de votre équipe.",
+        "اطّلع على نقاط لاعبيك وترتيب فريقك.",
       ),
       eyebrow: t("LE SCORE EST LÀ", "النقاط جاهزة"),
-      title: t("C’est prêt, coach !", "نقاطك جاهزة يا مدرب!"),
+      title: t("Vos points sont prêts !", "نقاطك جاهزة!"),
       body: t(
-        "Ta journée Fantasy a livré son verdict. Découvre tes points et les notes de chaque joueur, puis retrouve ton équipe au classement.",
-        "اكتملت نقاط جولتك في الفانتازي. اكتشف رصيدك وتقييم كل لاعب، ثم اطّلع على ترتيب فريقك.",
+        "Les points de cette journée sont publiés. Découvrez le détail par joueur et retrouvez votre équipe au classement.",
+        "نُشرت نقاط هذه الجولة. اطّلع على تفاصيل نقاط كل لاعب وترتيب فريقك.",
       ),
-      cta: t("Découvrir mes points", "اكتشف نقاطي"),
-      closer: t("La Botola se vit. La Fantasy aussi.", "عِش أجواء البطولة… والفانتازي أيضاً."),
+      cta: t("Voir mes points", "عرض نقاطي"),
+      closer: t("Rendez-vous à la prochaine journée !", "نلتقي في الجولة المقبلة!"),
+    },
+    {
+      subject: t(`Votre bilan de la ${gw.toLowerCase()} est prêt`, `ملخص ${gw} جاهز!`),
+      preheader: t(
+        `${points} ${pointUnit} : retrouvez le détail de votre journée.`,
+        `نقاط الجولة: ${points}. اطّلع على التفاصيل.`,
+      ),
+      eyebrow: t("BILAN DE LA JOURNÉE", "ملخص الجولة"),
+      title: t("Votre journée en détail", "تفاصيل جولتك"),
+      body: t(
+        "Consultez les points de chaque joueur pour faire le bilan et préparer vos prochains choix.",
+        "راجع نقاط كل لاعب لتقييم جولتك والاستعداد لاختياراتك المقبلة.",
+      ),
+      cta: t("Voir le détail de mes points", "عرض تفاصيل نقاطي"),
+      closer: t("Rendez-vous à la prochaine journée !", "نلتقي في الجولة المقبلة!"),
     },
     {
       subject: t(
-        `Coach, ton débrief de la ${gw.toLowerCase()} est prêt`,
-        `يا مدرب، ملخص ${gw} جاهز!`,
+        `Coup de sifflet final : ${points} ${pointUnit} pour la ${gw.toLowerCase()} !`,
+        `صافرة النهاية! نقاطك في ${gw}: ${points}`,
       ),
       preheader: t(
-        `${points} points : ton équipe, tes notes, ton classement. Tout est dans le débrief.`,
-        `${points} نقطة: فريقك وتقييمات لاعبيك وترتيبك، في ملخص واحد.`,
-      ),
-      eyebrow: t("LE DÉBRIEF DU COACH", "ملخص المدرب"),
-      title: t("À toi le débrief !", "ملخص الجولة بين يديك!"),
-      body: t(
-        "Les points sont prêts. Passe ton effectif en revue, regarde la contribution de chacun et prépare la suite de ta saison.",
-        "نقاطك جاهزة. راجع أداء تشكيلتك، واكتشف مساهمة كل لاعب، واستعد لما تبقى من الموسم.",
-      ),
-      cta: t("Ouvrir mon débrief", "افتح ملخصي"),
-      closer: t(
-        "Chaque choix compte. Chaque journée aussi.",
-        "كل اختيار يصنع الفارق. وكل جولة فرصة جديدة.",
-      ),
-    },
-    {
-      subject: t(
-        `Coup de sifflet final : ${points} points pour la ${gw.toLowerCase()} !`,
-        `صافرة النهاية! ${points} نقطة في ${gw}`,
-      ),
-      preheader: t(
-        "Le terrain a parlé. Retrouve maintenant le score de ton équipe sur BotolaGO.",
-        "قال الملعب كلمته. اكتشف الآن رصيد فريقك على BotolaGO.",
+        "Les points de votre équipe sont publiés sur BotolaGO.",
+        "نُشرت نقاط فريقك على BotolaGO.",
       ),
       eyebrow: t("FIN DU MATCH. PLACE AUX POINTS.", "انتهت المباريات. حان وقت النقاط."),
       title: t("Coup de sifflet final !", "صافرة النهاية!"),
       body: t(
-        "La journée est terminée et tes points sont prêts ! Retrouve les notes de tes joueurs et le classement pour prolonger les émotions du week-end.",
-        "انتهت الجولة ونقاطك جاهزة! اكتشف تقييمات لاعبيك والترتيب، واستمتع بأجواء البطولة حتى بعد صافرة النهاية.",
+        "La journée est terminée. Retrouvez les points de vos joueurs et la place de votre équipe au classement.",
+        "انتهت الجولة. اطّلع على نقاط لاعبيك وترتيب فريقك.",
       ),
-      cta: t("Voir le score de mon équipe", "شاهد رصيد فريقي"),
-      closer: t("Le match continue sur BotolaGO.", "الحماس مستمر على BotolaGO."),
+      cta: t("Voir les points de mon équipe", "عرض نقاط فريقي"),
+      closer: t("Rendez-vous à la prochaine journée !", "نلتقي في الجولة المقبلة!"),
     },
   ][idx]!;
   const name = clean(input.managerName ?? "");
-  const greeting = name
-    ? t(`Salut ${name},`, `مرحباً ${name}،`)
-    : t("Salut coach,", "مرحباً يا مدرب،");
+  const greeting = name ? t(`Bonjour ${name},`, `مرحبًا ${name}،`) : t("Bonjour,", "مرحبًا،");
   const facts: [string, string][] = [];
   if (Number.isSafeInteger(input.totalPoints))
     facts.push([t("Total de la saison", "مجموع الموسم"), number(input.totalPoints!)]);
@@ -190,7 +183,7 @@ export function renderPointsReadyEmail(input: PointsReadyEmailInput): {
   const logo = `${app}/email/botolago-wordmark-${idx === 1 ? "color" : "light"}.png`;
   const header = `<tr><td bgcolor="${idx === 1 ? C.surface : C.ink}" style="padding:26px 28px;background-color:${idx === 1 ? C.surface : C.ink};border-bottom:1px solid ${idx === 1 ? C.rule : C.ink};border-radius:16px 16px 0 0;text-align:${start};"><a href="${app}" style="text-decoration:none;"><img src="${logo}" alt="BotolaGO" width="196" height="35" style="display:inline-block;border:0;width:196px;height:35px;max-width:100%;" /></a></td></tr>`;
   const footer = t(
-    "Tu reçois cet e-mail car tes rappels Fantasy et tes e-mails sont activés sur BotolaGO.",
+    "Vous recevez cet e-mail car vos rappels Fantasy et vos e-mails sont activés sur BotolaGO.",
     "تصلك هذه الرسالة لأن تذكيرات الفانتازي والبريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
   );
   const cta = `${app}/fantasy/points`;
@@ -220,7 +213,7 @@ ${table(`<tr><td style="padding:22px 12px;text-align:${start};font-size:12px;lin
     greeting,
     copy.title,
     copy.body,
-    `${gw} : ${points} ${t("points", "نقطة")}`,
+    t(`${gw} : ${points} ${pointUnit}`, `${gw} · مجموع النقاط: ${points}`),
     ...facts.map(([label, value]) => `${label} : ${value}`),
     `${copy.cta} : ${cta}`,
     copy.closer,

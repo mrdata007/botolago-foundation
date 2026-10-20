@@ -262,10 +262,10 @@ describe("G1 for a manager", () => {
     const box = html.match(/<div[^>]*data-testid="curva-rating-line"[\s\S]*?<\/div>/)![0];
     expect(box).toContain('data-waiting="stats"');
     expect(box).toContain("border-[color:var(--ui-rule)]");
-    expect(text(box)).toContain("Statistiques remplies");
+    expect(text(box)).toContain("Statistiques disponibles");
     // CAP and SEL are filled, TRF and CON are not: 2 of the 4.
     expect(tight(box)).toContain("2/4");
-    expect(text(box)).toContain("Statistiques remplies : 2 sur 4");
+    expect(text(box)).toContain("Statistiques disponibles : 2 sur 4");
     expect(text(box)).toContain("Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.");
     expect(text(box)).not.toContain(fr["card.onboarding.m3.label"]);
     expect(text(box)).not.toContain("OVR");
@@ -274,7 +274,7 @@ describe("G1 for a manager", () => {
     expect(text(html)).not.toContain("3 journées comptées sur 3");
     const round = html.match(/data-testid="curva-round"[\s\S]*?<\/section>/)![0];
     expect(tight(round)).toContain("2/4");
-    expect(text(round)).toContain("Statistiques remplies");
+    expect(text(round)).toContain("Statistiques disponibles");
     expect(text(round)).toContain(
       "Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.",
     );

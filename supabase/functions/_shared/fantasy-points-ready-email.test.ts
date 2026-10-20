@@ -30,6 +30,27 @@ describe("points-ready email publication boundary", () => {
     expect(renderPointsReadyEmail({ ...base, points: 0 }).text).toContain("Journée 4 : 0 points");
     expect(renderPointsReadyEmail({ ...base, points: -4 }).text).toContain("Journée 4 : -4 points");
   });
+  test("score copy preserves small, zero and negative totals without forcing a fixed plural", () => {
+    for (const variant of POINTS_READY_VARIANTS)
+      for (const points of [0, 1, -1, 2, 3, 10, -4])
+        for (const language of ["fr", "ar"] as const) {
+          const email = renderPointsReadyEmail({ ...base, variant, points, language });
+          expect(`${email.subject} ${email.preheader}`).toContain(String(points));
+          if (language === "fr") {
+            const unit = Math.abs(points) === 1 ? "point" : "points";
+            expect(email.text).toContain(`${points} ${unit}`);
+            if (Math.abs(points) === 1) expect(email.text).not.toContain(`${points} points`);
+          } else {
+            // Intl adds directional marks before negative Arabic-locale numbers.
+            const text = email.text.replace(/[\u061c\u200e\u200f]/g, "");
+            expect(text).toContain(`مجموع النقاط: ${points}`);
+            // A label before the count avoids a singular noun after every value.
+            expect(`${email.subject} ${email.preheader} ${email.text}`).not.toMatch(
+              new RegExp(`${points}\\s+نقطة`),
+            );
+          }
+        }
+  });
   test("dynamic text cannot inject HTML, subject controls, or unsafe links", () => {
     const email = renderPointsReadyEmail({
       ...base,

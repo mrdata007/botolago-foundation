@@ -324,7 +324,11 @@ function RecapBody({
   const shareLinesTrimmed = shareLines.slice(0, 3);
 
   return (
-    <div className="pr" data-testid="plus-recap-body">
+    <div
+      className="pr"
+      data-testid="plus-recap-body"
+      data-calculation-version={view.calculationVersion}
+    >
       <div className="pr__main">
         <header className="pr__head">
           <div className="pr__top">
@@ -566,10 +570,7 @@ function RecapBody({
                 : text("plus.recap.league_note", { n: view.league.members })
               : t("plus.recap.no_league")}
           </p>
-          <p className="pr__meta">
-            {text("plus.recap.calc", { n: view.calculationVersion })}
-            {view.corrected ? ` · ${t("plus.recap.corrected")}` : ""}
-          </p>
+          {view.corrected ? <p className="pr__meta">{t("plus.recap.corrected")}</p> : null}
           {!example ? (
             <div className="pr__share">
               <ShareImageSheet

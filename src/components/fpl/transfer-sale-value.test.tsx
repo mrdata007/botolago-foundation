@@ -77,7 +77,7 @@ describe("the preview notice (FANT-02)", () => {
       <TransferPreviewNotice panel={failed("budget", 0.1)} onRetry={() => {}} retrying={false} />,
     );
     expect(html).toContain('role="alert"');
-    expect(text(html)).toContain("il manque 0,1 M");
+    expect(text(html)).toContain("Il manque 0,1 M");
     expect(html).toContain('data-testid="transfer-preview-retry"');
     expect(text(html)).toContain(fr["fantasy.error.retry"]);
   });
