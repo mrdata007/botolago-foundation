@@ -1,0 +1,154 @@
+[
+  {
+    "type": "matchday_preview",
+    "chosen": 1
+  },
+  {
+    "type": "matchday_results",
+    "chosen": 2
+  },
+  {
+    "type": "round_preview",
+    "chosen": 3
+  },
+  {
+    "type": "match_starting",
+    "chosen": 4
+  },
+  {
+    "type": "gameweek_opened",
+    "chosen": 5
+  },
+  {
+    "type": "deadline_24h",
+    "chosen": 1
+  },
+  {
+    "type": "gameweek_finalized",
+    "chosen": 2
+  },
+  {
+    "type": "pepites_weekly",
+    "chosen": 3
+  },
+  {
+    "version": 1,
+    "language": "fr",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 1,
+    "language": "fr",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 1,
+    "language": "ar",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 1,
+    "language": "ar",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 2,
+    "language": "fr",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 2,
+    "language": "fr",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 2,
+    "language": "ar",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 2,
+    "language": "ar",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 3,
+    "language": "fr",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 3,
+    "language": "fr",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 3,
+    "language": "ar",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 3,
+    "language": "ar",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 4,
+    "language": "fr",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 4,
+    "language": "fr",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 4,
+    "language": "ar",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 4,
+    "language": "ar",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 5,
+    "language": "fr",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 5,
+    "language": "fr",
+    "mode": "images-blocked",
+    "pass": true
+  },
+  {
+    "version": 5,
+    "language": "ar",
+    "mode": "inline-only",
+    "pass": true
+  },
+  {
+    "version": 5,
+    "language": "ar",
+    "mode": "images-blocked",
+    "pass": true
+  }
+]

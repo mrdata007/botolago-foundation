@@ -2,11 +2,11 @@
 //
 // Turns one claimed delivery (the contract is notification-email-types.ts)
 // into the subject, preheader, HTML body and plain-text body the dispatcher
-// hands the provider. Seven types x two languages (French, Arabic RTL).
+// hands the provider. Eight types x two languages (French, Arabic RTL).
 //
 // Pure and dependency-free on purpose: it runs under Bun (its tests and
 // scripts/backend/notification-email-previews.ts) and under Deno (the Edge
-// Function), so it imports nothing but the contract, relatively and with the
+// Function), so it uses only pure local modules, relatively and with the
 // `.ts` extension Deno requires.
 //
 // Every string in a delivery is data from the database. The HTML escapes all
@@ -35,6 +35,9 @@ import type {
   RoundPreviewPayload,
 } from "./notification-email-types.ts";
 import { MOROCCO_TIME_ZONE, shiftToMorocco } from "./morocco-time.ts";
+import { EMAIL_COLORS, escapeHtml } from "./notification-email-brand.ts";
+import { renderClubEmail } from "./notification-email-club.ts";
+export { EMAIL_COLORS, escapeHtml } from "./notification-email-brand.ts";
 
 /** The zone times are shown in when a delivery carries none (or an invalid one). */
 export const DEFAULT_EMAIL_TIME_ZONE = MOROCCO_TIME_ZONE;
@@ -47,33 +50,6 @@ export const DEFAULT_EMAIL_TIME_ZONE = MOROCCO_TIME_ZONE;
  */
 const COMPETITION_TIME_ZONE = MOROCCO_TIME_ZONE;
 
-/**
- * Brand colours as hex, converted from the oklch tokens in src/styles.css
- * (e-mail clients do not parse oklch). Contrast measured on the sRGB values:
- * white on `ink` 12.8:1, `onInk` on `ink` 9.3:1, `text` on white 19.4:1,
- * `muted` on white 7.4:1 and on `page` 6.9:1.
- */
-export const EMAIL_COLORS = {
-  /** --brand-primary / --ui-ink, oklch(0.32 0.1 258): header band, button, links. */
-  ink: "#0c3164",
-  /** --ui-on-ink, oklch(0.88 0.11 205): the cyan on an ink fill ("GO"). */
-  onInk: "#73edfa",
-  /** --brand-accent, oklch(0.62 0.19 256): borders only, never text. */
-  accent: "#2584f5",
-  /** --brand-accent at 10% over white: the favourite-club row. */
-  favoriteTint: "#e9f3fe",
-  /** --ui-page, oklch(0.975 0.004 250). */
-  page: "#f5f7f9",
-  /** --ui-surface. */
-  surface: "#ffffff",
-  /** --ui-on-surface, oklch(0.16 0.03 260). */
-  text: "#060d1a",
-  /** --ui-on-surface-muted, oklch(0.45 0.02 258). */
-  muted: "#4e5661",
-  /** --ui-rule, oklch(0.93 0.006 250). */
-  rule: "#e5e8ec",
-} as const;
-
 const C = EMAIL_COLORS;
 
 // System faces only: no web fonts in e-mail. The Arabic stack puts faces with
@@ -84,16 +60,6 @@ const FONT_ARABIC = "'Segoe UI',Tahoma,'Noto Sans Arabic','Geeza Pro',Arial,sans
 /* ------------------------------------------------------------------ */
 /* Text safety                                                         */
 /* ------------------------------------------------------------------ */
-
-/** Escapes the five characters that matter in HTML text and attribute values. */
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function isStrippedCodePoint(code: number): boolean {
   return (
@@ -1252,12 +1218,12 @@ function fixtureRowHtml(row: FixtureRow, ctx: RenderContext): string {
 function blockHtml(block: Block, ctx: RenderContext): string {
   switch (block.kind) {
     case "paragraph":
-      return `<p style="margin:16px 0 0;">${runsHtml(block.runs, ctx)}</p>`;
+      return `<p style="margin:18px 0 0;">${runsHtml(block.runs, ctx)}</p>`;
     case "heading":
       return `<h2 style="margin:24px 0 0;${cellFont(ctx)}font-size:15px;line-height:1.4;font-weight:700;color:${C.ink};">${escapeHtml(block.text)}</h2>`;
     case "fixtures":
       return [
-        tableOpen(ctx, "margin:12px 0 0;"),
+        tableOpen(ctx, "margin:22px 0 0;table-layout:fixed;"),
         ...block.rows.map(
           (row) => `<tr><td style="padding:0 0 8px;">${fixtureRowHtml(row, ctx)}</td></tr>`,
         ),
@@ -1267,7 +1233,7 @@ function blockHtml(block: Block, ctx: RenderContext): string {
       return [
         tableOpen(
           ctx,
-          `margin:16px 0 0;border-collapse:separate;border-spacing:0;background-color:${C.page};border-radius:10px;`,
+          `margin:22px 0 0;table-layout:fixed;border-collapse:separate;border-spacing:0;background-color:${C.surface};border-radius:10px;`,
         ),
         ...block.items.map((item, index) => {
           const rule = index > 0 ? `border-top:1px solid ${C.rule};` : "";
@@ -1277,10 +1243,10 @@ function blockHtml(block: Block, ctx: RenderContext): string {
       ].join("");
     case "stat":
       return [
-        tableOpen(ctx, "margin:20px 0 0;"),
-        `<tr><td align="center" bgcolor="${C.ink}" style="padding:20px 16px;background-color:${C.ink};border-radius:12px;text-align:center;${cellFont(ctx)}">`,
-        `<div style="font-size:44px;line-height:1.1;font-weight:800;color:#ffffff;">${isoHtml(block.value, ctx)}</div>`,
-        `<div style="margin-top:6px;font-size:14px;line-height:1.4;font-weight:700;color:${C.onInk};">${escapeHtml(block.label)}</div>`,
+        tableOpen(ctx, "margin:22px 0 0;table-layout:fixed;"),
+        `<tr><td align="center" bgcolor="${C.onInk}" style="padding:20px 16px;background-color:${C.onInk};border:1px solid ${C.rule};border-radius:12px;text-align:center;${cellFont(ctx)}">`,
+        `<div style="font-size:64px;line-height:1.1;font-weight:800;font-variant-numeric:tabular-nums;color:${C.ink};overflow-wrap:anywhere;">${isoHtml(block.value, ctx)}</div>`,
+        `<div style="margin-top:6px;font-size:14px;line-height:1.4;font-weight:700;color:${C.ink};">${escapeHtml(block.label)}</div>`,
         "</td></tr></table>",
       ].join("");
     case "callout":
@@ -1293,7 +1259,7 @@ function blockHtml(block: Block, ctx: RenderContext): string {
       ].join("");
     case "ranking":
       return [
-        tableOpen(ctx, "margin:16px 0 0;"),
+        tableOpen(ctx, "margin:22px 0 0;table-layout:fixed;"),
         ...block.rows.map(
           (row) => `<tr><td style="padding:0 0 8px;">${rankingRowHtml(row, ctx)}</td></tr>`,
         ),
@@ -1320,83 +1286,36 @@ function rankingRowHtml(row: RankingRow, ctx: RenderContext): string {
   ].join("");
 }
 
-function ctaHtml(cta: EmailContent["cta"], ctx: RenderContext): string {
-  return [
-    `<table role="presentation" dir="${ctx.dir}" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:28px auto 0;">`,
-    `<tr><td align="center" bgcolor="${C.ink}" style="border-radius:10px;background-color:${C.ink};">`,
-    `<a href="${escapeHtml(cta.url)}" target="_blank" rel="noopener" style="display:inline-block;padding:14px 28px;${cellFont(ctx)}font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">${escapeHtml(cta.label)}</a>`,
-    "</td></tr></table>",
-  ].join("");
-}
-
-// Keeps the inbox preview to the preheader instead of the first body text.
-const PREHEADER_FILLER = "&#8199;&#65279;&#847; ".repeat(40);
-
 function renderHtml(
   content: EmailContent,
   chrome: Chrome,
   ctx: RenderContext,
   subject: string,
   preheader: string,
+  appUrl: string,
 ): string {
-  const linkStyle = `color:${C.ink};text-decoration:underline;`;
-  const bodyCell = `background-color:${C.surface};padding:28px 24px 32px;border-radius:0 0 14px 14px;text-align:${ctx.start};${cellFont(ctx)}font-size:16px;line-height:${ctx.lineHeight};color:${C.text};`;
-  return [
-    "<!DOCTYPE html>",
-    `<html lang="${ctx.lang}" dir="${ctx.dir}">`,
-    "<head>",
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<meta name="x-apple-disable-message-reformatting">',
-    '<meta name="color-scheme" content="light">',
-    '<meta name="supported-color-schemes" content="light">',
-    `<title>${escapeHtml(subject)}</title>`,
-    // Optional refinements only; the layout does not depend on this block.
-    "<style>",
-    "@media only screen and (max-width:620px){.bg-outer{padding:12px 8px !important}.bg-card{padding:24px 16px 28px !important}.bg-band{padding:16px !important}}",
-    "a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important}",
-    "</style>",
-    "</head>",
-    `<body dir="${ctx.dir}" style="margin:0;padding:0;width:100%;background-color:${C.page};">`,
-    `<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;font-size:1px;line-height:1px;color:${C.page};">${escapeHtml(preheader)}${PREHEADER_FILLER}</div>`,
-    tableOpen(ctx, `background-color:${C.page};`, ` bgcolor="${C.page}"`),
-    `<tr><td class="bg-outer" align="center" style="padding:24px 12px;">`,
-    `<!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->`,
-    tableOpen(ctx, "max-width:600px;margin:0 auto;"),
-    // Header band: the text wordmark.
-    `<tr><td class="bg-band" dir="${ctx.dir}" align="${ctx.start}" bgcolor="${C.ink}" style="background-color:${C.ink};padding:20px 24px;border-radius:14px 14px 0 0;text-align:${ctx.start};">`,
-    `<span dir="ltr" style="font-family:${FONT_LATIN};font-size:24px;line-height:28px;font-weight:800;color:#ffffff;">Botola<span style="color:${C.onInk};">GO</span></span>`,
-    "</td></tr>",
-    // Body card.
-    `<tr><td class="bg-card" dir="${ctx.dir}" align="${ctx.start}" style="${bodyCell}">`,
-    `<p style="margin:0 0 6px;font-size:13px;line-height:18px;font-weight:700;color:${C.ink};">${escapeHtml(content.kicker)}</p>`,
-    `<h1 style="margin:0;${cellFont(ctx)}font-size:24px;line-height:1.3;font-weight:800;color:${C.text};">${escapeHtml(content.title)}</h1>`,
-    content.dateline
-      ? `<p style="margin:6px 0 0;font-size:15px;line-height:1.4;color:${C.muted};">${escapeHtml(content.dateline)}</p>`
-      : "",
-    `<p style="margin:20px 0 0;">${escapeHtml(chrome.greeting)}</p>`,
-    ...content.blocks.map((block) => blockHtml(block, ctx)),
-    ctaHtml(content.cta, ctx),
-    "</td></tr>",
-    // Footer.
-    `<tr><td dir="${ctx.dir}" align="${ctx.start}" style="padding:20px 24px 8px;text-align:${ctx.start};${cellFont(ctx)}font-size:12px;line-height:1.6;color:${C.muted};">`,
-    `<p style="margin:0;">${escapeHtml(chrome.why)}</p>`,
-    `<p style="margin:8px 0 0;">${
-      chrome.home
-        ? `<a href="${escapeHtml(chrome.home.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.home.label)}</a> · `
-        : ""
-    }<a href="${escapeHtml(chrome.manage.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.manage.label)}</a> · <a href="${escapeHtml(chrome.unsubscribe.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.unsubscribe.label)}</a></p>`,
-    chrome.scope ? `<p style="margin:8px 0 0;">${escapeHtml(chrome.scope)}</p>` : "",
-    `<p style="margin:8px 0 0;"><span dir="ltr">${escapeHtml(BRAND_LINE)}</span></p>`,
-    "</td></tr>",
-    "</table>",
-    "<!--[if mso]></td></tr></table><![endif]-->",
-    "</td></tr></table>",
-    "</body>",
-    "</html>",
-  ]
-    .filter((part) => part.length > 0)
-    .join("\n");
+  const linkStyle = `color:${C.ink};text-decoration:underline;display:inline-block;padding:5px 0;`;
+  return renderClubEmail({
+    language: ctx.lang,
+    appUrl,
+    subject,
+    preheader,
+    kicker: content.kicker,
+    title: content.title,
+    dateline: content.dateline,
+    bodyHtml: `<p style="margin:18px 0 0;">${escapeHtml(chrome.greeting)}</p>${content.blocks.map((block) => blockHtml(block, ctx)).join("")}`,
+    cta: content.cta,
+    footerHtml: [
+      `<p style="margin:0;">${escapeHtml(chrome.why)}</p>`,
+      `<p style="margin:8px 0 0;">${
+        chrome.home
+          ? `<a href="${escapeHtml(chrome.home.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.home.label)}</a> · `
+          : ""
+      }<a href="${escapeHtml(chrome.manage.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.manage.label)}</a> · <a href="${escapeHtml(chrome.unsubscribe.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.unsubscribe.label)}</a></p>`,
+      chrome.scope ? `<p style="margin:8px 0 0;">${escapeHtml(chrome.scope)}</p>` : "",
+      `<p style="margin:8px 0 0;"><span dir="ltr">${escapeHtml(BRAND_LINE)}</span></p>`,
+    ].join(""),
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -1416,7 +1335,7 @@ export function renderNotificationEmail(
     end: rtl ? "left" : "right",
     font: rtl ? FONT_ARABIC : FONT_LATIN,
     // The Arabic face needs a taller line box than the Latin one.
-    lineHeight: rtl ? "1.7" : "1.5",
+    lineHeight: rtl ? "1.95" : "1.7",
     timeZone: resolveTimeZone(delivery.timezone),
     favoriteTeamId:
       typeof delivery.favoriteTeamId === "string" && delivery.favoriteTeamId.length > 0
@@ -1469,7 +1388,7 @@ export function renderNotificationEmail(
   return {
     subject,
     preheader,
-    html: renderHtml(content, chrome, ctx, subject, preheader),
+    html: renderHtml(content, chrome, ctx, subject, preheader, app),
     text: renderText(content, chrome, ctx),
   };
 }
