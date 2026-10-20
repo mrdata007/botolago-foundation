@@ -23,8 +23,8 @@ import { useViewEvent } from "./use-view-event";
  * the card is in a headline, a line and the way in, the try-on of a club's colours, and the four
  * points. Nothing here is a number, a promise of a rating's date, or a count of anyone.
  *
- * Registration closed says so where the button would be (the Fantasy hub's own words) and offers
- * no way in: a team could not be created.
+ * Registration closed says so where the create-team button would be. Continuing home is always
+ * available, including when team creation is closed or still loading.
  */
 export function GuestHero({
   clubs,
@@ -76,7 +76,7 @@ export function GuestHero({
       <div className="mt-1">
         <ClubTryOn
           clubs={clubs}
-          selectedId={tried?.id ?? null}
+          selectedId={worn?.id ?? null}
           onPick={(club) => {
             setTried(club);
             track("curva_guest_club_try");
@@ -88,12 +88,15 @@ export function GuestHero({
           {headline}
         </h2>
         <p className={cn("text-pretty text-center", ui.text.secondary, ui.tone.muted)}>{body}</p>
+        <UiLinkButton to="/" variant="gradient" data-testid="curva-continue">
+          {copy.guestContinueHome}
+        </UiLinkButton>
         {closed ? null : loadingAction ? (
           <UiSkeleton className="h-12 rounded-full" testId="curva-guest-action-loading" />
         ) : canCreate ? (
           <UiLinkButton
             to="/fantasy/create"
-            variant="gradient"
+            variant="soft"
             onClick={() => track("curva_guest_cta")}
             data-testid="curva-create"
           >

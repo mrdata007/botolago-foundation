@@ -255,6 +255,7 @@ export function curvaCopy(t: Translate, lang: Language) {
     guestHeadline: t("curva.guest.headline"),
     guestBody: t("curva.guest.body"),
     guestSignIn: t("curva.guest.sign_in"),
+    guestContinueHome: t("curva.guest.continue_home"),
     guestTryTitle: t("curva.guest.try_title"),
     guestTryHint: t("curva.guest.try_hint"),
     guestPointNameTitle: t("curva.guest.point.name.title"),
