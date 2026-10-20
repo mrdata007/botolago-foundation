@@ -15,6 +15,12 @@ const manifest = readFileSync(
   "utf8",
 );
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+const releaseVersion = "20261020015540";
+const releaseName = "fantasy_legacy_hold_release_audit_pairing";
+const releaseMigration = readFileSync(
+  join(root, `supabase/migrations/${releaseVersion}_${releaseName}.sql`),
+  "utf8",
+);
 if (migration.includes("$legacy_schema$") || manifest.includes("$legacy_manifest$"))
   throw new Error("legacy source quoting collision");
 
@@ -98,6 +104,7 @@ do $$declare m jsonb;begin
  or exists(select 1 from app_private.trophy_settings where enabled)
  or exists(select 1 from app.account_deletion_requests where status='processing')then raise exception 'legacy_identity_dependent_writer_active';end if;
  if not exists(select 1 from supabase_migrations.schema_migrations where version='${version}'and encode(extensions.digest(statements[1],'sha256'),'hex')='${sha(migration)}')then raise exception 'legacy_identity_controls_missing';end if;
+ if not exists(select 1 from supabase_migrations.schema_migrations where version='${releaseVersion}'and encode(extensions.digest(statements[1],'sha256'),'hex')='${sha(releaseMigration)}')then raise exception 'legacy_identity_release_audit_missing';end if;
  select data into m from legacy_manifest;
  if encode(extensions.digest((select source_text from legacy_manifest),'sha256'),'hex')<>'${sha(manifest)}'
  or m->>'seasonId'<>'5ada3e98-2929-405a-a3f1-a26de8e51933'
@@ -155,10 +162,38 @@ select count(*)as repaired_identities,count(*)filter(where released_at is null)a
 `;
 }
 
+export function buildReleaseAudit(): string {
+  return `-- Forward-only audit hardening; exact source SHA256 ${sha(releaseMigration)}.
+begin;
+set local lock_timeout='5s';set local statement_timeout='90s';
+select set_config('bg.legacy_release_audit_mode','rehearsal',true);
+select app_private.hold_scheduled_jobs();
+do $$begin
+ ${paused}
+ if not exists(select 1 from supabase_migrations.schema_migrations where version='${version}'and encode(extensions.digest(statements[1],'sha256'),'hex')='${sha(migration)}')then raise exception 'legacy_identity_controls_missing';end if;
+ if exists(select 1 from supabase_migrations.schema_migrations where version='${releaseVersion}')then raise exception 'legacy_release_audit_already_applied';end if;
+end $$;
+create temporary table release_audit_before on commit drop as select md5(coalesce(string_agg(md5(t::text),''order by fantasy_player_id),''))digest from app_private.fantasy_legacy_identity_repairs t;
+insert into supabase_migrations.schema_migrations(version,name,statements)values('${releaseVersion}','${releaseName}',array[$legacy_release_audit$${releaseMigration}$legacy_release_audit$]);
+do $$declare source text;begin
+ select statements[1]into source from supabase_migrations.schema_migrations where version='${releaseVersion}';
+ if encode(extensions.digest(source,'sha256'),'hex')<>'${sha(releaseMigration)}'then raise exception 'legacy_release_audit_source_changed';end if;
+ execute source;
+ if(select digest from release_audit_before)is distinct from(select md5(coalesce(string_agg(md5(t::text),''order by fantasy_player_id),''))from app_private.fantasy_legacy_identity_repairs t)then raise exception 'legacy_release_audit_changed_evidence';end if;
+ if not exists(select 1 from pg_constraint where conrelid='app_private.fantasy_legacy_identity_repairs'::regclass and conname='legacy_identity_release_audit_pairing'and convalidated)then raise exception 'legacy_release_audit_constraint_missing';end if;
+ if current_setting('bg.legacy_release_audit_mode')='rehearsal'then raise exception 'LEGACY_RELEASE_AUDIT_REHEARSAL_PASSED: evidence preserved; all changes rolled back';end if;
+ if current_setting('bg.legacy_release_audit_mode')<>'apply'then raise exception 'legacy_release_audit_mode_invalid';end if;
+end $$;
+commit;
+select version,name from supabase_migrations.schema_migrations where version='${releaseVersion}';
+`;
+}
+
 if (import.meta.main) {
   for (const [file, build] of [
     [`apply-${version}-fantasy-legacy-controls.sql`, buildSchema],
     ["apply-fantasy-legacy-identity-repairs.sql", buildRepairs],
+    [`apply-${releaseVersion}-fantasy-legacy-release-audit.sql`, buildReleaseAudit],
   ] as const) {
     const path = join(root, "scripts/backend", file);
     const expected = build();

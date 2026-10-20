@@ -449,6 +449,7 @@ do $$declare m jsonb;begin
  or exists(select 1 from app_private.trophy_settings where enabled)
  or exists(select 1 from app.account_deletion_requests where status='processing')then raise exception 'legacy_identity_dependent_writer_active';end if;
  if not exists(select 1 from supabase_migrations.schema_migrations where version='20261019194059'and encode(extensions.digest(statements[1],'sha256'),'hex')='77b5d042cee91705691423a6c869baad95ed4389cb5c9fd06c5ad8837172cea5')then raise exception 'legacy_identity_controls_missing';end if;
+ if not exists(select 1 from supabase_migrations.schema_migrations where version='20261020015540'and encode(extensions.digest(statements[1],'sha256'),'hex')='c6661a418ae9cd4a54b89dc5f25b6ddb077f3b1e72cc31cfccbeb990250ff249')then raise exception 'legacy_identity_release_audit_missing';end if;
  select data into m from legacy_manifest;
  if encode(extensions.digest((select source_text from legacy_manifest),'sha256'),'hex')<>'323a2d23882d8dc8e8616811107157c9b17a5906284d11298eeec5e8e4b21128'
  or m->>'seasonId'<>'5ada3e98-2929-405a-a3f1-a26de8e51933'

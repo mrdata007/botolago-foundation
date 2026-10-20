@@ -47,5 +47,12 @@ select extensions.throws_ok($$update app_private.fantasy_legacy_identity_repairs
 select extensions.throws_ok($$delete from app_private.fantasy_legacy_identity_repairs where fantasy_player_id=pg_temp.lrid(7)$$,'P0001','legacy_identity_evidence_immutable','reviewed identity evidence cannot be deleted');
 select extensions.ok(not has_table_privilege('service_role','app_private.fantasy_legacy_identity_repairs','insert'),'routine service workers cannot approve identity repairs');
 select extensions.ok(not has_table_privilege('authenticated','app_private.fantasy_legacy_identity_repairs','select'),'private repair evidence is not exposed to the browser');
+select extensions.throws_ok($$update app_private.fantasy_legacy_identity_repairs set released_at=statement_timestamp()where fantasy_player_id=pg_temp.lrid(7)$$,'23514',null,'a hold cannot be released without an audit reason');
+select extensions.throws_ok($$insert into app_private.fantasy_legacy_identity_repairs(fantasy_player_id,football_player_id,api_player_id,owner_approval,identity_evidence,catalog_before,hold_reason,release_reason)
+ select fantasy_player_id,football_player_id,api_player_id,owner_approval,identity_evidence,catalog_before,hold_reason,'Reviewed current registration is now confirmed'from app_private.fantasy_legacy_identity_repairs where fantasy_player_id=pg_temp.lrid(7)$$,'23514',null,'a release reason cannot be stored without a release timestamp');
+select extensions.throws_ok($$update app_private.fantasy_legacy_identity_repairs set released_at=statement_timestamp(),release_reason='short'where fantasy_player_id=pg_temp.lrid(7)$$,'23514',null,'a release still requires a substantive audit rationale');
+select extensions.lives_ok($$update app_private.fantasy_legacy_identity_repairs set released_at=statement_timestamp(),release_reason='Reviewed current registration and catalog eligibility are confirmed'where fantasy_player_id=pg_temp.lrid(7)$$,'a paired release with a valid rationale succeeds');
+select extensions.ok(app_private.fantasy_native_player_selectable(pg_temp.lrid(7)),'an explicitly reviewed release restores new-purchase eligibility');
+select extensions.throws_ok($$update app_private.fantasy_legacy_identity_repairs set release_reason='Changing the previous release decision after the fact'where fantasy_player_id=pg_temp.lrid(7)$$,'P0001','legacy_identity_evidence_immutable','a completed release cannot be rewritten');
 select *from extensions.finish();
 rollback;

@@ -1,7 +1,11 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { buildRepairs, buildSchema } from "./build-apply-fantasy-legacy-identities";
+import {
+  buildRepairs,
+  buildSchema,
+  buildReleaseAudit,
+} from "./build-apply-fantasy-legacy-identities";
 
 test("the schema promoter contains exact canonical bytes and cannot perform identity repairs", () => {
   const source = readFileSync(
@@ -46,6 +50,7 @@ test("the one-time repair pins one manifest and preserves ownership, eligibility
     "legacy_identity_unexpected_state_change",
     "legacy_identity_input_version_scope_changed",
     "legacy_identity_new_purchase_hold_missing",
+    "legacy_identity_release_audit_missing",
     "LEGACY_IDENTITY_REPAIR_REHEARSAL_PASSED",
   ])
     expect(artifact).toContain(guard);
@@ -53,4 +58,21 @@ test("the one-time repair pins one manifest and preserves ownership, eligibility
   expect(artifact).not.toMatch(/(?:update|delete from) app\.fantasy_squad_memberships/i);
   expect(artifact).not.toMatch(/update app\.fantasy_teams/i);
   expect(artifact).not.toMatch(/update app\.players/i);
+});
+
+test("the forward audit promoter pins the null-pairing constraint without changing evidence", () => {
+  const source = readFileSync(
+    "supabase/migrations/20261020015540_fantasy_legacy_hold_release_audit_pairing.sql",
+    "utf8",
+  );
+  const artifact = readFileSync(
+    "scripts/backend/apply-20261020015540-fantasy-legacy-release-audit.sql",
+    "utf8",
+  );
+  expect(artifact).toBe(buildReleaseAudit());
+  expect(artifact.split(source)).toHaveLength(2);
+  expect(artifact).toContain(createHash("sha256").update(source).digest("hex"));
+  expect(artifact).toContain("LEGACY_RELEASE_AUDIT_REHEARSAL_PASSED");
+  expect(artifact).toContain("legacy_release_audit_changed_evidence");
+  expect(artifact).toContain("'bg.legacy_release_audit_mode','rehearsal'");
 });
