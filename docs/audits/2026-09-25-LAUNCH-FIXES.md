@@ -189,6 +189,8 @@ Follow-up, not a data defect: during a live gameweek, `/fantasy/team` and `/fant
 
 **Owner result (about 17:00Z): neither message arrived.** The owner did not see the GitHub notification for #218 or the Slack TEST message. Both systems accepted the alert, so it was delivered somewhere the owner does not look: a Slack channel or workspace the owner does not use, and a GitHub notification address or setting the owner does not read. Alert delivery to the owner is therefore **not working** and remains a launch blocker. `20260926001000_ops_alert_email` adds email to the owner's inbox through the site's own sender, plus a one-call delivery test (`app_private.ops_alert_test()`). See `docs/operations/ALERTS.md`.
 
+**Resolved (about 17:50Z).** The migration was applied through its guarded script, and `ops-alert-email` was deployed with the address `support@botolago.com`. The TEST email sent at 17:39Z was accepted by Resend and received by the owner. Record: `docs/production/APPLIED_2026_09_25_OPS_ALERT_EMAIL.md`. Alert delivery is no longer a launch blocker.
+
 ### Production frontend
 
 - `x-botolago-release` is `d862cf0ef4d282f46c8717a9dceec458d607d11f`, which is current `main`.
