@@ -1,0 +1,52 @@
+{
+  "_notice": "Synthetic local dry-run fixture. Never publish or treat as real reporting.",
+  "candidates": [
+    {
+      "sourceId": "elbotola:123",
+      "url": "https://www.elbotola.com/article/2026-09-27-08-00-123.html",
+      "outlet": "ElBotola",
+      "publishedAt": "2026-09-27T08:00:00Z",
+      "retrievedAt": "2026-09-27T08:05:00Z",
+      "language": "fr",
+      "title": "Le club annonce une décision concernant son équipe première",
+      "sourceText": "Le club a annoncé dans un communiqué une décision concernant son équipe première. Le calendrier de la compétition sera publié ultérieurement.",
+      "competition": "botola-pro-inwi",
+      "facts": [
+        {
+          "id": "f1",
+          "text": "Le club a annoncé une décision concernant son équipe première.",
+          "sourceUrl": "https://www.elbotola.com/article/2026-09-27-08-00-123.html",
+          "outlet": "ElBotola"
+        },
+        {
+          "id": "f2",
+          "text": "Le calendrier de la compétition sera publié ultérieurement.",
+          "sourceUrl": "https://www.elbotola.com/article/2026-09-27-08-00-123.html",
+          "outlet": "ElBotola"
+        }
+      ]
+    }
+  ],
+  "articles": {
+    "elbotola:123": {
+      "headline": "Une annonce du club au sujet de son équipe première",
+      "lead": {
+        "text": "Selon ElBotola, le club a fait connaître une décision qui concerne son équipe première.",
+        "factIds": ["f1"]
+      },
+      "body": [
+        {
+          "text": "Cette annonce porte sur le groupe engagé dans la compétition nationale, rapporte ElBotola.",
+          "factIds": ["f1"]
+        },
+        {
+          "text": "Le calendrier de la compétition doit encore être communiqué, selon le même média.",
+          "factIds": ["f2"]
+        }
+      ],
+      "excerpt": "Le club a communiqué au sujet de son équipe première, selon ElBotola.",
+      "seoTitle": "Annonce du club sur son équipe première",
+      "seoDescription": "Selon ElBotola, le club a communiqué une décision qui concerne son équipe première."
+    }
+  }
+}
