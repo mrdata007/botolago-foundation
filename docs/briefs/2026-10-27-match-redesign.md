@@ -40,7 +40,7 @@ Approved Phase 3 proposal `Match.dc.html`, 2026-10-27. Branch
    sentence (the existing phase-aware wording). The Résumé shows the statistics
    state under the timeline when the match has started (message when none, its
    own retry when that read failed). A failed section shows only its own retry
-   and the score and header always stay (already true, now covered by a test).
+   and the score and header always stay (already true before this change; no new test was added for it).
 4. Not built: the "LOGO / Match présenté par" sponsor line (sponsor slots are a
    later feature with an admin switch) and the "EXEMPLE" tag (mock-up data
    marker). The proposal's "Résultat validé" line for a finished match is not
