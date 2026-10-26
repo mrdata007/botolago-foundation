@@ -34,6 +34,69 @@ that no longer change with every deploy, so a returning visitor re-downloads
 the 100 KB gzip that is the application's own entry instead of 158 KB that
 included them. The one extra file is that split.
 
+## Second pass: less code on the first view
+
+Measured the same way on the same day, after package E's first commit. The
+first pass moved bytes between files; this one removes them from the first
+view.
+
+| First view of `/`                       | before this pass | after           |
+| --------------------------------------- | ---------------- | --------------- |
+| script files                            | 96               | 98              |
+| JavaScript, raw                         | 1568.5 KB        | 1346.5 KB       |
+| JavaScript, gzip                        | 489.7 KB         | 430.1 KB        |
+| main entry (`index-*.js`), raw          | 315.9 KB         | 304.0 KB        |
+| main entry, gzip                        | 101.5 KB         | 98.2 KB         |
+| stylesheet (`styles-*.css`), raw / gzip | 212.4 / 35.4 KB  | 212.4 / 35.4 KB |
+
+By change (gzip, cumulative): sample-data repositories 489.7 to 486.2 KB;
+owned Fantasy repository and Fantasy sample data to 475.7 KB; French
+dictionary to 430.1 KB. The two extra files are the lazy halves of what was
+split (`dictionary-fr-rest`, the Fantasy repositories chunk); the sample-data
+chunks are fetched only in development.
+
+- **French dictionary in two parts**
+  (`src/i18n/dictionary-fr-core.ts`, `dictionary-fr-rest.ts`,
+  `dictionary-fr-loader.ts`; `dictionary-fr.ts` is now the two together, for the
+  server, the tests and the i18n gate). The core part is 576 of the 3289 keys:
+  every key the code of the home page can ask for (the import closure of the
+  root and home routes), plus what the other routes' `head()` and the Fantasy
+  page heads read. `scripts/qa/i18n-split.ts` decides it and
+  `src/i18n/dictionary-split.test.ts` fails when a key the home page needs sits
+  in the rest part; `bun scripts/qa/i18n-split.ts --write` moves keys. The rest
+  (166 KB raw, about three quarters of the dictionary) is fetched by `loadFrenchRest()`:
+  - the server and the tests have the whole dictionary from the start, so the
+    HTML is the same as before;
+  - in the browser the router waits for it before hydrating any page other than
+    `/` (`router.tsx`, `hydrate`) and before rendering a client navigation to
+    one (root `beforeLoad`), so no page renders raw keys or hydrates with
+    different text;
+  - the warm-up fetches it two seconds after the home page has settled
+    (`SectionWarmup`), so a tap normally waits for nothing; with `saveData` or a
+    2G connection it is fetched at the tap;
+  - a key asked for before the rest has arrived (not expected) renders its key,
+    starts the fetch and re-renders when it lands.
+    Route files that read `fr[...]` in `head()` now import `frCore` (typed: a key
+    outside the core part is a compile error there).
+- **Owned Fantasy repository on demand**
+  (`fantasy-owned-repository-lazy.ts`, `fantasy-guest-repository.ts`): the root
+  provider builds the guest repository at once (it reads nothing) and fetches
+  the local and cloud repositories, the transfer rules and the Fantasy sample
+  data on the first call. `fantasy-mock-lazy.ts` and `fantasy-team-patch.ts` do
+  the same for the sample Fantasy service (the one synchronous method,
+  `saveTeam`, moved to the light file). Rules, scoring and the lifecycle are
+  untouched.
+- **Sample-data repositories on demand** (`src/backend/lazy-repository.ts`):
+  Football, News, Predictions, Pépites and Prizes build their mock repository
+  on first use. Production never selects them (`select*DataMode`), so the
+  sample data (`src/mocks/*`, 70 KB raw) is out of the first view.
+
+Checked and left: supabase-js brings the realtime (about 40 KB raw) and storage
+(21 KB) clients through `createClient`. A lighter client would mean assembling
+auth, PostgREST and functions by hand around `src/integrations/supabase/client.ts`,
+which is a managed file; not done. `auth-mock` (6.5 KB raw) stays because
+`authService` is synchronous.
+
 ## What was changed
 
 - **Vendor split** (`vite.config.ts`, client build only): `vendor-react` and
@@ -62,9 +125,10 @@ included them. The one extra file is that split.
   with a lazy load and so had no width until it arrived). `FailureAwareImage`
   and `MediaImage` fill a box whose shape the caller sets (`absolute inset-0
 h-full w-full`), so intrinsic attributes would change nothing; left alone.
-- **Budget**: `bun run perf:budget` fails above 540 KB gzip / 105 files /
-  39 KB gzip of CSS for `/` (about 10% over the figures above). Manual check,
-  not wired into the Lovable build.
+- **Budget**: `bun run perf:budget` first failed above 540 KB gzip / 105 files /
+  39 KB gzip of CSS for `/`; after the second pass (above) it fails above
+  475 KB gzip / 108 files / 39 KB CSS, about 10% over the new figures. Manual
+  check, not wired into the Lovable build.
 
 ## Findings that were checked and left alone
 
@@ -103,22 +167,13 @@ h-full w-full`), so intrinsic attributes would change nothing; left alone.
 
 ## What is left, largest first (outside this package's files)
 
-1. **French dictionary: 198 KB raw in the shared graph** (`dictionary-fr`,
-   inside `provider-*.js`, 67 KB gzip together with the i18n provider). The
-   Arabic one is already lazy; the French one could be split by screen.
-2. **Fantasy code in the root graph**: `FantasyOwnedProvider` in
-   `src/routes/__root.tsx` imports the owned repository, the mock Fantasy data
-   (`src/mocks/fantasy-data.ts`), transfers and the engine, so `fantasy-hub-share`
-   (10 KB gzip), `fantasy-runtime` (6 KB) and `schemas` (zod, 19 KB) load for
-   every page. Loading the provider's repository on demand is the biggest win
-   available, and touches business-critical files.
-3. **Sample data in production**: `src/backend/predictions`, `news` and
-   `football` mock repositories and `src/mocks/*` ship in the shared graph
-   (about 70 KB raw) although production never selects them.
-4. **supabase-js** brings realtime and storage clients (about 55 + 21 KB raw)
-   that public pages never use.
-5. **`sonner`** (9 KB gzip) is imported by many components, so the Toaster
+1. **supabase-js realtime and storage clients** (see above).
+2. **`schemas` (zod, 19 KB gzip)** is used by the football, news, auth and
+   Fantasy contracts the home page reads; it stays until those parse with
+   something lighter.
+3. **`sonner`** (9 KB gzip) is imported by many components, so the Toaster
    cannot be deferred alone.
-6. The 94 to 95 modulepreload links include about 30 icon files of under 1 KB;
-   merging them was not tried (a Rolldown group would put every icon any
-   screen uses in one file the home page then downloads).
+4. The modulepreload links include about 30 icon files of under 1 KB; merging
+   them was not tried (a Rolldown group would put every icon any screen uses in
+   one file the home page then downloads).
+5. **A 214 KB stylesheet still blocks the first paint** (35.5 KB gzip).

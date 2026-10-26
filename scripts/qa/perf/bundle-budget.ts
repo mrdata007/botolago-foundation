@@ -11,8 +11,8 @@
  *   bun scripts/qa/perf/bundle-budget.ts --json     # machine-readable output
  *   bun scripts/qa/perf/bundle-budget.ts --list     # the 40 heaviest files
  *
- * Budgets are about 10% above the figures measured on 2026-10-26
- * (docs/engineering/PERFORMANCE_2026_10_26.md). Lower them when a change makes
+ * Budgets are about 10% above the figures measured on 2026-10-26, after the
+ * second pass (docs/engineering/PERFORMANCE_2026_10_26.md). Lower them when a change makes
  * the first view lighter; raise them only with a reason in that document.
  * It is a manual check and is not wired into the Lovable build.
  */
@@ -26,7 +26,7 @@ const PUBLIC_DIR = join(ROOT, ".output/public");
 
 /** Per-route budgets. Routes without an entry are measured but not enforced. */
 export const BUDGETS: Record<string, { gzipKb: number; files: number; cssGzipKb: number }> = {
-  "/": { gzipKb: 540, files: 105, cssGzipKb: 39 },
+  "/": { gzipKb: 475, files: 108, cssGzipKb: 39 },
 };
 
 type ManifestRoute = { preloads?: string[]; scripts?: { attrs?: { src?: string } }[] };
