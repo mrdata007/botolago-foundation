@@ -21,7 +21,9 @@ import {
   isSameMatchDayQuery,
   matchDayQuery,
   matchDayRefetchInterval,
+  nearestMatchDay,
   openingMatchDay,
+  seasonFixtureDaysQuery,
   settleEndedMatches,
   withLiveReadings,
 } from "@/components/matches/match-day-query";
@@ -90,8 +92,22 @@ export const Route = createFileRoute("/matches/")({
       if (seasons) {
         const season = openingSeason(seasons, deps.season);
         // The same day the page works out: the one in the URL kept inside the
-        // season, else the day the season opens on.
-        const day = deps.date ? clampMatchDay(deps.date, season) : openingMatchDay(season, today);
+        // season, else the nearest day with fixtures to the one the season
+        // opens on (today when it has some, else the next, else the latest
+        // results), which takes the season's fixture days, read once.
+        let day: string;
+        if (deps.date) {
+          day = clampMatchDay(deps.date, season);
+        } else {
+          const opening = openingMatchDay(season, today);
+          if (season) await prefetchForSsr(queryClient, [seasonFixtureDaysQuery(season)]);
+          day = nearestMatchDay(
+            season
+              ? queryClient.getQueryData<string[]>(seasonFixtureDaysQuery(season).queryKey)
+              : undefined,
+            opening,
+          );
+        }
         await prefetchForSsr(queryClient, [matchDayQuery(day, "fr", season?.id)]);
       }
       // Both reads above count: every key `prefetchForSsr` was handed, the
@@ -201,7 +217,18 @@ function MatchesPage() {
 
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
   const selectedSeason = openingSeason(seasons, requestedSeasonId);
-  const openingDay = openingMatchDay(selectedSeason, today);
+  // The days with fixtures say which day to open on: today when it has some,
+  // else the next, else the latest results. Prefetched by the loader, so the
+  // server and the browser's first render agree; a day in the URL needs none.
+  const fixtureDaysEnabled = seasonsQ.isSuccess && !search.date && selectedSeason !== undefined;
+  const fixtureDaysQ = useQuery({
+    ...seasonFixtureDaysQuery(selectedSeason),
+    enabled: fixtureDaysEnabled,
+  });
+  const openingDay = nearestMatchDay(fixtureDaysQ.data, openingMatchDay(selectedSeason, today));
+  // The opening day waits for that read (a failed one falls back to the
+  // season's own opening day), so the list never opens on today and jumps.
+  const openingDayKnown = !fixtureDaysEnabled || !fixtureDaysQ.isPending;
   const matchDay = search.date ? clampMatchDay(search.date, selectedSeason) : openingDay;
   const selectedDate = useMemo(() => dateFromKey(matchDay), [matchDay]);
   // The date band's "today" is the loader's too, not this device's clock, so
@@ -227,7 +254,7 @@ function MatchesPage() {
   const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({
     ...dayQuery,
-    enabled: seasonsQ.isSuccess,
+    enabled: seasonsQ.isSuccess && openingDayKnown,
     // The same day in the language the page was just showing, while the new
     // one loads (`isSameMatchDayQuery`): the rows the server rendered stay
     // up through an Arabic reader's switch instead of flashing a skeleton.
