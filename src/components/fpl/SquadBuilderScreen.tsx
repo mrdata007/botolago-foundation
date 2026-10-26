@@ -1,4 +1,4 @@
-import { Plus, RotateCcw, UserPlus } from "lucide-react";
+import { Lock, Plus, RotateCcw, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { crestStyle } from "@/components/common/club-crest-style";
@@ -15,6 +15,7 @@ import { findClub } from "./club-lookup";
 import { formatDeadline } from "./deadline";
 import { FplEmptySlot, FplPlayerCard } from "./FplPlayerCard";
 import { FplPitch } from "./FplPitch";
+import { FplPositionProgress, positionProgress } from "./FplPositionProgress";
 import { FplStatBar, type FplStatItem } from "./FplStatBar";
 import { SquadListTable, type SquadListColumn } from "./SquadListTable";
 
@@ -93,6 +94,8 @@ export function SquadBuilderScreen({
   incoming,
   onCancelIncoming,
   showBench = false,
+  showProgress = false,
+  locked = false,
   children,
 }: {
   title: ReactNode;
@@ -133,6 +136,13 @@ export function SquadBuilderScreen({
    * their position rows, as in the reference.
    */
   showBench?: boolean;
+  /** First selection: a "GB 1/2 · DEF 3/5…" row above the pitch. Off in transfers. */
+  showProgress?: boolean;
+  /**
+   * The deadline has passed: the squad stays on screen but every action (the
+   * slots, add, next, reset) is inert. The route says why, in `banner`.
+   */
+  locked?: boolean;
   children?: ReactNode;
 }) {
   const { t, tr } = useI18n();
@@ -152,6 +162,7 @@ export function SquadBuilderScreen({
   // cross-fades the card into the empty slot, and undo or reset plays back.
   const card = (s: BuilderSlot, onBench = false) => {
     const dimmed = replaceMode && s.position !== incoming!.position;
+    const inert = dimmed || locked;
     return (
       <ExitSwap key={s.slot} swapKey={s.player?.id ?? "empty"} fadeIn={!s.player}>
         {s.player ? (
@@ -163,7 +174,7 @@ export function SquadBuilderScreen({
             vice={s.isViceCaptain}
             highlighted={s.highlighted}
             dimmed={dimmed}
-            onClick={dimmed ? undefined : () => onSlotTap(s)}
+            onClick={inert ? undefined : () => onSlotTap(s)}
             size={onBench ? "sm" : "md"}
           />
         ) : (
@@ -171,7 +182,7 @@ export function SquadBuilderScreen({
             position={s.position}
             onBench={onBench}
             className={dimmed ? "opacity-45" : undefined}
-            onClick={dimmed ? undefined : () => onSlotTap(s)}
+            onClick={inert ? undefined : () => onSlotTap(s)}
           />
         )}
       </ExitSwap>
@@ -208,7 +219,7 @@ export function SquadBuilderScreen({
         backTo={backTo}
         onBack={onBack}
         trailing={
-          onReset && !resetDisabled ? (
+          onReset && !resetDisabled && !locked ? (
             // A round control rather than a labelled pill, so the screen's
             // title keeps the width between the two flanks; the name stays
             // on the control for assistive tech and as its tooltip.
@@ -222,7 +233,12 @@ export function SquadBuilderScreen({
         items={stats}
         footer={<DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />}
       />
-      {banner ? <UiBanner>{banner}</UiBanner> : null}
+      {banner ? (
+        <UiBanner>
+          {locked ? <Lock className="me-1.5 inline h-4 w-4 align-text-bottom" aria-hidden /> : null}
+          {banner}
+        </UiBanner>
+      ) : null}
       {aboveToggle}
 
       <div className={cn("pt-3", ui.space.gutter)}>
@@ -237,6 +253,10 @@ export function SquadBuilderScreen({
           ]}
         />
       </div>
+
+      {showProgress ? (
+        <FplPositionProgress items={positionProgress(sorted)} className="pt-3" />
+      ) : null}
 
       {view === "squad" ? (
         <FplPitch
@@ -253,6 +273,7 @@ export function SquadBuilderScreen({
           clubs={clubs}
           columns={listColumns}
           onRowClick={(id) => {
+            if (locked) return;
             const slot = sorted.find((s) => s.player?.id === id);
             if (slot) onSlotTap(slot);
           }}
@@ -336,11 +357,16 @@ export function SquadBuilderScreen({
             className="px-2"
             variant="gradient"
             onClick={onAddPlayer}
-            disabled={replaceMode}
+            disabled={replaceMode || locked}
           >
             <Plus className="h-4 w-4 shrink-0" aria-hidden /> {t("fpl.add_player")}
           </UiButton>
-          <UiButton className="px-2" variant="ink" onClick={onNext} disabled={nextDisabled}>
+          <UiButton
+            className="px-2"
+            variant="ink"
+            onClick={onNext}
+            disabled={nextDisabled || locked}
+          >
             {nextLabel ?? t("fpl.next")}
           </UiButton>
         </div>

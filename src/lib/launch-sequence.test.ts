@@ -34,21 +34,10 @@ describe("arrival dialogs wait for the launch sequence", () => {
     },
   );
 
-  test("the home landing page waits for the splash, and is a page rather than a dialog", () => {
+  test("Home itself no longer swaps in the landing page: it is a page at /jouer only", () => {
     const source = code("src/routes/index.tsx");
-    expect(source).toContain('from "@/lib/launch-sequence"');
-    expect(source).toContain("const splashDone = useSplashDone();");
-    expect(source).toMatch(
-      /const showLanding =\s*mounted &&\s*splashDone &&\s*isHydrated &&\s*status === "anonymous" &&\s*!left &&\s*!hasWelcomed\(\);/,
-    );
-    expect(source).toMatch(
-      /showLanding \? \(\s*<Suspense fallback=\{<LandingFallback \/>\}>\s*<LandingPage onLeave=\{leave\} \/>\s*<\/Suspense>\s*\) : \(\s*<HomeContent \/>\s*\)/,
-    );
-    // Its own chunk: a signed-in or returning reader does not download it.
-    expect(source).not.toContain('import { LandingPage } from "@/components/landing/LandingPage"');
-    expect(source).toContain(
-      'const loadLanding = () => import("@/components/landing/LandingPage");',
-    );
+    expect(source).not.toContain("LandingPage");
+    expect(source).not.toContain("useSplashDone");
     expect(source).not.toContain('role="dialog"');
   });
 });

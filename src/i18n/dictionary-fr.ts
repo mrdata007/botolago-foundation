@@ -261,6 +261,11 @@ export const fr = {
   "standings.provisional": "Classement provisoire, calculé à partir des résultats des matchs.",
   "standings.unofficial": "Classement non officiel, calculé à partir des résultats des matchs.",
   "standings.computed": "Classement calculé à partir des résultats des matchs.",
+  "standings.in_hand_names": "Matchs en retard : {clubs}. Comparez la colonne {col}.",
+  "standings.in_hand_count": "{n} clubs ont des matchs en retard : comparez la colonne {col}.",
+  "standings.updated": "Classement chargé le {when}",
+  "standings.refresh_failed":
+    "Impossible d'actualiser le classement. Voici la dernière version chargée.",
   "standings.shared_rank": "Ex æquo",
   "standings.shared_rank_note":
     "Un même rang signale des clubs à égalité de points, de différence de buts et de buts marqués : l'ordre dans lequel ils sont listés ne les départage pas.",
@@ -584,6 +589,12 @@ export const fr = {
   "fantasy.rankings.ordinal_one": "{n}er",
   "fantasy.rankings.ordinal_other": "{n}e",
   "fantasy.rankings.tab_leagues": "Mes ligues",
+  "fantasy.rankings.waiting": "En attente",
+  "fantasy.rankings.waiting_note":
+    "Points de la journée en attente des notes des joueurs. Le classement peut encore bouger.",
+  "fantasy.rankings.around": "Autour de vous",
+  "fantasy.rankings.invite_title": "Invitez vos amis",
+  "fantasy.rankings.invite_body": "Créez une ligue privée et comparez vos points entre amis.",
   "fantasy.rank.up": "En hausse",
   "fantasy.rank.down": "En baisse",
   "fantasy.rank.same": "Position inchangée",
@@ -666,6 +677,11 @@ export const fr = {
   "fantasy.points.total": "Total",
   "fantasy.points.how_scored": "Comment les points sont calculés",
   "fantasy.points.status.provisional": "En cours",
+  // Player page chart: plain wording for how each round's points were set.
+  "fantasy.players.points_final": "Points définitifs",
+  "fantasy.players.points_provisional": "Points provisoires",
+  "fantasy.players.points_provisional_estimated": "Points provisoires · estimés",
+  "fantasy.players.points_waiting": "En attente",
   "fantasy.points.awaiting_rating": "En attente des notes",
   "fantasy.rules.rating_rule_not_rated":
     "À partir de la journée {n}, les points sont la note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Une apparition de moins de 10 minutes sans note peut être confirmée « Non noté » après au moins 24 h et deux vérifications : elle rapporte 0 point, sans note inventée. Les autres notes manquantes restent en attente. Un joueur qui n’a pas joué marque 0. Le capitaine double ses points.",
@@ -987,6 +1003,11 @@ export const fr = {
   "home.mine_empty": "Aucun match de vos clubs sur cette période.",
   "home.results_link": "Voir les derniers résultats",
   "home.calendar_link": "Ouvrir le calendrier",
+  "home.live_updated_now": "Mis à jour à l’instant",
+  "home.live_updated_ago": "Mis à jour il y a {n} min",
+  "home.no_match_today": "Pas de match aujourd’hui",
+  "home.next_match_day": "Prochaine journée : {date}",
+  "home.invite_title": "Composez votre équipe de Botola",
   "state.loading": "Chargement…",
   "state.empty": "Aucun contenu disponible.",
   "state.error": "Une erreur est survenue.",
@@ -2056,7 +2077,15 @@ export const fr = {
   "fantasy.create.error.generic":
     "Votre équipe n’a pas pu être enregistrée. Réessayez dans un instant.",
   "fantasy.create.enrolment_next":
-    "La Journée {current} est clôturée. Votre équipe jouera à partir de la Journée {n}.",
+    "Journée {current} clôturée · votre équipe joue dès la Journée {n}.",
+  "fantasy.create.locked":
+    "Journée {n} verrouillée : votre équipe reste visible, les changements rouvrent à la prochaine journée.",
+  "fantasy.create.next_locked": "Journée verrouillée",
+  "fantasy.create.next_remaining": "Encore {n} à choisir",
+  "fantasy.create.next_remaining_one": "Encore 1 à choisir",
+  "fantasy.create.per_place": "≈ {amount} par place restante",
+  "fantasy.create.progress.done": "complet",
+  "fantasy.create.progress.left": "reste {n}",
   "prizes.meta_title": "Lots à gagner — BotolaGO Fantasy",
   "prizes.meta_description":
     "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois et lot de la saison. Jeu 100 % gratuit.",

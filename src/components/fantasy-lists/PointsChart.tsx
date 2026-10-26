@@ -52,12 +52,12 @@ export function PointsChart({
       ),
       ...(bar.fixtureScoring ?? []).map((fixture) =>
         fixture.pending
-          ? t("fantasy.scoring.pending")
+          ? t("fantasy.players.points_waiting")
           : fixture.mode === "simple"
             ? fixture.estimated
-              ? t("fantasy.scoring.simpleEstimated")
-              : t("fantasy.scoring.simple")
-            : t("fantasy.scoring.full"),
+              ? t("fantasy.players.points_provisional_estimated")
+              : t("fantasy.players.points_provisional")
+            : t("fantasy.players.points_final"),
       ),
       bar.provisional ? t("fantasy.points.status.provisional") : null,
     ]
@@ -109,12 +109,12 @@ export function PointsChart({
                 {bar.fixtureScoring?.map((fixture) => (
                   <span key={fixture.fixtureId} className="block whitespace-normal">
                     {fixture.pending
-                      ? t("fantasy.scoring.pending")
+                      ? t("fantasy.players.points_waiting")
                       : fixture.mode === "simple"
                         ? fixture.estimated
-                          ? t("fantasy.scoring.simpleEstimated")
-                          : t("fantasy.scoring.simple")
-                        : t("fantasy.scoring.full")}
+                          ? t("fantasy.players.points_provisional_estimated")
+                          : t("fantasy.players.points_provisional")
+                        : t("fantasy.players.points_final")}
                   </span>
                 ))}
               </span>

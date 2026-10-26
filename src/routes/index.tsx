@@ -1,18 +1,11 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentType,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
+  CalendarDays,
   CircleDot,
   Bell,
   Gem,
@@ -78,6 +71,9 @@ import { bandGameweek } from "@/lib/band-gameweek";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
+import { FantasyInviteCard } from "@/components/home/FantasyInviteCard";
+import { HomeLiveFreshness } from "@/components/home/HomeLiveFreshness";
+import { nextMatchDay } from "@/components/home/next-match-day";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
 import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
@@ -85,8 +81,6 @@ import { RevealOnArrive } from "@/components/common/RevealOnArrive";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
-import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
@@ -105,7 +99,6 @@ import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
-import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -172,7 +165,7 @@ export const Route = createFileRoute("/")({
     // Who publishes the site, and the site itself (see `@/lib/structured-data`).
     scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
-  component: HomePage,
+  component: HomeContent,
 });
 
 /**
@@ -198,109 +191,6 @@ function useGreeting(now: Date) {
   if (part === "morning") return t("home.greeting_morning");
   if (part === "afternoon") return t("home.greeting_afternoon");
   return t("home.greeting_evening");
-}
-
-/**
- * The landing page, as its own chunk: most readers of `/` are signed in or
- * returning and never see it, so they no longer download it (about 33 KB of
- * script before compression: the page, the demonstration pitch's shirts, the
- * prize catalog's client). One loader, so the preload below and `lazy` share
- * the same request.
- */
-const loadLanding = () => import("@/components/landing/LandingPage");
-const LandingPage = lazy(() =>
-  loadLanding().then(
-    (module) => ({ default: module.LandingPage }),
-    // A chunk that fails to load (a deploy mid-visit, a dropped connection)
-    // leaves the newcomer on Home rather than on an error page.
-    () => ({ default: (_: { onLeave?: () => void }) => <HomeContent /> }),
-  ),
-);
-
-/**
- * Keep the hero's dark ground while its chunk arrives, with a readable status
- * and a public way forward even on a slow connection. Home's moving feed is
- * deliberately not mounted underneath it.
- */
-function LandingFallback() {
-  useDarkStatusBand();
-  const { t } = useI18n();
-  return (
-    <div
-      className={cn(
-        "flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-[color:var(--ui-ink-deep)] text-center",
-        ui.space.gutter,
-        ui.tone.onMesh,
-      )}
-    >
-      <h1 className={ui.display.title}>
-        <BrandedText text="BotolaGO" tone="light" />
-      </h1>
-      <p role="status" className={ui.text.body}>
-        {t("state.loading")}
-      </p>
-      <Link
-        to="/matches"
-        onClick={markWelcomeDone}
-        className={cn(
-          "inline-flex items-center underline underline-offset-4",
-          ui.space.tap,
-          ui.text.bodyStrong,
-          ui.focusOnMesh,
-        )}
-      >
-        {t("landing.cta_matches")}
-      </Link>
-    </div>
-  );
-}
-
-function HomePage() {
-  const { status } = useAuth();
-  const { isHydrated } = useI18n();
-  const splashDone = useSplashDone();
-
-  // Read localStorage only after mount so SSR and first client render match.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  // Leaving the landing page by any of its links is the welcome: from then on
-  // `/` opens on Home, also when that link was the logo, back to `/`.
-  const [left, setLeft] = useState(false);
-  const leave = () => {
-    markWelcomeDone();
-    setLeft(true);
-  };
-
-  // A first visit without an account gets the landing page in Home's place:
-  // what the game is, why play, and one way in. It used to be a welcome
-  // dialog of three buttons, two of which did the same thing, over a Home
-  // that a newcomer could not yet read.
-  //
-  // It waits for the splash (src/lib/launch-sequence.ts), under which nothing
-  // is seen, and not for the language chooser: the chooser opens over the
-  // landing page rather than over a Home that is about to be replaced.
-  // The server always renders Home — it knows no session — so a crawler, and
-  // every returning reader, gets Home's content and links (audit 2026-09-24,
-  // P1-2). A signed-in reader, a guest and anyone who has been welcomed
-  // before never see the landing page here; `/jouer` is its own address.
-  const showLanding =
-    mounted && splashDone && isHydrated && status === "anonymous" && !left && !hasWelcomed();
-
-  // Fetched as soon as the session says this is a first visit without an
-  // account — while the splash still plays — so the page is ready when the
-  // splash leaves.
-  const firstVisit = mounted && status === "anonymous" && !left && !hasWelcomed();
-  useEffect(() => {
-    if (firstVisit) void loadLanding();
-  }, [firstVisit]);
-
-  return showLanding ? (
-    <Suspense fallback={<LandingFallback />}>
-      <LandingPage onLeave={leave} />
-    </Suspense>
-  ) : (
-    <HomeContent />
-  );
 }
 
 /** A match being played right now, for the split live card. */
@@ -465,6 +355,8 @@ function HomeContent() {
   const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now), {
     inclusive: true,
   });
+  // No match today and none live: "À venir" opens by naming the next match day.
+  const nextDayKey = useMemo(() => nextMatchDay(homeMatches, now), [homeMatches, now]);
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
   const bandGameweekNumber = bandGameweek(
@@ -623,6 +515,16 @@ function HomeContent() {
               ))}
             </div>
           )}
+          {liveMatches[0] ? (
+            <div className="order-2">
+              <HomeLiveFreshness
+                match={liveMatches[0]}
+                updatedAt={matchesQ.dataUpdatedAt}
+                refetch={matchesQ.refetch}
+                refreshing={matchesQ.isFetching}
+              />
+            </div>
+          ) : null}
           {/* -------------------------------------------------------- */}
           {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
           {/* -------------------------------------------------------- */}
@@ -714,6 +616,29 @@ function HomeContent() {
                 </EmptyState>
               ) : (
                 <div className="grid gap-4">
+                  {nextDayKey ? (
+                    <div
+                      data-testid="home-next-match-day"
+                      className={cn("flex items-center gap-3 px-4 py-3", ui.surface.card)}
+                    >
+                      <CalendarDays className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
+                      <div className="min-w-0">
+                        <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
+                          {t("home.no_match_today")}
+                        </p>
+                        <p className={cn(ui.text.secondary, ui.tone.muted)}>
+                          {t("home.next_match_day").replace(
+                            "{date}",
+                            moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            }).format(matchDayFromKey(nextDayKey)),
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                   {upcomingDays.length > 1 || followedIds.length > 0 ? (
                     <div
                       role="group"
@@ -819,7 +744,7 @@ function HomeContent() {
             ) : availability.data.status !== "ready" ? (
               <FantasyUnavailableState reason={availability.data.status} />
             ) : source === "guest" ? (
-              <FantasyCreateCard canCreate={canCreate} />
+              <FantasyInviteCard canCreate={canCreate} deadline={gwQ.data?.deadline} />
             ) : summaryQ.isError || gwQ.isError ? (
               <ErrorState
                 onRetry={() => {
@@ -843,7 +768,10 @@ function HomeContent() {
               <HeroSkeleton />
             )}
 
-            {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
+            {/* The invitation card names the deadline itself; the chips repeat it only for an account. */}
+            {fantasyReady ? (
+              <FantasyRuleChips deadline={source === "guest" ? undefined : gwQ.data?.deadline} />
+            ) : null}
 
             {/* Only when there is something to show: an empty wrapper still
             carried its margin, a stray gap above the Pronostics card. */}
