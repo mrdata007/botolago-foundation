@@ -1924,7 +1924,15 @@ export const ar = {
   "fantasy.create.error.rejected":
     "فريقك لا يحترم إحدى قواعد اللعبة. راجع تشكيلتك ثم أعد المحاولة.",
   "fantasy.create.error.generic": "تعذّر حفظ فريقك. أعد المحاولة بعد لحظات.",
-  "fantasy.create.enrolment_next": "الجولة {current} مغلقة. سيشارك فريقك ابتداءً من الجولة {n}.",
+  "fantasy.create.enrolment_next": "الجولة {current} مغلقة · يشارك فريقك من الجولة {n}.",
+  "fantasy.create.locked":
+    "الجولة {n} مغلقة: يبقى فريقك ظاهراً، وتُفتح التغييرات في الجولة التالية.",
+  "fantasy.create.next_locked": "الجولة مغلقة",
+  "fantasy.create.next_remaining": "باقي {n} للاختيار",
+  "fantasy.create.next_remaining_one": "باقي 1 للاختيار",
+  "fantasy.create.per_place": "≈ {amount} لكل مركز متبقٍّ",
+  "fantasy.create.progress.done": "مكتمل",
+  "fantasy.create.progress.left": "باقي {n}",
   "prizes.meta_title": "الجوائز — BotolaGO Fantasy",
   "prizes.meta_description":
     "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم. لعبة مجانية 100%.",

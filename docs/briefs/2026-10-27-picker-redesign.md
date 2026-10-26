@@ -48,7 +48,7 @@ Sponsor slots from the mock-up are not built either.
   row, and a position with all places filled reads "complet".
 - The strip shows the remaining budget and "≈ X M par place restante" while a
   place is empty; with fifteen players the second line is gone.
-- "Suivant" reads "Encore N joueurs à choisir" (singular for one) and is
+- "Suivant" reads "Encore N à choisir" (the strip already says "N/15 joueurs"; the longer wording wrapped to three lines in the dock button) and is
   disabled until fifteen are chosen, then reads "Suivant".
 - Past the deadline: one lock notice, the squad readable, slot taps, add, reset
   and next inert, save disabled. Before it, nothing changes.
