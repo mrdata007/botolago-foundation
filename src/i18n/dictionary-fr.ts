@@ -406,6 +406,8 @@ export const fr = {
   "matches.detail.position.fwd": "A",
   "matches.detail.live_updating": "Mise à jour automatique",
   "matches.detail.updated_at": "Mis à jour à {time}",
+  "matches.detail.updated_ago": "Mis à jour {ago}",
+  "matches.detail.updated_now": "Mis à jour à l'instant",
   "matches.detail.stale_since": "Score non actualisé depuis {time}.",
   "matches.detail.stale_expired":
     "Dernière mise à jour à {time}. Ce score n'est peut-être pas définitif.",
@@ -427,6 +429,8 @@ export const fr = {
   "matches.event.goal": "But",
   "matches.event.penalty": "Penalty",
   "matches.event.own_goal": "But contre son camp",
+  "matches.event.penalty_short": "(pen.)",
+  "matches.event.own_goal_short": "(c.s.c.)",
   "matches.event.missed_penalty": "Penalty manqué",
   "matches.event.yellow": "Carton jaune",
   "matches.event.second_yellow": "Deuxième carton jaune",
