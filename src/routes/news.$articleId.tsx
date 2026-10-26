@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
+import { getArticleByPermalink, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -76,12 +76,7 @@ export const Route = createFileRoute("/news/$articleId")({
       return await context.queryClient.ensureQueryData({
         queryKey: ["news", "article-detail-v2", "fr", params.articleId],
         queryFn: () =>
-          getArticleWithLanguageFallback(
-            getNewsRepository(),
-            params.articleId,
-            "fr",
-            publicNewsContext(),
-          ),
+          getArticleByPermalink(getNewsRepository(), params.articleId, "fr", publicNewsContext()),
       });
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
@@ -160,8 +155,7 @@ function ArticlePage() {
 
   const articleQ = useQuery({
     queryKey: ["news", "article-detail-v2", lang, articleId],
-    queryFn: () =>
-      getArticleWithLanguageFallback(getNewsRepository(), articleId, lang, publicNewsContext()),
+    queryFn: () => getArticleByPermalink(getNewsRepository(), articleId, lang, publicNewsContext()),
     initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
   });
   const relatedQ = useQuery({

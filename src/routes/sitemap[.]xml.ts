@@ -7,6 +7,7 @@ import {
   SITEMAP_NEWS_LIMIT,
   type SitemapNewsEntry,
 } from "@/lib/sitemap";
+import { footballService } from "@/services/football";
 import { getNewsDataMode } from "@/services/news";
 
 /**
@@ -32,6 +33,10 @@ import { getNewsDataMode } from "@/services/news";
  * Every public article that fits in one sitemap is requested
  * (`SITEMAP_NEWS_LIMIT`); the licensed ElBotola archive alone is ~15,700
  * editions.
+ *
+ * Club pages (`/clubs/<id>`, the clubs of the directory's season) are listed
+ * too. A failed football read leaves them out rather than failing the whole
+ * sitemap: leaving a URL out of a sitemap does not remove it from the index.
  */
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -52,7 +57,13 @@ export const Route = createFileRoute("/sitemap.xml")({
             });
           }
         }
-        return new Response(buildSitemapXml({ newsEnabled: NEWS_ENABLED, news }), {
+        let clubIds: readonly string[] = [];
+        try {
+          clubIds = (await footballService.getClubDirectory("fr")).clubs.map((club) => club.id);
+        } catch {
+          clubIds = [];
+        }
+        return new Response(buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds }), {
           headers: {
             "content-type": "application/xml; charset=utf-8",
             "cache-control": SITEMAP_CACHE_CONTROL,
