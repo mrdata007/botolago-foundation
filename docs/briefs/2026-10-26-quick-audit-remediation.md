@@ -24,8 +24,9 @@ a store listing or a backend change is listed under "Not in this change".
 ## Work packages and acceptance criteria
 
 ### A. Edge caching and release tag
+
 - Public, anonymous HTML gets `Cache-Control: public, max-age=0,
-  s-maxage=60, stale-while-revalidate=300` (or similar short TTL). Personal
+s-maxage=60, stale-while-revalidate=300` (or similar short TTL). Personal
   routes keep `private, no-store`. A response that varies by cookie/session
   is never marked public.
 - `x-botolago-release` carries a real commit id on Lovable/Cloudflare builds
@@ -34,6 +35,7 @@ a store listing or a backend change is listed under "Not in this change".
   existing release-header test still passes.
 
 ### B. One first visit
+
 - The server and the browser show the same homepage to a logged-out
   visitor: the live-scores Home. The Fantasy pitch no longer replaces the
   page; it becomes an inline, dismissible card on Home.
@@ -48,6 +50,7 @@ a store listing or a backend change is listed under "Not in this change".
   viewport meta has no `maximum-scale`; French and Arabic (RTL) both render.
 
 ### C. Arabic articles that are really Arabic
+
 - An Arabic article URL renders the Arabic edition on the server, with
   `lang="ar" dir="rtl"`, a self-referencing canonical, reciprocal hreflang
   and an `x-default`, whatever the reader's interface language.
@@ -58,6 +61,7 @@ a store listing or a backend change is listed under "Not in this change".
   URL never returns a French canonical.
 
 ### D. Matches, sharing and SEO gaps
+
 - The Matches tab opens on the nearest matchday (live or next, else the
   latest results) instead of an empty day.
 - Article, match and club pages have their own share image where one is
@@ -68,6 +72,7 @@ a store listing or a backend change is listed under "Not in this change".
   its title, description, canonical or H1.
 
 ### E. Speed of the first screen
+
 - Less JavaScript preloaded on first view: Fantasy, Curva, Plus and
   animation code load only when used.
 - No duplicate client fetches right after load (server data reused from the
@@ -80,6 +85,7 @@ a store listing or a backend change is listed under "Not in this change".
   count and gzipped bytes of the first-view preloads) are recorded.
 
 ### F. Installable and offline-friendly
+
 - Web app manifest, `theme-color`, icons; a service worker that caches the
   app shell and the latest fixtures/standings for weak signal, never
   caches personal or authenticated data, and is not registered inside the
@@ -88,6 +94,7 @@ a store listing or a backend change is listed under "Not in this change".
   when the network fails, and a unit test covers its routing rules.
 
 ### G. Auto-written match reports
+
 - Guardrails in the generation step: one canonical name per club (the name
   given in the facts; aliases rejected), no sentences about missing data
   ("score à la mi-temps indisponible" and the like).
