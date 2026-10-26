@@ -24,6 +24,8 @@ export function StadiumBandPhoto({ sizes, className }: { sizes: string; classNam
       src={stadiumBand}
       srcSet={`${stadiumBandSmall} 800w, ${stadiumBand} 1600w`}
       sizes={sizes}
+      width={1600}
+      height={600}
       alt=""
       aria-hidden
       decoding="async"

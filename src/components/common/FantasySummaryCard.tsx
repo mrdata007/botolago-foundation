@@ -141,6 +141,8 @@ export function FantasyCreateCard({
       </span>
       <img
         src={createTeamArt}
+        width={640}
+        height={467}
         alt=""
         aria-hidden
         loading="lazy"

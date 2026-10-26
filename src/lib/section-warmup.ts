@@ -35,10 +35,20 @@ export function sectionsToWarm(destinations: readonly string[], currentPath: str
   return destinations.filter((path) => path !== currentPath);
 }
 
-/** Whether the reader asked the browser to save data, in which case nothing is fetched early. */
+/**
+ * Whether nothing should be fetched early: the reader asked the browser to
+ * save data, or the connection reports itself as 2G (`slow-2g` or `2g`), where
+ * a warm-up of several sections would take the bandwidth of the page in hand.
+ */
 export function savesData(nav: unknown = typeof navigator === "undefined" ? undefined : navigator) {
-  const connection = (nav as { connection?: { saveData?: boolean } } | undefined)?.connection;
-  return connection?.saveData === true;
+  const connection = (
+    nav as { connection?: { saveData?: boolean; effectiveType?: string } } | undefined
+  )?.connection;
+  return (
+    connection?.saveData === true ||
+    connection?.effectiveType === "slow-2g" ||
+    connection?.effectiveType === "2g"
+  );
 }
 
 const defaultIdle: Idle = (run) => {

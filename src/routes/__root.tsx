@@ -23,7 +23,7 @@ import { SectionWarmup } from "@/components/shell/SectionWarmup";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
-import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NativePushBridgeGate } from "@/components/native/NativePushBridgeGate";
 import { NATIVE_APP_INIT_SCRIPT } from "@/lib/native-app";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
@@ -365,7 +365,7 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
-              <NativePushBridge />
+              <NativePushBridgeGate />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
               <ManagerCardLiveMarker />
               <SectionWarmup />
