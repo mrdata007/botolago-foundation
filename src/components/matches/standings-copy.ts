@@ -101,3 +101,39 @@ export function zoneLabel(zone: LeagueZone, t: Translate): string {
       ? t("standings.zone.confederation_cup")
       : t("standings.zone.relegation");
 }
+
+/** How many names the games-in-hand note lists before it gives a count. */
+const IN_HAND_NAMES_MAX = 3;
+
+/**
+ * The clubs that have played fewer matches than the busiest club, in table
+ * order: their games in hand, or postponed ones. Worked out from the rows
+ * alone; empty when every club has played the same number.
+ */
+export function clubsWithGamesInHand<T extends { readonly played: number }>(
+  rows: readonly T[],
+): T[] {
+  const most = rows.reduce((max, row) => Math.max(max, row.played), 0);
+  return rows.filter((row) => row.played < most);
+}
+
+/**
+ * The note under an overall table when some clubs have games in hand: their
+ * names (up to three), else how many, and a pointer to the played column.
+ * `null` when there is nothing to say.
+ */
+export function gamesInHandNote(
+  names: readonly string[],
+  lang: Language,
+  t: Translate,
+  format: Format,
+): string | null {
+  if (names.length === 0) return null;
+  const col = t("matches.table.played_short");
+  if (names.length > IN_HAND_NAMES_MAX) {
+    return t("standings.in_hand_count").replace("{n}", format(names.length)).replace("{col}", col);
+  }
+  return t("standings.in_hand_names")
+    .replace("{clubs}", names.join(listSeparator(lang)))
+    .replace("{col}", col);
+}
