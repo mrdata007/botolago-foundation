@@ -3,6 +3,49 @@ import { currentRelease } from "./operational-errors";
 /** The hosts that serve the public site (not Lovable's editor preview). */
 const PRODUCTION_HOSTS = new Set(["botolago.com", "www.botolago.com"]);
 
+/**
+ * Public HTML may sit at the host's edge for a minute and be served stale for
+ * five while it refreshes, so a burst of visitors costs one render. Browsers
+ * still revalidate (`max-age=0`).
+ *
+ * Safe because the server render is anonymous and identical for everyone: the
+ * Supabase session lives in `localStorage` (never a cookie, never read by the
+ * server), the language is chosen in the browser, the only CSP the server sets
+ * is the static `frame-ancestors 'self'` (no per-request nonce), and the
+ * document carries no per-visitor value.
+ */
+export const PUBLIC_HTML_CACHE_CONTROL =
+  "public, max-age=0, s-maxage=60, stale-while-revalidate=300";
+
+/** What the cache rule needs to know about the request. */
+export interface PublicCacheRequest {
+  method: string;
+  /** True when the request carries an `Authorization` header. */
+  hasAuthorization?: boolean;
+}
+
+/** Paths that are never shared-cached even if their response looks public. */
+const UNCACHED_PATHS =
+  /^\/(curva|plus|suppression-compte|unsubscribe|dev|mcp|api|_serverFn|\.lovable|\.well-known|journee)(\/|$|\.)/;
+
+function isSharedCacheable(
+  response: Response,
+  path: string,
+  request?: PublicCacheRequest,
+): boolean {
+  if (!request) return false;
+  const method = request.method.toUpperCase();
+  if (method !== "GET" && method !== "HEAD") return false;
+  if (request.hasAuthorization) return false;
+  if (response.status !== 200) return false;
+  if (response.headers.has("cache-control") || response.headers.has("set-cookie")) return false;
+  if (response.headers.has("x-botolago-unavailable")) return false;
+  if (!(response.headers.get("content-type") ?? "").toLowerCase().includes("text/html")) {
+    return false;
+  }
+  return !UNCACHED_PATHS.test(path);
+}
+
 function setHeaders(response: Response, values: Record<string, string>): Response {
   try {
     for (const [name, value] of Object.entries(values)) response.headers.set(name, value);
@@ -35,6 +78,7 @@ export function withSiteHeaders(
   response: Response,
   requestUrl: string,
   release = currentRelease(),
+  request?: PublicCacheRequest,
 ): Response {
   const values: Record<string, string> = { "x-botolago-release": release };
   let host = "";
@@ -53,6 +97,8 @@ export function withSiteHeaders(
     (/^\/fantasy(\/|$)/.test(path) && !["/fantasy/rules", "/fantasy/prizes"].includes(path))
   ) {
     values["cache-control"] = "private, no-store";
+  } else if (isSharedCacheable(response, path, request)) {
+    values["cache-control"] = PUBLIC_HTML_CACHE_CONTROL;
   }
   if (PRODUCTION_HOSTS.has(host)) {
     values["content-security-policy"] = "frame-ancestors 'self'";
