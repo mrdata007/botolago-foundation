@@ -509,7 +509,7 @@ describe("football live refresh, data-source switch", () => {
         job: "match_details_backfill",
       });
       expect(paths).toEqual([]);
-      expect(calls).toEqual(["football_data_source"]);
+      expect(calls).toEqual(["football_data_source", "service_rapidapi_budget"]);
     });
 
     it(`${source} without RAPIDAPI_KEY answers provider_not_configured and writes nothing`, async () => {
@@ -518,9 +518,61 @@ describe("football live refresh, data-source switch", () => {
       expect(response.status).toBe(503);
       expect(await response.json()).toMatchObject({ error: "provider_not_configured" });
       expect(paths).toEqual([]);
-      expect(calls).toEqual(["football_data_source"]);
+      expect(calls).toEqual(["football_data_source", "service_rapidapi_budget"]);
     });
   }
+
+  it("at the monthly hard limit no provider call is made and the run says so", async () => {
+    const calls: string[] = [];
+    const client = {
+      schema() {
+        return {
+          rpc(name: string) {
+            calls.push(name);
+            const data: Record<string, unknown> = {
+              football_data_source: "sofascore",
+              service_rapidapi_budget: {
+                used: 9700,
+                softLimit: 8500,
+                hardLimit: 9700,
+                windowStart: "2026-10-10",
+                liveIntervalSeconds: 60,
+              },
+            };
+            return Promise.resolve({ data: data[name] ?? null, error: null });
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+    for (const body of [
+      '{"job":"fixtures"}',
+      '{"job":"rating_polls"}',
+      '{"job":"catalog_weekly"}',
+    ]) {
+      calls.length = 0;
+      const { response, paths } = await run(client, body);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        status: "skipped",
+        reason: "monthly_budget_hard_limit",
+        used: 9700,
+        hardLimit: 9700,
+      });
+      expect(paths).toEqual([]);
+      expect(calls).toEqual(["football_data_source", "service_rapidapi_budget"]);
+    }
+  });
+
+  it("the rating_polls job is skipped unless SofaScore is the source", async () => {
+    const calls: string[] = [];
+    const { response, paths } = await run(
+      withSource("sportsmonks", calls),
+      '{"job":"rating_polls"}',
+    );
+    expect(await response.json()).toMatchObject({ status: "skipped", job: "rating_polls" });
+    expect(paths).toEqual([]);
+    expect(calls).toEqual(["football_data_source"]);
+  });
 
   it("refuses a source it does not know, without writing", async () => {
     const calls: string[] = [];

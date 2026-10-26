@@ -1535,7 +1535,7 @@ describe("API-native ratings bypass canonical player matching", () => {
           },
         },
       });
-      await run.sweep();
+      await run.pollRatings();
       expect(requested.map((p) => p.split("?")[0])).toEqual([
         "matches/get-lineups",
         "matches/get-incidents",
@@ -1547,6 +1547,33 @@ describe("API-native ratings bypass canonical player matching", () => {
       expect(names(db)).not.toContain("service_sofascore_auto_map_players");
     },
   );
+  test("the sweep never polls native ratings; pollRatings does nothing else", async () => {
+    const db = fakeDb({ native: true, nativeDue: [{ fixtureId: FIXTURE, eventId: EVENT }] });
+    const { run, net } = makeRun(db);
+    await run.sweep();
+    expect(names(db)).not.toContain("service_fantasy_api_ratings_due");
+    expect(net.paths).toHaveLength(0);
+    const polling = fakeDb({ native: true });
+    await makeRun(polling).run.pollRatings();
+    expect(names(polling)).toEqual(["service_fantasy_api_ratings_due"]);
+  });
+
+  test("catch-up never fetches a fixture on the native rating path", async () => {
+    const db = fakeDb({ native: true, dueCatchUp: [{ fixtureId: FIXTURE, eventId: EVENT }] });
+    const { run, net } = makeRun(db);
+    await run.sweep();
+    expect(net.paths).toHaveLength(0);
+    expect(names(db)).toContain("service_fantasy_api_rating_context");
+    // A failed policy read is treated as native too: never fetch on a guess.
+    const unknown = fakeDb({
+      native: "unavailable",
+      dueCatchUp: [{ fixtureId: FIXTURE, eventId: EVENT }],
+    });
+    const second = makeRun(unknown);
+    await second.run.sweep();
+    expect(second.net.paths).toHaveLength(0);
+  });
+
   test("rated unknown API IDs are recorded without a mapping call", async () => {
     const db = fakeDb({ native: true, world: newWorld({ mapped: new Set() }) });
     const { run, lines } = makeRun(db);

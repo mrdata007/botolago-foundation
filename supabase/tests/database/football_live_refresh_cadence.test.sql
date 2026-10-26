@@ -6,6 +6,10 @@
 begin;
 select extensions.no_plan();
 
+-- The poll interval in play is a setting (120 s until the 10 Nov reset); the
+-- cadence below is the 60 s one.
+select app_private.rapidapi_budget_configure(p_live_interval => 60);
+
 select extensions.is((select schedule from cron.job where jobname = 'football-live-refresh'),
   '* * * * *', 'pg_cron wakes the live refresh every minute');
 select extensions.ok((select relrowsecurity and relforcerowsecurity from pg_class
@@ -167,6 +171,30 @@ select extensions.is(
   (select c ->> 'status' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
    where c ->> 'name' = 'live_scores'),
   'ok', 'a refresh a minute ago passes it');
+
+-- ---------------------------------------------------------------------------
+-- The in-play interval is app_private.rapidapi_budget_settings.live_interval_seconds,
+-- and stretches to at least 180 s past the budget's soft limit.
+-- ---------------------------------------------------------------------------
+select pg_temp.fixture(9, statement_timestamp() - interval '30 minutes 7 seconds', 'live_first_half');
+select app_private.rapidapi_budget_configure(p_live_interval => 120);
+select pg_temp.last_call(interval '90 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'waiting',
+  'at 120 seconds a match in play is not refreshed after 90');
+select pg_temp.last_call(interval '105 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'but after 105 seconds (a late pg_cron start included)');
+select app_private.rapidapi_budget_configure(p_used_offset => 8500);
+select extensions.is(app_private.rapidapi_live_interval_seconds(), 180,
+  'past the soft limit the poll is at least 180 seconds');
+select pg_temp.last_call(interval '150 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'waiting',
+  'and 150 seconds is too soon');
+select pg_temp.last_call(interval '165 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'while 165 seconds is enough');
+select app_private.rapidapi_budget_configure(p_used_offset => 0, p_live_interval => 300);
+select extensions.is(app_private.rapidapi_live_interval_seconds(), 300, 'a longer setting is kept');
 
 select * from extensions.finish();
 rollback;
