@@ -46,6 +46,7 @@ import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { currentRelease, reportUnhandledError } from "@/lib/operational-errors";
 import { installClientErrorSink } from "@/lib/client-error-sink";
+import { registerServiceWorker } from "@/lib/pwa/register-sw";
 import { retryAfterError } from "@/lib/chunk-reload";
 
 function NotFoundComponent() {
@@ -241,6 +242,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
+      // Browser chrome colour when the site is installed (public/manifest.webmanifest).
+      { name: "theme-color", content: "#0c3164" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",
@@ -270,6 +273,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
       // reusing the old one they have cached. Bump it whenever the file changes.
       { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },
@@ -355,6 +359,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   // Visitors' errors reach api.report_client_errors (production builds only).
   useEffect(() => installClientErrorSink(), []);
+  // Offline page and installability (production browsers only, never the phone app).
+  useEffect(() => registerServiceWorker(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
