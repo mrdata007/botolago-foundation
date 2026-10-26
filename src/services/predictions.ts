@@ -21,7 +21,7 @@ import type {
   ResetInviteCodeDto,
   SavePredictionsDto,
 } from "@/backend/predictions/contracts";
-import { lazyRepository } from "@/backend/lazy-repository";
+import { MockPredictionsRepository } from "@/backend/predictions/mock-repository";
 import { SupabasePredictionsRepository } from "@/backend/predictions/supabase-repository";
 import { authService } from "@/services/auth";
 
@@ -42,9 +42,7 @@ export function selectPredictionsDataMode(
   return "mock";
 }
 
-const mockRepository = lazyRepository<PredictionsRepository>(() =>
-  import("@/backend/predictions/mock-repository").then((m) => new m.MockPredictionsRepository()),
-);
+const mockRepository = new MockPredictionsRepository();
 const supabaseRepository = new SupabasePredictionsRepository();
 
 export function predictionsDataMode(): PredictionsDataMode {

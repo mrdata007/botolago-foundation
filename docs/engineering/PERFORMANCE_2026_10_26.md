@@ -177,3 +177,15 @@ h-full w-full`), so intrinsic attributes would change nothing; left alone.
    them was not tried (a Rolldown group would put every icon any screen uses in
    one file the home page then downloads).
 5. **A 214 KB stylesheet still blocks the first paint** (35.5 KB gzip).
+
+### Correction: the Pronostics sample data loads with the app again
+
+Loading the Pronostics sample-data repository on demand changed the timing of
+the sign-in hand-over in the browser suite: in French, a visitor's picks and
+votes left the phone at sign-in but did not show on the account
+(`tests/e2e/pronostics.e2e.ts`, "at sign-in"). With it loaded with the app again
+the suite passes. The cost is small: the first view of `/` measures 97 script
+files, 1360.1 KB raw, 434.0 KB gzip (was 430.1 KB gzip with it on demand),
+inside the 475 KB budget. The other sample-data repositories stay on demand.
+This only affects the development and test data source; production uses
+Supabase.
