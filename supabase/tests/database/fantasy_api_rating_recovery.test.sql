@@ -310,7 +310,7 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 -- Recent finished fixtures are retried promptly and reservations prevent bursts.
 update app.fixtures set finalized_at=statement_timestamp()-interval '1 hour' where id=pg_temp.rid(3002);
 update app.fantasy_gameweeks set status='provisional',points_state='provisional',finalized_at=null where id=pg_temp.rid(25);
-update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '7 minutes',last_attempt_at=statement_timestamp()-interval '7 minutes' where fixture_id=pg_temp.rid(3002);
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '40 minutes',last_attempt_at=statement_timestamp()-interval '40 minutes' where fixture_id=pg_temp.rid(3002);
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a post-match rating poll is claimed once its back-off mark (one hour) has passed');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'a reserved recent poll cannot be claimed again immediately');
 -- Ratings may appear long after the football clock's ordinary two-hour window.
@@ -328,8 +328,8 @@ select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),
 select extensions.ok(not exists(select 1 from app_private.fantasy_api_rating_candidates()),'the same retry reservation also suppresses further wake-ups');
 select extensions.is(app_private.fantasy_rating_polls_tick(),'idle','the rating poll job sleeps again while no poll is due');
 -- A fixture whose latest rating source is complete is never polled again.
-update app.fixtures set finalized_at=statement_timestamp()-interval '30 hours' where id=pg_temp.rid(3002);
-update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '29 hours',last_attempt_at=statement_timestamp()-interval '29 hours' where fixture_id=pg_temp.rid(3002);
+update app.fixtures set finalized_at=statement_timestamp()-interval '27 hours' where id=pg_temp.rid(3002);
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '26 hours',last_attempt_at=statement_timestamp()-interval '26 hours' where fixture_id=pg_temp.rid(3002);
 select extensions.ok(exists(select 1 from app_private.fantasy_api_rating_candidates()),'an incomplete fixture past its 24-hour mark is due');
 select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(false),statement_timestamp());
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '29 hours',last_attempt_at=statement_timestamp()-interval '29 hours' where fixture_id=pg_temp.rid(3002);

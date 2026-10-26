@@ -131,6 +131,8 @@ begin
     'windowStart', app_private.rapidapi_window_start(), 'used', app_private.rapidapi_calls_this_month());
 end;
 $$;
+revoke all on function app_private.rapidapi_budget_configure(integer, integer, integer, integer, integer, integer, integer)
+  from public, anon, authenticated, service_role;
 
 -- 2. The quota window -----------------------------------------------------------
 
@@ -485,7 +487,8 @@ begin
     -- after four without a season refresh.
     select season_quiet_hours into quiet_hours from app_private.rapidapi_budget_settings where id;
     quiet_hours := coalesce(quiet_hours, 3);
-    if not (
+    -- Never called yet, or just switched back on: call at once.
+    if beat.last_invoked_at is not null and not (
       (extract(hour from now_at at time zone 'utc')::integer = 3
         and (beat.last_invoked_at is null or beat.last_invoked_at <= now_at - interval '2 hours'))
       or (quiet_hours > 0
