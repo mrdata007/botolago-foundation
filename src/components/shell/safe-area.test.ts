@@ -36,7 +36,7 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 describe("safe areas", () => {
   test("the viewport covers the whole screen", () => {
     expect(read("src/routes/__root.tsx")).toContain(
-      'content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
     );
   });
 
@@ -83,18 +83,22 @@ describe("BG-0151: the root viewport meta", () => {
 
   test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
-    expect(viewports[0]).toBe(
-      "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
-    );
+    expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
   });
 
-  // iOS zooms in when a field under 16px gets focus and never zooms back; the
-  // kit's fields are 15px, and the phone app cannot pinch back out. The cap is
-  // what stops it (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
-  // `user-scalable=no` would add nothing in the app and fail more audits.
-  test("caps the zoom at 1, without user-scalable=no", () => {
-    expect(viewports[0]).toContain("maximum-scale=1");
+  // The page can be pinch-zoomed (WCAG 1.4.4). What the cap used to prevent,
+  // iOS zooming in on a focused field under 16px, is prevented by the fields
+  // being 16px on touch screens instead.
+  test("does not cap the zoom", () => {
+    expect(viewports[0]).not.toContain("maximum-scale");
     expect(viewports[0]).not.toContain("user-scalable");
+  });
+
+  test("keeps text fields at 16px on touch screens, so iOS does not zoom on focus", () => {
+    const css = read("src/styles.css");
+    const rule =
+      /@media \(pointer: coarse\) \{\s*input:not\([\s\S]*?\)\s*,\s*select,\s*textarea \{\s*font-size: 16px;/;
+    expect(css).toMatch(rule);
   });
 
   test("is not overridden by any other route", () => {

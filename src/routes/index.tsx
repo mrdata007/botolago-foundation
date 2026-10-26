@@ -1,15 +1,7 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentType,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -85,8 +77,7 @@ import { RevealOnArrive } from "@/components/common/RevealOnArrive";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
-import { useSplashDone } from "@/lib/launch-sequence";
+import { FantasyInvitationCard } from "@/components/landing/FantasyInvitationCard";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
@@ -105,11 +96,37 @@ import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
-import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
   "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
+
+/**
+ * The language the server renders and prefetches in, and the one the first
+ * client render uses: `INITIAL_LANGUAGE_STATE` is French for everyone (the
+ * stored or detected language is applied after mount, so hydration matches).
+ * The hydrated cache is therefore read, by every reader, under these "fr"
+ * keys. An Arabic reader's queries change key right after hydration and
+ * must be fetched in Arabic: the club, season and competition names come
+ * back from the database translated (`p_language`), so the French data
+ * cannot stand in for them, and the server cannot know to prefetch Arabic
+ * (the language is in the browser's storage, not the request). The
+ * language-keyed queries below keep the French data on screen as a
+ * placeholder while the Arabic arrives, rather than turning to skeletons.
+ */
+const SSR_LANGUAGE = "fr" as const;
+
+/** The band photograph the server drew: the crowd while a match is live. */
+const bandPhoto = (live: boolean) =>
+  live
+    ? { src: liveBand, small: liveBandSmall, width: 1600, height: 686 }
+    : { src: stadiumBand, small: stadiumBandSmall, width: 1600, height: 600 };
+/** What the band image's `sizes` says; the preload must say the same. */
+const BAND_IMAGE_SIZES = "(min-width: 640px) 672px, 100vw";
+const bandSrcSet = (live: boolean) => {
+  const photo = bandPhoto(live);
+  return `${photo.small} 800w, ${photo.src} 1600w`;
+};
 
 export const Route = createFileRoute("/")({
   // The server renders the home page with its matches, clubs, news and table
@@ -119,33 +136,37 @@ export const Route = createFileRoute("/")({
     const { queryClient } = context;
     await prefetchForSsr(queryClient, [
       {
-        queryKey: ["football", "home-matches", "fr"],
-        queryFn: ({ signal }) => footballService.getHomeMatches("fr", signal),
+        queryKey: ["football", "home-matches", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getHomeMatches(SSR_LANGUAGE, signal),
       },
       {
-        queryKey: ["football", "clubs", "fr"],
-        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+        queryKey: ["football", "clubs", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getClubs(SSR_LANGUAGE, signal),
       },
       {
-        queryKey: ["football", "seasons", "fr"],
-        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+        queryKey: ["football", "seasons", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getSeasons(SSR_LANGUAGE, signal),
       },
       ...(NEWS_ENABLED
         ? [
             {
-              queryKey: ["news", "edition", "fr", "auto"],
-              queryFn: () => newsService.getEdition("fr", "auto"),
+              queryKey: ["news", "edition", SSR_LANGUAGE, "auto"],
+              queryFn: () => newsService.getEdition(SSR_LANGUAGE, "auto"),
             },
           ]
         : []),
     ]);
-    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>([
+      "football",
+      "seasons",
+      SSR_LANGUAGE,
+    ]);
     const current = seasons?.find((season) => season.isCurrent) ?? seasons?.[0];
     if (current) {
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "standings", current.id, "fr"],
-          queryFn: ({ signal }) => footballService.getStandings(current, "fr", signal),
+          queryKey: ["football", "standings", current.id, SSR_LANGUAGE],
+          queryFn: ({ signal }) => footballService.getStandings(current, SSR_LANGUAGE, signal),
         },
       ]);
     }
@@ -153,10 +174,18 @@ export const Route = createFileRoute("/")({
     // the browser's first render reads it back from the loader data rather
     // than its own clock, so both render the same words (as /matches does
     // with its day).
-    return { ...ssrAvailability(queryClient), renderedAt: Date.now() };
+    // Whether a match is live, for the band's photograph (the preload in
+    // `head` names the one the page will draw, the crowd or the stadium).
+    const home = queryClient.getQueryData<{ matches: Match[] }>([
+      "football",
+      "home-matches",
+      SSR_LANGUAGE,
+    ]);
+    const bandLive = home?.matches.some(isInPlay) ?? false;
+    return { ...ssrAvailability(queryClient), renderedAt: Date.now(), bandLive };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { title: HOME_TITLE },
       { name: "description", content: HOME_DESCRIPTION },
@@ -168,7 +197,20 @@ export const Route = createFileRoute("/")({
       { name: "twitter:title", content: HOME_TITLE },
       { name: "twitter:description", content: HOME_DESCRIPTION },
     ],
-    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+    links: [
+      { rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` },
+      // The band's photograph is the page's largest image and the browser
+      // finds it only in the rendered body: fetched at once instead, with
+      // the same srcset and sizes as the `<img>`, so it picks the same file.
+      {
+        rel: "preload",
+        as: "image",
+        href: bandPhoto(loaderData?.bandLive ?? false).src,
+        imageSrcSet: bandSrcSet(loaderData?.bandLive ?? false),
+        imageSizes: BAND_IMAGE_SIZES,
+        fetchPriority: "high",
+      },
+    ],
     // Who publishes the site, and the site itself (see `@/lib/structured-data`).
     scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
@@ -201,106 +243,16 @@ function useGreeting(now: Date) {
 }
 
 /**
- * The landing page, as its own chunk: most readers of `/` are signed in or
- * returning and never see it, so they no longer download it (about 33 KB of
- * script before compression: the page, the demonstration pitch's shirts, the
- * prize catalog's client). One loader, so the preload below and `lazy` share
- * the same request.
+ * Home, for everyone. It used to give way to the landing page on a first
+ * visit without an account, once the splash had gone: the server's Home was
+ * replaced by a different page after hydration. Now an anonymous visitor who
+ * has not been welcomed keeps the Home the server sent (live scores, table,
+ * news) and finds a compact, dismissible invitation to the game inside it
+ * (`FantasyInvitationCard`, under the first screen's content). The landing
+ * page stays what it was, at `/jouer`.
  */
-const loadLanding = () => import("@/components/landing/LandingPage");
-const LandingPage = lazy(() =>
-  loadLanding().then(
-    (module) => ({ default: module.LandingPage }),
-    // A chunk that fails to load (a deploy mid-visit, a dropped connection)
-    // leaves the newcomer on Home rather than on an error page.
-    () => ({ default: (_: { onLeave?: () => void }) => <HomeContent /> }),
-  ),
-);
-
-/**
- * Keep the hero's dark ground while its chunk arrives, with a readable status
- * and a public way forward even on a slow connection. Home's moving feed is
- * deliberately not mounted underneath it.
- */
-function LandingFallback() {
-  useDarkStatusBand();
-  const { t } = useI18n();
-  return (
-    <div
-      className={cn(
-        "flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-[color:var(--ui-ink-deep)] text-center",
-        ui.space.gutter,
-        ui.tone.onMesh,
-      )}
-    >
-      <h1 className={ui.display.title}>
-        <BrandedText text="BotolaGO" tone="light" />
-      </h1>
-      <p role="status" className={ui.text.body}>
-        {t("state.loading")}
-      </p>
-      <Link
-        to="/matches"
-        onClick={markWelcomeDone}
-        className={cn(
-          "inline-flex items-center underline underline-offset-4",
-          ui.space.tap,
-          ui.text.bodyStrong,
-          ui.focusOnMesh,
-        )}
-      >
-        {t("landing.cta_matches")}
-      </Link>
-    </div>
-  );
-}
-
 function HomePage() {
-  const { status } = useAuth();
-  const { isHydrated } = useI18n();
-  const splashDone = useSplashDone();
-
-  // Read localStorage only after mount so SSR and first client render match.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  // Leaving the landing page by any of its links is the welcome: from then on
-  // `/` opens on Home, also when that link was the logo, back to `/`.
-  const [left, setLeft] = useState(false);
-  const leave = () => {
-    markWelcomeDone();
-    setLeft(true);
-  };
-
-  // A first visit without an account gets the landing page in Home's place:
-  // what the game is, why play, and one way in. It used to be a welcome
-  // dialog of three buttons, two of which did the same thing, over a Home
-  // that a newcomer could not yet read.
-  //
-  // It waits for the splash (src/lib/launch-sequence.ts), under which nothing
-  // is seen, and not for the language chooser: the chooser opens over the
-  // landing page rather than over a Home that is about to be replaced.
-  // The server always renders Home — it knows no session — so a crawler, and
-  // every returning reader, gets Home's content and links (audit 2026-09-24,
-  // P1-2). A signed-in reader, a guest and anyone who has been welcomed
-  // before never see the landing page here; `/jouer` is its own address.
-  const showLanding =
-    mounted && splashDone && isHydrated && status === "anonymous" && !left && !hasWelcomed();
-
-  // Fetched as soon as the session says this is a first visit without an
-  // account — while the splash still plays — so the page is ready when the
-  // splash leaves.
-  const firstVisit = mounted && status === "anonymous" && !left && !hasWelcomed();
-  useEffect(() => {
-    if (firstVisit) void loadLanding();
-  }, [firstVisit]);
-
-  return showLanding ? (
-    <Suspense fallback={<LandingFallback />}>
-      <LandingPage onLeave={leave} />
-    </Suspense>
-  ) : (
-    <HomeContent />
-  );
+  return <HomeContent />;
 }
 
 /** A match being played right now, for the split live card. */
@@ -390,10 +342,12 @@ function HomeContent() {
     queryKey: ["news", "edition", lang, "auto"] as const,
     queryFn: () => newsService.getEdition(lang, "auto"),
     enabled: NEWS_ENABLED,
+    placeholderData: keepPreviousData,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    placeholderData: keepPreviousData,
   });
 
   // Standings snapshot: the top of the table on the Classement tab
@@ -403,6 +357,7 @@ function HomeContent() {
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    placeholderData: keepPreviousData,
   });
   const currentSeason = useMemo(
     () => seasonsQ.data?.find((season) => season.isCurrent) ?? seasonsQ.data?.[0],
@@ -412,6 +367,8 @@ function HomeContent() {
     queryKey: ["football", "standings", currentSeason?.id, lang],
     queryFn: () => footballService.getStandings(currentSeason!, lang),
     enabled: currentSeason != null,
+    // The table in French while the Arabic one loads (see `SSR_LANGUAGE`).
+    placeholderData: keepPreviousData,
   });
   // A match ending changes the table (see /matches/standings).
   const queryClient = useQueryClient();
@@ -876,6 +833,10 @@ function HomeContent() {
                 </div>
               )}
           </Section>
+          {/* A first visit without an account: a way into the game, under the
+          Fantasy card. It appears after mount (localStorage) and below the
+          first screen on a phone, so nothing already read moves. */}
+          <FantasyInvitationCard className="order-5 xl:order-4" />
           {/* Pronostics (BG-0146), right after the matches: shown once promoted,
           and it hides itself while the game is off in the database. */}
           {PRONOSTICS_PROMOTED && (
@@ -1111,13 +1072,14 @@ function GameweekBand({
           starts on the calm side. Decorative, so hidden from assistive tech;
           above the fold, so it is fetched eagerly. */}
       <img
-        src={live ? liveBand : stadiumBand}
-        srcSet={
-          live
-            ? `${liveBandSmall} 800w, ${liveBand} 1600w`
-            : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
-        }
-        sizes="(min-width: 640px) 672px, 100vw"
+        src={bandPhoto(live).src}
+        srcSet={bandSrcSet(live)}
+        sizes={BAND_IMAGE_SIZES}
+        // The photograph's own size: the box is laid out by `h-full w-full`,
+        // so these change nothing on screen, but the browser knows the
+        // aspect before the file arrives.
+        width={bandPhoto(live).width}
+        height={bandPhoto(live).height}
         alt=""
         aria-hidden
         decoding="async"
