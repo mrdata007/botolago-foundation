@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { EmailRpcClient } from "./notification-email-dispatch.ts";
 import {
   buildUserMessage,
+  clubNameProblems,
   handleAiContentRequest,
   inventedScores,
   parseGenerated,
@@ -193,6 +194,84 @@ describe("unsupportedMentions", () => {
     expect(unsupportedMentions(preview, article("Une finale, peut-être aux tirs au but"))).toEqual(
       [],
     );
+  });
+});
+
+describe("club names", () => {
+  const zemamra: ContentJob = {
+    kind: "match_recap",
+    fixtureId: "f",
+    facts: {
+      home: { fr: "Maghreb Fès", ar: "نادي المغرب الرياضي الفاسي" },
+      away: { fr: "Renaissance Club Athletic Zemamra", ar: "نادي النهضة أتلتيك الزمامرة" },
+      homeScore: 2,
+      awayScore: 1,
+    },
+  };
+  const ok = article(
+    "Maghreb Fès a battu Renaissance Club Athletic Zemamra, et Renaissance Club Athletic Zemamra a résisté.",
+    "فاز نادي المغرب الرياضي الفاسي على نادي النهضة أتلتيك الزمامرة",
+  );
+  it("accepts a report that uses the fact names", () => {
+    expect(clubNameProblems(zemamra, ok)).toEqual([]);
+    expect(unsupportedMentions(zemamra, ok)).toEqual([]);
+  });
+  it("rejects the audit's three names for one club", () => {
+    for (const alias of ["RCA Zemamra", "CR Khemis Zemamra", "Renaissance Zemamra"]) {
+      const text = article(`Maghreb Fès a battu Renaissance Club Athletic Zemamra puis ${alias}.`);
+      expect(clubNameProblems(zemamra, text)).toEqual(["club_alias:rca-zemamra"]);
+      expect(unsupportedMentions(zemamra, text)).toEqual(["club_alias:rca-zemamra"]);
+    }
+    const ar = article("Le match", "فاز نادي المغرب الرياضي الفاسي على نهضة الزمامرة");
+    expect(clubNameProblems(zemamra, ar)).toEqual(["club_alias:rca-zemamra"]);
+  });
+  it("is not fooled by accents, case or a canonical name containing an alias", () => {
+    const text = article("MAGHREB FES a battu renaissance club athletic zemamra");
+    expect(clubNameProblems(zemamra, text)).toEqual([]);
+    const raja: ContentJob = {
+      kind: "match_recap",
+      fixtureId: "f",
+      facts: { home: { fr: "Raja Club Athletic", ar: "x" }, away: { fr: "Amal Tiznit", ar: "y" } },
+    };
+    expect(clubNameProblems(raja, article("Raja Club Athletic bat Amal Tiznit"))).toEqual([]);
+    expect(clubNameProblems(raja, article("Le Raja CA bat Amal Tiznit"))).toEqual([
+      "club_alias:raja-casablanca",
+    ]);
+  });
+  it("rejects a known club that is not in the facts", () => {
+    const text = article(
+      "Maghreb Fès a battu Renaissance Club Athletic Zemamra devant le Wydad Casablanca",
+    );
+    expect(clubNameProblems(zemamra, text)).toEqual(["club_not_in_facts:wydad-casablanca"]);
+  });
+  it("allows previews to name the opponents listed in the recent results", () => {
+    const preview: ContentJob = {
+      kind: "match_preview",
+      fixtureId: "f",
+      facts: {
+        home: { fr: "Maghreb Fès", ar: "a" },
+        away: { fr: "Raja Casablanca", ar: "b" },
+        homeLastResults: [{ opponent: "Wydad Casablanca", scored: 1, conceded: 0 }],
+      },
+    };
+    expect(
+      clubNameProblems(
+        preview,
+        article("Maghreb Fès reçoit Raja Casablanca après Wydad Casablanca"),
+      ),
+    ).toEqual([]);
+    expect(
+      clubNameProblems(preview, article("Maghreb Fès reçoit Raja Casablanca après RSB Berkane")),
+    ).toEqual(["club_not_in_facts:rsb-berkane"]);
+  });
+  it("leaves news and blog posts, and jobs without team facts, alone", () => {
+    const news: ContentJob = { kind: "news_report", fixtureId: null, facts: {} };
+    expect(clubNameProblems(news, article("Le Wydad Casablanca et RCA Zemamra"))).toEqual([]);
+    expect(clubNameProblems(recap, article("Le Wydad Casablanca"))).toEqual([]);
+  });
+  it("sends the exact club names to the model in the facts", () => {
+    const message = buildUserMessage(zemamra);
+    expect(message).toContain("Renaissance Club Athletic Zemamra");
   });
 });
 
