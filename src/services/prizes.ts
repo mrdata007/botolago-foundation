@@ -6,7 +6,7 @@ import type {
   PublicPrizeDto,
   PublicPrizeWinnerPageDto,
 } from "@/backend/prizes/contracts";
-import { MockPrizesRepository } from "@/backend/prizes/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { SupabasePrizesRepository } from "@/backend/prizes/supabase-repository";
 
 export type PrizesDataMode = "mock" | "supabase";
@@ -26,7 +26,9 @@ export function selectPrizesDataMode(
   return "mock";
 }
 
-const mockRepository = new MockPrizesRepository();
+const mockRepository = lazyRepository<PrizesRepository>(() =>
+  import("@/backend/prizes/mock-repository").then((m) => new m.MockPrizesRepository()),
+);
 const supabaseRepository = new SupabasePrizesRepository();
 
 export function getPrizesRepository(): PrizesRepository {

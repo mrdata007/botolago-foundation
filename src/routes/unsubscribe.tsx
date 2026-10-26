@@ -12,7 +12,7 @@ import {
 } from "@/backend/notifications/contracts";
 import { AppShell } from "@/components/shell/AppShell";
 import { UiPageTitle } from "@/components/ui-kit";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { unsubscribeFromNotificationEmails } from "@/services/notifications";
 import { NOTIFICATION_PREFERENCES_QUERY_KEY } from "@/services/use-notification-preferences";

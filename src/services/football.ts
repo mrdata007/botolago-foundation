@@ -15,7 +15,7 @@ import type {
   TeamSummaryDto,
 } from "@/backend/football/contracts";
 import { FootballError } from "@/backend/football/errors";
-import { MockFootballRepository } from "@/backend/football/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
 import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
@@ -45,7 +45,9 @@ export function selectFootballDataMode(
   return "mock";
 }
 
-const mockRepository = new MockFootballRepository();
+const mockRepository = lazyRepository<FootballRepository>(() =>
+  import("@/backend/football/mock-repository").then((m) => new m.MockFootballRepository()),
+);
 const supabaseRepository = new SupabaseFootballRepository();
 
 export function getFootballRepository(): FootballRepository {

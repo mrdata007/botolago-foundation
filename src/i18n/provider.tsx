@@ -6,11 +6,18 @@ import {
   useMemo,
   useReducer,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { TranslationKey } from "./dictionaries";
 import { dictionaryInChunk } from "./dictionary-chunk";
-import { fr } from "./dictionary-fr";
+import {
+  frenchDictionary,
+  frenchVersion,
+  isFrenchComplete,
+  loadFrenchRest,
+  subscribeFrench,
+} from "./dictionary-fr-loader";
 import {
   detectLanguage,
   INITIAL_LANGUAGE_STATE,
@@ -61,7 +68,7 @@ function isReady(lang: Language): boolean {
 }
 
 function dictionaryFor(lang: Language): Dictionary {
-  return (lang === "ar" && arabicDictionary()) || fr;
+  return (lang === "ar" && arabicDictionary()) || frenchDictionary();
 }
 
 interface I18nContextValue {
@@ -115,6 +122,9 @@ function LanguageProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(languageReducer, INITIAL_LANGUAGE_STATE);
   const { lang, hasChosen, loading, failed } = state;
   const [isHydrated, setIsHydrated] = useState(false);
+  // The rest of the French dictionary arriving (normally before the page that
+  // needs it, see dictionary-fr-loader.ts) re-renders what read a key early.
+  const frenchVersionNow = useSyncExternalStore(subscribeFrench, frenchVersion, frenchVersion);
 
   // Only Arabic is ever fetched. A result that arrives after the reader has
   // moved on is dropped by the reducer, which knows what is still wanted.
@@ -194,10 +204,17 @@ function LanguageProvider({ children }: { children: ReactNode }) {
       failedLanguage: failed,
       setLanguage,
       retryLanguage,
-      t: (key) => dictionaryFor(lang)[key] ?? key,
+      t: (key) => {
+        const found = dictionaryFor(lang)[key];
+        if (found !== undefined) return found;
+        // A key the first part does not hold, asked for before the rest has
+        // arrived: fetch it and render again when it does.
+        if (!isFrenchComplete()) loadFrenchRest().catch(() => undefined);
+        return key;
+      },
       tr: (s) => s[lang] ?? s.fr,
     }),
-    [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage],
+    [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage, frenchVersionNow],
   );
 
   return (

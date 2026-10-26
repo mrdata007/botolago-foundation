@@ -160,7 +160,9 @@ describe("the Curva screens' styling", () => {
 
 describe("the Curva screens' words", () => {
   it("add no dictionary key of their own: every key they read already exists", () => {
-    const fr = readFileSync(join(SRC, "i18n", "dictionary-fr.ts"), "utf8");
+    const fr = ["dictionary-fr-core.ts", "dictionary-fr-rest.ts"]
+      .map((file) => readFileSync(join(SRC, "i18n", file), "utf8"))
+      .join("\n");
     for (const { name, text } of sources) {
       for (const match of code(text).matchAll(/\bt\("([a-z0-9_.]+)"\)/g)) {
         expect(fr, `${name}: ${match[1]}`).toContain(`"${match[1]}"`);

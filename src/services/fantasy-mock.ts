@@ -8,43 +8,19 @@ import type {
   GameweekResult,
   League,
   LeagueStanding,
-  SquadPlayer,
-  FormationKey,
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import * as fdb from "@/mocks/fantasy-data";
-import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
+import {
+  loadPatch,
+  mergeTeam,
+  saveTeamPatch,
+  type FantasyTeamPatch,
+} from "@/services/fantasy-team-patch";
 
 const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
-// Locally persisted overrides on top of the mock team. Kept partial so we
-// only store what the user actually changed.
-export interface FantasyTeamPatch {
-  teamName?: string;
-  managerName?: string;
-  formation?: FormationKey;
-  squad?: SquadPlayer[];
-  bank?: number;
-  freeTransfers?: number;
-  pendingTransfers?: number;
-}
-
-function loadPatch(): FantasyTeamPatch {
-  return readJSON<FantasyTeamPatch>(STORAGE_KEYS.FANTASY_TEAM) ?? {};
-}
-
-function mergeTeam(base: FantasyTeam, patch: FantasyTeamPatch): FantasyTeam {
-  return {
-    ...base,
-    teamName: patch.teamName ?? base.teamName,
-    managerName: patch.managerName ?? base.managerName,
-    formation: patch.formation ?? base.formation,
-    squad: patch.squad ?? base.squad,
-    bank: patch.bank ?? base.bank,
-    freeTransfers: patch.freeTransfers ?? base.freeTransfers,
-    pendingTransfers: patch.pendingTransfers ?? base.pendingTransfers,
-  };
-}
+export type { FantasyTeamPatch };
 
 export const fantasyService = {
   async getPlayers(): Promise<FantasyPlayer[]> {
@@ -57,8 +33,7 @@ export const fantasyService = {
     return delay(mergeTeam(fdb.fantasyTeam, loadPatch()));
   },
   saveTeam(patch: FantasyTeamPatch): void {
-    const current = loadPatch();
-    writeJSON<FantasyTeamPatch>(STORAGE_KEYS.FANTASY_TEAM, { ...current, ...patch });
+    saveTeamPatch(patch);
   },
   /** Compute team value (sum of squad prices) from the current merged team. */
   async getTeamValue(): Promise<number> {

@@ -5,6 +5,7 @@ import { viewTransitionOption } from "@/lib/page-transition";
 import { armTabSlide } from "@/lib/tab-slide";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { createAppQueryClient } from "@/services/query-client";
+import { frenchReadyFor } from "@/i18n/dictionary-fr-loader";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -34,8 +35,12 @@ export const getRouter = () => {
       ({
         queryClientState: dehydrate(queryClient, SSR_DEHYDRATE_OPTIONS),
       }) as never,
-    hydrate: (dehydrated: { queryClientState?: DehydratedState }) => {
+    hydrate: async (dehydrated: { queryClientState?: DehydratedState }) => {
       if (dehydrated?.queryClientState) hydrate(queryClient, dehydrated.queryClientState);
+      // The server rendered this page from the whole French dictionary; the
+      // browser needs the same before its first render, or the page would
+      // hydrate with raw keys (the home page is covered by the first part).
+      await frenchReadyFor(window.location.pathname);
     },
   });
 

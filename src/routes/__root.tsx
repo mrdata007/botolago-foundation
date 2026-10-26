@@ -16,6 +16,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { frenchReadyFor } from "@/i18n/dictionary-fr-loader";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
@@ -233,7 +234,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   // Curva (the Manager Card section): read the database's status once per server render, before
   // any child route's guard needs it. Registered only when the build lets Curva exist, so with
   // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
-  ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
+  beforeLoad: async (ctx) => {
+    // Browser: the rest of the French dictionary is in before a page other than
+    // the home page renders (src/i18n/dictionary-fr-loader.ts).
+    await frenchReadyFor(ctx.location.pathname);
+    if (MANAGER_CARD_BUILD) await rootBeforeLoad(ctx);
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },

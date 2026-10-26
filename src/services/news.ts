@@ -7,7 +7,7 @@ import type {
   NewsTeamFilterDto,
 } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
-import { MockNewsRepository } from "@/backend/news/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { encodeSavedCursor, SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import type { SavedEntry } from "@/lib/saved-collection";
 import { authService } from "@/services/auth";
@@ -40,7 +40,9 @@ export function selectNewsDataMode(
   return "mock";
 }
 
-const mockRepository = new MockNewsRepository();
+const mockRepository = lazyRepository<NewsRepository>(() =>
+  import("@/backend/news/mock-repository").then((m) => new m.MockNewsRepository()),
+);
 const supabaseRepository = new SupabaseNewsRepository();
 
 export function getNewsDataMode(): NewsDataMode {

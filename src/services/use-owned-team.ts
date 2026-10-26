@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { fantasyService as mockFantasyService } from "@/services/fantasy-mock";
+import { lazyMockFantasyService as mockFantasyService } from "@/services/fantasy-mock-lazy";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore, type FantasyPersistedState } from "@/services/fantasy-state";
 import type { FantasyTeam } from "@/types/fantasy";
