@@ -580,6 +580,12 @@ export const fr = {
   "fantasy.rankings.ordinal_one": "{n}er",
   "fantasy.rankings.ordinal_other": "{n}e",
   "fantasy.rankings.tab_leagues": "Mes ligues",
+  "fantasy.rankings.waiting": "En attente",
+  "fantasy.rankings.waiting_note":
+    "Points de la journée en attente des notes des joueurs. Le classement peut encore bouger.",
+  "fantasy.rankings.around": "Autour de vous",
+  "fantasy.rankings.invite_title": "Invitez vos amis",
+  "fantasy.rankings.invite_body": "Créez une ligue privée et comparez vos points entre amis.",
   "fantasy.rank.up": "En hausse",
   "fantasy.rank.down": "En baisse",
   "fantasy.rank.same": "Position inchangée",
