@@ -5,8 +5,10 @@ live public pages, no code access). This brief turns its findings into
 work packages and records, before any interface change, what must be
 preserved, what changes, and how each change is accepted.
 
-Code only. No database writes, no migrations applied, no Edge Function
-deployed, nothing published in Lovable. Anything that needs an account,
+Code only. No database writes, no migrations applied, nothing published in
+Lovable. One exception, on the owner's instruction (2026-10-26): the Edge
+Function `ai-content-generate` was redeployed to production (version 19) with
+package G's guardrails; see "Deployed" below. Anything that needs an account,
 a store listing or a backend change is listed under "Not in this change".
 
 ## What must be preserved
@@ -112,3 +114,16 @@ s-maxage=60, stale-while-revalidate=300` (or similar short TTL). Personal
 - Supabase access review (RLS, elevated functions, vote rate limits) and
   data/logo licensing: to check with backend access.
 - A human review queue for generated reports (needs a migration).
+
+## Deployed
+
+- 2026-10-26 19:23 UTC, on the owner's instruction: `ai-content-generate`
+  redeployed to production `tkewgajrljbwgwedqsxn` (version 18 → 19) from this
+  branch, through the Supabase connector (the `production-ai-content-setup`
+  workflow runs only from `main`). The seven uploaded files were compared
+  byte for byte with the branch after deploying: identical. The deploy also
+  brought this function onto the in-process scheduler-token check already on
+  `main` and on the other scheduled functions; an all-zero token probe
+  answered 401 (secret present), and the 19:30 pg_cron run answered 200.
+  Production now runs code ahead of `main` for this function until this
+  branch is merged. Rollback: redeploy version 18's files.
