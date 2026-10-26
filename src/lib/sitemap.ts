@@ -116,17 +116,20 @@ export function buildSitemapXml(options: {
     urls.push(`  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}/news`)}</loc></url>`);
     for (const entry of options.news) {
       const own = buildCanonicalArticleUrl(entry.id);
-      const alternates =
+      const editions =
         entry.translations.length === 0
-          ? ""
-          : [{ id: entry.id, language: entry.language }, ...entry.translations]
-              .map(
-                (edition) =>
-                  `<xhtml:link rel="alternate" hreflang="${edition.language}" href="${escapeXml(
-                    buildCanonicalArticleUrl(edition.id),
-                  )}"/>`,
-              )
-              .join("");
+          ? []
+          : [{ id: entry.id, language: entry.language }, ...entry.translations];
+      const link = (hreflang: string, id: string) =>
+        `<xhtml:link rel="alternate" hreflang="${hreflang}" href="${escapeXml(
+          buildCanonicalArticleUrl(id),
+        )}"/>`;
+      // Reciprocal pair (each edition's own entry lists both) plus x-default on
+      // the French edition, exactly as the article page's head declares them.
+      const french = editions.find((edition) => edition.language === "fr");
+      const alternates =
+        editions.map((edition) => link(edition.language, edition.id)).join("") +
+        (french ? link("x-default", french.id) : "");
       // The last real change, else publication: never `updatedAt`, which a
       // bulk update moved on every article on 2026-09-24 (audit P1-4).
       const modified = entry.contentUpdatedAt ?? entry.publishedAt;

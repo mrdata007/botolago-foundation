@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
+import { getArticleEdition, getNewsRepository, newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -57,6 +57,9 @@ import {
   unavailableHeaders,
 } from "@/lib/page-availability";
 
+const ARTICLE_EDITION_KEY = (identifier: string) =>
+  ["news", "article-edition-v1", identifier] as const;
+
 export const Route = createFileRoute("/news/$articleId")({
   // While News is hidden (owner decision — see `@/lib/feature-flags`) article
   // permalinks redirect to Home rather than 404; the full rationale is on the
@@ -74,14 +77,9 @@ export const Route = createFileRoute("/news/$articleId")({
   loader: async ({ params, context }) => {
     try {
       return await context.queryClient.ensureQueryData({
-        queryKey: ["news", "article-detail-v2", "fr", params.articleId],
+        queryKey: ARTICLE_EDITION_KEY(params.articleId),
         queryFn: () =>
-          getArticleWithLanguageFallback(
-            getNewsRepository(),
-            params.articleId,
-            "fr",
-            publicNewsContext(),
-          ),
+          getArticleEdition(getNewsRepository(), params.articleId, publicNewsContext()),
       });
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
@@ -159,10 +157,12 @@ function ArticlePage() {
   const initialArticle = isUnavailable(loaded) ? undefined : loaded;
 
   const articleQ = useQuery({
-    queryKey: ["news", "article-detail-v2", lang, articleId],
-    queryFn: () =>
-      getArticleWithLanguageFallback(getNewsRepository(), articleId, lang, publicNewsContext()),
-    initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
+    // Keyed by the edition the address names, never by the reader's language:
+    // the server loader and this query agree, so hydration keeps the server's
+    // text (an Arabic edition stays Arabic for a French-interface reader).
+    queryKey: ARTICLE_EDITION_KEY(articleId),
+    queryFn: () => getArticleEdition(getNewsRepository(), articleId, publicNewsContext()),
+    initialData: initialArticle ?? undefined,
   });
   const relatedQ = useQuery({
     queryKey: ["news", "related", lang, articleId],
