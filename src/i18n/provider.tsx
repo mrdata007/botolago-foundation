@@ -214,6 +214,8 @@ function LanguageProvider({ children }: { children: ReactNode }) {
       },
       tr: (s) => s[lang] ?? s.fr,
     }),
+    // `frenchVersionNow` is not read inside: a new value makes `t` read the dictionary again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage, frenchVersionNow],
   );
 
