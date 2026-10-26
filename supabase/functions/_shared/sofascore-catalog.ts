@@ -26,6 +26,7 @@
 import {
   createRapidApiClient,
   RapidApiError,
+  type RapidApiBudget,
   type RapidApiResult,
   type RapidApiRequestEvent,
   type RapidApiRuntime,
@@ -367,6 +368,7 @@ export function createCatalogRapidClient(
   overrides: {
     readonly runtime?: RapidApiRuntime;
     readonly onRequest?: (event: RapidApiRequestEvent) => void;
+    readonly budget?: RapidApiBudget;
   } = {},
 ): CatalogRapidClient {
   const send: FetchLike = baseFetch ?? ((input, init) => globalThis.fetch(input, init));

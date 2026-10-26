@@ -533,15 +533,27 @@ export class SofascoreFantasyRun {
   /**
    * Retries held fixtures from their stored replies (no SofaScore request) and
    * fetches at most `catchUpPerTick` finished fixtures never attempted
-   * (3 requests each). `sofascore` mode only: a shadow run keeps no state.
+   * (3 requests each; never a fixture on the native rating path, which the
+   * rating polls serve). `sofascore` mode only: a shadow run keeps no state.
+   * The native rating polls are not part of it: see `pollRatings`.
    */
   async sweep(): Promise<void> {
     const { config, deps } = this;
     if (!config.enabled || deps.mode !== "sofascore") return;
-    await this.refreshNativeRatings();
     await this.retryAndCatchUp();
     // After the retries, so a fixture recorded just now is written in this same tick.
     await this.syncDuePerformances();
+  }
+
+  /**
+   * The native rating polls that are due (api.service_fantasy_api_ratings_due:
+   * a fixed back-off per finished fixture, none once its ratings are complete),
+   * one lineups request each. Nothing else. `sofascore` mode only.
+   */
+  async pollRatings(): Promise<void> {
+    const { config, deps } = this;
+    if (!config.enabled || deps.mode !== "sofascore") return;
+    await this.refreshNativeRatings();
   }
 
   private async refreshNativeRatings(): Promise<void> {
@@ -628,6 +640,21 @@ export class SofascoreFantasyRun {
       for (const item of catchUp.slice(0, config.catchUpPerTick)) {
         if (this.rateLimited) break;
         if (this.done.has(item.fixtureId)) continue;
+        // A native rating fixture never gets an observation, so it would stay
+        // "never attempted" and be fetched again on every run. Its lineups come
+        // from the whistle fetch and the rating polls. A failed policy read
+        // counts as native: never fetch on a guess.
+        let native = true;
+        try {
+          native = await this.nativeEnabled(item.fixtureId);
+        } catch {
+          native = true;
+        }
+        if (native) {
+          this.done.add(item.fixtureId);
+          this.counts.skipped += 1;
+          continue;
+        }
         await this.catchUp(item.fixtureId, item.eventId);
       }
     } catch {

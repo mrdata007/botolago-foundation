@@ -226,9 +226,10 @@ select api.service_get_fantasy_scoring_snapshot(pg_temp.rid(25),current_setting(
 select extensions.throws_ok($$select api.service_begin_fantasy_finalization(pg_temp.rid(25),current_setting('test.partial_version')::bigint,
  current_setting('test.partial_preview')::jsonb->>'inputDigest')$$,'PT409',null,'missing actual ratings prevent sealing even though other ratings can score');
 
+update app.fixtures set finalized_at=statement_timestamp()-interval '5 hours' where id=pg_temp.rid(3002);
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '3 hours',last_attempt_at=statement_timestamp()-interval '1 hour' where fixture_id=pg_temp.rid(3002);
-select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a stale native fixture gets one bounded poll claim');
-select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'even a failed provider request cannot be retried again within fifteen minutes');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a native fixture past its three-hour back-off mark gets one bounded poll claim');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'even a failed provider request cannot be retried again within thirty minutes');
 -- A published historical revision exposes real points without replacing its
 -- original final result or seal. Missing data stays NULL in the projection.
 update app.fantasy_gameweeks set status='finalized',points_state='final',finalized_at=statement_timestamp() where id=pg_temp.rid(25);
@@ -310,7 +311,7 @@ select set_config('request.jwt.claims','{"role":"service_role"}',true);
 update app.fixtures set finalized_at=statement_timestamp()-interval '1 hour' where id=pg_temp.rid(3002);
 update app.fantasy_gameweeks set status='provisional',points_state='provisional',finalized_at=null where id=pg_temp.rid(25);
 update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '7 minutes',last_attempt_at=statement_timestamp()-interval '7 minutes' where fixture_id=pg_temp.rid(3002);
-select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'recent post-match ratings are polled within five minutes');
+select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'a post-match rating poll is claimed once its back-off mark (one hour) has passed');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),0,'a reserved recent poll cannot be claimed again immediately');
 -- Ratings may appear long after the football clock's ordinary two-hour window.
 update app.fixtures set finalized_at=statement_timestamp()-interval '12 hours' where id=pg_temp.rid(3002);
@@ -318,10 +319,21 @@ update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timest
 select app_private.notification_email_configure('off','https://late-rating.example.invalid/functions/v1',null,true);
 update app_private.football_live_refresh_heartbeat set last_invoked_at=null where id;
 select extensions.ok(exists(select 1 from app_private.fantasy_api_rating_candidates()),'a twelve-hour-old unfinished Fantasy fixture still has a due rating poll');
-select extensions.is(app_private.football_live_refresh_tick(),'invoked','late ratings wake the real football dispatcher even with no recent or live match');
+select extensions.is(app_private.football_live_refresh_tick(),'idle','a due rating poll no longer wakes the live football dispatcher');
+select extensions.is(app_private.fantasy_rating_polls_tick(),'skipped_source','the rating poll tick calls nothing unless SofaScore is the data source');
+select app_private.football_data_source_configure('sofascore');
+select extensions.is(app_private.fantasy_rating_polls_tick(),'invoked','late ratings wake the rating poll job even with no recent or live match');
+select extensions.ok(exists(select 1 from net.http_request_queue where url='https://late-rating.example.invalid/functions/v1/football-live-refresh' and convert_from(body,'utf8')::jsonb->>'job'='rating_polls'),'and it asks for the rating_polls job, which reads no live feed');
 select extensions.is(jsonb_array_length(api.service_fantasy_api_ratings_due(1)),1,'the woken fetcher claims the same due fixture');
 select extensions.ok(not exists(select 1 from app_private.fantasy_api_rating_candidates()),'the same retry reservation also suppresses further wake-ups');
-select extensions.is(app_private.football_live_refresh_tick(),'idle','the dispatcher sleeps again while no rating poll or football work is due');
+select extensions.is(app_private.fantasy_rating_polls_tick(),'idle','the rating poll job sleeps again while no poll is due');
+-- A fixture whose latest rating source is complete is never polled again.
+update app.fixtures set finalized_at=statement_timestamp()-interval '30 hours' where id=pg_temp.rid(3002);
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '29 hours',last_attempt_at=statement_timestamp()-interval '29 hours' where fixture_id=pg_temp.rid(3002);
+select extensions.ok(exists(select 1 from app_private.fantasy_api_rating_candidates()),'an incomplete fixture past its 24-hour mark is due');
+select api.service_record_fantasy_api_ratings(pg_temp.rid(3002),'9002',pg_temp.native_players(false),statement_timestamp());
+update app_private.fantasy_api_rating_polls set last_fetched_at=statement_timestamp()-interval '29 hours',last_attempt_at=statement_timestamp()-interval '29 hours' where fixture_id=pg_temp.rid(3002);
+select extensions.ok(not exists(select 1 from app_private.fantasy_api_rating_candidates()),'a fixture whose ratings are complete is not polled');
 select extensions.ok(not has_function_privilege('authenticated','app_private.fantasy_api_rating_candidates()','execute'),'the late-rating scheduler predicate stays private');
 select extensions.ok(
  (select prosrc ~ 'perform app_private.assert_mfa_step_up\(\);' from pg_proc where oid='api.fantasy_player_pool(uuid,text,uuid,numeric,text,numeric,uuid,integer)'::regprocedure),

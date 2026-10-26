@@ -196,11 +196,11 @@ const pullCall = (db: ReturnType<typeof fakeDb>) =>
 
 describe("staged statistics: when it runs", () => {
   test("config defaults and bounds", () => {
-    expect(readStagedConfig({})).toEqual({ enabled: true, pullsPerTick: 2, budgetStop: 9000 });
+    expect(readStagedConfig({})).toEqual({ enabled: true, pullsPerTick: 2, budgetStop: 8500 });
     expect(readStagedConfig({ SOFASCORE_STAGED_PULLS_PER_TICK: "5" }).pullsPerTick).toBe(5);
     expect(readStagedConfig({ SOFASCORE_STAGED_PULLS_PER_TICK: "50" }).pullsPerTick).toBe(2);
     expect(readStagedConfig({ SOFASCORE_STAGED_ENABLED: "false" }).enabled).toBe(false);
-    expect(STAGED_BUDGET_STOP).toBe(9000);
+    expect(STAGED_BUDGET_STOP).toBe(8500);
     expect(REQUESTS_PER_PULL).toBe(3);
   });
 
@@ -226,7 +226,7 @@ describe("staged statistics: when it runs", () => {
     const { run } = makeRun(db, net);
     const summary = await run.sweep();
     expect(names(db)).toEqual(["service_sofascore_staged_due"]);
-    expect(db.calls[0].args).toEqual({ p_limit: 2, p_budget_stop: 9000 });
+    expect(db.calls[0].args).toEqual({ p_limit: 2, p_budget_stop: 8500 });
     expect(net.paths).toEqual([]);
     expect(summary).toMatchObject({ due: 0, pulled: 0, requests: 0, stoppedBy: null });
   });

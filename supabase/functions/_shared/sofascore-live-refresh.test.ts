@@ -293,7 +293,10 @@ describe("sofascore live refresh", () => {
     expect(outcome.status).toBe(200);
     expect(outcome.body).toMatchObject({ status: "shadow", wouldIngest: 1, written: 0 });
     expect(paths).toHaveLength(1);
-    expect(db.calls.map((c) => c.name)).toEqual(["football_sofascore_live_snapshot"]);
+    expect(db.calls.map((c) => c.name)).toEqual([
+      "football_sofascore_live_snapshot",
+      "service_football_details_schedule",
+    ]);
     expect(lines).toHaveLength(1);
     const logged = JSON.parse(lines[0]);
     expect(logged.result).toBe("shadow");
@@ -339,6 +342,7 @@ describe("sofascore live refresh", () => {
       "begin_football_ingestion",
       "ingest_football_fixture",
       "complete_football_ingestion",
+      "service_football_details_schedule",
     ]);
   });
 
