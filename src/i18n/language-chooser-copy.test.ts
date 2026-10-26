@@ -29,11 +29,7 @@ describe("the language chooser's Arabic lines", () => {
     const root = join(import.meta.dir, "..", "..");
     const staticArabic =
       /^import\s+(?!type\b)[^;]*from\s+["'](?:\.\/|@\/i18n\/)(?:dictionary-ar|dictionaries)["']/m;
-    for (const file of [
-      "src/i18n/provider.tsx",
-      "src/i18n/language-load-notice.tsx",
-      "src/components/shell/FirstLaunchLanguage.tsx",
-    ]) {
+    for (const file of ["src/i18n/provider.tsx", "src/i18n/language-load-notice.tsx"]) {
       const source = readFileSync(join(root, file), "utf8");
       expect({ file, imports: staticArabic.test(source) }).toEqual({ file, imports: false });
       if (file !== "src/i18n/provider.tsx") expect(source).toContain("CHOOSER_ARABIC");

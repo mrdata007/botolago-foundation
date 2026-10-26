@@ -18,7 +18,6 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
-import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { SectionWarmup } from "@/components/shell/SectionWarmup";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
@@ -89,6 +88,18 @@ const stateActionClass = cn(
 
 function NotFoundBody() {
   const { t, dir } = useI18n();
+  // The 404 had the site's default title, as if it were the home page (audit
+  // 2026-10-26). `head()` runs without the reader's language, so the title is
+  // set here, in it, as `/jouer` does; the previous one is put back when the
+  // reader leaves, since the head would not repaint an unchanged title.
+  const title = `${t("notfound.title")} — BotolaGO`;
+  useEffect(() => {
+    const previous = document.title;
+    document.title = title;
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
   return (
     <div
       dir={dir}
@@ -118,7 +129,8 @@ function NotFoundBody() {
             `ui.stat.hero`'s own `leading-[var(--ui-leading-flat)]` and the
             numeral falls back to the inherited line box. Verified against
             tailwind-merge 3.5. */}
-        <h1
+        <p
+          aria-hidden
           className={cn(
             ui.stat.hero,
             ui.tone.ink,
@@ -126,8 +138,9 @@ function NotFoundBody() {
           )}
         >
           {t("notfound.code")}
-        </h1>
-        <h2 className={cn("mt-4", ui.text.title, ui.tone.default)}>{t("notfound.title")}</h2>
+        </p>
+        {/* The page's heading: the figure above is decoration for it. */}
+        <h1 className={cn("mt-4", ui.text.title, ui.tone.default)}>{t("notfound.title")}</h1>
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("notfound.description")}</p>
         <div className="mt-6">
           <Link
@@ -228,18 +241,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
       // the insets are 0 and nothing moves.
       //
-      // `maximum-scale=1`: iOS zooms in when a field whose text is under 16px
-      // gets focus (by 16 ÷ its size, capped by this value) and never zooms
-      // back. The kit's fields are 15px, so signing in left the whole app at
-      // 1.067, and in the phone app the owner could not pinch back out:
-      // Capacitor switches pinch off. The cap stops that zoom everywhere; in
-      // the app's web view it also stops double-tap and pinch zoom. iPhone
-      // Safari still lets a visitor pinch; Android browsers no longer do.
-      // Not `user-scalable=no`: it adds nothing in the app.
+      // No `maximum-scale` and no `user-scalable=no`: a reader must be able
+      // to pinch-zoom the page (WCAG 1.4.4, audit 2026-10-26). The cap this
+      // tag used to carry existed so iOS would not zoom in, and never zoom
+      // back, when a field under 16px got focus; that is now stopped at the
+      // source, by the fields being 16px on touch screens (`@media
+      // (pointer: coarse)` in src/styles.css). In the Capacitor app, pinch
+      // zoom is switched off by the shell itself (`zoomEnabled: false`), so
+      // the phone app behaves as before.
       // docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
@@ -419,12 +432,11 @@ function AnalyticsPageviews() {
  * After mount:
  *   1. If this load shows the splash, it plays out and leaves; if not, it is
  *      dropped at once, having never been on screen.
- *   2. When it is gone → language chooser (if not already chosen).
- *   3. Otherwise → normal routes.
- * Splash and language chooser never render simultaneously.
+ *   2. Otherwise → normal routes.
+ * There is no language chooser: the language is the stored one, or the
+ * device's (src/i18n/language-state.ts), changed from the top bar.
  */
 function LaunchGate() {
-  const { hasChosen, isHydrated } = useI18n();
   const [splashDone, setSplashDone] = useState(false);
 
   // Arrival dialogs of other pages (the prize welcome) wait for this; see
@@ -434,15 +446,12 @@ function LaunchGate() {
     if (splashDone) markSplashDone();
   }, [splashDone]);
 
-  const showLanguage = splashDone && isHydrated && !hasChosen;
-
   return (
     <>
       {/* First in the document, so it is parsed, and painted, before the
           page it covers. */}
       {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
       <Outlet />
-      {showLanguage && <FirstLaunchLanguage />}
     </>
   );
 }

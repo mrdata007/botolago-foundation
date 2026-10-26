@@ -481,7 +481,9 @@ export const BASELINES: Baselines = {
   // calculation-version jargon. Those ten old keys become unused. Reusing
   // fantasy.transfers.confirm and fantasy.transfers.review_title removes two
   // existing findings. All new keys have call sites: 243 + 10 - 2 = 251.
-  W3: 251,
+  // First-launch language chooser removed (2026-10-26, quick audit): five keys
+  // that only it read (`app.tagline` among them) are unreferenced. 251 -> 256.
+  W3: 256,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

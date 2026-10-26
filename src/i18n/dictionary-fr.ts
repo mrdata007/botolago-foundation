@@ -31,6 +31,8 @@ export const fr = {
   "language.arabic": "العربية",
   "language.continue": "Continuer",
   "language.switch": "Langue",
+  "language.switch_to_ar": "Passer en arabe",
+  "language.switch_to_fr": "Passer en français",
   "language.arabic_loading": "Chargement de l'arabe…",
   "language.arabic_failed":
     "L'arabe n'a pas pu être chargé. Vérifiez votre connexion, puis réessayez.",

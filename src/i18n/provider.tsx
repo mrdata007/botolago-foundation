@@ -11,7 +11,12 @@ import {
 import type { TranslationKey } from "./dictionaries";
 import { dictionaryInChunk } from "./dictionary-chunk";
 import { fr } from "./dictionary-fr";
-import { INITIAL_LANGUAGE_STATE, languageNotice, languageReducer } from "./language-state";
+import {
+  detectLanguage,
+  INITIAL_LANGUAGE_STATE,
+  languageNotice,
+  languageReducer,
+} from "./language-state";
 import { LanguageLoadNotice } from "./language-load-notice";
 import { retryableImport } from "./retryable-import";
 import { useSplashDone } from "@/lib/launch-sequence";
@@ -123,9 +128,13 @@ function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = readStored();
     setIsHydrated(true);
-    const ready = stored === null || isReady(stored);
-    dispatch({ type: "restored", stored, ready });
-    if (!ready && stored) fetchDictionary(stored);
+    // Nothing stored: the device's language, applied but not stored (it is
+    // a default, not a choice), so the top bar's switcher stays the way to
+    // change it and the next visit detects again.
+    const detected = stored ?? detectLanguage(navigator.languages ?? [navigator.language]);
+    const ready = isReady(detected);
+    dispatch({ type: "restored", stored, ready, detected });
+    if (!ready) fetchDictionary(detected);
   }, [fetchDictionary]);
 
   // Sync <html lang> and <html dir> only after mount, never during render.
