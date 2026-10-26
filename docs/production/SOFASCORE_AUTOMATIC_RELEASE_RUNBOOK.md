@@ -959,6 +959,7 @@ It is prepared for separate review and has not been applied to a shared
 database. See [the UX writing report](../review/2026-10-20-ux-writing-report.md)
 and its isolated PostgreSQL validation evidence before promotion. It enables
 no event, channel, job or sending switch.
+
 ### Native final email authority (20 October 2026)
 
 `20261020091926_fantasy_native_final_email_gate.sql` replaces the obsolete
@@ -1013,3 +1014,12 @@ Promote this correction with
 `scripts/backend/apply-20261020114031-actionable-deadline-reminders.sql`
 after `20261020103533`, using its real rehearsal and independent rollback
 check. Deploy the worker only after both migrations are recorded.
+
+`20261026143000_rapidapi_budget_guard_and_poll_schedule.sql` caps RapidAPI
+spend: the quota window and budget guard (`app_private.rapidapi_budget_settings`,
+`app_private.rapidapi_budget_configure`), the rating-poll back-off and its own
+`fantasy-rating-polls` cron job, the post-match details schedule and the quieter
+season refresh. Every replaced body is md5-guarded against production. Apply it
+before deploying `football-live-refresh`, so the Edge budget guard finds its
+settings. Details and the owner commands are in
+`docs/backend/SOFASCORE_LIVE_EDGE.md` (budget section).
