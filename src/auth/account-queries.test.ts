@@ -324,7 +324,7 @@ describe("public News caches across an account switch", () => {
     tags: [{ id: "t", slug: "s", name: "S" }],
   });
   const FEED_KEY = ["news", "feed-v2", "fr", null, null] as const;
-  const DETAIL_KEY = ["news", "article-detail-v2", "fr", STORY] as const;
+  const DETAIL_KEY = ["news", "article-edition-v1", STORY] as const;
   const HOME_KEY = ["news", "home-modules-v2", "fr"] as const;
 
   /** A is signed in and reads News: the answers come back marked for A. */

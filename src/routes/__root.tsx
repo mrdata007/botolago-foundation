@@ -1,6 +1,7 @@
 import notFoundArt from "@/assets/illustrations/not-found.webp";
 import errorArt from "@/assets/illustrations/no-connection.webp";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { documentLanguageFromMatches } from "@/lib/document-language";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -338,8 +339,13 @@ function RootShell({ children }: { children: ReactNode }) {
   // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`;
   // the splash and native-app scripts add their `data-*` attributes the same way.
   // Both are deliberate out-of-band writes to the document element, not drift.
+  // French and left-to-right everywhere except an Arabic article edition.
+  const htmlLanguage = useRouterState({
+    select: (state) => documentLanguageFromMatches(state.matches),
+    structuralSharing: true,
+  });
   return (
-    <html lang="fr" dir="ltr" suppressHydrationWarning>
+    <html lang={htmlLanguage.lang} dir={htmlLanguage.dir} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

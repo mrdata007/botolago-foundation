@@ -3,6 +3,7 @@ import { MockNewsRepository } from "@/backend/news/mock-repository";
 import type { NewsLanguage, NewsRepository } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
 import {
+  getArticleEdition,
   getArticleWithLanguageFallback,
   getNewsEdition,
   isOwnPublisher,
@@ -761,5 +762,60 @@ describe("Available news editions", () => {
       "transfer",
     ]);
     expect(articles.map((article) => article.id)).toEqual(["oldest", "transfer", "analysis"]);
+  });
+});
+
+describe("getArticleEdition resolves the edition the address names", () => {
+  const FR_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
+  const AR_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1";
+  const edition = (id: string, language: NewsLanguage): ArticleDetailDto =>
+    detailFixture({ id, language, slug: `${language}-slug`, author: null, publisher: null });
+
+  // Like api.news_article_detail (20261011170000): an id from the other
+  // language answers that language's sibling edition.
+  const repository: Pick<NewsRepository, "getArticle"> = {
+    async getArticle(identifier, language) {
+      const byLanguage = { fr: edition(FR_ID, "fr"), ar: edition(AR_ID, "ar") };
+      if (identifier === FR_ID || identifier === AR_ID) return byLanguage[language];
+      const match = Object.values(byLanguage).find(
+        (candidate) => candidate.slug === identifier && candidate.language === language,
+      );
+      if (!match) throw new NewsError("article_not_found", "missing");
+      return match;
+    },
+  };
+  const context = {} as Parameters<typeof getArticleEdition>[2];
+
+  test("an Arabic edition id yields the Arabic edition, not its French sibling", async () => {
+    const article = await getArticleEdition(repository, AR_ID, context);
+    expect(article.id).toBe(AR_ID);
+    expect(article.language).toBe("ar");
+  });
+
+  test("a French edition id yields the French edition", async () => {
+    expect((await getArticleEdition(repository, FR_ID, context)).language).toBe("fr");
+  });
+
+  test("slugs are language-specific: each is found in its own language", async () => {
+    expect((await getArticleEdition(repository, "ar-slug", context)).id).toBe(AR_ID);
+    expect((await getArticleEdition(repository, "fr-slug", context)).id).toBe(FR_ID);
+  });
+
+  test("the reader's language is not an input", () => {
+    expect(getArticleEdition.length).toBe(3);
+  });
+
+  test("an unknown slug is a not-found, other failures surface unchanged", async () => {
+    await expect(getArticleEdition(repository, "nope", context)).rejects.toMatchObject({
+      code: "article_not_found",
+    });
+    const broken: Pick<NewsRepository, "getArticle"> = {
+      async getArticle() {
+        throw new NewsError("data_unavailable", "down");
+      },
+    };
+    await expect(getArticleEdition(broken, AR_ID, context)).rejects.toMatchObject({
+      code: "data_unavailable",
+    });
   });
 });
