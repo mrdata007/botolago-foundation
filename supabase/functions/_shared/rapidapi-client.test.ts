@@ -101,15 +101,23 @@ describe("Edge RapidAPI client", () => {
     expect(seen).toHaveLength(3);
   });
 
-  test("429, 5xx and network errors are retried, then succeed", async () => {
+  test("5xx and network errors are retried, then succeed", async () => {
     const seen: Seen[] = [];
     const api = client(
-      [reply(429, {}), new TypeError("network down"), reply(200, { ok: 1 })],
+      [reply(503, {}), new TypeError("network down"), reply(200, { ok: 1 })],
       seen,
     );
     expect((await api.getJson("x")).data).toEqual({ ok: 1 });
     expect(seen).toHaveLength(3);
     expect(api.requestsSent()).toBe(3);
+  });
+
+  test("a 429 is never retried", async () => {
+    const seen: Seen[] = [];
+    const api = client([reply(429, {}), reply(200, { ok: 1 })], seen);
+    await expect(api.getJson("x")).rejects.toMatchObject({ code: "provider_rate_limited" });
+    expect(seen).toHaveLength(1);
+    expect(api.requestsSent()).toBe(1);
   });
 
   test("gives up after 2 retries", async () => {
@@ -195,5 +203,57 @@ describe("createRapidApiClient", () => {
     await expect(strict.getJson("y")).rejects.toMatchObject({ code: "provider_rate_limited" });
     expect(() => make("abc")).toThrow(RapidApiError);
     expect(() => make("-1")).toThrow(RapidApiError);
+  });
+});
+
+describe("Edge RapidAPI client, monthly budget", () => {
+  const budgeted = (used: number, seen: Seen[] = []) =>
+    new RapidApiClient({
+      host: SOFASCORE_RAPIDAPI_HOST,
+      key: KEY,
+      runtime,
+      budget: { used, softLimit: 8500, hardLimit: 9700 },
+      fetch: async (url, init) => {
+        seen.push({ url, init });
+        return reply(200, { ok: 1 });
+      },
+    });
+
+  test("below the soft limit everything is sent", async () => {
+    const seen: Seen[] = [];
+    const api = budgeted(100, seen);
+    await api.getJson("matches/get-lineups?matchId=1");
+    expect(seen).toHaveLength(1);
+  });
+
+  test("above the soft limit only the live feed and incidents are sent", async () => {
+    const seen: Seen[] = [];
+    const api = budgeted(8500, seen);
+    await expect(api.getJson("matches/get-lineups?matchId=1")).rejects.toMatchObject({
+      code: "provider_rate_limited",
+      budget: "soft_limit",
+    });
+    await expect(api.getJson("tournaments/get-last-matches?pageIndex=0")).rejects.toMatchObject({
+      budget: "soft_limit",
+    });
+    expect(seen).toHaveLength(0);
+    await api.getJson("tournaments/get-live-events?sport=football");
+    await api.getJson("matches/get-incidents?matchId=1");
+    expect(seen).toHaveLength(2);
+  });
+
+  test("at the hard limit nothing is sent, and the run's own requests count", async () => {
+    const seen: Seen[] = [];
+    await expect(
+      budgeted(9700, seen).getJson("tournaments/get-live-events?sport=football"),
+    ).rejects.toMatchObject({ budget: "hard_limit" });
+    expect(seen).toHaveLength(0);
+    const api = budgeted(9698, seen);
+    await api.getJson("matches/get-incidents?matchId=1");
+    await api.getJson("matches/get-incidents?matchId=1");
+    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+      budget: "hard_limit",
+    });
+    expect(seen).toHaveLength(2);
   });
 });

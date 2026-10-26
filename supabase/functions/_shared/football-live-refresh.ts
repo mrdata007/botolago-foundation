@@ -32,6 +32,7 @@ import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sports
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
+import { loadRapidApiBudget } from "./rapidapi-budget.ts";
 import { RapidApiError } from "./rapidapi-client.ts";
 import {
   createCatalogRapidClient,
@@ -39,7 +40,11 @@ import {
   type CatalogStorage,
 } from "./sofascore-catalog.ts";
 import type { SofascoreShadowClient } from "./sofascore-fixtures.ts";
-import { runSofascoreDetailsBackfill, runSofascoreRefresh } from "./sofascore-live-refresh.ts";
+import {
+  runSofascoreDetailsBackfill,
+  runSofascoreRatingPolls,
+  runSofascoreRefresh,
+} from "./sofascore-live-refresh.ts";
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -146,6 +151,10 @@ export async function handleFootballLiveRefreshRequest(
   // RapidAPI (sofascore-live-refresh.ts); SportsMonks is not called for them.
   const source = await liveDataSource(dependencies.client);
   if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
+  // The rating polls exist for SofaScore only.
+  if (job === "rating_polls" && source !== "sofascore") {
+    return json(200, { status: "skipped", reason: `data_source_${source}`, job });
+  }
   // The weekly catalog refresh exists for SofaScore only.
   if (job === "catalog_weekly" && source === "sportsmonks") {
     return json(200, { status: "skipped", reason: "data_source_sportsmonks", job });
@@ -156,7 +165,35 @@ export async function handleFootballLiveRefreshRequest(
     // (api.service_record_rapidapi_calls) and written once, after the work below.
     // An injected client (tests) is not counted. Counting never throws or waits long.
     let counter: RapidApiCallCounter | null = null;
+    let liveIntervalSeconds: number | undefined;
     if (!rapid) {
+      // The monthly budget, read once before the first provider call. At the
+      // hard limit nothing is sent and the run says so; above the soft limit
+      // the client sends only the live feed and incidents.
+      const budget = await loadRapidApiBudget(dependencies.client, job);
+      if (budget && budget.used >= budget.hardLimit) {
+        console.log(
+          JSON.stringify({
+            event: "football_live_refresh",
+            result: "skipped",
+            reason: "monthly_budget_hard_limit",
+            source,
+            job,
+            used: budget.used,
+            hardLimit: budget.hardLimit,
+          }),
+        );
+        return json(200, {
+          status: "skipped",
+          reason: "monthly_budget_hard_limit",
+          source,
+          job,
+          used: budget.used,
+          hardLimit: budget.hardLimit,
+          windowStart: budget.windowStart,
+        });
+      }
+      liveIntervalSeconds = budget?.liveIntervalSeconds;
       try {
         counter = createRapidApiCallCounter({ client: dependencies.client, job });
         // The same RapidAPI client as ever; it can also return image bytes
@@ -164,7 +201,18 @@ export async function handleFootballLiveRefreshRequest(
         rapid = createCatalogRapidClient(
           dependencies.environment,
           dependencies.fetch as Parameters<typeof createCatalogRapidClient>[1],
-          { onRequest: counter.record },
+          {
+            onRequest: counter.record,
+            ...(budget
+              ? {
+                  budget: {
+                    used: budget.used,
+                    softLimit: budget.softLimit,
+                    hardLimit: budget.hardLimit,
+                  },
+                }
+              : {}),
+          },
         );
       } catch (error) {
         const code = error instanceof RapidApiError ? error.code : "provider_unavailable";
@@ -203,6 +251,16 @@ export async function handleFootballLiveRefreshRequest(
         });
         return json(backfill.status, backfill.body);
       }
+      if (job === "rating_polls") {
+        const polls = await runSofascoreRatingPolls({
+          mode: source,
+          client: dependencies.client,
+          rapid,
+          environment: dependencies.environment,
+          now,
+        });
+        return json(polls.status, polls.body);
+      }
       const outcome = await runSofascoreRefresh({
         mode: source,
         job,
@@ -210,6 +268,7 @@ export async function handleFootballLiveRefreshRequest(
         rapid,
         environment: dependencies.environment,
         now,
+        ...(liveIntervalSeconds ? { liveIntervalSeconds } : {}),
       });
       return json(outcome.status, outcome.body);
     } finally {
@@ -306,11 +365,19 @@ const DETAILS_AFTER_ERRORS: ReadonlySet<string> = new Set([
 /**
  * `{"job":"fixtures"}` (the live tick's, and the default), `{"job":"season_fixtures"}`
  * (the hourly season tick's), `{"job":"match_details_backfill"}` or
- * `{"job":"catalog_weekly"}` (the weekly clubs and players refresh, SofaScore only).
+ * `{"job":"catalog_weekly"}` (the weekly clubs and players refresh, SofaScore only) or
+ * `{"job":"rating_polls"}` (the Fantasy rating polls alone, SofaScore only).
  */
 async function requestedJob(
   request: Request,
-): Promise<"fixtures" | "season_fixtures" | "match_details_backfill" | "catalog_weekly" | null> {
+): Promise<
+  | "fixtures"
+  | "season_fixtures"
+  | "match_details_backfill"
+  | "catalog_weekly"
+  | "rating_polls"
+  | null
+> {
   const source = await request.text();
   if (source.length > MAX_REQUEST_BYTES) return null;
   if (!source.trim()) return "fixtures";
@@ -324,6 +391,7 @@ async function requestedJob(
     if (job === "season_fixtures") return "season_fixtures";
     if (job === "match_details_backfill") return "match_details_backfill";
     if (job === "catalog_weekly") return "catalog_weekly";
+    if (job === "rating_polls") return "rating_polls";
     return null;
   } catch {
     return null;

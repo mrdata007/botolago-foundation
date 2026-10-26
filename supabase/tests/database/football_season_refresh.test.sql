@@ -41,6 +41,29 @@ select extensions.is(
   '*/10 * * * * select app_private.football_season_refresh_tick();',
   'pg_cron runs the tick every 10 minutes');
 
+-- A match in play: the live refresh calls every 2 minutes, and the season
+-- refresh is hourly (a fixture within a day either side of now).
+insert into app.countries (id, iso_alpha2, iso_alpha3)
+values ('f6000000-0000-4000-8000-000000000001', 'ZQ', 'ZQZ');
+insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
+values ('f6100000-0000-4000-8000-000000000001', 'season-refresh', 'Season Refresh', 'SR', 'league',
+  'f6000000-0000-4000-8000-000000000001');
+insert into app.seasons (id, competition_id, label, starts_on, ends_on, status, is_current)
+values ('f6200000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
+  'Season refresh', current_date - 30, current_date + 200, 'active', true);
+insert into app.rounds (id, season_id, round_number, name)
+values ('f6300000-0000-4000-8000-000000000001', 'f6200000-0000-4000-8000-000000000001', 1, 'Round 1');
+insert into app.teams (id, slug, name, short_name, code, country_id)
+select ('f6400000-0000-4000-8000-00000000000' || n)::uuid, 'season-club-' || n, 'Season Club ' || n,
+  'SC' || n, 'SC' || n, 'f6000000-0000-4000-8000-000000000001'
+from generate_series(1, 2) n;
+insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
+  kickoff_at, status, provider_updated_at, source_sequence)
+values ('f6500000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
+  'f6200000-0000-4000-8000-000000000001', 'f6300000-0000-4000-8000-000000000001',
+  'f6400000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000002',
+  statement_timestamp() - interval '70 minutes', 'live_second_half', statement_timestamp() - interval '1 day', 1);
+
 -- ---------------------------------------------------------------------------
 -- The tick: under the live refresh switch, once an hour.
 -- ---------------------------------------------------------------------------
@@ -92,27 +115,6 @@ select extensions.ok(
   and not has_table_privilege('service_role', 'app_private.football_refresh_dispatch', 'select'),
   'only the database dispatches refreshes, or reads the dispatch record');
 
--- A match in play, so the live refresh calls every 2 minutes.
-insert into app.countries (id, iso_alpha2, iso_alpha3)
-values ('f6000000-0000-4000-8000-000000000001', 'ZQ', 'ZQZ');
-insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
-values ('f6100000-0000-4000-8000-000000000001', 'season-refresh', 'Season Refresh', 'SR', 'league',
-  'f6000000-0000-4000-8000-000000000001');
-insert into app.seasons (id, competition_id, label, starts_on, ends_on, status, is_current)
-values ('f6200000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
-  'Season refresh', current_date - 30, current_date + 200, 'active', true);
-insert into app.rounds (id, season_id, round_number, name)
-values ('f6300000-0000-4000-8000-000000000001', 'f6200000-0000-4000-8000-000000000001', 1, 'Round 1');
-insert into app.teams (id, slug, name, short_name, code, country_id)
-select ('f6400000-0000-4000-8000-00000000000' || n)::uuid, 'season-club-' || n, 'Season Club ' || n,
-  'SC' || n, 'SC' || n, 'f6000000-0000-4000-8000-000000000001'
-from generate_series(1, 2) n;
-insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
-  kickoff_at, status, provider_updated_at, source_sequence)
-values ('f6500000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
-  'f6200000-0000-4000-8000-000000000001', 'f6300000-0000-4000-8000-000000000001',
-  'f6400000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000002',
-  statement_timestamp() - interval '70 minutes', 'live_second_half', statement_timestamp() - interval '1 day', 1);
 update app_private.football_live_refresh_heartbeat set last_invoked_at = null;
 
 -- The season call from above is still running: the live refresh waits.

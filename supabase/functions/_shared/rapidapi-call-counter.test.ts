@@ -56,16 +56,9 @@ describe("RapidApiClient onRequest", () => {
     const seen: number[] = [];
     const notFound = client([new Response("", { status: 404 })], (e) => seen.push(e.statusCode));
     await expect(notFound.getJson("matches/get-lineups?matchId=1")).rejects.toThrow();
-    const limited = client(
-      [
-        new Response("", { status: 429 }),
-        new Response("", { status: 429 }),
-        new Response("", { status: 429 }),
-      ],
-      (e) => seen.push(e.statusCode),
-    );
+    const limited = client([new Response("", { status: 429 })], (e) => seen.push(e.statusCode));
     await expect(limited.getJson("matches/get-lineups?matchId=1")).rejects.toThrow();
-    expect(seen).toEqual([404, 429, 429, 429]);
+    expect(seen).toEqual([404, 429]);
   });
 
   test("a request refused by the quota floor is not sent, so not counted", async () => {

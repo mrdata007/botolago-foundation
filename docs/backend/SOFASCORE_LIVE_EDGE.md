@@ -63,12 +63,17 @@ set). Read from `app_private.football_live_refresh_tick()` and
   (`get-last-matches` page 0) only when a mapped fixture that production shows
   in play, or that kicked off in the last 3 hours without a status, is missing
   from the live list (the final whistle).
-- season job: 2 (`get-next-matches`, `get-last-matches`, page 0), hourly.
+- season job: 2 (`get-next-matches`, `get-last-matches`, page 0), hourly while a
+  fixture is within a day either side of now, every 3 hours otherwise (see
+  "Budget guard and the per-round model" below).
+- `rating_polls` job: one `matches/get-lineups` per Fantasy rating poll that is
+  due, nothing else (no live feed).
 
 Every request logs `quotaRemaining` / `quotaLimit`. Below the client's floor
 (`SOFASCORE_MIN_REMAINING`) the client refuses: the function answers 429
 `provider_rate_limited` and writes nothing (all reads happen before the first
-write).
+write). A 429 from the provider is never sent again (every try is a counted
+call); 5xx, timeouts and network errors are retried twice with backoff.
 
 ## What gets written
 
@@ -236,6 +241,12 @@ fixtures, so this can only happen to a match that was live across the switch.
 
 ## Live polling every 60 seconds
 
+> Since migration `20261026143000` the in-play interval is the setting
+> `live_interval_seconds` (60 to 300; it ships at 120 for the cycle ending on the
+> 10 Nov reset), and is stretched to at least 180 s once the counted calls reach
+> the soft limit. The 60 s figures below are the default of the original
+> migration. Rating candidates no longer wake this tick (see below).
+
 Migration `20261013110100_football_live_refresh_60s.sql` replaces
 `app_private.football_live_refresh_tick()`; `20261013110200_football_live_refresh_post_final_30min.sql`
 replaces it again (post-match refresh every 30 minutes instead of 15, below). pg_cron already wakes it every minute
@@ -382,12 +393,86 @@ items: [{job, endpoint, calls}]}` for the current month. Read only.
 -- the same numbers from SQL, by job and endpoint
 select job, endpoint, sum(calls) calls
   from app_private.rapidapi_call_counts
- where day >= date_trunc('month', now() at time zone 'utc')::date
+ where day >= app_private.rapidapi_window_start()   -- the quota window, not the calendar month
  group by 1, 2 order by calls desc;
 ```
 
 The count is our own tally, not the provider's: RapidAPI's dashboard stays the
 authority (the client also logs `quotaRemaining` and refuses below the floor).
+
+## Budget guard and the per-round model
+
+Migration `20261026143000_rapidapi_budget_guard_and_poll_schedule.sql`; code in
+`rapidapi-client.ts` (guard), `rapidapi-budget.ts` (reads the budget),
+`sofascore-live-refresh.ts` (details schedule, `rating_polls`).
+
+**What went wrong on 25 Oct (4,000 calls for 2 matches).** Every Fantasy rating
+candidate made the live tick fire every 60 s (candidates were polled every 5 minutes
+for 6 hours, 30 minutes for 2 days, then every 2 hours, complete or not). Each
+call then read the live feed, the three detail replies of every fixture finalized in
+the last 2 hours (up to 4), and a catch-up fetch for native-rating fixtures,
+which never get an observation and so stayed "never attempted" for ever (the
+`season_fixtures` job paid that one too, about 24 times a day).
+
+**Now:**
+
+- Live play: one `get-live-events` per poll, shared by all matches. Incidents for a
+  match whose score or status was written, or whose `changeTimestamp` moved while
+  its details are 5 minutes old or more. Lineups once at kickoff (again only if none
+  is stored). Statistics at full time.
+- Full time: the trio once at the whistle, then at most two follow-ups (+30 min and
+  +90 min), chosen from `api.service_football_details_schedule()` (reads
+  `app_private.football_match_details_syncs.last_stored_at`; a fixture is due when
+  nothing was stored since the mark).
+- Rating polls (`fantasy-rating-polls`, every 5 minutes, calls the Edge job
+  `rating_polls` only when a poll is due): one lineups request per fixture at +15
+  min, +1 h, +3 h, +12 h, +24 h, +48 h, +4 d, +7 d, +14 d after full time, none once
+  the fixture's latest `app_private.fantasy_api_rating_sources` row is `ready`; a
+  failed attempt is retried every 30 minutes for 6 hours after the mark.
+- Season refresh: every `season_match_hours` (1) while a fixture is within a day
+  either side of now; otherwise every `season_quiet_hours` (3; 0 = the 03:00 UTC
+  daily pass only). Not 6 hours: the `provider_refresh` health check fails after 4
+  without a season refresh.
+- Catch-up never fetches a native-rating fixture; staged pulls stop at 8,500.
+
+**Per-round model** (estimates). Per slot (all matches kicking off together), at
+a poll interval T: 2 ticks before kickoff, 1 for the announcement, 110 x 60 / T in
+play, 1 fallback, 4 post-match ticks. T = 60: 2+1+110+1+4 = 118. T = 120: 2+1+55+1+4
+= 63. T = 180: 2+1+37+1+4 = 45. Per match: incidents about 16 (6 score or status
+writes, about 10 moved reads) + 1 lineups at start, trio 3, follow-ups 2 x 3 = 6,
+rating polls about 3 (2 polls, some incidents), so about 29 (it was 44, plus the
+polls). One slot of 8 matches at T = 60: 118 + 8 x 29 = 350 (T = 120: 63 + 232 = 295;
+T = 180: 45 + 232 = 277). An 8-match round in 3 slots at T = 60: 3 x 118 + 8 x 29 =
+354 + 232 = 586, plus the season job for the week (4 busy days x 48 + 3 quiet days
+x 16 = 240) and standings (about 10): about 840 a round-week, so about 3,400 for 4
+rounds, plus 3 quiet weeks x 112 = 340 for a month of 30 days: roughly 3,700. A
+no-match day is 16 (season job) plus the daily pass.
+The model is arithmetic on assumptions, not a measurement: read the counter after
+the first match day.
+
+**Reading and changing the guard.**
+
+```sql
+select api.admin_rapidapi_calls_this_month();            -- as staff: window, total, limits, by job
+select * from app_private.rapidapi_budget_settings;      -- as the owner
+select app_private.rapidapi_budget_configure(
+  p_soft_limit => 8500, p_hard_limit => 9700, p_reset_day => 10, p_used_offset => 470,
+  p_live_interval => 120, p_season_quiet_hours => 3, p_season_match_hours => 1);  -- null leaves a value
+select app_private.rapidapi_budget_configure(p_live_interval => 60);              -- back to 60 s
+```
+
+The count is the table's sum since the most recent reset day (UTC) plus
+`used_offset` (calls the provider counted that the table never saw: the counter has
+rows from 14 Oct only). Above `soft_limit` the Edge client sends only
+`tournaments/get-live-events` and `matches/get-incidents`, and the live poll is at
+least 180 s; at `hard_limit` no call is sent and the run answers
+`{"status":"skipped","reason":"monthly_budget_hard_limit"}`. Each run reads the
+count once (`api.service_rapidapi_budget`) and adds its own requests. The
+`rapidapi_budget` health check (warn 8,000, fail 9,500) uses the same window and
+offset. Everything through `football-live-refresh` (live, season, rating polls,
+details backfill, weekly catalog) goes through the guard; scripts under
+`scripts/backend/` and `src/backend/football/provider/` build their own clients and
+do not.
 
 ## The live minute
 

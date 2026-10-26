@@ -4,8 +4,10 @@
 // and resilience.ts. Edge shared code does not import from src/ (it must run
 // unchanged under Bun for tests and Deno in the Edge runtime, and src/ uses
 // extensionless imports Deno cannot resolve), so the logic is duplicated here
-// on purpose. Keep the two in step: same headers, same 15 s timeout, same 2
-// retries on 429/5xx/timeout/network only, same quota floor.
+// on purpose. Keep the two in step: same headers, same 15 s timeout, same quota
+// floor. This copy differs on purpose in two ways: it retries 5xx, timeouts and
+// network errors only (a 429 is never sent again: every try is a counted call),
+// and it enforces the monthly budget (see `RapidApiBudget`).
 //
 // The key goes in headers only. It is never put in a URL, a log line or an
 // error message, and error messages carry the path and status but never the
@@ -19,6 +21,12 @@ export const DEFAULT_MIN_REMAINING = 100;
 export const RAPIDAPI_TIMEOUT_MS = 15_000;
 export const RAPIDAPI_MAX_RETRIES = 2;
 
+/** Endpoints that still run above the soft limit: the live score feed and the incidents of a match. */
+export const ESSENTIAL_ENDPOINTS: ReadonlySet<string> = new Set([
+  "tournaments/get-live-events",
+  "matches/get-incidents",
+]);
+
 export type RapidApiErrorCode =
   | "provider_unavailable"
   | "provider_rate_limited"
@@ -27,11 +35,31 @@ export type RapidApiErrorCode =
 
 export class RapidApiError extends Error {
   readonly code: RapidApiErrorCode;
-  constructor(code: RapidApiErrorCode, message: string, cause?: unknown) {
+  /** Set when the monthly budget guard refused the request, not the provider. */
+  readonly budget?: "soft_limit" | "hard_limit";
+  constructor(
+    code: RapidApiErrorCode,
+    message: string,
+    cause?: unknown,
+    budget?: "soft_limit" | "hard_limit",
+  ) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = "RapidApiError";
     this.code = code;
+    if (budget) this.budget = budget;
   }
+}
+
+/**
+ * The month's budget at the start of a run (api.service_rapidapi_budget):
+ * calls counted in the current quota window, before this run's own. Above
+ * `softLimit` only ESSENTIAL_ENDPOINTS are sent; at `hardLimit` nothing is.
+ * The run's own requests are added on top, retries included.
+ */
+export interface RapidApiBudget {
+  readonly used: number;
+  readonly softLimit: number;
+  readonly hardLimit: number;
 }
 
 export interface RapidApiQuota {
@@ -71,6 +99,8 @@ export interface RapidApiClientConfig {
   readonly minRemaining?: number;
   readonly timeoutMs?: number;
   readonly maxRetries?: number;
+  /** The monthly budget guard; none when absent (tests, scripts). */
+  readonly budget?: RapidApiBudget;
   readonly fetch?: FetchLike;
   readonly runtime?: RapidApiRuntime;
   /**
@@ -95,6 +125,7 @@ export class RapidApiClient {
   private readonly minRemaining: number;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
+  private readonly budget: RapidApiBudget | undefined;
   private readonly fetchImpl: FetchLike;
   private readonly runtime: RapidApiRuntime;
   private readonly onRequest: ((event: RapidApiRequestEvent) => void) | undefined;
@@ -116,6 +147,7 @@ export class RapidApiClient {
     this.minRemaining = config.minRemaining ?? DEFAULT_MIN_REMAINING;
     this.timeoutMs = config.timeoutMs ?? RAPIDAPI_TIMEOUT_MS;
     this.maxRetries = config.maxRetries ?? RAPIDAPI_MAX_RETRIES;
+    this.budget = config.budget;
     this.fetchImpl = fetchImpl;
     this.runtime = config.runtime ?? defaultRuntime;
     this.onRequest = config.onRequest;
@@ -139,6 +171,30 @@ export class RapidApiClient {
     return this.requestCount;
   }
 
+  /** The error to throw instead of sending `path`, or null when the budget allows it. */
+  private budgetRefusal(path: string): RapidApiError | null {
+    const budget = this.budget;
+    if (!budget) return null;
+    const used = budget.used + this.requestCount;
+    if (used >= budget.hardLimit) {
+      return new RapidApiError(
+        "provider_rate_limited",
+        `Monthly RapidAPI budget reached (${used} of ${budget.hardLimit}): not sending the request.`,
+        undefined,
+        "hard_limit",
+      );
+    }
+    if (used >= budget.softLimit && !ESSENTIAL_ENDPOINTS.has(endpointOf(path))) {
+      return new RapidApiError(
+        "provider_rate_limited",
+        `Monthly RapidAPI soft limit reached (${used} of ${budget.softLimit}): only live calls are sent.`,
+        undefined,
+        "soft_limit",
+      );
+    }
+    return null;
+  }
+
   async getJson(pathAndQuery: string): Promise<RapidApiResult> {
     if (/key=/i.test(pathAndQuery)) {
       throw new RapidApiError("provider_unavailable", "A key must never be placed in a URL.");
@@ -151,6 +207,8 @@ export class RapidApiClient {
       );
     }
     const path = pathAndQuery.replace(/^\//, "");
+    const refused = this.budgetRefusal(path);
+    if (refused) throw refused;
     const url = `https://${this.host}/${path}`;
 
     const response = await this.sendWithRetries(url, path);
@@ -190,6 +248,10 @@ export class RapidApiClient {
           `Provider quota is low (${remaining} left): not sending the request.`,
         );
       }
+      if (attempt > 0) {
+        const refused = this.budgetRefusal(path);
+        if (refused) throw refused;
+      }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
       let counted = false;
@@ -223,7 +285,10 @@ export class RapidApiClient {
                   ? "The provider request timed out."
                   : "The provider request failed.",
               );
-        if (attempt === this.maxRetries) throw lastError;
+        // A 429 is never sent again: the retry would only spend another call.
+        if (lastError.code === "provider_rate_limited" || attempt === this.maxRetries) {
+          throw lastError;
+        }
         const exponential = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** attempt);
         const jitter = Math.floor(exponential * 0.25 * this.runtime.random());
         await this.runtime.sleep(exponential + jitter);
@@ -256,7 +321,7 @@ export function readQuota(headers: Headers, previous: RapidApiQuota): RapidApiQu
 type Environment = Readonly<Record<string, string | undefined>>;
 type ClientOverrides = Pick<
   RapidApiClientConfig,
-  "fetch" | "runtime" | "timeoutMs" | "maxRetries" | "minRemaining" | "onRequest"
+  "fetch" | "runtime" | "timeoutMs" | "maxRetries" | "minRemaining" | "onRequest" | "budget"
 >;
 
 /**

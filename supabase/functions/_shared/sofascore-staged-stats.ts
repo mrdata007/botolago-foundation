@@ -47,8 +47,8 @@ export const STAGED_PULLS_PER_TICK_DEFAULT = 2;
 export const STAGED_PULLS_PER_TICK_MAX = 8;
 /** Requests one pull costs (incidents, lineups, statistics). */
 export const REQUESTS_PER_PULL = 3;
-/** The due list is empty once this many calls were counted in the month. */
-export const STAGED_BUDGET_STOP = 9000;
+/** The due list is empty once this many calls were counted in the quota window (the guard's soft limit). */
+export const STAGED_BUDGET_STOP = 8500;
 const MAX_PLAYER_IDS = 120;
 
 export interface StagedStatsConfig {

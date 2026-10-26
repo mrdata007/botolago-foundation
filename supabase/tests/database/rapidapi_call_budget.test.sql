@@ -55,19 +55,19 @@ select extensions.throws_ok($$select api.service_record_rapidapi_calls('fixtures
 select extensions.throws_ok($$select api.service_record_rapidapi_calls('fixtures', '{}'::jsonb)$$,
   '22023', 'invalid_rapidapi_calls', '2.10 a payload that is not an array is refused');
 
--- 3 the monthly total counts the current UTC month only
+-- 3 the total counts the current quota window only (since the most recent reset day)
 select extensions.is(app_private.rapidapi_calls_this_month(), 10::bigint, '3.1 this month so far');
 insert into app_private.rapidapi_call_counts (day, job, endpoint, status_code, calls)
-values (date_trunc('month', statement_timestamp() at time zone 'utc')::date - 1, 'fixtures',
+values (app_private.rapidapi_window_start() - 1, 'fixtures',
   'matches/get-incidents', 200, 5000);
 select extensions.is(app_private.rapidapi_calls_this_month(), 10::bigint,
-  '3.2 last month''s calls are not counted');
+  '3.2 calls before the window are not counted');
 
 -- 4 the health check
 create function pg_temp.status_with(p_total integer) returns text language plpgsql as $$
 begin
   delete from app_private.rapidapi_call_counts
-  where day >= date_trunc('month', statement_timestamp() at time zone 'utc')::date;
+  where day >= app_private.rapidapi_window_start();
   insert into app_private.rapidapi_call_counts (day, job, endpoint, status_code, calls)
   values ((statement_timestamp() at time zone 'utc')::date, 'fixtures', 'a/b', 200, p_total);
   return app_private.rapidapi_budget_health() ->> 'status';

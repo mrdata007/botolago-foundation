@@ -2146,6 +2146,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_football_details_schedule: { Args: never; Returns: Json }
       service_football_match_details_due: {
         Args: {
           p_limit?: number
@@ -2257,6 +2258,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_rapidapi_budget: { Args: never; Returns: Json }
       service_recalculate_fantasy_rankings: {
         Args: {
           p_calculation_version?: number

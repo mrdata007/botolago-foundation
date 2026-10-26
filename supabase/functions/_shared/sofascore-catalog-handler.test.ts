@@ -75,6 +75,7 @@ describe("handler: the catalog_weekly job", () => {
     // against the RapidAPI budget (shadow counts too).
     expect(fake.calls).toEqual([
       "football_data_source",
+      "service_rapidapi_budget",
       "football_sofascore_catalog_snapshot",
       "service_record_rapidapi_calls",
     ]);

@@ -332,6 +332,17 @@ null, false);` before a write that touches fixtures or notifications, and
    Members pinning, unpinning and switching the notification
    (`api.pin_rival`, `api.unpin_rival`, `api.set_rivals_notify`) is ordinary app
    traffic, each member writing only their own rows.
+   Where migration 20261026143000 is applied, pg_cron also runs
+   `fantasy-rating-polls` every 5 minutes. It wakes the Edge Function
+   `football-live-refresh` with `{"job":"rating_polls"}` only when a Fantasy rating
+   poll is due (`app_private.fantasy_api_rating_candidates()`), and only while the
+   live refresh switch is on and the data source is `sofascore`. The job fetches
+   lineups and writes `app_private.fantasy_api_rating_sources`,
+   `app_private.fantasy_api_rating_polls` and the rating points. The live refresh
+   switch pauses it with the rest (`select app_private.notification_email_configure('off', null, null, false);`).
+   The same migration adds `app_private.rapidapi_budget_settings`, written only by
+   `app_private.rapidapi_budget_configure` (limits, reset day, offset, live poll
+   interval, season refresh cadence); the Edge Function reads it at the start of each run.
    Where migration 20261015150100 is applied, pg_cron also runs `trophies-tick`
    at minutes 10 and 40 of every hour. It evaluates the Trophées rules over the
    final results of every active team of the current Fantasy season and writes

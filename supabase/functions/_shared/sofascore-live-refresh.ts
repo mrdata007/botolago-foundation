@@ -24,12 +24,16 @@
 // sofascore-match-details.ts: 3 requests per fixture, at most
 // SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
 // more requests. Chosen fixtures: a mapped fixture written as finished this
-// tick, then mapped fixtures in play whose score or status was written (a write
-// that only moves the live minute does not count) or whose
-// changeTimestamp moved in the last 90 seconds (incidents only: 1 request, plus the
-// lineups on the tick that sees the match start; statistics are read at full time), then fixtures finalized in the
-// last two hours so post-match corrections are refreshed. The
-// season job fetches none. `runSofascoreDetailsBackfill` serves the
+// tick (the whistle fetch), then mapped fixtures in play whose score or status
+// was written (a write that only moves the live minute does not count) or
+// whose changeTimestamp moved in the last 90 seconds while their details were
+// last stored 5 minutes ago or more (incidents only: 1 request, plus the
+// lineups on the tick that sees the match start; statistics are read at full
+// time), then the post-match follow-ups: a finished fixture whose details were
+// last stored before its +30 minute or +90 minute mark
+// (api.service_football_details_schedule), one fetch each. The
+// season job fetches none. `rating_polls` (runSofascoreRatingPolls) is the
+// Fantasy rating polls alone: one lineups request per poll due, no live feed. `runSofascoreDetailsBackfill` serves the
 // `match_details_backfill` job. Details never hold a score back: they run after
 // the scores are written, and a failure is reported in `matchDetails`.
 //
@@ -80,6 +84,14 @@ import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 
 export type SofascoreRefreshMode = "sofascore" | "shadow";
 export type SofascoreRefreshJob = "fixtures" | "season_fixtures";
+/** Per-fixture post-match schedule from the database (api.service_football_details_schedule). */
+export interface SofascoreDetailsSchedule {
+  /** SofaScore event ids whose +30 min or +90 min follow-up is due. */
+  readonly followUps: ReadonlySet<string>;
+  /** When the fixture's details were last stored (ms), by SofaScore event id. */
+  readonly lastStored: ReadonlyMap<string, number>;
+}
+const NO_SCHEDULE: SofascoreDetailsSchedule = { followUps: new Set(), lastStored: new Map() };
 
 export const DEFAULT_SOFASCORE_SEASON_ID = "102220";
 /** Pages per direction the daily full-season pull may read (30 or so events each). */
@@ -114,8 +126,19 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
  * is fetched once or twice, not for as long as 150 s.
  */
 const DETAILS_CHANGE_WINDOW_MS = 90_000;
-/** Keep refreshing details while post-match incidents and statistics settle. */
-const DETAILS_FINAL_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+/** The change window for a live poll every `intervalSeconds`: one interval and 30 s of lateness. */
+export function detailsChangeWindowMs(intervalSeconds: number | undefined): number {
+  if (!intervalSeconds || !Number.isFinite(intervalSeconds) || intervalSeconds <= 60) {
+    return DETAILS_CHANGE_WINDOW_MS;
+  }
+  return Math.min(330, intervalSeconds + 30) * 1000;
+}
+/**
+ * A match in play whose provider change timestamp moved (without a score or
+ * status write) is read again only when its details were stored this long ago.
+ */
+const DETAILS_LIVE_MIN_GAP_MS = 5 * 60 * 1000;
 
 export interface SofascoreRefreshDependencies {
   readonly mode: SofascoreRefreshMode;
@@ -124,6 +147,12 @@ export interface SofascoreRefreshDependencies {
   readonly rapid: SofascoreShadowClient;
   readonly environment: Readonly<Record<string, string | undefined>>;
   readonly now: Date;
+  /**
+   * Seconds between live polls (api.service_rapidapi_budget; 60 by default,
+   * longer when the owner or the budget guard stretches it). A change
+   * "since the last poll" is judged against it. Absent: 60.
+   */
+  readonly liveIntervalSeconds?: number;
   readonly log?: (line: string) => void;
 }
 
@@ -291,9 +320,11 @@ function detailsTeams(
 
 /**
  * Fixtures whose details are worth fetching this tick, in priority order:
- * written as finished first, then in play and changed (written, or the
- * provider's changeTimestamp moved within the last 90 s; incidents only), newest change first,
- * then fixtures finalized within two hours, even if absent from the live feed.
+ * written as finished first (the whistle fetch), then in play and changed
+ * (written, or the provider's changeTimestamp moved within the last 90 s and the
+ * details are 5 minutes old; incidents only), newest change first, then the
+ * post-match follow-ups the database says are due, even if absent from the live
+ * feed. Without a schedule (older database) there are no follow-ups.
  */
 export function selectLiveDetailTargets(
   events: readonly SofascoreFixtureEvent[],
@@ -302,6 +333,8 @@ export function selectLiveDetailTargets(
   snapshot: Snapshot,
   now: Date,
   limit: number,
+  schedule: SofascoreDetailsSchedule = NO_SCHEDULE,
+  changeWindowMs: number = DETAILS_CHANGE_WINDOW_MS,
 ): SofascoreDetailsTarget[] {
   const written = new Set(toWrite.map((call) => call.p_external_id));
   const stateById = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
@@ -312,7 +345,11 @@ export function selectLiveDetailTargets(
     if (!state) continue; // not mapped to a fixture: the RPC would refuse it
     const changed = event.changeTimestamp === null ? -1 : event.changeTimestamp * 1000;
     const isWritten = written.has(event.sofascoreEventId);
-    const moved = changed >= 0 && now.getTime() - changed <= DETAILS_CHANGE_WINDOW_MS;
+    const lastStored = schedule.lastStored.get(event.sofascoreEventId);
+    const moved =
+      changed >= 0 &&
+      now.getTime() - changed <= changeWindowMs &&
+      (lastStored === undefined || now.getTime() - lastStored >= DETAILS_LIVE_MIN_GAP_MS);
     let rank: number | null = null;
     if (event.status === "finished" && isWritten) rank = 0;
     else if (DETAILS_LIVE_STATUSES.has(event.status) && (isWritten || moved)) rank = 1;
@@ -348,16 +385,21 @@ export function selectLiveDetailTargets(
     });
   }
   // Finished matches leave the live list and need no score write on later
-  // ticks. Use the snapshot to refresh their details for two hours after
-  // finalization, including when the provider no longer lists them as live.
+  // ticks. The database names the ones whose +30 min or +90 min follow-up is
+  // due (their details were last stored before that mark), so a match is
+  // read once or twice after the whistle fetch, not on every call.
   const selected = new Set(ranked.map((item) => item.target.eventId));
   for (const fixture of snapshot.fixtures) {
-    if (fixture.status !== "finished" || !fixture.finalizedAt || selected.has(fixture.externalId)) {
+    if (
+      fixture.status !== "finished" ||
+      !fixture.finalizedAt ||
+      selected.has(fixture.externalId) ||
+      !schedule.followUps.has(fixture.externalId)
+    ) {
       continue;
     }
     const finalized = Date.parse(fixture.finalizedAt);
-    const age = now.getTime() - finalized;
-    if (!Number.isFinite(age) || age < 0 || age > DETAILS_FINAL_WINDOW_MS) continue;
+    if (!Number.isFinite(finalized)) continue;
     const teams = detailsTeams(fixture, teamIds, undefined);
     if (teams)
       ranked.push({
@@ -435,6 +477,84 @@ export function skipReason(
 ): SkipReason | null {
   const kind = classifyCall(call, fixture);
   return kind === "clock" || kind === "content" ? null : kind;
+}
+
+/**
+ * The post-match schedule from api.service_football_details_schedule. A missing
+ * function (migration not applied) or any failure is an empty schedule: no
+ * follow-ups, and a moved change timestamp is read as before.
+ */
+async function loadDetailsSchedule(client: FixtureRpcClient): Promise<SofascoreDetailsSchedule> {
+  try {
+    const result = await client.schema("api").rpc("service_football_details_schedule", {});
+    if (result.error || !isRecord(result.data)) return NO_SCHEDULE;
+    const followUps = new Set<string>(
+      (Array.isArray(result.data.followUps) ? result.data.followUps : []).filter(
+        (id): id is string => typeof id === "string" && /^[1-9][0-9]{0,11}$/.test(id),
+      ),
+    );
+    const lastStored = new Map<string, number>();
+    if (isRecord(result.data.lastStored)) {
+      for (const [eventId, value] of Object.entries(result.data.lastStored)) {
+        const at = typeof value === "string" ? Date.parse(value) : Number.NaN;
+        if (Number.isFinite(at)) lastStored.set(eventId, at);
+      }
+    }
+    return { followUps, lastStored };
+  } catch {
+    return NO_SCHEDULE;
+  }
+}
+
+export interface SofascoreRatingPollDependencies {
+  readonly mode: SofascoreRefreshMode;
+  readonly client: FixtureRpcClient;
+  readonly rapid: SofascoreShadowClient;
+  readonly environment: Readonly<Record<string, string | undefined>>;
+  readonly now: Date;
+  readonly log?: (line: string) => void;
+}
+
+/**
+ * The `rating_polls` job: the Fantasy rating polls that are due and nothing
+ * else (one lineups request per poll, plus the incidents when a lineup has
+ * uncertain players). No live feed, no score write, no match details for
+ * other fixtures, no staged pulls. Woken by app_private.fantasy_rating_polls_tick
+ * only when a poll is due.
+ */
+export async function runSofascoreRatingPolls(
+  dependencies: SofascoreRatingPollDependencies,
+): Promise<SofascoreRefreshOutcome> {
+  const { mode, client, rapid, environment, now } = dependencies;
+  const job = "rating_polls";
+  const log = dependencies.log ?? ((line: string) => console.log(line));
+  const fantasy = new SofascoreFantasyRun({
+    mode,
+    client,
+    rapid,
+    environment,
+    now,
+    log: (line) => log(line),
+  });
+  try {
+    await fantasy.pollRatings();
+  } catch {
+    // Reported through the summary.
+  }
+  const fantasySummary = fantasy.summary();
+  log(
+    JSON.stringify({
+      event: "football_live_refresh_sofascore",
+      mode,
+      job,
+      result: "ok",
+      fantasy: fantasySummary,
+    }),
+  );
+  return {
+    status: 200,
+    body: { provider: SOFASCORE_PROVIDER_NAME, mode, job, fantasy: fantasySummary },
+  };
 }
 
 export async function runSofascoreRefresh(
@@ -548,8 +668,19 @@ export async function runSofascoreRefresh(
   } catch (error) {
     const code = error instanceof RapidApiError ? error.code : "invalid_provider_payload";
     const status = code === "provider_rate_limited" ? 429 : 502;
-    emit({ result: "error", error: code, requests, written: 0 });
-    return { status, body: { error: code, mode, job, requests: requests.length, written: 0 } };
+    const budget = error instanceof RapidApiError ? error.budget : undefined;
+    emit({ result: "error", error: code, ...(budget ? { budget } : {}), requests, written: 0 });
+    return {
+      status,
+      body: {
+        error: code,
+        ...(budget ? { budget } : {}),
+        mode,
+        job,
+        requests: requests.length,
+        written: 0,
+      },
+    };
   }
 
   // 3. Plan: parse, collapse replacements, resolve ids, drop what cannot change.
@@ -691,7 +822,16 @@ export async function runSofascoreRefresh(
     // request (that would be one request per match in play per minute); its
     // provider changeTimestamp moving still does, inside selectLiveDetailTargets.
     const changed = toWrite.filter((call) => !clockOnly.has(call.p_external_id));
-    const targets = selectLiveDetailTargets(collapsed.events, changed, liveSnapshot, now, cap);
+    const schedule = await loadDetailsSchedule(client);
+    const targets = selectLiveDetailTargets(
+      collapsed.events,
+      changed,
+      liveSnapshot,
+      now,
+      cap,
+      schedule,
+      detailsChangeWindowMs(dependencies.liveIntervalSeconds),
+    );
     return runSofascoreMatchDetails(targets, {
       mode,
       scope: "live",
