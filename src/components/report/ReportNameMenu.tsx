@@ -1,4 +1,4 @@
-import { Flag } from "lucide-react";
+import { EllipsisVertical, Flag } from "lucide-react";
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 import { ui, UiIconButton, UiMenu, UiMenuItem } from "@/components/ui-kit";
@@ -54,15 +54,22 @@ const RowTrigger = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButton
  *
  * `placement="row"` is the compact control for a table row; `"header"` is the
  * kit's 44px icon button, for a `UiHeader`'s `trailing` slot.
+ *
+ * `icon="more"` draws the row control as three dots instead of a flag: a flag
+ * on its own reads as a mystery, and a "more" button opens a menu whose
+ * entries carry the visible "Signaler …" labels. The accessible name is the
+ * same either way.
  */
 export function ReportNameMenu({
   targets,
   placement = "row",
+  icon = "flag",
   className,
 }: {
   /** What can be reported here, in menu order. The first one names the control. */
   targets: ReportTarget[];
   placement?: "row" | "header";
+  icon?: "flag" | "more";
   className?: string;
 }) {
   const { t } = useI18n();
@@ -71,14 +78,15 @@ export function ReportNameMenu({
   if (shown.length === 0) return null;
   const label = t("report.menu_label").replace("{name}", shown[0].name.trim());
 
+  const TriggerIcon = icon === "more" ? EllipsisVertical : Flag;
   const trigger =
     placement === "header" ? (
       <UiIconButton aria-label={label} data-report-trigger="" className={className}>
-        <Flag aria-hidden />
+        <TriggerIcon aria-hidden />
       </UiIconButton>
     ) : (
       <RowTrigger aria-label={label} data-report-trigger="" className={className}>
-        <Flag aria-hidden />
+        <TriggerIcon aria-hidden />
       </RowTrigger>
     );
 
