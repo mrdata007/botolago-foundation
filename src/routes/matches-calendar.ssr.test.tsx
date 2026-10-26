@@ -60,9 +60,14 @@ const original = {
   getSeasons: footballService.getSeasons,
   getMatchDay: footballService.getMatchDay,
   getLiveMatches: footballService.getLiveMatches,
+  getSeasonFixtureDays: footballService.getSeasonFixtureDays,
 };
+/** The days with fixtures; by default today's only, read when asked. */
+let fixtureDays: (() => string[]) | undefined;
 function stubFootball() {
   footballService.getSeasons = async () => [SEASON];
+  footballService.getSeasonFixtureDays = async () =>
+    fixtureDays ? fixtureDays() : [matchDayKey(new Date())];
   footballService.getMatchDay = async (date) => {
     const day = matchDayKey(date);
     asked.push(day);
@@ -90,6 +95,7 @@ const clients: QueryClient[] = [];
 afterEach(() => {
   Object.assign(footballService, original);
   asked.length = 0;
+  fixtureDays = undefined;
   for (const created of clients.splice(0)) created.clear();
   if (hadWindow) globals.window = originalWindow;
   else delete globals.window;
@@ -212,6 +218,7 @@ describe("/matches in the server's HTML", () => {
     // The seasons still go over; the day is the browser's to load.
     expect(handover?.queries.map((query) => query.queryKey)).toEqual([
       ["football", "seasons", "fr"],
+      ["football", "season-fixture-days", "season-current"],
     ]);
 
     globals.window = {};
@@ -272,6 +279,35 @@ describe("/matches in the server's HTML", () => {
     expect(loaded.loaderData).toEqual({ today: "2026-09-26" });
     expect(loaded.response.status).toBe(200);
     expect(loaded.response.headers.get("retry-after")).toBeNull();
+  });
+
+  test("a day with no fixtures opens on the next day that has some, on both sides", async () => {
+    stubFootball();
+    delete globals.window;
+    setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    fixtureDays = () => ["2026-09-20", "2026-10-03"];
+    const server = appClient();
+    let handover: unknown;
+    const serverHtml = await renderMatches(server, () => {
+      handover = JSON.parse(JSON.stringify(dehydrate(server, SSR_DEHYDRATE_OPTIONS)));
+    });
+    expect(asked).toEqual(["2026-10-03"]);
+    expect(serverHtml).toContain("/matches/7b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d");
+
+    globals.window = {};
+    const browser = appClient();
+    hydrate(browser, handover);
+    expect(await renderMatches(browser)).toBe(serverHtml);
+    expect(asked).toEqual(["2026-10-03"]);
+  });
+
+  test("with nothing ahead it opens on the latest results day", async () => {
+    stubFootball();
+    delete globals.window;
+    setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    fixtureDays = () => ["2026-09-12", "2026-09-19"];
+    await renderMatches(appClient());
+    expect(asked).toEqual(["2026-09-19"]);
   });
 
   test("the browser opens on the server's day, even when midnight falls between the two", async () => {

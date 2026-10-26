@@ -18,6 +18,7 @@ export interface AuditRow {
   description: string;
   descriptionLength: number;
   h1Count: number;
+  ogImage: string;
   canonical: string;
   robots: string;
   wordCount: number;
@@ -131,6 +132,8 @@ export function inspectHtml(
     tagWithAttribute(html, "meta", "name", "description")?.get("content")?.trim() ?? "";
   const canonical = tagWithAttribute(html, "link", "rel", "canonical")?.get("href")?.trim() ?? "";
   const robots = tagWithAttribute(html, "meta", "name", "robots")?.get("content")?.trim() ?? "";
+  const ogImage =
+    tagWithAttribute(html, "meta", "property", "og:image")?.get("content")?.trim() ?? "";
   const language = attributes(html.match(/<html\b[^>]*>/i)?.[0] ?? "").get("lang") ?? "";
   const h1Count = html.match(/<h1\b/gi)?.length ?? 0;
   const body = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] ?? html;
@@ -153,6 +156,7 @@ export function inspectHtml(
   if (h1Count > 1) issues.push("multiple_h1");
   if (!canonical) issues.push("missing_canonical");
   else if (canonicalUrl(canonical) !== canonicalUrl(url)) issues.push("canonical_mismatch");
+  if (!ogImage) issues.push("missing_og_image");
   if (/\bnoindex\b/i.test(robots)) issues.push("noindex");
   if (wordCount < 300 && !isUtilityPage(url)) issues.push("thin_raw_html");
 
@@ -165,6 +169,7 @@ export function inspectHtml(
     description,
     descriptionLength: description.length,
     h1Count,
+    ogImage,
     canonical,
     robots,
     wordCount,
@@ -234,6 +239,7 @@ async function auditUrl(url: string, timeoutMs: number): Promise<AuditRow> {
       description: "",
       descriptionLength: 0,
       h1Count: 0,
+      ogImage: "",
       canonical: "",
       robots: "",
       wordCount: 0,
@@ -275,6 +281,7 @@ function toCsv(rows: readonly AuditRow[]): string {
     "description",
     "descriptionLength",
     "h1Count",
+    "ogImage",
     "canonical",
     "robots",
     "wordCount",

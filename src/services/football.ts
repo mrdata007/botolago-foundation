@@ -762,6 +762,35 @@ export const footballService = {
   },
 
   /**
+   * The days of a season on which a match is played or has been, as
+   * competition-day keys, oldest first: scheduled, in play or finished.
+   * Postponed and cancelled fixtures do not count. The Matches calendar opens
+   * on the nearest of them (`nearestMatchDay`); one read of the fixture list,
+   * in French whatever the reader's language, because only the days are kept.
+   */
+  async getSeasonFixtureDays(
+    season: Pick<FootballSeason, "id" | "competitionId">,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      "fr",
+      requestContext(signal),
+    );
+    const days = new Set<string>();
+    for (const fixture of fixtures) {
+      const match = toMatch(fixture);
+      const counts =
+        match.status === "scheduled" || match.status === "live" || match.status === "finished";
+      if (counts && !Number.isNaN(Date.parse(match.kickoff))) {
+        days.add(matchDayKey(new Date(match.kickoff)));
+      }
+    }
+    return [...days].sort();
+  },
+
+  /**
    * The season's table: its fixtures and any stored table, read together (see
    * `buildStandings`). Every surface that shows a rank reads it here, under
    * `["football", "standings", seasonId, language]`: the Classement tab, Home,

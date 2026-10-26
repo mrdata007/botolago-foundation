@@ -63,6 +63,44 @@ export function openingMatchDay(season: SeasonDates | undefined, today: string):
   return today;
 }
 
+/**
+ * The query for the days of a season that have fixtures. Keyed without the
+ * language: only day keys are kept, so an Arabic reader's first render finds
+ * what the French server render prefetched.
+ */
+export function seasonFixtureDaysQuery(
+  season: Pick<FootballSeason, "id" | "competitionId"> | undefined,
+) {
+  return {
+    queryKey: ["football", "season-fixture-days", season?.id ?? "none"] as const,
+    queryFn: (context?: { signal?: AbortSignal }) =>
+      footballService.getSeasonFixtureDays(season!, context?.signal),
+    staleTime: 5 * 60_000,
+  };
+}
+
+/**
+ * The day the calendar opens on once the days with fixtures are known: the
+ * opening day (`openingMatchDay`) when it has fixtures, else the next day
+ * that has some, else the latest day before it that has (the newest results),
+ * else the opening day itself. `fixtureDays` are day keys in any order; an
+ * empty or unknown list leaves the opening day as it is.
+ */
+export function nearestMatchDay(
+  fixtureDays: readonly string[] | undefined,
+  opening: string,
+): string {
+  if (!fixtureDays || fixtureDays.length === 0) return opening;
+  let next: string | null = null;
+  let previous: string | null = null;
+  for (const day of fixtureDays) {
+    if (day === opening) return opening;
+    if (day > opening && (next === null || day < next)) next = day;
+    if (day < opening && (previous === null || day > previous)) previous = day;
+  }
+  return next ?? previous ?? opening;
+}
+
 /** A day the reader picked, kept inside the season on show. */
 export function clampMatchDay(
   day: string,

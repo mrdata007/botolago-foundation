@@ -35,6 +35,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { crestShareMeta } from "@/lib/share-image";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
 import { useBackTo } from "@/lib/back-navigation";
 import {
@@ -123,6 +124,8 @@ export const Route = createFileRoute("/clubs/$clubId")({
         { name: "twitter:card", content: "summary" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
+        // The club's crest as the share picture when it has a usable one.
+        ...(name ? crestShareMeta(club?.crestUrl, `Écusson ${name}`) : []),
       ],
       links: [{ rel: "canonical", href: canonical }],
       // The trail to the club, only when its name loaded.

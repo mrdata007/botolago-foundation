@@ -5,6 +5,8 @@ import { useAuth } from "@/auth/AuthProvider";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { CurvaLoading } from "@/components/curva/StateBlocks";
 import { CurvaLockScreen } from "@/components/curva/CurvaLockScreen";
+import { useCurvaCopy } from "@/components/manager-card/copy";
+import { UiPageTitle } from "@/components/ui-kit";
 import { preloadCardRenderer } from "@/components/manager-card/use-card-renderer";
 import { curvaAccess } from "@/services/curva-access";
 import { shouldRedirectFromCurva } from "@/services/manager-card-status";
@@ -53,6 +55,7 @@ const cardRendererStarted: true = (preloadCardRenderer(), true);
 
 function CurvaLayout() {
   const { status } = useAuth();
+  const copy = useCurvaCopy();
   useEffect(() => {
     preloadCardRenderer(); // idempotent; covers a layout whose module was evaluated on the server
   }, []);
@@ -64,6 +67,8 @@ function CurvaLayout() {
   if (access === "pending") {
     return (
       <FantasyFrame bottomNav>
+        {/* The server render stops here, so the heading is here too. */}
+        <UiPageTitle title={copy.nav} />
         <CurvaLoading />
       </FantasyFrame>
     );
