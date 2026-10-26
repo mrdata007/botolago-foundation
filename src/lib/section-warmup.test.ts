@@ -15,6 +15,9 @@ describe("section warm-up", () => {
     expect(savesData({ connection: { saveData: true } })).toBe(true);
     expect(savesData({ connection: { saveData: false } })).toBe(false);
     expect(savesData({})).toBe(false);
+    expect(savesData({ connection: { effectiveType: "slow-2g" } })).toBe(true);
+    expect(savesData({ connection: { effectiveType: "2g" } })).toBe(true);
+    expect(savesData({ connection: { effectiveType: "4g" } })).toBe(false);
   });
 
   test("loads each path's routes in turn and carries on past a failure", async () => {
