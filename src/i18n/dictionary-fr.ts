@@ -264,7 +264,8 @@ export const fr = {
   "standings.in_hand_names": "Matchs en retard : {clubs}. Comparez la colonne {col}.",
   "standings.in_hand_count": "{n} clubs ont des matchs en retard : comparez la colonne {col}.",
   "standings.updated": "Classement chargé le {when}",
-  "standings.refresh_failed": "Impossible d'actualiser le classement. Voici la dernière version chargée.",
+  "standings.refresh_failed":
+    "Impossible d'actualiser le classement. Voici la dernière version chargée.",
   "standings.shared_rank": "Ex æquo",
   "standings.shared_rank_note":
     "Un même rang signale des clubs à égalité de points, de différence de buts et de buts marqués : l'ordre dans lequel ils sont listés ne les départage pas.",
