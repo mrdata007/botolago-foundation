@@ -247,6 +247,10 @@ export const ar = {
   "standings.provisional": "ترتيب مؤقت، محسوب من نتائج المباريات.",
   "standings.unofficial": "ترتيب غير رسمي، محسوب من نتائج المباريات.",
   "standings.computed": "ترتيب محسوب من نتائج المباريات.",
+  "standings.in_hand_names": "مباريات مؤجلة: {clubs}. قارن عمود «{col}».",
+  "standings.in_hand_count": "عدد الأندية ذات المباريات المؤجلة: {n}. قارن عمود «{col}».",
+  "standings.updated": "تم تحميل الترتيب {when}",
+  "standings.refresh_failed": "تعذّر تحديث الترتيب. هذه آخر نسخة تم تحميلها.",
   "standings.shared_rank": "مركز مشترك",
   "standings.shared_rank_note":
     "تكرار المركز يعني تساوي الفرق في النقاط وفارق الأهداف والأهداف المسجلة، وترتيب ظهورها في الجدول لا يفصل بينها.",

@@ -27,6 +27,7 @@ import { ui, UiButton, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
@@ -155,7 +156,17 @@ function StandingsPage() {
   });
 
   const loading = seasonsQ.isPending || (season != null && standingsQ.isPending);
-  const failed = seasonsQ.isError || standingsQ.isError;
+  // A first load that failed has nothing to show. A refresh that failed while a
+  // table is on screen keeps it, with a notice (`refreshFailed`), instead of
+  // replacing it with an error.
+  const hasTable = (data?.overall.length ?? 0) > 0;
+  const failed = (seasonsQ.isError || standingsQ.isError) && !hasTable;
+  const refreshFailed = (seasonsQ.isError || standingsQ.isError) && hasTable;
+
+  const retry = () => {
+    void seasonsQ.refetch();
+    if (season) void standingsQ.refetch();
+  };
 
   const clubById = (id: string) => data?.clubs.find((club) => club.id === id);
   const favourite = findClub(data?.clubs, user?.favoriteClubId);
@@ -177,6 +188,18 @@ function StandingsPage() {
 
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const rounds = data ? roundsLabel(data.rounds, lang, t, (value) => nf.format(value)) : "";
+  // When this page last read the table: the API gives no calculation time, so
+  // it is worded as a read, and pinned to Morocco time (BG-0100).
+  const updatedAt =
+    standingsQ.dataUpdatedAt > 0
+      ? moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(standingsQ.dataUpdatedAt))
+      : "";
   const status = [
     t("matches.competition.botola"),
     season?.status === "completed" && !data?.computed
@@ -213,12 +236,7 @@ function StandingsPage() {
           <SkeletonList count={8}>{() => <StandingsRowSkeleton />}</SkeletonList>
         </div>
       ) : failed ? (
-        <ErrorState
-          onRetry={() => {
-            void seasonsQ.refetch();
-            if (season) void standingsQ.refetch();
-          }}
-        />
+        <ErrorState onRetry={retry} />
       ) : !data || data.overall.length === 0 ? (
         <div className="grid gap-3">
           <EmptyState illustration={standingsSoonArt}>{t("matches.table.empty")}</EmptyState>
@@ -237,6 +255,22 @@ function StandingsPage() {
               {t("club.all_clubs")}
             </SectionHeaderLink>
           </div>
+
+          {refreshFailed ? (
+            <div
+              role="status"
+              className={cn(
+                "flex min-w-0 flex-wrap items-center justify-between gap-x-3",
+                ui.text.meta,
+                ui.tone.negative,
+              )}
+            >
+              <p className="min-w-0">{t("standings.refresh_failed")}</p>
+              <UiButton variant="soft" size="sm" onClick={retry}>
+                {t("state.retry")}
+              </UiButton>
+            </div>
+          ) : null}
 
           {favourite && favouriteStanding ? (
             <YourClubCard club={favourite} standing={favouriteStanding} />
@@ -281,7 +315,14 @@ function StandingsPage() {
               rows={rows ?? []}
               computed={shown === "home" || shown === "away" || data.computed}
               seasonStatus={season?.status}
+              // Games in hand only mean something against the whole season.
+              clubById={shown === "overall" || shown === "form" ? clubById : undefined}
             />
+            {updatedAt ? (
+              <p className={cn("px-1", ui.text.meta, ui.tone.muted)}>
+                {t("standings.updated").replace("{when}", updatedAt)}
+              </p>
+            ) : null}
           </section>
         </div>
       )}

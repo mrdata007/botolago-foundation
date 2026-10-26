@@ -3,6 +3,8 @@ import { describe, expect, test } from "bun:test";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 import {
+  clubsWithGamesInHand,
+  gamesInHandNote,
   gapLabel,
   listSeparator,
   placeLabel,
@@ -93,5 +95,31 @@ describe("the table page's counted phrases", () => {
       ].join(listSeparator(lang));
     expect(heard("ar")).toBe("2، مركز مشترك، الهبوط");
     expect(heard("fr")).toBe("2, Ex æquo, Relégation");
+  });
+});
+
+describe("games in hand", () => {
+  const row = (played: number) => ({ played });
+  const t = inLanguage("fr");
+
+  test("nobody is behind when every club has played the same number", () => {
+    expect(clubsWithGamesInHand([row(5), row(5), row(5)])).toEqual([]);
+    expect(gamesInHandNote([], "fr", t, format)).toBeNull();
+  });
+
+  test("the clubs behind the busiest one, in table order", () => {
+    expect(clubsWithGamesInHand([row(6), row(5), row(6), row(4)])).toEqual([row(5), row(4)]);
+  });
+
+  test("names up to three clubs, then gives the count, and points to the played column", () => {
+    expect(gamesInHandNote(["Raja", "FAR"], "fr", t, format)).toBe(
+      "Matchs en retard : Raja, FAR. Comparez la colonne J.",
+    );
+    expect(gamesInHandNote(["a", "b", "c", "d"], "fr", t, format)).toBe(
+      "4 clubs ont des matchs en retard : comparez la colonne J.",
+    );
+    expect(gamesInHandNote(["a", "b"], "ar", inLanguage("ar"), format)).toBe(
+      "مباريات مؤجلة: a، b. قارن عمود «ل».",
+    );
   });
 });

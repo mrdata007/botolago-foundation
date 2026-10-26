@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import type { FootballSeason } from "@/services/football";
 import type { Club, TableRow } from "@/types/domain";
 import { formatGoalDifference } from "./head-to-head";
-import { listSeparator, zoneLabel } from "./standings-copy";
+import { clubsWithGamesInHand, gamesInHandNote, listSeparator, zoneLabel } from "./standings-copy";
 
 /**
  * What the table shows: the season (`overall`), home or away matches only,
@@ -80,7 +80,11 @@ export function StandingsTable({
   );
   const figures = view !== "form";
   // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
-  const head = "py-2";
+  // It sticks under the top bar (and the live strip while one shows) as the page scrolls, on an opaque fill so rows pass beneath it.
+  const head = cn(
+    "py-2 sticky z-10 bg-[color:var(--ui-surface-sunken)]",
+    "top-[calc(var(--topbar-h)+var(--livestrip-h))]",
+  );
   // The won/drawn/lost columns are the wide screens'; a phone has them as a
   // line under the club's name once asked (`detailed`).
   const narrow = "max-sm:hidden";
@@ -98,7 +102,9 @@ export function StandingsTable({
   );
 
   return (
-    <div className={cn("overflow-hidden", ui.surface.card)} ref={tableRef}>
+    // `overflow-clip`, not `hidden`: it rounds the corners without making the
+    // card a scroll box, so the head row can stick to the page's scroll.
+    <div className={cn("overflow-clip", ui.surface.card)} ref={tableRef}>
       <table id={tableId} className="w-full table-fixed border-collapse">
         <caption className="sr-only">{caption}</caption>
         <colgroup>
@@ -338,27 +344,43 @@ export function StandingsNotes({
   shown = rows,
   computed,
   seasonStatus,
+  clubById,
   className,
 }: {
-  rows: readonly Pick<TableRow, "position">[];
+  rows: readonly Pick<TableRow, "position" | "played" | "clubId">[];
   shown?: readonly Pick<TableRow, "position">[];
   computed: boolean;
   seasonStatus: FootballSeason["status"] | undefined;
+  /**
+   * Names the clubs with games in hand. Given only for a table where played
+   * counts mean something to compare (overall, form): without it, no such note.
+   */
+  clubById?: (id: string) => Club | undefined;
   className?: string;
 }) {
-  const { t } = useI18n();
+  const { t, tr, lang } = useI18n();
   const sharedRanks = sharedPositions(rows);
   const shared = shown.some((row) => sharedRanks.has(row.position));
   const over = seasonStatus === "completed" || seasonStatus === "cancelled";
   // A table still being played carries no note of its own: only a finished one says it is unofficial.
   const computedNote = computed && (seasonStatus === undefined || over);
-  if (!computedNote && !shared) return null;
+  const inHandNames = clubById
+    ? clubsWithGamesInHand(rows).flatMap((row) => {
+        const club = clubById(row.clubId);
+        return club ? [clubLabel(club, tr)] : [];
+      })
+    : [];
+  const inHand = gamesInHandNote(inHandNames, lang, t, (n) =>
+    new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR").format(n),
+  );
+  if (!computedNote && !shared && !inHand) return null;
   return (
     <div className={cn("grid gap-1 px-1", ui.text.meta, ui.tone.muted, className)}>
       {computedNote ? (
         <p>{seasonStatus === undefined ? t("standings.computed") : t("standings.unofficial")}</p>
       ) : null}
       {shared ? <p>{t("standings.shared_rank_note")}</p> : null}
+      {inHand ? <p>{inHand}</p> : null}
     </div>
   );
 }
