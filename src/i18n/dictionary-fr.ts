@@ -2070,7 +2070,15 @@ export const fr = {
   "fantasy.create.error.generic":
     "Votre équipe n’a pas pu être enregistrée. Réessayez dans un instant.",
   "fantasy.create.enrolment_next":
-    "La Journée {current} est clôturée. Votre équipe jouera à partir de la Journée {n}.",
+    "Journée {current} clôturée · votre équipe joue dès la Journée {n}.",
+  "fantasy.create.locked":
+    "Journée {n} verrouillée : votre équipe reste visible, les changements rouvrent à la prochaine journée.",
+  "fantasy.create.next_locked": "Journée verrouillée",
+  "fantasy.create.next_remaining": "Encore {n} à choisir",
+  "fantasy.create.next_remaining_one": "Encore 1 à choisir",
+  "fantasy.create.per_place": "≈ {amount} par place restante",
+  "fantasy.create.progress.done": "complet",
+  "fantasy.create.progress.left": "reste {n}",
   "prizes.meta_title": "Lots à gagner — BotolaGO Fantasy",
   "prizes.meta_description":
     "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois et lot de la saison. Jeu 100 % gratuit.",
