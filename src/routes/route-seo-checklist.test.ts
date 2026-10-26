@@ -165,7 +165,7 @@ describe("dynamic public routes", () => {
       const merged = merge(await rootHead(), await headOf(load, params, unusable));
       expectChecklist(path, merged);
       expect(merged.tags.get("property:og:image")).toBe(`${PUBLIC_SITE_ORIGIN}/og-image.jpg`);
-      expect(merged.tags.get("property:og:image:width")).toBe("1200");
+      expect(merged.tags.has("property:og:image:width")).toBe(false);
     });
   }
 });

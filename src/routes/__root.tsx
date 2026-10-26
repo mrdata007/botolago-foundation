@@ -263,11 +263,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Actualités, informations de match et Fantasy pour la Botola Pro.",
       },
       { property: "og:type", content: "website" },
-      // The default share picture (stadium + wordmark, 1200×630). Article
-      // pages set their own og:image, which takes precedence.
+      // The default share picture (stadium + wordmark, 1200×630). Article,
+      // club and match pages set their own og:image, which takes precedence.
+      // No og:image:width/height here: the router merges tag by tag, so a
+      // root size would be declared for a page's crest of unknown size too.
       { property: "og:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
       { property: "og:image:alt", content: "BotolaGO" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
