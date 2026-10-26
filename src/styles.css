@@ -727,32 +727,6 @@ html[dir="rtl"] body {
   font-family: var(--font-arabic);
   line-height: 1.75;
 }
-/* iOS zooms the page in when a text field under 16px gets focus, and does not
-   zoom back out. The viewport no longer caps zoom (`maximum-scale=1` stopped
-   pinch zoom for everyone, a WCAG 1.4.4 failure), so the fields are 16px on
-   touch screens instead: the kit's are 15px and the header search 13px.
-   Touch only, so a desktop keeps the kit's 15px. Unlayered, like the rules
-   around it, so the size utilities on the fields cannot undo it. Checkboxes,
-   radios and the like have no text to zoom for. */
-@media (pointer: coarse) {
-  input:not(
-    [type="checkbox"],
-    [type="radio"],
-    [type="range"],
-    [type="file"],
-    [type="color"],
-    [type="button"],
-    [type="submit"],
-    [type="reset"],
-    [type="image"],
-    [type="hidden"]
-  ),
-  select,
-  textarea {
-    font-size: 16px;
-  }
-}
-
 /* BG-0069 — Arabic letterforms join. Any letter-spacing, positive or
    negative, pulls the joins apart and renders a word as loose disconnected
    glyphs; there is no "small enough" amount, so the rule is none at all.

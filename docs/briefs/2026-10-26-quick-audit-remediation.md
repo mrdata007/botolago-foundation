@@ -42,12 +42,12 @@ s-maxage=60, stale-while-revalidate=300` (or similar short TTL). Personal
 - The full-screen language picker no longer blocks content. The first
   language comes from the browser/device language (Arabic → `ar`, else
   `fr`); a one-tap switch stays reachable in the header.
-- Pinch-zoom is allowed again (no `maximum-scale=1`); the iOS input-focus
-  zoom is prevented by 16px inputs instead.
+- Zoom stays capped (`maximum-scale=1`): the owner decided on 2026-10-26 to
+  keep the 2026-10-06 decision, so the audit's pinch-zoom item is not taken.
 - The 404 page gets its own title.
 - Accepted when: Home renders the same main content on server and after
   hydration for an anonymous visitor; no modal appears on first load; the
-  viewport meta has no `maximum-scale`; French and Arabic (RTL) both render.
+  French and Arabic (RTL) both render.
 
 ### C. Arabic articles that are really Arabic
 

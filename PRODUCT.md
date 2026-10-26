@@ -420,8 +420,7 @@ Known gaps (**Unknown** whether intended):
   It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone (the
   app, and the website in Safari upright and sideways) and on Android phones with a recent and an
   older WebView is not yet checked.
-- Revised 2026-10-26 (quick audit, MOB-01): the viewport meta no longer carries
-  `maximum-scale=1`, so the website can be pinch-zoomed again (WCAG 1.4.4). The iPhone problem it
-  was added for (a 15px field zooming iOS in on focus, with no way back) is stopped by making text
-  fields 16px on touch screens. The Capacitor app keeps pinch zoom off through its own shell
-  setting. Not yet checked on a real iPhone.
+- Decided 2026-10-06 (owner report from the iPhone app): the viewport meta carries
+  `maximum-scale=1`, so the app never zooms. Cost: on Android browsers (Chrome, Edge, Firefox) and
+  some other apps' built-in browsers, the website can no longer be pinch-zoomed unless the reader
+  switches on "force enable zoom". iPhone Safari still pinches. Not yet checked on a real iPhone.

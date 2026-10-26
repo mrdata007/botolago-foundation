@@ -243,18 +243,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
       // the insets are 0 and nothing moves.
       //
-      // No `maximum-scale` and no `user-scalable=no`: a reader must be able
-      // to pinch-zoom the page (WCAG 1.4.4, audit 2026-10-26). The cap this
-      // tag used to carry existed so iOS would not zoom in, and never zoom
-      // back, when a field under 16px got focus; that is now stopped at the
-      // source, by the fields being 16px on touch screens (`@media
-      // (pointer: coarse)` in src/styles.css). In the Capacitor app, pinch
-      // zoom is switched off by the shell itself (`zoomEnabled: false`), so
-      // the phone app behaves as before.
+      // `maximum-scale=1`: iOS zooms in when a field whose text is under 16px
+      // gets focus (by 16 ÷ its size, capped by this value) and never zooms
+      // back. The kit's fields are 15px, so signing in left the whole app at
+      // 1.067, and in the phone app the owner could not pinch back out:
+      // Capacitor switches pinch off. The cap stops that zoom everywhere; in
+      // the app's web view it also stops double-tap and pinch zoom. iPhone
+      // Safari still lets a visitor pinch; Android browsers no longer do.
+      // Not `user-scalable=no`: it adds nothing in the app.
       // docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
       // Browser chrome colour when the site is installed (public/manifest.webmanifest).
       { name: "theme-color", content: "#0c3164" },
