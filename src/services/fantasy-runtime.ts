@@ -79,6 +79,7 @@ export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatD
           : "injured";
   return {
     id: dto.id,
+    footballPlayerId: dto.footballPlayerId,
     name: { fr: dto.name, ar: dto.name },
     clubId: dto.footballTeamId,
     position: dto.position,
@@ -539,6 +540,21 @@ export const fantasyService = {
   async getPlayer(id: string): Promise<FantasyPlayer | undefined> {
     if (mode() === "mock") return mockFantasyService.getPlayer(id);
     return (await allPlayers()).find((player) => player.id === id);
+  },
+  /**
+   * Football player id -> Fantasy player id, for the players the season's pool
+   * lists. A line-up or squad row links to `/fantasy/players/$playerId` only
+   * when its player is here (U1). It reads the same shared pool as the Fantasy
+   * lists, so it costs nothing extra once one of them has loaded.
+   */
+  async getFootballPlayerLinks(): Promise<Record<string, string>> {
+    if (mode() === "mock") return mockFantasyService.getFootballPlayerLinks();
+    const links: Record<string, string> = {};
+    for (const player of await allPlayers()) {
+      if (player.footballPlayerId && !player.placeholder)
+        links[player.footballPlayerId] = player.id;
+    }
+    return links;
   },
   async getTeam(): Promise<FantasyTeam> {
     if (mode() === "mock") return mockFantasyService.getTeam();

@@ -13,6 +13,7 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import * as fdb from "@/mocks/fantasy-data";
+import { players as mockFootballPlayers } from "@/mocks/data";
 import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
 
 const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms));
@@ -52,6 +53,20 @@ export const fantasyService = {
   },
   async getPlayer(id: string): Promise<FantasyPlayer | undefined> {
     return delay(fdb.fantasyPlayers.find((p) => p.id === id));
+  },
+  /**
+   * Demo data: the football mock's players, as the football mock repository
+   * ids them (`mock-repository.ts`: `uuid(30, index + 1)`), matched to the
+   * Fantasy pool by name.
+   */
+  async getFootballPlayerLinks(): Promise<Record<string, string>> {
+    const links: Record<string, string> = {};
+    mockFootballPlayers.forEach((player, index) => {
+      const fantasy = fdb.fantasyPlayers.find((p) => p.name.fr === player.name.fr);
+      if (fantasy)
+        links[`00000030-0000-4000-8000-${String(index + 1).padStart(12, "0")}`] = fantasy.id;
+    });
+    return delay(links);
   },
   async getTeam(): Promise<FantasyTeam> {
     return delay(mergeTeam(fdb.fantasyTeam, loadPatch()));

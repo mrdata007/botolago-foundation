@@ -2,6 +2,8 @@ import { Section } from "@/components/common/Section";
 import { SectionGroupHeader } from "@/components/common/SectionHeader";
 import { PlayerRowSkeleton, SkeletonList } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
+import { FantasyPlayerLink, type FantasyPlayerLinkOf } from "@/components/common/FantasyPlayerLink";
+import { ChevronRight } from "lucide-react";
 import { ui, UiBadge, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
@@ -16,10 +18,23 @@ import type { SectionData } from "./ClubOverview";
  * defenders, midfielders, forwards, each line with how many it holds. Each
  * row is the shirt number on a disc in the club's colour, then the name; a
  * player the provider gave no number keeps the row's rhythm with an empty
- * disc rather than an invented one. There is no football player page, so a
- * row opens nothing.
+ * disc rather than an invented one. A row opens the player's page
+ * (`/fantasy/players/$playerId`, the only player page there is) when
+ * `playerLink` maps his football id to a Fantasy player id (U1); for a player
+ * the Fantasy pool does not list, the row is plain text.
  */
-export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<SquadPlayer[]> }) {
+const noPlayerLink: FantasyPlayerLinkOf = () => null;
+
+export function ClubSquad({
+  club,
+  squad,
+  playerLink = noPlayerLink,
+}: {
+  club: Club;
+  squad: SectionData<SquadPlayer[]>;
+  /** Football player id to Fantasy player id, or `null`: who gets a link. */
+  playerLink?: FantasyPlayerLinkOf;
+}) {
   const { t } = useI18n();
 
   if (squad.isPending) {
@@ -68,7 +83,7 @@ export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<Squa
           <UiCard padding="none" className="overflow-hidden">
             <ul>
               {group.players.map((player) => (
-                <SquadRow key={player.id} player={player} />
+                <SquadRow key={player.id} player={player} fantasyId={playerLink(player.id)} />
               ))}
             </ul>
           </UiCard>
@@ -78,51 +93,58 @@ export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<Squa
   );
 }
 
-function SquadRow({ player }: { player: SquadPlayer }) {
+function SquadRow({ player, fantasyId }: { player: SquadPlayer; fantasyId: string | null }) {
   const { t } = useI18n();
   return (
-    <li
-      className={cn(
-        "flex min-h-[var(--ui-row-min)] items-center gap-3 px-3.5 py-2",
-        ui.rule.blockStart,
-        "first:border-t-0",
-      )}
-    >
-      {player.shirtNumber !== null ? (
-        <span
-          className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center",
-            ui.radius.full,
-            ui.club.fill,
-            ui.club.ring,
-            ui.stat.sm,
-            "[font-weight:var(--ui-weight-heavy)]",
-          )}
-        >
-          <span aria-hidden>{player.shirtNumber}</span>
-          <span className="sr-only">
-            {t("club.squad.number").replace("{n}", String(player.shirtNumber))}
-          </span>
-        </span>
-      ) : (
-        <span aria-hidden className={cn("h-8 w-8 shrink-0", ui.radius.full, ui.surface.sunken)} />
-      )}
-      <span
-        dir="auto"
+    <li className={cn(ui.rule.blockStart, "first:border-t-0")}>
+      {/* The whole row is the target, at least `--ui-row-min` (56px) high. */}
+      <FantasyPlayerLink
+        playerId={fantasyId}
         className={cn(
-          "min-w-0 flex-1 truncate",
-          ui.text.body,
-          "[font-weight:var(--ui-weight-strong)]",
-          ui.tone.default,
+          "flex min-h-[var(--ui-row-min)] items-center gap-3 px-3.5 py-2",
+          fantasyId &&
+            "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
         )}
       >
-        {player.name}
-      </span>
-      {player.role === "captain" ? (
-        <UiBadge tone="outline">{t("club.squad.captain")}</UiBadge>
-      ) : player.role === "vice_captain" ? (
-        <UiBadge tone="outline">{t("club.squad.vice_captain")}</UiBadge>
-      ) : null}
+        {player.shirtNumber !== null ? (
+          <span
+            className={cn(
+              "grid h-8 w-8 shrink-0 place-items-center",
+              ui.radius.full,
+              ui.club.fill,
+              ui.club.ring,
+              ui.stat.sm,
+              "[font-weight:var(--ui-weight-heavy)]",
+            )}
+          >
+            <span aria-hidden>{player.shirtNumber}</span>
+            <span className="sr-only">
+              {t("club.squad.number").replace("{n}", String(player.shirtNumber))}
+            </span>
+          </span>
+        ) : (
+          <span aria-hidden className={cn("h-8 w-8 shrink-0", ui.radius.full, ui.surface.sunken)} />
+        )}
+        <span
+          dir="auto"
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            ui.text.body,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.default,
+          )}
+        >
+          {player.name}
+        </span>
+        {player.role === "captain" ? (
+          <UiBadge tone="outline">{t("club.squad.captain")}</UiBadge>
+        ) : player.role === "vice_captain" ? (
+          <UiBadge tone="outline">{t("club.squad.vice_captain")}</UiBadge>
+        ) : null}
+        {fantasyId ? (
+          <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
+        ) : null}
+      </FantasyPlayerLink>
     </li>
   );
 }

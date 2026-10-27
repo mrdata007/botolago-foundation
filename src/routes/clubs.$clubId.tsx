@@ -48,6 +48,7 @@ import { sharedPositions } from "@/lib/league-table";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import { useFantasyPlayerLinks } from "@/services/use-fantasy-player-links";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -286,6 +287,8 @@ function ClubPage() {
   // The current squad is the club's active memberships; a past season's is
   // the squad stored for it.
   const squadSeason = season && !season.isCurrent ? season.id : null;
+  // Names open the player's page when the Fantasy pool lists the player (U1).
+  const playerLink = useFantasyPlayerLinks(tab === "squad");
   const squadQ = useQuery({
     queryKey: ["football", "club-squad", clubId, squadSeason ?? "current", lang],
     queryFn: () => footballService.getClubSquad(clubId, squadSeason, lang),
@@ -500,6 +503,7 @@ function ClubPage() {
         {tab === "squad" && (
           <ClubSquad
             club={club}
+            playerLink={playerLink}
             squad={{
               data: squadQ.data,
               isPending: seasonsQ.isPending || squadQ.isPending,

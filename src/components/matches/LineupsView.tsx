@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { MatchAbsenceDto, MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { FantasyPlayerLink, type FantasyPlayerLinkOf } from "@/components/common/FantasyPlayerLink";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { MatchDataState } from "./MatchDataState";
 import { ui, UiCard } from "@/components/ui-kit";
@@ -36,6 +37,8 @@ function positionAbbreviation(t: (key: TranslationKey) => string, position: stri
   }
 }
 
+const noPlayerLink: FantasyPlayerLinkOf = () => null;
+
 const starters = (lineup: Lineup) => lineup.players.filter((player) => player.slot === "starting");
 const benchOf = (lineup: Lineup) =>
   lineup.players.filter((player) => player.slot === "bench").sort((a, b) => a.order - b.order);
@@ -65,6 +68,13 @@ const benchOf = (lineup: Lineup) =>
  *
  * Under it all, the players the provider lists as injured or suspended
  * (`Absences`), which are known before the lineups are.
+ *
+ * A player's name opens his page (`/fantasy/players/$playerId`) when
+ * `playerLink` maps his football id to a Fantasy player id (U1): the pitch
+ * disc, the bench pill and the list row are the tap target, 44px high in the
+ * lists. Without `playerLink`, or for a player it does not know, the same
+ * boxes are plain text. The pitch is a picture hidden from assistive
+ * technology, so its links are not tab stops; the lists carry the keyboard.
  */
 export function LineupsView({
   lineups,
@@ -74,6 +84,7 @@ export function LineupsView({
   phase,
   absences = [],
   unavailable,
+  playerLink = noPlayerLink,
 }: {
   lineups: readonly Lineup[];
   home: Club;
@@ -87,6 +98,8 @@ export function LineupsView({
    * or `absences` then only means nothing was read.
    */
   unavailable?: { lineups?: ReactNode; absences?: ReactNode };
+  /** Football player id to Fantasy player id, or `null`: who gets a link (U1). */
+  playerLink?: FantasyPlayerLinkOf;
 }) {
   const { t } = useI18n();
   const absent = unavailable?.absences ?? (
@@ -119,7 +132,7 @@ export function LineupsView({
       <div className="grid gap-4">
         <h2 className="sr-only">{t("matches.detail.tab.lineups")}</h2>
         {sides.map((side) => (
-          <TeamList key={side.club.id} {...side} />
+          <TeamList key={side.club.id} {...side} playerLink={playerLink} />
         ))}
         {absent}
       </div>
@@ -145,6 +158,7 @@ export function LineupsView({
               <PlayerNode
                 key={player.id}
                 player={player}
+                fantasyId={playerLink(player.id)}
                 palette={palettes.away}
                 inlineStart={slotInlineStart(index, line.length, true)}
                 blockStart={lineBlockStart(lineIndex, awayLines.length, "away")}
@@ -156,6 +170,7 @@ export function LineupsView({
               <PlayerNode
                 key={player.id}
                 player={player}
+                fantasyId={playerLink(player.id)}
                 palette={palettes.home}
                 inlineStart={slotInlineStart(index, line.length, false)}
                 blockStart={lineBlockStart(lineIndex, homeLines.length, "home")}
@@ -173,7 +188,7 @@ export function LineupsView({
         ))}
       </div>
 
-      <Bench sides={sides} />
+      <Bench sides={sides} playerLink={playerLink} />
       {absent}
     </div>
   );
@@ -272,11 +287,13 @@ function PitchMarkings() {
  */
 function PlayerNode({
   player,
+  fantasyId,
   palette,
   inlineStart,
   blockStart,
 }: {
   player: LineupPlayer;
+  fantasyId: string | null;
   palette: ClubPalette;
   inlineStart: number;
   blockStart: number;
@@ -289,7 +306,12 @@ function PlayerNode({
     insetBlockStart: `calc(${blockStart}% - 0.9375rem)`,
   };
   return (
-    <div className="absolute flex w-22 flex-col items-center gap-0.5" style={position}>
+    <FantasyPlayerLink
+      playerId={fantasyId}
+      focusable={false}
+      className="absolute flex w-22 flex-col items-center gap-0.5"
+      style={position}
+    >
       <span
         {...clubStyle(palette)}
         className={cn(
@@ -328,12 +350,18 @@ function PlayerNode({
       >
         {player.displayName}
       </span>
-    </div>
+    </FantasyPlayerLink>
   );
 }
 
 /** The substitutes of both sides, under the pitch. */
-function Bench({ sides }: { sides: { lineup: Lineup; club: Club; palette: ClubPalette }[] }) {
+function Bench({
+  sides,
+  playerLink,
+}: {
+  sides: { lineup: Lineup; club: Club; palette: ClubPalette }[];
+  playerLink: FantasyPlayerLinkOf;
+}) {
   const { t, tr } = useI18n();
   const withBench = sides.filter((side) => benchOf(side.lineup).length > 0);
   if (withBench.length === 0) return null;
@@ -350,19 +378,22 @@ function Bench({ sides }: { sides: { lineup: Lineup; club: Club; palette: ClubPa
             </div>
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {benchOf(lineup).map((player) => (
-                <li
-                  key={player.id}
-                  className={cn(
-                    "inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1",
-                    ui.radius.full,
-                    ui.surface.sunken,
-                    ui.text.meta,
-                  )}
-                >
-                  {player.shirtNumber !== null ? (
-                    <span className={cn(ui.stat.sm, ui.tone.muted)}>{player.shirtNumber}</span>
-                  ) : null}
-                  <span className="truncate">{player.displayName}</span>
+                <li key={player.id} className="min-w-0 max-w-full">
+                  <FantasyPlayerLink
+                    playerId={playerLink(player.id)}
+                    as="span"
+                    className={cn(
+                      "inline-flex min-h-[var(--ui-tap-min)] min-w-0 max-w-full items-center gap-1.5 px-2.5",
+                      ui.radius.full,
+                      ui.surface.sunken,
+                      ui.text.meta,
+                    )}
+                  >
+                    {player.shirtNumber !== null ? (
+                      <span className={cn(ui.stat.sm, ui.tone.muted)}>{player.shirtNumber}</span>
+                    ) : null}
+                    <span className="truncate">{player.displayName}</span>
+                  </FantasyPlayerLink>
                 </li>
               ))}
             </ul>
@@ -377,7 +408,17 @@ function Bench({ sides }: { sides: { lineup: Lineup; club: Club; palette: ClubPa
  * The fallback when the pitch cannot be drawn honestly: one card per team,
  * its band in the club colour, then the XI and the bench as lists.
  */
-function TeamList({ lineup, club, palette }: { lineup: Lineup; club: Club; palette: ClubPalette }) {
+function TeamList({
+  lineup,
+  club,
+  palette,
+  playerLink,
+}: {
+  lineup: Lineup;
+  club: Club;
+  palette: ClubPalette;
+  playerLink: FantasyPlayerLinkOf;
+}) {
   const { t } = useI18n();
   const starting = sortStartingXi(starters(lineup));
   const bench = benchOf(lineup);
@@ -390,43 +431,48 @@ function TeamList({ lineup, club, palette }: { lineup: Lineup; club: Club; palet
           {starting.map((player) => {
             const position = positionAbbreviation(t, player.position);
             return (
-              <li
-                key={player.id}
-                className={cn("flex min-h-8 items-center gap-2.5", ui.text.secondary)}
-              >
-                <span
-                  {...clubStyle(palette)}
+              <li key={player.id}>
+                <FantasyPlayerLink
+                  playerId={playerLink(player.id)}
                   className={cn(
-                    "grid h-7 w-7 shrink-0 place-items-center",
-                    ui.radius.full,
-                    ui.club.fill,
-                    ui.club.ring,
+                    "flex min-h-[var(--ui-tap-min)] items-center gap-2.5 rounded-[var(--ui-radius-control)]",
+                    ui.text.secondary,
                   )}
                 >
-                  {player.shirtNumber !== null ? (
-                    <span className={ui.stat.sm}>{player.shirtNumber}</span>
-                  ) : null}
-                </span>
-                <span className="min-w-0 flex-1 truncate [font-weight:var(--ui-weight-strong)]">
-                  {player.displayName}
-                </span>
-                {position ? (
-                  <span className={cn(ui.text.label, ui.tone.muted)}>{position}</span>
-                ) : null}
-                {player.captain ? (
                   <span
-                    aria-label={t("matches.detail.captain")}
-                    title={t("matches.detail.captain")}
+                    {...clubStyle(palette)}
                     className={cn(
-                      "grid h-5 w-5 shrink-0 place-items-center",
+                      "grid h-7 w-7 shrink-0 place-items-center",
                       ui.radius.full,
-                      ui.text.micro,
-                      "bg-[color:var(--ui-caution)] text-[color:var(--ui-on-caution)] [font-weight:var(--ui-weight-heavy)]",
+                      ui.club.fill,
+                      ui.club.ring,
                     )}
                   >
-                    C
+                    {player.shirtNumber !== null ? (
+                      <span className={ui.stat.sm}>{player.shirtNumber}</span>
+                    ) : null}
                   </span>
-                ) : null}
+                  <span className="min-w-0 flex-1 truncate [font-weight:var(--ui-weight-strong)]">
+                    {player.displayName}
+                  </span>
+                  {position ? (
+                    <span className={cn(ui.text.label, ui.tone.muted)}>{position}</span>
+                  ) : null}
+                  {player.captain ? (
+                    <span
+                      aria-label={t("matches.detail.captain")}
+                      title={t("matches.detail.captain")}
+                      className={cn(
+                        "grid h-5 w-5 shrink-0 place-items-center",
+                        ui.radius.full,
+                        ui.text.micro,
+                        "bg-[color:var(--ui-caution)] text-[color:var(--ui-on-caution)] [font-weight:var(--ui-weight-heavy)]",
+                      )}
+                    >
+                      C
+                    </span>
+                  ) : null}
+                </FantasyPlayerLink>
               </li>
             );
           })}
@@ -436,19 +482,22 @@ function TeamList({ lineup, club, palette }: { lineup: Lineup; club: Club; palet
             <p className={cn(ui.text.label, ui.tone.muted)}>{t("matches.detail.substitutes")}</p>
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {bench.map((player) => (
-                <li
-                  key={player.id}
-                  className={cn(
-                    "inline-flex min-w-0 max-w-full items-center gap-1.5 px-2.5 py-1",
-                    ui.radius.full,
-                    ui.surface.sunken,
-                    ui.text.meta,
-                  )}
-                >
-                  {player.shirtNumber !== null ? (
-                    <span className={cn(ui.stat.sm, ui.tone.muted)}>{player.shirtNumber}</span>
-                  ) : null}
-                  <span className="truncate">{player.displayName}</span>
+                <li key={player.id} className="min-w-0 max-w-full">
+                  <FantasyPlayerLink
+                    playerId={playerLink(player.id)}
+                    as="span"
+                    className={cn(
+                      "inline-flex min-h-[var(--ui-tap-min)] min-w-0 max-w-full items-center gap-1.5 px-2.5",
+                      ui.radius.full,
+                      ui.surface.sunken,
+                      ui.text.meta,
+                    )}
+                  >
+                    {player.shirtNumber !== null ? (
+                      <span className={cn(ui.stat.sm, ui.tone.muted)}>{player.shirtNumber}</span>
+                    ) : null}
+                    <span className="truncate">{player.displayName}</span>
+                  </FantasyPlayerLink>
                 </li>
               ))}
             </ul>
