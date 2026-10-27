@@ -1027,6 +1027,9 @@ export const ar = {
   "fantasy.meta.player_title": "{name}: السعر والنقاط والمستوى الأخير — BotolaGO Fantasy",
   "fantasy.meta.player_description":
     "{name}: الإحصائيات والمستوى الأخير والسعر والمباريات القادمة، لتقرّر إن كان يستحق مكانًا في فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.player_club_title": "{name} ({club}): الإحصائيات والمباريات والنقاط | BotolaGO",
+  "fantasy.meta.player_club_description":
+    "{name} ({club})، {position} في البطولة الاحترافية: إحصائيات الموسم وآخر المباريات والسعر ونقاط BotolaGO Fantasy.",
   "fantasy.meta.player_unknown_title": "بطاقة اللاعب — BotolaGO Fantasy",
   "fantasy.meta.player_unknown_description":
     "إحصائيات لاعب من البطولة الاحترافية ومستواه الأخير وسعره ومبارياته القادمة، لفريقك على BotolaGO Fantasy.",

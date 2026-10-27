@@ -121,13 +121,14 @@ function escapeXml(value: string): string {
  * - `clubs`: the club pages of the directory's season;
  * - `matches`: every fixture of the current season and the one before;
  * - `news-recent`: the Google News file, titled articles of the last 48 hours;
+ * - `players`: the player pages of the current season's pool;
  * - `news-YYYY-MM`: the articles published that month (UTC).
  *
  * Search Console then reports each kind apart, a slow News read no longer
  * holds the club and match pages back, and no file comes near the protocol's
  * 50,000 URLs.
  */
-export const SITEMAP_SECTIONS = ["static", "clubs", "matches"] as const;
+export const SITEMAP_SECTIONS = ["static", "clubs", "matches", "players"] as const;
 export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
 
 /** How many fixtures the match sitemap lists at most (two seasons are ~480). */
@@ -138,6 +139,9 @@ export const NEWS_RECENT_SITEMAP_NAME = "news-recent";
 export const NEWS_RECENT_WINDOW_MS = 48 * 60 * 60 * 1000;
 /** Google News: at most 1,000 `<url>` per news sitemap. */
 export const NEWS_RECENT_MAX_URLS = 1_000;
+
+/** How many player pages the sitemap lists at most (the pool is ~540). */
+export const SITEMAP_PLAYER_LIMIT = 5_000;
 
 const NEWS_MONTH = /^news-(\d{4})-(0[1-9]|1[0-2])$/;
 
@@ -279,6 +283,15 @@ export function buildMatchesSitemapXml(matchIds: readonly string[]): string {
     [...new Set(matchIds)]
       .slice(0, SITEMAP_MATCH_LIMIT)
       .map((id) => pageUrl(`/matches/${encodeURIComponent(id)}`)),
+  );
+}
+
+/** Each player page once, at its canonical URL (`/fantasy/players/<id>`). */
+export function buildPlayersSitemapXml(playerIds: readonly string[]): string {
+  return urlset(
+    [...new Set(playerIds)]
+      .slice(0, SITEMAP_PLAYER_LIMIT)
+      .map((id) => pageUrl(`/fantasy/players/${encodeURIComponent(id)}`)),
   );
 }
 

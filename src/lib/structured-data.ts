@@ -97,6 +97,40 @@ export function sportsTeamJsonLd(input: {
   };
 }
 
+/**
+ * A player as a Person who plays for a club. Only what the player page holds:
+ * the name, the page, his position as `jobTitle`, an approved photo and the
+ * club. Nationality and date of birth are not stored, so they are not emitted.
+ */
+export function personJsonLd(input: {
+  readonly canonicalUrl: string;
+  readonly name: string;
+  readonly jobTitle?: string | null;
+  readonly imageUrl?: string | null;
+  readonly team?: { readonly name: string; readonly url: string } | null;
+}): JsonLd {
+  const jobTitle = input.jobTitle?.trim();
+  const image = input.imageUrl?.trim();
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: input.name,
+    url: input.canonicalUrl,
+    ...(jobTitle ? { jobTitle } : {}),
+    ...(image ? { image } : {}),
+    ...(input.team
+      ? {
+          memberOf: {
+            "@type": "SportsTeam",
+            name: input.team.name,
+            url: input.team.url,
+            sport: "Football",
+          },
+        }
+      : {}),
+  };
+}
+
 /** A side of a match, as far as the page knows it. */
 export interface EventTeam {
   readonly name: string;

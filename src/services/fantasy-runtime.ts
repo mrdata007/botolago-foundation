@@ -79,6 +79,7 @@ export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatD
           : "injured";
   return {
     id: dto.id,
+    footballPlayerId: dto.footballPlayerId,
     name: { fr: dto.name, ar: dto.name },
     clubId: dto.footballTeamId,
     position: dto.position,

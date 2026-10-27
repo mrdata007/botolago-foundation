@@ -6,6 +6,7 @@ import {
   buildMatchesSitemapXml,
   buildNewsRecentSitemapXml,
   buildNewsSitemapXml,
+  buildPlayersSitemapXml,
   buildSitemapIndexXml,
   buildStaticSitemapXml,
   parseSitemapName,
@@ -14,6 +15,7 @@ import {
   SITEMAP_FRESHNESS_SECONDS,
   SITEMAP_MAX_URLS,
   SITEMAP_NEWS_LIMIT,
+  SITEMAP_PLAYER_LIMIT,
   SITEMAP_SNAPSHOT_MAX_AGE_SECONDS,
   type SitemapNewsEntry,
 } from "./sitemap";
@@ -93,6 +95,7 @@ describe("sitemap.xml", () => {
       "https://botolago.com/sitemaps/static.xml",
       "https://botolago.com/sitemaps/clubs.xml",
       "https://botolago.com/sitemaps/matches.xml",
+      "https://botolago.com/sitemaps/players.xml",
       "https://botolago.com/sitemaps/news-recent.xml",
       "https://botolago.com/sitemaps/news-2026-10.xml",
       "https://botolago.com/sitemaps/news-2026-09.xml",
@@ -106,6 +109,7 @@ describe("sitemap.xml", () => {
     expect(parseSitemapName("static.xml")).toEqual({ kind: "section", section: "static" });
     expect(parseSitemapName("matches.xml")).toEqual({ kind: "section", section: "matches" });
     expect(parseSitemapName("news-recent.xml")).toEqual({ kind: "news-recent" });
+    expect(parseSitemapName("players.xml")).toEqual({ kind: "section", section: "players" });
     expect(parseSitemapName("news-2026-10.xml")).toEqual({ kind: "news", name: "news-2026-10" });
     for (const bad of ["static", "news-2026-13.xml", "news-26-10.xml", "../x.xml", "admin.xml"]) {
       expect(`${bad}: ${parseSitemapName(bad)}`).toBe(`${bad}: null`);
@@ -263,9 +267,9 @@ describe("sitemap.xml", () => {
     for (const route of [read(INDEX_ROUTE), read(FILES_ROUTE)]) {
       expect(route).toContain('if (news === "failed") return sitemapUnavailable();');
     }
-    // The club and match files answer 503 too when the football read fails
-    // (the News read has two: month files and the Google News file).
-    expect(read(FILES_ROUTE).match(/return sitemapUnavailable\(\);/g)).toHaveLength(4);
+    // The club, match and player files answer 503 too when the football read
+    // fails (the News read has two: month files and the Google News file).
+    expect(read(FILES_ROUTE).match(/return sitemapUnavailable\(\);/g)).toHaveLength(5);
   });
 
   test("a good sitemap is cacheable within the five-minute promise, and outlives an outage", () => {
@@ -347,6 +351,23 @@ describe("sitemap.xml", () => {
       xml.match(new RegExp(`<loc>https://botolago.com/matches/${id}</loc>`, "g")),
     ).toHaveLength(1);
     expect(xml).not.toContain("?tab");
+  });
+
+  test("lists each player page once, at its canonical URL, up to the limit", () => {
+    const id = "8c1d0f52-0000-4000-8000-000000000001";
+    const xml = buildPlayersSitemapXml([id, id, "a b"]);
+    expect(
+      xml.match(new RegExp(`<loc>https://botolago.com/fantasy/players/${id}</loc>`, "g")),
+    ).toHaveLength(1);
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/players/a%20b</loc>");
+    const ids = Array.from({ length: SITEMAP_PLAYER_LIMIT + 3 }, (_, i) => `p-${i}`);
+    expect(buildPlayersSitemapXml(ids).match(/<url>/g)).toHaveLength(SITEMAP_PLAYER_LIMIT);
+  });
+
+  test("the players file reads the season's pool and answers 503 when it fails", () => {
+    const route = read(FILES_ROUTE);
+    expect(route).toContain("fantasyService.getPlayers()");
+    expect(route.split("sitemapUnavailable()").length - 1).toBeGreaterThanOrEqual(4);
   });
 
   test("the club and match files read the directory and the season's fixtures", () => {

@@ -5,17 +5,19 @@ import {
   buildMatchesSitemapXml,
   buildNewsRecentSitemapXml,
   buildNewsSitemapXml,
+  buildPlayersSitemapXml,
   buildStaticSitemapXml,
   parseSitemapName,
 } from "@/lib/sitemap";
 import { readSitemapNews, sitemapUnavailable, sitemapXmlResponse } from "@/lib/sitemap-responses";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 
 /**
  * The files `/sitemap.xml` lists (`@/lib/sitemap`): `static.xml`,
- * `clubs.xml`, `matches.xml`, `news-recent.xml` (Google News) and
- * `news-YYYY-MM.xml`. Any other name is a 404,
- * and so are the News files while News is off.
+ * `clubs.xml`, `matches.xml`, `players.xml`, `news-recent.xml` (Google
+ * News) and `news-YYYY-MM.xml`. Any other name is a 404, and so are the News
+ * files while News is off.
  *
  * A failed read is a 503 the crawler retries, never an empty file: an empty
  * sitemap tells it every page it listed has gone.
@@ -58,6 +60,20 @@ export const Route = createFileRoute("/sitemaps/$file")({
             try {
               const matches = await footballService.getSitemapMatches("fr");
               return sitemapXmlResponse(buildMatchesSitemapXml(matches.map((match) => match.id)));
+            } catch {
+              return sitemapUnavailable();
+            }
+          case "players":
+            // The Fantasy pool of the current season: the players that have a
+            // page. A placeholder (an owned player the pool no longer lists)
+            // has no page worth indexing.
+            try {
+              const players = await fantasyService.getPlayers();
+              return sitemapXmlResponse(
+                buildPlayersSitemapXml(
+                  players.filter((player) => !player.placeholder).map((player) => player.id),
+                ),
+              );
             } catch {
               return sitemapUnavailable();
             }

@@ -54,6 +54,7 @@ import {
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
+import { fantasyService } from "@/services/fantasy-runtime";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { newsArticlesForCategory, newsService } from "@/services/news";
@@ -312,6 +313,21 @@ function ClubPage() {
     queryFn: () => footballService.getClubSquad(clubId, squadSeason, lang),
     enabled: validId && seasonsQ.isSuccess && tab === "squad",
   });
+  // The Fantasy pool maps a squad member (the football catalogue's id) to his
+  // player page. Decoration: a failed read just leaves the names unlinked.
+  const poolQ = useQuery({
+    queryKey: ["fantasy-players"],
+    queryFn: () => fantasyService.getPlayers(),
+    enabled: validId && tab === "squad",
+  });
+  const playerPages = useMemo(() => {
+    const pages = new Map<string, string>();
+    for (const player of poolQ.data ?? []) {
+      if (player.footballPlayerId && !player.placeholder)
+        pages.set(player.footballPlayerId, player.id);
+    }
+    return pages;
+  }, [poolQ.data]);
   // The club's latest stories. A News surface, so it is gated on the same
   // flag as every other: with the flag off this query never runs.
   const newsQ = useQuery({
@@ -526,6 +542,7 @@ function ClubPage() {
         {tab === "squad" && (
           <ClubSquad
             club={club}
+            playerPages={playerPages}
             squad={{
               data: squadQ.data,
               isPending: seasonsQ.isPending || squadQ.isPending,
