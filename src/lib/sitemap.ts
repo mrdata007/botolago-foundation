@@ -88,11 +88,18 @@ export const SITEMAP_CACHE_CONTROL = [
 export const SITEMAP_CLUB_LIMIT = 100;
 
 /**
+ * The most match pages listed: the current season's fixtures (a Botola Pro
+ * season has 240). Reserved out of the News budget like the clubs, so the file
+ * never passes `SITEMAP_MAX_URLS`.
+ */
+export const SITEMAP_MATCH_LIMIT = 600;
+
+/**
  * How many News editions fit alongside the static pages and the /news hub
  * without exceeding `SITEMAP_MAX_URLS`.
  */
 export const SITEMAP_NEWS_LIMIT =
-  SITEMAP_MAX_URLS - SITEMAP_STATIC_PATHS.length - 1 - SITEMAP_CLUB_LIMIT;
+  SITEMAP_MAX_URLS - SITEMAP_STATIC_PATHS.length - 1 - SITEMAP_CLUB_LIMIT - SITEMAP_MATCH_LIMIT;
 
 function escapeXml(value: string): string {
   return value
@@ -117,6 +124,8 @@ export function buildSitemapXml(options: {
   readonly news: readonly SitemapNewsEntry[];
   /** The clubs of the club directory; each club page is its own canonical. */
   readonly clubIds?: readonly string[];
+  /** The current season's fixtures; each match page is its own canonical. */
+  readonly matchIds?: readonly string[];
 }): string {
   const urls: string[] = [];
   for (const path of SITEMAP_STATIC_PATHS) {
@@ -125,6 +134,11 @@ export function buildSitemapXml(options: {
   for (const clubId of [...new Set(options.clubIds ?? [])].slice(0, SITEMAP_CLUB_LIMIT)) {
     urls.push(
       `  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(clubId)}`)}</loc></url>`,
+    );
+  }
+  for (const matchId of [...new Set(options.matchIds ?? [])].slice(0, SITEMAP_MATCH_LIMIT)) {
+    urls.push(
+      `  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}/matches/${encodeURIComponent(matchId)}`)}</loc></url>`,
     );
   }
   if (options.newsEnabled) {

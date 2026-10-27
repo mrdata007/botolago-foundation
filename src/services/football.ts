@@ -915,6 +915,25 @@ export const footballService = {
   },
 
   /**
+   * The ids of the current (else latest) season's fixtures, in kickoff order:
+   * the match pages the sitemap lists. Read through the same season the club
+   * directory uses (`defaultSeason`).
+   */
+  async getSeasonMatchIds(language: FootballLanguage, signal?: AbortSignal): Promise<string[]> {
+    const season = defaultSeason(await footballService.getSeasons(language, signal));
+    if (!season) return [];
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      language,
+      requestContext(signal),
+    );
+    return [...fixtures]
+      .sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt))
+      .map((fixture) => fixture.id);
+  },
+
+  /**
    * One club's matches in one season, oldest first, and every club they
    * name. The API pages a club's fixtures newest first across all seasons,
    * so this reads back until it has passed the season's first day.

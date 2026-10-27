@@ -35,8 +35,9 @@ import { getNewsDataMode } from "@/services/news";
  * editions.
  *
  * Club pages (`/clubs/<id>`, the clubs of the directory's season) are listed
- * too. A failed football read leaves them out rather than failing the whole
- * sitemap: leaving a URL out of a sitemap does not remove it from the index.
+ * too, and so are the current season's match pages (`/matches/<id>`). A failed
+ * football read leaves them out rather than failing the whole sitemap: leaving
+ * a URL out of a sitemap does not remove it from the index.
  */
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -57,18 +58,24 @@ export const Route = createFileRoute("/sitemap.xml")({
             });
           }
         }
-        let clubIds: readonly string[] = [];
-        try {
-          clubIds = (await footballService.getClubDirectory("fr")).clubs.map((club) => club.id);
-        } catch {
-          clubIds = [];
-        }
-        return new Response(buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds }), {
-          headers: {
-            "content-type": "application/xml; charset=utf-8",
-            "cache-control": SITEMAP_CACHE_CONTROL,
+        // Clubs and matches are read side by side; each is left out alone
+        // when its read fails.
+        const [clubIds, matchIds] = await Promise.all([
+          footballService
+            .getClubDirectory("fr")
+            .then((directory) => directory.clubs.map((club) => club.id))
+            .catch((): readonly string[] => []),
+          footballService.getSeasonMatchIds("fr").catch((): readonly string[] => []),
+        ]);
+        return new Response(
+          buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds, matchIds }),
+          {
+            headers: {
+              "content-type": "application/xml; charset=utf-8",
+              "cache-control": SITEMAP_CACHE_CONTROL,
+            },
           },
-        });
+        );
       },
     },
   },

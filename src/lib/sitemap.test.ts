@@ -5,6 +5,7 @@ import {
   buildSitemapXml,
   SITEMAP_CACHE_CONTROL,
   SITEMAP_CLUB_LIMIT,
+  SITEMAP_MATCH_LIMIT,
   SITEMAP_FRESHNESS_SECONDS,
   SITEMAP_NEWS_LIMIT,
   SITEMAP_SNAPSHOT_MAX_AGE_SECONDS,
@@ -223,8 +224,10 @@ describe("sitemap.xml", () => {
     const news = Array.from({ length: SITEMAP_NEWS_LIMIT }, (_, i) => entry(i));
     // More clubs than the cap: the extra ones are dropped, never the limit passed.
     const clubIds = Array.from({ length: SITEMAP_CLUB_LIMIT + 5 }, (_, i) => `club-${i}`);
-    const xml = buildSitemapXml({ newsEnabled: true, news, clubIds });
+    const matchIds = Array.from({ length: SITEMAP_MATCH_LIMIT + 5 }, (_, i) => `match-${i}`);
+    const xml = buildSitemapXml({ newsEnabled: true, news, clubIds, matchIds });
     expect(xml.match(/<url>/g)).toHaveLength(50_000);
+    expect(xml.match(/\/matches\/match-/g)).toHaveLength(SITEMAP_MATCH_LIMIT);
   });
 
   test("lists each club page once, at its canonical URL", () => {
@@ -240,10 +243,22 @@ describe("sitemap.xml", () => {
     ).toHaveLength(1);
   });
 
-  test("the route lists the club directory and survives a failed football read", () => {
+  test("lists each match page once, at its canonical URL", () => {
+    const id = "7b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+    const xml = buildSitemapXml({ newsEnabled: false, news: [], matchIds: [id, id] });
+    expect(
+      xml.match(new RegExp(`<loc>https://botolago\\.com/matches/${id}</loc>`, "g")),
+    ).toHaveLength(1);
+    // Without matches, no match page is listed (the static /matches hub stays).
+    expect(buildSitemapXml({ newsEnabled: false, news: [] })).not.toMatch(/\/matches\/[0-9a-f]/);
+  });
+
+  test("the route lists the club directory and the season's matches, and survives failed football reads", () => {
     const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
-    expect(route).toContain('footballService.getClubDirectory("fr")');
-    expect(route).toContain("clubIds = [];");
+    expect(route).toContain('footballService\n            .getClubDirectory("fr")');
+    expect(route).toContain('footballService.getSeasonMatchIds("fr")');
+    // Each football read is caught on its own: neither fails the sitemap.
+    expect(route.match(/\.catch\(\(\): readonly string\[\] => \[\]\)/g)).toHaveLength(2);
   });
 });
 
