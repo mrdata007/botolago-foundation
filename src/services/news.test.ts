@@ -3,6 +3,7 @@ import { MockNewsRepository } from "@/backend/news/mock-repository";
 import type { NewsLanguage, NewsRepository } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
 import {
+  getArticleByPermalink,
   getArticleWithLanguageFallback,
   getNewsEdition,
   isOwnPublisher,
@@ -462,6 +463,89 @@ describe("News frontend repository cutover", () => {
     const detail = await repository.getArticle(feed.items[0]!.id, "fr", context);
     expect(detail.bodyHtml).toContain("<p>");
     expect(Array.isArray(await repository.getRelated(detail.id, 6, context))).toBe(true);
+  });
+
+  describe("getArticleByPermalink", () => {
+    const arabicId = "9e1a0000-0000-4000-8000-000000000202";
+    const frenchId = "9e1a0000-0000-4000-8000-000000000201";
+    // The database's answer: an edition id asked for in the other language
+    // comes back as the requested language's edition of the same story.
+    function bilingualRepository(calls: NewsLanguage[]): Pick<NewsRepository, "getArticle"> {
+      return {
+        async getArticle(identifier, language) {
+          calls.push(language);
+          const french = detailFixture({ id: frenchId, language: "fr", title: "Titre" });
+          const arabic = detailFixture({ id: arabicId, language: "ar", title: "عنوان" });
+          if (identifier === arabicId || identifier === frenchId) {
+            return language === "fr" ? french : arabic;
+          }
+          throw new NewsError("article_not_found", "Not found.");
+        },
+      };
+    }
+
+    test("serves the Arabic edition its URL names to a French request", async () => {
+      const calls: NewsLanguage[] = [];
+      const result = await getArticleByPermalink(
+        bilingualRepository(calls),
+        arabicId,
+        "fr",
+        context,
+      );
+      expect(result.id).toBe(arabicId);
+      expect(result.language).toBe("ar");
+      expect(calls).toEqual(["fr", "ar"]);
+    });
+
+    test("serves the French edition its URL names to an Arabic request", async () => {
+      const calls: NewsLanguage[] = [];
+      const result = await getArticleByPermalink(
+        bilingualRepository(calls),
+        frenchId,
+        "ar",
+        context,
+      );
+      expect(result.id).toBe(frenchId);
+      expect(calls).toEqual(["ar", "fr"]);
+    });
+
+    test("asks once when the edition is already in the requested language", async () => {
+      const calls: NewsLanguage[] = [];
+      const result = await getArticleByPermalink(
+        bilingualRepository(calls),
+        frenchId,
+        "fr",
+        context,
+      );
+      expect(result.id).toBe(frenchId);
+      expect(calls).toEqual(["fr"]);
+    });
+
+    test("a slug shaped like an id but not one to the database is served as found", async () => {
+      // Version 0: the database reads it as a slug, so its answer is not a swap.
+      const slug = "9e1a0000-0000-0000-0000-000000000301";
+      const calls: NewsLanguage[] = [];
+      const repository: Pick<NewsRepository, "getArticle"> = {
+        async getArticle(_identifier, language) {
+          calls.push(language);
+          return detailFixture({ id: frenchId, language: "fr", slug });
+        },
+      };
+      const result = await getArticleByPermalink(repository, slug, "fr", context);
+      expect(result.id).toBe(frenchId);
+      expect(calls).toEqual(["fr"]);
+    });
+
+    test("an unknown id is still not found", async () => {
+      await expect(
+        getArticleByPermalink(
+          bilingualRepository([]),
+          "9e1a0000-0000-4000-8000-0000000009ff",
+          "fr",
+          context,
+        ),
+      ).rejects.toMatchObject({ code: "article_not_found" });
+    });
   });
 
   test("opens an Arabic-only edition UUID for a French viewer without relabeling its content", async () => {

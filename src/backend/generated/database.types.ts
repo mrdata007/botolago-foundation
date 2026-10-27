@@ -1222,6 +1222,10 @@ export type Database = {
         Args: { p_provider_name: string; p_season_external_id: string }
         Returns: Json
       }
+      football_player_season_profile: {
+        Args: { p_fantasy_player_id: string }
+        Returns: Json
+      }
       football_player_season_ratings: {
         Args: {
           p_after_player_id?: string
@@ -2312,6 +2316,10 @@ export type Database = {
       service_record_rapidapi_calls: {
         Args: { p_calls: Json; p_job: string }
         Returns: number
+      }
+      service_record_rapidapi_quota: {
+        Args: { p_limit: number; p_observed_at?: string; p_remaining: number }
+        Returns: boolean
       }
       service_record_reconciled_fantasy_observation: {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }

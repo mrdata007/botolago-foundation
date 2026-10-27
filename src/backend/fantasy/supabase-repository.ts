@@ -15,6 +15,7 @@ import {
   fantasyLeagueStandingPageSchema,
   fantasyOverallStandingPageSchema,
   fantasyPlayerGameweekHistorySchema,
+  footballPlayerSeasonProfileSchema,
   fantasyPlayerSeasonStatsSchema,
   fantasyPointsSchema,
   fantasyTeamSchema,
@@ -444,5 +445,14 @@ export class SupabaseFantasyRepository implements FantasyRepository {
     });
     check(error);
     return parse(fantasyPlayerGameweekHistorySchema, data);
+  }
+
+  /** The player's football season, from api.football_player_season_profile. */
+  async getPlayerSeasonProfile(fantasyPlayerId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("football_player_season_profile", {
+      p_fantasy_player_id: fantasyPlayerId,
+    });
+    check(error);
+    return parse(footballPlayerSeasonProfileSchema, data);
   }
 }

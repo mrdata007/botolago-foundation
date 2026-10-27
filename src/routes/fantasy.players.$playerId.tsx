@@ -7,6 +7,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { FixtureCard } from "@/components/fantasy-lists/FixtureCard";
+import { PlayerFootballProfile } from "@/components/fantasy-lists/PlayerFootballProfile";
 import { PointsChart } from "@/components/fantasy-lists/PointsChart";
 import { ShareButton } from "@/components/fantasy-lists/ShareButton";
 import { splitPlayerName, surnameStep } from "@/components/fantasy-lists/player-name";
@@ -94,6 +95,8 @@ function PlayerDetailFramed() {
  *   pill, the club's disc;
  * - the four key numbers on a lifted card that overlaps the hero;
  * - the last six gameweeks as bars ("Dernières journées");
+ * - the football season (matches, goals, assists, minutes, cards, rating, the
+ *   last five matches), which loads, fails and empties on its own;
  * - the next fixtures with their difficulty ("Prochains matchs");
  * - the actions: follow (the watchlist) and share in the header; "Comparer"
  *   and "Recruter" at the foot.
@@ -380,6 +383,8 @@ function PlayerDetailPage() {
             </div>
           )}
         </section>
+
+        <PlayerFootballProfile playerId={playerId} clubs={clubs} />
 
         <section className="mt-6 px-4">
           <SectionHeader

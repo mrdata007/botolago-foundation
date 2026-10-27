@@ -23,12 +23,14 @@ import {
   type LeagueStandingsPage,
 } from "./fantasy-league-pages";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { EMPTY_FOOTBALL_PLAYER_SEASON_PROFILE } from "@/backend/fantasy/contracts";
 import type {
   FantasyGameweekSummaryDto,
   FantasyHubDto,
   FantasyOverallStandingDto,
   FantasyPlayerDto,
   FantasyPlayerGameweekHistoryEntryDto,
+  FootballPlayerSeasonProfileDto,
   FantasyPlayerSeasonStatDto,
   FantasyPointsDto,
   FantasyMyRecapPublicationDto,
@@ -927,6 +929,15 @@ export const fantasyService = {
   ): Promise<readonly FantasyPlayerGameweekHistoryEntryDto[]> {
     if (mode() === "mock") return [];
     return cloud.getPlayerGameweekHistory(playerId, context());
+  },
+  /**
+   * The player's football season (matches, goals, assists, minutes, cards,
+   * rating, last matches). Mock mode has no football source, so it answers
+   * with an empty season rather than inventing figures.
+   */
+  async getPlayerSeasonProfile(playerId: string): Promise<FootballPlayerSeasonProfileDto> {
+    if (mode() === "mock") return EMPTY_FOOTBALL_PLAYER_SEASON_PROFILE;
+    return cloud.getPlayerSeasonProfile(playerId, context());
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
     if (mode() === "mock") return mockFantasyService.getAvailableTopGameweeks();
