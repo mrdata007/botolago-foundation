@@ -174,9 +174,30 @@ export type AnalyticsEvent =
 
 type Seline = { track: (event: string) => void; page: (path: string) => void };
 
+/**
+ * Audit and test robots (PageSpeed Insights and Lighthouse, headless Chrome,
+ * search crawlers, WebDriver). Seline answers every request from one with
+ * HTTP 400 ("Bot request."), which the browser logs as a console error on each
+ * page load (found by the PageSpeed run of 2026-10-27) and which counts
+ * nothing. Sending nothing from them is the same result without the error.
+ * Visitors are unaffected.
+ */
+const AUTOMATED_USER_AGENT =
+  /Lighthouse|PageSpeed|HeadlessChrome|PhantomJS|GTmetrix|Googlebot|bingbot|\bbot\b|crawler|spider/i;
+
+export function isAutomatedBrowser(userAgent: string, webdriver = false): boolean {
+  return webdriver || AUTOMATED_USER_AGENT.test(userAgent);
+}
+
 function seline(): Seline | null {
   if (!ANALYTICS_ACTIVE || typeof window === "undefined") return null;
   if (window.location.hostname !== MEASURED_HOST) return null;
+  if (
+    typeof navigator !== "undefined" &&
+    isAutomatedBrowser(navigator.userAgent ?? "", navigator.webdriver === true)
+  ) {
+    return null;
+  }
   const candidate = (window as Window & { seline?: Partial<Seline> }).seline;
   return typeof candidate?.track === "function" && typeof candidate.page === "function"
     ? (candidate as Seline)

@@ -138,8 +138,8 @@ export function ArticleCard({
    * `MediaImage` paints it behind the photo and shows it only when there is no
    * URL or the one we have fails, so a card with a real photo is untouched.
    */
-  const heroPlaceholder = () => (
-    <ArticleHeroFallback category={article.category} headline={tr(article.title)} />
+  const heroPlaceholder = (sizes: string) => (
+    <ArticleHeroFallback category={article.category} headline={tr(article.title)} sizes={sizes} />
   );
 
   /**
@@ -191,7 +191,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
-            placeholder={heroPlaceholder()}
+            placeholder={heroPlaceholder(READING_COLUMN_SIZES)}
             loading={isLead ? "eager" : undefined}
             fetchPriority={isLead ? "high" : undefined}
             frame={isLead ? LEAD_FRAME : IMAGE_LED_FRAME}
@@ -319,7 +319,7 @@ export function ArticleCard({
           src={article.heroUrl}
           alt=""
           fallback={article.heroGradient}
-          placeholder={heroPlaceholder()}
+          placeholder={heroPlaceholder("88px")}
           frame={{ sizes: "88px", ratio: 22 / 17 }}
           className={cn("h-17 w-22", ui.radius.track)}
           imageClassName={cn("group-hover:scale-[1.05]", IMAGE_ZOOM)}

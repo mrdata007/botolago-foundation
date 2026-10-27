@@ -3,7 +3,12 @@ import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import {
   ArrowRight,
   CalendarDays,
@@ -23,10 +28,16 @@ import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/li
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { MyClubsRow } from "@/components/home/MyClubsRow";
 import { HomeStories } from "@/components/home/HomeStories";
+import { homeStoriesQuery } from "@/components/home/home-stories-query";
 import { homeClubs } from "@/components/home/my-clubs";
 import { findClub } from "@/components/fantasy/club-identity";
 import { footballService, HOME_LIST_SIZE, type FootballSeason } from "@/services/football";
-import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
+import {
+  isServerRender,
+  prefetchForSsr,
+  ssrAvailability,
+  SSR_QUERY_META,
+} from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
@@ -105,12 +116,43 @@ const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football maroc
 const HOME_DESCRIPTION =
   "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
 
+/** How long the server waits for the story rail before leaving it to the browser. */
+const HOME_STORIES_SSR_BUDGET_MS = 1_500;
+
+/**
+ * Reads the story rail into the server render, so the rail (or, for an empty
+ * feed, its absence) is in the first paint and nothing above the band moves
+ * once the page has loaded. Outside `prefetchForSsr` on purpose: the rail is an
+ * extra, so a failed or slow read never makes Home answer 503 -- it is simply
+ * read in the browser, as before. Server only; never throws.
+ */
+async function warmHomeStories(queryClient: QueryClient): Promise<void> {
+  if (!isServerRender()) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const expired = await Promise.race([
+      queryClient
+        .prefetchQuery({ ...homeStoriesQuery, meta: SSR_QUERY_META, retry: false })
+        .then(() => false),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(true), HOME_STORIES_SSR_BUDGET_MS);
+      }),
+    ]);
+    if (expired) await queryClient.cancelQueries({ queryKey: homeStoriesQuery.queryKey });
+  } catch {
+    // Left to the browser.
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const Route = createFileRoute("/")({
   // The server renders the home page with its matches, clubs, news and table
   // (see `@/lib/ssr-prefetch`); the Fantasy blocks are the visitor's own and
   // load in the browser.
   loader: async ({ context }) => {
     const { queryClient } = context;
+    const stories = warmHomeStories(queryClient);
     await prefetchForSsr(queryClient, [
       {
         queryKey: ["football", "home-matches", "fr"],
@@ -147,7 +189,9 @@ export const Route = createFileRoute("/")({
     // the browser's first render reads it back from the loader data rather
     // than its own clock, so both render the same words (as /matches does
     // with its day).
-    return { ...ssrAvailability(queryClient), renderedAt: Date.now() };
+    const availability = ssrAvailability(queryClient);
+    await stories;
+    return { ...availability, renderedAt: Date.now() };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
@@ -1038,7 +1082,10 @@ function GameweekBand({
       {/* The night-match photograph: floodlights and crowd on the far side,
           dark sky behind the text. Mirrored in Arabic so the text still
           starts on the calm side. Decorative, so hidden from assistive tech;
-          above the fold, so it is fetched eagerly. */}
+          above the fold, so it is fetched eagerly. React hoists a high-priority
+          preload for it into the document head from this very element (srcset
+          and sizes included), so the browser starts it with the stylesheet,
+          before any script. */}
       <img
         src={live ? liveBand : stadiumBand}
         srcSet={
@@ -1047,8 +1094,14 @@ function GameweekBand({
             : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
         }
         sizes="(min-width: 640px) 672px, 100vw"
+        // The photographs' own sizes (1600 wide; the live one is a little taller):
+        // the CSS below draws them to the band, so this only tells the browser
+        // their ratio before they arrive.
+        width={1600}
+        height={live ? 686 : 600}
         alt=""
         aria-hidden
+        loading="eager"
         decoding="async"
         fetchPriority="high"
         className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_60%] rtl:-scale-x-100"

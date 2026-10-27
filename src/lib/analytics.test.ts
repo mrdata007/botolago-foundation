@@ -4,6 +4,7 @@ import {
   ANALYTICS_ACTIVE,
   SELINE_MASK_PATTERNS,
   SELINE_QUEUE_SCRIPT,
+  isAutomatedBrowser,
   pageviewPath,
   track,
   trackPageview,
@@ -171,5 +172,25 @@ describe("track: silent unless measuring", () => {
     globals.window = undefined;
     expect(() => track("pronostics_signup_click")).not.toThrow();
     expect(() => trackPageview()).not.toThrow();
+  });
+});
+
+describe("isAutomatedBrowser: robots are not measured (Seline answers them with a 400)", () => {
+  const PSI =
+    "Mozilla/5.0 (Linux; Android 11; moto g power (2022)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36 Chrome-Lighthouse";
+  const PHONE =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+
+  test("PageSpeed, headless Chrome, crawlers and WebDriver are robots", () => {
+    expect(isAutomatedBrowser(PSI)).toBe(true);
+    expect(isAutomatedBrowser("Mozilla/5.0 HeadlessChrome/137.0.0.0 Safari/537.36")).toBe(true);
+    expect(isAutomatedBrowser("Mozilla/5.0 (compatible; Googlebot/2.1)")).toBe(true);
+    expect(isAutomatedBrowser(PHONE, true)).toBe(true);
+  });
+
+  test("a visitor's phone is not", () => {
+    expect(isAutomatedBrowser(PHONE)).toBe(false);
+    expect(isAutomatedBrowser(PHONE, false)).toBe(false);
+    expect(isAutomatedBrowser("")).toBe(false);
   });
 });

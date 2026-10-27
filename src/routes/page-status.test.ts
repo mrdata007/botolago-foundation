@@ -16,7 +16,11 @@ import { Route as MatchRoute } from "./matches.$matchId";
  */
 const ID = "8b630afa-bf52-42f8-9ec0-f4d27fffe04b";
 
-type Loader = (ctx: { params: Record<string, string>; context: unknown }) => Promise<unknown>;
+type Loader = (ctx: {
+  params: Record<string, string>;
+  deps?: Record<string, unknown>;
+  context: unknown;
+}) => Promise<unknown>;
 type Head = (ctx: { params: Record<string, string>; loaderData: unknown }) => {
   meta?: Array<Record<string, string>>;
 };
@@ -40,7 +44,7 @@ async function outcome(
 ) {
   const loader = (route.options as { loader: Loader }).loader;
   try {
-    return { data: await loader({ params, context: failingCache(error) }) };
+    return { data: await loader({ params, deps: {}, context: failingCache(error) }) };
   } catch (thrown) {
     return { thrown };
   }

@@ -339,6 +339,7 @@ function ArticlePage() {
                   <ArticleHeroFallback
                     category={article.primaryCategory?.slug}
                     headline={article.title}
+                    sizes={FULL_COLUMN_SIZES}
                   />
                 }
                 loading="eager"

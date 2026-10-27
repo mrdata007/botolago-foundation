@@ -36,7 +36,7 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 describe("safe areas", () => {
   test("the viewport covers the whole screen", () => {
     expect(read("src/routes/__root.tsx")).toContain(
-      'content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
     );
   });
 
@@ -83,18 +83,32 @@ describe("BG-0151: the root viewport meta", () => {
 
   test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
-    expect(viewports[0]).toBe(
-      "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
-    );
+    expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
   });
 
-  // iOS zooms in when a field under 16px gets focus and never zooms back; the
-  // kit's fields are 15px, and the phone app cannot pinch back out. The cap is
-  // what stops it (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
-  // `user-scalable=no` would add nothing in the app and fail more audits.
-  test("caps the zoom at 1, without user-scalable=no", () => {
-    expect(viewports[0]).toContain("maximum-scale=1");
+  // The owner decided on 2026-10-27 that visitors may zoom (the PageSpeed
+  // accessibility audit flags `maximum-scale`). The cap had been added on
+  // 2026-10-06 because iOS zooms in when a field under 16px takes focus and
+  // never zooms back (docs/engineering/briefs/ios-zoom-and-pitch-lines.md);
+  // the fields are 16px on a touch screen instead, which the next test holds.
+  test("does not limit the zoom", () => {
+    expect(viewports[0]).not.toContain("maximum-scale");
+    expect(viewports[0]).not.toContain("minimum-scale");
     expect(viewports[0]).not.toContain("user-scalable");
+  });
+
+  test("text fields are 16px on a touch screen, so focusing one cannot zoom iOS", () => {
+    const css = read("src/styles.css");
+    const block =
+      /@media \(pointer: coarse\) \{\s*input:not\(([\s\S]*?)\),\s*select,\s*textarea \{\s*font-size: 16px;/.exec(
+        css,
+      );
+    expect(block).not.toBeNull();
+    // Text-entry inputs are covered; buttons, checkboxes and files are not.
+    expect(block![1]).toContain('[type="checkbox"]');
+    expect(block![1]).not.toContain('[type="text"]');
+    expect(block![1]).not.toContain('[type="search"]');
+    expect(block![1]).not.toContain('[type="email"]');
   });
 
   test("is not overridden by any other route", () => {

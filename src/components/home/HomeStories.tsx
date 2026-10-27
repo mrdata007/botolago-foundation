@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { homeStoriesRepository } from "@/backend/home-stories/repository";
+import { homeStoriesQuery } from "./home-stories-query";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { getNewsDataMode } from "@/services/news";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
@@ -13,14 +13,37 @@ import { cn } from "@/lib/utils";
 /** Published news images only. An empty feed does not become navigation. */
 export function HomeStories() {
   const stories = useQuery({
-    queryKey: ["home-stories"],
-    queryFn: () =>
-      getNewsDataMode() === "supabase" ? homeStoriesRepository.list() : Promise.resolve([]),
+    ...homeStoriesQuery,
     staleTime: 60_000,
     refetchInterval: 60_000,
     retry: false,
   });
-  return stories.data?.length ? <PublishedStories stories={stories.data} /> : null;
+  if (stories.data?.length) return <PublishedStories stories={stories.data} />;
+  // Home's server render carries the rail (`warmHomeStories`), so an empty or
+  // failed feed renders nothing from the first paint and nothing moves. When
+  // that warm-up missed (slow read), the rail is read in the browser and lands
+  // above the band; this box, the size of the rail it becomes, keeps the page
+  // from dropping by its height when it arrives (the largest layout shift on
+  // Home). The `home-stories` marker is the one Home's own spacing keys on, so
+  // the page's padding does not change either.
+  if (stories.isPending && getNewsDataMode() === "supabase") return <StoriesReserve />;
+  return null;
+}
+
+/**
+ * An empty, hidden box with the rail's own height: the section's `py-4`, the
+ * row's `p-1` and one story (the ring at 1.6 times the tap target, 1.8 from
+ * `sm`, a 4px gap and the 16px label line), from the same tokens
+ * `PublishedStories` uses.
+ */
+function StoriesReserve() {
+  return (
+    <section aria-hidden data-testid="home-stories" data-pending className="min-w-0 py-4">
+      <div className="p-1">
+        <div className="h-[calc(var(--ui-tap-min)*1.6+20px)] sm:h-[calc(var(--ui-tap-min)*1.8+20px)]" />
+      </div>
+    </section>
+  );
 }
 
 export function PublishedStories({ stories }: { stories: readonly HomeStory[] }) {

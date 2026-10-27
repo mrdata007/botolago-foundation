@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { systemBars } from "@/lib/system-bars";
 import { claimLaunchSplash, releaseLaunchSplash } from "./launch-splash";
-import { startMagicRings } from "./magic-rings";
 import {
   BALL_BOX,
   WORDMARK_GLYPHS,
@@ -99,13 +98,22 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
     }, hold + fade);
 
     // The rings join when the code arrives, and fade in. Not under reduced
-    // motion; and where WebGL2 is missing this does nothing at all.
-    const stopRings =
-      !prefersReduced && ringsRef.current
-        ? startMagicRings(ringsRef.current, shownAt, ballRef.current)
-        : undefined;
+    // motion; and where WebGL2 is missing this does nothing at all. Their code
+    // (the shader and the WebGL setup) is a chunk of its own, fetched here after
+    // the page is up instead of travelling in the entry bundle: the rings are
+    // already written to arrive late (they fade in from the first paint's clock,
+    // never pop), and the page's first paint does not wait for a decoration.
+    let cancelled = false;
+    let stopRings: (() => void) | undefined;
+    if (!prefersReduced && ringsRef.current) {
+      void import("./magic-rings").then(({ startMagicRings }) => {
+        if (cancelled || !ringsRef.current) return;
+        stopRings = startMagicRings(ringsRef.current, shownAt, ballRef.current);
+      });
+    }
 
     return () => {
+      cancelled = true;
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       stopRings?.();

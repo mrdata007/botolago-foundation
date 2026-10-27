@@ -54,10 +54,10 @@ import {
 } from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
-import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -74,42 +74,68 @@ interface ClubSearch {
   season?: string;
 }
 
-const isNotFound = (error: unknown) =>
-  error instanceof FootballError && error.code === "team_not_found";
+/**
+ * The club's latest stories and its season's matches, as the page and the
+ * loader both ask them: one definition, so the keys the server warms are the
+ * keys the page reads.
+ */
+const clubNewsQuery = (clubId: string, lang: "fr" | "ar") => ({
+  queryKey: ["news", "club", clubId, lang],
+  queryFn: async () =>
+    newsArticlesForCategory(
+      await newsService.getArticles(lang, { teamId: clubId }),
+      "latest",
+    ).slice(0, CLUB_NEWS_COUNT),
+});
+const clubMatchesQuery = (
+  clubId: string,
+  season: FootballSeason | undefined,
+  lang: "fr" | "ar",
+) => ({
+  queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
+  queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+});
 
 /**
- * The club's fixtures for the season the page opens on, in the server's HTML:
- * the overview's next match and latest results are links to match pages, and
- * they used to load only in the browser, so the HTML linked to none (SEO pass
- * 1, 2026-10-27). Server only, within the render's budget (`@/lib/ssr-prefetch`);
- * the queries are the page's own, handed to the browser by the router's
- * dehydrate step so its first render draws the same rows. A read that fails
- * leaves the section to its skeleton and its retry, as before: the club
- * itself decides the page's 404 and 503, not its fixtures.
+ * Warms what the overview links to -- the club's matches and, while News is
+ * on, its latest stories -- so the HTML a crawler gets holds those links
+ * (`@/lib/ssr-prefetch`). Server only. It never throws: a read that fails or
+ * runs late is simply left to the browser, as before, and never changes the
+ * page's status.
  */
-async function prefetchClubFixtures(
+async function warmClubLinks(
   queryClient: QueryClient,
   clubId: string,
   requestedSeasonId: string | undefined,
-) {
-  await prefetchForSsr(queryClient, [
-    {
-      queryKey: ["football", "seasons", "fr"],
-      queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
-    },
-  ]);
-  const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
-  if (!seasons) return;
-  // The season the page works out for itself: the one in the URL, else the current one.
-  const season =
-    seasons.find((candidate) => candidate.id === requestedSeasonId) ?? defaultSeason(seasons);
-  await prefetchForSsr(queryClient, [
-    {
-      queryKey: ["football", "club-matches", clubId, season?.id ?? "none", "fr"],
-      queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, "fr"),
-    },
-  ]);
+): Promise<void> {
+  try {
+    const seasonsKey = ["football", "seasons", "fr"];
+    await Promise.all([
+      (async () => {
+        await prefetchForSsr(queryClient, [
+          {
+            queryKey: seasonsKey,
+            queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+          },
+        ]);
+        const seasons = queryClient.getQueryData<FootballSeason[]>(seasonsKey);
+        // The season the page opens on: the one in the address, else the current one.
+        if (seasons) {
+          const season =
+            seasons.find((candidate) => candidate.id === requestedSeasonId) ??
+            defaultSeason(seasons);
+          await prefetchForSsr(queryClient, [clubMatchesQuery(clubId, season, "fr")]);
+        }
+      })(),
+      NEWS_ENABLED ? prefetchForSsr(queryClient, [clubNewsQuery(clubId, "fr")]) : undefined,
+    ]);
+  } catch {
+    // Left to the browser.
+  }
 }
+
+const isNotFound = (error: unknown) =>
+  error instanceof FootballError && error.code === "team_not_found";
 
 export const Route = createFileRoute("/clubs/$clubId")({
   validateSearch: (search: Record<string, unknown>): ClubSearch => {
@@ -161,6 +187,8 @@ export const Route = createFileRoute("/clubs/$clubId")({
       });
     }
     const id = known?.id ?? ref;
+    // The overview's links, read alongside the club (see `warmClubLinks`).
+    const links = warmClubLinks(context.queryClient, id, deps.season);
     try {
       const queryKey = ["football", "club", id, "fr"];
       const club = await context.queryClient.ensureQueryData({
@@ -168,7 +196,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
         queryFn: () => footballService.getClub(id, "fr"),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      await prefetchClubFixtures(context.queryClient, id, deps.season);
+      await links;
       return { club, fetchedAt, canonicalRef: slug ?? id };
     } catch (error) {
       if (isRedirect(error)) throw error;
@@ -298,8 +326,7 @@ function ClubPage() {
     seasons.find((candidate) => candidate.id === search.season) ?? defaultSeason(seasons);
 
   const matchesQ = useQuery({
-    queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
-    queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+    ...clubMatchesQuery(clubId, season, lang),
     enabled: validId && seasonsQ.isSuccess,
   });
   // The season's table, worked out from its results: the Classement tab's
@@ -335,12 +362,7 @@ function ClubPage() {
   // The club's latest stories. A News surface, so it is gated on the same
   // flag as every other: with the flag off this query never runs.
   const newsQ = useQuery({
-    queryKey: ["news", "club", clubId, lang],
-    queryFn: async () =>
-      newsArticlesForCategory(
-        await newsService.getArticles(lang, { teamId: clubId }),
-        "latest",
-      ).slice(0, CLUB_NEWS_COUNT),
+    ...clubNewsQuery(clubId, lang),
     enabled: NEWS_ENABLED && validId,
   });
 
