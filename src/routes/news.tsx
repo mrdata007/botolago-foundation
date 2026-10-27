@@ -18,6 +18,7 @@ import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SkeletonList } from "@/components/common/Skeletons";
 import { ErrorState } from "@/components/common/States";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { UiIconLinkButton, UiPageTitle } from "@/components/ui-kit";
 import { Bookmark } from "lucide-react";
@@ -127,6 +128,7 @@ function NewsRoute() {
 
 function NewsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.news_title"));
   const { user } = useAuth();
   // The filters are the URL's, not this page's state: an article replaces
   // this page with its own, so state held here is gone when Retour comes back.

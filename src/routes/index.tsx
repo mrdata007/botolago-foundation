@@ -66,6 +66,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
 import { followedTeamIdsQuery } from "@/services/follows";
@@ -224,6 +225,7 @@ const isInPlay = (match: Match) => match.status === "live";
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.home_title"));
   const { status, user } = useAuth();
   const { source, key } = useFantasyDataSource();
   const { renderedAt } = Route.useLoaderData();

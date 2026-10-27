@@ -29,6 +29,7 @@ import {
   UiSkeleton,
 } from "@/components/ui-kit";
 import type { NotificationCardDto, NotificationCategory } from "@/backend/notifications/contracts";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { formatRelativeTime } from "@/lib/format-time";
@@ -63,6 +64,7 @@ const CATEGORY_ICON: Record<NotificationCategory, LucideIcon> = {
 
 function NotificationsPage() {
   const { t } = useI18n();
+  useReaderDocumentTitle(t("meta.notifications_title"));
   const { status, user } = useAuth();
   const signedIn = status === "authenticated";
 

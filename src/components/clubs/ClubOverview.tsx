@@ -108,7 +108,10 @@ export function ClubOverview({
         </Section>
       ) : next ? (
         <Section>
-          <SectionHeader title={t("club.next_match")} />
+          {/* A live match is not "next": the card says so (U11). */}
+          <SectionHeader
+            title={next.status === "live" ? t("club.live_match") : t("club.next_match")}
+          />
           <MatchRow match={next} clubById={clubById} variant="row" />
         </Section>
       ) : null}

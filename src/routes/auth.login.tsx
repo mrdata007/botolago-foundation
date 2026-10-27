@@ -21,6 +21,7 @@ import { socialSignInErrorKey } from "@/auth/social-error";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthStatus } from "@/services/auth";
 import { takeSuspensionNotice, type SuspensionNotice } from "@/services/account-standing";
@@ -84,6 +85,7 @@ function SuspendedAccountNotice() {
 
 function LoginPage() {
   const { t } = useI18n();
+  useReaderDocumentTitle(t("meta.login_title"));
   const navigate = useNavigate();
   const { next } = Route.useSearch();
   const emailId = useId();

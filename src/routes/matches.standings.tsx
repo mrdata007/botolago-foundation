@@ -24,6 +24,7 @@ import { YourClubCard } from "@/components/matches/YourClubCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiChip, UiPageTitle } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
@@ -102,6 +103,7 @@ const EMPTY_SEASONS: readonly FootballSeason[] = [];
  */
 function StandingsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.standings_title"));
   const { user } = useAuth();
   const { season: requestedSeasonId } = Route.useSearch();
   // The season the other tab was on, else (below) the current one.
