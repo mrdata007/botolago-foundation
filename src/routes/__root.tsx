@@ -270,6 +270,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      // The two faces every page draws its first paint in (Manrope for body
+      // text and figures, Changa for headings), Latin subset only. The Latin
+      // extension, Arabic and signature faces are not preloaded: the browser
+      // fetches them only when text in their ranges is drawn. Fonts need
+      // `crossorigin` on a preload even from the same origin.
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/manrope-latin-wght-normal.woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/changa-latin-wght-normal.woff2",
+        crossOrigin: "anonymous",
+      },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
       // reusing the old one they have cached. Bump it whenever the file changes.
       { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },

@@ -83,7 +83,7 @@ export function Logo({ variant = "full", tone = "auto", size = "md", className }
           fetchPriority="high"
           className={cn(
             WORDMARK_HEIGHT[size],
-            "w-auto max-w-full select-none object-contain",
+            "aspect-[1615/288] w-auto max-w-full select-none object-contain",
             logoThemeClass(only, "block"),
           )}
           draggable={false}

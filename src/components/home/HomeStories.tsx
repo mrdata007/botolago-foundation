@@ -20,7 +20,30 @@ export function HomeStories() {
     refetchInterval: 60_000,
     retry: false,
   });
-  return stories.data?.length ? <PublishedStories stories={stories.data} /> : null;
+  if (stories.data?.length) return <PublishedStories stories={stories.data} />;
+  // The rail is read in the browser and lands above the band, so without a box
+  // for it the whole page used to drop by its height when it arrived (the
+  // largest layout shift on Home). While it is read the box is already there,
+  // the size of the rail it becomes. The `home-stories` marker is the one Home's
+  // own spacing keys on, so the page's padding does not change either.
+  if (stories.isPending && getNewsDataMode() === "supabase") return <StoriesReserve />;
+  return null;
+}
+
+/**
+ * An empty, hidden box with the rail's own height: the section's `py-4`, the
+ * row's `p-1` and one story (the ring at 1.6 times the tap target, 1.8 from
+ * `sm`, a 4px gap and the 16px label line), from the same tokens
+ * `PublishedStories` uses.
+ */
+function StoriesReserve() {
+  return (
+    <section aria-hidden data-testid="home-stories" data-pending className="min-w-0 py-4">
+      <div className="p-1">
+        <div className="h-[calc(var(--ui-tap-min)*1.6+20px)] sm:h-[calc(var(--ui-tap-min)*1.8+20px)]" />
+      </div>
+    </section>
+  );
 }
 
 export function PublishedStories({ stories }: { stories: readonly HomeStory[] }) {

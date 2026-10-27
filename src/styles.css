@@ -349,7 +349,7 @@
   --ease-emphasized: var(--ease-emphasized);
   --ease-decelerate: var(--ease-decelerate);
 
-  --font-sans: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-arabic: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 }
 
@@ -1777,13 +1777,14 @@ html[dir="rtl"]
      Spelled out rather than chained through `--font-sans`: that one is an
      `@theme inline` value, which Tailwind inlines into utilities and does
      not promise to emit as a custom property. */
-  --ui-font-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-display:
+    "Changa", "Changa Fallback", "Manrope", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
   /* The body face, as a token: the same stack `body` uses (`--font-sans`,
      and `--font-arabic` in the Arabic block below). Only for putting a
      glyph Changa lacks — the minute prime — back into the body face INSIDE
      display text (`ui.font.body`); `body` itself keeps `--font-sans`. The
      contract test holds the two stacks equal. */
-  --ui-font-body: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-body: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* ---- Display ramp: the Changa sizes the text ramp does not have ----
      The hub title (34), the screen header (19), the section band (17) and
