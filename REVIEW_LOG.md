@@ -274,3 +274,28 @@ Saved in `docs/review/phase3-2026-10-27/`: design system, proposals, mobile spec
 
 Phase 3 result: waiting for the owner's approval and answers.
 
+### Owner decisions on Phase 3 (27 Oct)
+
+1. Phase 3 approved.
+2. Auto-fill picks a mix (form and price), never injured players.
+3. Sponsor wording: "Présenté par".
+4. The player page stays inside Fantasy, with a football look.
+5. Official Arabic names come from the API. Checked: SportAPI/Sofascore data carries official Arabic names for clubs and players (e.g. الكوكب المراكشي, أمين الوعد).
+
+Not answered: should the home team stay on the right in Arabic? It stays as today unless the owner says otherwise.
+
+## Phase 4 – Build
+
+### Build task B – Batch 1 website quick wins
+
+**Brief to the Builder:**
+- Work on branch `claude/batch1-web-quick-wins`.
+- Make player names in line-ups and squads open the player page.
+- Give visitors who are not logged in a way to the Fantasy leaderboard.
+- Clearer wording on three screens; Arabic page titles.
+- Darker text shades for small coloured text; pinch-zoom back with 16px inputs; small text up to 12px (13px in Arabic).
+- Bigger tap areas for the legal links; lighter background checks in the browser.
+- The pitch and jerseys must not change.
+- Not allowed: database, API, deploying, opening a pull request, merging.
+- AGENTS.md screen rules apply: write a brief first, take before/after screenshots in French and Arabic, and run the tests.
+
