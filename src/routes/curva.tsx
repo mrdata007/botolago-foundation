@@ -60,7 +60,7 @@ const cardRendererStarted: true = (startCardRendererOnCurva(), true);
  */
 function startCardRendererOnCurva(): void {
   if (typeof window === "undefined") return;
-  if (/^\/curva(\/|$)/.test(window.location.pathname)) preloadCardRenderer();
+  if (/^\/curva(\/|$)/.test(window.location?.pathname ?? "")) preloadCardRenderer();
 }
 
 function CurvaLayout() {
