@@ -5,6 +5,8 @@ export interface SitemapNewsEntry {
   readonly id: string;
   readonly language: "fr" | "ar";
   readonly publishedAt: string;
+  /** The edition's title; absent before migration 20261027150000. */
+  readonly title?: string | null;
   /** When the text last really changed; absent before migration 20260924200600. */
   readonly contentUpdatedAt?: string | null;
   readonly translations: readonly { readonly id: string; readonly language: "fr" | "ar" }[];
@@ -114,6 +116,7 @@ function escapeXml(value: string): string {
  *   `/news` while News is on);
  * - `clubs`: the club pages of the directory's season;
  * - `matches`: every fixture of the current season and the one before;
+ * - `news-recent`: the Google News file, titled articles of the last 48 hours;
  * - `news-YYYY-MM`: the articles published that month (UTC).
  *
  * Search Console then reports each kind apart, a slow News read no longer
@@ -125,6 +128,12 @@ export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
 
 /** How many fixtures the match sitemap lists at most (two seasons are ~480). */
 export const SITEMAP_MATCH_LIMIT = 5_000;
+
+/** The Google News sitemap lists only articles from the last 48 hours (Google's rule). */
+export const NEWS_RECENT_SITEMAP_NAME = "news-recent";
+export const NEWS_RECENT_WINDOW_MS = 48 * 60 * 60 * 1000;
+/** Google News: at most 1,000 `<url>` per news sitemap. */
+export const NEWS_RECENT_MAX_URLS = 1_000;
 
 const NEWS_MONTH = /^news-(\d{4})-(0[1-9]|1[0-2])$/;
 
@@ -145,9 +154,14 @@ export function newsSitemapName(entry: Pick<SitemapNewsEntry, "publishedAt">): s
  */
 export function parseSitemapName(
   file: string,
-): { kind: "section"; section: SitemapSection } | { kind: "news"; name: string } | null {
+):
+  | { kind: "section"; section: SitemapSection }
+  | { kind: "news"; name: string }
+  | { kind: "news-recent" }
+  | null {
   const name = file.replace(/\.xml$/, "");
   if (name === file) return null;
+  if (name === NEWS_RECENT_SITEMAP_NAME) return { kind: "news-recent" };
   if ((SITEMAP_SECTIONS as readonly string[]).includes(name)) {
     return { kind: "section", section: name as SitemapSection };
   }
@@ -169,6 +183,8 @@ function entryLastmod(entry: SitemapNewsEntry): string | null {
 export function buildSitemapIndexXml(options: {
   readonly newsEnabled: boolean;
   readonly news: readonly SitemapNewsEntry[];
+  /** The clock for the Google News window; tests pass a fixed one. */
+  readonly now?: Date;
 }): string {
   const months = new Map<string, string | null>();
   if (options.newsEnabled) {
@@ -182,8 +198,18 @@ export function buildSitemapIndexXml(options: {
       }
     }
   }
+  const recent = options.newsEnabled ? recentNewsEntries(options.news, options.now) : [];
   const items = [
     ...SITEMAP_SECTIONS.map((name) => ({ name, lastmod: null as string | null })),
+    // The Google News file, listed while News is on even when it is empty.
+    ...(options.newsEnabled
+      ? [
+          {
+            name: NEWS_RECENT_SITEMAP_NAME as string,
+            lastmod: recent[0] ? new Date(Date.parse(recent[0].publishedAt)).toISOString() : null,
+          },
+        ]
+      : []),
     ...[...months.entries()]
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([name, lastmod]) => ({ name, lastmod })),
@@ -268,4 +294,47 @@ export function buildNewsSitemapXml(news: readonly SitemapNewsEntry[], month?: s
     urls.push(`  <url><loc>${escapeXml(own)}</loc>${lastmod}${alternates}</url>`);
   }
   return urlset(urls);
+}
+
+/**
+ * The entries that belong in the Google News sitemap: published within the
+ * last 48 hours (and not in the future), with a non-blank title, newest first,
+ * at most 1,000. An entry without a title (an API build before migration
+ * 20261027150000) is left out: Google News requires one, and none is invented.
+ */
+export function recentNewsEntries(
+  news: readonly SitemapNewsEntry[],
+  now: Date = new Date(),
+): readonly SitemapNewsEntry[] {
+  const to = now.getTime();
+  const from = to - NEWS_RECENT_WINDOW_MS;
+  return news
+    .filter((entry) => {
+      const ms = Date.parse(entry.publishedAt);
+      return !Number.isNaN(ms) && ms >= from && ms <= to && Boolean(entry.title?.trim());
+    })
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
+    .slice(0, NEWS_RECENT_MAX_URLS);
+}
+
+/**
+ * The Google News sitemap (`/sitemaps/news-recent.xml`): `news:news` with the
+ * publication name and language, the publication date and the title. Always a
+ * valid `urlset`, empty when nothing was published in the window.
+ */
+export function buildNewsRecentSitemapXml(
+  news: readonly SitemapNewsEntry[],
+  now: Date = new Date(),
+): string {
+  const urls = recentNewsEntries(news, now).map((entry) => {
+    const published = new Date(Date.parse(entry.publishedAt)).toISOString();
+    return `  <url><loc>${escapeXml(buildCanonicalArticleUrl(entry.id))}</loc><news:news><news:publication><news:name>BotolaGO</news:name><news:language>${entry.language}</news:language></news:publication><news:publication_date>${published}</news:publication_date><news:title>${escapeXml(entry.title!.trim())}</news:title></news:news></url>`;
+  });
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
+    ...urls,
+    "</urlset>",
+    "",
+  ].join("\n");
 }

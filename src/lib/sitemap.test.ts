@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   buildClubsSitemapXml,
   buildMatchesSitemapXml,
+  buildNewsRecentSitemapXml,
   buildNewsSitemapXml,
   buildSitemapIndexXml,
   buildStaticSitemapXml,
@@ -86,6 +87,7 @@ describe("sitemap.xml", () => {
       "https://botolago.com/sitemaps/static.xml",
       "https://botolago.com/sitemaps/clubs.xml",
       "https://botolago.com/sitemaps/matches.xml",
+      "https://botolago.com/sitemaps/news-recent.xml",
       "https://botolago.com/sitemaps/news-2026-10.xml",
       "https://botolago.com/sitemaps/news-2026-09.xml",
     ]);
@@ -97,6 +99,7 @@ describe("sitemap.xml", () => {
   test("a sitemap file name is a section or a News month, nothing else", () => {
     expect(parseSitemapName("static.xml")).toEqual({ kind: "section", section: "static" });
     expect(parseSitemapName("matches.xml")).toEqual({ kind: "section", section: "matches" });
+    expect(parseSitemapName("news-recent.xml")).toEqual({ kind: "news-recent" });
     expect(parseSitemapName("news-2026-10.xml")).toEqual({ kind: "news", name: "news-2026-10" });
     for (const bad of ["static", "news-2026-13.xml", "news-26-10.xml", "../x.xml", "admin.xml"]) {
       expect(`${bad}: ${parseSitemapName(bad)}`).toBe(`${bad}: null`);
@@ -159,7 +162,8 @@ describe("sitemap.xml", () => {
     expect(read(INDEX_ROUTE)).toContain("readSitemapNews()");
     expect(read(FILES_ROUTE)).toContain("readSitemapNews()");
     // A News month while News is off is a 404, never an article list.
-    expect(read(FILES_ROUTE)).toContain('wanted.kind === "news" && !NEWS_ENABLED');
+    expect(read(FILES_ROUTE)).toContain('wanted.kind === "news" || wanted.kind === "news-recent"');
+    expect(read(FILES_ROUTE)).toContain("&& !NEWS_ENABLED");
   });
 
   test("the latest api.news_sitemap_entries in the migrations stays set-based", () => {
@@ -253,8 +257,9 @@ describe("sitemap.xml", () => {
     for (const route of [read(INDEX_ROUTE), read(FILES_ROUTE)]) {
       expect(route).toContain('if (news === "failed") return sitemapUnavailable();');
     }
-    // The club and match files answer 503 too when the football read fails.
-    expect(read(FILES_ROUTE).match(/return sitemapUnavailable\(\);/g)).toHaveLength(3);
+    // The club and match files answer 503 too when the football read fails
+    // (the News read has two: month files and the Google News file).
+    expect(read(FILES_ROUTE).match(/return sitemapUnavailable\(\);/g)).toHaveLength(4);
   });
 
   test("a good sitemap is cacheable within the five-minute promise, and outlives an outage", () => {
@@ -346,5 +351,95 @@ describe("robots.txt and admin noindex", () => {
   test("every Admin route (the CMS included) sends noindex, nofollow", () => {
     const admin = readFileSync(join(import.meta.dir, "../routes/admin.tsx"), "utf8");
     expect(admin).toContain('meta: [{ name: "robots", content: "noindex, nofollow" }]');
+  });
+});
+
+describe("Google News sitemap (news-recent)", () => {
+  const NOW = new Date("2026-10-27T12:00:00Z");
+  const entry = (
+    id: string,
+    publishedAt: string,
+    title?: string | null,
+    language = "fr" as const,
+  ) => ({ id, language, publishedAt, title, translations: [] }) as SitemapNewsEntry;
+
+  test("lists only titled articles of the last 48 hours, newest first, in news:news format", () => {
+    const xml = buildNewsRecentSitemapXml(
+      [
+        entry(FR, "2026-10-26T10:00:00Z", "Le Wydad s'impose"),
+        entry(AR, "2026-10-27T09:00:00Z", "الرجاء يفوز", "ar"),
+        entry("old", "2026-10-25T11:59:00Z", "Trop ancien"),
+        entry("future", "2026-10-27T13:00:00Z", "Pas encore"),
+        entry("untitled", "2026-10-27T08:00:00Z"),
+        entry("blank", "2026-10-27T08:00:00Z", "   "),
+        entry("baddate", "nope", "Date invalide"),
+      ],
+      NOW,
+    );
+    expect(xml).toContain(
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
+    );
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+    expect(locs).toEqual([`https://botolago.com/news/${AR}`, `https://botolago.com/news/${FR}`]);
+    expect(xml).toContain(
+      "<news:news><news:publication><news:name>BotolaGO</news:name><news:language>ar</news:language></news:publication><news:publication_date>2026-10-27T09:00:00.000Z</news:publication_date><news:title>الرجاء يفوز</news:title></news:news>",
+    );
+    expect(xml).toContain("<news:title>Le Wydad s&apos;impose</news:title>");
+  });
+
+  test("escapes XML in titles", () => {
+    const xml = buildNewsRecentSitemapXml(
+      [entry(FR, "2026-10-27T10:00:00Z", 'A & B <c> "d"')],
+      NOW,
+    );
+    expect(xml).toContain("<news:title>A &amp; B &lt;c&gt; &quot;d&quot;</news:title>");
+  });
+
+  test("keeps at most 1,000 entries", () => {
+    const many = Array.from({ length: 1_200 }, (_, i) =>
+      entry(`id-${i}`, new Date(NOW.getTime() - i * 1000).toISOString(), `Titre ${i}`),
+    );
+    expect(buildNewsRecentSitemapXml(many, NOW).match(/<url>/g)).toHaveLength(1_000);
+  });
+
+  test("without titles (API before the migration) the file is empty but valid", () => {
+    const xml = buildNewsRecentSitemapXml([entry(FR, "2026-10-27T10:00:00Z")], NOW);
+    expect(xml).not.toContain("<url>");
+    expect(xml).toContain("</urlset>");
+  });
+
+  test("the index lists it with News on, with the latest recent publication", () => {
+    const xml = buildSitemapIndexXml({
+      newsEnabled: true,
+      news: [entry(FR, "2026-10-27T10:00:00Z", "Titre")],
+      now: NOW,
+    });
+    expect(xml).toContain(
+      "<loc>https://botolago.com/sitemaps/news-recent.xml</loc><lastmod>2026-10-27T10:00:00.000Z</lastmod>",
+    );
+    expect(buildSitemapIndexXml({ newsEnabled: false, news: [] })).not.toContain("news-recent");
+  });
+
+  test("the route serves it and 404s while News is off", () => {
+    const route = read(FILES_ROUTE);
+    expect(route).toContain("buildNewsRecentSitemapXml(news)");
+    expect(route).toContain('wanted.kind === "news-recent") && !NEWS_ENABLED');
+  });
+
+  test("the latest news_sitemap_compute carries the title and stays set-based", () => {
+    const directory = join(import.meta.dir, "../../supabase/migrations");
+    const marker = "create or replace function app_private.news_sitemap_compute(";
+    const latest = readdirSync(directory)
+      .filter((name) => name.endsWith(".sql"))
+      .sort()
+      .filter((name) => readFileSync(join(directory, name), "utf8").includes(marker))
+      .at(-1)!;
+    const source = readFileSync(join(directory, latest), "utf8");
+    const body = source.slice(source.indexOf(marker)).split("\n$$;")[0]!;
+    expect(body).toContain("'title', listed.title");
+    expect(body).toContain("'contentUpdatedAt'");
+    expect(body).not.toMatch(
+      /news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(/,
+    );
   });
 });

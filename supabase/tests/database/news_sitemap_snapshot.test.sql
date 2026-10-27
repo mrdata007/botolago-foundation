@@ -120,6 +120,7 @@ language sql stable set search_path = '' as $$
       'id', edition.id,
       'language', edition.language,
       'slug', edition.slug,
+      'title', edition.title,
       'publishedAt', edition.published_at,
       'updatedAt', edition.updated_at,
       'contentUpdatedAt', greatest(edition.published_at, last_revision.created_at),
