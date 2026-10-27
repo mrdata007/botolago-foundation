@@ -219,3 +219,19 @@ Written by the Lead from the approved audit: `docs/review/PHASE2_PLAN_2026-10-27
 
 Waiting for the owner's approval.
 
+### Owner decisions (27 Oct, later)
+
+- SportAPI bought: 15,000 calls from 27 Oct until the same day next month.
+- The Builder was told to keep the SportAPI call count separate from the old Sofascore count. Otherwise this month's ~9,000 old calls would trip the safety stop almost at once.
+- Phase 2 approved.
+
+## Phase 3 – Design proposals
+
+Started 27 Oct. Owner rule added: **the Fantasy pitch and the jerseys must not change.**
+
+Two operators run at the same time:
+- **UX & Design:** a design system built on the existing brand; prototypes of Home, Live match, Standings, Player page, Fantasy team picker and leaderboard, in French and Arabic; before/after screenshots at 390px and 1280px; each change explained in one line and tied to an audit finding; 3–5 sponsor spots.
+- **Mobile & Arabic:** writes the size, Arabic, tap-target and contrast rules first, so UX can follow them; then measures every prototype at 320/360/390px in French and Arabic.
+
+If the two disagree, the Lead decides and records why here.
+
