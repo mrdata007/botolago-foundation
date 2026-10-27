@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { withSiteHeaders } from "./response-headers";
+import {
+  SITE_OPENER_POLICY,
+  contentSecurityPolicyReportOnly,
+  withSiteHeaders,
+} from "./response-headers";
 import { SITEMAP_CACHE_CONTROL } from "./sitemap";
 
 describe("site response headers", () => {
@@ -21,6 +25,64 @@ describe("site response headers", () => {
       expect(headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
       expect(headers.get("x-frame-options")).toBe("SAMEORIGIN");
     }
+  });
+
+  test("on botolago.com pages carry the opener policy and a report-only CSP, never an enforcing one", () => {
+    const page = () =>
+      new Response("<html></html>", { headers: { "content-type": "text/html; charset=utf-8" } });
+    for (const url of ["https://botolago.com/", "https://www.botolago.com/news"]) {
+      const headers = withSiteHeaders(page(), url, "6a12a6b").headers;
+      expect(headers.get("cross-origin-opener-policy")).toBe("same-origin-allow-popups");
+      expect(SITE_OPENER_POLICY).toBe("same-origin-allow-popups");
+      expect(headers.get("content-security-policy-report-only")).toBe(
+        contentSecurityPolicyReportOnly(),
+      );
+      // The one enforced policy stays the frame rule alone.
+      expect(headers.get("content-security-policy")).toBe("frame-ancestors 'self'");
+    }
+  });
+
+  test("non-pages and other hosts get neither the opener policy nor the report-only CSP", () => {
+    const json = withSiteHeaders(
+      new Response("{}", { headers: { "content-type": "application/json" } }),
+      "https://botolago.com/api/x",
+      "6a12a6b",
+    ).headers;
+    expect(json.get("cross-origin-opener-policy")).toBeNull();
+    expect(json.get("content-security-policy-report-only")).toBeNull();
+    const preview = withSiteHeaders(
+      new Response("", { headers: { "content-type": "text/html" } }),
+      "https://id-preview--9f9face2-4733-42fd-aa13-174fbe9f6c87.lovable.app/",
+      "6a12a6b",
+    ).headers;
+    expect(preview.get("cross-origin-opener-policy")).toBeNull();
+    expect(preview.get("content-security-policy-report-only")).toBeNull();
+  });
+
+  test("the report-only policy names the project's own origins and what the pages load", () => {
+    const policy = contentSecurityPolicyReportOnly("https://abc.supabase.co");
+    const directives = new Map(
+      policy.split("; ").map((part) => {
+        const [name, ...sources] = part.split(" ");
+        return [name, sources] as const;
+      }),
+    );
+    expect(directives.get("default-src")).toEqual(["'self'"]);
+    expect(directives.get("connect-src")).toEqual([
+      "'self'",
+      "https://abc.supabase.co",
+      "wss://abc.supabase.co",
+      "https://api.seline.com",
+    ]);
+    expect(directives.get("script-src")).toContain("https://cdn.seline.com");
+    expect(directives.get("script-src")).toContain("'unsafe-eval'");
+    expect(directives.get("img-src")).toEqual(expect.arrayContaining(["data:", "blob:", "https:"]));
+    expect(directives.get("object-src")).toEqual(["'none'"]);
+    // Frame rules are the enforced header's job, not this one's.
+    expect(directives.has("frame-ancestors")).toBe(false);
+    // Without a project origin it falls back to the host family, never to "*".
+    expect(contentSecurityPolicyReportOnly(undefined)).toContain("https://*.supabase.co");
+    expect(policy).not.toMatch(/[ ]\*[ ;]|[ ]\*$/);
   });
 
   test("auth and private routes cannot be cached, including redirects", () => {
