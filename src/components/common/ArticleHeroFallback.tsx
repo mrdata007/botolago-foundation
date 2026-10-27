@@ -15,6 +15,24 @@ import topicStadium from "@/assets/news/topics/topic-stadium.webp";
 import topicTraining from "@/assets/news/topics/topic-training.webp";
 import topicTransfer from "@/assets/news/topics/topic-transfer.webp";
 import topicTrophy from "@/assets/news/topics/topic-trophy.webp";
+import platePhotoAnalysisSmall from "@/assets/news/plate-analysis-480.webp";
+import platePhotoForYouSmall from "@/assets/news/plate-for-you-480.webp";
+import platePhotoInterviewsSmall from "@/assets/news/plate-interviews-480.webp";
+import platePhotoLatestSmall from "@/assets/news/plate-latest-480.webp";
+import platePhotoTransfersSmall from "@/assets/news/plate-transfers-480.webp";
+import topicClubBoardSmall from "@/assets/news/topics/topic-club-board-480.webp";
+import topicCoachSmall from "@/assets/news/topics/topic-coach-480.webp";
+import topicFansSmall from "@/assets/news/topics/topic-fans-480.webp";
+import topicGoalSmall from "@/assets/news/topics/topic-goal-480.webp";
+import topicInjurySmall from "@/assets/news/topics/topic-injury-480.webp";
+import topicMatchdaySmall from "@/assets/news/topics/topic-matchday-480.webp";
+import topicPressSmall from "@/assets/news/topics/topic-press-480.webp";
+import topicRefereeSmall from "@/assets/news/topics/topic-referee-480.webp";
+import topicStadiumSmall from "@/assets/news/topics/topic-stadium-480.webp";
+import topicTrainingSmall from "@/assets/news/topics/topic-training-480.webp";
+import topicTransferSmall from "@/assets/news/topics/topic-transfer-480.webp";
+import topicTrophySmall from "@/assets/news/topics/topic-trophy-480.webp";
+import { READING_COLUMN_SIZES } from "@/lib/media";
 import { topicForHeadline, type NewsTopic } from "@/lib/news-topic";
 import type { ArticleCategory } from "@/types/domain";
 
@@ -84,6 +102,16 @@ const PLATE_PHOTO: Record<ArticleCategory, string> = {
   interviews: platePhotoInterviews,
 };
 
+/** The same photographs at 480px wide, for the small boxes (the 88px thumbnail,
+ *  a phone card's grid cell): about a quarter of the bytes. */
+const PLATE_PHOTO_SMALL: Record<ArticleCategory, string> = {
+  for_you: platePhotoForYouSmall,
+  latest: platePhotoLatestSmall,
+  transfers: platePhotoTransfersSmall,
+  analysis: platePhotoAnalysisSmall,
+  interviews: platePhotoInterviewsSmall,
+};
+
 /** Where each photo is anchored when a box crops it (the 56px and 120px
  *  squares, the 4:5 card): the microphones sit left of centre, and a centred
  *  square cut through them. */
@@ -107,6 +135,27 @@ const TOPIC_PHOTO: Record<NewsTopic, string> = {
   stadium: topicStadium,
 };
 
+const TOPIC_PHOTO_SMALL: Record<NewsTopic, string> = {
+  injury: topicInjurySmall,
+  referee: topicRefereeSmall,
+  transfer: topicTransferSmall,
+  trophy: topicTrophySmall,
+  press: topicPressSmall,
+  "club-board": topicClubBoardSmall,
+  coach: topicCoachSmall,
+  training: topicTrainingSmall,
+  goal: topicGoalSmall,
+  fans: topicFansSmall,
+  matchday: topicMatchdaySmall,
+  stadium: topicStadiumSmall,
+};
+
+/** The topic illustrations are 1200 wide, the category photographs 1440. */
+const TOPIC_WIDTH = 1200;
+const TOPIC_HEIGHT = 672;
+const PLATE_WIDTH = 1440;
+const PLATE_HEIGHT = 810;
+
 function knownCategory(category: string | undefined): ArticleCategory {
   return CATEGORIES.find((candidate) => candidate === category) ?? "latest";
 }
@@ -119,11 +168,18 @@ export function plateTokenForCategory(category: string | undefined): string {
 export function ArticleHeroFallback({
   category,
   headline,
+  sizes = READING_COLUMN_SIZES,
 }: {
   /** The edition's primary category; an unknown slug falls back to `latest`. */
   category?: string;
   /** The headline, whose subject picks the illustration when it has one. */
   headline?: string;
+  /**
+   * The width the plate is drawn at, as `sizes`: the box it fills is the
+   * caller's, so the caller says it (the card's `frame.sizes`). Picks the
+   * 480px file for a small box and the full file for a large one.
+   */
+  sizes?: string;
 }) {
   const known = knownCategory(category);
   const token = PLATE_TOKEN[known];
@@ -140,10 +196,14 @@ export function ArticleHeroFallback({
     >
       <img
         src={topic ? TOPIC_PHOTO[topic] : PLATE_PHOTO[known]}
+        srcSet={`${topic ? TOPIC_PHOTO_SMALL[topic] : PLATE_PHOTO_SMALL[known]} 480w, ${
+          topic ? TOPIC_PHOTO[topic] : PLATE_PHOTO[known]
+        } ${topic ? TOPIC_WIDTH : PLATE_WIDTH}w`}
+        sizes={sizes}
         alt=""
         data-article-hero-topic={topic ?? undefined}
-        width={1440}
-        height={810}
+        width={topic ? TOPIC_WIDTH : PLATE_WIDTH}
+        height={topic ? TOPIC_HEIGHT : PLATE_HEIGHT}
         loading="lazy"
         decoding="async"
         draggable={false}
