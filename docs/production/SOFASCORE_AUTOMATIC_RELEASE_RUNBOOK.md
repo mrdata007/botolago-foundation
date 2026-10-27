@@ -1046,4 +1046,6 @@ edition's `title`, for the Google News sitemap (`/sitemaps/news-recent.xml`).
 Grants, the snapshot and the 120-second rule are unchanged, and it writes
 nothing. The website works before it is applied (the Google News file is then
 empty but valid); the next `news-sitemap-refresh` run after it puts the titles
-in the snapshot.
+in the snapshot. It is applied with the guarded
+`scripts/backend/apply-20261027150000-news-sitemap-entry-titles.sql`
+(rehearsal, then commit).

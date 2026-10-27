@@ -225,6 +225,22 @@ about 99% of editions licensed, about 80% Arabic, median 120 or so words, 7%
 under 80, 25% under 100. Query 4 should come back near zero for exact titles;
 4b and 5 are where real duplicates would show.
 
+## Decision (2026-10-27)
+
+The threshold stays at **60**. Measured on production with Query 1 the same
+day, over 15,771 public editions:
+
+| Language | Editions | Under 60 | Under 80 | Under 100 | Median words |
+| -------- | -------: | -------: | -------: | --------: | -----------: |
+| French   |    2,524 |       10 |       60 |       269 |          159 |
+| Arabic   |   13,247 |      195 |    1,920 |     4,655 |          113 |
+
+At 80, 1,920 of the 1,980 hidden editions would be Arabic (14% of the Arabic
+archive). An Arabic word is longer than a French one (articles and
+prepositions join the word), so one word count for both languages hides Arabic
+first, and Arabic is where the site ranks worst. A higher bar waits for the
+sitemap filter (point 3) and, if wanted, a per-language threshold.
+
 ## Decisions the owner needs to make
 
 1. The threshold N (60 now; 80 suggested next). Edit

@@ -274,6 +274,12 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
  * would call an article; raising it to 80 would drop 7% of the sample, to 100
  * a quarter. The owner tunes it here (see docs/seo/NEWS_QUALITY_PROPOSAL.md);
  * `0` turns the rule off.
+ *
+ * Kept at 60 on 2026-10-27, measured on production (15,771 public editions):
+ * 205 fall under 60 words, 1,980 under 80. Of those 1,980, 1,920 are Arabic
+ * (14% of the Arabic archive), whose words run longer than French ones, so 80
+ * would hide one Arabic article in seven while Arabic search is the site's
+ * weakest. Raise it only with the sitemap filtering the same editions out.
  */
 export const MIN_INDEXABLE_BODY_WORDS = 60;
 
