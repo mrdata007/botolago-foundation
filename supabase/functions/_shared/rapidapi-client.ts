@@ -81,6 +81,13 @@ export interface RapidApiRequestEvent {
   readonly endpoint: string;
   /** HTTP status of the answer, or 0 when there was none (network error, timeout). */
   readonly statusCode: number;
+  /**
+   * The quota the provider reported on this answer (`x-ratelimit-requests-*`).
+   * Present only when the answer carried the header; the counter keeps the
+   * smallest `quotaRemaining` of a run as the provider's own figure.
+   */
+  readonly quotaRemaining?: number;
+  readonly quotaLimit?: number;
 }
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -153,10 +160,16 @@ export class RapidApiClient {
     this.onRequest = config.onRequest;
   }
 
-  private count(path: string, statusCode: number): void {
+  private count(path: string, statusCode: number, quota?: RapidApiQuota): void {
     if (!this.onRequest) return;
     try {
-      this.onRequest({ endpoint: endpointOf(path), statusCode });
+      this.onRequest({
+        endpoint: endpointOf(path),
+        statusCode,
+        ...(quota && quota.remaining !== null && quota.limit !== null
+          ? { quotaRemaining: quota.remaining, quotaLimit: quota.limit }
+          : {}),
+      });
     } catch {
       // Counting must never break a request.
     }
@@ -175,7 +188,14 @@ export class RapidApiClient {
   private budgetRefusal(path: string): RapidApiError | null {
     const budget = this.budget;
     if (!budget) return null;
-    const used = budget.used + this.requestCount;
+    // Our own count (the database's, plus this run's requests) or, when higher,
+    // what the provider itself says it has used: limit - remaining of the last
+    // reply. The provider's figure is the floor, as it is in the database.
+    const providerUsed =
+      this.lastQuota.limit !== null && this.lastQuota.remaining !== null
+        ? Math.max(0, this.lastQuota.limit - this.lastQuota.remaining)
+        : 0;
+    const used = Math.max(budget.used + this.requestCount, providerUsed);
     if (used >= budget.hardLimit) {
       return new RapidApiError(
         "provider_rate_limited",
@@ -262,8 +282,12 @@ export class RapidApiClient {
           signal: controller.signal,
         });
         counted = true;
-        this.count(path, result.status);
+        // The guard keeps the last figure the run saw; the count gets only the
+        // figure this answer carried, so a reply without the headers never
+        // passes an earlier figure off as a fresh one.
+        const answered = readQuota(result.headers, { limit: null, remaining: null });
         this.lastQuota = readQuota(result.headers, this.lastQuota);
+        this.count(path, result.status, answered);
         if (result.status === 429) {
           throw new RapidApiError("provider_rate_limited", `Rate limited on ${path}.`);
         }

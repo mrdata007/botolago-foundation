@@ -257,3 +257,80 @@ describe("Edge RapidAPI client, monthly budget", () => {
     expect(seen).toHaveLength(2);
   });
 });
+
+describe("Edge RapidAPI client, the provider's own figure", () => {
+  const withQuota = (remaining: string, limit = "10000") =>
+    new Response("{}", {
+      status: 200,
+      headers: {
+        "x-ratelimit-requests-limit": limit,
+        "x-ratelimit-requests-remaining": remaining,
+      },
+    });
+  const make = (used: number, replies: Response[], seen: Seen[] = []) =>
+    new RapidApiClient({
+      host: SOFASCORE_RAPIDAPI_HOST,
+      key: KEY,
+      runtime,
+      minRemaining: 0,
+      budget: { used, softLimit: 9600, hardLimit: 9950 },
+      fetch: async (url, init) => {
+        seen.push({ url, init });
+        const next = replies.shift();
+        if (!next) throw new Error("unexpected extra request");
+        return next;
+      },
+    });
+
+  test("refuses once a reply puts provider-used at the hard limit, whatever our count says", async () => {
+    const seen: Seen[] = [];
+    const api = make(100, [withQuota("50")], seen);
+    await api.getJson("matches/get-incidents?matchId=1");
+    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+      code: "provider_rate_limited",
+      budget: "hard_limit",
+    });
+    expect(seen).toHaveLength(1);
+  });
+
+  test("provider-used just under the hard limit still sends, and the soft limit follows it too", async () => {
+    const seen: Seen[] = [];
+    const api = make(100, [withQuota("401"), withQuota("400"), withQuota("399")], seen);
+    await api.getJson("matches/get-incidents?matchId=1");
+    // 10,000 - 401 = 9,599: below the soft limit.
+    await api.getJson("matches/get-lineups?matchId=1");
+    // 10,000 - 400 = 9,600: at the soft limit, only the live feed and incidents.
+    await expect(api.getJson("matches/get-lineups?matchId=1")).rejects.toMatchObject({
+      budget: "soft_limit",
+    });
+    await api.getJson("matches/get-incidents?matchId=1");
+    expect(seen).toHaveLength(3);
+  });
+
+  test("a reply without quota headers changes nothing", async () => {
+    const seen: Seen[] = [];
+    const api = make(100, [new Response("{}"), new Response("{}")], seen);
+    await api.getJson("matches/get-lineups?matchId=1");
+    await api.getJson("matches/get-lineups?matchId=1");
+    expect(seen).toHaveLength(2);
+  });
+
+  test("a reply without quota headers reports no figure, while the guard keeps the earlier one", async () => {
+    const events: { quotaRemaining?: number; quotaLimit?: number }[] = [];
+    const replies = [withQuota("50"), new Response("{}")];
+    const api = new RapidApiClient({
+      host: SOFASCORE_RAPIDAPI_HOST,
+      key: KEY,
+      runtime,
+      minRemaining: 0,
+      budget: { used: 100, softLimit: 9600, hardLimit: 9990 },
+      onRequest: (event) => events.push(event),
+      fetch: async () => replies.shift()!,
+    });
+    await api.getJson("matches/get-incidents?matchId=1");
+    await api.getJson("matches/get-incidents?matchId=1");
+    expect(events[0]).toMatchObject({ quotaRemaining: 50, quotaLimit: 10000 });
+    expect(events[1]?.quotaRemaining).toBeUndefined();
+    expect(api.quota()).toEqual({ limit: 10000, remaining: 50 });
+  });
+});

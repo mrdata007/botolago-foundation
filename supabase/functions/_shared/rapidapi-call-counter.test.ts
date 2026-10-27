@@ -159,6 +159,118 @@ describe("createRapidApiCallCounter", () => {
   });
 });
 
+describe("the provider's own quota", () => {
+  function database(
+    quotaResult: { error: { message?: string; code?: string } | null } | "hang" | "throw",
+  ) {
+    const calls: { name: string; args: Record<string, unknown> }[] = [];
+    const client: RapidApiCountClient = {
+      schema() {
+        return {
+          rpc(name, args) {
+            calls.push({ name, args });
+            if (name !== "service_record_rapidapi_quota") return Promise.resolve({ error: null });
+            if (quotaResult === "throw") throw new Error("down");
+            if (quotaResult === "hang") return new Promise(() => {});
+            return Promise.resolve(quotaResult);
+          },
+        };
+      },
+    };
+    return { client, calls };
+  }
+
+  test("the client reports the quota of each answer, and omits it when there was none", async () => {
+    const seen: RapidApiRequestEvent[] = [];
+    const answers = [
+      Response.json(
+        {},
+        {
+          headers: { "x-ratelimit-requests-limit": "10000", "x-ratelimit-requests-remaining": "7" },
+        },
+      ),
+      Response.json({}),
+    ];
+    const rapid = new RapidApiClient({
+      host: HOST,
+      key: "k",
+      runtime,
+      onRequest: (e) => seen.push(e),
+      minRemaining: 0,
+      fetch: async () => answers.shift() as Response,
+    });
+    await rapid.getJson("a/b");
+    expect(seen[0]).toEqual({
+      endpoint: "a/b",
+      statusCode: 200,
+      quotaRemaining: 7,
+      quotaLimit: 10000,
+    });
+  });
+
+  test("records the smallest remaining of the run once, with its limit", async () => {
+    const db = database({ error: null });
+    const counter = createRapidApiCallCounter({
+      client: db.client,
+      job: "fixtures",
+      log: () => {},
+    });
+    counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: 120, quotaLimit: 10000 });
+    counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: 119, quotaLimit: 10000 });
+    counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: 121, quotaLimit: 10000 });
+    counter.record({ endpoint: "a/b", statusCode: 0 });
+    await counter.flush();
+    const quota = db.calls.filter((c) => c.name === "service_record_rapidapi_quota");
+    expect(quota).toHaveLength(1);
+    expect(quota[0].args).toMatchObject({ p_remaining: 119, p_limit: 10000 });
+    expect(Number.isNaN(Date.parse(String(quota[0].args.p_observed_at)))).toBe(false);
+    await counter.flush();
+    expect(db.calls.filter((c) => c.name === "service_record_rapidapi_quota")).toHaveLength(1);
+  });
+
+  test("sends nothing when no answer carried a quota, and ignores impossible figures", async () => {
+    const db = database({ error: null });
+    const counter = createRapidApiCallCounter({
+      client: db.client,
+      job: "fixtures",
+      log: () => {},
+    });
+    counter.record({ endpoint: "a/b", statusCode: 200 });
+    counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: -1, quotaLimit: 10000 });
+    counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: 20000, quotaLimit: 10000 });
+    await counter.flush();
+    expect(db.calls.map((c) => c.name)).toEqual(["service_record_rapidapi_calls"]);
+  });
+
+  test("a missing function is logged as unavailable; a failure, throw or hang never throws or waits long", async () => {
+    const cases = [
+      [
+        { error: { code: "PGRST202", message: "Could not find the function" } },
+        "rapidapi_quota_unavailable",
+      ],
+      [{ error: { message: "boom" } }, "rapidapi_quota_failed"],
+      ["throw", "rapidapi_quota_failed"],
+      ["hang", "rapidapi_quota_failed"],
+    ] as const;
+    for (const [behaviour, event] of cases) {
+      const db = database(behaviour);
+      const lines: string[] = [];
+      const counter = createRapidApiCallCounter({
+        client: db.client,
+        job: "fixtures",
+        timeoutMs: 20,
+        log: (line) => lines.push(line),
+      });
+      counter.record({ endpoint: "a/b", statusCode: 200, quotaRemaining: 5, quotaLimit: 10 });
+      const started = Date.now();
+      await counter.flush();
+      expect(Date.now() - started).toBeLessThan(500);
+      expect(lines).toHaveLength(1);
+      expect(JSON.parse(lines[0])).toMatchObject({ event, job: "fixtures" });
+    }
+  });
+});
+
 describe("the migration agrees with the client", () => {
   const sql = readFileSync(
     new URL("../../migrations/20261013110000_rapidapi_call_budget.sql", import.meta.url),
