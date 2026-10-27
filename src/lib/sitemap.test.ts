@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   buildSitemapXml,
   SITEMAP_CACHE_CONTROL,
+  SITEMAP_CLUB_LIMIT,
   SITEMAP_FRESHNESS_SECONDS,
   SITEMAP_NEWS_LIMIT,
   SITEMAP_SNAPSHOT_MAX_AGE_SECONDS,
@@ -220,8 +221,29 @@ describe("sitemap.xml", () => {
       translations: [],
     });
     const news = Array.from({ length: SITEMAP_NEWS_LIMIT }, (_, i) => entry(i));
-    const xml = buildSitemapXml({ newsEnabled: true, news });
+    // More clubs than the cap: the extra ones are dropped, never the limit passed.
+    const clubIds = Array.from({ length: SITEMAP_CLUB_LIMIT + 5 }, (_, i) => `club-${i}`);
+    const xml = buildSitemapXml({ newsEnabled: true, news, clubIds });
     expect(xml.match(/<url>/g)).toHaveLength(50_000);
+  });
+
+  test("lists each club page once, at its canonical URL", () => {
+    const xml = buildSitemapXml({
+      newsEnabled: false,
+      news: [],
+      clubIds: ["0257feb3-4c16-431d-a58b-5faf060576ad", "0257feb3-4c16-431d-a58b-5faf060576ad"],
+    });
+    expect(
+      xml.match(
+        /<loc>https:\/\/botolago\.com\/clubs\/0257feb3-4c16-431d-a58b-5faf060576ad<\/loc>/g,
+      ),
+    ).toHaveLength(1);
+  });
+
+  test("the route lists the club directory and survives a failed football read", () => {
+    const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
+    expect(route).toContain('footballService.getClubDirectory("fr")');
+    expect(route).toContain("clubIds = [];");
   });
 });
 
