@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -262,6 +262,26 @@ function MatchRow({
     .filter(Boolean)
     .join(", ");
 
+  const details: ReactNode[] = [
+    <bdi key="date">{date}</bdi>,
+    venue,
+    t("fantasy.football.min").replace("{n}", nf.format(match.minutes)),
+  ];
+  if (match.goals > 0) {
+    details.push(
+      sentence(t("fantasy.football.goals_line"), {
+        n: <bdi key="g">{nf.format(match.goals)}</bdi>,
+      }),
+    );
+  }
+  if (match.assists !== null && match.assists > 0) {
+    details.push(
+      sentence(t("fantasy.football.assists_line"), {
+        n: <bdi key="a">{nf.format(match.assists)}</bdi>,
+      }),
+    );
+  }
+
   return (
     <Link
       to="/matches/$matchId"
@@ -286,24 +306,17 @@ function MatchRow({
       <div className="min-w-0 flex-1">
         <p className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>{opponent}</p>
         <p className={cn(ui.text.meta, ui.tone.muted)}>
-          <bdi>{date}</bdi> · {venue} ·{" "}
-          {t("fantasy.football.min").replace("{n}", nf.format(match.minutes))}
-          {match.goals > 0 ? (
-            <>
-              {" · "}
-              {sentence(t("fantasy.football.goals_line"), {
-                n: <bdi key="g">{nf.format(match.goals)}</bdi>,
-              })}
-            </>
-          ) : null}
-          {match.assists !== null && match.assists > 0 ? (
-            <>
-              {" · "}
-              {sentence(t("fantasy.football.assists_line"), {
-                n: <bdi key="a">{nf.format(match.assists)}</bdi>,
-              })}
-            </>
-          ) : null}
+          {details.map((item, index) => (
+            // Each item stays whole, so a long line breaks between items and not
+            // inside "71 min" or "Buts : 2". The space between them sits outside
+            // the nowrap span: that is where the line may break.
+            <Fragment key={index}>
+              <span className="whitespace-nowrap">
+                {item}
+                {index < details.length - 1 ? " ·" : null}
+              </span>{" "}
+            </Fragment>
+          ))}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
