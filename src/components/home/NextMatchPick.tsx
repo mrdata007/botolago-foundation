@@ -29,6 +29,19 @@ const PICK_SHELL = cn(
 );
 
 /**
+ * A club's side of the card: the crest above its name, both centred. Beside the
+ * crest a phone left a name about 40px, and "Casablanca" ran into the kickoff;
+ * under it the name has the whole side. A word longer than the side breaks
+ * rather than overflow.
+ */
+const CLUB_SIDE = "flex min-w-0 flex-col items-center gap-1.5 text-center";
+const CLUB_NAME = cn(
+  "min-w-0 max-w-full [overflow-wrap:anywhere]",
+  ui.text.secondary,
+  "[font-weight:var(--ui-weight-heavy)]",
+);
+
+/**
  * The next match, inside Home's navy band: the two clubs, the kickoff, and —
  * when fans can vote on it — "Qui va gagner ?" with one tap each for the home
  * side, the draw and the away side.
@@ -105,13 +118,9 @@ export function NextMatchPick({
           ui.focusOnMesh,
         )}
       >
-        <span className="flex min-w-0 items-center gap-2">
+        <span className={CLUB_SIDE}>
           <ClubCrest club={home} size="md" tone="inverse" />
-          <span
-            className={cn("min-w-0", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}
-          >
-            {name(home)}
-          </span>
+          <span className={CLUB_NAME}>{name(home)}</span>
         </span>
         <span className="flex flex-col items-center text-center">
           <bdi className={cn(ui.score.row, ui.text.tabular)}>
@@ -122,13 +131,9 @@ export function NextMatchPick({
           </bdi>
           <span className={cn(ui.text.micro, ui.tone.onInkMuted)}>{when.split(/[\s,]+/)[0]}</span>
         </span>
-        <span className="flex min-w-0 flex-row-reverse items-center gap-2 text-end">
+        <span className={CLUB_SIDE}>
           <ClubCrest club={away} size="md" tone="inverse" />
-          <span
-            className={cn("min-w-0", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}
-          >
-            {name(away)}
-          </span>
+          <span className={CLUB_NAME}>{name(away)}</span>
         </span>
       </Link>
 
