@@ -349,7 +349,7 @@
   --ease-emphasized: var(--ease-emphasized);
   --ease-decelerate: var(--ease-decelerate);
 
-  --font-sans: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-arabic: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 }
 
@@ -1777,13 +1777,14 @@ html[dir="rtl"]
      Spelled out rather than chained through `--font-sans`: that one is an
      `@theme inline` value, which Tailwind inlines into utilities and does
      not promise to emit as a custom property. */
-  --ui-font-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-display:
+    "Changa", "Changa Fallback", "Manrope", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
   /* The body face, as a token: the same stack `body` uses (`--font-sans`,
      and `--font-arabic` in the Arabic block below). Only for putting a
      glyph Changa lacks — the minute prime — back into the body face INSIDE
      display text (`ui.font.body`); `body` itself keeps `--font-sans`. The
      contract test holds the two stacks equal. */
-  --ui-font-body: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-body: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* ---- Display ramp: the Changa sizes the text ramp does not have ----
      The hub title (34), the screen header (19), the section band (17) and
@@ -2898,3 +2899,71 @@ html[dir="rtl"]
   }
 }
 /* ======================= end GOAL MOMENT motion ========================== */
+
+/* ================================================================== */
+/* Entrance animations: transform and opacity only                    */
+/* ================================================================== */
+/* tw-animate-css's `enter` and `exit` keyframes (what `animate-in` and
+   `animate-out` play) also animate `filter: blur(var(--tw-enter-blur, 0))`.
+   Every `animate-in fade-in-0` therefore animated opacity together with a
+   filter, which the browser cannot hand to the compositor: the animation ran
+   on the main thread (PageSpeed, "Avoid non-composited animations": the band,
+   the story thumbnails, the cards). Nothing in the app uses the blur-in or
+   blur-out utilities, so the blur was always 0 and its removal changes no
+   frame. `--animate-in` and `--animate-out` (the theme variables the
+   `animate-in` and `animate-out` utilities read) now point at the same
+   keyframes minus the filter. A second `@keyframes enter` would be merged
+   away by the build, which keeps the library's; hence new names. */
+@theme inline {
+  --animate-in: enter-flat var(--tw-animation-duration, var(--tw-duration, 0.15s))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
+    var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  --animate-out: exit-flat var(--tw-animation-duration, var(--tw-duration, 0.15s))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
+    var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  @keyframes enter-flat {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+        scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1))
+        rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+  @keyframes exit-flat {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+        scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1))
+        rotate(var(--tw-exit-rotate, 0));
+    }
+  }
+}
+
+/* ================================================================== */
+/* Text fields on touch screens: 16px                                 */
+/* ================================================================== */
+/* iOS zooms the page in when a field whose text is under 16px takes focus
+   and never zooms back. The kit's fields are 15px (`--ui-text-body`) and the
+   header search 13px. The page may be zoomed by the visitor now (the viewport
+   no longer caps the scale), so the fields themselves stay at 16px on a touch
+   screen, whatever size the component asks for. Unlayered on purpose: it must
+   outrank the utility classes (`@layer utilities`) on the fields. Pointer
+   devices keep the kit's sizes. docs/briefs/2026-10-27-pagespeed.md (A1). */
+@media (pointer: coarse) {
+  input:not(
+    [type="checkbox"],
+    [type="radio"],
+    [type="range"],
+    [type="file"],
+    [type="color"],
+    [type="hidden"],
+    [type="submit"],
+    [type="button"],
+    [type="reset"],
+    [type="image"]
+  ),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

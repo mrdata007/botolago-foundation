@@ -1,0 +1,33 @@
+# BotolaGO
+
+> BotolaGO is a mobile-first website for following the Botola Pro, Morocco's top football league: live scores, results, fixtures, the league table, club pages and news, plus free games (Fantasy and Pronostics) built on the same match data. The interface is in French and in Arabic.
+>
+> BotolaGO est un site de football marocain : résultats en direct, calendrier, classement, clubs et actualités de la Botola Pro, avec des jeux gratuits (Fantasy et Pronostics). Interface en français et en arabe.
+>
+> بوطولا جو موقع لمتابعة البطولة الاحترافية المغربية: نتائج مباشرة، برنامج المباريات، الترتيب، الأندية والأخبار، مع ألعاب مجانية (فانتازي وتوقعات). الواجهة بالفرنسية والعربية.
+
+Pages are served in French by default; a reader's Arabic choice is applied in the browser. Account pages, sign-in and the staff console are not public content.
+
+## Football
+
+- [Home](https://botolago.com/): today's matches, the gameweek, the latest news and the top of the table
+- [Matches](https://botolago.com/matches): fixtures and results, day by day, with a page per match
+- [Standings](https://botolago.com/matches/standings): the Botola Pro table
+- [Clubs](https://botolago.com/clubs): every club of the league, with its page
+
+## News
+
+- [News](https://botolago.com/news): articles on the Botola Pro, in French and Arabic
+
+## Games
+
+- [Fantasy](https://botolago.com/fantasy): build a squad, pick a captain, make transfers before each deadline and compare with friends in private leagues
+- [Fantasy rules](https://botolago.com/fantasy/rules): how the game and its scoring work
+- [Pronostics](https://botolago.com/pronostics): predict the scores of each gameweek
+- [Prospects](https://botolago.com/pepites): the best under-23 players of the Botola Pro, with a weekly Top 10 and the method behind the ranking
+- [Prizes](https://botolago.com/prizes): the prizes of the games and their terms
+
+## Optional
+
+- [Privacy](https://botolago.com/privacy)
+- [Sitemap](https://botolago.com/sitemap.xml)

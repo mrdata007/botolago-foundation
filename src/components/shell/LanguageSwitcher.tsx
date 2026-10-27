@@ -35,7 +35,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
         type="button"
         data-language-switcher=""
         className={cn(
-          "inline-flex items-center justify-center gap-1.5 px-3 transition-colors",
+          "inline-flex items-center justify-center gap-1.5 px-3 transition-[color,background-color,border-color]",
           ui.space.tap,
           ui.radius.full,
           ui.surface.mesh,

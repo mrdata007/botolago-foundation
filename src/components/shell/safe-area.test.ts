@@ -86,13 +86,29 @@ describe("BG-0151: the root viewport meta", () => {
     expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
   });
 
-  // iOS zooms in when a field under 16px gets focus and never zooms back. The
-  // cap that used to stop it is gone (M1, 2026-10-27): pinch zoom is allowed,
-  // and the kit's fields are 16px instead
-  // (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
-  test("does not cap the zoom", () => {
+  // The owner decided on 2026-10-27 that visitors may zoom (the PageSpeed
+  // accessibility audit flags `maximum-scale`). The cap had been added on
+  // 2026-10-06 because iOS zooms in when a field under 16px takes focus and
+  // never zooms back (docs/engineering/briefs/ios-zoom-and-pitch-lines.md);
+  // the fields are 16px on a touch screen instead, which the next test holds.
+  test("does not limit the zoom", () => {
     expect(viewports[0]).not.toContain("maximum-scale");
+    expect(viewports[0]).not.toContain("minimum-scale");
     expect(viewports[0]).not.toContain("user-scalable");
+  });
+
+  test("text fields are 16px on a touch screen, so focusing one cannot zoom iOS", () => {
+    const css = read("src/styles.css");
+    const block =
+      /@media \(pointer: coarse\) \{\s*input:not\(([\s\S]*?)\),\s*select,\s*textarea \{\s*font-size: 16px;/.exec(
+        css,
+      );
+    expect(block).not.toBeNull();
+    // Text-entry inputs are covered; buttons, checkboxes and files are not.
+    expect(block![1]).toContain('[type="checkbox"]');
+    expect(block![1]).not.toContain('[type="text"]');
+    expect(block![1]).not.toContain('[type="search"]');
+    expect(block![1]).not.toContain('[type="email"]');
   });
 
   test("the field text is at least 16px, so iOS has no focus zoom to cap", () => {

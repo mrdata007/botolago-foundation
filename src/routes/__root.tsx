@@ -228,14 +228,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
       // the insets are 0 and nothing moves.
       //
-      // No `maximum-scale` and no `user-scalable=no`: a reader can pinch-zoom
-      // (WCAG 1.4.4). The cap used to be here (2026-10-06) because iOS zooms
-      // in when a field whose text is under 16px gets focus (by 16 ÷ its size)
-      // and never zooms back, and the kit's fields were 15px. Every input,
-      // select and textarea is now at least 16px (`FIELD_TEXT` in the kit,
-      // the header search, the Plus selects), so there is no focus zoom to cap.
-      // The phone app is unchanged: Capacitor keeps pinch off (`zoomEnabled:
-      // false`). docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
+      // No `maximum-scale` and no `user-scalable=no`: a visitor may zoom the
+      // page (owner decision of 2026-10-27, after the PageSpeed accessibility
+      // audit flagged the cap). It was added on 2026-10-06 because iOS zooms in
+      // when a field whose text is under 16px takes focus (by 16 ÷ its size,
+      // capped by that value) and never zooms back; the cap now lives where it
+      // belongs, in the fields: on a touch screen every text field is 16px
+      // (`src/styles.css`, "Text fields on touch screens"), so focusing one no
+      // longer zooms. docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
       {
         name: "viewport",
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
@@ -269,6 +269,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      // The two faces every page draws its first paint in (Manrope for body
+      // text and figures, Changa for headings), Latin subset only. The Latin
+      // extension, Arabic and signature faces are not preloaded: the browser
+      // fetches them only when text in their ranges is drawn. Fonts need
+      // `crossorigin` on a preload even from the same origin.
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/manrope-latin-wght-normal.woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "/fonts/changa-latin-wght-normal.woff2",
+        crossOrigin: "anonymous",
+      },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
       // reusing the old one they have cached. Bump it whenever the file changes.
       { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },

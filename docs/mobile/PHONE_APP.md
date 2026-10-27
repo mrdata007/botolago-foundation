@@ -421,20 +421,20 @@ bridge, not on a phone: it is part of the device check above.
 
 ## Zoom
 
-The app does not pinch-zoom: Capacitor keeps `zoomEnabled: false`. Since
-2026-10-27 (Batch 1, M1) the viewport meta no longer carries `maximum-scale=1`
-(`src/routes/__root.tsx`); the focus zoom described below is prevented by
-making every text field at least 16px instead. The rest of this section is the
-history of the cap (owner report of 2026-10-06,
-`docs/engineering/briefs/ios-zoom-and-pitch-lines.md`).
+Since 2026-10-27 the viewport meta carries no `maximum-scale` (`src/routes/__root.tsx`;
+owner decision after the PageSpeed accessibility audit). It had carried
+`maximum-scale=1` since the owner report of 2026-10-06
+(`docs/engineering/briefs/ios-zoom-and-pitch-lines.md`).
 
-Why: iOS zooms in when a text field whose letters are under 16px gets focus, by
-16 ÷ that size, and never zooms back out. The kit's fields are 15px, so signing
-in left the whole app enlarged by 1.067. Capacitor keeps zoom off by default
-(`zoomEnabled: false`), which blocks the pinch gesture but not that focus zoom,
-so the reader was stuck: zoomed in, unable to pinch back out. iOS caps the
-focus zoom at `maximum-scale`, and the app's web view also caps double-tap and
-pinch zoom by it.
+Why the cap existed: iOS zooms in when a text field whose letters are under 16px
+gets focus, by 16 ÷ that size, and never zooms back out. The kit's fields were
+15px, so signing in left the whole app enlarged by 1.067. Capacitor keeps zoom
+off by default (`zoomEnabled: false`), which blocks the pinch gesture but not
+that focus zoom, so the reader was stuck: zoomed in, unable to pinch back out.
+The cap is replaced by the fix at the source: on a touch screen every text
+field is 16px (`src/styles.css`, "Text fields on touch screens"), so focusing
+one does not zoom. In the app's web view pinch and double-tap zoom stay off
+(`zoomEnabled: false`).
 
 Leave `zoomEnabled` at its default: turning it on would only let a reader pinch
 back out after the zoom, and it needs a new native build. The viewport change

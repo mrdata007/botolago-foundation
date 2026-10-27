@@ -220,17 +220,24 @@ export function startMagicRings(
     if (!running || context.isContextLost()) return;
     const now = performance.now();
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-    const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-    const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    // Every layout read first, then the writes: resizing the canvas below
+    // invalidates layout, and a read after it (the rects) made the browser lay
+    // the page out again in the middle of the frame (a forced reflow, PageSpeed
+    // 2026-10-27). The canvas keeps its CSS size when its pixel size changes,
+    // so these are the same boxes. Where the ball is on screen this frame, and
+    // how big: the rings follow it.
+    const cssWidth = canvas.clientWidth;
+    const cssHeight = canvas.clientHeight;
+    const box = canvas.getBoundingClientRect();
+    const b = ball?.getBoundingClientRect();
+    const w = Math.max(1, Math.round(cssWidth * dpr));
+    const h = Math.max(1, Math.round(cssHeight * dpr));
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;
     }
     context.viewport(0, 0, w, h);
     context.clear(context.COLOR_BUFFER_BIT);
-    // Where the ball is on screen this frame, and how big: the rings follow it.
-    const box = canvas.getBoundingClientRect();
-    const b = ball?.getBoundingClientRect();
     const k = box.width > 0 ? w / box.width : dpr;
     const sinceShown = now - shownAt;
     const opacity =
