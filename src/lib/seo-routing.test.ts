@@ -26,6 +26,15 @@ describe("answers given before the router", () => {
     ).toBe("/matches/standings?season=abc");
   });
 
+  test("/calendrier goes to the matches page and /botola-pro to the home page", () => {
+    const calendar = earlySeoResponse("https://botolago.com/calendrier/?season=abc");
+    expect(calendar?.status).toBe(301);
+    expect(calendar?.headers.get("location")).toBe("/matches?season=abc");
+    const hub = earlySeoResponse("https://botolago.com/botola-pro");
+    expect(hub?.status).toBe(301);
+    expect(hub?.headers.get("location")).toBe("/");
+  });
+
   test("every other page goes to the router", () => {
     for (const path of ["/", "/matches/standings", "/clubs", "/news", "/sitemap.xml"]) {
       expect(`${path}: ${earlySeoResponse(`https://botolago.com${path}`)}`).toBe(`${path}: null`);

@@ -19,6 +19,9 @@ export const SITEMAP_STATIC_PATHS = [
   "/",
   "/matches",
   "/matches/standings",
+  // The two rivalry pages: the next meeting and the past results.
+  "/derby-casablanca",
+  "/classico-wac-far",
   "/clubs",
   "/fantasy",
   // The landing page: what Fantasy is, for a visitor who has never played.

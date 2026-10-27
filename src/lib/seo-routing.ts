@@ -13,6 +13,8 @@
  *    intents, and `/classement` and `/standings` were 404s. `/matches/standings`
  *    stays the canonical page because it is the one already indexed and every
  *    link in the app points at it.
+ *
+ * 3. `/calendrier` is a 301 to `/matches` and `/botola-pro` a 301 to `/`.
  */
 
 /** Permanent moves: request path (no trailing slash) → canonical path. */
@@ -20,6 +22,10 @@ export const PERMANENT_REDIRECTS: Readonly<Record<string, string>> = {
   "/classement": "/matches/standings",
   "/standings": "/matches/standings",
   "/matches/classement": "/matches/standings",
+  // The calendar is the Matches page; "Botola Pro" has no page of its own
+  // beyond the home page (SEO brief 3.4, 2026-10-27).
+  "/calendrier": "/matches",
+  "/botola-pro": "/",
 };
 
 /** Whether a path still holds an unfilled route parameter (`$name` or `%24name`). */
