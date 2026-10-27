@@ -492,6 +492,80 @@ export type FantasyPlayerGameweekHistoryEntryDto = z.infer<
 
 export const fantasyPlayerGameweekHistorySchema = z.array(fantasyPlayerGameweekHistoryEntrySchema);
 
+/**
+ * A player's football season, from `api.football_player_season_profile`
+ * (migration 20261027100100): totals over the finished matches that carry
+ * performance rows, how far those rows reach, and the last five appearances.
+ *
+ * `coverage` is the honesty of the screen. `finished` is the number of finished
+ * matches of the player's club this season, `covered` how many of them have
+ * figures; when `covered < finished` the page says so instead of presenting a
+ * partial season as the whole one.
+ *
+ * `assists` of a match is `null` when the provider did not report it, and
+ * `totals.assistsMissing` counts those appearances: the total sums what was
+ * reported and the page says it is short. `averageRating` and a match's `rating` are `null` — never 0 — when the
+ * provider gave none. `.nullable()` sits outside the coercion so a null is not
+ * turned into 0 (the same reason as `fantasyPlayerSeasonStatSchema.form`). A
+ * score is null when the fixture carries none.
+ */
+export const footballPlayerSeasonProfileSchema = z.object({
+  coverage: z.object({
+    covered: z.coerce.number().int().nonnegative(),
+    finished: z.coerce.number().int().nonnegative(),
+  }),
+  totals: z.object({
+    appearances: z.coerce.number().int().nonnegative(),
+    starts: z.coerce.number().int().nonnegative(),
+    minutes: z.coerce.number().int().nonnegative(),
+    goals: z.coerce.number().int().nonnegative(),
+    assists: z.coerce.number().int().nonnegative(),
+    assistsMissing: z.coerce.number().int().nonnegative(),
+    yellowCards: z.coerce.number().int().nonnegative(),
+    redCards: z.coerce.number().int().nonnegative(),
+    averageRating: z.coerce.number().nullable(),
+    ratedMatches: z.coerce.number().int().nonnegative(),
+  }),
+  lastMatches: z.array(
+    z.object({
+      fixtureId: postgresUuidSchema,
+      kickoffAt: z.string(),
+      home: z.boolean(),
+      opponent: z.object({
+        teamId: postgresUuidSchema,
+        shortName: z.string().min(1),
+        name: z.string().min(1),
+      }),
+      homeScore: z.coerce.number().int().nonnegative().nullable(),
+      awayScore: z.coerce.number().int().nonnegative().nullable(),
+      minutes: z.coerce.number().int().nonnegative(),
+      started: z.boolean(),
+      goals: z.coerce.number().int().nonnegative(),
+      assists: z.coerce.number().int().nonnegative().nullable(),
+      rating: z.coerce.number().nullable(),
+    }),
+  ),
+});
+export type FootballPlayerSeasonProfileDto = z.infer<typeof footballPlayerSeasonProfileSchema>;
+
+/** A season with nothing in it: what mock mode answers, rather than inventing figures. */
+export const EMPTY_FOOTBALL_PLAYER_SEASON_PROFILE: FootballPlayerSeasonProfileDto = {
+  coverage: { covered: 0, finished: 0 },
+  totals: {
+    appearances: 0,
+    starts: 0,
+    minutes: 0,
+    goals: 0,
+    assists: 0,
+    assistsMissing: 0,
+    yellowCards: 0,
+    redCards: 0,
+    averageRating: null,
+    ratedMatches: 0,
+  },
+  lastMatches: [],
+};
+
 export const fantasyTransferPreviewSchema = z.object({
   transferCount: z.number().int().positive(),
   bankBefore: z.coerce.number().nonnegative(),
@@ -770,6 +844,11 @@ export interface FantasyRepository {
     fantasyPlayerId: string,
     context: RepositoryContext,
   ): Promise<readonly FantasyPlayerGameweekHistoryEntryDto[]>;
+  /** The player's football season: totals, coverage and last matches. */
+  getPlayerSeasonProfile(
+    fantasyPlayerId: string,
+    context: RepositoryContext,
+  ): Promise<FootballPlayerSeasonProfileDto>;
   /** Fantasy R4 — publish (or re-alias) the team's finalized gameweek recap. */
   publishGameweekRecap(
     teamId: string,

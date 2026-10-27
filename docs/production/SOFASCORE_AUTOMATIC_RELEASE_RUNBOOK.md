@@ -1033,3 +1033,9 @@ count plus the offset and `limit - remaining` as last reported by RapidAPI. Appl
 it before deploying `football-live-refresh`; the function feature-detects the
 RPC, so an early deploy only logs `rapidapi_quota_unavailable`. Details are in
 `docs/backend/SOFASCORE_LIVE_EDGE.md` (budget section).
+
+`20261027100100_football_player_season_profile.sql` adds one public read,
+`api.football_player_season_profile`, for the football section of the Fantasy
+player page. It changes no existing function, table or grant and writes
+nothing. Apply it before publishing the website build that calls it, or the
+section shows its error state until it is applied.
