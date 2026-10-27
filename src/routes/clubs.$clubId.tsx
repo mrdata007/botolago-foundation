@@ -6,7 +6,7 @@ import {
   UNAVAILABLE,
   unavailableHeaders,
 } from "@/lib/page-availability";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
 import { ClubFollowButton } from "@/components/clubs/ClubFollowButton";
@@ -45,6 +45,7 @@ import {
 } from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { newsArticlesForCategory, newsService } from "@/services/news";
@@ -61,6 +62,61 @@ interface ClubSearch {
   tab?: Exclude<ClubTabKey, "overview">;
   /** Absent: the current season. */
   season?: string;
+}
+
+/**
+ * The club's latest stories and its season's matches, as the page and the
+ * loader both ask them: one definition, so the keys the server warms are the
+ * keys the page reads.
+ */
+const clubNewsQuery = (clubId: string, lang: "fr" | "ar") => ({
+  queryKey: ["news", "club", clubId, lang],
+  queryFn: async () =>
+    newsArticlesForCategory(
+      await newsService.getArticles(lang, { teamId: clubId }),
+      "latest",
+    ).slice(0, CLUB_NEWS_COUNT),
+});
+const clubMatchesQuery = (
+  clubId: string,
+  season: FootballSeason | undefined,
+  lang: "fr" | "ar",
+) => ({
+  queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
+  queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+});
+
+/**
+ * Warms what the overview links to -- the club's matches and, while News is
+ * on, its latest stories -- so the HTML a crawler gets holds those links
+ * (`@/lib/ssr-prefetch`). Server only. It never throws: a read that fails or
+ * runs late is simply left to the browser, as before, and never changes the
+ * page's status.
+ */
+async function warmClubLinks(queryClient: QueryClient, clubId: string): Promise<void> {
+  try {
+    const seasonsKey = ["football", "seasons", "fr"];
+    await Promise.all([
+      (async () => {
+        await prefetchForSsr(queryClient, [
+          {
+            queryKey: seasonsKey,
+            queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+          },
+        ]);
+        const seasons = queryClient.getQueryData<FootballSeason[]>(seasonsKey);
+        // The season the page opens on when the address names none.
+        if (seasons) {
+          await prefetchForSsr(queryClient, [
+            clubMatchesQuery(clubId, defaultSeason(seasons), "fr"),
+          ]);
+        }
+      })(),
+      NEWS_ENABLED ? prefetchForSsr(queryClient, [clubNewsQuery(clubId, "fr")]) : undefined,
+    ]);
+  } catch {
+    // Left to the browser.
+  }
 }
 
 const isNotFound = (error: unknown) =>
@@ -88,6 +144,8 @@ export const Route = createFileRoute("/clubs/$clubId")({
    */
   loader: async ({ params, context }) => {
     if (!UUID.test(params.clubId)) throw notFound();
+    // The overview's links, read alongside the club (see `warmClubLinks`).
+    const links = warmClubLinks(context.queryClient, params.clubId);
     try {
       const queryKey = ["football", "club", params.clubId, "fr"];
       const club = await context.queryClient.ensureQueryData({
@@ -95,6 +153,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
         queryFn: () => footballService.getClub(params.clubId, "fr"),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
+      await links;
       return { club, fetchedAt };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
@@ -214,8 +273,7 @@ function ClubPage() {
     seasons.find((candidate) => candidate.id === search.season) ?? defaultSeason(seasons);
 
   const matchesQ = useQuery({
-    queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
-    queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+    ...clubMatchesQuery(clubId, season, lang),
     enabled: validId && seasonsQ.isSuccess,
   });
   // The season's table, worked out from its results: the Classement tab's
@@ -236,12 +294,7 @@ function ClubPage() {
   // The club's latest stories. A News surface, so it is gated on the same
   // flag as every other: with the flag off this query never runs.
   const newsQ = useQuery({
-    queryKey: ["news", "club", clubId, lang],
-    queryFn: async () =>
-      newsArticlesForCategory(
-        await newsService.getArticles(lang, { teamId: clubId }),
-        "latest",
-      ).slice(0, CLUB_NEWS_COUNT),
+    ...clubNewsQuery(clubId, lang),
     enabled: NEWS_ENABLED && validId,
   });
 
