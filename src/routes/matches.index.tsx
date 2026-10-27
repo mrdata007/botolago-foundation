@@ -40,7 +40,7 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { latestResultDayBefore, matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
-import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { prefetchForSsr, prefetchOptionalForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Club, Match } from "@/types/domain";
 
@@ -97,13 +97,14 @@ export const Route = createFileRoute("/matches/")({
         // A day with nothing on it points at the fixtures still to come, and
         // those are read here too, so the HTML links to real match pages
         // instead of holding an empty state alone (SEO pass 1, 2026-10-27).
-        // Only for an empty day: a busy one already links its matches.
+        // Only for an empty day: a busy one already links its matches. An
+        // extra: if it fails the page still answers 200 with its empty state.
         if (
           queryClient.getQueryData<FootballMatchCollection>(
             matchDayQuery(day, "fr", season?.id).queryKey,
           )?.matches.length === 0
         ) {
-          await prefetchForSsr(queryClient, [
+          await prefetchOptionalForSsr(queryClient, [
             {
               queryKey: ["football", "home-matches", "fr"],
               queryFn: () => footballService.getHomeMatches("fr"),

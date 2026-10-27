@@ -53,8 +53,11 @@ async function prefetchStep(
   queryKeys: readonly QueryKey[],
   start: () => Promise<unknown>,
   budgetMs: number,
+  counts = true,
 ): Promise<void> {
-  renderQueries.set(queryClient, [...(renderQueries.get(queryClient) ?? []), ...queryKeys]);
+  if (counts) {
+    renderQueries.set(queryClient, [...(renderQueries.get(queryClient) ?? []), ...queryKeys]);
+  }
   const now = Date.now();
   let deadline = renderDeadlines.get(queryClient);
   if (deadline === undefined) {
@@ -113,6 +116,37 @@ export async function prefetchForSsr(
         ),
       ),
     budgetMs,
+  );
+}
+
+/**
+ * Like `prefetchForSsr`, for a read the page can do without: its failure
+ * leaves the page to its loading state in the browser and does not make
+ * `ssrAvailability` answer 503. For an extra that only adds links (the next
+ * fixtures under an empty match day), never for the page's own content.
+ */
+export async function prefetchOptionalForSsr(
+  queryClient: QueryClient,
+  queries: readonly SsrQuery[],
+  budgetMs: number = SSR_PREFETCH_BUDGET_MS,
+): Promise<void> {
+  if (!isServerRender()) return;
+  await prefetchStep(
+    queryClient,
+    queries.map((query) => query.queryKey),
+    () =>
+      Promise.all(
+        queries.map((query) =>
+          queryClient.prefetchQuery({
+            queryKey: query.queryKey,
+            queryFn: query.queryFn,
+            meta: SSR_QUERY_META,
+            retry: false,
+          }),
+        ),
+      ),
+    budgetMs,
+    false,
   );
 }
 
