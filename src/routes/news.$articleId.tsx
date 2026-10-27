@@ -50,6 +50,7 @@ import {
 } from "@/components/news/article-reading";
 import { articleLeadPlacement } from "@/components/news/article-lead";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import {
   isMissingContent,
   isUnavailable,
@@ -73,11 +74,21 @@ export const Route = createFileRoute("/news/$articleId")({
   // to be `null` for both, served as 200 + noindex.
   loader: async ({ params, context }) => {
     try {
-      return await context.queryClient.ensureQueryData({
+      const article = await context.queryClient.ensureQueryData({
         queryKey: ["news", "article-detail-v2", "fr", params.articleId],
         queryFn: () =>
           getArticleByPermalink(getNewsRepository(), params.articleId, "fr", publicNewsContext()),
       });
+      // The related articles are links to other articles: in the server's HTML
+      // they tie the archive together for a crawler (a failed read leaves them
+      // to the browser, and never fails the article).
+      await prefetchForSsr(context.queryClient, [
+        {
+          queryKey: ["news", "related", "fr", params.articleId],
+          queryFn: () => newsService.getRelated(params.articleId, "fr"),
+        },
+      ]);
+      return article;
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;

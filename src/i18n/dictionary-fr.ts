@@ -3880,6 +3880,13 @@ export const fr = {
   "clubs.load_failed": "Les clubs n’ont pas pu être chargés. Réessayez.",
   "club.load_failed": "Les informations du club n’ont pas pu être chargées. Réessayez.",
   "news.load_more": "Voir plus d’articles",
+  "news.archive.title": "Archives des actualités",
+  "news.archive.link": "Toutes les actualités",
+  "news.archive.pages": "Pages des archives",
+  "news.archive.page_of": "Page {page} sur {total}",
+  "news.archive.page_n": "Page {page}",
+  "news.archive.prev": "Page précédente",
+  "news.archive.next": "Page suivante",
   "news.no_matching_articles": "Aucun article ne correspond à ces filtres.",
   "matches.standings_failed": "Le classement n’a pas pu être chargé. Réessayez.",
 
