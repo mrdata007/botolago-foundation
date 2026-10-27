@@ -521,6 +521,21 @@ describe("News frontend repository cutover", () => {
       expect(calls).toEqual(["fr"]);
     });
 
+    test("a slug shaped like an id but not one to the database is served as found", async () => {
+      // Version 0: the database reads it as a slug, so its answer is not a swap.
+      const slug = "9e1a0000-0000-0000-0000-000000000301";
+      const calls: NewsLanguage[] = [];
+      const repository: Pick<NewsRepository, "getArticle"> = {
+        async getArticle(_identifier, language) {
+          calls.push(language);
+          return detailFixture({ id: frenchId, language: "fr", slug });
+        },
+      };
+      const result = await getArticleByPermalink(repository, slug, "fr", context);
+      expect(result.id).toBe(frenchId);
+      expect(calls).toEqual(["fr"]);
+    });
+
     test("an unknown id is still not found", async () => {
       await expect(
         getArticleByPermalink(

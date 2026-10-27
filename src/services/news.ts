@@ -509,6 +509,14 @@ export async function getNewsEdition(
 
 const EDITION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * The test `api.news_article_detail` applies before reading an identifier as an
+ * edition id (lower-case RFC 4122, versions 1-5); anything else it reads as a
+ * slug, so only an identifier that passes this one can have been swapped.
+ */
+const DATABASE_EDITION_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 export async function getArticleWithLanguageFallback(
   repository: Pick<NewsRepository, "getArticle">,
   identifier: string,
@@ -566,10 +574,7 @@ export async function getArticleByPermalink(
     language,
     requestContext,
   );
-  if (
-    !EDITION_ID_PATTERN.test(identifier) ||
-    article.id.toLowerCase() === identifier.toLowerCase()
-  ) {
+  if (!DATABASE_EDITION_ID_PATTERN.test(identifier) || article.id === identifier) {
     return article;
   }
   return sanitizeArticleAttribution(
