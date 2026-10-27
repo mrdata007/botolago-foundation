@@ -348,3 +348,11 @@ Tests unchanged (10,890 pass, 1 known failure). Sent to the Tester for round 2, 
 - Only website code changed: no database, no server functions.
 - Ready for the owner. Nothing is merged.
 
+### Batch 1 – owner approval and release (27 Oct)
+
+The owner said yes to merging, and asked the Lead to publish it in Lovable.
+- `main` had moved on (#566, page speed and security headers). Four files clashed, because both sides removed the zoom cap on the same day.
+- The Lead merged `main` into the Batch 1 branch: kept main's wording, and kept both sets of tests.
+- Re-checked: typecheck clean, lint 0 errors, formatting clean, 10,896 tests pass (1 known failure), i18n gate passes, build passes.
+- Pull request #569 opened. Waiting for GitHub's checks before merging; then publish in Lovable (project "BotolaGO").
+
