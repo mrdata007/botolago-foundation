@@ -21,6 +21,7 @@ import {
   UiPill,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubPathParam } from "@/lib/club-slug";
 import { useBackTo } from "@/lib/back-navigation";
 import { shareLink } from "@/lib/share-link";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
@@ -546,7 +547,7 @@ function ArticlePage() {
                       <li key={team.id} className="max-w-full">
                         <Link
                           to="/clubs/$clubId"
-                          params={{ clubId: team.id }}
+                          params={{ clubId: club ? clubPathParam(club) : team.id }}
                           className={cn(
                             "inline-flex max-w-full items-center gap-2 py-1.5 pe-4",
                             club ? "ps-1.5" : "ps-4",

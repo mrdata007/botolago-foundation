@@ -22,6 +22,7 @@ import {
   searchPanelState,
   type SearchEntry,
 } from "@/lib/global-search";
+import { clubPathParam } from "@/lib/club-slug";
 import { ExitFade, ExitPresence } from "@/lib/motion-exit";
 import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
@@ -159,9 +160,13 @@ export function GlobalSearch({
     rememberSearchQuery(text);
     setOpen(false);
     setText("");
-    if (entry.kind === "club")
-      void navigate({ to: "/clubs/$clubId", params: { clubId: entry.id } });
-    else void navigate({ to: "/fantasy/players/$playerId", params: { playerId: entry.id } });
+    if (entry.kind === "club") {
+      const club = clubsQ.data?.find((candidate) => candidate.id === entry.id);
+      void navigate({
+        to: "/clubs/$clubId",
+        params: { clubId: club ? clubPathParam(club) : entry.id },
+      });
+    } else void navigate({ to: "/fantasy/players/$playerId", params: { playerId: entry.id } });
   };
 
   return (

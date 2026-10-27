@@ -12,6 +12,7 @@ import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { ui, UiCard, UiSkeleton } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { clubPathParam } from "@/lib/club-slug";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -171,7 +172,7 @@ export function LandingBotolaNow({
                         <li key={row.clubId}>
                           <Link
                             to="/clubs/$clubId"
-                            params={{ clubId: club.id }}
+                            params={{ clubId: clubPathParam(club) }}
                             onClick={onLeave}
                             className={cn(
                               "grid min-h-[var(--ui-tap-min)] grid-cols-[2rem_minmax(0,1fr)_2.25rem_2.75rem] items-center gap-2 px-4 py-2",

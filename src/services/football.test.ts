@@ -94,6 +94,22 @@ describe("Football frontend repository cutover", () => {
     expect(club.crestPlaceholder).toBe(team.code);
   });
 
+  test("gives each club a readable page slug from its French short name", async () => {
+    const matches = await new MockFootballRepository().getHomeMatches("fr", 1, context);
+    const team = {
+      ...matches[0]!.homeTeam,
+      id: "7b2e23bc-450f-4a1e-9d0c-111111111111",
+      slug: "rsb-berkane-7b2e23bc450f",
+      name: "Renaissance Sportive de Berkane",
+      shortName: "RSB Berkane",
+    };
+    expect(presentFootballClub(team).pathSlug).toBe("rsb-berkane");
+    // An Arabic response has no Latin name to derive from: links use the id.
+    expect(
+      presentFootballClub({ ...team, name: "نهضة بركان", shortName: "نهضة بركان" }).pathSlug,
+    ).toBeUndefined();
+  });
+
   test("match detail page exposes lineups without fabricating data when the provider has none", async () => {
     const repository = new MockFootballRepository();
     const matches = await repository.getHomeMatches("fr", 1, context);

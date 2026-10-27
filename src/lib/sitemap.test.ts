@@ -25,6 +25,12 @@ const RESPONSES = "./sitemap-responses.ts";
 const FR = "9b2f0c1e-0000-4000-8000-0000000000f1";
 const AR = "9b2f0c1e-0000-4000-8000-0000000000a1";
 
+const club = (id: string, short: string) => ({
+  id,
+  name: { fr: short },
+  shortName: { fr: short },
+});
+
 describe("sitemap.xml", () => {
   test("with News off, no News URL is advertised even if entries were passed", () => {
     const news = [
@@ -297,20 +303,34 @@ describe("sitemap.xml", () => {
     expect(SITEMAP_NEWS_LIMIT).toBeLessThanOrEqual(SITEMAP_MAX_URLS);
     expect(buildNewsSitemapXml(news).match(/<url>/g)!.length).toBeLessThanOrEqual(SITEMAP_MAX_URLS);
     // More clubs than the cap: the extra ones are dropped.
-    const clubIds = Array.from({ length: SITEMAP_CLUB_LIMIT + 5 }, (_, i) => `club-${i}`);
-    expect(buildClubsSitemapXml(clubIds).match(/<url>/g)).toHaveLength(SITEMAP_CLUB_LIMIT);
+    const clubs = Array.from({ length: SITEMAP_CLUB_LIMIT + 5 }, (_, i) =>
+      club(`club-${i}`, `Club ${i}`),
+    );
+    expect(buildClubsSitemapXml(clubs).match(/<url>/g)).toHaveLength(SITEMAP_CLUB_LIMIT);
   });
 
-  test("lists each club page once, at its canonical URL", () => {
+  test("lists each club page once, at its readable slug URL", () => {
+    const berkane = club("7b2e23bc-450f-4a1e-9d0c-111111111111", "RSB Berkane");
     const xml = buildClubsSitemapXml([
-      "0257feb3-4c16-431d-a58b-5faf060576ad",
-      "0257feb3-4c16-431d-a58b-5faf060576ad",
+      berkane,
+      berkane,
+      club("0257feb3-4c16-431d-a58b-5faf060576ad", "Maghreb Fès"),
     ]);
-    expect(
-      xml.match(
-        /<loc>https:\/\/botolago\.com\/clubs\/0257feb3-4c16-431d-a58b-5faf060576ad<\/loc>/g,
-      ),
-    ).toHaveLength(1);
+    expect(xml.match(/<loc>https:\/\/botolago\.com\/clubs\/rsb-berkane<\/loc>/g)).toHaveLength(1);
+    expect(xml).toContain("<loc>https://botolago.com/clubs/maghreb-fes</loc>");
+    expect(xml).not.toContain("7b2e23bc");
+  });
+
+  test("falls back to the id for a club with no Latin name, and keeps duplicates apart", () => {
+    const arabic = club("11111111-1111-4111-8111-111111111111", "الرجاء");
+    const xml = buildClubsSitemapXml([
+      arabic,
+      club("22222222-2222-4222-8222-222222222222", "Twin FC"),
+      club("33333333-3333-4333-8333-333333333333", "Twin FC"),
+    ]);
+    expect(xml).toContain(`/clubs/${arabic.id}</loc>`);
+    expect(xml).toContain("/clubs/twin-fc-22222222</loc>");
+    expect(xml).toContain("/clubs/twin-fc-33333333</loc>");
   });
 
   // Match pages are the largest source of search impressions and the server's

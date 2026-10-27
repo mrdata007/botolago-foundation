@@ -63,6 +63,8 @@ import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
+import { clubPath, clubPathParam } from "@/lib/club-slug";
+import type { Club } from "@/types/domain";
 import { clubSearchName, matchSeoDescription, matchSeoTitle } from "@/lib/seo-titles";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
@@ -132,7 +134,7 @@ export const Route = createFileRoute("/matches/$matchId")({
     const description = named
       ? matchSeoDescription(detail!.match, named.home, named.away)
       : "Score en direct, compositions, statistiques et temps forts du match sur BotolaGO.";
-    const clubUrl = (id: string) => `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(id)}`;
+    const clubUrl = (club: Club) => `${PUBLIC_SITE_ORIGIN}${clubPath(clubPathParam(club))}`;
     // The match and the trail to it, only from what the page loaded (see
     // `@/lib/structured-data`); nothing for a page whose read failed.
     const structured =
@@ -143,12 +145,12 @@ export const Route = createFileRoute("/matches/$matchId")({
               match: detail.match,
               home: {
                 name: clubSearchName(named.home),
-                url: clubUrl(named.home.id),
+                url: clubUrl(named.home),
                 logoUrl: named.home.crestUrl,
               },
               away: {
                 name: clubSearchName(named.away),
-                url: clubUrl(named.away.id),
+                url: clubUrl(named.away),
                 logoUrl: named.away.crestUrl,
               },
               league: hasLeagueTable(detail.season),

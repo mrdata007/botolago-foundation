@@ -1,3 +1,4 @@
+import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
@@ -868,7 +869,7 @@ function HomeContent() {
                         {/* Wraps rather than ending in an ellipsis. */}
                         <Link
                           to="/clubs/$clubId"
-                          params={{ clubId: club.id }}
+                          params={{ clubId: clubPathParam(club) }}
                           className={cn(
                             "min-w-0 flex-1",
                             ui.text.body,

@@ -20,6 +20,7 @@ import {
   type ClubSeasonStats,
   type RecordLine,
 } from "@/lib/club-season";
+import { clubPathParam } from "@/lib/club-slug";
 import { rowClubName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -285,7 +286,7 @@ function MiniTableRow({
         // The name is the link; its ::after makes the whole row the target.
         <Link
           to="/clubs/$clubId"
-          params={{ clubId: club.id }}
+          params={{ clubId: clubPathParam(club) }}
           className={cn(nameClass, STRETCHED_LINK)}
         >
           {rowClubName(tr(club.shortName), tr(club.name))}
