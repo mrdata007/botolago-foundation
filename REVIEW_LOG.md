@@ -70,3 +70,18 @@ I re-checked held up. Sent back because:
 5. The language-pop-up screenshot was lost; take it again.
 6. Confirm the main screens on the real site (5 public pages allowed).
 
+### Task 5 – Fantasy Referee
+
+**Round 1 – REVISE (small).** 16 findings and 10 worked scoring examples, run
+through the real scoring code. The points maths is correct. Deadlines are
+enforced by the server clock with no grace period. The auditor also corrected
+my brief: since 20 Sept 2026 Morocco stays on UTC+0 all year, so there is no
+Ramadan clock change. I checked the two most serious findings myself and both
+are real:
+- A prize period is skipped for good if the prize was switched on late or nobody qualified.
+- A match moved earlier on the day can leave the old, later deadline in place, so teams can still be edited after kick-off.
+
+Sent back because:
+1. One finding (a chip lost when making transfers) did not show whether the real app ever triggers it; prove it or lower it.
+2. It must spell out what the possible Sofascore blackout until 10 Nov does to Fantasy (late ratings, stuck gameweek).
+
