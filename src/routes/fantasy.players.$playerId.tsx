@@ -40,6 +40,7 @@ import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
+import { clubPathParam } from "@/lib/club-slug";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
   /**
@@ -89,7 +90,14 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
     const player = loaderData?.player;
     const club = player ? findClub(loaderData?.clubs, player.clubId) : undefined;
     return fantasyPlayerHead(params.playerId, player?.name.fr, {
-      club: club ? { id: club.id, name: clubSearchName(club), position: player!.position } : null,
+      club: club
+        ? {
+            id: club.id,
+            pathSlug: club.pathSlug,
+            name: clubSearchName(club),
+            position: player!.position,
+          }
+        : null,
       photoUrl: player?.photoUrl,
     });
   },
@@ -265,7 +273,7 @@ function PlayerDetailPage() {
                   {" · "}
                   <Link
                     to="/clubs/$clubId"
-                    params={{ clubId: club.id }}
+                    params={{ clubId: clubPathParam(club) }}
                     className="underline-offset-2 hover:underline focus-visible:underline"
                   >
                     {clubLabel(club, tr)}

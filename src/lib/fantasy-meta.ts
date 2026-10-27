@@ -3,6 +3,7 @@ import { fr } from "@/i18n/dictionary-fr";
 import { serializeJsonLd } from "@/lib/article-meta";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/structured-data";
+import { clubPath, clubPathParam } from "@/lib/club-slug";
 
 /**
  * The `head()` of every Fantasy page (audit A17), and its title and
@@ -338,7 +339,9 @@ export function fantasyPlayerHead(
   playerId: string,
   playerName: string | null | undefined,
   details?: {
-    readonly club?: (FantasyPlayerClub & { readonly id: string }) | null;
+    readonly club?:
+      | (FantasyPlayerClub & { readonly id: string; readonly pathSlug?: string })
+      | null;
     readonly photoUrl?: string | null;
   },
 ) {
@@ -346,6 +349,8 @@ export function fantasyPlayerHead(
   const canonical = `${PUBLIC_SITE_ORIGIN}${path}`;
   const name = playerName?.trim();
   const club = details?.club;
+  // The club's readable address when it has one (`@/lib/club-slug`).
+  const clubHref = club ? clubPath(clubPathParam(club)) : null;
   const base = head({
     ...fantasyPlayerCopy(playerName, french, club),
     canonical,
@@ -369,7 +374,7 @@ export function fantasyPlayerHead(
             team: club
               ? {
                   name: club.name,
-                  url: `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(club.id)}`,
+                  url: `${PUBLIC_SITE_ORIGIN}${clubHref}`,
                 }
               : null,
           }),
@@ -381,7 +386,7 @@ export function fantasyPlayerHead(
           breadcrumbJsonLd([
             { name: "Accueil", path: "/" },
             club
-              ? { name: club.name, path: `/clubs/${encodeURIComponent(club.id)}` }
+              ? { name: club.name, path: clubHref! }
               : { name: "Joueurs", path: "/fantasy/players" },
             { name, path },
           ]),
