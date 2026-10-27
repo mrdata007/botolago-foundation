@@ -507,6 +507,16 @@ export async function getNewsEdition(
   };
 }
 
+const EDITION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The test `api.news_article_detail` applies before reading an identifier as an
+ * edition id (lower-case RFC 4122, versions 1-5); anything else it reads as a
+ * slug, so only an identifier that passes this one can have been swapped.
+ */
+const DATABASE_EDITION_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 export async function getArticleWithLanguageFallback(
   repository: Pick<NewsRepository, "getArticle">,
   identifier: string,
@@ -528,7 +538,7 @@ export async function getArticleWithLanguageFallback(
     if (
       !(error instanceof NewsError) ||
       error.code !== "article_not_found" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)
+      !EDITION_ID_PATTERN.test(identifier)
     ) {
       throw error;
     }
@@ -536,6 +546,44 @@ export async function getArticleWithLanguageFallback(
       await repository.getArticle(identifier, language === "fr" ? "ar" : "fr", requestContext),
     );
   }
+}
+
+/**
+ * The article a permalink names: `/news/<edition id>` is that edition, in its
+ * own language, whatever language the reader browses in.
+ *
+ * `api.news_article_detail` answers an edition id asked for in the other
+ * language with the requested language's edition of the same story
+ * (migration 20261011170000). The article page asks in French on the server,
+ * so every Arabic edition with a French counterpart rendered the French text
+ * and declared the French URL canonical: Google could not index the Arabic
+ * edition and its hreflang pair pointed at a page saying it was French
+ * (about 1,900 sitemap URLs, measured 2026-10-26). Asking again in the other
+ * language returns the named edition itself. The reader still finds the
+ * other edition through the page's translation link.
+ */
+export async function getArticleByPermalink(
+  repository: Pick<NewsRepository, "getArticle">,
+  identifier: string,
+  language: NewsLanguage,
+  requestContext: RepositoryContext,
+): Promise<ArticleDetailDto> {
+  const article = await getArticleWithLanguageFallback(
+    repository,
+    identifier,
+    language,
+    requestContext,
+  );
+  if (!DATABASE_EDITION_ID_PATTERN.test(identifier) || article.id === identifier) {
+    return article;
+  }
+  return sanitizeArticleAttribution(
+    await repository.getArticle(
+      identifier,
+      article.language === "fr" ? "ar" : "fr",
+      requestContext,
+    ),
+  );
 }
 
 /** The server caps a page of the saved list at 50 (`api.news_saved_articles`). */
