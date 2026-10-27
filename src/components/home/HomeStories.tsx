@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { homeStoriesRepository } from "@/backend/home-stories/repository";
+import { homeStoriesQuery } from "./home-stories-query";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { getNewsDataMode } from "@/services/news";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
@@ -13,19 +13,19 @@ import { cn } from "@/lib/utils";
 /** Published news images only. An empty feed does not become navigation. */
 export function HomeStories() {
   const stories = useQuery({
-    queryKey: ["home-stories"],
-    queryFn: () =>
-      getNewsDataMode() === "supabase" ? homeStoriesRepository.list() : Promise.resolve([]),
+    ...homeStoriesQuery,
     staleTime: 60_000,
     refetchInterval: 60_000,
     retry: false,
   });
   if (stories.data?.length) return <PublishedStories stories={stories.data} />;
-  // The rail is read in the browser and lands above the band, so without a box
-  // for it the whole page used to drop by its height when it arrived (the
-  // largest layout shift on Home). While it is read the box is already there,
-  // the size of the rail it becomes. The `home-stories` marker is the one Home's
-  // own spacing keys on, so the page's padding does not change either.
+  // Home's server render carries the rail (`warmHomeStories`), so an empty or
+  // failed feed renders nothing from the first paint and nothing moves. When
+  // that warm-up missed (slow read), the rail is read in the browser and lands
+  // above the band; this box, the size of the rail it becomes, keeps the page
+  // from dropping by its height when it arrives (the largest layout shift on
+  // Home). The `home-stories` marker is the one Home's own spacing keys on, so
+  // the page's padding does not change either.
   if (stories.isPending && getNewsDataMode() === "supabase") return <StoriesReserve />;
   return null;
 }
