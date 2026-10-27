@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 // The request fixture never executes JavaScript: these are crawler-visible HTML checks.
 for (const [path, contentLink] of [
   ["/matches", /href="\/matches\/[0-9a-f-]+"/],
-  ["/clubs", /href="\/clubs\/[0-9a-f-]+"/],
+  // A club page is addressed by its readable slug (`/clubs/rsb-berkane`), or by
+  // its id where it has none (`@/lib/club-slug`).
+  ["/clubs", /href="\/clubs\/[a-z0-9-]+"/],
   ["/news", /href="\/news\/[^"?]+"/],
 ] as const) {
   test(`${path} exposes content and canonical before hydration`, async ({ request }) => {
@@ -31,13 +33,22 @@ for (const path of ["/terms", "/privacy", "/prizes", "/prizes/terms"] as const) 
   });
 }
 
+// /sitemap.xml is a sitemap index (`@/lib/sitemap`); the public pages are in
+// its static file. /fantasy/players and /fantasy/fixtures are left out on
+// purpose: Search Console reported them as duplicates (SEO pass 1).
 test("the sitemap exposes every public Fantasy discovery page", async ({ request }) => {
-  const response = await request.get("/sitemap.xml");
+  const index = await request.get("/sitemap.xml");
+  expect(index.status()).toBe(200);
+  expect(await index.text()).toContain("<loc>https://botolago.com/sitemaps/static.xml</loc>");
+
+  const response = await request.get("/sitemaps/static.xml");
   expect(response.status()).toBe(200);
   const xml = await response.text();
-
-  for (const path of ["players", "top-players", "fixtures", "rankings", "help"] as const) {
+  for (const path of ["top-players", "rankings", "help"] as const) {
     expect(xml).toContain(`<loc>https://botolago.com/fantasy/${path}</loc>`);
+  }
+  for (const path of ["players", "fixtures"] as const) {
+    expect(xml).not.toContain(`<loc>https://botolago.com/fantasy/${path}</loc>`);
   }
 });
 
