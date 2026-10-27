@@ -309,3 +309,21 @@ Not answered: should the home team stay on the right in Arabic? It stays as toda
 
 Open concern sent to the Tester: the new player links load the whole Fantasy player list on match pages. The Tester must measure the extra data per page view.
 
+**Tester round 1 – FAIL** (4 Medium, 6 Low; nothing serious).
+Builder numbers confirmed:
+- Tests and contrast pass.
+- The pitch is pixel-identical (0 differing pixels in 8 views).
+- Background checks on Home dropped from 14 to 6 in 150 seconds.
+
+Problems found:
+1. Player links download the whole Fantasy player list: about 74 KB extra per match or club page for every visitor.
+2. The keyboard focus outline on linked rows is cut off.
+3. The visitor "Ligues" tile leads to a sign-in wall.
+4. Arabic text at +1px wraps the player stat lines badly on 320px phones.
+Also: the visitor leaderboard tile sits 1,500px down the page (defeats the goal), and an Arabic Home card is cut off at 320px.
+
+Lead sent these 6 fixes back to the Builder. Accepted as they are:
+- Arabic titles set after loading (fixed in Batch 4).
+- A few tiny symbols still under 12px.
+- Fantasy availability may be up to 5 minutes old.
+
