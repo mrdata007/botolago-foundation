@@ -336,3 +336,15 @@ Lead sent these 6 fixes back to the Builder. Accepted as they are:
 
 Tests unchanged (10,890 pass, 1 known failure). Sent to the Tester for round 2, with the instruction to measure the page weight for real.
 
+**Tester round 2 – PASS.** Everything was measured:
+- Player links: 3 requests and about 6.7 KB on a match page, 2 requests and about 3.5 KB on a club page (was 8 requests and 74 KB). Nothing loads until the line-up or squad tab is opened.
+- Visitor leaderboard tiles at 342–403px from the top.
+- 0 sideways scrolling on 44 screen states.
+- The pitch is pixel-identical.
+- Tests unchanged.
+
+**Lead final review – APPROVED.** I read the main code changes: zoom, background checks, player links, and the Fantasy availability check.
+- They match what the Tester measured.
+- Only website code changed: no database, no server functions.
+- Ready for the owner. Nothing is merged.
+
