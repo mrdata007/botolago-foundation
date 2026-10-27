@@ -228,18 +228,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
       // the insets are 0 and nothing moves.
       //
-      // `maximum-scale=1`: iOS zooms in when a field whose text is under 16px
-      // gets focus (by 16 ÷ its size, capped by this value) and never zooms
-      // back. The kit's fields are 15px, so signing in left the whole app at
-      // 1.067, and in the phone app the owner could not pinch back out:
-      // Capacitor switches pinch off. The cap stops that zoom everywhere; in
-      // the app's web view it also stops double-tap and pinch zoom. iPhone
-      // Safari still lets a visitor pinch; Android browsers no longer do.
-      // Not `user-scalable=no`: it adds nothing in the app.
-      // docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
+      // No `maximum-scale` and no `user-scalable=no`: a visitor may zoom the
+      // page (owner decision of 2026-10-27, after the PageSpeed accessibility
+      // audit flagged the cap). It was added on 2026-10-06 because iOS zooms in
+      // when a field whose text is under 16px takes focus (by 16 ÷ its size,
+      // capped by that value) and never zooms back; the cap now lives where it
+      // belongs, in the fields: on a touch screen every text field is 16px
+      // (`src/styles.css`, "Text fields on touch screens"), so focusing one no
+      // longer zooms. docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {

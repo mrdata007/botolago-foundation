@@ -2848,3 +2848,32 @@ html[dir="rtl"]
   }
 }
 /* ======================= end GOAL MOMENT motion ========================== */
+
+/* ================================================================== */
+/* Text fields on touch screens: 16px                                 */
+/* ================================================================== */
+/* iOS zooms the page in when a field whose text is under 16px takes focus
+   and never zooms back. The kit's fields are 15px (`--ui-text-body`) and the
+   header search 13px. The page may be zoomed by the visitor now (the viewport
+   no longer caps the scale), so the fields themselves stay at 16px on a touch
+   screen, whatever size the component asks for. Unlayered on purpose: it must
+   outrank the utility classes (`@layer utilities`) on the fields. Pointer
+   devices keep the kit's sizes. docs/briefs/2026-10-27-pagespeed.md (A1). */
+@media (pointer: coarse) {
+  input:not(
+    [type="checkbox"],
+    [type="radio"],
+    [type="range"],
+    [type="file"],
+    [type="color"],
+    [type="hidden"],
+    [type="submit"],
+    [type="button"],
+    [type="reset"],
+    [type="image"]
+  ),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
