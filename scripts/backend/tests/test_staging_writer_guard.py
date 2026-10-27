@@ -67,8 +67,12 @@ class StagingWriterGuardTests(unittest.TestCase):
 
     def test_every_staging_load_test_environment_workflow_is_listed(self) -> None:
         # Use the environment's secrets but never touch the database: the provider
-        # probe only calls the RapidAPI hosts.
-        read_only = {"phase6-supabase-management-preflight.yml", "provider-probe.yml"}
+        # probe, and the reviewed correction's fetch job, only call the RapidAPI hosts.
+        read_only = {
+            "phase6-supabase-management-preflight.yml",
+            "provider-probe.yml",
+            "fantasy-reviewed-correction.yml",
+        }
         for path in sorted(WORKFLOWS.glob("*.yml")):
             if "environment: staging-load-test" in path.read_text() and path.name not in read_only:
                 self.assertIn(path.name, GUARD.STAGING_WRITERS)
