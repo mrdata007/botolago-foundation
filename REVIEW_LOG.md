@@ -94,3 +94,12 @@ Sent back because:
 1. One finding (a chip lost when making transfers) did not show whether the real app ever triggers it; prove it or lower it.
 2. It must spell out what the possible Sofascore blackout until 10 Nov does to Fantasy (late ratings, stuck gameweek).
 
+**Round 2 – APPROVED.** Both points fixed:
+1. Chip finding: the real app always sends the active chip, so this is only a risk from broken or outside apps. Lowered to Low.
+2. New finding F17 (High while Sofascore calls are at zero). I checked the stop in the code myself:
+   - Every data job stops: live scores, ratings, fixtures, standings.
+   - The jobs still report "ok", so only one health check shows the problem.
+   - Deadlines and gameweeks that already have all their ratings carry on as normal.
+   - Matches still missing ratings cannot finish. Fans see frozen scores and "points pending", and prizes are held back.
+   - Matches finished before about 26 Oct may never be checked for ratings again.
+
