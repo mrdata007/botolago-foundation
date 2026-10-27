@@ -98,5 +98,7 @@ export const authLinkClass = {
   consent: cn(
     "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
     ui.tone.ink,
+    // 44px target behind an inline link (M6): 121x16 in French, 84x24 in Arabic before.
+    ui.hitFloor,
   ),
 };

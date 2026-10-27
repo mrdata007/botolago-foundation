@@ -23,9 +23,9 @@ const minutes = (n: number) => n * 60_000;
 describe("how often the day on show refreshes itself", () => {
   const kickoff = "2026-09-26T20:00:00Z";
 
-  test("every 30 seconds while one of its matches is in play", () => {
+  test("every minute while one of its matches is in play", () => {
     expect(matchDayRefetchInterval([{ status: "live", kickoff }], at(kickoff) + minutes(50))).toBe(
-      30_000,
+      60_000,
     );
   });
 
@@ -85,7 +85,7 @@ describe("how often the day on show refreshes itself", () => {
     ).toBe(false);
     // Three hours past kick-off is where "live" stops counting.
     expect(matchDayRefetchInterval([{ status: "live", kickoff }], at(kickoff) + minutes(179))).toBe(
-      30_000,
+      60_000,
     );
     expect(matchDayRefetchInterval([{ status: "live", kickoff }], at(kickoff) + minutes(181))).toBe(
       false,
@@ -114,7 +114,7 @@ describe("how often the day on show refreshes itself", () => {
         ],
         at("2026-09-26T19:50:00Z"),
       ),
-    ).toBe(30_000);
+    ).toBe(60_000);
   });
 
   // Midnight UTC, 01:00 in Casablanca: the hour the provider gives a fixture

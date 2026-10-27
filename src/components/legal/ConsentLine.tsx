@@ -15,6 +15,8 @@ import type { ConsentSegment } from "./consent-segments";
 const DEFAULT_LINK_CLASS = cn(
   "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
   ui.tone.ink,
+  // 44px target behind an inline link (M6).
+  ui.hitFloor,
 );
 
 /**

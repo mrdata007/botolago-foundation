@@ -40,10 +40,27 @@ export function DeadlineStrip({
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(deadline));
-  const text = t("home.deadline_strip")
-    .replace("{gw}", nf.format(gameweek))
-    .replace("{time}", left)
-    .replace("{when}", when);
+  // The sentence is split at its placeholders so the time left and the deadline
+  // each stay on one line (M9b): in Arabic at 320px the number and its unit
+  // ("37" / "س 59") used to land on two lines. `<bdi>` isolates each run from
+  // the sentence's direction; the words around them still wrap.
+  const parts = t("home.deadline_strip")
+    .split(/(\{gw\}|\{time\}|\{when\})/)
+    .map((part, index) =>
+      part === "{gw}" ? (
+        nf.format(gameweek)
+      ) : part === "{time}" ? (
+        <bdi key={index} className="whitespace-nowrap">
+          {left}
+        </bdi>
+      ) : part === "{when}" ? (
+        <bdi key={index} className="whitespace-nowrap">
+          {when}
+        </bdi>
+      ) : (
+        part
+      ),
+    );
 
   return (
     <Link
@@ -60,7 +77,7 @@ export function DeadlineStrip({
       )}
     >
       <Clock className="h-4 w-4 shrink-0" aria-hidden />
-      <span className="min-w-0 flex-1 text-balance">{text}</span>
+      <span className="min-w-0 flex-1 text-balance">{parts}</span>
       <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
     </Link>
   );

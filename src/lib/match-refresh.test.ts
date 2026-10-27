@@ -5,6 +5,7 @@ import { matchDayRefetchInterval } from "@/components/matches/match-day-query";
 import type { Match } from "@/types/domain";
 import {
   KICKOFF_WAKE_UP_HORIZON_MINUTES,
+  LIVE_REFRESH_MS,
   LIVE_STRIP_IDLE_REFRESH_MS,
   liveStripRefetchInterval,
   matchesRefetchInterval,
@@ -14,12 +15,27 @@ import {
 
 const minutes = (n: number) => n * 60_000;
 
+// S9: the server has a new score once a minute at best (pg_cron
+// `football-live-refresh`), so the browser never asks faster than that.
+const SERVER_LIVE_REFRESH_MS = 60_000;
+
+describe("the browser does not poll live data faster than the server refreshes it", () => {
+  test("every live pace is at least the server's", () => {
+    expect(LIVE_REFRESH_MS).toBeGreaterThanOrEqual(SERVER_LIVE_REFRESH_MS);
+    expect(matchRefetchInterval({ status: "live", kickoff: "2026-09-24T19:00:00Z" }, 0)).toBe(
+      LIVE_REFRESH_MS,
+    );
+    expect(liveStripRefetchInterval(3)).toBeGreaterThanOrEqual(SERVER_LIVE_REFRESH_MS);
+    expect(liveStripRefetchInterval(0)).toBeGreaterThanOrEqual(SERVER_LIVE_REFRESH_MS);
+  });
+});
+
 describe("matchRefetchInterval", () => {
   const kickoff = "2026-09-24T19:00:00Z";
   const at = (iso: string) => Date.parse(iso);
 
-  test("every 30 seconds while live", () => {
-    expect(matchRefetchInterval({ status: "live", kickoff }, at(kickoff))).toBe(30_000);
+  test("every minute while live", () => {
+    expect(matchRefetchInterval({ status: "live", kickoff }, at(kickoff))).toBe(60_000);
   });
 
   test("every minute from 15 minutes before a scheduled kick-off", () => {
@@ -90,7 +106,7 @@ describe("matchRefetchInterval", () => {
     test("is followed as soon as the feed marks the match started", () => {
       expect(
         matchRefetchInterval({ ...unconfirmed, status: "live" }, at("2026-09-27T20:10:00Z")),
-      ).toBe(30_000);
+      ).toBe(60_000);
     });
 
     test("is only the exact hour: a minute off it is a real kick-off", () => {
@@ -116,7 +132,7 @@ describe("matchesRefetchInterval", () => {
         ],
         now,
       ),
-    ).toBe(30_000);
+    ).toBe(60_000);
   });
 
   test("a match about to kick off keeps Home refreshing, so it becomes the live card", () => {
@@ -183,8 +199,8 @@ describe("the day list and the match page agree on a match to come", () => {
 });
 
 describe("liveStripRefetchInterval", () => {
-  test("follows the score every 30 seconds while a match is live", () => {
-    expect(liveStripRefetchInterval(2)).toBe(30_000);
+  test("follows the score every minute while a match is live", () => {
+    expect(liveStripRefetchInterval(2)).toBe(60_000);
   });
 
   test("keeps a slow watch with nothing live, so a match that starts brings the strip up", () => {

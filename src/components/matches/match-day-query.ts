@@ -107,7 +107,7 @@ function dayMatchRefetchInterval(
 /**
  * How often the Matches calendar refetches the day on show, as a TanStack
  * Query `refetchInterval`. The match page's pace (`matchRefetchInterval`):
- * every 30 seconds while a match is in play, every minute from a quarter of
+ * every minute while a match is in play, every minute from a quarter of
  * an hour before a kick-off until the feed marks it started, and before that
  * the single refetch that starts the watch, booked up to a day ahead; a
  * kick-off still at the provider's placeholder hour is not watched at all.
@@ -118,8 +118,8 @@ function dayMatchRefetchInterval(
  * caller sets `refetchIntervalInBackground: false`, so a hidden tab never
  * polls either.
  *
- * The list used to be read once: the live strip above it moved on every 30
- * seconds while the rows under it kept the score, the minute and the status
+ * The list used to be read once: the live strip above it moved on every
+ * minute while the rows under it kept the score, the minute and the status
  * they opened with (audit 2026-09-25, A05).
  */
 export function matchDayRefetchInterval(
