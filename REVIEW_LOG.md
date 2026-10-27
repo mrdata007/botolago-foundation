@@ -79,6 +79,13 @@ no anti-bot check.
 5. The language-pop-up screenshot was lost; take it again.
 6. Confirm the main screens on the real site (5 public pages allowed).
 
+**Round 2 – APPROVED.** All six points fixed. I re-checked the Google/Apple sign-in switch and the demo-only league names in the code.
+- Player page: lowered from High to Medium. Since today's change, fans get season stats and the last five matches. But the page still looks like a Fantasy page, and club squads and match line-ups don't link to it.
+- Taps were clicked for real: live match 1, today's scores 1, standings 2, a player 2 plus typing.
+- New: a visitor who isn't logged in has no way to reach the Fantasy leaderboard (U18). A prize pop-up adds one tap the first time (U19, Low).
+- Dropped as demo-only: three findings (a pre-filled squad for visitors, odd league names, the Arabic slider dots).
+- Google/Apple sign-in buttons are switched on in the code; whether they work on the live site depends on your Supabase settings.
+
 ### Task 5 – Fantasy Referee
 
 **Round 1 – REVISE (small).** 16 findings and 10 worked scoring examples, run
@@ -102,4 +109,21 @@ Sent back because:
    - Deadlines and gameweeks that already have all their ratings carry on as normal.
    - Matches still missing ratings cannot finish. Fans see frozen scores and "points pending", and prizes are held back.
    - Matches finished before about 26 Oct may never be checked for ratings again.
+
+
+### Side task – testing a second data feed (SportAPI on RapidAPI)
+
+Asked for by the owner on 27 Oct, after the Sofascore allowance may have run
+out. The Lead made the test calls directly, using the key the owner provided.
+5 calls on the SportAPI free plan (50 a month; 45 left afterwards). It does
+not use the main Sofascore allowance.
+
+Result: **passed.**
+- Botola Pro 2026-27 is there, with the same season number BotolaGO already uses (102220).
+- Results up to round 5 (24–25 Oct) are there.
+- Upcoming fixtures from 28 Oct are there.
+- Player ratings for a finished match: 32 of 32 players who played are rated.
+- Player IDs are identical to Sofascore's own (checked against IDs already in the project).
+
+Not tested: a match while it is live (none was being played at the time).
 
