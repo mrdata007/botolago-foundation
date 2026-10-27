@@ -23,6 +23,7 @@ export function FantasyPlayerLink({
   style,
   children,
   focusable = true,
+  insetFocus = false,
   as: Plain = "div",
 }: {
   playerId: string | null;
@@ -30,6 +31,8 @@ export function FantasyPlayerLink({
   style?: CSSProperties;
   children: ReactNode;
   focusable?: boolean;
+  /** Draw the focus ring inside the box: for a row in a card that clips its overflow. */
+  insetFocus?: boolean;
   as?: "div" | "span";
 }) {
   if (!playerId)
@@ -44,7 +47,12 @@ export function FantasyPlayerLink({
       params={{ playerId }}
       tabIndex={focusable ? undefined : -1}
       style={style}
-      className={cn(className, ui.focus)}
+      className={cn(
+        className,
+        insetFocus
+          ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]"
+          : ui.focus,
+      )}
     >
       {children}
     </Link>

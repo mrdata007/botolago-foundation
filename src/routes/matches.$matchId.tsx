@@ -273,6 +273,7 @@ function MatchDetailPage() {
   // Player names open the player's page when the Fantasy pool lists the player
   // (U1). Only read where the line-ups are on screen.
   const playerLink = useFantasyPlayerLinks(
+    lineups.map((lineup) => lineup.team.id),
     lineups.length > 0 && (tab === "lineups" || (tab === "summary" && wideLayout)),
   );
   const pressure = detailQ.data?.pressure ?? [];

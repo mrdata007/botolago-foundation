@@ -309,6 +309,7 @@ export const ar = {
   "meta.notifications_title": "الإشعارات — BotolaGO",
   "club.next_match": "المباراة القادمة",
   "club.live_match": "مباشر الآن",
+  "fantasy.hub.visitor_leagues": "إنشاء دوري أو الانضمام إليه",
   "club.recent_results": "آخر النتائج",
   "club.full_table": "الترتيب الكامل",
   "club.stats.title": "الإحصائيات",

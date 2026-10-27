@@ -324,6 +324,7 @@ export const fr = {
   "meta.notifications_title": "Notifications — BotolaGO",
   "club.next_match": "Prochain match",
   "club.live_match": "En direct",
+  "fantasy.hub.visitor_leagues": "Créer ou rejoindre une ligue",
   "club.recent_results": "Derniers résultats",
   "club.full_table": "Classement complet",
   "club.stats.title": "Statistiques",

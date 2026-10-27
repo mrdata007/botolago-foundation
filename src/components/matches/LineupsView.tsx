@@ -434,6 +434,7 @@ function TeamList({
               <li key={player.id}>
                 <FantasyPlayerLink
                   playerId={playerLink(player.id)}
+                  insetFocus
                   className={cn(
                     "flex min-h-[var(--ui-tap-min)] items-center gap-2.5 rounded-[var(--ui-radius-control)]",
                     ui.text.secondary,

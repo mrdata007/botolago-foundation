@@ -453,7 +453,12 @@ function PlayersPage() {
             <div className="flex items-center gap-1">
               <label
                 htmlFor="players-sort"
-                className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
+                className={cn(
+                  "whitespace-nowrap",
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.tone.muted,
+                )}
               >
                 {t("fantasy.picker.sort")}
               </label>
@@ -706,9 +711,16 @@ function PlayerListRow({
           {t(`player.pos.${player.position}` as TranslationKey)}
           {club ? ` · ${clubLabel(club, tr)}` : ""}
         </span>
-        <span className={cn("[overflow-wrap:anywhere]", ui.text.micro, ui.tone.muted)}>
-          {t("fantasy.form")} <bdi>{form}</bdi> · {t("fantasy.players.ownership_short")}{" "}
-          <bdi>{pctNf.format(player.ownership / 100)}</bdi>
+        {/* Two items that never break inside: with the Arabic +1px the line
+            wrapped mid-item at 320px ("المستوى الأخير" / "8,6 ·" / "الاختيار"). The row
+            wraps between them instead, and the gap replaces the "·". */}
+        <span className={cn("flex flex-wrap gap-x-2.5", ui.text.micro, ui.tone.muted)}>
+          <span className="whitespace-nowrap">
+            {t("fantasy.form")} <bdi>{form}</bdi>
+          </span>
+          <span className="whitespace-nowrap">
+            {t("fantasy.players.ownership_short")} <bdi>{pctNf.format(player.ownership / 100)}</bdi>
+          </span>
         </span>
       </Link>
 

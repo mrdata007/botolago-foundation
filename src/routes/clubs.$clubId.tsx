@@ -288,7 +288,7 @@ function ClubPage() {
   // the squad stored for it.
   const squadSeason = season && !season.isCurrent ? season.id : null;
   // Names open the player's page when the Fantasy pool lists the player (U1).
-  const playerLink = useFantasyPlayerLinks(tab === "squad");
+  const playerLink = useFantasyPlayerLinks([clubId], tab === "squad");
   const squadQ = useQuery({
     queryKey: ["football", "club-squad", clubId, squadSeason ?? "current", lang],
     queryFn: () => footballService.getClubSquad(clubId, squadSeason, lang),

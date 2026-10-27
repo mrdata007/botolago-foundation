@@ -100,6 +100,7 @@ function SquadRow({ player, fantasyId }: { player: SquadPlayer; fantasyId: strin
       {/* The whole row is the target, at least `--ui-row-min` (56px) high. */}
       <FantasyPlayerLink
         playerId={fantasyId}
+        insetFocus
         className={cn(
           "flex min-h-[var(--ui-row-min)] items-center gap-3 px-3.5 py-2",
           fantasyId &&

@@ -499,7 +499,7 @@ describe("the hub places them", () => {
   it("once each, in its order: team area, shortcuts, leagues, News, reminders, more about", () => {
     const order = [
       "<FantasyHubTeamArea",
-      "<ShortcutTiles visitor={!hasTeam} />",
+      "<ShortcutTiles />",
       "<FantasyHubLeagues",
       "{NEWS_ENABLED && (",
       "<FantasyHubReminders layout={layout} />",
