@@ -26,9 +26,36 @@ import { LanguageMenuChoices } from "./LanguageMenuChoices";
  * rather than an `id`: the menu gives its trigger an id of its own, which
  * names the menu, and there can be more than one switcher on a page.
  */
-export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | "onMesh" } = {}) {
-  const { lang, t } = useI18n();
+export function LanguageSwitcher({
+  tone = "onSurface",
+  direct = false,
+}: {
+  tone?: "onSurface" | "onMesh";
+  /**
+   * One tap instead of a menu of two: the button names the OTHER language
+   * ("ع" on a French page, "FR" on an Arabic one) and switches to it. The top
+   * bar uses it, since a first visit has no chooser and the way into Arabic
+   * has to be a single tap; the Profile row keeps the menu.
+   */
+  direct?: boolean;
+} = {}) {
+  const { lang, setLanguage, t } = useI18n();
   const current = lang === "fr" ? "FR" : "ع";
+  if (direct) {
+    const other = lang === "fr" ? "ar" : "fr";
+    return (
+      <UiIconButton
+        aria-label={other === "fr" ? t("language.switch_to_fr") : t("language.switch_to_ar")}
+        data-language-switcher=""
+        // The label is the target language written in its own script.
+        lang={other}
+        onClick={() => setLanguage(other)}
+        className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
+      >
+        {other === "fr" ? "FR" : "ع"}
+      </UiIconButton>
+    );
+  }
   const trigger =
     tone === "onMesh" ? (
       <button

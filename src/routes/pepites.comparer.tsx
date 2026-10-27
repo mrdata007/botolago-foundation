@@ -6,7 +6,7 @@ import {
   pepitesPageHeaders,
   prefetchPointer,
 } from "@/components/pepites/pepites-route";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { isServerRender, ssrAvailability } from "@/lib/ssr-prefetch";
 
 interface CompareSearch {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { LandingPage } from "@/components/landing/LandingPage";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 import { markWelcomeDone } from "@/lib/welcome";

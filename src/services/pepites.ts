@@ -15,7 +15,7 @@ import type {
   VersionResponse,
   WeeklyEmailDto,
 } from "@/backend/pepites/contracts";
-import { MockPepitesRepository } from "@/backend/pepites/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { SupabasePepitesRepository } from "@/backend/pepites/supabase-repository";
 import { authService } from "@/services/auth";
 
@@ -36,7 +36,9 @@ export function selectPepitesDataMode(
   return production ? "supabase" : "mock";
 }
 
-const mockRepository = new MockPepitesRepository();
+const mockRepository = lazyRepository<PepitesRepository>(() =>
+  import("@/backend/pepites/mock-repository").then((m) => new m.MockPepitesRepository()),
+);
 const supabaseRepository = new SupabasePepitesRepository();
 
 export function pepitesDataMode(): PepitesDataMode {

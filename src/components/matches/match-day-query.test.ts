@@ -12,6 +12,7 @@ import {
   JUST_FINISHED_REFRESH_MINUTES,
   matchDayQuery,
   matchDayRefetchInterval,
+  nearestMatchDay,
   openingMatchDay,
   settleEndedMatches,
   withLiveReadings,
@@ -489,5 +490,31 @@ describe("the fixtures the server renders reach the browser's first render", () 
     const key = matchDayQuery(openingMatchDay(shown, today), "fr", shown?.id).queryKey;
     expect(key).toEqual(["football", "matches", "2026-09-13", "current", "fr"]);
     expect(browser.getQueryData(key)).toEqual(fixtures);
+  });
+});
+
+describe("nearestMatchDay", () => {
+  const days = ["2026-10-03", "2026-10-10", "2026-10-24", "2026-11-07"];
+
+  test("stays on the opening day when it has fixtures", () => {
+    expect(nearestMatchDay(days, "2026-10-24")).toBe("2026-10-24");
+  });
+
+  test("goes to the next day with fixtures when the opening day has none", () => {
+    expect(nearestMatchDay(days, "2026-10-26")).toBe("2026-11-07");
+    expect(nearestMatchDay(days, "2026-10-04")).toBe("2026-10-10");
+  });
+
+  test("falls back to the latest results when nothing is ahead", () => {
+    expect(nearestMatchDay(days, "2026-12-01")).toBe("2026-11-07");
+  });
+
+  test("takes the days in any order", () => {
+    expect(nearestMatchDay([...days].reverse(), "2026-10-26")).toBe("2026-11-07");
+  });
+
+  test("keeps the opening day when the days are unknown or there are none", () => {
+    expect(nearestMatchDay(undefined, "2026-10-26")).toBe("2026-10-26");
+    expect(nearestMatchDay([], "2026-10-26")).toBe("2026-10-26");
   });
 });

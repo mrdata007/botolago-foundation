@@ -70,7 +70,12 @@ describe("sitemap.xml", () => {
       1,
     );
     expect(xml).toContain(
-      `<loc>https://botolago.com/news/${FR}</loc><lastmod>2026-09-22T10:00:00.000Z</lastmod><xhtml:link rel="alternate" hreflang="fr" href="https://botolago.com/news/${FR}"/><xhtml:link rel="alternate" hreflang="ar" href="https://botolago.com/news/${AR}"/>`,
+      `<loc>https://botolago.com/news/${FR}</loc><lastmod>2026-09-22T10:00:00.000Z</lastmod><xhtml:link rel="alternate" hreflang="fr" href="https://botolago.com/news/${FR}"/><xhtml:link rel="alternate" hreflang="ar" href="https://botolago.com/news/${AR}"/><xhtml:link rel="alternate" hreflang="x-default" href="https://botolago.com/news/${FR}"/>`,
+    );
+    // The Arabic edition's own entry: its own canonical, the same reciprocal set,
+    // x-default still the French edition.
+    expect(xml).toContain(
+      `<loc>https://botolago.com/news/${AR}</loc><lastmod>2026-09-22T11:00:00.000Z</lastmod><xhtml:link rel="alternate" hreflang="ar" href="https://botolago.com/news/${AR}"/><xhtml:link rel="alternate" hreflang="fr" href="https://botolago.com/news/${FR}"/><xhtml:link rel="alternate" hreflang="x-default" href="https://botolago.com/news/${FR}"/>`,
     );
     // A single-language article carries no alternates.
     expect(xml).toContain(

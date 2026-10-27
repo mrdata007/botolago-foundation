@@ -169,11 +169,32 @@ describe("Accueil (Home) structural contract", () => {
     test("the news edition is not fetched while the flag is off", () => {
       const page = source.slice(source.indexOf("queryFn: () => newsService.getEdition(lang"));
       expect(page.slice(0, 120)).toContain("enabled: NEWS_ENABLED");
-      const loader = source.slice(0, source.indexOf("head: () => ({"));
-      const prefetch = loader.indexOf('newsService.getEdition("fr", "auto")');
+      const loader = source.slice(0, source.indexOf("head: ({ loaderData }) => ({"));
+      const prefetch = loader.indexOf('newsService.getEdition(SSR_LANGUAGE, "auto")');
       expect(prefetch).toBeGreaterThan(-1);
       expect(loader.slice(0, prefetch)).toContain("...(NEWS_ENABLED");
       expect(source.split("newsService.getEdition(").length - 1).toBe(2);
+    });
+  });
+
+  describe("first visit and speed (quick audit 2026-10-26)", () => {
+    test("the band photograph has its intrinsic size and is preloaded with the img's srcset", () => {
+      expect(source).toContain("width={bandPhoto(live).width}");
+      expect(source).toContain("height={bandPhoto(live).height}");
+      expect(source).toContain('rel: "preload"');
+      expect(source).toContain("imageSrcSet: bandSrcSet(");
+      expect(source).toContain("imageSizes: BAND_IMAGE_SIZES");
+      expect(source).toContain("sizes={BAND_IMAGE_SIZES}");
+    });
+
+    test("the loader prefetches under one named language, the one the first client render uses", () => {
+      const loader = source.slice(0, source.indexOf("head: ({ loaderData }) => ({"));
+      expect(loader).toContain('const SSR_LANGUAGE = "fr" as const;');
+      expect(loader).not.toMatch(/queryKey: \[[^\]]*"fr"/);
+    });
+
+    test("language-keyed queries keep the previous language's data while the new one loads", () => {
+      expect(source.match(/placeholderData: keepPreviousData/g)?.length).toBeGreaterThanOrEqual(5);
     });
   });
 

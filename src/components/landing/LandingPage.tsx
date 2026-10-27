@@ -36,6 +36,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import type { PublicPrizeDto } from "@/backend/prizes/contracts";
 import { prizesService } from "@/services/prizes";
+import { useNearViewport } from "@/lib/use-near-viewport";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { SQUAD_RULES } from "@/types/fantasy";
 import { DemoPitch } from "./DemoPitch";
@@ -111,14 +112,6 @@ export function LandingPage({
     useDeadlineCountdown(joinTarget(gameweek.data ?? null)?.deadline),
   );
 
-  // The prizes, only when the catalog lists an open one: same key as the hub.
-  const prizes = useQuery({
-    queryKey: ["prizes", "catalog"],
-    queryFn: () => prizesService.listPrizes(),
-    enabled: PRIZES_ENABLED,
-    staleTime: 5 * 60_000,
-  });
-
   // The funnel counts visitors without an account, the audience that can
   // go on to sign up: once the session says so, once per mount. A manager
   // opening `/jouer` is not a landing view (the events carry no audience to
@@ -137,6 +130,16 @@ export function LandingPage({
   const SubSub = headingLevel === 1 ? "h3" : "h4";
   const howId = useId();
   const faqId = useId();
+
+  // The prizes, only when the catalog lists an open one: same key as the hub.
+  // Read when the section is about to scroll into view, not with the first screen.
+  const prizesNear = useNearViewport(`[aria-labelledby="${howId}-why"]`);
+  const prizes = useQuery({
+    queryKey: ["prizes", "catalog"],
+    queryFn: () => prizesService.listPrizes(),
+    enabled: PRIZES_ENABLED && prizesNear,
+    staleTime: 5 * 60_000,
+  });
 
   // The sticky bar on a phone: once the hero's button has scrolled away, and
   // never over the final invitation, which carries the same button.

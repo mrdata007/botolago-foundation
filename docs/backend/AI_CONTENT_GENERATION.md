@@ -27,6 +27,25 @@ publishes it, then emails the owner.
 - **Facts only.** The prompt forbids anything not supplied. Every score written
   in the text must be one from the facts; otherwise the article is dropped and
   retried next run.
+- **Match reports say nothing about missing data.** The prompt tells the model to
+  leave out anything the facts do not contain and never to write that data is
+  missing, unknown or unavailable; null half-time and shoot-out scores are not
+  sent at all. `unsupportedMentions` rejects a recap that still contains such a
+  remark in French or Arabic ("indisponible", "non communiqué", "n'est pas
+  connu", "غير متوفر", "غير متاحة", "لم يتم الكشف"...). The list is deliberately
+  narrow and applies to recaps only, because "indisponible" is ordinary wording
+  in a news roundup about an injured player.
+- **One name per club.** The prompt requires each club's name exactly as the
+  facts give it (no abbreviation, nickname or code) and no club outside the
+  facts. `clubNameProblems` (called from `unsupportedMentions`, recaps and
+  previews only) rejects a text that uses another name for a club in the match
+  (`club_alias:<club>`, e.g. "RCA Zemamra" or "CR Khemis Zemamra" where the
+  facts say "Renaissance Club Athletic Zemamra") or names a known club the facts
+  do not mention (`club_not_in_facts:<club>`). Known aliases live in
+  `supabase/functions/_shared/club-aliases.ts`; add a line there when a new
+  variant shows up. A club missing from that table cannot be recognised, so
+  this is a net, not a proof. A rejected article takes the usual path: it is not
+  published and the same job returns on the next run.
 - **No model HTML.** The model returns plain paragraphs; the function escapes
   them and builds the markup. Source links come from the database, https only.
 - **Public editorial rule.** No AI authorship/generation notices or provider
@@ -62,8 +81,19 @@ select kind, language, created_at, owner_notified_at
 
 To take one article down, unpublish it from the admin news screen.
 
+## Deploying the guardrails (owner)
+
+The change is code only: nothing was deployed or applied. The Edge Function
+`ai-content-generate` must be redeployed for it to take effect, through the
+existing `production-ai-content-setup` workflow or
+`supabase functions deploy ai-content-generate --no-verify-jwt`. No migration
+and no setting change is needed; the switch and the cap stay as they are.
+
 ## Not yet covered
 
+- No human review queue: published articles go live at once. A queue (a
+  pending state, an admin screen, approve/reject) needs a migration and is not
+  part of this change.
 - No hero image; articles publish without one.
 - Fact checks catch invented scores, not every wrong claim. Review the first
   days of output before leaving it unattended.

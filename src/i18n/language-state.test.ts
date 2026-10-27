@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import {
+  detectLanguage,
   INITIAL_LANGUAGE_STATE,
   languageNotice,
   languageReducer,
@@ -34,87 +35,63 @@ describe("the language on the server and the first client render", () => {
 });
 
 describe("a first visit (nothing stored)", () => {
-  it("opens the chooser on a French page", () => {
-    expect(FIRST_VISIT).toEqual({ lang: "fr", hasChosen: false, loading: null, failed: null });
+  it("applies French at once, with no chooser", () => {
+    expect(FIRST_VISIT).toEqual({ lang: "fr", hasChosen: true, loading: null, failed: null });
   });
 
-  it("closes the chooser at once on French", () => {
-    expect(run([{ type: "chosen", lang: "fr", ready: true }], FIRST_VISIT)).toEqual({
-      lang: "fr",
+  it("applies Arabic at once when the device asks for it and the dictionary is here", () => {
+    expect(run([{ type: "restored", stored: null, ready: true, detected: "ar" }])).toEqual({
+      lang: "ar",
       hasChosen: true,
       loading: null,
       failed: null,
     });
   });
 
-  it("keeps the chooser open while Arabic downloads, the page still French", () => {
+  it("stays French while a detected Arabic downloads, then shows it", () => {
+    const waiting = run([{ type: "restored", stored: null, ready: false, detected: "ar" }]);
+    expect(waiting).toEqual({ lang: "fr", hasChosen: true, loading: "ar", failed: null });
+    expect(run([{ type: "loaded", lang: "ar" }], waiting)).toEqual({
+      lang: "ar",
+      hasChosen: true,
+      loading: null,
+      failed: null,
+    });
+  });
+
+  it("reports a failed Arabic download through the notice, not a chooser", () => {
+    const failed = run([
+      { type: "restored", stored: null, ready: false, detected: "ar" },
+      { type: "load_failed", lang: "ar" },
+    ]);
+    expect(failed).toEqual({ lang: "fr", hasChosen: true, loading: null, failed: "ar" });
+    expect(languageNotice(failed, true)).toBe("failed");
+  });
+
+  it("prefers what is stored over what the device asks for", () => {
+    expect(run([{ type: "restored", stored: "fr", ready: true, detected: "ar" }]).lang).toBe("fr");
+  });
+
+  it("switches to Arabic from the top bar, and back, once settled", () => {
+    expect(run([{ type: "chosen", lang: "ar", ready: true }], FIRST_VISIT).lang).toBe("ar");
     const waiting = run([{ type: "chosen", lang: "ar", ready: false }], FIRST_VISIT);
-    expect(waiting).toEqual({ lang: "fr", hasChosen: false, loading: "ar", failed: null });
+    expect(waiting).toEqual({ lang: "fr", hasChosen: true, loading: "ar", failed: null });
+  });
+});
+
+describe("detectLanguage", () => {
+  it("takes Arabic in any region, French otherwise", () => {
+    expect(detectLanguage(["ar"])).toBe("ar");
+    expect(detectLanguage(["ar-MA", "fr"])).toBe("ar");
+    expect(detectLanguage(["AR_EG"])).toBe("ar");
+    expect(detectLanguage(["fr-FR", "ar"])).toBe("fr");
   });
 
-  it("closes the chooser on Arabic only once the dictionary has arrived", () => {
-    const shown = run(
-      [
-        { type: "chosen", lang: "ar", ready: false },
-        { type: "loaded", lang: "ar" },
-      ],
-      FIRST_VISIT,
-    );
-    expect(shown).toEqual({ lang: "ar", hasChosen: true, loading: null, failed: null });
-  });
-
-  it("keeps the chooser open, and says Arabic failed, when the download fails", () => {
-    const failed = run(
-      [
-        { type: "chosen", lang: "ar", ready: false },
-        { type: "load_failed", lang: "ar" },
-      ],
-      FIRST_VISIT,
-    );
-    expect(failed).toEqual({ lang: "fr", hasChosen: false, loading: null, failed: "ar" });
-  });
-
-  it("clears the failure when the reader tries again, and closes once it works", () => {
-    const failed = run(
-      [
-        { type: "chosen", lang: "ar", ready: false },
-        { type: "load_failed", lang: "ar" },
-      ],
-      FIRST_VISIT,
-    );
-    const retrying = run([{ type: "chosen", lang: "ar", ready: false }], failed);
-    expect(retrying).toEqual({ lang: "fr", hasChosen: false, loading: "ar", failed: null });
-    expect(run([{ type: "loaded", lang: "ar" }], retrying)).toEqual({
-      lang: "ar",
-      hasChosen: true,
-      loading: null,
-      failed: null,
-    });
-  });
-
-  it("lets a reader whose Arabic failed continue in French instead", () => {
-    const failed = run(
-      [
-        { type: "chosen", lang: "ar", ready: false },
-        { type: "load_failed", lang: "ar" },
-      ],
-      FIRST_VISIT,
-    );
-    expect(run([{ type: "chosen", lang: "fr", ready: true }], failed)).toEqual({
-      lang: "fr",
-      hasChosen: true,
-      loading: null,
-      failed: null,
-    });
-  });
-
-  it("switches straight to Arabic when the dictionary is already here", () => {
-    expect(run([{ type: "chosen", lang: "ar", ready: true }], FIRST_VISIT)).toEqual({
-      lang: "ar",
-      hasChosen: true,
-      loading: null,
-      failed: null,
-    });
+  it("goes by the first Arabic or French entry, and falls back to French", () => {
+    expect(detectLanguage(["en-US", "ar"])).toBe("ar");
+    expect(detectLanguage(["en-US"])).toBe("fr");
+    expect(detectLanguage([])).toBe("fr");
+    expect(detectLanguage(undefined)).toBe("fr");
   });
 });
 
@@ -285,17 +262,6 @@ describe("what the notice outside the chooser shows", () => {
     expect(
       languageNotice(run([{ type: "restored", stored: "ar", ready: false }]), true),
     ).toBeNull();
-  });
-
-  it("leaves a first visit's failure to the chooser", () => {
-    const chooserFailed = run(
-      [
-        { type: "chosen", lang: "ar", ready: false },
-        { type: "load_failed", lang: "ar" },
-      ],
-      FIRST_VISIT,
-    );
-    expect(languageNotice(chooserFailed, true)).toBeNull();
   });
 });
 

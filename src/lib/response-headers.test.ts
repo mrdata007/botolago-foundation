@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { withSiteHeaders } from "./response-headers";
+import { PUBLIC_HTML_CACHE_CONTROL, withSiteHeaders } from "./response-headers";
 import { SITEMAP_CACHE_CONTROL } from "./sitemap";
 
 describe("site response headers", () => {
@@ -106,5 +106,58 @@ describe("site response headers", () => {
     expect(
       withSiteHeaders(new Response(""), "https://botolago.com/").headers.get("x-botolago-release"),
     ).toMatch(/^([0-9a-f]{7,40}|unknown)$/);
+  });
+});
+
+describe("public HTML edge caching", () => {
+  const html = (init: ResponseInit = {}) =>
+    new Response("<html></html>", {
+      status: 200,
+      ...init,
+      headers: { "content-type": "text/html; charset=utf-8", ...(init.headers ?? {}) },
+    });
+  const get = { method: "GET" };
+  const cache = (response: Response, path: string, request: object | undefined = get) =>
+    withSiteHeaders(
+      response,
+      `https://botolago.com${path}`,
+      "6a12a6b",
+      request as never,
+    ).headers.get("cache-control");
+
+  test("public 200 HTML gets a short shared cache", () => {
+    for (const path of ["/", "/news", "/news/abc", "/matches", "/fantasy/rules", "/pronostics"]) {
+      expect(cache(html(), path)).toBe(PUBLIC_HTML_CACHE_CONTROL);
+    }
+    expect(cache(html(), "/", { method: "HEAD" })).toBe(PUBLIC_HTML_CACHE_CONTROL);
+  });
+
+  test("personal paths stay private, no-store", () => {
+    for (const path of ["/auth/login", "/admin", "/profile", "/fantasy/team", "/notifications"]) {
+      expect(cache(html(), path)).toBe("private, no-store");
+    }
+  });
+
+  test("nothing else is shared-cached", () => {
+    expect(
+      withSiteHeaders(html(), "https://botolago.com/", "6a12a6b").headers.get("cache-control"),
+    ).toBeNull();
+    expect(cache(html(), "/", { method: "POST" })).toBeNull();
+    expect(cache(html(), "/", { method: "GET", hasAuthorization: true })).toBeNull();
+    expect(cache(html({ status: 404 }), "/nope")).toBeNull();
+    expect(cache(html({ status: 503 }), "/news/abc")).toBeNull();
+    expect(cache(html({ status: 500 }), "/")).toBeNull();
+    expect(cache(html({ headers: { "set-cookie": "a=b" } }), "/")).toBeNull();
+    expect(cache(html({ headers: { "x-botolago-unavailable": "1" } }), "/")).toBeNull();
+    const json = new Response("{}", { headers: { "content-type": "application/json" } });
+    expect(cache(json, "/")).toBeNull();
+    for (const path of ["/curva", "/curva/carte", "/plus", "/unsubscribe", "/suppression-compte"]) {
+      expect(cache(html(), path)).toBeNull();
+    }
+  });
+
+  test("a route's own Cache-Control is kept", () => {
+    const own = "public, max-age=0, s-maxage=10";
+    expect(cache(html({ headers: { "cache-control": own } }), "/pepites")).toBe(own);
   });
 });

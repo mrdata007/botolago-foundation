@@ -18,8 +18,11 @@ export interface LanguageState {
   /** The language the page is drawn in. Arabic only once its words are here. */
   lang: Language;
   /**
-   * Whether a language is settled. False only on a first visit, until the
-   * chosen language can be shown — it is what keeps the chooser open.
+   * Whether a language is settled. Always true now: a first visit is no
+   * longer stopped by a chooser (the language comes from the device, see
+   * `detectLanguage`), but the launch gates that wait for it still read it.
+   * It does not mean the reader made a choice: only `botolago.language`
+   * being stored does, and a detected language is never stored.
    */
   hasChosen: boolean;
   /** The language asked for whose dictionary is on its way. */
@@ -29,8 +32,11 @@ export interface LanguageState {
 }
 
 export type LanguageEvent =
-  /** On mount: the language stored on this device, if any. */
-  | { type: "restored"; stored: Language | null; ready: boolean }
+  /**
+   * On mount: the language stored on this device, if any; with none stored,
+   * the one the device asks for (`detected`, French when absent).
+   */
+  | { type: "restored"; stored: Language | null; ready: boolean; detected?: Language }
   /** The reader chose a language (or, in the chooser, tried the failed one again). */
   | { type: "chosen"; lang: Language; ready: boolean }
   /** The notice's Retry: the language that failed is asked for again. */
@@ -41,9 +47,8 @@ export type LanguageEvent =
   | { type: "load_failed"; lang: Language };
 
 /**
- * What the server renders and the first client render repeats: French, and
- * no chooser (the chooser also waits for hydration). The stored choice is
- * read after mount.
+ * What the server renders and the first client render repeats: French. The
+ * stored choice, or the device's language, is read after mount.
  */
 export const INITIAL_LANGUAGE_STATE: LanguageState = {
   lang: "fr",
@@ -62,16 +67,18 @@ function settled(lang: Language): LanguageState {
  */
 export function languageReducer(state: LanguageState, event: LanguageEvent): LanguageState {
   switch (event.type) {
-    case "restored":
-      if (event.stored === null) return { ...settled("fr"), hasChosen: false };
-      if (event.ready) return settled(event.stored);
-      // A returning Arabic reader: the choice was made on an earlier visit, so
-      // nothing waits for it, and the page stays French until the words come.
-      return { lang: "fr", hasChosen: true, loading: event.stored, failed: null };
+    case "restored": {
+      // A first visit has no chooser: the device's language is applied
+      // without being stored, so it stays a default the reader can change
+      // from the top bar rather than a choice they were made to make.
+      const lang = event.stored ?? event.detected ?? "fr";
+      if (event.ready) return settled(lang);
+      // Arabic (stored, or detected on a first visit): nothing waits for it,
+      // and the page stays French until the words come.
+      return { lang: "fr", hasChosen: true, loading: lang, failed: null };
+    }
     case "chosen":
       if (event.ready) return settled(event.lang);
-      // `hasChosen` is left as it was: on a first visit the chooser stays open
-      // (showing the wait) until the dictionary can be shown.
       return { ...state, loading: event.lang, failed: null };
     case "retried":
       // Unlike a fresh choice, the failure is kept while the retry is on its
@@ -91,10 +98,23 @@ export function languageReducer(state: LanguageState, event: LanguageEvent): Lan
 }
 
 /**
- * What the notice outside the chooser shows (`language-load-notice.tsx`):
- * nothing, the failure, or the wait for a retry of it. On a first visit the
- * chooser reports the failure itself, and nothing is drawn over the splash.
- * A returning reader's ordinary download is not news, so a wait is shown only
+ * The language a device asks for, from `navigator.languages`: the first
+ * entry that is Arabic (`ar`, `ar-MA`, ...) or French wins; French when
+ * there is none (English and the rest get the product's default).
+ */
+export function detectLanguage(preferred: readonly string[] | undefined): Language {
+  for (const tag of preferred ?? []) {
+    const primary = tag.toLowerCase().split(/[-_]/)[0];
+    if (primary === "ar") return "ar";
+    if (primary === "fr") return "fr";
+  }
+  return "fr";
+}
+
+/**
+ * What the notice shows (`language-load-notice.tsx`):
+ * nothing, the failure, or the wait for a retry of it. Nothing is drawn over
+ * the splash. A returning reader's ordinary download is not news, so a wait is shown only
  * for a retry the notice started.
  */
 export type LanguageNotice = "failed" | "retrying" | null;

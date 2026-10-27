@@ -1,5 +1,5 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 
 /**
@@ -36,7 +36,7 @@ import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 type Translate = (key: TranslationKey) => string;
 
 /** `head()` has no reader language: it reads the French dictionary. */
-const french: Translate = (key) => fr[key];
+const french: Translate = (key) => (fr as Readonly<Record<string, string>>)[key];
 
 export interface FantasyPageCopy {
   readonly title: string;

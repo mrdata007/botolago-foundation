@@ -104,7 +104,9 @@ export function useMatchVotes(fixtureId: string, { enabled = true }: { enabled?:
     },
     staleTime: 60_000,
     retry: 1,
-    enabled,
+    // Not while the session is still being read: the read would go out under
+    // the visitor's key and again, as the player's, a moment later.
+    enabled: enabled && status !== "loading",
   });
 
   // The phone's votes are read after mount: the server's render has none.

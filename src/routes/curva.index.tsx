@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { CurvaHome } from "@/components/curva/CurvaHome";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 
 export const Route = createFileRoute("/curva/")({
   head: () => ({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/curva/")({
       { name: "description", content: fr["curva.meta.description"] },
       { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/curva` }],
   }),
   component: CurvaIndexRoute,
 });

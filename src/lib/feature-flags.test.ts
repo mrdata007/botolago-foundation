@@ -189,8 +189,12 @@ describe("OAUTH_PROVIDERS_ENABLED", () => {
     expect(shell).toContain("export function AppleGlyph");
     // One file per language since the Arabic dictionary is loaded on demand:
     // the copy has to stay in both.
-    for (const file of ["src/i18n/dictionary-fr.ts", "src/i18n/dictionary-ar.ts"]) {
-      const dictionary = read(file);
+    // (French is in two parts, dictionary-fr-core.ts and dictionary-fr-rest.ts.)
+    const dictionaries = {
+      "src/i18n/dictionary-fr.ts": `${read("src/i18n/dictionary-fr-core.ts")}${read("src/i18n/dictionary-fr-rest.ts")}`,
+      "src/i18n/dictionary-ar.ts": read("src/i18n/dictionary-ar.ts"),
+    };
+    for (const [file, dictionary] of Object.entries(dictionaries)) {
       for (const key of ['"auth.google"', '"auth.apple"', '"auth.or_continue_with"']) {
         expect(`${file} ${key}: ${dictionary.includes(key)}`).toBe(`${file} ${key}: true`);
       }
@@ -506,7 +510,7 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
       "MANAGER_CARD_BUILD",
     );
     expect(stripComments(read("src/routes/__root.tsx"))).toContain(
-      "...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {})",
+      "if (MANAGER_CARD_BUILD) await rootBeforeLoad(ctx);",
     );
     expect(stripComments(read("src/routes/curva.tsx"))).toContain("shouldRedirectFromCurva");
   });

@@ -6,12 +6,24 @@ import {
   useMemo,
   useReducer,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { TranslationKey } from "./dictionaries";
 import { dictionaryInChunk } from "./dictionary-chunk";
-import { fr } from "./dictionary-fr";
-import { INITIAL_LANGUAGE_STATE, languageNotice, languageReducer } from "./language-state";
+import {
+  frenchDictionary,
+  frenchVersion,
+  isFrenchComplete,
+  loadFrenchRest,
+  subscribeFrench,
+} from "./dictionary-fr-loader";
+import {
+  detectLanguage,
+  INITIAL_LANGUAGE_STATE,
+  languageNotice,
+  languageReducer,
+} from "./language-state";
 import { LanguageLoadNotice } from "./language-load-notice";
 import { retryableImport } from "./retryable-import";
 import { useSplashDone } from "@/lib/launch-sequence";
@@ -56,7 +68,7 @@ function isReady(lang: Language): boolean {
 }
 
 function dictionaryFor(lang: Language): Dictionary {
-  return (lang === "ar" && arabicDictionary()) || fr;
+  return (lang === "ar" && arabicDictionary()) || frenchDictionary();
 }
 
 interface I18nContextValue {
@@ -110,6 +122,9 @@ function LanguageProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(languageReducer, INITIAL_LANGUAGE_STATE);
   const { lang, hasChosen, loading, failed } = state;
   const [isHydrated, setIsHydrated] = useState(false);
+  // The rest of the French dictionary arriving (normally before the page that
+  // needs it, see dictionary-fr-loader.ts) re-renders what read a key early.
+  const frenchVersionNow = useSyncExternalStore(subscribeFrench, frenchVersion, frenchVersion);
 
   // Only Arabic is ever fetched. A result that arrives after the reader has
   // moved on is dropped by the reducer, which knows what is still wanted.
@@ -123,9 +138,13 @@ function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = readStored();
     setIsHydrated(true);
-    const ready = stored === null || isReady(stored);
-    dispatch({ type: "restored", stored, ready });
-    if (!ready && stored) fetchDictionary(stored);
+    // Nothing stored: the device's language, applied but not stored (it is
+    // a default, not a choice), so the top bar's switcher stays the way to
+    // change it and the next visit detects again.
+    const detected = stored ?? detectLanguage(navigator.languages ?? [navigator.language]);
+    const ready = isReady(detected);
+    dispatch({ type: "restored", stored, ready, detected });
+    if (!ready) fetchDictionary(detected);
   }, [fetchDictionary]);
 
   // Sync <html lang> and <html dir> only after mount, never during render.
@@ -185,10 +204,19 @@ function LanguageProvider({ children }: { children: ReactNode }) {
       failedLanguage: failed,
       setLanguage,
       retryLanguage,
-      t: (key) => dictionaryFor(lang)[key] ?? key,
+      t: (key) => {
+        const found = dictionaryFor(lang)[key];
+        if (found !== undefined) return found;
+        // A key the first part does not hold, asked for before the rest has
+        // arrived: fetch it and render again when it does.
+        if (!isFrenchComplete()) loadFrenchRest().catch(() => undefined);
+        return key;
+      },
       tr: (s) => s[lang] ?? s.fr,
     }),
-    [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage],
+    // `frenchVersionNow` is not read inside: a new value makes `t` read the dictionary again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage, frenchVersionNow],
   );
 
   return (

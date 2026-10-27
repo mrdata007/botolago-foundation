@@ -22,6 +22,7 @@ import {
 } from "./notification-email-dispatch.ts";
 import { containsPublicAiNotice, PUBLIC_EDITORIAL_RULE } from "./public-editorial-policy.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
+import { CLUB_ALIASES, type ClubAliasGroup } from "./club-aliases.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const RESEND_URL = "https://api.resend.com/emails";
@@ -88,6 +89,10 @@ const SYSTEM_PROMPT = [
   "not in the facts. If a detail is not supplied, leave it out. Do not guess.",
   "Never write that information is missing, unknown, unavailable or not",
   "communicated (for example a half-time score): simply say nothing about it.",
+  "Do not speculate about anything the facts do not contain; leave it out.",
+  "Name each club exactly as it is written in the facts for that language,",
+  "every time, with no abbreviation, nickname, code or other spelling, and",
+  "mention no club that is not in the facts.",
   "Never mention a penalty shoot-out or extra time unless the facts contain a",
   "penalty shoot-out score; a league match cannot go to penalties.",
   "For news and blog pieces, put every claim in your own words and credit the",
@@ -363,6 +368,107 @@ export function unsupportedMentions(job: ContentJob, article: GeneratedArticle):
     if (!wentToPenalties) {
       if (SHOOTOUT_PATTERNS.some((p) => p.test(text))) found.add("penalty_shootout");
       if (EXTRA_TIME_PATTERNS.some((p) => p.test(text))) found.add("extra_time");
+    }
+  }
+  for (const label of clubNameProblems(job, article)) found.add(label);
+  return [...found];
+}
+
+// ------------------------------------------------------- club-name checks
+
+function normalizeName(text: string): string {
+  return stripArabicMarks(text)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’`´]/g, "'")
+    .replace(/[أإآ]/g, "ا")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameRegex(name: string, language: ContentLanguage): RegExp {
+  const escaped = normalizeName(name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Arabic attaches one-letter prefixes (و ب ل ف ك) directly to the name.
+  const prefix = language === "ar" ? "[وبلفك]?" : "";
+  return new RegExp(`(?<![\\p{L}\\p{N}])${prefix}${escaped}(?![\\p{L}\\p{N}])`, "gu");
+}
+
+function groupOf(name: string): ClubAliasGroup | null {
+  const wanted = normalizeName(name);
+  return (
+    CLUB_ALIASES.find((group) =>
+      [...group.fr, ...group.ar].some((alias) => normalizeName(alias) === wanted),
+    ) ?? null
+  );
+}
+
+/** Every string under `home`, `away` or `opponent` keys, however nested, for context clubs. */
+function collectClubStrings(value: unknown, into: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const item of value) collectClubStrings(item, into);
+    return;
+  }
+  if (!isRecord(value)) return;
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "home" || key === "away" || key === "opponent") {
+      if (typeof child === "string") into.add(child);
+      else if (isRecord(child)) {
+        for (const name of Object.values(child)) if (typeof name === "string") into.add(name);
+      }
+    } else collectClubStrings(child, into);
+  }
+}
+
+/**
+ * A match report or preview must call each club by the one name in the facts
+ * and name no other known club. Labels: `club_alias:<club>` when the text uses
+ * another name for a club in the match (the audit's "RCA Zemamra" /
+ * "Renaissance Club Athletic Zemamra" / "CR Khemis Zemamra"), and
+ * `club_not_in_facts:<club>` for a known club the facts do not mention.
+ * Clubs outside the alias table cannot be recognised and are not checked.
+ */
+export function clubNameProblems(job: ContentJob, article: GeneratedArticle): string[] {
+  if (job.kind !== "match_recap" && job.kind !== "match_preview") return [];
+  const facts = job.facts;
+  if (!facts) return [];
+  const found = new Set<string>();
+  const context = new Set<string>();
+  collectClubStrings(facts, context);
+  collectClubStrings(job.recentResults, context);
+  const contextKeys = new Set<string>();
+  for (const name of context) {
+    const group = groupOf(name);
+    if (group) contextKeys.add(group.key);
+  }
+  for (const language of LANGUAGES) {
+    const own: string[] = [];
+    for (const side of [facts.home, facts.away]) {
+      const name = isRecord(side) ? side[language] : side;
+      if (typeof name === "string" && name.trim()) own.push(name);
+    }
+    if (own.length === 0) continue;
+    const ownKeys = new Set<string>();
+    for (const name of own) {
+      const group = groupOf(name);
+      if (group) ownKeys.add(group.key);
+    }
+    let text = normalizeName(
+      [article[language].title, article[language].summary, ...article[language].paragraphs].join(
+        "\n",
+      ),
+    );
+    // Blank every name the facts supply (longest first) so a canonical name
+    // that contains a shorter alias is not read as that alias.
+    const supplied = [...own, ...context].sort((a, b) => b.length - a.length);
+    for (const name of supplied) text = text.replace(nameRegex(name, language), " ");
+    for (const group of CLUB_ALIASES) {
+      if (contextKeys.has(group.key) && !ownKeys.has(group.key)) continue;
+      const aliases = group[language];
+      if (!aliases.some((alias) => nameRegex(alias, language).test(text))) continue;
+      found.add(
+        ownKeys.has(group.key) ? `club_alias:${group.key}` : `club_not_in_facts:${group.key}`,
+      );
     }
   }
   return [...found];

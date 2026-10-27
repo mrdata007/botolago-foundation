@@ -383,6 +383,42 @@ describe("French ↔ Arabic alternates (hreflang)", () => {
     expect(head.meta).toContainEqual({ property: "og:locale", content: "ar_MA" });
   });
 
+  it("an Arabic edition never yields a French canonical, however its address was reached", () => {
+    const head = buildArticleHead(
+      detail({
+        id: AR,
+        language: "ar",
+        translations: [{ id: FR, language: "fr", slug: "fr-slug" }],
+      }),
+      // Reached by the French edition's id or by a slug: the canonical is the edition's own.
+      FR,
+    );
+    expect(head.links[0]).toEqual({ rel: "canonical", href: `https://botolago.com/news/${AR}` });
+    expect(head.meta).toContainEqual({
+      property: "og:url",
+      content: `https://botolago.com/news/${AR}`,
+    });
+    expect(head.meta).toContainEqual({ property: "og:locale", content: "ar_MA" });
+  });
+
+  it("hreflang is reciprocal: each side lists the same fr, ar and x-default set", () => {
+    const fr = buildArticleHead(
+      detail({ id: FR, language: "fr", translations: [{ id: AR, language: "ar", slug: "a" }] }),
+      FR,
+    );
+    const ar = buildArticleHead(
+      detail({ id: AR, language: "ar", translations: [{ id: FR, language: "fr", slug: "f" }] }),
+      AR,
+    );
+    const set = (links: typeof fr.links) =>
+      links
+        .filter((link) => link.rel === "alternate")
+        .map((link) => `${(link as { hrefLang: string }).hrefLang}=${link.href}`)
+        .sort();
+    expect(set(fr.links)).toEqual(set(ar.links));
+    expect(set(fr.links)).toHaveLength(3);
+  });
+
   it("no public counterpart (missing or unpublished): no alternates at all", () => {
     for (const translations of [[], undefined]) {
       const head = buildArticleHead(detail({ id: FR, translations }), FR);

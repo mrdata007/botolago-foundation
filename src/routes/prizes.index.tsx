@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { PrizesPage } from "@/components/prizes/PrizesPage";
 import { UiHeader } from "@/components/ui-kit";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";

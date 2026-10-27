@@ -7,7 +7,7 @@ import type {
   NewsTeamFilterDto,
 } from "@/backend/news/contracts";
 import { NewsError } from "@/backend/news/errors";
-import { MockNewsRepository } from "@/backend/news/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { encodeSavedCursor, SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import type { SavedEntry } from "@/lib/saved-collection";
 import { authService } from "@/services/auth";
@@ -40,7 +40,9 @@ export function selectNewsDataMode(
   return "mock";
 }
 
-const mockRepository = new MockNewsRepository();
+const mockRepository = lazyRepository<NewsRepository>(() =>
+  import("@/backend/news/mock-repository").then((m) => new m.MockNewsRepository()),
+);
 const supabaseRepository = new SupabaseNewsRepository();
 
 export function getNewsDataMode(): NewsDataMode {
@@ -536,6 +538,47 @@ export async function getArticleWithLanguageFallback(
       await repository.getArticle(identifier, language === "fr" ? "ar" : "fr", requestContext),
     );
   }
+}
+
+const EDITION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The edition a URL names, whichever language the reader's interface is in.
+ *
+ * An edition's language is a property of the edition, not of the reader: the
+ * page for an Arabic edition's address shows that Arabic edition for everyone.
+ * `api.news_article_detail` is asked for one language and, given an edition id
+ * from the other language, answers that language's sibling (migration
+ * 20261011170000), so asking only in French returned the French text for an
+ * Arabic address. Here an id is asked in each language in turn and accepted
+ * only when the answer IS that edition (`id` equal); a slug is language-specific,
+ * so it is tried in French, then Arabic. The reader's language plays no part,
+ * which is what lets the server loader and the client query agree.
+ */
+export async function getArticleEdition(
+  repository: Pick<NewsRepository, "getArticle">,
+  identifier: string,
+  requestContext: RepositoryContext,
+): Promise<ArticleDetailDto> {
+  const isId = EDITION_UUID.test(identifier);
+  const languages: readonly NewsLanguage[] = ["fr", "ar"];
+  let sibling: ArticleDetailDto | null = null;
+  let notFound: unknown = null;
+  for (const language of languages) {
+    try {
+      const article = await repository.getArticle(identifier, language, requestContext);
+      if (!isId || article.id.toLowerCase() === identifier.toLowerCase()) {
+        return sanitizeArticleAttribution(article);
+      }
+      sibling ??= article;
+    } catch (error) {
+      if (!(error instanceof NewsError) || error.code !== "article_not_found") throw error;
+      notFound = error;
+    }
+  }
+  // An id that no language answered as itself: serve what the server did return.
+  if (sibling) return sanitizeArticleAttribution(sibling);
+  throw notFound;
 }
 
 /** The server caps a page of the saved list at 50 (`api.news_saved_articles`). */

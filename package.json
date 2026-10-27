@@ -21,6 +21,7 @@
     "seo:gsc": "bun scripts/seo/analyze-search-console.ts",
     "test:backend": "bun test src/backend",
     "lint": "eslint .",
+    "perf:budget": "bun scripts/qa/perf/bundle-budget.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "backend:migrations:check": "bun scripts/backend/validate-migrations.mjs",

@@ -1,4 +1,5 @@
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { crestShareMeta } from "@/lib/share-image";
 import {
   isMissingContent,
   isUnavailable,
@@ -123,7 +124,13 @@ export const Route = createFileRoute("/matches/$matchId")({
     const detail = isUnavailable(loaderData) ? undefined : loaderData?.detail;
     const home = detail?.clubs.find((club) => club.id === detail.match.homeClubId)?.name.fr;
     const away = detail?.clubs.find((club) => club.id === detail.match.awayClubId)?.name.fr;
+    const homeClub = detail?.clubs.find((club) => club.id === detail.match.homeClubId);
     const named = home && away ? { home, away } : null;
+    // The home side's crest is the share picture when it has a usable one:
+    // a square picture, so the small card, not the large one.
+    const crestMeta = named
+      ? crestShareMeta(homeClub?.crestUrl, `${named.home} — ${named.away}`)
+      : [];
     const title = named
       ? `${named.home} — ${named.away} | BotolaGO`
       : "Match Botola Pro — BotolaGO";
@@ -159,9 +166,10 @@ export const Route = createFileRoute("/matches/$matchId")({
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:url", content: canonical },
-        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:card", content: crestMeta.length ? "summary" : "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
+        ...crestMeta,
       ],
       links: [{ rel: "canonical", href: canonical }],
       ...(structured.length

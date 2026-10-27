@@ -60,7 +60,7 @@ for (const language of ["fr", "ar"] as const) {
 // against this dev server it never showed at all, because StrictMode's second
 // run of a mount effect read the "seen" flag the first run had just written.
 test.describe("launch splash", () => {
-  test("a first visit opens on the splash, once, then the language chooser", async ({
+  test("a first visit opens on the splash, once, then the page, with no language chooser", async ({
     page,
   }, testInfo) => {
     const diagnostics = observePage(page);
@@ -82,13 +82,18 @@ test.describe("launch splash", () => {
     const splashChanges = () =>
       page.evaluate(() => (window as unknown as { __splash: boolean[] }).__splash);
 
+    // The language comes from the browser (audit 2026-10-26): no chooser
+    // stands between a first visit and the page.
     await page.goto("/");
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.locator(".launch-splash")).toBeHidden();
+    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(await splashChanges()).toEqual([true, false]);
 
     // Once per tab: a reload goes straight to the page.
     await page.reload();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.locator("main")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     expect(await splashChanges()).toEqual([false]);
 
     await diagnostics.verify(testInfo);

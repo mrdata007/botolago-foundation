@@ -9,7 +9,7 @@ import {
   pepitesRobotsMeta,
 } from "@/components/pepites/pepites-route";
 import { methodologyQueryOptions } from "@/components/pepites/use-pepites";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { isServerRender, prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";

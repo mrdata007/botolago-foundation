@@ -15,7 +15,7 @@ import type {
   TeamSummaryDto,
 } from "@/backend/football/contracts";
 import { FootballError } from "@/backend/football/errors";
-import { MockFootballRepository } from "@/backend/football/mock-repository";
+import { lazyRepository } from "@/backend/lazy-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
 import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
@@ -45,7 +45,9 @@ export function selectFootballDataMode(
   return "mock";
 }
 
-const mockRepository = new MockFootballRepository();
+const mockRepository = lazyRepository<FootballRepository>(() =>
+  import("@/backend/football/mock-repository").then((m) => new m.MockFootballRepository()),
+);
 const supabaseRepository = new SupabaseFootballRepository();
 
 export function getFootballRepository(): FootballRepository {
@@ -755,6 +757,35 @@ export const footballService = {
     for (const fixture of fixtures) {
       const match = toMatch(fixture);
       if (match.status === "finished" && !Number.isNaN(Date.parse(match.kickoff))) {
+        days.add(matchDayKey(new Date(match.kickoff)));
+      }
+    }
+    return [...days].sort();
+  },
+
+  /**
+   * The days of a season on which a match is played or has been, as
+   * competition-day keys, oldest first: scheduled, in play or finished.
+   * Postponed and cancelled fixtures do not count. The Matches calendar opens
+   * on the nearest of them (`nearestMatchDay`); one read of the fixture list,
+   * in French whatever the reader's language, because only the days are kept.
+   */
+  async getSeasonFixtureDays(
+    season: Pick<FootballSeason, "id" | "competitionId">,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      "fr",
+      requestContext(signal),
+    );
+    const days = new Set<string>();
+    for (const fixture of fixtures) {
+      const match = toMatch(fixture);
+      const counts =
+        match.status === "scheduled" || match.status === "live" || match.status === "finished";
+      if (counts && !Number.isNaN(Date.parse(match.kickoff))) {
         days.add(matchDayKey(new Date(match.kickoff)));
       }
     }

@@ -13,6 +13,7 @@ describe("SEO site audit", () => {
             <title>Raja Casablanca : matchs, classement et actualites</title>
             <meta name="description" content="Suivez le Raja Casablanca, ses matchs, son classement et ses actualites sur BotolaGO.">
             <link rel="canonical" href="https://botolago.com/clubs/raja">
+            <meta property="og:image" content="https://botolago.com/og-image.jpg">
             <script type="application/ld+json">{"@type":"SportsTeam"}</script>
           </head>
           <body><main><h1>Raja Casablanca</h1><p>Club marocain.</p></main></body>
@@ -22,8 +23,22 @@ describe("SEO site audit", () => {
 
     expect(row.wordCount).toBe(4);
     expect(row.h1Count).toBe(1);
+    expect(row.ogImage).toBe("https://botolago.com/og-image.jpg");
+    expect(row.issues).not.toContain("missing_og_image");
+    expect(row.issues).not.toContain("missing_h1");
     expect(row.jsonLdTypes).toBe("SportsTeam");
     expect(row.issues).toContain("thin_raw_html");
+  });
+
+  test("flags a page with no h1", () => {
+    const row = inspectHtml(
+      "https://botolago.com/x",
+      200,
+      "",
+      "<html><body><p>a</p></body></html>",
+      1,
+    );
+    expect(row.issues).toContain("missing_h1");
   });
 
   test("reports the high-impact indexability issues", () => {
@@ -41,6 +56,7 @@ describe("SEO site audit", () => {
         "missing_description",
         "multiple_h1",
         "missing_canonical",
+        "missing_og_image",
         "noindex",
       ]),
     );

@@ -117,7 +117,7 @@ export function TopBar({
             <Search aria-hidden />
           </UiIconButton>
           <NotificationBell />
-          <LanguageSwitcher />
+          <LanguageSwitcher direct />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
           {PEPITES_PROMOTED || curvaLive ? (

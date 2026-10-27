@@ -36,7 +36,6 @@ const SHELL_FILES = [
   "src/components/shell/PageBackground.tsx",
   "src/components/shell/LanguageSwitcher.tsx",
   "src/components/shell/LanguageMenuChoices.tsx",
-  "src/components/shell/FirstLaunchLanguage.tsx",
   "src/components/shell/ThemeSwitcher.tsx",
 ];
 

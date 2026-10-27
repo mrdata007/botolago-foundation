@@ -111,9 +111,10 @@ describe("the legal routes themselves", () => {
       }
       expect(source).toContain(`fr["${key}"]`);
     }
-    // The French dictionary itself: the route no longer imports both
-    // languages (the Arabic one is loaded on demand).
-    expect(source).toContain('import { fr } from "@/i18n/dictionary-fr"');
+    // The French dictionary itself, its first part (the one the entry chunk
+    // holds): the route no longer imports both languages (the Arabic one is
+    // loaded on demand) nor the whole French dictionary.
+    expect(source).toContain('import { frCore as fr } from "@/i18n/dictionary-fr-core"');
     expect(source).toContain('name: "description"');
   });
 });

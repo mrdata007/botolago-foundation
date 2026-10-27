@@ -29,6 +29,8 @@ export const ar = {
   "language.arabic": "العربية",
   "language.continue": "متابعة",
   "language.switch": "اللغة",
+  "language.switch_to_ar": "التبديل إلى العربية",
+  "language.switch_to_fr": "التبديل إلى الفرنسية",
   "language.arabic_loading": "جارٍ تحميل العربية…",
   "language.arabic_failed": "تعذّر تحميل العربية. تحقّق من اتصالك ثم أعد المحاولة.",
 

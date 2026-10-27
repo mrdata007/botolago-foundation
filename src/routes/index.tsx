@@ -104,6 +104,33 @@ const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football maroc
 const HOME_DESCRIPTION =
   "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
 
+/**
+ * The language the server renders and prefetches in, and the one the first
+ * client render uses: `INITIAL_LANGUAGE_STATE` is French for everyone (the
+ * stored or detected language is applied after mount, so hydration matches).
+ * The hydrated cache is therefore read, by every reader, under these "fr"
+ * keys. An Arabic reader's queries change key right after hydration and
+ * must be fetched in Arabic: the club, season and competition names come
+ * back from the database translated (`p_language`), so the French data
+ * cannot stand in for them, and the server cannot know to prefetch Arabic
+ * (the language is in the browser's storage, not the request). The
+ * language-keyed queries below keep the French data on screen as a
+ * placeholder while the Arabic arrives, rather than turning to skeletons.
+ */
+const SSR_LANGUAGE = "fr" as const;
+
+/** The band photograph the server drew: the crowd while a match is live. */
+const bandPhoto = (live: boolean) =>
+  live
+    ? { src: liveBand, small: liveBandSmall, width: 1600, height: 686 }
+    : { src: stadiumBand, small: stadiumBandSmall, width: 1600, height: 600 };
+/** What the band image's `sizes` says; the preload must say the same. */
+const BAND_IMAGE_SIZES = "(min-width: 640px) 672px, 100vw";
+const bandSrcSet = (live: boolean) => {
+  const photo = bandPhoto(live);
+  return `${photo.small} 800w, ${photo.src} 1600w`;
+};
+
 export const Route = createFileRoute("/")({
   // The server renders the home page with its matches, clubs, news and table
   // (see `@/lib/ssr-prefetch`); the Fantasy blocks are the visitor's own and
@@ -112,33 +139,37 @@ export const Route = createFileRoute("/")({
     const { queryClient } = context;
     await prefetchForSsr(queryClient, [
       {
-        queryKey: ["football", "home-matches", "fr"],
-        queryFn: ({ signal }) => footballService.getHomeMatches("fr", signal),
+        queryKey: ["football", "home-matches", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getHomeMatches(SSR_LANGUAGE, signal),
       },
       {
-        queryKey: ["football", "clubs", "fr"],
-        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+        queryKey: ["football", "clubs", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getClubs(SSR_LANGUAGE, signal),
       },
       {
-        queryKey: ["football", "seasons", "fr"],
-        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+        queryKey: ["football", "seasons", SSR_LANGUAGE],
+        queryFn: ({ signal }) => footballService.getSeasons(SSR_LANGUAGE, signal),
       },
       ...(NEWS_ENABLED
         ? [
             {
-              queryKey: ["news", "edition", "fr", "auto"],
-              queryFn: () => newsService.getEdition("fr", "auto"),
+              queryKey: ["news", "edition", SSR_LANGUAGE, "auto"],
+              queryFn: () => newsService.getEdition(SSR_LANGUAGE, "auto"),
             },
           ]
         : []),
     ]);
-    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>([
+      "football",
+      "seasons",
+      SSR_LANGUAGE,
+    ]);
     const current = seasons?.find((season) => season.isCurrent) ?? seasons?.[0];
     if (current) {
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "standings", current.id, "fr"],
-          queryFn: ({ signal }) => footballService.getStandings(current, "fr", signal),
+          queryKey: ["football", "standings", current.id, SSR_LANGUAGE],
+          queryFn: ({ signal }) => footballService.getStandings(current, SSR_LANGUAGE, signal),
         },
       ]);
     }
@@ -146,10 +177,18 @@ export const Route = createFileRoute("/")({
     // the browser's first render reads it back from the loader data rather
     // than its own clock, so both render the same words (as /matches does
     // with its day).
-    return { ...ssrAvailability(queryClient), renderedAt: Date.now() };
+    // Whether a match is live, for the band's photograph (the preload in
+    // `head` names the one the page will draw, the crowd or the stadium).
+    const home = queryClient.getQueryData<{ matches: Match[] }>([
+      "football",
+      "home-matches",
+      SSR_LANGUAGE,
+    ]);
+    const bandLive = home?.matches.some(isInPlay) ?? false;
+    return { ...ssrAvailability(queryClient), renderedAt: Date.now(), bandLive };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { title: HOME_TITLE },
       { name: "description", content: HOME_DESCRIPTION },
@@ -161,7 +200,20 @@ export const Route = createFileRoute("/")({
       { name: "twitter:title", content: HOME_TITLE },
       { name: "twitter:description", content: HOME_DESCRIPTION },
     ],
-    links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+    links: [
+      { rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` },
+      // The band's photograph is the page's largest image and the browser
+      // finds it only in the rendered body: fetched at once instead, with
+      // the same srcset and sizes as the `<img>`, so it picks the same file.
+      {
+        rel: "preload",
+        as: "image",
+        href: bandPhoto(loaderData?.bandLive ?? false).src,
+        imageSrcSet: bandSrcSet(loaderData?.bandLive ?? false),
+        imageSizes: BAND_IMAGE_SIZES,
+        fetchPriority: "high",
+      },
+    ],
     // Who publishes the site, and the site itself (see `@/lib/structured-data`).
     scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
@@ -280,10 +332,12 @@ function HomeContent() {
     queryKey: ["news", "edition", lang, "auto"] as const,
     queryFn: () => newsService.getEdition(lang, "auto"),
     enabled: NEWS_ENABLED,
+    placeholderData: keepPreviousData,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    placeholderData: keepPreviousData,
   });
 
   // Standings snapshot: the top of the table on the Classement tab
@@ -293,6 +347,7 @@ function HomeContent() {
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    placeholderData: keepPreviousData,
   });
   const currentSeason = useMemo(
     () => seasonsQ.data?.find((season) => season.isCurrent) ?? seasonsQ.data?.[0],
@@ -302,6 +357,8 @@ function HomeContent() {
     queryKey: ["football", "standings", currentSeason?.id, lang],
     queryFn: () => footballService.getStandings(currentSeason!, lang),
     enabled: currentSeason != null,
+    // The table in French while the Arabic one loads (see `SSR_LANGUAGE`).
+    placeholderData: keepPreviousData,
   });
   // A match ending changes the table (see /matches/standings).
   const queryClient = useQueryClient();
@@ -1039,13 +1096,14 @@ function GameweekBand({
           starts on the calm side. Decorative, so hidden from assistive tech;
           above the fold, so it is fetched eagerly. */}
       <img
-        src={live ? liveBand : stadiumBand}
-        srcSet={
-          live
-            ? `${liveBandSmall} 800w, ${liveBand} 1600w`
-            : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
-        }
-        sizes="(min-width: 640px) 672px, 100vw"
+        src={bandPhoto(live).src}
+        srcSet={bandSrcSet(live)}
+        sizes={BAND_IMAGE_SIZES}
+        // The photograph's own size: the box is laid out by `h-full w-full`,
+        // so these change nothing on screen, but the browser knows the
+        // aspect before the file arrives.
+        width={bandPhoto(live).width}
+        height={bandPhoto(live).height}
         alt=""
         aria-hidden
         decoding="async"

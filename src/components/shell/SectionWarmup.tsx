@@ -1,7 +1,14 @@
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { savesData, sectionsToWarm, warmSections, type WarmupRouter } from "@/lib/section-warmup";
+import { loadFrenchRest } from "@/i18n/dictionary-fr-loader";
+import {
+  WARMUP_DELAY_MS,
+  savesData,
+  sectionsToWarm,
+  warmSections,
+  type WarmupRouter,
+} from "@/lib/section-warmup";
 import { usePrimaryNavItems } from "./primary-nav";
 
 /** Once per page load: a later page settling does not start it again. */
@@ -25,6 +32,8 @@ export function SectionWarmup() {
     if (warmed || settledPath === undefined || savesData()) return;
     const start = () => {
       warmed = true;
+      // The French strings of the other pages, so a first tap waits for none.
+      window.setTimeout(() => void loadFrenchRest().catch(() => undefined), WARMUP_DELAY_MS);
       void warmSections(
         router as unknown as WarmupRouter,
         sectionsToWarm(

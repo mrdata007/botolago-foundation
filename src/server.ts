@@ -54,6 +54,8 @@ export default {
       return withSiteHeaders(
         withPageStatus(await normalizeCatastrophicSsrResponse(response)),
         request.url,
+        undefined,
+        { method: request.method, hasAuthorization: request.headers.has("authorization") },
       );
     } catch (error) {
       console.error(error);

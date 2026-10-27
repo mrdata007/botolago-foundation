@@ -30,9 +30,12 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
       /prefetchForSsr\(queryClient, \[\s*\{\s*queryKey: \["football", "seasons", "fr"\]/,
     );
     expect(page).toContain("const season = openingSeason(seasons, deps.season);");
-    expect(page).toMatch(
-      /deps\.date\s*\? clampMatchDay\(deps\.date, season\)\s*: openingMatchDay\(season, today\)/,
-    );
+    expect(page).toContain("day = clampMatchDay(deps.date, season);");
+    // Without a day in the URL: the nearest day with fixtures to the opening
+    // day, from the season's fixture days read once for the server render.
+    expect(page).toContain("const opening = openingMatchDay(season, today);");
+    expect(page).toMatch(/prefetchForSsr\(queryClient, \[seasonFixtureDaysQuery\(season\)\]\)/);
+    expect(page).toMatch(/day = nearestMatchDay\([\s\S]*?opening,\s*\);/);
     expect(page).toMatch(
       /prefetchForSsr\(queryClient, \[matchDayQuery\(day, "fr", season\?\.id\)\]\)/,
     );
@@ -44,6 +47,14 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
     expect(page).toContain("return { ...ssrAvailability(queryClient), today };");
     expect(page).toContain("const { today } = Route.useLoaderData();");
     expect(page).toContain("openingMatchDay(selectedSeason, today)");
+    // The page opens on the same nearest day, and its day's read waits for the
+    // fixture days (unless the URL names a day), so it never opens on today
+    // and then jumps.
+    expect(page).toContain(
+      "nearestMatchDay(fixtureDaysQ.data, openingMatchDay(selectedSeason, today))",
+    );
+    expect(page).toContain("const fixtureDaysEnabled = seasonsQ.isSuccess && !search.date");
+    expect(page).toContain("enabled: seasonsQ.isSuccess && openingDayKnown");
   });
 
   it("works out the season and the day while rendering, never in an effect after it", () => {

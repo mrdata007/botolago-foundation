@@ -12,17 +12,34 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 // runs (`x-botolago-release` header, `botolago-release` meta tag, and every
 // operational error event). On 2026-09-24 the live login page was days behind
 // `main` and nothing showed it. A CI or host that sets VITE_RELEASE_SHA wins;
-// otherwise the checkout's own HEAD; without git the release reads "unknown".
-if (!process.env.VITE_RELEASE_SHA) {
+// otherwise the checkout's own HEAD, then the commit variables of common build
+// hosts (Workers Builds, Pages, GitHub, Vercel, Netlify, Lovable); with none of
+// them the release reads "unknown".
+const RELEASE_ENV_VARS = [
+  "WORKERS_CI_COMMIT_SHA",
+  "CF_PAGES_COMMIT_SHA",
+  "GITHUB_SHA",
+  "VERCEL_GIT_COMMIT_SHA",
+  "COMMIT_REF",
+  "LOVABLE_COMMIT_SHA",
+];
+
+function validRelease(value: string | undefined): string | undefined {
+  const sha = value?.trim().toLowerCase();
+  return sha && /^[0-9a-f]{7,40}$/.test(sha) ? sha : undefined;
+}
+
+if (!validRelease(process.env.VITE_RELEASE_SHA)) {
+  let release: string | undefined;
   try {
-    process.env.VITE_RELEASE_SHA = execSync("git rev-parse HEAD", {
-      stdio: ["ignore", "pipe", "ignore"],
-    })
-      .toString()
-      .trim();
+    release = validRelease(
+      execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString(),
+    );
   } catch {
-    // Not a git checkout: the release stays unknown.
+    // Not a git checkout: fall back to the build host's own variables.
   }
+  for (const name of RELEASE_ENV_VARS) release ??= validRelease(process.env[name]);
+  if (release) process.env.VITE_RELEASE_SHA = release;
 }
 
 export default defineConfig({
@@ -37,5 +54,29 @@ export default defineConfig({
   },
   vite: {
     plugins: [mcpPlugin()],
+    environments: {
+      client: {
+        build: {
+          rollupOptions: {
+            output: {
+              codeSplitting: {
+                groups: [
+                  {
+                    name: "vendor-react",
+                    test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                    priority: 30,
+                  },
+                  {
+                    name: "vendor-supabase",
+                    test: /node_modules[\\/]@supabase[\\/]/,
+                    priority: 20,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
   },
 });

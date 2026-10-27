@@ -28,13 +28,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
-import {
-  createFantasyOwnedRepository,
-  selectFantasyRepoSource,
-  type FantasyOwnedRepository,
-  type FantasyRepoSource,
-  type FantasySnapshot,
+import type {
+  FantasyOwnedRepository,
+  FantasyRepoSource,
+  FantasySnapshot,
 } from "@/services/fantasy-owned-repository";
+import { createLazyFantasyOwnedRepository } from "@/services/fantasy-owned-repository-lazy";
+import { selectFantasyRepoSource } from "@/services/fantasy-guest-repository";
 import { FantasyRepoError } from "@/services/fantasy-errors";
 import { forgetSharedFantasyHub } from "@/services/fantasy-hub-share";
 import {
@@ -98,7 +98,7 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   const owner = userId ?? LOCAL_OWNER;
 
   const repo = useMemo<FantasyOwnedRepository>(() => {
-    return createFantasyOwnedRepository({
+    return createLazyFantasyOwnedRepository({
       authMode: AUTH_MODE,
       isAuthenticated,
       userId,

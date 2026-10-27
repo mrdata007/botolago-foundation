@@ -5,7 +5,7 @@ import { LegalDocumentView } from "@/components/legal/LegalDocumentView";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiHeader } from "@/components/ui-kit";
 import { PRIZE_TERMS } from "@/content/legal/prize-terms";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";

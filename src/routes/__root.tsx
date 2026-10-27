@@ -1,6 +1,7 @@
 import notFoundArt from "@/assets/illustrations/not-found.webp";
 import errorArt from "@/assets/illustrations/no-connection.webp";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { documentLanguageFromMatches } from "@/lib/document-language";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -15,15 +16,15 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { frenchReadyFor } from "@/i18n/dictionary-fr-loader";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
-import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { SectionWarmup } from "@/components/shell/SectionWarmup";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
-import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NativePushBridgeGate } from "@/components/native/NativePushBridgeGate";
 import { NATIVE_APP_INIT_SCRIPT } from "@/lib/native-app";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
@@ -46,6 +47,7 @@ import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { currentRelease, reportUnhandledError } from "@/lib/operational-errors";
 import { installClientErrorSink } from "@/lib/client-error-sink";
+import { registerServiceWorker } from "@/lib/pwa/register-sw";
 import { retryAfterError } from "@/lib/chunk-reload";
 
 function NotFoundComponent() {
@@ -89,6 +91,18 @@ const stateActionClass = cn(
 
 function NotFoundBody() {
   const { t, dir } = useI18n();
+  // The 404 had the site's default title, as if it were the home page (audit
+  // 2026-10-26). `head()` runs without the reader's language, so the title is
+  // set here, in it, as `/jouer` does; the previous one is put back when the
+  // reader leaves, since the head would not repaint an unchanged title.
+  const title = `${t("notfound.title")} — BotolaGO`;
+  useEffect(() => {
+    const previous = document.title;
+    document.title = title;
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
   return (
     <div
       dir={dir}
@@ -118,7 +132,8 @@ function NotFoundBody() {
             `ui.stat.hero`'s own `leading-[var(--ui-leading-flat)]` and the
             numeral falls back to the inherited line box. Verified against
             tailwind-merge 3.5. */}
-        <h1
+        <p
+          aria-hidden
           className={cn(
             ui.stat.hero,
             ui.tone.ink,
@@ -126,8 +141,9 @@ function NotFoundBody() {
           )}
         >
           {t("notfound.code")}
-        </h1>
-        <h2 className={cn("mt-4", ui.text.title, ui.tone.default)}>{t("notfound.title")}</h2>
+        </p>
+        {/* The page's heading: the figure above is decoration for it. */}
+        <h1 className={cn("mt-4", ui.text.title, ui.tone.default)}>{t("notfound.title")}</h1>
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("notfound.description")}</p>
         <div className="mt-6">
           <Link
@@ -218,7 +234,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   // Curva (the Manager Card section): read the database's status once per server render, before
   // any child route's guard needs it. Registered only when the build lets Curva exist, so with
   // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
-  ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
+  beforeLoad: async (ctx) => {
+    // Browser: the rest of the French dictionary is in before a page other than
+    // the home page renders (src/i18n/dictionary-fr-loader.ts).
+    await frenchReadyFor(ctx.location.pathname);
+    if (MANAGER_CARD_BUILD) await rootBeforeLoad(ctx);
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -241,6 +262,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
       },
+      // Browser chrome colour when the site is installed (public/manifest.webmanifest).
+      { name: "theme-color", content: "#0c3164" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",
@@ -259,17 +282,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Actualités, informations de match et Fantasy pour la Botola Pro.",
       },
       { property: "og:type", content: "website" },
-      // The default share picture (stadium + wordmark, 1200×630). Article
-      // pages set their own og:image, which takes precedence.
+      // The default share picture (stadium + wordmark, 1200×630). Article,
+      // club and match pages set their own og:image, which takes precedence.
+      // No og:image:width/height here: the router merges tag by tag, so a
+      // root size would be declared for a page's crest of unknown size too.
       { property: "og:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
-      { property: "og:image:width", content: "1200" },
-      { property: "og:image:height", content: "630" },
       { property: "og:image:alt", content: "BotolaGO" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: `${PUBLIC_SITE_ORIGIN}/og-image.jpg` },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
       // reusing the old one they have cached. Bump it whenever the file changes.
       { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },
@@ -338,8 +362,13 @@ function RootShell({ children }: { children: ReactNode }) {
   // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`;
   // the splash and native-app scripts add their `data-*` attributes the same way.
   // Both are deliberate out-of-band writes to the document element, not drift.
+  // French and left-to-right everywhere except an Arabic article edition.
+  const htmlLanguage = useRouterState({
+    select: (state) => documentLanguageFromMatches(state.matches),
+    structuralSharing: true,
+  });
   return (
-    <html lang="fr" dir="ltr" suppressHydrationWarning>
+    <html lang={htmlLanguage.lang} dir={htmlLanguage.dir} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -355,6 +384,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   // Visitors' errors reach api.report_client_errors (production builds only).
   useEffect(() => installClientErrorSink(), []);
+  // Offline page and installability (production browsers only, never the phone app).
+  useEffect(() => registerServiceWorker(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
@@ -365,7 +396,7 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
-              <NativePushBridge />
+              <NativePushBridgeGate />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
               <ManagerCardLiveMarker />
               <SectionWarmup />
@@ -419,12 +450,11 @@ function AnalyticsPageviews() {
  * After mount:
  *   1. If this load shows the splash, it plays out and leaves; if not, it is
  *      dropped at once, having never been on screen.
- *   2. When it is gone → language chooser (if not already chosen).
- *   3. Otherwise → normal routes.
- * Splash and language chooser never render simultaneously.
+ *   2. Otherwise → normal routes.
+ * There is no language chooser: the language is the stored one, or the
+ * device's (src/i18n/language-state.ts), changed from the top bar.
  */
 function LaunchGate() {
-  const { hasChosen, isHydrated } = useI18n();
   const [splashDone, setSplashDone] = useState(false);
 
   // Arrival dialogs of other pages (the prize welcome) wait for this; see
@@ -434,15 +464,12 @@ function LaunchGate() {
     if (splashDone) markSplashDone();
   }, [splashDone]);
 
-  const showLanguage = splashDone && isHydrated && !hasChosen;
-
   return (
     <>
       {/* First in the document, so it is parsed, and painted, before the
           page it covers. */}
       {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
       <Outlet />
-      {showLanguage && <FirstLaunchLanguage />}
     </>
   );
 }

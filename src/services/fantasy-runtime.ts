@@ -1,4 +1,5 @@
-import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
+import { lazyMockFantasyService as mockFantasyService } from "./fantasy-mock-lazy";
+import { saveTeamPatch, type FantasyTeamPatch } from "./fantasy-team-patch";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
 import { hubIdentity } from "./fantasy-identity";
@@ -544,7 +545,7 @@ export const fantasyService = {
   },
   saveTeam(patch: FantasyTeamPatch): void {
     if (mode() === "mock") {
-      mockFantasyService.saveTeam(patch);
+      saveTeamPatch(patch);
       return;
     }
     throw new Error("Cloud Fantasy mutations must use the authoritative owned repository.");
