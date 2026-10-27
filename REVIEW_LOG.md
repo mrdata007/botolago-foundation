@@ -356,3 +356,17 @@ The owner said yes to merging, and asked the Lead to publish it in Lovable.
 - Re-checked: typecheck clean, lint 0 errors, formatting clean, 10,896 tests pass (1 known failure), i18n gate passes, build passes.
 - Pull request #569 opened. Waiting for GitHub's checks before merging; then publish in Lovable (project "BotolaGO").
 
+**Merged** (#569 → `main`, 86fb535) after both GitHub checks passed. Codex's optional review was still running.
+
+**Not published yet: Lovable is out of step with GitHub.**
+- At 15:47 Lovable made its own change: its build tool went from 2.23.1 to 2.26.5. It put that on side branch `lovable-sync-1793116085`, not on `main`.
+- Since then Lovable has not taken anything from `main`: neither #566 nor #569.
+- Publishing now would put an older version live, without today's work.
+
+The Lead tested `main` combined with Lovable's change:
+- It combines without clashes.
+- The build passes and typecheck is clean.
+- Tests: 10,895 pass. Two failures: the known Bun-version test, and a timing-sensitive animation test that passed 3 out of 3 on its own, with and without the change.
+
+Asked the owner before combining the two on `main`.
+
