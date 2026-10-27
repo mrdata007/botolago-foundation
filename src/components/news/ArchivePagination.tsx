@@ -30,7 +30,7 @@ export function ArchivePagination({ page, plan }: { page: number; plan: NewsArch
               rel="prev"
               className={cn(control, idle)}
             >
-              <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+              <ChevronLeft className="h-4 w-4" aria-hidden />
               {t("news.archive.prev")}
             </Link>
           </li>
@@ -68,7 +68,7 @@ export function ArchivePagination({ page, plan }: { page: number; plan: NewsArch
               className={cn(control, idle)}
             >
               {t("news.archive.next")}
-              <ChevronRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+              <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </li>
         )}

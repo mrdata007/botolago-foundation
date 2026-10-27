@@ -249,11 +249,12 @@ function urlset(urls: readonly string[]): string {
 const pageUrl = (path: string) =>
   `  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}${path}`)}</loc></url>`;
 
-/** The static pages, and the /news hub while News is on. */
+/** The static pages, and the /news hub and archive while News is on. */
 export function buildStaticSitemapXml(options: { readonly newsEnabled: boolean }): string {
   return urlset([
     ...SITEMAP_STATIC_PATHS.map(pageUrl),
-    ...(options.newsEnabled ? [pageUrl("/news")] : []),
+    // The hub and the archive, whose numbered pages link every article.
+    ...(options.newsEnabled ? [pageUrl("/news"), pageUrl("/news/archive")] : []),
   ]);
 }
 

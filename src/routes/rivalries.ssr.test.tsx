@@ -81,11 +81,15 @@ const PAST = match(
 const original = footballService.getRivalry;
 const globals = globalThis as { window?: unknown };
 const hadWindow = "window" in globals;
+const originalWindow = globals.window;
 const clients: QueryClient[] = [];
 afterEach(() => {
   footballService.getRivalry = original;
   for (const created of clients.splice(0)) created.clear();
-  if (!hadWindow) delete globals.window;
+  // Other test files leave a `window` shim on the shared global (the drafts
+  // store reads its storage), so it is put back as it was, not only removed.
+  if (hadWindow) globals.window = originalWindow;
+  else delete globals.window;
 });
 
 function render(queryClient: QueryClient) {
