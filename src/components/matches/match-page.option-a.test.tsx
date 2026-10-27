@@ -287,13 +287,57 @@ describe("match page — the Résumé timeline", () => {
     />,
   );
 
-  it("puts a home event's edge on the inline start and an away event's on the inline end", () => {
+  it("puts a home event on the inline start and an away event on the inline end, one row each", () => {
     // The substitution is a "moment faible": hidden until the switch is off.
-    const cards = [...html.matchAll(/<div data-club=""[^>]*class="([^"]*)"/g)].map((m) => m[1]!);
-    expect(cards).toHaveLength(3);
-    expect(cards[0]).toContain("border-s-4");
-    expect(cards[1]).toContain("border-e-4");
-    expect(cards[2]).toContain("border-e-4");
+    const rows = [...html.matchAll(/<div data-club=""[^>]*class="([^"]*grid-cols[^"]*)"/g)].map(
+      (m) => m[1]!,
+    );
+    expect(rows).toHaveLength(3);
+    // Goals carry the club wash; a card does not. No row is a card with an edge.
+    expect(rows[0]).toContain("bg-[color:var(--ui-club-tint)]");
+    expect(rows[1]).not.toContain("bg-[color:var(--ui-club-tint)]");
+    expect(html).not.toContain("border-s-4");
+    expect(html).not.toContain("border-e-4");
+    // Away rows put the text toward the end: `text-end` and `justify-end`.
+    expect(html.match(/justify-end/g)).toHaveLength(2);
+  });
+
+  it("lists the latest event first", () => {
+    const minutes = [...html.matchAll(/<bdi>(\d+)(?:<!-- -->)?(?:\+\d+)?<span/g)].map((m) => m[1]);
+    expect(minutes).toEqual(["45", "33", "12"]);
+  });
+
+  it("keeps a goal's way and a card's name short on the one line, the card's words for screen readers", () => {
+    const lineup = {
+      id: "l1",
+      team: { id: "war" },
+      formation: "4-3-3",
+      confirmed: true,
+      publishedAt: null,
+      players: [
+        { id: "p1", slug: null, displayName: "Hamza Smaali", slot: "starting", order: 1 },
+        { id: "p2", slug: null, displayName: "Jawad Rhabra", slot: "starting", order: 2 },
+      ],
+    } as unknown as MatchLineupDto;
+    const named = inFrench(
+      <EventTimeline
+        events={[
+          { ...event("g1", "penalty_goal", "home", 19), playerId: "p1" },
+          { ...event("c1", "yellow_card", "home", 41), playerId: "p2" },
+        ]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        lineups={[lineup]}
+        isLive={false}
+        phase="finished"
+      />,
+    );
+    expect(named).toContain("Hamza Smaali");
+    expect(named).toContain(dictionaries.fr["matches.event.penalty_short"]);
+    expect(named).toMatch(/<span class="sr-only">Carton jaune · <\/span>/);
+    // The card line is just the name: no visible "Carton jaune ·".
+    expect(named).not.toMatch(/>Carton jaune · Jawad/);
   });
 
   it("hides substitutions by default and offers to show them, counted", () => {
@@ -303,19 +347,20 @@ describe("match page — the Résumé timeline", () => {
   });
 
   it("puts each minute in a centre pill: navy for a goal, light grey for a card", () => {
-    const pills = [...html.matchAll(/<span class="([^"]*rounded-full[^"]*)"><bdi[^>]*>(\d+)/g)].map(
+    const pills = [...html.matchAll(/<span class="([^"]*rounded-full[^"]*)"><bdi>(\d+)/g)].map(
       (m) => [m[2]!, m[1]!] as const,
     );
-    expect(pills.map(([minute]) => minute)).toEqual(["12", "33", "45"]);
-    expect(pills[0]![1]).toContain("bg-[color:var(--ui-ink)]");
+    // Latest first.
+    expect(pills.map(([minute]) => minute)).toEqual(["45", "33", "12"]);
+    expect(pills[2]![1]).toContain("bg-[color:var(--ui-ink)]");
     expect(pills[1]![1]).toContain("bg-[color:var(--ui-surface-sunken)]");
     // A penalty is a goal for the pill's purposes.
-    expect(pills[2]![1]).toContain("bg-[color:var(--ui-ink)]");
+    expect(pills[0]![1]).toContain("bg-[color:var(--ui-ink)]");
   });
 
   it("isolates each minute, stoppage time included, with the prime in the body face", () => {
-    expect(html).toMatch(/<bdi[^>]*>12<span class="[^"]*">′<\/span><\/bdi>/);
-    expect(html).toMatch(/<bdi[^>]*>45(?:<!-- -->)?\+2<span class="[^"]*">′<\/span><\/bdi>/);
+    expect(html).toMatch(/<bdi>12<span class="[^"]*">′<\/span><\/bdi>/);
+    expect(html).toMatch(/<bdi>45(?:<!-- -->)?\+2<span class="[^"]*">′<\/span><\/bdi>/);
   });
 
   it("draws the end of the first half as MI-TEMPS and no other period boundary", () => {
@@ -342,6 +387,28 @@ describe("match page — the Résumé timeline", () => {
     expect(withScore).toMatch(
       /Mi-temps<span class="[^"]*flex[^"]*">.*?<bdi>1<\/bdi><span>–<\/span><bdi>0<\/bdi>/,
     );
+  });
+
+  it("closes a finished match with a full-time separator carrying the final score", () => {
+    const finished = inFrench(
+      <EventTimeline
+        events={[event("g1", "goal", "home", 12), event("g2", "goal", "away", 80)]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        isLive={false}
+        phase="finished"
+        fullTime={{ home: 1, away: 1 }}
+      />,
+    );
+    // Latest first: the full-time band is the first line.
+    expect(finished.indexOf("Terminé")).toBeGreaterThan(-1);
+    expect(finished.indexOf("Terminé")).toBeLessThan(finished.indexOf(">80<"));
+    expect(finished).toMatch(
+      /Terminé<span class="[^"]*">.*?<bdi>1<\/bdi><span>–<\/span><bdi>1<\/bdi>/,
+    );
+    // A live match has none.
+    expect(html).not.toContain("Terminé");
   });
 });
 

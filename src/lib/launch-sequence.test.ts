@@ -34,23 +34,10 @@ describe("arrival dialogs wait for the launch sequence", () => {
     },
   );
 
-  test("Home is never replaced by the landing page: a first visit gets an invitation inside it", () => {
+  test("Home itself no longer swaps in the landing page: it is a page at /jouer only", () => {
     const source = code("src/routes/index.tsx");
-    expect(source).not.toContain("showLanding");
-    expect(source).not.toContain("LandingFallback");
-    expect(source).not.toContain("loadLanding");
+    expect(source).not.toContain("LandingPage");
+    expect(source).not.toContain("useSplashDone");
     expect(source).not.toContain('role="dialog"');
-    // The landing page is not downloaded by Home at all: it is `/jouer`.
-    expect(source).not.toContain("components/landing/LandingPage");
-    expect(source).toContain("<FantasyInvitationCard");
-
-    // The invitation reads localStorage only after mount, so the server's
-    // Home and the first client render are the same markup, and it is for an
-    // anonymous visitor who has not been welcomed; closing it is the welcome.
-    const card = code("src/components/landing/FantasyInvitationCard.tsx");
-    expect(card).toContain("useEffect(() => setMounted(true), [])");
-    expect(card).toContain('mounted && status === "anonymous" && !dismissed && !hasWelcomed()');
-    expect(card).toContain("markWelcomeDone();");
-    expect(card).toContain('to="/jouer"');
   });
 });

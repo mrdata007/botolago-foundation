@@ -45,6 +45,25 @@ describe("LiveFreshnessNote", () => {
     expect(html).not.toContain("<button");
   });
 
+  test("fresh with the clock: says how long ago the stored data was written", () => {
+    const ago = (minutes: number, stored = true) =>
+      inFrench(
+        <LiveFreshnessNote
+          freshness="fresh"
+          updatedAt={UPDATED}
+          refreshing={false}
+          onRefresh={() => {}}
+          now={UPDATED + minutes * 60_000}
+          dataUpdatedAt={stored ? new Date(UPDATED).toISOString() : undefined}
+        />,
+      );
+    expect(ago(0)).toContain("Mis à jour à l&#x27;instant");
+    expect(ago(2)).toMatch(/Mis à jour <bdi[^>]*>il y a\s2\smin<\/bdi>/);
+    expect(ago(90)).toMatch(/Mis à jour <bdi[^>]*>il y a\s1\sh<\/bdi>/);
+    // No stored time: the time of the last read stands in.
+    expect(ago(3, false)).toMatch(/<bdi[^>]*>il y a\s3\smin<\/bdi>/);
+  });
+
   test("stale: says since when, announced once, with a refresh button", () => {
     const html = note("stale");
     expect(html).toContain('role="status"');

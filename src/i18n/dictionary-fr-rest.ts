@@ -2,6 +2,11 @@
 // on demand (src/i18n/dictionary-fr-loader.ts) before the first page other than the home
 // page is shown; the server has it from the start. See dictionary-fr-core.ts.
 export const frRest = {
+  "common.close": "Fermer",
+  "landing.title_2": "À vous de jouer.",
+  "landing.lede":
+    "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.",
+  "landing.cta_discover": "Découvrir le jeu",
   "fantasy.scoring.incrementalPolicy":
     "Les points et le classement sont actualisés après chaque match admissible. Ils peuvent encore changer pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
   "fantasy.scoring.closedProvisional":
@@ -234,10 +239,8 @@ export const frRest = {
   "matches.detail.position.fwd": "A",
   "matches.detail.live_updating": "Mise à jour automatique",
   "matches.detail.updated_at": "Mis à jour à {time}",
-  "matches.detail.stale_since": "Score non actualisé depuis {time}.",
   "matches.detail.stale_expired":
     "Dernière mise à jour à {time}. Ce score n'est peut-être pas définitif.",
-  "matches.detail.refresh": "Actualiser",
   "matches.detail.starts_in": "Débute dans",
   "matches.detail.elapsed": "Temps de jeu",
   "matches.detail.scorers": "Buteurs",
@@ -1713,7 +1716,7 @@ export const frRest = {
   "fantasy.create.error.generic":
     "Votre équipe n’a pas pu être enregistrée. Réessayez dans un instant.",
   "fantasy.create.enrolment_next":
-    "La Journée {current} est clôturée. Votre équipe jouera à partir de la Journée {n}.",
+    "Journée {current} clôturée · votre équipe joue dès la Journée {n}.",
   "prizes.title": "Lots à gagner",
   "prizes.intro":
     "Jouez gratuitement toute la saison : chaque journée, chaque bloc de 4 journées et la saison entière ont leur lot.",
@@ -2391,8 +2394,6 @@ export const frRest = {
   "landing.title_1": "Vous connaissez la Botola.",
   "landing.cta_how": "Comment ça marche",
   "landing.cta_matches": "Voir les matchs et résultats",
-  "landing.cta_note":
-    "Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
   "landing.join_by": "Pour jouer dès la Journée {n}, enregistrez votre équipe avant le",
   "landing.demo_badge": "Démonstration",
   "landing.demo_label": "Démonstration d’un effectif sur le terrain",
@@ -3117,4 +3118,30 @@ export const frRest = {
   "fantasy.team.save_lineup": "Enregistrer l’équipe",
   "fantasy.import.players_unavailable":
     "Certains joueurs de ce brouillon ne peuvent pas encore être enregistrés. Réessayez plus tard ou créez une nouvelle équipe.",
+  "standings.updated": "Classement chargé le {when}",
+  "standings.refresh_failed":
+    "Impossible d'actualiser le classement. Voici la dernière version chargée.",
+  "matches.detail.updated_ago": "Mis à jour {ago}",
+  "matches.detail.updated_now": "Mis à jour à l'instant",
+  "matches.event.penalty_short": "(pen.)",
+  "matches.event.own_goal_short": "(c.s.c.)",
+  "fantasy.rankings.waiting": "En attente",
+  "fantasy.rankings.waiting_note":
+    "Points de la journée en attente des notes des joueurs. Le classement peut encore bouger.",
+  "fantasy.rankings.around": "Autour de vous",
+  "fantasy.rankings.invite_title": "Invitez vos amis",
+  "fantasy.rankings.invite_body": "Créez une ligue privée et comparez vos points entre amis.",
+  // Player page chart: plain wording for how each round's points were set.
+  "fantasy.players.points_final": "Points définitifs",
+  "fantasy.players.points_provisional": "Points provisoires",
+  "fantasy.players.points_provisional_estimated": "Points provisoires · estimés",
+  "fantasy.players.points_waiting": "En attente",
+  "fantasy.create.locked":
+    "Journée {n} verrouillée : votre équipe reste visible, les changements rouvrent à la prochaine journée.",
+  "fantasy.create.next_locked": "Journée verrouillée",
+  "fantasy.create.next_remaining": "Encore {n} à choisir",
+  "fantasy.create.next_remaining_one": "Encore 1 à choisir",
+  "fantasy.create.per_place": "≈ {amount} par place restante",
+  "fantasy.create.progress.done": "complet",
+  "fantasy.create.progress.left": "reste {n}",
 } as const satisfies Record<string, string>;

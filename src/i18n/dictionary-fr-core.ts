@@ -217,7 +217,6 @@ export const frCore = {
   "fantasy.rankings.ordinal_other": "{n}e",
   "fantasy.points.unit_one": "pt",
   "fantasy.points.unit_other": "pts",
-  "common.close": "Fermer",
 
   "home.upcoming_empty": "Aucun match programmé dans les prochains jours.",
   "home.mine_empty": "Aucun match de vos clubs sur cette période.",
@@ -382,10 +381,6 @@ export const frCore = {
   "landing.meta_description":
     "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée. Jeu gratuit.",
   "landing.kicker": "Fantasy Botola Pro · Gratuit",
-  "landing.title_2": "À vous de jouer.",
-  "landing.lede":
-    "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.",
-  "landing.cta_discover": "Découvrir le jeu",
 
   /* ------------------------------------------------------------------ */
   /* Curva and the Manager Card (plan: docs/product/MANAGER_CARD_SECTION_PLAN.md,
@@ -716,4 +711,15 @@ export const frCore = {
   "plus.brief.meta": "Briefing avant la date limite — BotolaGO Fantasy",
   "plus.brief.meta_description":
     "Votre briefing avant la date limite : absences listées, remplaçants dans votre budget, capitaine et coût des transferts.",
+  "matches.detail.stale_since": "Score non actualisé depuis {time}.",
+  "matches.detail.refresh": "Actualiser",
+  "landing.cta_note":
+    "Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+  "standings.in_hand_names": "Matchs en retard : {clubs}. Comparez la colonne {col}.",
+  "standings.in_hand_count": "{n} clubs ont des matchs en retard : comparez la colonne {col}.",
+  "home.live_updated_now": "Mis à jour à l’instant",
+  "home.live_updated_ago": "Mis à jour il y a {n} min",
+  "home.no_match_today": "Pas de match aujourd’hui",
+  "home.next_match_day": "Prochaine journée : {date}",
+  "home.invite_title": "Composez votre équipe de Botola",
 } as const satisfies Record<string, string>;

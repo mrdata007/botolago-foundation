@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
+  CalendarDays,
   CircleDot,
   Bell,
   Gem,
@@ -70,6 +71,9 @@ import { bandGameweek } from "@/lib/band-gameweek";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
+import { FantasyInviteCard } from "@/components/home/FantasyInviteCard";
+import { HomeLiveFreshness } from "@/components/home/HomeLiveFreshness";
+import { nextMatchDay } from "@/components/home/next-match-day";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
 import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
@@ -77,7 +81,6 @@ import { RevealOnArrive } from "@/components/common/RevealOnArrive";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { FantasyInvitationCard } from "@/components/landing/FantasyInvitationCard";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
@@ -214,7 +217,7 @@ export const Route = createFileRoute("/")({
     // Who publishes the site, and the site itself (see `@/lib/structured-data`).
     scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
-  component: HomePage,
+  component: HomeContent,
 });
 
 /**
@@ -240,19 +243,6 @@ function useGreeting(now: Date) {
   if (part === "morning") return t("home.greeting_morning");
   if (part === "afternoon") return t("home.greeting_afternoon");
   return t("home.greeting_evening");
-}
-
-/**
- * Home, for everyone. It used to give way to the landing page on a first
- * visit without an account, once the splash had gone: the server's Home was
- * replaced by a different page after hydration. Now an anonymous visitor who
- * has not been welcomed keeps the Home the server sent (live scores, table,
- * news) and finds a compact, dismissible invitation to the game inside it
- * (`FantasyInvitationCard`, under the first screen's content). The landing
- * page stays what it was, at `/jouer`.
- */
-function HomePage() {
-  return <HomeContent />;
 }
 
 /** A match being played right now, for the split live card. */
@@ -422,6 +412,8 @@ function HomeContent() {
   const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now), {
     inclusive: true,
   });
+  // No match today and none live: "À venir" opens by naming the next match day.
+  const nextDayKey = useMemo(() => nextMatchDay(homeMatches, now), [homeMatches, now]);
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
   const bandGameweekNumber = bandGameweek(
@@ -580,6 +572,16 @@ function HomeContent() {
               ))}
             </div>
           )}
+          {liveMatches[0] ? (
+            <div className="order-2">
+              <HomeLiveFreshness
+                match={liveMatches[0]}
+                updatedAt={matchesQ.dataUpdatedAt}
+                refetch={matchesQ.refetch}
+                refreshing={matchesQ.isFetching}
+              />
+            </div>
+          ) : null}
           {/* -------------------------------------------------------- */}
           {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
           {/* -------------------------------------------------------- */}
@@ -671,6 +673,29 @@ function HomeContent() {
                 </EmptyState>
               ) : (
                 <div className="grid gap-4">
+                  {nextDayKey ? (
+                    <div
+                      data-testid="home-next-match-day"
+                      className={cn("flex items-center gap-3 px-4 py-3", ui.surface.card)}
+                    >
+                      <CalendarDays className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
+                      <div className="min-w-0">
+                        <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
+                          {t("home.no_match_today")}
+                        </p>
+                        <p className={cn(ui.text.secondary, ui.tone.muted)}>
+                          {t("home.next_match_day").replace(
+                            "{date}",
+                            moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            }).format(matchDayFromKey(nextDayKey)),
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                   {upcomingDays.length > 1 || followedIds.length > 0 ? (
                     <div
                       role="group"
@@ -776,7 +801,7 @@ function HomeContent() {
             ) : availability.data.status !== "ready" ? (
               <FantasyUnavailableState reason={availability.data.status} />
             ) : source === "guest" ? (
-              <FantasyCreateCard canCreate={canCreate} />
+              <FantasyInviteCard canCreate={canCreate} deadline={gwQ.data?.deadline} />
             ) : summaryQ.isError || gwQ.isError ? (
               <ErrorState
                 onRetry={() => {
@@ -800,7 +825,10 @@ function HomeContent() {
               <HeroSkeleton />
             )}
 
-            {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
+            {/* The invitation card names the deadline itself; the chips repeat it only for an account. */}
+            {fantasyReady ? (
+              <FantasyRuleChips deadline={source === "guest" ? undefined : gwQ.data?.deadline} />
+            ) : null}
 
             {/* Only when there is something to show: an empty wrapper still
             carried its margin, a stray gap above the Pronostics card. */}
@@ -833,10 +861,6 @@ function HomeContent() {
                 </div>
               )}
           </Section>
-          {/* A first visit without an account: a way into the game, under the
-          Fantasy card. It appears after mount (localStorage) and below the
-          first screen on a phone, so nothing already read moves. */}
-          <FantasyInvitationCard className="order-5 xl:order-4" />
           {/* Pronostics (BG-0146), right after the matches: shown once promoted,
           and it hides itself while the game is off in the database. */}
           {PRONOSTICS_PROMOTED && (

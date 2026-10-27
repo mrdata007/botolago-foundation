@@ -178,15 +178,6 @@ describe("Accueil (Home) structural contract", () => {
   });
 
   describe("first visit and speed (quick audit 2026-10-26)", () => {
-    test("Home is not swapped for the landing page; an invitation card sits inside it", () => {
-      expect(source).not.toContain("showLanding");
-      expect(source).toContain("<FantasyInvitationCard");
-      // Under the Fantasy card, so it never pushes down the first screen.
-      expect(indexOfOrThrow("<FantasyInvitationCard")).toBeGreaterThan(
-        indexOfOrThrow('t("home.fantasy_hub")'),
-      );
-    });
-
     test("the band photograph has its intrinsic size and is preloaded with the img's srcset", () => {
       expect(source).toContain("width={bandPhoto(live).width}");
       expect(source).toContain("height={bandPhoto(live).height}");
@@ -204,6 +195,44 @@ describe("Accueil (Home) structural contract", () => {
 
     test("language-keyed queries keep the previous language's data while the new one loads", () => {
       expect(source.match(/placeholderData: keepPreviousData/g)?.length).toBeGreaterThanOrEqual(5);
+    });
+  });
+
+  /**
+   * Phase 4 redesign (docs/briefs/2026-10-27-home-redesign.md): a visitor
+   * without an account gets Home itself, with the bottom bar, not a
+   * full-screen advert in its place.
+   */
+  describe("signed-out Home", () => {
+    test("`/` renders Home for everyone; the landing page lives at /jouer only", () => {
+      expect(source).toContain("component: HomeContent,");
+      expect(source).not.toContain("LandingPage");
+      expect(source).not.toContain("hasWelcomed");
+    });
+
+    test("a visitor without an account gets the invitation card, not the account card", () => {
+      expect(source).toContain(
+        "<FantasyInviteCard canCreate={canCreate} deadline={gwQ.data?.deadline} />",
+      );
+    });
+
+    test("the live card names its freshness, and a no-match day names the next match day", () => {
+      expect(source).toContain("<HomeLiveFreshness");
+      expect(source).toContain("updatedAt={matchesQ.dataUpdatedAt}");
+      expect(source).toContain("nextMatchDay(homeMatches, now)");
+      expect(source).toContain('data-testid="home-next-match-day"');
+    });
+
+    test("each section keeps its own error state and retry", () => {
+      // One section failing never replaces the page: each retry refetches only
+      // its own query.
+      expect(source).toContain("onRetry={() => void matchesQ.refetch()}");
+      expect(source).toContain("onRetry={() => void newsQ.refetch()}");
+      expect(source).toContain("onRetry={() => void availability.refetch()}");
+      expect(source).toMatch(
+        /onRetry=\{\(\) => \{\s*void seasonsQ\.refetch\(\);\s*void standingsQ\.refetch\(\);\s*\}\}/,
+      );
+      expect(source.match(/<ErrorState/g)?.length).toBeGreaterThanOrEqual(5);
     });
   });
 });

@@ -8,6 +8,7 @@ import {
 } from "@/lib/page-availability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState, type ComponentProps } from "react";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 import {
   footballService,
@@ -40,7 +41,7 @@ import {
 } from "@/components/matches/MatchTabs";
 import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
-import { matchDataPhase } from "@/components/matches/match-empty-states";
+import { matchDataPhase, noStatsMessage } from "@/components/matches/match-empty-states";
 import {
   eventsWhenFresh,
   scoreCountsEveryGoal,
@@ -244,7 +245,7 @@ function MatchDetailPage() {
   // open: back to the tab, restored from the back/forward cache, focus, the
   // network back. A failed refetch keeps the last read on screen (said to be
   // stale after two minutes) instead of replacing the page with an error.
-  const { freshness, shownAt } = useLiveFreshness({
+  const { freshness, shownAt, now, mounted } = useLiveFreshness({
     match,
     updatedAt: detailQ.dataUpdatedAt,
     refetch: () => void detailQ.refetch({ cancelRefetch: false }),
@@ -408,6 +409,18 @@ function MatchDetailPage() {
   );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
   const presented = presentScore(match);
+  // The statistics under the timeline, once the match has started: what the
+  // Stats tab would say if it held nothing, in a line, so a reader of the
+  // Résumé is not left wondering. A failed read has its own retry here too.
+  const statsNote =
+    phase !== "live" && phase !== "finished" ? null : failed("statistics") ? (
+      sectionError(t("matches.detail.section_failed.stats"))
+    ) : live.stats.length === 0 ? (
+      <p className={cn("flex items-start gap-2 px-1", ui.text.secondary, ui.tone.muted)}>
+        <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{noStatsMessage(phase, t)}</span>
+      </p>
+    ) : null;
   const lineupsUnavailable = {
     lineups: failed("lineups")
       ? sectionError(t("matches.detail.section_failed.lineups"))
@@ -478,6 +491,8 @@ function MatchDetailPage() {
         updatedAt={shownAt}
         refreshing={detailQ.isFetching}
         onRefresh={() => void detailQ.refetch()}
+        now={mounted ? now : undefined}
+        dataUpdatedAt={match.dataUpdatedAt}
       />
 
       {/* Tabs straight after the match's identity, on every width. Desktop
@@ -542,6 +557,11 @@ function MatchDetailPage() {
                           ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
                           : undefined
                       }
+                      fullTime={
+                        presented.home !== null && presented.away !== null
+                          ? { home: presented.home, away: presented.away }
+                          : undefined
+                      }
                     />
                   )}
                   {wideLayout ? (
@@ -556,6 +576,7 @@ function MatchDetailPage() {
                     />
                   ) : null}
                 </div>
+                {statsNote ? <div className="mt-4">{statsNote}</div> : null}
                 {predictionInline && match.status !== "scheduled" ? (
                   <div className="mt-4">{prediction}</div>
                 ) : null}

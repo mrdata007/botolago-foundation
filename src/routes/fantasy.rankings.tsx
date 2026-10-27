@@ -2,7 +2,7 @@ import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import rankingEmptyArt from "@/assets/illustrations/ranking-empty.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, Share2, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { LeagueList, type LeagueListRow } from "@/components/fantasy-lists/LeagueList";
@@ -15,6 +15,13 @@ import {
   STANDINGS_FIGURE_CELL,
   STANDINGS_NAME_CELL,
 } from "@/components/fantasy-lists/standings";
+import {
+  gameweekPointsWaiting,
+  rowsAround,
+  SMALL_BOARD_MAX,
+  showsAround,
+  showsWaiting,
+} from "@/components/fantasy-lists/rankings-view";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
 import { fill, ltr } from "@/components/manager-card/interpolate";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
@@ -164,6 +171,15 @@ function RankingsPage() {
     refetchInterval: 60_000,
   });
 
+  // While the gameweek's points are provisional, a 0 in the gameweek column
+  // means "not published yet": same query key as the Fantasy home, so it is
+  // usually already cached.
+  const gwQ = useQuery({
+    queryKey: ["gameweek"],
+    queryFn: () => fantasyService.getCurrentGameweek(),
+  });
+  const waiting = gameweekPointsWaiting(gwQ.data);
+
   // Keep the page in range whenever the filter or sort shrinks the board.
   useEffect(() => {
     setPage(1);
@@ -172,7 +188,63 @@ function RankingsPage() {
   const data = rankingsQ.data;
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const onBoard = tab !== "leagues";
-  const rankStep = rankFigure(Math.max(1, ...(data?.rows ?? []).map((row) => row.rank)));
+
+  const movementLabels = {
+    up: t("fantasy.rank.up"),
+    down: t("fantasy.rank.down"),
+    same: t("fantasy.rank.same"),
+    unknown: t("fantasy.rank.unknown"),
+  };
+
+  // "Autour de vous": the API has no call for the rows around a rank, so read
+  // the page that holds the manager's (same board reader, same cache) and
+  // keep the neighbours. Only when the table on screen does not show them.
+  const myRankValue = data?.myRank?.rank ?? null;
+  const showAround =
+    onBoard &&
+    !!data &&
+    showsAround({
+      myManagerId: data.myRank?.managerId,
+      searching: search.trim() !== "",
+      shownRows: data.rows,
+    });
+  const aroundQ = useQuery({
+    queryKey: key(
+      "rankings-around",
+      sort,
+      myRankValue === null ? null : pageForRank(myRankValue, PAGE_SIZE),
+      me?.totalScore ?? null,
+    ),
+    queryFn: () =>
+      fantasyService.getGlobalRankings({
+        page: pageForRank(myRankValue ?? 1, PAGE_SIZE),
+        pageSize: PAGE_SIZE,
+        sort,
+        query: "",
+        me,
+      }),
+    enabled: showAround && myRankValue !== null,
+    refetchInterval: 60_000,
+  });
+  const aroundRows =
+    showAround && data?.myRank ? rowsAround(aroundQ.data?.rows ?? [], data.myRank.managerId) : [];
+  const showInvite =
+    onBoard &&
+    !!data &&
+    data.total > 0 &&
+    data.total <= SMALL_BOARD_MAX &&
+    presence.status === "present";
+  const tableProps = {
+    ownTeamId,
+    nf,
+    formatMove: move,
+    movementLabels,
+    waiting,
+    waitingLabel: t("fantasy.rankings.waiting"),
+    caption: t("fantasy.rankings.title"),
+    gwTitle: t("fantasy.gw_points"),
+    totalTitle: t("fantasy.total_points"),
+  };
 
   const jumpToMe = () => {
     if (!data?.myRank) return;
@@ -181,13 +253,6 @@ function RankingsPage() {
     requestAnimationFrame(() =>
       tableRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" }),
     );
-  };
-
-  const movementLabels = {
-    up: t("fantasy.rank.up"),
-    down: t("fantasy.rank.down"),
-    same: t("fantasy.rank.same"),
-    unknown: t("fantasy.rank.unknown"),
   };
 
   return (
@@ -238,6 +303,19 @@ function RankingsPage() {
 
             {onBoard ? (
               <>
+                {aroundRows.length > 0 ? (
+                  <section aria-labelledby="rankings-around" className="space-y-2">
+                    <h2 id="rankings-around" className={cn(ui.display.section, ui.tone.default)}>
+                      {t("fantasy.rankings.around")}
+                    </h2>
+                    <StandingsTable
+                      rows={aroundRows}
+                      meId={data.myRank?.managerId}
+                      {...tableProps}
+                    />
+                  </section>
+                ) : null}
+
                 <SearchField
                   value={search}
                   onChange={setSearch}
@@ -274,58 +352,18 @@ function RankingsPage() {
                       }
                     />
                   ) : (
-                    <UiCard padding="none" className="overflow-hidden">
-                      {/* The figure columns size to their content and the name
-                          column takes the rest without being able to widen the
-                          table (see `standings.ts`): a long manager name once
-                          grew this table past a 390px viewport (421px), with
-                          the total — the column people came for — off-screen. */}
-                      <UiTable caption={t("fantasy.rankings.title")}>
-                        <UiTHead className="bg-transparent">
-                          <UiTR>
-                            <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL)}>#</UiTH>
-                            <UiTH className={STANDINGS_NAME_CELL}>
-                              {t("fantasy.rankings.manager")}
-                            </UiTH>
-                            {/* Both figures are always shown; the tab changes
-                                the ORDER, not which column is which. */}
-                            <UiTH
-                              numeric
-                              className={STANDINGS_FIGURE_CELL}
-                              title={t("fantasy.gw_points")}
-                            >
-                              {t("fantasy.leagues.gw")}
-                            </UiTH>
-                            <UiTH
-                              numeric
-                              className={STANDINGS_FIGURE_CELL}
-                              title={t("fantasy.total_points")}
-                            >
-                              {t("fantasy.leagues.total")}
-                            </UiTH>
-                            <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
-                              <span aria-hidden>+/−</span>
-                              <span className="sr-only">{t("fantasy.leagues.movement")}</span>
-                            </UiTH>
-                          </UiTR>
-                        </UiTHead>
-                        <UiTBody>
-                          {data.rows.map((row, index) => (
-                            <RankingRow
-                              key={row.managerId}
-                              row={row}
-                              isMe={row.managerId === data.myRank?.managerId}
-                              ownTeamId={ownTeamId}
-                              isLast={index === data.rows.length - 1}
-                              nf={nf}
-                              rankStep={rankStep}
-                              formatMove={move}
-                              movementLabels={movementLabels}
-                            />
-                          ))}
-                        </UiTBody>
-                      </UiTable>
-                    </UiCard>
+                    <>
+                      <StandingsTable
+                        rows={data.rows}
+                        meId={data.myRank?.managerId}
+                        {...tableProps}
+                      />
+                      {waiting && data.rows.some((row) => showsWaiting(true, row.gameweekScore)) ? (
+                        <p role="status" className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
+                          {t("fantasy.rankings.waiting_note")}
+                        </p>
+                      ) : null}
+                    </>
                   )}
                 </div>
 
@@ -336,6 +374,21 @@ function RankingsPage() {
                   onPrevious={() => setPage((current) => Math.max(1, current - 1))}
                   onNext={() => setPage((current) => Math.min(pageCount, current + 1))}
                 />
+
+                {showInvite ? (
+                  <UiCard padding="lg" className="space-y-2">
+                    <h2 className={cn(ui.display.section, ui.tone.default)}>
+                      {t("fantasy.rankings.invite_title")}
+                    </h2>
+                    <p className={cn(ui.text.secondary, ui.tone.muted)}>
+                      {t("fantasy.rankings.invite_body")}
+                    </p>
+                    <UiLinkButton to="/fantasy/leagues" variant="soft" className="mt-1">
+                      <Share2 className="h-4 w-4" aria-hidden />
+                      {t("fantasy.hub.invite_share")}
+                    </UiLinkButton>
+                  </UiCard>
+                ) : null}
               </>
             ) : (
               <MyLeagues />
@@ -344,6 +397,73 @@ function RankingsPage() {
         )}
       </section>
     </>
+  );
+}
+
+/**
+ * The standings table: the board's page, or the few rows "Autour de vous"
+ * shows. The figure columns size to their content and the name column takes
+ * the rest without being able to widen the table (see `standings.ts`): a long
+ * manager name once grew this table past a 390px viewport (421px), with the
+ * total — the column people came for — off-screen.
+ */
+function StandingsTable({
+  rows,
+  meId,
+  caption,
+  gwTitle,
+  totalTitle,
+  ...rowProps
+}: {
+  rows: LeagueStanding[];
+  meId: string | undefined;
+  caption: string;
+  gwTitle: string;
+  totalTitle: string;
+  ownTeamId: string | null;
+  nf: Intl.NumberFormat;
+  formatMove: (places: number) => string;
+  movementLabels: { up: string; down: string; same: string; unknown: string };
+  waiting: boolean;
+  waitingLabel: string;
+}) {
+  const { t } = useI18n();
+  const rankStep = rankFigure(Math.max(1, ...rows.map((row) => row.rank)));
+  return (
+    <UiCard padding="none" className="overflow-hidden">
+      <UiTable caption={caption}>
+        <UiTHead className="bg-transparent">
+          <UiTR>
+            <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL)}>#</UiTH>
+            <UiTH className={STANDINGS_NAME_CELL}>{t("fantasy.rankings.manager")}</UiTH>
+            {/* Both figures are always shown; the tab changes the ORDER, not
+                which column is which. */}
+            <UiTH numeric className={STANDINGS_FIGURE_CELL} title={gwTitle}>
+              {t("fantasy.leagues.gw")}
+            </UiTH>
+            <UiTH numeric className={STANDINGS_FIGURE_CELL} title={totalTitle}>
+              {t("fantasy.leagues.total")}
+            </UiTH>
+            <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
+              <span aria-hidden>+/−</span>
+              <span className="sr-only">{t("fantasy.leagues.movement")}</span>
+            </UiTH>
+          </UiTR>
+        </UiTHead>
+        <UiTBody>
+          {rows.map((row, index) => (
+            <RankingRow
+              key={row.managerId}
+              row={row}
+              isMe={row.managerId === meId}
+              isLast={index === rows.length - 1}
+              rankStep={rankStep}
+              {...rowProps}
+            />
+          ))}
+        </UiTBody>
+      </UiTable>
+    </UiCard>
   );
 }
 
@@ -356,6 +476,8 @@ function RankingRow({
   rankStep,
   formatMove,
   movementLabels,
+  waiting,
+  waitingLabel,
 }: {
   row: LeagueStanding;
   isMe: boolean;
@@ -367,6 +489,9 @@ function RankingRow({
   rankStep: string;
   formatMove: (places: number) => string;
   movementLabels: { up: string; down: string; same: string; unknown: string };
+  /** The gameweek's points are provisional: a 0 reads "En attente". */
+  waiting: boolean;
+  waitingLabel: string;
 }) {
   const podium = row.rank <= 3;
   return (
@@ -408,12 +533,25 @@ function RankingRow({
           </div>
           {/* Other managers' names can be reported, never the reader's own. */}
           {isMe || isOwnStanding(row.managerId, ownTeamId) ? null : (
-            <ReportNameMenu targets={standingReportTargets(row)} />
+            <ReportNameMenu targets={standingReportTargets(row)} icon="more" />
           )}
         </div>
       </UiTD>
       <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
-        {nf.format(row.gameweekScore)}
+        {showsWaiting(waiting, row.gameweekScore) ? (
+          // Words, not a number: two short lines so the name column keeps its width.
+          <span
+            className={cn(
+              "inline-block max-w-[3.75rem] whitespace-normal text-center leading-tight",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
+            )}
+          >
+            {waitingLabel}
+          </span>
+        ) : (
+          nf.format(row.gameweekScore)
+        )}
       </UiTD>
       <UiTD numeric strong className={cn(STANDINGS_FIGURE_CELL, ui.stat.md, ui.tone.default)}>
         {nf.format(row.totalScore)}
