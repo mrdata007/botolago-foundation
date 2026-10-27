@@ -2850,6 +2850,45 @@ html[dir="rtl"]
 /* ======================= end GOAL MOMENT motion ========================== */
 
 /* ================================================================== */
+/* Entrance animations: transform and opacity only                    */
+/* ================================================================== */
+/* tw-animate-css's `enter` and `exit` keyframes (what `animate-in` and
+   `animate-out` play) also animate `filter: blur(var(--tw-enter-blur, 0))`.
+   Every `animate-in fade-in-0` therefore animated opacity together with a
+   filter, which the browser cannot hand to the compositor: the animation ran
+   on the main thread (PageSpeed, "Avoid non-composited animations": the band,
+   the story thumbnails, the cards). Nothing in the app uses the blur-in or
+   blur-out utilities, so the blur was always 0 and its removal changes no
+   frame. `--animate-in` and `--animate-out` (the theme variables the
+   `animate-in` and `animate-out` utilities read) now point at the same
+   keyframes minus the filter. A second `@keyframes enter` would be merged
+   away by the build, which keeps the library's; hence new names. */
+@theme inline {
+  --animate-in: enter-flat var(--tw-animation-duration, var(--tw-duration, 0.15s))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
+    var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  --animate-out: exit-flat var(--tw-animation-duration, var(--tw-duration, 0.15s))
+    var(--tw-ease, ease) var(--tw-animation-delay, 0s) var(--tw-animation-iteration-count, 1)
+    var(--tw-animation-direction, normal) var(--tw-animation-fill-mode, none);
+  @keyframes enter-flat {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+        scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1))
+        rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+  @keyframes exit-flat {
+    to {
+      opacity: var(--tw-exit-opacity, 1);
+      transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+        scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1))
+        rotate(var(--tw-exit-rotate, 0));
+    }
+  }
+}
+
+/* ================================================================== */
 /* Text fields on touch screens: 16px                                 */
 /* ================================================================== */
 /* iOS zooms the page in when a field whose text is under 16px takes focus
