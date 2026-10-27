@@ -235,3 +235,26 @@ Two operators run at the same time:
 
 If the two disagree, the Lead decides and records why here.
 
+### Phase 3 – round 1
+
+**Mobile & Arabic – APPROVED.**
+- Wrote the size, Arabic, tap-target and colour rules first. Each rule is backed by a measurement; for example, Arabic letters measure about 22% smaller than French at the same size, so Arabic text gets 1px more.
+- Tested all 14 mock-ups (112 runs, 320–390px, French and Arabic, light and dark). Zero sideways scrolling, zero tiny text, zero small tap targets. Found 10 issues to fix.
+
+**UX & Design – REVISE.** 6 redesigns and 5 sponsor spots, French and Arabic, with before/after screenshots. The pitch and jerseys are unchanged (pasted in as an image of today's pitch). Sent back with 14 fixes:
+- Team picker: the pitch starts too low on a phone; Bench Boost and Free Hit are hidden; the save bar covers players.
+- Home: the Fantasy deadline is missing from the first screen; two "Classement" buttons look alike, and one is cut off.
+- The Mobile worker's issues: Arabic table header, text direction in the language bar, score covering the crests, text on club colours, landscape bars, tab rows, the screen-reader tab role.
+- Arabic pages must use the app's existing Arabic words (تعزيز الاحتياط, الضربة الحرة…), not English terms.
+
+**Lead decisions** (where the two workers asked):
+- Arabic gets +1px on small text (measured reason).
+- Darker text-only shades count as allowed additions.
+- Visitors who are not logged in see team names only on the leaderboard.
+- Club-colour captions may be dropped.
+- Compact landscape menu approved.
+- No pure black text on club colours; labels go on a neutral pill instead.
+- Home team on the right in Arabic is kept (as today); to confirm with the owner.
+
+Left for the owner: auto-fill picking rules, sponsor wording, a separate player page route, official Arabic names, and language cookie first or not.
+
