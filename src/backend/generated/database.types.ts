@@ -2313,6 +2313,10 @@ export type Database = {
         Args: { p_calls: Json; p_job: string }
         Returns: number
       }
+      service_record_rapidapi_quota: {
+        Args: { p_limit: number; p_observed_at?: string; p_remaining: number }
+        Returns: boolean
+      }
       service_record_reconciled_fantasy_observation: {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
         Returns: Json

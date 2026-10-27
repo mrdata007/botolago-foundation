@@ -1023,3 +1023,13 @@ season refresh. Every replaced body is md5-guarded against production. Apply it
 before deploying `football-live-refresh`, so the Edge budget guard finds its
 settings. Details and the owner commands are in
 `docs/backend/SOFASCORE_LIVE_EDGE.md` (budget section).
+
+`20261027100000_rapidapi_provider_quota_floor.sql` makes the provider's own
+quota figure the floor of that count. It adds
+`app_private.rapidapi_provider_quota`, the service-only
+`api.service_record_rapidapi_quota` and a new
+`app_private.rapidapi_calls_this_month()`, which returns the greater of our
+count plus the offset and `limit - remaining` as last reported by RapidAPI. Apply
+it before deploying `football-live-refresh`; the function feature-detects the
+RPC, so an early deploy only logs `rapidapi_quota_unavailable`. Details are in
+`docs/backend/SOFASCORE_LIVE_EDGE.md` (budget section).
