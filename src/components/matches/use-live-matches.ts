@@ -7,7 +7,7 @@ import type { Match } from "@/types/domain";
 
 /**
  * The matches in play, at the live strip's pace (`liveStripRefetchInterval`:
- * every 30 seconds while one is live, a slow watch otherwise, never from a
+ * every minute while one is live, a slow watch otherwise, never from a
  * hidden tab). One query, shared by the strip and by what has to react to a
  * match finishing.
  */

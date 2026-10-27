@@ -98,5 +98,9 @@ export const authLinkClass = {
   consent: cn(
     "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
     ui.tone.ink,
+    // A 44px target (M6; 121x16 in French and 84x24 in Arabic before), the way the
+    // footer link above gets one. Padding or an `::after` box would overlap the
+    // link on the next line: the later one would take taps meant for the earlier.
+    "inline-flex min-h-[var(--ui-tap-min)] items-center",
   ),
 };

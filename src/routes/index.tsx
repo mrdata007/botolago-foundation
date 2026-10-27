@@ -77,6 +77,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
 import { followedTeamIdsQuery } from "@/services/follows";
@@ -268,6 +269,7 @@ const isInPlay = (match: Match) => match.status === "live";
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.home_title"));
   const { status, user } = useAuth();
   const { source, key } = useFantasyDataSource();
   const { renderedAt } = Route.useLoaderData();
@@ -317,9 +319,9 @@ function HomeContent() {
     // 2.5 s of waterfall on 2026-10-11) for a strip that stays hidden.
     enabled: fantasyReady && hasAlerts,
   });
-  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
-  // the edition is not even fetched: no News RPC, no third-party media URLs
-  // reaching the document, nothing to flash before the section is skipped.
+  // The edition follows `NEWS_ENABLED` (`@/lib/feature-flags`): with News off
+  // it is not even fetched — no News RPC, no third-party media URLs reaching
+  // the document, nothing to flash before the section is skipped.
   const newsQ = useQuery({
     queryKey: ["news", "edition", lang, "auto"] as const,
     queryFn: () => newsService.getEdition(lang, "auto"),
@@ -570,7 +572,7 @@ function HomeContent() {
             </div>
           ) : null}
           {/* -------------------------------------------------------- */}
-          {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
+          {/* 4. News preview — follows NEWS_ENABLED                    */}
           {/* -------------------------------------------------------- */}
           {NEWS_ENABLED && (
             <Section className="order-6">
@@ -752,7 +754,7 @@ function HomeContent() {
               <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
               <DiscoveryLink to="/clubs" icon={Shield} label={t("clubs.title")} />
               <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
-              {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
+              {/* News discovery tile — follows NEWS_ENABLED. */}
               {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
               {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
               {PEPITES_PROMOTED ? (

@@ -1753,7 +1753,7 @@ html[dir="rtl"]
   --ui-text-secondary: 14px; /* supporting copy, pills */
   --ui-text-meta: 13px; /* meta, table cells */
   --ui-text-label: 12px; /* badges, column heads */
-  --ui-text-micro: 11px; /* nav labels, micro captions */
+  --ui-text-micro: 12px; /* nav labels, micro captions (was 11px: M5, 2026-10-27) */
 
   /* ---- Display face (Option A) -----------------------------------
      Changa, a Kufi-flavoured display sans with an Arabic subset,
@@ -2072,6 +2072,24 @@ html[dir="rtl"]
      badge. */
   --ui-live: oklch(0.62 0.22 27);
   --ui-live-fg: oklch(0.5 0.22 27);
+  /* Text-only steps for green, magenta, live red and the faint grey on a
+     tint of themselves (M4, 2026-10-27). The fills above are the brand and do
+     not change. As TEXT, `--ui-positive` and `--ui-negative` measured 3.90 on
+     their own 20% tint (the "Journée double" and "NOUV." chips) and 3.2 on a
+     sunken row; these clear 4.9 on the worst case (rasterised sRGB, WCAG 2.x:
+     positive 4.99, negative 4.92, live 4.88, faint 4.87-5.99). Same hue, lower
+     lightness. Use ONLY as `color:`, never as a fill. Dark theme: green and
+     red already pass, so they alias the fills; magenta gets a lighter step. */
+  --ui-positive-text: oklch(0.42 0.12 150);
+  --ui-negative-text: oklch(0.44 0.19 355);
+  --ui-live-text: oklch(0.45 0.2 27);
+  /* `--ui-on-surface-faint` fails as text (4.40 on the page, 3.85 on a sunken
+     row). It stays for disabled copy and decoration; anything readable uses
+     this step. */
+  --ui-on-surface-faint-text: oklch(0.5 0.02 258);
+  /* An outline drawn on a sunken surface: 3.79:1 there, 4.66 on a surface. One
+     step stronger than `--ui-rule-strong`, same hue. */
+  --ui-control-edge: oklch(0.56 0.02 258);
   /* The foreground each status FILL carries, the way `--ui-fdr-N` carries
      `--ui-on-fdr-N`. Not a convenience: `--ui-positive` and `--ui-negative`
      invert across the themes — a mid-tone in light, a light tint in dark — so
@@ -2262,6 +2280,34 @@ html[dir="rtl"]
      French ones; the Noto stack is the fallback while it loads. */
   --ui-font-display: "Changa", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
   --ui-font-body: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+
+  /* The small steps are one pixel larger in Arabic (M5, 2026-10-27). Measured
+     with the product's own faces: Noto Sans Arabic letters stand 22% lower
+     than Manrope's lower case at the same px, so 12px Arabic reads like 9px
+     French. Titles (Changa, 87%) keep their size; micro and label are 13px,
+     the Arabic floor. This reverses the BG-0124 note above, which kept the
+     size to protect the spacing grid; 320px layouts were re-measured for
+     overflow after the change (docs/review/batch1-2026-10-27). The Fantasy
+     pitch keeps the old steps: see
+     `[data-pitch-type-scale]` below. */
+  --ui-text-body: 16px;
+  --ui-text-secondary: 15px;
+  --ui-text-meta: 14px;
+  --ui-text-label: 13px;
+  --ui-text-micro: 13px;
+}
+
+/* The Fantasy pitch and its plates, jerseys and bench strip keep the type
+   steps they had before M5 (owner rule: the pitch and jerseys do not change).
+   Set on the `UiPitchSurface` root; custom properties inherit, so every plate
+   label inside reads the old values in both languages. Doubled attribute for
+   specificity over the `[dir="rtl"]` / `[lang="ar"]` rule above. */
+[data-pitch-type-scale][data-pitch-type-scale] {
+  --ui-text-body: 15px;
+  --ui-text-secondary: 14px;
+  --ui-text-meta: 13px;
+  --ui-text-label: 12px;
+  --ui-text-micro: 11px;
 }
 
 .dark {
@@ -2311,6 +2357,11 @@ html[dir="rtl"]
   --ui-caution: oklch(0.85 0.16 80);
   --ui-live: oklch(0.68 0.22 27);
   --ui-live-fg: oklch(0.78 0.18 27);
+  --ui-positive-text: var(--ui-positive);
+  --ui-negative-text: oklch(0.78 0.17 355);
+  --ui-live-text: var(--ui-live-fg);
+  --ui-on-surface-faint-text: var(--ui-on-surface-faint);
+  --ui-control-edge: oklch(0.62 0.02 258);
   --ui-on-positive: var(--ui-ink-deep);
   --ui-on-negative: var(--ui-ink-deep);
   --ui-on-caution: var(--ui-ink-deep);

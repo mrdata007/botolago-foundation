@@ -61,8 +61,12 @@ export function useFantasyAvailability() {
   const query = useQuery({
     queryKey: ["fantasy", "availability"],
     queryFn: () => withTimeout(fantasyService.getAvailability(), FANTASY_AVAILABILITY_TIMEOUT_MS),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    // No polling (S10, 2026-10-27; it asked every 60 s on every Fantasy screen
+    // and on Home). Whether a season is open and a team can be created changes
+    // by the gameweek, not by the minute: held 5 minutes, read again when the
+    // reader comes back to the tab after that.
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
     retry: 1,
     retryDelay: 1_500,
   });

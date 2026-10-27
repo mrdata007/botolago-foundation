@@ -23,7 +23,7 @@ export function UserDisc({
         size === "lg" ? "h-14 w-14" : "h-10 w-10",
         ui.radius.full,
         user.activeBan
-          ? "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]"
+          ? "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative-text)]"
           : cn(ui.surface.sunken, ui.tone.ink),
         size === "lg" ? ui.display.section : ui.text.bodyStrong,
       )}

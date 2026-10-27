@@ -38,6 +38,12 @@ export type KitPattern =
 
 export interface FantasyPlayer extends Player {
   // extra fantasy-only fields
+  /**
+   * The football catalogue player (`app.players.id`) behind this Fantasy player.
+   * Match line-ups and club squads carry that id, not the Fantasy one, so it is
+   * how they find this player's page (U1). Absent in the demo pool.
+   */
+  footballPlayerId?: string;
   nextOpponentClubId?: string;
   nextIsHome?: boolean;
   nextFixtureDifficulty?: 1 | 2 | 3 | 4 | 5;

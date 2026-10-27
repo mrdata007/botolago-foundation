@@ -104,14 +104,14 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await page.getByRole("button", { name: /Enregistrer mon équipe/ }).click();
     await page.waitForURL((url) => url.pathname.endsWith("/fantasy/team"), { timeout: 60_000 });
     await expectSettled(page);
-    await expect(page.getByRole("heading", { name: /Composer l’équipe/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Mon équipe$/ })).toBeVisible();
     await expect(page.locator("main button[aria-label]").filter({ hasText: /./ })).not.toHaveCount(
       0,
     );
 
     await reloadHydrated(page, "fr");
     await expectSettled(page);
-    await expect(page.getByRole("heading", { name: /Composer l’équipe/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Mon équipe$/ })).toBeVisible();
     await expect(page.getByText(/Bench Boost/)).toBeVisible();
   });
 

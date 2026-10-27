@@ -15,6 +15,8 @@ import type { ConsentSegment } from "./consent-segments";
 const DEFAULT_LINK_CLASS = cn(
   "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
   ui.tone.ink,
+  // A 44px target (M6), as `authLinkClass.consent` does.
+  "inline-flex min-h-[var(--ui-tap-min)] items-center",
 );
 
 /**

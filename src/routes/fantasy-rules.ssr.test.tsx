@@ -96,7 +96,7 @@ describe("the rules page with the v1 ruleset", () => {
       `<span aria-hidden="true" class="text-[color:var(--ui-on-surface-muted)]">—</span><span class="sr-only">${fr["fantasy.rules.table_na"].replace("'", "&#x27;")}</span>`,
     );
     // A penalty keeps its sign in front of the number in Arabic too.
-    expect(html).toContain('<bdi dir="ltr" class="text-[color:var(--ui-negative)]">−3</bdi>');
+    expect(html).toContain('<bdi dir="ltr" class="text-[color:var(--ui-negative-text)]">−3</bdi>');
   });
 
   test("states the transfers from the ruleset's own numbers", async () => {

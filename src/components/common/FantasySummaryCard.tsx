@@ -74,13 +74,13 @@ export function FantasySummaryCard({
   return (
     <Link to={next?.to ?? "/fantasy/team"} aria-label={label} className={CARD} style={GRADIENT}>
       <span aria-hidden className="min-w-0 flex-1">
-        <span className={cn("block truncate", ui.text.label)}>
+        <span className={cn("block [overflow-wrap:anywhere]", ui.text.label)}>
           {plain(t("home.fantasy_hub"))} · {summary.teamName}
         </span>
         {rank === null ? null : (
           <span
             className={cn(
-              "mt-1 block truncate",
+              "mt-1 block [overflow-wrap:anywhere]",
               ui.text.meta,
               "[font-weight:var(--ui-weight-strong)]",
             )}

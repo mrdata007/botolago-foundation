@@ -209,7 +209,11 @@ function PickTeamBody() {
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
       <>
-        <UiHeader kicker={t("fantasy.title")} title={t("fpl.pick_team")} backTo="/fantasy" />
+        <UiHeader
+          kicker={t("fantasy.title")}
+          title={t("fantasy.team.screen_title")}
+          backTo="/fantasy"
+        />
         <FantasyScreenGate state={screen} next="/fantasy/team">
           <div />
         </FantasyScreenGate>
@@ -572,7 +576,9 @@ function PickTeamBody() {
     <>
       <UiHeader
         kicker={`${t("fpl.gameweek")} ${gameweek.number}`}
-        title={t("fpl.pick_team")}
+        // "Mon équipe", not "Composer l'équipe": the team exists, this is the
+        // week's pick (U8). The hub's creation card keeps "Composez".
+        title={t("fantasy.team.screen_title")}
         // The Back pill stays while changes are pending: Annuler and the one
         // Confirmer are in the bar at the foot (BG-0157), not swapped in here,
         // where they scrolled away with the header.

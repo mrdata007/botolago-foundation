@@ -33,8 +33,21 @@ export const KICKOFF_WAKE_UP_HORIZON_MINUTES = 24 * 60;
 export const WATCH_REFRESH_MS = 60_000;
 
 /**
- * How often the match page refetches: every 30 seconds while the match is
- * live, every minute from a quarter of an hour before a scheduled kick-off
+ * How often a live match is read again: once a minute (S9, 2026-10-27; it was
+ * 30 seconds). The server only has a new score once a minute at best: pg_cron
+ * runs `football-live-refresh` every minute (`AGENTS.md`), and the Edge
+ * Function's own live poll interval is a server setting
+ * (`rapidapi_budget_settings`) that is never sent to the browser. A browser
+ * asking every 30 seconds therefore got the same answer half of the time and
+ * doubled the database requests of every open match page and live strip. The
+ * trade-off: a goal reaches a reader up to 60 seconds after the server has it
+ * (30 on average) instead of up to 30 (15 on average).
+ */
+export const LIVE_REFRESH_MS = 60_000;
+
+/**
+ * How often the match page refetches: every minute while the match is
+ * live (`LIVE_REFRESH_MS`), every minute from a quarter of an hour before a scheduled kick-off
  * until the provider flips the status (for at most three hours past it, so a
  * fixture nobody updates does not poll forever), otherwise never. A
  * reader who opened the page before kick-off used to wait for a tab focus to
@@ -65,7 +78,7 @@ export function matchRefetchInterval(
   now: number,
 ): number | false {
   if (!match) return false;
-  if (match.status === "live") return 30_000;
+  if (match.status === "live") return LIVE_REFRESH_MS;
   if (match.status !== "scheduled") return false;
   const kickoff = Date.parse(match.kickoff);
   if (Number.isNaN(kickoff)) return false;
@@ -101,7 +114,7 @@ export function matchesRefetchInterval(
   return shortest;
 }
 
-/** Every 30 seconds while something is live; otherwise once a minute. */
+/** Once a minute while something is live (`LIVE_REFRESH_MS`); otherwise once a minute too. */
 export const LIVE_STRIP_IDLE_REFRESH_MS = 60_000;
 
 /**
@@ -111,7 +124,7 @@ export const LIVE_STRIP_IDLE_REFRESH_MS = 60_000;
  * never brought the strip up.
  */
 export function liveStripRefetchInterval(liveCount: number): number {
-  return liveCount > 0 ? 30_000 : LIVE_STRIP_IDLE_REFRESH_MS;
+  return liveCount > 0 ? LIVE_REFRESH_MS : LIVE_STRIP_IDLE_REFRESH_MS;
 }
 
 /**
