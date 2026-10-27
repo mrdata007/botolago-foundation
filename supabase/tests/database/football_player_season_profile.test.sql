@@ -176,10 +176,10 @@ select extensions.is(
   'the last matches are the appearances, not the club''s whole calendar'
 );
 select extensions.is(
-  current_setting('test.fpsp_striker')::jsonb -> 'lastMatches' -> 0,
+  -- kickoffAt is checked on its own below: this runs as anon, which cannot read app.fixtures.
+  (current_setting('test.fpsp_striker')::jsonb -> 'lastMatches' -> 0) - 'kickoffAt',
   jsonb_build_object(
     'fixtureId', 'c1300000-0000-4000-8000-000000000002',
-    'kickoffAt', (select kickoff_at from app.fixtures where id = 'c1300000-0000-4000-8000-000000000002'),
     'home', false,
     'opponent', jsonb_build_object('teamId', 'c0400000-0000-4000-8000-000000000003',
       'shortName', 'Charlie', 'name', 'FPSP Club C'),
@@ -187,6 +187,11 @@ select extensions.is(
     'goals', 0, 'assists', null, 'rating', null
   ),
   'newest first; an away match names the home club as opponent; an unrated match has a null rating and an unreported assist count stays null'
+);
+select extensions.isnt(
+  current_setting('test.fpsp_striker')::jsonb -> 'lastMatches' -> 0 ->> 'kickoffAt',
+  null,
+  'each last match carries its kick-off time'
 );
 select extensions.is(
   current_setting('test.fpsp_striker')::jsonb -> 'lastMatches' -> 1 ->> 'home',

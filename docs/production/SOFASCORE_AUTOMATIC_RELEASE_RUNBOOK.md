@@ -1023,3 +1023,9 @@ season refresh. Every replaced body is md5-guarded against production. Apply it
 before deploying `football-live-refresh`, so the Edge budget guard finds its
 settings. Details and the owner commands are in
 `docs/backend/SOFASCORE_LIVE_EDGE.md` (budget section).
+
+`20261027100100_football_player_season_profile.sql` adds one public read,
+`api.football_player_season_profile`, for the football section of the Fantasy
+player page. It changes no existing function, table or grant and writes
+nothing. Apply it before publishing the website build that calls it, or the
+section shows its error state until it is applied.
