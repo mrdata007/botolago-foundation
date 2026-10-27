@@ -6,10 +6,12 @@ import {
   CalendarDays,
   ChevronRight,
   CircleHelp,
+  ListOrdered,
   SlidersHorizontal,
   Star,
   TrendingUp,
   Trophy,
+  Users,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
@@ -144,8 +146,8 @@ function FantasyHub() {
   // the explanation of the game comes after them.
   const closedGuest = layout.intro !== null && gameweek?.enrolment === null;
 
-  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
-  // the hub's "News & Video" rail is not rendered and its feed is not fetched.
+  // The hub's "News & Video" rail and its feed follow `NEWS_ENABLED`
+  // (`@/lib/feature-flags`): off, the rail is not rendered and the feed not fetched.
   const articles = useQuery({
     queryKey: ["fantasy-articles", lang],
     queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
@@ -255,7 +257,7 @@ function FantasyHub() {
         />
       ) : null}
 
-      <ShortcutTiles />
+      <ShortcutTiles visitor={!hasTeam} />
 
       {closedGuest ? (
         <div className={cn("mt-4", ui.space.gutter)}>
@@ -273,7 +275,7 @@ function FantasyHub() {
         leaguesLoading={leagues.isPending && leagues.isEnabled}
       />
 
-      {/* News & Video — hidden at launch (NEWS_ENABLED). */}
+      {/* News & Video — follows NEWS_ENABLED. */}
       {NEWS_ENABLED && (
         <section className="mt-6">
           <div className={ui.space.gutter}>
@@ -349,7 +351,7 @@ function FantasyHub() {
 /* Shortcuts                                                            */
 /* ------------------------------------------------------------------ */
 
-function ShortcutTiles() {
+function ShortcutTiles({ visitor }: { visitor: boolean }) {
   const { t } = useI18n();
   const live = useManagerCardLive();
   const tiles: Array<{ to: string; label: string; icon: ReactNode }> = [
@@ -357,6 +359,16 @@ function ShortcutTiles() {
     { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
     { to: "/fantasy/players", label: t("fpl.player_stats"), icon: <TrendingUp aria-hidden /> },
     { to: "/fantasy/top-players", label: t("fpl.top_players"), icon: <Star aria-hidden /> },
+    // A visitor with no team has no "Mes ligues" row to reach the board from
+    // (the owner's hub carries them): the ranking and the leagues are the best
+    // proof that the game is alive, so they are two taps from Fantasy (U18).
+    // The board names teams only to a visitor; the API resolves that.
+    ...(visitor
+      ? [
+          { to: "/fantasy/rankings", label: t("fpl.rankings"), icon: <ListOrdered aria-hidden /> },
+          { to: "/fantasy/leagues", label: t("fpl.leagues"), icon: <Users aria-hidden /> },
+        ]
+      : []),
   ];
   return (
     <div className={cn("mt-2.5", ui.space.gutter)}>

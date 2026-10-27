@@ -116,7 +116,7 @@ export function ClubOverview({
         </Section>
       ) : null}
 
-      {/* 2. News — hidden at launch (NEWS_ENABLED). Its fetch is gated on the
+      {/* 2. News — follows NEWS_ENABLED. Its fetch is gated on the
           same flag by the page, so with the flag off a club page makes no
           News request at all; the cards link to /news/$articleId, which
           redirects Home while the flag is off. */}
