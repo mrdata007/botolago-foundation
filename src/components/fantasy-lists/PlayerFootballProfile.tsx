@@ -144,6 +144,13 @@ function Loaded({
           })}
         </p>
       ) : null}
+      {totals.assistsMissing > 0 ? (
+        <p className={cn("mt-2 px-1", ui.text.meta, ui.tone.muted)}>
+          {sentence(t("fantasy.football.assists_missing"), {
+            n: <bdi key="n">{nf.format(totals.assistsMissing)}</bdi>,
+          })}
+        </p>
+      ) : null}
       {coverageNote}
 
       {lastMatches.length > 0 ? (
@@ -289,7 +296,7 @@ function MatchRow({
               })}
             </>
           ) : null}
-          {match.assists > 0 ? (
+          {match.assists !== null && match.assists > 0 ? (
             <>
               {" · "}
               {sentence(t("fantasy.football.assists_line"), {

@@ -71,6 +71,7 @@ describe("footballPlayerSeasonProfileSchema", () => {
       minutes: 110,
       goals: 1,
       assists: 1,
+      assistsMissing: 1,
       yellowCards: 1,
       redCards: 0,
       averageRating: 7.5,
@@ -91,7 +92,7 @@ describe("footballPlayerSeasonProfileSchema", () => {
         minutes: 20,
         started: false,
         goals: 0,
-        assists: 0,
+        assists: null,
         rating: null,
       },
     ],
@@ -101,6 +102,8 @@ describe("footballPlayerSeasonProfileSchema", () => {
     const parsed = footballPlayerSeasonProfileSchema.parse(payload);
     expect(parsed.coverage.covered).toBe(2);
     expect(parsed.lastMatches[0]!.rating).toBeNull();
+    expect(parsed.lastMatches[0]!.assists).toBeNull();
+    expect(parsed.totals.assistsMissing).toBe(1);
   });
 
   test("keeps a null average rating null", () => {

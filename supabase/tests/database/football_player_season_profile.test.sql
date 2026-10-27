@@ -4,7 +4,8 @@
 --
 --   Club A (home of the striker), Club B, Club C.
 --   F1  A v B  finished 2-1   striker starts, 90', 1 goal, 1 assist, rating 7.50
---   F2  C v A  finished 0-0   striker comes on, 20', 1 yellow card, NO rating
+--   F2  C v A  finished 0-0   striker comes on, 20', 1 yellow card, NO rating,
+--                             assists NOT REPORTED (null)
 --                             (+ an INACTIVE older row with 5 goals: ignored)
 --   F3  A v C  finished 3-3   no performance rows yet  -> uncovered
 --   F4  A v B  scheduled      no rows; not finished, so not counted at all
@@ -127,7 +128,7 @@ $$;
 
 --                season fixture player team version  started appeared min goals assists yel red rating active
 select pg_temp.perf('1', '1', '1', '1', 'a1', true,  true,  90, 1, 1, 0, 0, 7.50, true);
-select pg_temp.perf('1', '2', '1', '1', 'a2', false, true,  20, 0, 0, 1, 0, null, true);
+select pg_temp.perf('1', '2', '1', '1', 'a2', false, true,  20, 0, null, 1, 0, null, true);
 -- An older, superseded row for the same match: inactive, so it is not counted.
 select pg_temp.perf('1', '2', '1', '1', 'a2-old', true, true, 90, 5, 5, 0, 1, 9.00, false);
 -- The same striker the season before: another season, never in this one.
@@ -160,8 +161,9 @@ select set_config('test.fpsp_striker', api.football_player_season_profile(
 select extensions.is(
   current_setting('test.fpsp_striker')::jsonb -> 'totals',
   '{"goals": 1, "minutes": 110, "starts": 1, "assists": 1, "redCards": 0,
-    "yellowCards": 1, "appearances": 2, "ratedMatches": 1, "averageRating": 7.50}'::jsonb,
-  'totals count active rows of finished matches of this season only'
+    "yellowCards": 1, "appearances": 2, "ratedMatches": 1, "averageRating": 7.50,
+    "assistsMissing": 1}'::jsonb,
+  'totals count active rows of finished matches of this season only; an unreported assist count is counted as missing, not as zero'
 );
 select extensions.is(
   current_setting('test.fpsp_striker')::jsonb -> 'coverage',
@@ -182,9 +184,9 @@ select extensions.is(
     'opponent', jsonb_build_object('teamId', 'c0400000-0000-4000-8000-000000000003',
       'shortName', 'Charlie', 'name', 'FPSP Club C'),
     'homeScore', 0, 'awayScore', 0, 'minutes', 20, 'started', false,
-    'goals', 0, 'assists', 0, 'rating', null
+    'goals', 0, 'assists', null, 'rating', null
   ),
-  'newest first; an away match names the home club as opponent; an unrated match has a null rating'
+  'newest first; an away match names the home club as opponent; an unrated match has a null rating and an unreported assist count stays null'
 );
 select extensions.is(
   current_setting('test.fpsp_striker')::jsonb -> 'lastMatches' -> 1 ->> 'home',
@@ -208,7 +210,8 @@ select extensions.is(
 select extensions.is(
   current_setting('test.fpsp_winger')::jsonb -> 'totals',
   '{"goals": 2, "minutes": 170, "starts": 2, "assists": 0, "redCards": 0,
-    "yellowCards": 0, "appearances": 2, "ratedMatches": 2, "averageRating": 7.50}'::jsonb,
+    "yellowCards": 0, "appearances": 2, "ratedMatches": 2, "averageRating": 7.50,
+    "assistsMissing": 0}'::jsonb,
   'a bench row with no appearance counts for coverage but not for appearances, and the average is over rated matches'
 );
 
@@ -218,7 +221,8 @@ select set_config('test.fpsp_reserve', api.football_player_season_profile(
 select extensions.is(
   current_setting('test.fpsp_reserve')::jsonb -> 'totals',
   '{"goals": 0, "minutes": 0, "starts": 0, "assists": 0, "redCards": 0,
-    "yellowCards": 0, "appearances": 0, "ratedMatches": 0, "averageRating": null}'::jsonb,
+    "yellowCards": 0, "appearances": 0, "ratedMatches": 0, "averageRating": null,
+    "assistsMissing": 0}'::jsonb,
   'a player with no performance row has zero totals and a null average rating'
 );
 select extensions.is(

@@ -50,8 +50,12 @@
 -- Payload
 -- ---------------------------------------------------------------------------
 --   coverage     {covered, finished}
---   totals       {appearances, starts, minutes, goals, assists, yellowCards,
---                 redCards, averageRating, ratedMatches}
+--   totals       {appearances, starts, minutes, goals, assists, assistsMissing,
+--                 yellowCards, redCards, averageRating, ratedMatches}
+--                assists is the one performance column the provider may leave
+--                empty (a null is "not reported", not zero): it sums the
+--                reported values and assistsMissing counts the appearances
+--                without one, so the screen can say the total is short.
 --                averageRating is the mean provider rating over the matches that
 --                carry one (ratedMatches of them), to two decimals, and JSON
 --                null when none does. It is never 0 for "no rating".
@@ -59,7 +63,7 @@
 --                home (true when the player's club hosted), opponent
 --                {teamId, shortName, name} as fantasy_player_gameweek_history
 --                returns it, homeScore, awayScore, minutes, started, goals,
---                assists, rating (null when unrated)
+--                assists (null when not reported), rating (null when unrated)
 --
 -- A match counts as an appearance when `appeared` is true. A bench row with no
 -- minutes is not one.
@@ -120,6 +124,7 @@ begin
     'minutes', coalesce(sum(performance.minutes) filter (where performance.appeared), 0),
     'goals', coalesce(sum(performance.goals) filter (where performance.appeared), 0),
     'assists', coalesce(sum(performance.assists) filter (where performance.appeared), 0),
+    'assistsMissing', count(*) filter (where performance.appeared and performance.assists is null),
     'yellowCards', coalesce(sum(performance.yellow_cards) filter (where performance.appeared), 0),
     'redCards', coalesce(sum(performance.red_cards) filter (where performance.appeared), 0),
     'averageRating', round(avg(performance.provider_rating)

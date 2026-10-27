@@ -833,6 +833,7 @@ export const fr = {
   "fantasy.football.yellow": "Cartons jaunes",
   "fantasy.football.red": "Cartons rouges",
   "fantasy.football.rated_note": "Note moyenne sur les matchs notés : {n}",
+  "fantasy.football.assists_missing": "Matchs sans passes déc. communiquées : {n}",
   "fantasy.football.coverage_note": "Chiffres sur {covered} des {finished} matchs de son club",
   "fantasy.football.empty": "Pas encore de match cette saison",
   "fantasy.football.empty_desc": "Ses statistiques apparaîtront après son premier match.",

@@ -502,7 +502,9 @@ export const fantasyPlayerGameweekHistorySchema = z.array(fantasyPlayerGameweekH
  * figures; when `covered < finished` the page says so instead of presenting a
  * partial season as the whole one.
  *
- * `averageRating` and a match's `rating` are `null` — never 0 — when the
+ * `assists` of a match is `null` when the provider did not report it, and
+ * `totals.assistsMissing` counts those appearances: the total sums what was
+ * reported and the page says it is short. `averageRating` and a match's `rating` are `null` — never 0 — when the
  * provider gave none. `.nullable()` sits outside the coercion so a null is not
  * turned into 0 (the same reason as `fantasyPlayerSeasonStatSchema.form`). A
  * score is null when the fixture carries none.
@@ -518,6 +520,7 @@ export const footballPlayerSeasonProfileSchema = z.object({
     minutes: z.coerce.number().int().nonnegative(),
     goals: z.coerce.number().int().nonnegative(),
     assists: z.coerce.number().int().nonnegative(),
+    assistsMissing: z.coerce.number().int().nonnegative(),
     yellowCards: z.coerce.number().int().nonnegative(),
     redCards: z.coerce.number().int().nonnegative(),
     averageRating: z.coerce.number().nullable(),
@@ -538,7 +541,7 @@ export const footballPlayerSeasonProfileSchema = z.object({
       minutes: z.coerce.number().int().nonnegative(),
       started: z.boolean(),
       goals: z.coerce.number().int().nonnegative(),
-      assists: z.coerce.number().int().nonnegative(),
+      assists: z.coerce.number().int().nonnegative().nullable(),
       rating: z.coerce.number().nullable(),
     }),
   ),
@@ -554,6 +557,7 @@ export const EMPTY_FOOTBALL_PLAYER_SEASON_PROFILE: FootballPlayerSeasonProfileDt
     minutes: 0,
     goals: 0,
     assists: 0,
+    assistsMissing: 0,
     yellowCards: 0,
     redCards: 0,
     averageRating: null,
