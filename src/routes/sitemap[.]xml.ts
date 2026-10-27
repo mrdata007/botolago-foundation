@@ -67,12 +67,15 @@ export const Route = createFileRoute("/sitemap.xml")({
             .catch((): readonly string[] => []),
           footballService.getSeasonMatchIds("fr").catch((): readonly string[] => []),
         ]);
-        return new Response(buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds, matchIds }), {
-          headers: {
-            "content-type": "application/xml; charset=utf-8",
-            "cache-control": SITEMAP_CACHE_CONTROL,
+        return new Response(
+          buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds, matchIds }),
+          {
+            headers: {
+              "content-type": "application/xml; charset=utf-8",
+              "cache-control": SITEMAP_CACHE_CONTROL,
+            },
           },
-        });
+        );
       },
     },
   },

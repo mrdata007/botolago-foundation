@@ -99,11 +99,7 @@ export const SITEMAP_MATCH_LIMIT = 600;
  * without exceeding `SITEMAP_MAX_URLS`.
  */
 export const SITEMAP_NEWS_LIMIT =
-  SITEMAP_MAX_URLS -
-  SITEMAP_STATIC_PATHS.length -
-  1 -
-  SITEMAP_CLUB_LIMIT -
-  SITEMAP_MATCH_LIMIT;
+  SITEMAP_MAX_URLS - SITEMAP_STATIC_PATHS.length - 1 - SITEMAP_CLUB_LIMIT - SITEMAP_MATCH_LIMIT;
 
 function escapeXml(value: string): string {
   return value

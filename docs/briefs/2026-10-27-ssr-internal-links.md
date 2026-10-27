@@ -19,17 +19,17 @@ redesign: no component, markup, style or copy changes.
 ## Improvements
 
 A. `/clubs/<id>`: the loader also reads, in French, the season list, the club's
-   matches for the season the page opens on, and (only while the News flag is
-   on) the club's latest stories, in parallel with the club read. They are
-   seeded into the page's own queries, so the first server render holds the
-   `/matches/<id>` and `/news/<id>` links.
+matches for the season the page opens on, and (only while the News flag is
+on) the club's latest stories, in parallel with the club read. They are
+seeded into the page's own queries, so the first server render holds the
+`/matches/<id>` and `/news/<id>` links.
 B. `/matches`: audit what the server HTML holds. The list is already seeded by
-   the loader (audit A10); it has links on any day with fixtures. No change
-   unless the audit finds a gap.
+the loader (audit A10); it has links on any day with fixtures. No change
+unless the audit finds a gap.
 C. `/sitemap.xml`: list `/matches/<id>` for the directory's season (the default
-   season), capped by `SITEMAP_MATCH_LIMIT`, reserved out of the News budget as
-   `SITEMAP_CLUB_LIMIT` is. A failed football read leaves them out, never the
-   sitemap.
+season), capped by `SITEMAP_MATCH_LIMIT`, reserved out of the News budget as
+`SITEMAP_CLUB_LIMIT` is. A failed football read leaves them out, never the
+sitemap.
 
 ## Acceptance criteria
 
