@@ -327,3 +327,12 @@ Lead sent these 6 fixes back to the Builder. Accepted as they are:
 - A few tiny symbols still under 12px.
 - Fantasy availability may be up to 5 minutes old.
 
+**Builder round 2 – all 6 fixes pushed (5dde976).**
+- Player links now ask only for the teams on screen (3 requests instead of 8), only when the line-up tab is open. The size is calculated, not yet measured.
+- Visitor leaderboard tiles moved up from about 1,500px to about 350–400px.
+- The "Ligues" tile is honestly labelled "Créer ou rejoindre une ligue".
+- Arabic stat lines no longer break inside an item.
+- Focus outline visible.
+
+Tests unchanged (10,890 pass, 1 known failure). Sent to the Tester for round 2, with the instruction to measure the page weight for real.
+
