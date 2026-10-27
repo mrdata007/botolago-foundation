@@ -137,10 +137,11 @@ function Loaded({
           />
         </dl>
       </UiCard>
-      {totals.ratedMatches > 0 ? (
+      {totals.ratedMatches > 0 && totals.ratedMatches < totals.appearances ? (
         <p className={cn("mt-2 px-1", ui.text.meta, ui.tone.muted)}>
           {sentence(t("fantasy.football.rated_note"), {
             n: <bdi key="n">{nf.format(totals.ratedMatches)}</bdi>,
+            total: <bdi key="total">{nf.format(totals.appearances)}</bdi>,
           })}
         </p>
       ) : null}

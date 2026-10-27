@@ -795,7 +795,7 @@ export const ar = {
   "fantasy.football.assists": "تمريرات حاسمة",
   "fantasy.football.yellow": "بطاقات صفراء",
   "fantasy.football.red": "بطاقات حمراء",
-  "fantasy.football.rated_note": "متوسط التقييم على المباريات المقيّمة: {n}",
+  "fantasy.football.rated_note": "متوسط التقييم على المباريات المقيّمة ({n} من {total})",
   "fantasy.football.assists_missing": "مباريات بلا بيانات التمريرات الحاسمة: {n}",
   "fantasy.football.coverage_note": "الأرقام تغطي {covered} من أصل {finished} من مباريات ناديه",
   "fantasy.football.empty": "لم يلعب بعد هذا الموسم",
