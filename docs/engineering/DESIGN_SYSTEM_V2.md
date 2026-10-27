@@ -526,7 +526,7 @@ for `rounded-lg` (the legacy `--radius`) for a card.
 - `ui.safe.top` / `ui.safe.bottom` — safe-area padding:
   `max(env(safe-area-inset-*), fallback)`, so a screen without insets keeps the
   fallback. The insets are live because the viewport meta says
-  `viewport-fit=cover` (set with the store readiness work, #358; BG-0151); without it iOS reports them as 0. The same tag carries `maximum-scale=1`, so iOS does not zoom in when a 15px field gets focus (the app could not zoom back out). A bar pinned
+  `viewport-fit=cover` (set with the store readiness work, #358; BG-0151); without it iOS reports them as 0. The same tag no longer carries `maximum-scale=1` (removed 2026-10-27, M1): every field is at least 16px (`FIELD_TEXT` in the kit), so iOS does not zoom in when a field gets focus, and readers can pinch-zoom. A bar pinned
   to the bottom edge pads by the inset itself — `ui.safe.bottom`, or
   `pb-[max(env(safe-area-inset-bottom),<its own padding>)]` when its padding is
   not 0.5rem — and never as `ui.safe.bottom` followed by another `pb-*` in the

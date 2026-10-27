@@ -36,7 +36,7 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 describe("safe areas", () => {
   test("the viewport covers the whole screen", () => {
     expect(read("src/routes/__root.tsx")).toContain(
-      'content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
     );
   });
 
@@ -83,18 +83,25 @@ describe("BG-0151: the root viewport meta", () => {
 
   test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
-    expect(viewports[0]).toBe(
-      "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
-    );
+    expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
   });
 
-  // iOS zooms in when a field under 16px gets focus and never zooms back; the
-  // kit's fields are 15px, and the phone app cannot pinch back out. The cap is
-  // what stops it (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
-  // `user-scalable=no` would add nothing in the app and fail more audits.
-  test("caps the zoom at 1, without user-scalable=no", () => {
-    expect(viewports[0]).toContain("maximum-scale=1");
+  // iOS zooms in when a field under 16px gets focus and never zooms back. The
+  // cap that used to stop it is gone (M1, 2026-10-27): pinch zoom is allowed,
+  // and the kit's fields are 16px instead
+  // (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
+  test("does not cap the zoom", () => {
+    expect(viewports[0]).not.toContain("maximum-scale");
     expect(viewports[0]).not.toContain("user-scalable");
+  });
+
+  test("the field text is at least 16px, so iOS has no focus zoom to cap", () => {
+    expect(read("src/components/ui-kit/primitives.tsx")).toContain(
+      "text-[length:max(16px,var(--ui-text-body))]",
+    );
+    expect(read("src/components/shell/GlobalSearch.tsx")).toContain(
+      "text-[length:max(16px,var(--ui-text-meta))]",
+    );
   });
 
   test("is not overridden by any other route", () => {

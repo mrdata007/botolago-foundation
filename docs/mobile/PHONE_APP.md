@@ -421,8 +421,11 @@ bridge, not on a phone: it is part of the device check above.
 
 ## Zoom
 
-The app does not zoom. The viewport meta carries `maximum-scale=1`
-(`src/routes/__root.tsx`; owner report of 2026-10-06,
+The app does not pinch-zoom: Capacitor keeps `zoomEnabled: false`. Since
+2026-10-27 (Batch 1, M1) the viewport meta no longer carries `maximum-scale=1`
+(`src/routes/__root.tsx`); the focus zoom described below is prevented by
+making every text field at least 16px instead. The rest of this section is the
+history of the cap (owner report of 2026-10-06,
 `docs/engineering/briefs/ios-zoom-and-pitch-lines.md`).
 
 Why: iOS zooms in when a text field whose letters are under 16px gets focus, by
