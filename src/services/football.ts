@@ -28,6 +28,12 @@ import {
 import { clubSlug } from "@/lib/club-slug";
 import { resolveMediaUrl } from "@/lib/media";
 import { matchDayKey } from "@/lib/match-kickoff";
+import {
+  findRivalryClubs,
+  splitMeetings,
+  type Rivalry,
+  type RivalryMeetings,
+} from "@/lib/rivalries";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
@@ -1008,6 +1014,32 @@ export const footballService = {
       collected.map((item) => ({ seasonId: item.seasonId, match: toMatch(item) })),
       clubId,
     );
+  },
+
+  /**
+   * A rivalry page (`@/lib/rivalries`): the two clubs, found among the
+   * current season's, and their next and past meetings, read from the first
+   * club's fixtures across every season the API pages back through. `null`
+   * when either club is not in the directory.
+   */
+  async getRivalry(
+    rivalry: Rivalry,
+    language: FootballLanguage,
+  ): Promise<({ clubs: readonly [Club, Club] } & RivalryMeetings) | null> {
+    // The clubs are identified from the French names: an Arabic response has
+    // translated them, and the match is on the names and the slug.
+    const french = findRivalryClubs(rivalry, (await footballService.getClubDirectory("fr")).clubs);
+    if (!french) return null;
+    const [first, second] = french;
+    let clubs: readonly [Club, Club] = french;
+    if (language !== "fr") {
+      const named = (await footballService.getClubDirectory(language)).clubs;
+      const a = named.find((club) => club.id === first.id);
+      const b = named.find((club) => club.id === second.id);
+      if (a && b) clubs = [a, b];
+    }
+    const { matches } = await footballService.getClubSeasonMatches(first.id, null, language);
+    return { clubs, ...splitMeetings(matches, first.id, second.id, Date.now()) };
   },
 
   /** `seasonId` null: the club's current squad; a season id: its squad that season. */
