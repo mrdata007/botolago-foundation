@@ -1,0 +1,72 @@
+/* =====================================================================
+   PHASE 3 ADDITIONS  (everything here is NEW; no existing token changes
+   value except --ui-text-micro, 11 -> 12 / 13 AR, see mobile-spec 1.2)
+
+   Loaded AFTER tokens.css (copied verbatim from src/styles.css).
+   Fills and brand colours are untouched. Every colour below is either a
+   text-only shade, a quiet wash mixed from an existing token, or a neutral
+   sponsor surface.
+   ===================================================================== */
+:root {
+  /* --- Type: M5 floor (12px FR) -------------------------------------- */
+  --ui-text-micro: 12px;
+
+  /* --- Text-only shades (M4), values from mobile-spec 3.2 ------------- */
+  --ui-positive-text: oklch(0.42 0.12 150);
+  --ui-negative-text: oklch(0.44 0.19 355);
+  --ui-live-text: oklch(0.45 0.2 27);
+  --ui-on-surface-faint-text: oklch(0.5 0.02 258);
+
+  /* --- Quiet washes mixed from existing tokens ------------------------ */
+  /* "my row", the open row, the selected card edge. Mixed, not new hue. */
+  --ui-ink-wash: color-mix(in oklab, var(--ui-ink-fg) 7%, var(--ui-surface));
+  --ui-ink-wash-strong: color-mix(in oklab, var(--ui-ink-fg) 13%, var(--ui-surface));
+  --ui-positive-wash: color-mix(in oklab, var(--ui-positive) 14%, var(--ui-surface));
+  --ui-negative-wash: color-mix(in oklab, var(--ui-negative) 12%, var(--ui-surface));
+  --ui-live-wash: color-mix(in oklab, var(--ui-live) 12%, var(--ui-surface));
+
+  /* --- Rank medals (leaderboard podium). Fills only. ------------------ */
+  --ui-medal-1: var(--ui-caution);
+  --ui-medal-2: oklch(0.86 0.01 250);
+  --ui-medal-3: oklch(0.74 0.1 55);
+  --ui-on-medal: var(--ui-ink-deep);
+
+  /* --- Sponsor surface: neutral only, never club colour --------------- */
+  --ui-sponsor-surface: var(--ui-surface-sunken);
+  --ui-sponsor-rule: var(--ui-rule);
+  --ui-sponsor-text: var(--ui-on-surface-muted);
+
+  /* --- Control edge: --ui-rule-strong is 2.73:1 on sunken (U20). Same hue,
+         one step darker; use for outlines drawn on --ui-surface-sunken. --- */
+  --ui-control-edge: oklch(0.56 0.02 258);
+
+  /* --- Spacing: one step the scale lacks (desktop section gap) -------- */
+  --ui-space-7: 3rem;
+
+  /* --- Arabic stack with an Android-safe fallback (mobile-spec 1.3) --- */
+  --ui-font-body-ar: "Noto Sans Arabic", system-ui, "Segoe UI Arabic", Tahoma, sans-serif;
+  --ui-font-display-ar: "Changa", "Noto Sans Arabic", system-ui, "Segoe UI Arabic", Tahoma,
+    sans-serif;
+}
+.dark {
+  --ui-positive-text: var(--ui-positive);
+  --ui-negative-text: oklch(0.78 0.17 355);
+  --ui-live-text: var(--ui-live-fg);
+  --ui-on-surface-faint-text: var(--ui-on-surface-faint);
+  --ui-control-edge: oklch(0.62 0.02 258);
+  --ui-medal-2: oklch(0.78 0.01 250);
+  --ui-medal-3: oklch(0.7 0.1 55);
+}
+
+/* Arabic is one step larger on the small steps only (mobile-spec 1.2).
+   One switch: delete this block to go back to equal px. */
+:root:lang(ar),
+[dir="rtl"] {
+  --ui-text-body: 16px;
+  --ui-text-secondary: 15px;
+  --ui-text-meta: 14px;
+  --ui-text-label: 13px;
+  --ui-text-micro: 13px;
+  --ui-font-body: var(--ui-font-body-ar);
+  --ui-font-display: var(--ui-font-display-ar);
+}

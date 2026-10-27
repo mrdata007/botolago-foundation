@@ -258,3 +258,19 @@ If the two disagree, the Lead decides and records why here.
 
 Left for the owner: auto-fill picking rules, sponsor wording, a separate player page route, official Arabic names, and language cookie first or not.
 
+### Phase 3 – round 2
+
+**UX & Design – APPROVED.** All 14 fixes done. I checked the screenshots myself:
+- Pitch back near its old height (y=342 French, 362 Arabic; it was 345).
+- Bench Boost and Free Hit visible in Arabic.
+- Save button moved to the top.
+- Fantasy deadline on the first screen of Home.
+- Shortcut buttons not cut off.
+- Re-measured: no sideways scrolling, no tiny text, no small tap targets, at 320/360/390 in French and Arabic.
+
+Known issue to fix when building: on the leaderboard mock-up, the sample points don't add up (the top 3 show fewer points than "my" team at rank 330). This is mock data only.
+
+Saved in `docs/review/phase3-2026-10-27/`: design system, proposals, mobile spec and review, the working mock-ups (`proto/`), phone screenshots, and before/after comparisons (`compare/`).
+
+Phase 3 result: waiting for the owner's approval and answers.
+

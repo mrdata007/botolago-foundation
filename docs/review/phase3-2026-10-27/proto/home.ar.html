@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="additions.css"><link rel="stylesheet" href="proto.css">
+<script>(function(){var q=new URLSearchParams(location.search),h=document.documentElement;if(q.get('sponsor')==='off')h.dataset.sponsor='off';if(q.get('shot'))h.dataset.shot='1';if(q.get('theme')==='dark')h.classList.add('dark');if(q.get('state'))h.dataset.state=q.get('state');})();</script>
+<style>
+  .fline{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 16px;background:var(--ui-ink-wash);border-block-end:1px solid var(--ui-rule);font-size:var(--ui-text-meta)}
+  .fl-i{color:var(--ui-ink-fg);display:grid}
+  .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sgrid .chip{justify-content:center;white-space:nowrap}
+  .sc.section{padding-block-start:16px}
+  .grow{flex:1;min-width:0}
+  .live-strip{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 16px;background:var(--ui-surface);border-block-end:1px solid var(--ui-rule)}
+  .langbar{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 16px;background:var(--ui-ink-wash);border-block-end:1px solid var(--ui-rule)}
+  [dir=rtl] .langbar{padding:4px 16px 4px 4px}
+  .langbar .t-meta{flex:1}
+  .hero{position:relative;padding:24px 16px 20px;background:linear-gradient(color-mix(in oklab,var(--ui-ink-deep) 72%,transparent),color-mix(in oklab,var(--ui-ink-deep) 92%,transparent)),url(assets/home-band-stadium-800.webp) center/cover;color:var(--ui-on-ink-plain)}
+  .hero-k{color:var(--ui-on-ink-muted);margin-block-end:4px}
+  .hcard{position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:272px;margin-block-start:16px;border-radius:var(--ui-radius-sheet);overflow:hidden;box-shadow:var(--ui-shadow-lifted)}
+  .half{display:flex;flex-direction:column;justify-content:flex-end;gap:2px;padding:132px 16px 16px;background:var(--c);color:var(--oc);min-width:0}
+  .half:last-of-type{align-items:flex-end;text-align:end}
+  .half b{font-size:19px;line-height:1.3;overflow-wrap:anywhere}.half.pilled b{background:#fff;color:var(--ui-ink-deep);border-radius:10px;padding:2px 10px;align-self:inherit}
+  .half small{font-size:var(--ui-text-label);font-weight:700;opacity:.95}
+  .half .crest{margin-block-end:6px}
+  .plate{position:absolute;inset-inline:0;inset-block-start:16px;margin-inline:auto;width:max-content;max-width:60%;background:var(--ui-scorebox);color:var(--ui-on-scorebox);border-radius:var(--ui-radius-card);padding:6px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:var(--ui-shadow-lifted)}
+  .dots{display:flex;justify-content:center;gap:6px;margin-block-start:14px}.dots span{width:8px;height:8px;border-radius:99px;background:var(--ui-mesh-rule)}.dots .on{width:24px;background:var(--ui-accent-spring)}
+  .fcard{background:var(--ui-surface);border-radius:var(--ui-radius-card);box-shadow:var(--ui-shadow-card);overflow:hidden}
+  .fc-top{padding:16px;background:var(--ui-grad-action);color:var(--ui-ink-deep)}
+  .fc-top .t-label{opacity:.9}
+  .fc-free{display:flex;align-items:center;gap:8px;min-height:48px;padding:8px 16px;color:var(--ui-ink-fg);font-weight:700;font-size:var(--ui-text-meta)}
+  .fc-free span{flex:1}
+  .medal{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:var(--ui-text-meta);background:var(--ui-medal-2);color:var(--ui-on-medal);flex:none}
+  .medal.m1{background:var(--ui-medal-1)}.medal.m3{background:var(--ui-medal-3)}
+  .thumb{width:72px;height:56px;border-radius:var(--ui-radius-track);flex:none}
+  .pad-d{padding-inline:var(--ui-gutter)}
+  .rail-note{}
+  @media(min-width:1024px){
+    .pad-d{padding-inline:0}
+    .hero{border-radius:var(--ui-radius-sheet);margin-block-start:24px}
+    .hcard{min-height:260px}
+    .half b{font-size:var(--ui-display-section)}
+    .live-strip{border-radius:999px;margin-block-start:16px;border:1px solid var(--ui-rule)}
+    .langbar{border-radius:var(--ui-radius-track);margin-block-start:16px}
+    .shortcuts-d{}
+  }</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+<symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z"/></symbol>
+<symbol id="i-news" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2M18 14h-8M15 18h-5M10 6h8v4h-8z"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4.2a4 4 0 0 1 0 7.6M22 21a7 7 0 0 0-4-6.3"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></symbol>
+<symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8zM5 14l.6 1.6L7.2 16l-1.6.6L5 18.2l-.6-1.6L2.8 16l1.6-.4z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7L21 16M21 21v-5h-5"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-whistle" viewBox="0 0 24 24"><circle cx="9" cy="14" r="6"/><path d="M13 9l8-3v5h-4"/></symbol>
+<symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 8 3.5 2.5-1.3 4h-4.4l-1.3-4zM12 3v5M20.5 9.5 15.5 10.5M3.5 9.5l5 1M7 20l2.8-5.5M17 20l-2.8-5.5"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+<symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M10.7 5.1A15 15 0 0 1 22 8.8M5 12.9a10 10 0 0 1 5-2.7M13.9 10.4A10 10 0 0 1 19 12.9M12 20h.01"/></symbol>
+</defs></svg>
+<a class="skip" href="#main">تخطي إلى المحتوى</a>
+<div class="protobar"><a href="home.html">Français</a><a href="?sponsor=off">بدون راعٍ</a><a href="?">مع MARQUE</a></div>
+<header class="topbar">
+  <img class="logo" src="assets/botolago-wordmark-color.svg" alt="BotolaGO" width="157" height="28">
+  <nav class="desk-nav" aria-label="التنقل الرئيسي"><a href="#" aria-current="page">الرئيسية</a><a href="#" >المباريات</a><a href="#" >فانتازي</a><a href="#" >الأخبار</a><a href="#" >كورفا</a></nav>
+  <span class="sp-fill"></span>
+  <button class="icon-btn" aria-label="بحث"><svg class="i " aria-hidden="true"><use href="#i-search"/></svg></button>
+  <button class="pill-btn" aria-label="اللغة: العربية"><span lang="ar">ع</span></button>
+  <button class="icon-btn" aria-label="حسابي"><svg class="i " aria-hidden="true"><use href="#i-user"/></svg></button>
+</header>
+<main id="main"><div class="only-m"><div class="langbar" role="region" aria-label="اللغة">
+    <span class="t-meta" lang="fr" dir="ltr" style="text-align:start">Afficher BotolaGO en français ?</span>
+    <a class="btn sm soft" href="home.html" lang="fr">Français</a>
+    <button class="icon-btn" aria-label="إغلاق" style="width:44px;height:44px;background:none">✕</button>
+  </div>
+  <div class="page">
+    <a href="live.html" class="live-strip" aria-label="مباراة مباشرة: الرجاء البيضاوي 1، حسنية أكادير 1، الدقيقة 63">
+    <span class="dot"></span><span class="crest sm pilled" style="--c:#0a8f3a;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">RCA</bdi></b></span><span class="score" style="font-size:22px"><span>1</span><i aria-hidden="true">–</i><span>1</span></span><span class="crest sm pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span>
+    <span class="t-meta strong"><bdi dir="ltr">63′</bdi></span><span class="grow"></span><span class="t-meta strong ink-fg">تابع المباراة</span><svg class="i dir sm ink-fg" aria-hidden="true"><use href="#i-chev"/></svg>
+  </a><a href="team.html" class="fline"><span class="fl-i"><svg class="i sm" aria-hidden="true"><use href="#i-clock"/></svg></span><span class="grow"><b>فانتازي</b> ج5: بقي <span class="nowrap"><bdi dir="ltr">21</bdi> س</span> <span class="nowrap"><bdi dir="ltr">04</bdi> د</span></span><span class="strong ink-fg t-meta">العب</span><svg class="i dir sm ink-fg" aria-hidden="true"><use href="#i-chev"/></svg></a>
+    <section class="hero" aria-labelledby="h1">
+    <p class="t-label hero-k">الأربعاء 28 أكتوبر · الجولة 5</p>
+    <h1 id="h1" class="display" style="font-size:var(--ui-display-hero);color:var(--ui-on-ink-plain)">الجولة 5</h1>
+    <a href="live.html" class="hcard" aria-label="الرجاء البيضاوي ضد حسنية أكادير، 1–1، مباشر">
+      <span class="half pilled" style="--c:#0a8f3a;--oc:#111111"><span class="crest lg pilled" style="--c:#0a8f3a;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">RCA</bdi></b></span><b class="display">الرجاء البيضاوي</b></span>
+      <span class="half pilled" style="--c:#e63900;--oc:#111111"><span class="crest lg pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span><b class="display">حسنية أكادير</b></span>
+      <span class="plate"><span class="score" style="font-size:var(--ui-score-hero)"><span>1</span><i aria-hidden="true">–</i><span>1</span></span>
+        <span class="badge live"><span class="dot"></span>مباشر <bdi dir="ltr">63′</bdi></span></span>
+    </a>
+    <div class="dots" aria-label="مباراة 1 من 3"><span class="on"></span><span></span><span></span></div>
+  </section><nav class="pad section sc" aria-label="اختصارات"><div class="sgrid">
+    <a class="chip" href="standings.html"><svg class="i sm" aria-hidden="true"><use href="#i-trophy"/></svg>الترتيب</a>
+    <a class="chip" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-cal"/></svg>المباريات</a>
+    <a class="chip" href="rank.html"><svg class="i sm" aria-hidden="true"><use href="#i-users"/></svg>أفضل المدربين</a>
+    <a class="chip" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-target"/></svg>التوقعات</a>
+  </div></nav><section class="pad section" aria-labelledby="up">
+    <div class="sec-head"><h2 id="up">المباريات القادمة</h2><a class="link-more" href="#">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="chips" style="margin-block-end:8px"><button class="chip" aria-pressed="true">الكل</button><button class="chip">الأربعاء 28</button><button class="chip">الخميس 29</button></div>
+    <div class="stack-s">
+      <a href="live.html" class="mcard edge" style="--e:#1a3a7a">
+    <div class="meta">الأربعاء 28 · البطولة الاحترافية إنوي</div>
+    <div class="teams">
+      <div class="side"><span class="crest md " style="--c:#1a3a7a;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">FAR</bdi></span><span class="nm">الجيش الملكي</span></div>
+      <div class="mid"><span class="kick"><bdi dir="ltr">20:00</bdi></span></div>
+      <div class="side away"><span class="crest md " style="--c:#1e5bb8;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">ITT</bdi></span><span class="nm">اتحاد طنجة</span></div>
+    </div></a>
+      <a href="live.html" class="mcard edge" style="--e:#ffd400">
+    <div class="meta">الخميس 29 · البطولة الاحترافية إنوي</div>
+    <div class="teams">
+      <div class="side"><span class="crest md " style="--c:#ffd400;--oc:#111111" aria-hidden="true"><bdi dir="ltr">MAG</bdi></span><span class="nm">المغرب الفاسي</span></div>
+      <div class="mid"><span class="kick"><bdi dir="ltr">20:00</bdi></span></div>
+      <div class="side away"><span class="crest md " style="--c:#f26522;--oc:#111111" aria-hidden="true"><bdi dir="ltr">RSB</bdi></span><span class="nm">نهضة بركان</span></div>
+    </div></a>
+    </div>
+  </section>
+    <div class="pad"><section class="section" aria-labelledby="fa">
+    <div class="sec-head pad-d"><h2 id="fa">فانتازي</h2><a class="link-more" href="rank.html">الترتيب<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="fcard">
+      <div class="fc-top">
+        <p class="t-label">الجولة 5 · آخر موعد</p>
+        <p class="display" style="font-size:var(--ui-text-title)">بقي <span class="nowrap"><bdi dir="ltr">21</bdi> س</span> <span class="nowrap"><bdi dir="ltr">04</bdi> د</span></p>
+        <a href="team.html" class="btn ink block" style="margin-block-start:12px">اختيار تشكيلتي<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a>
+      </div>
+      <div class="sp" style="border-radius:0 0 var(--ui-radius-card) var(--ui-radius-card);min-height:44px"><svg class="i sm" aria-hidden="true"><use href="#i-gift"/></svg><span>تحدي الجولة برعاية</span><span class="brand-mark">MARQUE</span></div>
+      <a class="sp-off fc-free" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-gift"/></svg><span>مجاني · جوائز في كل جولة</span><svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a>
+    </div>
+    <div class="group" style="margin-block-start:12px">
+      <div class="row one" style="background:var(--ui-surface-sunken);min-height:44px"><span class="t-meta strong">أفضل المدربين</span><span class="grow"></span><span class="t-meta muted"><bdi dir="ltr">12 480</bdi> مدرب</span></div>
+      <a href="rank.html" class="row one"><span class="medal m1">1</span><span class="grow trunc"><bdi>Atlas Lions</bdi></span><span class="num t-body"><bdi dir="ltr">312</bdi></span></a><a href="rank.html" class="row one"><span class="medal m2">2</span><span class="grow trunc"><bdi>نسور الأطلس</bdi></span><span class="num t-body"><bdi dir="ltr">307</bdi></span></a><a href="rank.html" class="row one"><span class="medal m3">3</span><span class="grow trunc"><bdi>Casa United</bdi></span><span class="num t-body"><bdi dir="ltr">301</bdi></span></a>
+    </div>
+  </section></div><section class="pad section" aria-labelledby="cl">
+    <div class="sec-head"><h2 id="cl">الترتيب</h2><a class="link-more" href="standings.html">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="group"><table class="tbl" style="table-layout:fixed">
+      <caption class="sr">ترتيب البطولة، أول 5 فرق</caption>
+      <thead><tr><th class="zone"></th><th style="width:36px">#</th><th class="l">الفريق</th><th style="width:36px">لعب</th><th style="width:44px">فارق</th><th style="width:44px">نقاط</th></tr></thead>
+      <tbody><tr><td class="zone cl"></td><td class="num">1</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#c8102e;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">KAW</bdi></span><span class="trunc strong">الكوكب المراكشي</span></span></td><td>5</td><td><bdi dir="ltr">+2</bdi></td><td class="num">10</td></tr><tr><td class="zone cl"></td><td class="num">2</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#0a7a3c;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">COD</bdi></span><span class="trunc strong">الكوديم المكناسي</span></span></td><td>5</td><td><bdi dir="ltr">+5</bdi></td><td class="num">10</td></tr><tr><td class="zone cf"></td><td class="num">3</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#c8102e;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">WCA</bdi></span><span class="trunc strong">الوداد البيضاوي</span></span></td><td>5</td><td><bdi dir="ltr">+1</bdi></td><td class="num">8</td></tr><tr><td class="zone "></td><td class="num">4</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span><span class="trunc strong">حسنية أكادير</span></span></td><td>4</td><td><bdi dir="ltr">+3</bdi></td><td class="num">7</td></tr><tr><td class="zone "></td><td class="num">5</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#1e5bb8;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">ITT</bdi></span><span class="trunc strong">اتحاد طنجة</span></span></td><td>4</td><td><bdi dir="ltr">+2</bdi></td><td class="num">7</td></tr></tbody>
+    </table>
+    <a href="standings.html" class="btn soft block" style="border-radius:0;min-height:48px">عرض الترتيب الكامل</a></div>
+  </section><section class="pad section" aria-labelledby="nw">
+    <div class="sec-head"><h2 id="nw">أخبار البطولة</h2><a class="link-more" href="#">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="group">
+      <a href="#" class="row edge" style="--e:var(--news-plate-latest);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">معاينة المباراة: الرجاء البيضاوي ضد حسنية أكادير</span><br><span class="t-meta muted">قبل 20 دقيقة</span></span><span class="thumb" style="background:var(--news-plate-latest)" aria-hidden="true"></span></a><a href="#" class="row edge" style="--e:var(--news-plate-analysis);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">تعادل بين الكوكب المراكشي والدفاع الحسني الجديدي</span><br><span class="t-meta muted">أمس</span></span><span class="thumb" style="background:var(--news-plate-analysis)" aria-hidden="true"></span></a><a href="#" class="row edge" style="--e:var(--news-plate-transfers);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">فوز الفتح الرياضي على رجاء زمامرة</span><br><span class="t-meta muted">أول أمس</span></span><span class="thumb" style="background:var(--news-plate-transfers)" aria-hidden="true"></span></a>
+    </div>
+  </section>
+  </div></div><div class="only-d"><div class="langbar" role="region" aria-label="اللغة">
+    <span class="t-meta" lang="fr" dir="ltr" style="text-align:start">Afficher BotolaGO en français ?</span>
+    <a class="btn sm soft" href="home.html" lang="fr">Français</a>
+    <button class="icon-btn" aria-label="إغلاق" style="width:44px;height:44px;background:none">✕</button>
+  </div>
+  <div class="page narrow">
+    <div class="only-m"><a href="live.html" class="live-strip" aria-label="مباراة مباشرة: الرجاء البيضاوي 1، حسنية أكادير 1، الدقيقة 63">
+    <span class="dot"></span><span class="crest sm pilled" style="--c:#0a8f3a;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">RCA</bdi></b></span><span class="score" style="font-size:22px"><span>1</span><i aria-hidden="true">–</i><span>1</span></span><span class="crest sm pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span>
+    <span class="t-meta strong"><bdi dir="ltr">63′</bdi></span><span class="grow"></span><span class="t-meta strong ink-fg">تابع المباراة</span><svg class="i dir sm ink-fg" aria-hidden="true"><use href="#i-chev"/></svg>
+  </a></div>
+    <div class="layout">
+      <div class="col">
+        <section class="hero" aria-labelledby="h1d">
+    <p class="t-label hero-k">الأربعاء 28 أكتوبر · الجولة 5</p>
+    <h1 id="h1d" class="display" style="font-size:var(--ui-display-hero);color:var(--ui-on-ink-plain)">الجولة 5</h1>
+    <a href="live.html" class="hcard" aria-label="الرجاء البيضاوي ضد حسنية أكادير، 1–1، مباشر">
+      <span class="half pilled" style="--c:#0a8f3a;--oc:#111111"><span class="crest lg pilled" style="--c:#0a8f3a;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">RCA</bdi></b></span><b class="display">الرجاء البيضاوي</b></span>
+      <span class="half pilled" style="--c:#e63900;--oc:#111111"><span class="crest lg pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span><b class="display">حسنية أكادير</b></span>
+      <span class="plate"><span class="score" style="font-size:var(--ui-score-hero)"><span>1</span><i aria-hidden="true">–</i><span>1</span></span>
+        <span class="badge live"><span class="dot"></span>مباشر <bdi dir="ltr">63′</bdi></span></span>
+    </a>
+    <div class="dots" aria-label="مباراة 1 من 3"><span class="on"></span><span></span><span></span></div>
+  </section><nav class="pad section sc" aria-label="اختصارات"><div class="sgrid">
+    <a class="chip" href="standings.html"><svg class="i sm" aria-hidden="true"><use href="#i-trophy"/></svg>الترتيب</a>
+    <a class="chip" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-cal"/></svg>المباريات</a>
+    <a class="chip" href="rank.html"><svg class="i sm" aria-hidden="true"><use href="#i-users"/></svg>أفضل المدربين</a>
+    <a class="chip" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-target"/></svg>التوقعات</a>
+  </div></nav><section class="pad section" aria-labelledby="upd">
+    <div class="sec-head"><h2 id="upd">المباريات القادمة</h2><a class="link-more" href="#">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="chips" style="margin-block-end:8px"><button class="chip" aria-pressed="true">الكل</button><button class="chip">الأربعاء 28</button><button class="chip">الخميس 29</button></div>
+    <div class="stack-s">
+      <a href="live.html" class="mcard edge" style="--e:#1a3a7a">
+    <div class="meta">الأربعاء 28 · البطولة الاحترافية إنوي</div>
+    <div class="teams">
+      <div class="side"><span class="crest md " style="--c:#1a3a7a;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">FAR</bdi></span><span class="nm">الجيش الملكي</span></div>
+      <div class="mid"><span class="kick"><bdi dir="ltr">20:00</bdi></span></div>
+      <div class="side away"><span class="crest md " style="--c:#1e5bb8;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">ITT</bdi></span><span class="nm">اتحاد طنجة</span></div>
+    </div></a>
+      <a href="live.html" class="mcard edge" style="--e:#ffd400">
+    <div class="meta">الخميس 29 · البطولة الاحترافية إنوي</div>
+    <div class="teams">
+      <div class="side"><span class="crest md " style="--c:#ffd400;--oc:#111111" aria-hidden="true"><bdi dir="ltr">MAG</bdi></span><span class="nm">المغرب الفاسي</span></div>
+      <div class="mid"><span class="kick"><bdi dir="ltr">20:00</bdi></span></div>
+      <div class="side away"><span class="crest md " style="--c:#f26522;--oc:#111111" aria-hidden="true"><bdi dir="ltr">RSB</bdi></span><span class="nm">نهضة بركان</span></div>
+    </div></a>
+    </div>
+  </section><section class="pad section" aria-labelledby="nwd">
+    <div class="sec-head"><h2 id="nwd">أخبار البطولة</h2><a class="link-more" href="#">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="group">
+      <a href="#" class="row edge" style="--e:var(--news-plate-latest);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">معاينة المباراة: الرجاء البيضاوي ضد حسنية أكادير</span><br><span class="t-meta muted">قبل 20 دقيقة</span></span><span class="thumb" style="background:var(--news-plate-latest)" aria-hidden="true"></span></a><a href="#" class="row edge" style="--e:var(--news-plate-analysis);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">تعادل بين الكوكب المراكشي والدفاع الحسني الجديدي</span><br><span class="t-meta muted">أمس</span></span><span class="thumb" style="background:var(--news-plate-analysis)" aria-hidden="true"></span></a><a href="#" class="row edge" style="--e:var(--news-plate-transfers);min-height:72px"><span class="grow"><span class="t-label muted" style="text-transform:none;letter-spacing:0">آخر الأخبار</span><br><span class="strong t-body" style="line-height:1.4">فوز الفتح الرياضي على رجاء زمامرة</span><br><span class="t-meta muted">أول أمس</span></span><span class="thumb" style="background:var(--news-plate-transfers)" aria-hidden="true"></span></a>
+    </div>
+  </section>
+      </div>
+      <aside class="rail"><section class="section" aria-labelledby="fad">
+    <div class="sec-head pad-d"><h2 id="fad">فانتازي</h2><a class="link-more" href="rank.html">الترتيب<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="fcard">
+      <div class="fc-top">
+        <p class="t-label">الجولة 5 · آخر موعد</p>
+        <p class="display" style="font-size:var(--ui-text-title)">بقي <span class="nowrap"><bdi dir="ltr">21</bdi> س</span> <span class="nowrap"><bdi dir="ltr">04</bdi> د</span></p>
+        <a href="team.html" class="btn ink block" style="margin-block-start:12px">اختيار تشكيلتي<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a>
+      </div>
+      <div class="sp" style="border-radius:0 0 var(--ui-radius-card) var(--ui-radius-card);min-height:44px"><svg class="i sm" aria-hidden="true"><use href="#i-gift"/></svg><span>تحدي الجولة برعاية</span><span class="brand-mark">MARQUE</span></div>
+      <a class="sp-off fc-free" href="#"><svg class="i sm" aria-hidden="true"><use href="#i-gift"/></svg><span>مجاني · جوائز في كل جولة</span><svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a>
+    </div>
+    <div class="group" style="margin-block-start:12px">
+      <div class="row one" style="background:var(--ui-surface-sunken);min-height:44px"><span class="t-meta strong">أفضل المدربين</span><span class="grow"></span><span class="t-meta muted"><bdi dir="ltr">12 480</bdi> مدرب</span></div>
+      <a href="rank.html" class="row one"><span class="medal m1">1</span><span class="grow trunc"><bdi>Atlas Lions</bdi></span><span class="num t-body"><bdi dir="ltr">312</bdi></span></a><a href="rank.html" class="row one"><span class="medal m2">2</span><span class="grow trunc"><bdi>نسور الأطلس</bdi></span><span class="num t-body"><bdi dir="ltr">307</bdi></span></a><a href="rank.html" class="row one"><span class="medal m3">3</span><span class="grow trunc"><bdi>Casa United</bdi></span><span class="num t-body"><bdi dir="ltr">301</bdi></span></a>
+    </div>
+  </section><section class="pad section" aria-labelledby="cld">
+    <div class="sec-head"><h2 id="cld">الترتيب</h2><a class="link-more" href="standings.html">عرض الكل<svg class="i dir sm" aria-hidden="true"><use href="#i-chev"/></svg></a></div>
+    <div class="group"><table class="tbl" style="table-layout:fixed">
+      <caption class="sr">ترتيب البطولة، أول 5 فرق</caption>
+      <thead><tr><th class="zone"></th><th style="width:36px">#</th><th class="l">الفريق</th><th style="width:36px">لعب</th><th style="width:44px">فارق</th><th style="width:44px">نقاط</th></tr></thead>
+      <tbody><tr><td class="zone cl"></td><td class="num">1</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#c8102e;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">KAW</bdi></span><span class="trunc strong">الكوكب المراكشي</span></span></td><td>5</td><td><bdi dir="ltr">+2</bdi></td><td class="num">10</td></tr><tr><td class="zone cl"></td><td class="num">2</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#0a7a3c;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">COD</bdi></span><span class="trunc strong">الكوديم المكناسي</span></span></td><td>5</td><td><bdi dir="ltr">+5</bdi></td><td class="num">10</td></tr><tr><td class="zone cf"></td><td class="num">3</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#c8102e;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">WCA</bdi></span><span class="trunc strong">الوداد البيضاوي</span></span></td><td>5</td><td><bdi dir="ltr">+1</bdi></td><td class="num">8</td></tr><tr><td class="zone "></td><td class="num">4</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm pilled" style="--c:#e63900;--oc:#111111" aria-hidden="true"><b><bdi dir="ltr">HAS</bdi></b></span><span class="trunc strong">حسنية أكادير</span></span></td><td>4</td><td><bdi dir="ltr">+3</bdi></td><td class="num">7</td></tr><tr><td class="zone "></td><td class="num">5</td><td class="l"><span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="crest sm " style="--c:#1e5bb8;--oc:#ffffff" aria-hidden="true"><bdi dir="ltr">ITT</bdi></span><span class="trunc strong">اتحاد طنجة</span></span></td><td>4</td><td><bdi dir="ltr">+2</bdi></td><td class="num">7</td></tr></tbody>
+    </table>
+    <a href="standings.html" class="btn soft block" style="border-radius:0;min-height:48px">عرض الترتيب الكامل</a></div>
+  </section></aside>
+    </div>
+  </div></div></main>
+<nav class="bottomnav only-m" aria-label="التنقل الرئيسي"><a href="#" aria-current="page"><span class="pill"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></span><span>الرئيسية</span></a><a href="#" ><span class="pill"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span><span>المباريات</span></a><a href="#" ><span class="pill"><svg class="i " aria-hidden="true"><use href="#i-trophy"/></svg></span><span>فانتازي</span></a><a href="#" ><span class="pill"><svg class="i " aria-hidden="true"><use href="#i-news"/></svg></span><span>الأخبار</span></a><a href="#" ><span class="pill"><svg class="i " aria-hidden="true"><use href="#i-user"/></svg></span><span>كورفا</span></a></nav>
+<script>(function(){function run(){document.querySelectorAll('.tabs').forEach(function(t){if(t.scrollWidth>t.clientWidth+1){t.classList.add('more');var a=t.querySelector('[aria-current]');if(a)a.scrollIntoView({inline:'nearest',block:'nearest'});}})}if(document.fonts&&document.fonts.ready)document.fonts.ready.then(run);else run();})();</script>
+</body></html>
