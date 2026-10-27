@@ -286,7 +286,7 @@ function StandingsPage() {
               <div
                 role="group"
                 aria-label={t("standings.a11y.views")}
-                className="flex min-w-0 items-center gap-1.5 max-[359px]:gap-1"
+                className="flex min-w-0 flex-wrap items-center gap-1.5 max-[359px]:gap-1"
               >
                 {views.map((option) => (
                   <UiChip
@@ -294,7 +294,9 @@ function StandingsPage() {
                     selected={shown === option.value}
                     onClick={() => setView(option.value)}
                     // Four chips share one line; narrower than 360px each gives
-                    // ground and truncates rather than scrolling one away.
+                    // ground and truncates rather than scrolling one away. If the
+                    // labels no longer fit (Arabic at 320px since M5), the row
+                    // wraps to a second line instead of cutting "العام" to "ال...".
                     // As the Matchs filter row: the chip may shrink under 44px at 320px,
                     // its hit area may not.
                     className={cn("min-w-0 shrink max-[359px]:px-2", ui.hitFloor)}

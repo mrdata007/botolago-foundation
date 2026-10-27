@@ -324,6 +324,8 @@ function PlayersPage() {
     ui.radius.full,
     "w-auto border-transparent bg-[color:var(--ui-surface-sunken)] ps-4",
     ui.text.meta,
+    // 16px: a select under it zooms the page on iOS when focused (M1).
+    "text-[length:max(16px,var(--ui-text-meta))]",
     "[font-weight:var(--ui-weight-heavy)]",
   );
 

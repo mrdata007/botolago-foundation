@@ -187,7 +187,9 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     const hub = code("src/routes/fantasy.index.tsx");
     expect(hub).toContain("layout.intro !== null && gameweek?.enrolment === null");
     expect(hub.indexOf("<ShortcutTiles visitor={!hasTeam} />")).toBeGreaterThan(-1);
-    expect(hub.indexOf("<FantasyGuestExplainer")).toBeGreaterThan(hub.indexOf("<ShortcutTiles visitor={!hasTeam} />"));
+    expect(hub.indexOf("<FantasyGuestExplainer")).toBeGreaterThan(
+      hub.indexOf("<ShortcutTiles visitor={!hasTeam} />"),
+    );
   });
 
   it("mentions prizes only when the catalog has one", async () => {
