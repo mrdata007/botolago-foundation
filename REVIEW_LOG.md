@@ -48,6 +48,16 @@ French page first, and the Fantasy check every 60 seconds. Sent back because:
 4. No page-speed baseline (Lighthouse score, load time per page) yet. Phase 2 needs one.
 5. Add the plain statement that Sofascore calls do not grow with users.
 
+**Round 2 – APPROVED.** All five points fixed. I re-checked the hosting answer
+(Lovable hosting on Cloudflare) in the deployment notes and the build output.
+- The hard stop in force is 9,700 calls a month.
+- Load at 5,000 active users: about 15–55 requests a second to the database on a normal evening, and 135–217 on a derby night. Medium now; High at around 5 times that audience.
+- Speed baseline (simulated mid-range phone on a slow connection, test copy with no data):
+  - The main picture or text appears in 2.1–2.6 s on Home and Matches, and 6.6–9.1 s on Standings, Player and Fantasy.
+  - Every page downloads about 1.7 MB of JavaScript before compression.
+  - No Lighthouse score: the tool is not installed here.
+  - These numbers compare pages with each other. They are not live-site times; Phase 2 will add a measurement of the live site.
+
 ### Task 2 – Code Health & Security
 
 **Round 1 – REVISE.** No leaked keys, every table locked, admin checks done on
