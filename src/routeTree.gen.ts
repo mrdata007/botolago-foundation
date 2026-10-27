@@ -94,6 +94,7 @@ import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as ProfileSavedRouteImport } from './routes/profile.saved'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
+import { Route as SitemapsFileRouteImport } from './routes/sitemaps.$file'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AdminFootballPlayerMappingsRouteImport } from './routes/admin.football.player-mappings'
@@ -542,6 +543,11 @@ const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PronosticsRoute,
 } as any)
+const SitemapsFileRoute = SitemapsFileRouteImport.update({
+  id: '/sitemaps/$file',
+  path: '/sitemaps/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
   path: '/.lovable/oauth/consent',
@@ -717,6 +723,7 @@ export interface FileRoutesByFullPath {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -816,6 +823,7 @@ export interface FileRoutesByTo {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth': typeof AuthIndexRoute
   '/clubs': typeof ClubsIndexRoute
   '/curva': typeof CurvaIndexRoute
@@ -922,6 +930,7 @@ export interface FileRoutesById {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -1029,6 +1038,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth/'
     | '/clubs/'
     | '/curva/'
@@ -1128,6 +1138,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth'
     | '/clubs'
     | '/curva'
@@ -1233,6 +1244,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth/'
     | '/clubs/'
     | '/curva/'
@@ -1296,6 +1308,7 @@ export interface RootRouteChildren {
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
+  SitemapsFileRoute: typeof SitemapsFileRoute
   ClubsIndexRoute: typeof ClubsIndexRoute
   MatchesIndexRoute: typeof MatchesIndexRoute
   PrizesIndexRoute: typeof PrizesIndexRoute
@@ -1900,6 +1913,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PronosticsIndexRouteImport
       parentRoute: typeof PronosticsRoute
     }
+    '/sitemaps/$file': {
+      id: '/sitemaps/$file'
+      path: '/sitemaps/$file'
+      fullPath: '/sitemaps/$file'
+      preLoaderRoute: typeof SitemapsFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
       path: '/.lovable/oauth/consent'
@@ -2322,6 +2342,7 @@ const rootRouteChildren: RootRouteChildren = {
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,
+  SitemapsFileRoute: SitemapsFileRoute,
   ClubsIndexRoute: ClubsIndexRoute,
   MatchesIndexRoute: MatchesIndexRoute,
   PrizesIndexRoute: PrizesIndexRoute,

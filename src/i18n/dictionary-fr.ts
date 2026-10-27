@@ -231,6 +231,8 @@ export const fr = {
   "standings.view.away": "Extérieur",
   "standings.a11y.views": "Vue du classement",
   "standings.final": "classement final",
+  /* The standings page's own heading (its H1): what people search for. */
+  "standings.page_title": "Classement",
   "standings.after_rounds_one": "après 1 journée",
   "standings.after_rounds_two": "après 2 journées",
   "standings.after_rounds_few": "après {n} journées",

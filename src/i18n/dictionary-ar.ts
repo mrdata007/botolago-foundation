@@ -217,6 +217,7 @@ export const ar = {
   "standings.view.away": "خارج الميدان",
   "standings.a11y.views": "طريقة عرض الترتيب",
   "standings.final": "الترتيب النهائي",
+  "standings.page_title": "الترتيب",
   "standings.after_rounds_one": "بعد جولة واحدة",
   "standings.after_rounds_two": "بعد جولتين",
   "standings.after_rounds_few": "بعد {n} جولات",

@@ -878,6 +878,44 @@ export const footballService = {
     };
   },
 
+  /**
+   * Every fixture of the current season and of the one before it in the same
+   * competition, for the match sitemap: match pages are the site's largest
+   * source of search impressions, and the server's HTML links to none of
+   * them (the calendar loads its days in the browser), so the sitemap is how
+   * a crawler finds them.
+   */
+  async getSitemapMatches(
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<{ id: string; kickoff: string }[]> {
+    const seasons = await footballService.getSeasons(language, signal);
+    const current = defaultSeason(seasons);
+    if (!current) return [];
+    const previous = seasons
+      .filter(
+        (season) =>
+          season.competitionId === current.competitionId &&
+          season.id !== current.id &&
+          season.startsOn < current.startsOn,
+      )
+      .sort((a, b) => b.startsOn.localeCompare(a.startsOn))[0];
+    const repository = getFootballRepository();
+    const lists = await Promise.all(
+      [current, previous]
+        .filter((season): season is FootballSeason => Boolean(season))
+        .map((season) =>
+          repository.getSeasonFixtures(
+            season.competitionId,
+            season.id,
+            language,
+            requestContext(signal),
+          ),
+        ),
+    );
+    return lists.flat().map((fixture) => ({ id: fixture.id, kickoff: fixture.kickoffAt }));
+  },
+
   async getClub(id: string, language: FootballLanguage): Promise<Club> {
     return presentFootballClub(
       await getFootballRepository().getTeam(id, language, requestContext()),

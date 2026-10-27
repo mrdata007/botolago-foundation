@@ -36,6 +36,7 @@ import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
+import { clubSearchName, clubSeoDescription, clubSeoTitle } from "@/lib/seo-titles";
 import { useBackTo } from "@/lib/back-navigation";
 import {
   clubSeasonAbsent,
@@ -105,12 +106,11 @@ export const Route = createFileRoute("/clubs/$clubId")({
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
     const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
-    const name = club?.name.fr;
-    const title = name
-      ? `${name} — matchs, classement et effectif | BotolaGO`
-      : "Club de Botola Pro — BotolaGO";
-    const description = name
-      ? `${name} en Botola Pro : prochain match, résultats, classement, statistiques et effectif sur BotolaGO.`
+    const name = club ? clubSearchName(club) : undefined;
+    // Short name first, the words people search with (`@/lib/seo-titles`).
+    const title = club ? clubSeoTitle(club) : "Club de Botola Pro — BotolaGO";
+    const description = club
+      ? clubSeoDescription(club)
       : "Prochain match, résultats, classement, statistiques et effectif d'un club de Botola Pro sur BotolaGO.";
     return {
       meta: [
@@ -137,6 +137,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
                     name,
                     city: club?.city?.fr,
                     logoUrl: club?.crestUrl,
+                    alternateNames: [club?.name.fr],
                   }),
                 ),
               },
