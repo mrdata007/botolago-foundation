@@ -24,6 +24,11 @@ tokens and the share art (SVG gradients) and `palette()` for the faces the scree
 back, the burst, the ceremony). `metal.test.ts` measures every text colour against every stop of
 its face (4.5:1) and keeps violet and pink to LEGEND.
 
+For a free base card with a preferred club, `view.ts` tints the face with the club's primary
+colour over a dark ground (signup fix, owner request 2026-10-20). This same face appears in
+the signup token, Curva card and share art. Without a club the base stays graphite. Earned
+tier metals, ladder previews and paid editions keep their finishes.
+
 ## Files
 
 | File                       | What                                                                                                          |

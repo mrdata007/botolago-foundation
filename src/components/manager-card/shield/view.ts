@@ -47,7 +47,31 @@ export interface ShieldView {
 export function makeView(profile: CardProfile, strings: CardStrings): ShieldView {
   const v = makeEclatView(profile, strings);
   const edition = paidEdition(profile.edition);
-  return { p: v.p, s: v.s, ar: v.ar, key: v.tierKey, edition, m: metalFor(v.tierKey, edition) };
+  const metal = metalFor(v.tierKey, edition);
+  const primary = v.p.club?.primary;
+  let clubShade = 0.55;
+  // Very light club colours need more shade than red or green. Leave headroom for the full
+  // card's highlights and translucent ribbon, rather than checking only its unlit face.
+  if (primary) {
+    while (contrast(metal.ink2, mix(primary, "#10151d", clubShade)) < 7 && clubShade < 0.9)
+      clubShade += 0.05;
+  }
+  // Before a tier is earned, the favourite club gives the card its colour. Use the cleaned
+  // primary hex and a dark ground so every club (including white/yellow) keeps the light text
+  // readable. The same material feeds full cards, tokens and share art. Earned metals and paid
+  // editions retain their own finishes.
+  const m =
+    v.tierKey === "base" && !edition && primary
+      ? {
+          ...metal,
+          faceStops: [
+            clubShade,
+            clubShade + (1 - clubShade) / 3,
+            clubShade + ((1 - clubShade) * 2) / 3,
+          ].map((shade) => mix(primary, "#10151d", shade)),
+        }
+      : metal;
+  return { p: v.p, s: v.s, ar: v.ar, key: v.tierKey, edition, m };
 }
 
 /** The Éclat view of the same profile, for the helpers that take one (the token's label). */

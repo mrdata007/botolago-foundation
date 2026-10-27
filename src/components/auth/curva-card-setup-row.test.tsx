@@ -1,17 +1,17 @@
 import { describe, expect, it } from "bun:test";
 import { renderToString } from "react-dom/server";
 
-import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 
-import { CardSetupRow } from "./curva-card-setup-row";
+import type { Club } from "@/types/domain";
+
+import { CardSetupRow, CardSetupSlot } from "./curva-card-setup-row";
 import { isFantasyCreateNext } from "./fantasy-create-path";
-import { serverResolvesClub } from "./server-resolves-club";
 
 /**
  * Profile setup's card row (plan M1c), as the server draws it: a 64 px token, the name beside it,
- * the club hint only when the server resolves the club, and none of the eyebrow label the lab
+ * the club hint when the selected club resolves in the catalog, and none of the eyebrow label the lab
  * review ruled out.
  */
 
@@ -55,13 +55,34 @@ describe("which account paths show the card", () => {
   });
 });
 
-describe("the club colour waits for the server (owner decision 5)", () => {
-  it("is allowed only when the account's own card read carries a club", () => {
-    expect(serverResolvesClub(FIXTURES.rated.card)).toBe(true);
-    expect(serverResolvesClub(FIXTURES.clubNull.card)).toBe(false);
-    // No card yet (a new account, no team): nothing says the server resolves the club.
-    expect(serverResolvesClub(null)).toBe(false);
-    expect(serverResolvesClub(undefined)).toBe(false);
+describe("the new account's local club preview", () => {
+  const club: Club = {
+    id: "club-uuid",
+    slug: "rca",
+    name: RAJA.name,
+    shortName: RAJA.name,
+    city: { fr: "Casablanca", ar: "الدار البيضاء" },
+    primaryColor: RAJA.primary,
+    crestPlaceholder: "RCA",
+  };
+
+  it.each([club.id, club.slug!])("resolves %s without an account or server card", (clubId) => {
+    const html = render(<CardSetupSlot step={2} name="Karim" clubId={clubId} clubs={[club]} />);
+    expect(html).toContain(escapeHtml(fr["card.onboarding.m1.setup.club_hint"]));
+  });
+
+  it.each([undefined, "unknown"])("keeps an unresolved choice %s neutral", (clubId) => {
+    const html = render(<CardSetupSlot step={2} name="Karim" clubId={clubId} clubs={[club]} />);
+    expect(html).not.toContain(escapeHtml(fr["card.onboarding.m1.setup.club_hint"]));
+  });
+
+  it("waits for the catalog, and shows no step-two hint on step one", () => {
+    expect(
+      render(<CardSetupSlot step={2} name="Karim" clubId="rca" clubs={undefined} />),
+    ).not.toContain(escapeHtml(fr["card.onboarding.m1.setup.club_hint"]));
+    expect(
+      render(<CardSetupSlot step={1} name="Karim" clubId="rca" clubs={[club]} />),
+    ).not.toContain(escapeHtml(fr["card.onboarding.m1.setup.club_hint"]));
   });
 });
 

@@ -155,6 +155,31 @@ describe("G1 for a visitor", () => {
   });
 });
 
+describe("G1 after signup, before creating a Fantasy team", () => {
+  for (const scenario of [
+    { name: "registration is open", closed: false, canCreate: true, loadingAction: false },
+    { name: "registration is closed", closed: true, canCreate: false, loadingAction: false },
+    { name: "team creation is unavailable", closed: false, canCreate: false, loadingAction: false },
+    { name: "team availability is loading", closed: false, canCreate: false, loadingAction: true },
+  ]) {
+    it(`offers an explicit way home when ${scenario.name}`, async () => {
+      const html = await view({ kind: "no_team", closed: scenario.closed }, scenario);
+      // Scope this to the card's own action: global navigation already linked home before
+      // the fix, but did not give signup a clear completion action.
+      const exits = html.match(/<a\b[^>]*data-testid="curva-continue"[^>]*>[\s\S]*?<\/a>/g) ?? [];
+      expect(exits).toHaveLength(1);
+      expect(exits[0]).toContain('href="/"');
+      expect(text(exits[0]!)).toContain(fr["curva.guest.continue_home"]);
+      expect(html.includes('data-testid="curva-create"')).toBe(
+        !scenario.closed && !scenario.loadingAction && scenario.canCreate,
+      );
+      expect(html.includes('data-testid="curva-guest-action-loading"')).toBe(
+        !scenario.closed && scenario.loadingAction,
+      );
+    });
+  }
+});
+
 describe("G1 for a manager", () => {
   it("shows the rated card's rating line, identity line and blocks", async () => {
     const html = await owner("rated");

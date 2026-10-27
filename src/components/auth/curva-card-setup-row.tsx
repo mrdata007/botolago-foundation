@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo } from "react";
 
+import { findClub } from "@/components/fantasy/club-identity";
 import { CardToken } from "@/components/manager-card/CardToken";
 import { useMomentCopy } from "@/components/manager-card/copy";
 import { auto } from "@/components/manager-card/interpolate";
@@ -7,10 +8,7 @@ import { cardClubFromClub, localProfile } from "@/components/manager-card/to-pro
 import type { CardClub } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
-import { useMyManagerCard } from "@/services/use-manager-card";
 import type { Club } from "@/types/domain";
-
-import { serverResolvesClub } from "./server-resolves-club";
 
 /**
  * Profile setup, steps 1 and 2: the manager card being formed (plan M1c). Rendered only while
@@ -25,7 +23,7 @@ import { serverResolvesClub } from "./server-resolves-club";
  * taller block pushed « Suivant » below it in the lab build.
  */
 
-/** The row itself, drawn from what it is given. `club` is set only once the server resolves it. */
+/** The row itself, drawn from the locally selected favourite club. */
 export function CardSetupRow({
   name,
   club,
@@ -65,8 +63,8 @@ export function CardSetupRow({
 }
 
 /**
- * The row with its data: the account's card read decides whether the club colour may show
- * (`serverResolvesClub`), and the club is the one tapped on step 2 (or already chosen).
+ * The setup preview follows the club tapped on step 2 (or already chosen). A new account has
+ * no Fantasy card yet, so a server card read cannot be a prerequisite for this local preview.
  */
 export function CardSetupSlot({
   step,
@@ -79,8 +77,7 @@ export function CardSetupSlot({
   clubId: string | undefined;
   clubs: readonly Club[] | undefined;
 }) {
-  const resolved = serverResolvesClub(useMyManagerCard().data);
-  const chosen = resolved && clubId ? clubs?.find((club) => club.id === clubId) : undefined;
+  const chosen = findClub(clubs, clubId);
   const club = useMemo(() => cardClubFromClub(chosen), [chosen]);
-  return <CardSetupRow name={name} club={club} clubHint={resolved && step === 2} />;
+  return <CardSetupRow name={name} club={club} clubHint={club !== null && step === 2} />;
 }

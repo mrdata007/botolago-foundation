@@ -2985,6 +2985,7 @@ export const fr = {
   "curva.guest.body":
     "Votre carte de manager démarre avec votre équipe : votre nom, les couleurs de votre club, et une note qui vient de vos choix, journée après journée.",
   "curva.guest.sign_in": "Se connecter",
+  "curva.guest.continue_home": "Continuer vers l’accueil",
   "curva.guest.try_title": "Essayer les couleurs d’un club",
   "curva.guest.try_hint":
     "Un aperçu seulement : votre club se choisit à la création du compte, et se change dans votre profil.",
