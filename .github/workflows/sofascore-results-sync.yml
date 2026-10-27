@@ -1,0 +1,194 @@
+name: Production V2 SofaScore results sync (owner-run)
+
+# Writes SofaScore fixture status and scores into Production V2 through the
+# reviewed RPC api.ingest_football_fixture, because SportsMonks results stopped.
+# Mode rehearse: one poll, every planned call runs in a single DO block that
+# ends in a deliberate raise (rolled back), then a re-read proves nothing
+# changed. Mode apply: up to `repeat` polls, `interval_minutes` apart; each poll
+# commits at most one DO block and a re-read proves every written fixture now
+# shows SofaScore's status and score. At most 2 RapidAPI requests per poll.
+# It REFUSES to write while football_live_refresh_enabled is true (two writers
+# on fixtures) and while any other dispatched or scheduled run is active, except
+# the read-only SofaScore shadow compare. Steps and how to stop:
+# docs/production/SOFASCORE_RESULTS_SYNC_RUNBOOK.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this production run
+        required: true
+        type: string
+      mode:
+        description: rehearse (rolled back, one poll) or apply (commits)
+        required: true
+        type: choice
+        options:
+          - rehearse
+          - apply
+      confirmation:
+        description: Type REHEARSE_SOFASCORE_RESULTS_SYNC or APPLY_SOFASCORE_RESULTS_SYNC to match the mode
+        required: true
+        type: string
+      repeat:
+        description: "Apply only: number of polls in this run (1 to 15)"
+        required: false
+        type: string
+        default: "1"
+      interval_minutes:
+        description: "Apply only: minutes between polls (2 to 10)"
+        required: false
+        type: string
+        default: "10"
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  sync:
+    name: Sync SofaScore results into Production V2
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # 15 polls at 10 minutes is 150 minutes of sleeping plus requests.
+    timeout-minutes: 200
+    environment: production-admin-activation
+    env:
+      MODE: ${{ inputs.mode }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      REPEAT: ${{ inputs.repeat }}
+      INTERVAL: ${{ inputs.interval_minutes }}
+
+    steps:
+      - name: Enforce dispatch guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production runs may start only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
+          case "$MODE" in
+            rehearse) [[ "$CONFIRMATION" == "REHEARSE_SOFASCORE_RESULTS_SYNC" ]] || { echo "Invalid confirmation: type REHEARSE_SOFASCORE_RESULTS_SYNC."; exit 2; } ;;
+            apply) [[ "$CONFIRMATION" == "APPLY_SOFASCORE_RESULTS_SYNC" ]] || { echo "Invalid confirmation: type APPLY_SOFASCORE_RESULTS_SYNC."; exit 2; } ;;
+            *) echo "mode must be rehearse or apply."; exit 2 ;;
+          esac
+          [[ "$REPEAT" =~ ^[0-9]{1,2}$ ]] && (( 10#$REPEAT >= 1 && 10#$REPEAT <= 15 )) || { echo "repeat must be 1 to 15."; exit 2; }
+          [[ "$INTERVAL" =~ ^[0-9]{1,2}$ ]] && (( 10#$INTERVAL >= 2 && 10#$INTERVAL <= 10 )) || { echo "interval_minutes must be 2 to 10."; exit 2; }
+          echo "Dispatch guards: PASS"
+
+      - name: Refuse if another workflow run is active (one writer at a time)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          THIS_RUN: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Scheduled and manually dispatched runs are the ones that can write to
+          # the database (AGENTS.md, "Check the scheduled jobs too"). Any other
+          # such run that is active, queued or waiting stops this one, except the
+          # SofaScore live shadow compare, which only reads.
+          found=""
+          for status in in_progress queued waiting pending; do
+            for event in workflow_dispatch schedule; do
+              rows=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&event=$event&per_page=100" \
+                --jq ".workflow_runs[] | select(.id != ($THIS_RUN|tonumber)) | select(.path != \".github/workflows/sofascore-live-shadow-compare.yml\") | \"\(.id) \(.name) [\(.status)]\"")
+              if [[ -n "$rows" ]]; then found+="$rows"$'\n'; fi
+            done
+          done
+          if [[ -n "$found" ]]; then
+            echo "Another run is active; refusing to start:"
+            printf '%s' "$found"
+            exit 2
+          fi
+          echo "No other writing run is active."
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Poll SofaScore and sync (never retried within a poll)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          SOFASCORE_RESULTS_SYNC_CONFIRMATION: ${{ inputs.confirmation }}
+          EVIDENCE_DIR: ${{ runner.temp }}/sofascore-results-sync-evidence
+        run: |
+          set -euo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
+          install -d -m 0700 "$EVIDENCE_DIR"
+          polls=$(( 10#$REPEAT ))
+          interval=$(( 10#$INTERVAL ))
+          if [[ "$MODE" == "rehearse" ]]; then polls=1; fi
+          {
+            echo "## SofaScore results sync on Production V2: $MODE"
+            echo
+            echo "Polls: $polls, every $interval minutes. At most 2 RapidAPI requests per poll; one DO block per poll, one transaction."
+            if [[ "$MODE" == "rehearse" ]]; then echo "Rehearsal: every planned call runs, then the transaction is rolled back and re-read."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          failures=0
+          stopped=""
+          for (( poll = 1; poll <= polls; poll++ )); do
+            md="$RUNNER_TEMP/sync-$poll.md"
+            set +e
+            bun scripts/backend/sofascore-results-sync.ts --mode "$MODE" --poll "$poll" --of "$polls" \
+              --markdown "$md" --evidence-dir "$EVIDENCE_DIR"
+            status=$?
+            set -e
+            if [[ -f "$md" ]]; then
+              { echo; cat "$md"; } >> "$GITHUB_STEP_SUMMARY"
+            else
+              { echo; echo "#### Poll $poll of $polls: no result (exit $status, see the job log)"; } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            case "$status" in
+              0) ;;
+              1|4) failures=$((failures + 1)) ;;
+              *)
+                # 2 refused, 3 unverified, 5 needs review: do not poll again.
+                stopped="poll $poll stopped the run with exit $status"
+                echo "$stopped"
+                { echo; echo "**Stopped: $stopped.**"; } >> "$GITHUB_STEP_SUMMARY"
+                break
+                ;;
+            esac
+            if (( poll < polls )); then sleep $(( interval * 60 )); fi
+          done
+          if [[ -n "$stopped" ]]; then exit 1; fi
+          # A failed poll did not stop the next one, but the run is red.
+          if (( failures > 0 )); then echo "$failures of $polls polls failed."; exit 1; fi
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sofascore-results-sync-${{ github.run_id }}
+          path: ${{ runner.temp }}/sofascore-results-sync-evidence
+          if-no-files-found: warn
+          retention-days: 30
