@@ -86,6 +86,7 @@ import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
+import { Route as NewsArchiveRouteImport } from './routes/news.archive'
 import { Route as PepitesIndexRouteImport } from './routes/pepites.index'
 import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as PepitesComparerRouteImport } from './routes/pepites.comparer'
@@ -505,6 +506,11 @@ const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   path: '/$articleId',
   getParentRoute: () => NewsRoute,
 } as any)
+const NewsArchiveRoute = NewsArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => NewsRoute,
+} as any)
 const PepitesIndexRoute = PepitesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -730,6 +736,7 @@ export interface FileRoutesByFullPath {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -832,6 +839,7 @@ export interface FileRoutesByTo {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -941,6 +949,7 @@ export interface FileRoutesById {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -1051,6 +1060,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1153,6 +1163,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1261,6 +1272,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1883,6 +1895,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsArticleIdRouteImport
       parentRoute: typeof NewsRoute
     }
+    '/news/archive': {
+      id: '/news/archive'
+      path: '/archive'
+      fullPath: '/news/archive'
+      preLoaderRoute: typeof NewsArchiveRouteImport
+      parentRoute: typeof NewsRoute
+    }
     '/pepites/': {
       id: '/pepites/'
       path: '/'
@@ -2284,10 +2303,12 @@ const FantasyRouteWithChildren =
 
 interface NewsRouteChildren {
   NewsArticleIdRoute: typeof NewsArticleIdRoute
+  NewsArchiveRoute: typeof NewsArchiveRoute
 }
 
 const NewsRouteChildren: NewsRouteChildren = {
   NewsArticleIdRoute: NewsArticleIdRoute,
+  NewsArchiveRoute: NewsArchiveRoute,
 }
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)

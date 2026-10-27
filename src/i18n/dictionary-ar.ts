@@ -3680,6 +3680,13 @@ export const ar = {
   "clubs.load_failed": "تعذّر تحميل الأندية. أعد المحاولة.",
   "club.load_failed": "تعذّر تحميل معلومات النادي. أعد المحاولة.",
   "news.load_more": "عرض المزيد من المقالات",
+  "news.archive.title": "أرشيف الأخبار",
+  "news.archive.link": "كل الأخبار",
+  "news.archive.pages": "صفحات الأرشيف",
+  "news.archive.page_of": "الصفحة {page} من {total}",
+  "news.archive.page_n": "الصفحة {page}",
+  "news.archive.prev": "الصفحة السابقة",
+  "news.archive.next": "الصفحة التالية",
   "news.no_matching_articles": "لا توجد مقالات تطابق هذه الفلاتر.",
   "matches.standings_failed": "تعذّر تحميل الترتيب. أعد المحاولة.",
 
