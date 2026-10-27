@@ -400,6 +400,25 @@ select job, endpoint, sum(calls) calls
 The count is our own tally, not the provider's: RapidAPI's dashboard stays the
 authority (the client also logs `quotaRemaining` and refuses below the floor).
 
+## The provider's figure is the floor
+
+Migration `20261027100000_rapidapi_provider_quota_floor.sql`. On 26 Oct our count
+read 9,036 while RapidAPI answered `quotaRemaining: 0` of 10,000: about 964 calls
+were never counted, so the soft and hard limits never fired. Every reply carries
+`x-ratelimit-requests-remaining` and `-limit`. Each run keeps the smallest
+`remaining` it saw and writes it once, after its work, with
+`api.service_record_rapidapi_quota` into `app_private.rapidapi_provider_quota`
+(one row per quota window). The database keeps an observation only if it is not
+older than the stored one and not from before the window start.
+`app_private.rapidapi_calls_this_month()` then returns
+`greatest(counted + offset, limit - remaining)`, so the Edge budget read, the
+health check and the staff read all see at least what the provider says. In a
+run the client also takes `limit - remaining` of its last reply as a floor for the
+soft and hard limits. A missing function (Edge deployed before the migration) is
+logged as `rapidapi_quota_unavailable`; a failed write as `rapidapi_quota_failed`;
+neither stops a run. After the plan resets the old row is ignored: it belongs to the
+previous window.
+
 ## Budget guard and the per-round model
 
 Migration `20261026143000_rapidapi_budget_guard_and_poll_schedule.sql`; code in

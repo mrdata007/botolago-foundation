@@ -343,6 +343,10 @@ null, false);` before a write that touches fixtures or notifications, and
    The same migration adds `app_private.rapidapi_budget_settings`, written only by
    `app_private.rapidapi_budget_configure` (limits, reset day, offset, live poll
    interval, season refresh cadence); the Edge Function reads it at the start of each run.
+   Where migration 20261027100000 is applied, every run of the same Edge Function
+   also writes `app_private.rapidapi_provider_quota` (the provider's own latest
+   quota figure, through `api.service_record_rapidapi_quota`); it is a few bytes
+   a run, and the live refresh switch pauses it with the rest.
    Where migration 20261015150100 is applied, pg_cron also runs `trophies-tick`
    at minutes 10 and 40 of every hour. It evaluates the Trophées rules over the
    final results of every active team of the current Fantasy season and writes
