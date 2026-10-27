@@ -165,3 +165,17 @@ Lead's recommendation to the owner:
 3. Save the live goal timeline from BSD while each match is on.
 4. Keep RapidAPI as an automatic backup for the live score if BSD stops answering.
 
+### Owner decision (27 Oct) – which RapidAPI feed
+
+Sofascore (the current feed) is used for Fantasy ratings and team match stats.
+SportAPI stays on its free plan as a spare.
+
+### Build task A – too many Sofascore calls (asked for by the owner ahead of the phase order)
+
+**Brief to the Builder:**
+- Find every place that spends Sofascore calls, how often each runs, and whether it is counted and capped.
+- Show the main causes of over-spending, with proof.
+- Fix them on a separate branch, `claude/rapidapi-call-reduction`, with tests.
+- Not allowed: touching the database, calling any provider, deploying, changing Fantasy scoring or screens, or building BSD.
+- Next: a separate Tester checks the work, then the Lead reviews it, then the owner decides.
+
