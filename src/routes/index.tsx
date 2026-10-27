@@ -1037,7 +1037,10 @@ function GameweekBand({
       {/* The night-match photograph: floodlights and crowd on the far side,
           dark sky behind the text. Mirrored in Arabic so the text still
           starts on the calm side. Decorative, so hidden from assistive tech;
-          above the fold, so it is fetched eagerly. */}
+          above the fold, so it is fetched eagerly. React hoists a high-priority
+          preload for it into the document head from this very element (srcset
+          and sizes included), so the browser starts it with the stylesheet,
+          before any script. */}
       <img
         src={live ? liveBand : stadiumBand}
         srcSet={
@@ -1046,8 +1049,14 @@ function GameweekBand({
             : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
         }
         sizes="(min-width: 640px) 672px, 100vw"
+        // The photographs' own sizes (1600 wide; the live one is a little taller):
+        // the CSS below draws them to the band, so this only tells the browser
+        // their ratio before they arrive.
+        width={1600}
+        height={live ? 686 : 600}
         alt=""
         aria-hidden
+        loading="eager"
         decoding="async"
         fetchPriority="high"
         className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_60%] rtl:-scale-x-100"
