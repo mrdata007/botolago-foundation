@@ -204,3 +204,18 @@ All five reports were approved, in 1–2 rounds each. The merged report is in
 `docs/review/PHASE1_AUDIT_REPORT_2026-10-27.md`, and the five full reports are
 in `docs/review/phase1-2026-10-27/`. Waiting for the owner's approval before Phase 2.
 
+### Owner decisions (27 Oct)
+
+- Phase 1 approved.
+- No Sofascore plan upgrade. SportAPI runs the app for the rest of this period.
+- The Builder's task was extended with A2: a switch that lets the app use SportAPI with the same data and IDs. The Lead fetched 5 more SportAPI sample replies (40 free calls left) as test examples.
+
+## Phase 2 – Plan
+
+Written by the Lead from the approved audit: `docs/review/PHASE2_PLAN_2026-10-27.md`.
+- Batch 0 (emergency) is under way.
+- Then quick wins, Fantasy fairness, BSD, anti-bot, Arabic first screen, speed, the score-correction process, and tidy-up.
+- Targets cover API calls, load time, Lighthouse, the Arabic first screen and taps.
+
+Waiting for the owner's approval.
+
