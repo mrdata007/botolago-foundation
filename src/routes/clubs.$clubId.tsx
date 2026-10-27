@@ -33,6 +33,7 @@ import {
 } from "@/components/matches/StandingsTable";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
+import { clubAliasNames } from "@/content/club-aliases";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
@@ -107,6 +108,9 @@ export const Route = createFileRoute("/clubs/$clubId")({
     const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
     const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
     const name = club ? clubSearchName(club) : undefined;
+    const aliases = club
+      ? clubAliasNames(club, [name ?? "", club.name.fr])
+      : { latin: [], arabic: null };
     // Short name first, the words people search with (`@/lib/seo-titles`).
     const title = club ? clubSeoTitle(club) : "Club de Botola Pro — BotolaGO";
     const description = club
@@ -137,7 +141,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
                     name,
                     city: club?.city?.fr,
                     logoUrl: club?.crestUrl,
-                    alternateNames: [club?.name.fr],
+                    alternateNames: [club?.name.fr, ...aliases.latin, aliases.arabic],
                   }),
                 ),
               },

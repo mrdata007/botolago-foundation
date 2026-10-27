@@ -296,6 +296,7 @@ export const ar = {
   "club.tab.matches": "المباريات",
   "club.tab.standings": "الترتيب",
   "club.tab.squad": "اللاعبون",
+  "club.aliases": "يُعرف أيضًا بـ",
   "club.key.played": "لعب",
   "club.key.goal_difference": "الفارق",
   "club.next_match": "المباراة القادمة",
