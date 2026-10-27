@@ -205,3 +205,22 @@ export function sportsEventJsonLd(input: {
     ...(description ? { description } : {}),
   };
 }
+
+/**
+ * A page's visible questions and answers as `FAQPage` data. Google requires
+ * the marked-up text to be the text on the page, so the caller builds `items`
+ * from the same dictionary entries it renders; each answer is plain text.
+ */
+export function faqPageJsonLd(
+  items: readonly { readonly question: string; readonly answer: string }[],
+): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+}

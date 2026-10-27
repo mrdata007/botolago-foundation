@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { LandingPage } from "@/components/landing/LandingPage";
+import { landingFaqItems } from "@/components/landing/landing-faq";
 import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
+import { serializeJsonLd } from "@/lib/article-meta";
+import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+import { faqPageJsonLd } from "@/lib/structured-data";
 import { markWelcomeDone } from "@/lib/welcome";
 
 const CANONICAL = `${PUBLIC_SITE_ORIGIN}/jouer`;
@@ -29,6 +33,15 @@ export const Route = createFileRoute("/jouer")({
       { name: "twitter:description", content: fr["landing.meta_description"] },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
+    // The FAQ on the page, as `FAQPage` data: the same French text it shows.
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: serializeJsonLd(
+          faqPageJsonLd(landingFaqItems((key) => fr[key], { prizes: PRIZES_ENABLED })),
+        ),
+      },
+    ],
   }),
   component: JouerRoute,
 });
