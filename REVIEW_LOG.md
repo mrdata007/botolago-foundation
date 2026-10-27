@@ -137,3 +137,31 @@ Result: **passed.**
 
 Not tested: a match while it is live (none was being played at the time).
 
+### Owner decision (27 Oct) – data sources
+
+The owner chose: **BSD for match data** (fixtures, scores, events, line-ups,
+stats) and **RapidAPI (Sofascore data) for Fantasy ratings**.
+
+The Lead checked BSD with 5 free calls (sports.bzzoiro.com; free up to 7,500 a day).
+
+What BSD has:
+- This season: Botola Pro 2026-27 (BSD's season number 1962). Round 5 results match SportAPI.
+- Kick-off times, status, half-time and full-time scores.
+- Line-ups with positions, shirt numbers, captain, substitution minutes, goals and cards per player, and minutes played (32 of 32 players who played).
+- Team card counts.
+- Each player carries Sofascore's own ID (`api_id`), so the two sources can be matched without guesswork.
+- During a match, its live feed carries the minute and a goal/card timeline. This was seen on other leagues; no Botola match was live during the test.
+
+What BSD does not have for Botola now:
+- Team stats: possession, shots, corners, fouls are empty.
+- Detailed player stats: passes, duels, xG are all zero.
+- Player ratings.
+- Referee and stadium.
+- A goal timeline after the match, unless BotolaGO saves it while the match is live.
+
+Lead's recommendation to the owner:
+1. Fantasy ratings come from RapidAPI, as decided.
+2. Fetch the team stats once per finished match from RapidAPI as well (about 35 calls a month).
+3. Save the live goal timeline from BSD while each match is on.
+4. Keep RapidAPI as an automatic backup for the live score if BSD stops answering.
+
