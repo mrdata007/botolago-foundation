@@ -283,8 +283,10 @@ function PlayerDetailPage() {
 
       {/* No fill of its own: the card's negative margin collapses through this
           wrapper, and a page-coloured wrapper would then paint over the
-          hero's foot instead of letting the card overlap it. */}
-      <div>
+          hero's foot instead of letting the card overlap it. `pb-4` is the
+          last section's own clearance above the action bar, so the bar's
+          fade never lands on the last content at the end of the scroll. */}
+      <div className="pb-4">
         {/* The key numbers: a row of different figures laid out as a grid,
             so the tabular stat ramp, not the display face. */}
         <UiCard

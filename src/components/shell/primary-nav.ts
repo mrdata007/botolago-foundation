@@ -29,9 +29,10 @@ export type PrimaryNavItem = {
 /** Every primary destination, ignoring feature flags. Not for rendering. */
 const allPrimaryNavItems: PrimaryNavItem[] = [
   { to: "/", labelKey: "nav.home", icon: Home },
-  { to: "/news", labelKey: "nav.news", icon: Newspaper },
-  { to: "/fantasy", labelKey: "nav.fantasy", icon: Trophy },
+  // Matches second (owner decision, 2026-10-26): the bar leads with what is on today.
   { to: "/matches", labelKey: "nav.matches", icon: CalendarDays },
+  { to: "/fantasy", labelKey: "nav.fantasy", icon: Trophy },
+  { to: "/news", labelKey: "nav.news", icon: Newspaper },
   { to: "/pepites", labelKey: "nav.pepites", icon: Gem },
   // Curva (the Manager Card section) takes the fifth slot only while it is live; see
   // `withFifthSlot` and `usePrimaryNavItems`. `withPepitesSlot` never lets it into `primaryNavItems`.
@@ -93,7 +94,7 @@ const offeredNavItems = allPrimaryNavItems.filter((item) => NEWS_ENABLED || item
  */
 export const primaryNavItems: PrimaryNavItem[] = withPepitesSlot(offeredNavItems, PEPITES_PROMOTED);
 
-/** The list while Curva is live: Accueil, Actualités, Fantasy, Matches, Curva. */
+/** The list while Curva is live: Accueil, Matchs, Fantasy, Actualités, Curva. */
 export const liveNavItems: PrimaryNavItem[] = withFifthSlot(offeredNavItems, {
   pepitesPromoted: PEPITES_PROMOTED,
   curvaLive: true,

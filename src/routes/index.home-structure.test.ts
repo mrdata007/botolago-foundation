@@ -176,4 +176,42 @@ describe("Accueil (Home) structural contract", () => {
       expect(source.split("newsService.getEdition(").length - 1).toBe(2);
     });
   });
+
+  /**
+   * Phase 4 redesign (docs/briefs/2026-10-27-home-redesign.md): a visitor
+   * without an account gets Home itself, with the bottom bar, not a
+   * full-screen advert in its place.
+   */
+  describe("signed-out Home", () => {
+    test("`/` renders Home for everyone; the landing page lives at /jouer only", () => {
+      expect(source).toContain("component: HomeContent,");
+      expect(source).not.toContain("LandingPage");
+      expect(source).not.toContain("hasWelcomed");
+    });
+
+    test("a visitor without an account gets the invitation card, not the account card", () => {
+      expect(source).toContain(
+        "<FantasyInviteCard canCreate={canCreate} deadline={gwQ.data?.deadline} />",
+      );
+    });
+
+    test("the live card names its freshness, and a no-match day names the next match day", () => {
+      expect(source).toContain("<HomeLiveFreshness");
+      expect(source).toContain("updatedAt={matchesQ.dataUpdatedAt}");
+      expect(source).toContain("nextMatchDay(homeMatches, now)");
+      expect(source).toContain('data-testid="home-next-match-day"');
+    });
+
+    test("each section keeps its own error state and retry", () => {
+      // One section failing never replaces the page: each retry refetches only
+      // its own query.
+      expect(source).toContain("onRetry={() => void matchesQ.refetch()}");
+      expect(source).toContain("onRetry={() => void newsQ.refetch()}");
+      expect(source).toContain("onRetry={() => void availability.refetch()}");
+      expect(source).toMatch(
+        /onRetry=\{\(\) => \{\s*void seasonsQ\.refetch\(\);\s*void standingsQ\.refetch\(\);\s*\}\}/,
+      );
+      expect(source.match(/<ErrorState/g)?.length).toBeGreaterThanOrEqual(5);
+    });
+  });
 });

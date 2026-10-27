@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { ArrowDownUp, CircleAlert, HeartPulse } from "lucide-react";
 import type { MatchLineupDto } from "@/backend/football/contracts";
 import { MatchDataState } from "./MatchDataState";
@@ -21,21 +21,23 @@ const CARD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set([
 const PERIOD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set(["period_start", "period_end"]);
 
 /**
- * The Résumé tab (A-Match): the provider's key events, one card each.
+ * The Résumé tab: the provider's key events, one compact line each, the latest
+ * first.
  *
- * A home event carries the home club's 4px edge on the inline start and reads
- * icon · text · minute; an away event mirrors it — edge on the inline end,
- * minute first, text toward the end, icon last — so each side's events sit on
- * its own side of the column, and Arabic flips both with no extra rule. The
- * colours are the page's resolved pair (`palettes`), so a clash-resolved away
- * club is the same colour here as in the header.
+ * A home event reads icon · text on the inline start with the minute pill in
+ * the middle; an away event mirrors it — text · icon on the inline end — so
+ * each side's events sit on its own side of the column, and Arabic flips both
+ * with no extra rule. A goal is louder (heavier name, a wash of its club's
+ * colour behind the row); a card is a small shape. The colours are the page's
+ * resolved pair (`palettes`), so a clash-resolved away club is the same colour
+ * here as in the header.
  *
- * Period boundaries are not cards: the end of the first half is drawn as the
- * "MI-TEMPS" rule (before the first second-half event when the provider sent
- * no boundary). The rule carries no score: the half-time score is not in the
- * match data (`toMatch` does not map it), and counting goals out of a
- * timeline that can lag the score would be inventing one. Any other event
- * with no team is a quiet centred line.
+ * Period boundaries are not rows: the end of the first half is drawn as the
+ * "MI-TEMPS" separator (before the first second-half event when the provider
+ * sent no boundary), with the half-time score only when the provider recorded
+ * one — counting goals out of a timeline that can lag the score would be
+ * inventing it. A finished match closes with a "TERMINÉ" separator carrying
+ * the final score. Any other event with no team is a quiet centred line.
  *
  * With no events, the message follows `phase` (see `match-empty-states`): "no
  * key events for now" under a finished 1–3 would deny the four goals.
@@ -49,6 +51,7 @@ export function EventTimeline({
   isLive,
   phase,
   halfTime,
+  fullTime,
 }: {
   events: readonly MatchEvent[];
   home: Club;
@@ -60,6 +63,8 @@ export function EventTimeline({
   phase: MatchDataPhase;
   /** The half-time score, when the provider has recorded one: "MI-TEMPS · 1 – 1". */
   halfTime?: { home: number; away: number };
+  /** The final score, for the full-time separator of a finished match. */
+  fullTime?: { home: number; away: number };
 }) {
   const { t, lang } = useI18n();
   // "Moments forts": substitutions are hidden by default, and one tap shows
@@ -90,10 +95,11 @@ export function EventTimeline({
       return next;
     });
 
-  // Period boundaries are not cards. The end of the first half becomes the
-  // half-time rule (so it shows during the break too); without one, the rule
-  // goes before the first second-half event. Other boundaries are dropped:
-  // the rule and the header's status already say where the match is.
+  // Period boundaries are not rows. The end of the first half becomes the
+  // half-time separator (so it shows during the break too); without one, the
+  // separator goes before the first second-half event. Other boundaries are
+  // dropped: the separators and the header's status already say where the
+  // match is. A finished match closes with a full-time separator.
   const pool = highlights ? events.filter((event) => event.type !== "substitution") : events;
   const halfTimeEnd = pool.find((event) => event.type === "period_end" && event.minute === 45)?.id;
   const firstSecondHalf = halfTimeEnd
@@ -110,6 +116,23 @@ export function EventTimeline({
       lineup.players.map((player) => [player.id, player.displayName] as const),
     ),
   );
+
+  // In order of play, then turned round: the latest event is the first line,
+  // which is what a live match is opened for.
+  type Item =
+    | { kind: "event"; event: MatchEvent }
+    | { kind: "half"; key: string }
+    | { kind: "full"; key: string };
+  const items: Item[] = [];
+  for (const event of shown) {
+    if (event.id === halfTimeEnd) items.push({ kind: "half", key: event.id });
+    else {
+      if (event.id === firstSecondHalf) items.push({ kind: "half", key: `ht-${event.id}` });
+      items.push({ kind: "event", event });
+    }
+  }
+  if (phase === "finished") items.push({ kind: "full", key: "ft" });
+  items.reverse();
 
   return (
     <>
@@ -129,39 +152,45 @@ export function EventTimeline({
           ) : null}
         </div>
       ) : null}
-      <ol className="grid gap-2.5">
-        {shown.map((event) => {
-          if (event.id === halfTimeEnd) {
+      <ol className={cn("divide-y divide-[color:var(--ui-rule)] overflow-hidden", ui.surface.card)}>
+        {items.map((item) => {
+          if (item.kind === "half") {
             return (
-              <li key={event.id}>
-                <HalfTimeDivider score={halfTime} />
+              <li key={item.key}>
+                <Separator label={t("matches.status.ht")} score={halfTime} />
               </li>
             );
           }
+          if (item.kind === "full") {
+            return (
+              <li key={item.key}>
+                <Separator label={t("matches.status.ft")} score={fullTime} />
+              </li>
+            );
+          }
+          const { event } = item;
           const isEntering = entering.has(event.id);
           return (
-            <li key={event.id} className="contents">
-              {event.id === firstSecondHalf && <HalfTimeDivider score={halfTime} />}
-              <div
-                className={cn(isEntering && "event-enter")}
-                onAnimationEnd={(animation) => {
-                  if (isEntering && animation.target === animation.currentTarget) settle(event.id);
-                }}
-              >
-                <div className={cn(isEntering && "min-h-0 overflow-hidden")}>
-                  <EventRow
-                    event={event}
-                    club={event.side === "home" ? home : event.side === "away" ? away : undefined}
-                    palette={
-                      event.side === "home"
-                        ? palettes.home
-                        : event.side === "away"
-                          ? palettes.away
-                          : undefined
-                    }
-                    nameOf={(id) => (id ? names.get(id) : undefined)}
-                  />
-                </div>
+            <li
+              key={event.id}
+              className={cn(isEntering && "event-enter")}
+              onAnimationEnd={(animation) => {
+                if (isEntering && animation.target === animation.currentTarget) settle(event.id);
+              }}
+            >
+              <div className={cn(isEntering && "min-h-0 overflow-hidden")}>
+                <EventRow
+                  event={event}
+                  club={event.side === "home" ? home : event.side === "away" ? away : undefined}
+                  palette={
+                    event.side === "home"
+                      ? palettes.home
+                      : event.side === "away"
+                        ? palettes.away
+                        : undefined
+                  }
+                  nameOf={(id) => (id ? names.get(id) : undefined)}
+                />
               </div>
             </li>
           );
@@ -192,29 +221,31 @@ function showSubstitutionsLabel(
   return template.replace("{n}", String(n));
 }
 
-/** "MI-TEMPS" between two hairlines, with the half-time score when there is
- * one. Plain text, not `role="separator"`, whose content assistive tech does
- * not read. */
-function HalfTimeDivider({ score }: { score?: { home: number; away: number } }) {
-  const { t } = useI18n();
+/** "MI-TEMPS · 1 – 0" or "TERMINÉ · 1 – 1" as a quiet band across the list, the
+ * score only when the data has one. Plain text, not `role="separator"`, whose
+ * content assistive tech does not read. */
+function Separator({ label, score }: { label: string; score?: { home: number; away: number } }) {
   return (
-    <div className="flex items-center gap-2.5 py-0.5">
-      <span aria-hidden className="h-px flex-1 bg-[color:var(--ui-rule)]" />
+    <div
+      className={cn(
+        "flex items-center justify-center gap-1.5 px-3 py-1.5",
+        ui.surface.sunken,
+        ui.text.label,
+        ui.tone.muted,
+      )}
+    >
       {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-      <span className={cn("flex items-center gap-1.5", ui.text.label, ui.tone.muted)}>
-        {t("matches.status.ht")}
-        {score ? (
-          // Home first in the source, so Arabic puts it on the right, as the
-          // header does; each figure isolated, the row a plain flex box.
-          <span className={cn("flex items-center gap-1", ui.text.tabular)}>
-            <span aria-hidden>·</span>
-            <bdi>{score.home}</bdi>
-            <span>–</span>
-            <bdi>{score.away}</bdi>
-          </span>
-        ) : null}
-      </span>
-      <span aria-hidden className="h-px flex-1 bg-[color:var(--ui-rule)]" />
+      {label}
+      {score ? (
+        // Home first in the source, so Arabic puts it on the right, as the
+        // header does; each figure isolated, the row a plain flex box.
+        <span className={cn("flex items-center gap-1", ui.text.tabular)}>
+          <span aria-hidden>·</span>
+          <bdi>{score.home}</bdi>
+          <span>–</span>
+          <bdi>{score.away}</bdi>
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -267,7 +298,7 @@ function typeLabel(t: (key: TranslationKey) => string, type: MatchEvent["type"])
  * substitution the swap arrows; anything else a quiet glyph.
  */
 function EventGlyph({ event }: { event: MatchEvent }) {
-  const glyph = "h-4.5 w-4.5 shrink-0";
+  const glyph = "h-4 w-4 shrink-0";
   if (GOAL_EVENT_TYPES.has(event.type)) {
     return <BallIcon className={cn(glyph, ui.tone.club)} />;
   }
@@ -306,67 +337,96 @@ function EventRow({
   palette?: ClubPalette;
   nameOf: (id: string | null) => string | undefined;
 }) {
-  const { t, tr } = useI18n();
+  const { t } = useI18n();
   const label = typeLabel(t, event.type);
+  const minute = (
+    <>
+      {event.minute}
+      {event.addedTime > 0 ? `+${event.addedTime}` : ""}
+    </>
+  );
 
   // Anything the provider did not attribute to a team (a VAR check, say): a
-  // centred line, no card, no club colour — there is no side to put it on.
+  // centred quiet line, no club colour — there is no side to put it on.
   if (!club || !palette || event.side === null) {
     return (
-      <p className={cn("flex items-center justify-center gap-2 py-1", ui.text.meta, ui.tone.muted)}>
+      <p
+        className={cn(
+          "flex min-h-9 items-center justify-center gap-2 px-3 py-1",
+          ui.text.meta,
+          ui.tone.muted,
+        )}
+      >
         <CircleAlert className="h-4 w-4 shrink-0" aria-hidden />
         <span>{label}</span>
-        <bdi className={ui.text.tabular}>
-          {event.minute}
-          {event.addedTime > 0 ? `+${event.addedTime}` : ""}′
-        </bdi>
+        <bdi className={ui.text.tabular}>{minute}′</bdi>
       </p>
     );
   }
 
   const player = nameOf(event.playerId);
   const related = nameOf(event.relatedPlayerId);
-  // The line under the title, from what the data carries: the assist for a
-  // goal, the player replaced for a substitution (the provider's related
-  // player is the one going off), else the provider's own detail, else the
-  // club — which is what a card needs, since it names no one else.
-  let sub: ReactNode = null;
-  if (GOAL_EVENT_TYPES.has(event.type) && related) {
-    sub = `${t("matches.event.assist")} ${related}`;
-  } else if (event.type === "substitution" && related) {
-    sub = t("matches.event.replaces").replace("{name}", related);
-  } else if (event.detail && event.detail !== player) {
-    sub = event.detail;
-  } else {
-    sub = tr(club.shortName);
+  const isGoal = GOAL_EVENT_TYPES.has(event.type);
+  const isCard = CARD_TYPES.has(event.type);
+  // What follows the name on the same line, from what the data carries: the
+  // way a goal came ("pen.", "c.s.c."), the assist, the player replaced by a
+  // substitute (the provider's related player is the one going off), or the
+  // provider's own detail. A card needs nothing: its shape says it.
+  const notes: string[] = [];
+  // With no named player the label ("Penalty") already says it.
+  if (player && event.type === "penalty_goal") notes.push(t("matches.event.penalty_short"));
+  if (player && event.type === "own_goal") notes.push(t("matches.event.own_goal_short"));
+  if (isGoal && related) notes.push(`${t("matches.event.assist")} ${related}`);
+  else if (event.type === "substitution" && related) {
+    notes.push(t("matches.event.replaces").replace("{name}", related));
+  } else if (!isCard && !isGoal && event.detail && event.detail !== player) {
+    notes.push(event.detail);
   }
+  // A card is a small shape, so its name is said to screen readers; a goal
+  // with no named scorer and any other event keep their words on screen.
+  const showLabel = !player || (!isGoal && !isCard);
 
   const away = event.side === "away";
   const text = (
-    <div className={cn("min-w-0", away && "text-end")}>
-      <p className={cn("break-words", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-        {player ? `${label} · ${player}` : label}
-      </p>
-      {sub ? <p className={cn("break-words", ui.text.meta, ui.tone.muted)}>{sub}</p> : null}
-    </div>
+    <p className={cn("min-w-0 break-words", ui.text.secondary, away && "text-end")}>
+      {isCard && player ? <span className="sr-only">{label} · </span> : null}
+      <span
+        className={cn(
+          isGoal ? "[font-weight:var(--ui-weight-heavy)]" : "[font-weight:var(--ui-weight-strong)]",
+          isCard && "[font-weight:var(--ui-weight-body)]",
+        )}
+      >
+        {showLabel ? (player ? `${label} · ${player}` : label) : player}
+      </span>
+      {notes.length > 0 ? (
+        <span className={cn("ms-1 whitespace-nowrap", ui.text.meta, ui.tone.muted)}>
+          {notes.join(" · ")}
+        </span>
+      ) : null}
+    </p>
   );
   // The minute sits in a pill in the middle of the column: navy for a goal
   // or a penalty, light grey for a card and everything else.
-  const decisive = GOAL_EVENT_TYPES.has(event.type);
   const pill = (
     <span
       className={cn(
-        "inline-flex items-center justify-center px-2.5 py-1",
+        "inline-flex min-w-[2.75rem] items-center justify-center px-1.5 py-0.5",
         ui.radius.full,
-        decisive ? ui.surface.inkPlain : ui.surface.sunken,
+        ui.text.meta,
+        ui.text.tabular,
+        "[font-weight:var(--ui-weight-heavy)]",
+        isGoal ? ui.surface.inkPlain : ui.surface.sunken,
       )}
     >
-      <Minute event={event} />
+      <bdi>
+        {minute}
+        <span className={ui.font.body}>′</span>
+      </bdi>
     </span>
   );
   // The icon beside the name, on the team's side: first for home, last for away.
   const side = (
-    <div className={cn("flex min-w-0 items-center gap-2", away && "justify-end")}>
+    <div className={cn("flex min-w-0 items-center gap-1.5", away && "justify-end")}>
       {away ? (
         <>
           {text}
@@ -385,9 +445,8 @@ function EventRow({
     <div
       {...clubStyle(palette)}
       className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2.5 px-3.5 py-3",
-        ui.surface.card,
-        away ? ui.edge.end : ui.edge.start,
+        "grid min-h-11 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 px-2.5 py-1.5",
+        isGoal && "bg-[color:var(--ui-club-tint)]",
       )}
     >
       {away ? (

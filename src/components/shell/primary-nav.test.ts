@@ -50,9 +50,9 @@ const item = (to: PrimaryNavItem["to"]): PrimaryNavItem => ({
 });
 const ALL = [
   item("/"),
-  item("/news"),
-  item("/fantasy"),
   item("/matches"),
+  item("/fantasy"),
+  item("/news"),
   item("/pepites"),
   item("/curva"),
   item("/profile"),
@@ -63,22 +63,22 @@ describe("the fifth slot (Curva, plan 3.3)", () => {
   it("withPepitesSlot never lets Curva in, whatever the other switch says", () => {
     expect(tos(withPepitesSlot(ALL, true))).toEqual([
       "/",
-      "/news",
-      "/fantasy",
       "/matches",
+      "/fantasy",
+      "/news",
       "/pepites",
     ]);
     expect(tos(withPepitesSlot(ALL, false))).toEqual([
       "/",
-      "/news",
-      "/fantasy",
       "/matches",
+      "/fantasy",
+      "/news",
       "/profile",
     ]);
   });
 
   it("withFifthSlot: Curva when live, else Pépites when promoted, else Profil", () => {
-    const first = ["/", "/news", "/fantasy", "/matches"];
+    const first = ["/", "/matches", "/fantasy", "/news"];
     expect(tos(withFifthSlot(ALL, { pepitesPromoted: true, curvaLive: true }))).toEqual([
       ...first,
       "/curva",
@@ -97,10 +97,15 @@ describe("the fifth slot (Curva, plan 3.3)", () => {
     ]);
   });
 
+  it("Matches is second: Accueil, Matchs, Fantasy, then the rest (owner decision, 2026-10-26)", () => {
+    expect(tos(primaryNavItems).slice(0, 3)).toEqual(["/", "/matches", "/fantasy"]);
+    expect(tos(liveNavItems).slice(0, 2)).toEqual(["/", "/matches"]);
+  });
+
   it("the shipped list is today's, Curva is in the live one only", () => {
     expect(tos(primaryNavItems)).not.toContain("/curva");
     expect(tos(primaryNavItems)).toContain("/pepites");
-    expect(tos(liveNavItems)).toEqual(["/", "/news", "/fantasy", "/matches", "/curva"]);
+    expect(tos(liveNavItems)).toEqual(["/", "/matches", "/fantasy", "/news", "/curva"]);
     expect(liveNavItems.find((entry) => entry.to === "/curva")?.labelKey).toBe("nav.curva");
   });
 

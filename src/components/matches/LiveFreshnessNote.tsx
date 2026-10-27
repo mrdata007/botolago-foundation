@@ -5,10 +5,11 @@ import { useI18n } from "@/i18n/provider";
 import type { LiveFreshness } from "@/lib/match-freshness";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
+import { formatLiveAge, liveAge } from "./live-age";
 
-/** `{time}` in a translated sentence, the time isolated in a `<bdi>`. */
-function withTime(sentence: string, time: string): ReactNode {
-  const parts = sentence.split("{time}");
+/** `{time}` (or another token) in a translated sentence, the value isolated in a `<bdi>`. */
+function withTime(sentence: string, time: string, token = "{time}"): ReactNode {
+  const parts = sentence.split(token);
   return parts.map((part, index) => (
     <Fragment key={index}>
       {part}
@@ -21,8 +22,10 @@ function withTime(sentence: string, time: string): ReactNode {
  * Under the score header of a live match: when the page last heard from the
  * server (docs/screens/2026-10-14-live-match-freshness/BRIEF.md).
  *
- * - fresh: one quiet line, "Mis à jour à 21:05". Not a live region: it changes
- *   every 30 seconds, and the score is the page's one live region.
+ * - fresh: one quiet line, "Mis à jour il y a 2 min" (from the fixture's stored
+ *   update time), or "Mis à jour à 21:05" until the page has the clock. Not a
+ *   live region: it changes every 15 seconds, and the score is the page's one
+ *   live region.
  * - stale: "Score non actualisé depuis 21:05" and an "Actualiser" button.
  * - expired: the same, saying the score may not be final; the header has
  *   already swapped its live pill for a neutral one.
@@ -35,9 +38,19 @@ export function LiveFreshnessNote({
   updatedAt,
   refreshing,
   onRefresh,
+  now,
+  dataUpdatedAt,
 }: {
   freshness: LiveFreshness;
   updatedAt: number;
+  /**
+   * The browser's clock, once the page has mounted. With it, a fresh line says
+   * how long ago the data was written ("il y a 2 min"); without it (the server
+   * render and the first browser render, which must agree) it names the time.
+   */
+  now?: number;
+  /** The fixture's stored update time (`Match.dataUpdatedAt`), for that age. */
+  dataUpdatedAt?: string;
   refreshing: boolean;
   onRefresh: () => void;
 }) {
@@ -49,6 +62,20 @@ export function LiveFreshnessNote({
   }).format(new Date(updatedAt));
 
   if (freshness === "fresh") {
+    const age = now === undefined ? null : liveAge({ dataUpdatedAt }, updatedAt, now);
+    if (age) {
+      return (
+        <p
+          data-testid="live-freshness"
+          data-freshness="fresh"
+          className={cn("mt-2 px-1 text-center", ui.text.meta, ui.tone.muted)}
+        >
+          {age.unit === "now"
+            ? t("matches.detail.updated_now")
+            : withTime(t("matches.detail.updated_ago"), formatLiveAge(age, lang), "{ago}")}
+        </p>
+      );
+    }
     return (
       <p
         data-testid="live-freshness"

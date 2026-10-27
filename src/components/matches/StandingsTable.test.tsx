@@ -280,6 +280,35 @@ describe("a table with clubs level on every figure", () => {
     ).toBe("");
   });
 
+  test("names the clubs with games in hand, only when asked and only when counts differ", () => {
+    const behind = overall.map((row, i) => (i === 1 ? { ...row, played: row.played - 1 } : row));
+    const notes = inFrench(
+      <StandingsNotes
+        rows={behind}
+        computed={false}
+        seasonStatus="completed"
+        clubById={clubById}
+      />,
+    );
+    expect(notes).toContain("Matchs en retard");
+    expect(notes).toContain("colonne J");
+    expect(notes).toContain(behind[1]!.clubId);
+    // Not asked (home / away), or nobody behind: no note.
+    expect(
+      inFrench(<StandingsNotes rows={behind} computed={false} seasonStatus="completed" />),
+    ).toBe("");
+    expect(
+      inFrench(
+        <StandingsNotes
+          rows={overall}
+          computed={false}
+          seasonStatus="completed"
+          clubById={clubById}
+        />,
+      ),
+    ).toBe("");
+  });
+
   test("a table worked out from a finished season's results is unofficial, not provisional", () => {
     const notes = inFrench(<StandingsNotes rows={overall} computed seasonStatus="completed" />);
     expect(notes).toContain("Classement non officiel, calculé à partir des résultats des matchs.");

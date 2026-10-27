@@ -21,6 +21,7 @@ import { ui, UiAlert, UiButton, UiCard, UiHeader, UiInput } from "@/components/u
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { useI18n } from "@/i18n/provider";
+import { evaluateDeadline } from "@/lib/fantasy-engine";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
 import { pendingInvite } from "@/components/predictions/leagues/invite-link";
@@ -266,6 +267,11 @@ function CreateTeamBody() {
           .replace("{current}", String(gameweek.number))
           .replace("{n}", String(enrolment.number))
       : null;
+  // The gameweek this squad joins has started: the squad stays readable, nothing can change.
+  const locked = evaluateDeadline(enrolment.deadline).isLocked;
+  const emptyPlaces = summary.total - summary.filled;
+  const perPlace = emptyPlaces > 0 ? round1(summary.bankRemaining / emptyPlaces) : null;
+  const [perPlaceBefore, perPlaceAfter] = t("fantasy.create.per_place").split("{amount}");
 
   const slots: BuilderSlot[] = draft.slots.map((s) => ({
     slot: s.slot,
@@ -548,7 +554,7 @@ function CreateTeamBody() {
               type="submit"
               variant="gradient"
               className="mt-4"
-              disabled={!nameCheck.ok || !validation.ok || saving}
+              disabled={!nameCheck.ok || !validation.ok || saving || locked}
               aria-describedby={live && accountReturn ? BUILDER_RETURN_LINE_ID : undefined}
             >
               {saving ? t("fpl.saving") : t("fantasy.create.cta_primary")}
@@ -567,8 +573,12 @@ function CreateTeamBody() {
         backTo="/fantasy"
         gameweek={enrolment.number}
         deadlineIso={enrolment.deadline}
+        showProgress
+        locked={locked}
         banner={
-          draftAtRisk ? (
+          locked ? (
+            t("fantasy.create.locked").replace("{n}", String(enrolment.number))
+          ) : draftAtRisk ? (
             <>
               {enrolmentNotice ? <span className="block">{enrolmentNotice}</span> : null}
               <span className="block" role="alert" data-testid="guest-draft-unsaved">
@@ -588,7 +598,19 @@ function CreateTeamBody() {
             value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
             text: true,
           },
-          { label: t("fpl.left_in_bank"), value: <FantasyAmount value={summary.bankRemaining} /> },
+          {
+            label: t("fpl.left_in_bank"),
+            value: <FantasyAmount value={summary.bankRemaining} />,
+            // The budget beside the choice: what each empty place can cost on average.
+            sub:
+              perPlace === null ? undefined : (
+                <>
+                  {perPlaceBefore}
+                  <FantasyAmount value={perPlace} />
+                  {perPlaceAfter}
+                </>
+              ),
+          },
         ]}
         showBench
         slots={slots}
@@ -608,6 +630,15 @@ function CreateTeamBody() {
           }
           setStep("name");
         }}
+        nextLabel={
+          locked
+            ? t("fantasy.create.next_locked")
+            : summary.filled < 15
+              ? emptyPlaces === 1
+                ? t("fantasy.create.next_remaining_one")
+                : t("fantasy.create.next_remaining").replace("{n}", String(emptyPlaces))
+              : undefined
+        }
         nextDisabled={summary.filled < 15 || summary.overBudget || summary.overClubLimit.length > 0}
         onReset={() => setDraft(initCreateDraft(draft.teamName))}
         resetDisabled={summary.filled === 0}
