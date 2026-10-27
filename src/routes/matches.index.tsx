@@ -32,6 +32,7 @@ import { useLiveMatches, useOnLiveMatchEnd } from "@/components/matches/use-live
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { matchBucket } from "@/lib/match-bucket";
@@ -193,6 +194,7 @@ function openingSeason(
  */
 function MatchesPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.matches_title"));
   // The router hands on the URL's own keys beside the validated ones, so a
   // `?date=2026-02-31` it dropped from the validated search is still in what
   // `useSearch` returns: validated again here, where the values are used.

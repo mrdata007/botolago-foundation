@@ -23,6 +23,7 @@ import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { socialSignInErrorKey } from "@/auth/social-error";
 import { cn } from "@/lib/utils";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
 import { useManagerCardLive } from "@/services/manager-card-status";
@@ -78,6 +79,7 @@ const RESERVED_ERROR_LINE = cn(
 
 function RegisterPage() {
   const { t } = useI18n();
+  useReaderDocumentTitle(t("meta.register_title"));
   const navigate = useNavigate();
   // The manager card (plan M1c): while Curva is live, « Nom complet » says what the name is for.
   const live = useManagerCardLive();

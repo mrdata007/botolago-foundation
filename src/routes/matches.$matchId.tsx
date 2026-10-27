@@ -62,6 +62,7 @@ import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
+import { useFantasyPlayerLinks } from "@/services/use-fantasy-player-links";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { clubPath, clubPathParam } from "@/lib/club-slug";
 import type { Club } from "@/types/domain";
@@ -285,6 +286,12 @@ function MatchDetailPage() {
   const h2h = detailQ.data?.headToHead ?? [];
   const live = detailQ.data?.live;
   const lineups = detailQ.data?.lineups ?? [];
+  // Player names open the player's page when the Fantasy pool lists the player
+  // (U1). Only read where the line-ups are on screen.
+  const playerLink = useFantasyPlayerLinks(
+    lineups.map((lineup) => lineup.team.id),
+    lineups.length > 0 && (tab === "lineups" || (tab === "summary" && wideLayout)),
+  );
   const pressure = detailQ.data?.pressure ?? [];
   const absences = detailQ.data?.absences ?? [];
   // A section whose read failed is not an empty one: its list above is empty
@@ -581,6 +588,7 @@ function MatchDetailPage() {
                       phase={phase}
                       absences={absences}
                       unavailable={lineupsUnavailable}
+                      playerLink={playerLink}
                     />
                   ) : null}
                 </div>
@@ -620,6 +628,7 @@ function MatchDetailPage() {
                 phase={phase}
                 absences={absences}
                 unavailable={lineupsUnavailable}
+                playerLink={playerLink}
               />
             )}
 

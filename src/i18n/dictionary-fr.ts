@@ -315,7 +315,19 @@ export const fr = {
   "club.aliases": "Aussi appelé :",
   "club.key.played": "Joués",
   "club.key.goal_difference": "Diff.",
+  /* Document titles for the routes whose <title> is set by `head()` in French: the
+     reader's own language is set after mount (`useReaderDocumentTitle`). */
+  "meta.home_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
+  "meta.matches_title": "Matches Botola Pro — scores en direct | BotolaGO",
+  "meta.standings_title": "Classement Botola Pro — points, forme et buts | BotolaGO",
+  "meta.clubs_title": "Clubs de Botola Pro — BotolaGO",
+  "meta.news_title": "Actualités — BotolaGO",
+  "meta.login_title": "Se connecter — BotolaGO",
+  "meta.register_title": "Créer un compte — BotolaGO",
+  "meta.notifications_title": "Notifications — BotolaGO",
   "club.next_match": "Prochain match",
+  "club.live_match": "En direct",
+  "fantasy.hub.visitor_leagues": "Créer ou rejoindre une ligue",
   "club.recent_results": "Derniers résultats",
   "club.full_table": "Classement complet",
   "club.stats.title": "Statistiques",
@@ -1249,6 +1261,7 @@ export const fr = {
   "fpl.squad": "Effectif",
   "fpl.list": "Liste",
   "fpl.pick_team": "Composer l’équipe",
+  "fantasy.team.screen_title": "Mon équipe",
   "fantasy.transfers.incoming_owned": "Ce joueur est déjà dans votre équipe.",
   "fantasy.transfers.incoming_unavailable":
     "Ce joueur n’est plus disponible dans la saison Fantasy en cours.",
@@ -1340,6 +1353,8 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code de la ligue privée fourni par son administrateur.",
+  "fpl.join_code_hint":
+    "Le bouton s’active dès que le code est saisi. Le code compte 32 caractères (chiffres 0 à 9, lettres A à F) : copiez-le depuis l’invitation reçue.",
   "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":

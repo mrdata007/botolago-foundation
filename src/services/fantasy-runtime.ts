@@ -541,6 +541,38 @@ export const fantasyService = {
     if (mode() === "mock") return mockFantasyService.getPlayer(id);
     return (await allPlayers()).find((player) => player.id === id);
   },
+  /**
+   * Football player id -> Fantasy player id for the players of the given
+   * football teams (a line-up's two clubs, or one club's squad). A row links to
+   * `/fantasy/players/$playerId` only when its player is here (U1).
+   *
+   * One page of the pool per team through its `p_team_id` filter (a squad is
+   * well under the page's 100), beside the shared hub read: about 3 requests for
+   * a match and 2 for a club, not the 6 pages of the whole pool plus the
+   * statistics read. A team that fails to read just has no links.
+   */
+  async getFootballPlayerLinks(teamIds: readonly string[]): Promise<Record<string, string>> {
+    if (mode() === "mock") return mockFantasyService.getFootballPlayerLinks();
+    const current = await hub();
+    const links: Record<string, string> = {};
+    await Promise.all(
+      [...new Set(teamIds)].map(async (teamId) => {
+        try {
+          const items = await shareRead(`links:${current.season.id}:${teamId}`, async () => {
+            const page = await cloud.getPlayerPool(
+              { seasonId: current.season.id, teamId, limit: 100 },
+              context(),
+            );
+            return page.items;
+          });
+          for (const item of items) links[item.footballPlayerId] = item.id;
+        } catch {
+          // No links for this team; its names stay plain text.
+        }
+      }),
+    );
+    return links;
+  },
   async getTeam(): Promise<FantasyTeam> {
     if (mode() === "mock") return mockFantasyService.getTeam();
     return teamDto((await cloudTeam()).team);

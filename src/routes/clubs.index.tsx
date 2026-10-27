@@ -6,6 +6,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
@@ -61,6 +62,7 @@ export const Route = createFileRoute("/clubs/")({
  */
 function ClubsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.clubs_title"));
   const directoryQ = useQuery({
     queryKey: ["football", "club-directory", lang],
     queryFn: () => footballService.getClubDirectory(lang),

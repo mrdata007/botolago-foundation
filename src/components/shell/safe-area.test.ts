@@ -111,6 +111,15 @@ describe("BG-0151: the root viewport meta", () => {
     expect(block![1]).not.toContain('[type="email"]');
   });
 
+  test("the field text is at least 16px, so iOS has no focus zoom to cap", () => {
+    expect(read("src/components/ui-kit/primitives.tsx")).toContain(
+      "text-[length:max(16px,var(--ui-text-body))]",
+    );
+    expect(read("src/components/shell/GlobalSearch.tsx")).toContain(
+      "text-[length:max(16px,var(--ui-text-meta))]",
+    );
+  });
+
   test("is not overridden by any other route", () => {
     const glob = new Bun.Glob("**/*.tsx");
     const others = [...glob.scanSync({ cwd: join(ROOT, "src", "routes") })]

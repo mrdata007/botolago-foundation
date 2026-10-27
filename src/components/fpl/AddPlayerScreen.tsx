@@ -45,7 +45,7 @@ const ALL_POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
  * on the type ramp and tightens its gutters. Both are ramp steps, not new
  * numbers. Round, like every control in Option A.
  */
-const FILTER_FIELD = "rounded-full px-3 pe-8 text-[length:var(--ui-text-meta)]";
+const FILTER_FIELD = "rounded-full px-3 pe-8 text-[length:max(16px,var(--ui-text-meta))]";
 
 /**
  * BG-0071 — descending form, with "no value yet" (`null`) sorted below every

@@ -56,8 +56,8 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
-import { fantasyService } from "@/services/fantasy-runtime";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import { useFantasyPlayerLinks } from "@/services/use-fantasy-player-links";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -339,26 +339,13 @@ function ClubPage() {
   // The current squad is the club's active memberships; a past season's is
   // the squad stored for it.
   const squadSeason = season && !season.isCurrent ? season.id : null;
+  // Names open the player's page when the Fantasy pool lists the player (U1).
+  const playerLink = useFantasyPlayerLinks([clubId], tab === "squad");
   const squadQ = useQuery({
     queryKey: ["football", "club-squad", clubId, squadSeason ?? "current", lang],
     queryFn: () => footballService.getClubSquad(clubId, squadSeason, lang),
     enabled: validId && seasonsQ.isSuccess && tab === "squad",
   });
-  // The Fantasy pool maps a squad member (the football catalogue's id) to his
-  // player page. Decoration: a failed read just leaves the names unlinked.
-  const poolQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-    enabled: validId && tab === "squad",
-  });
-  const playerPages = useMemo(() => {
-    const pages = new Map<string, string>();
-    for (const player of poolQ.data ?? []) {
-      if (player.footballPlayerId && !player.placeholder)
-        pages.set(player.footballPlayerId, player.id);
-    }
-    return pages;
-  }, [poolQ.data]);
   // The club's latest stories. A News surface, so it is gated on the same
   // flag as every other: with the flag off this query never runs.
   const newsQ = useQuery({
@@ -568,7 +555,7 @@ function ClubPage() {
         {tab === "squad" && (
           <ClubSquad
             club={club}
-            playerPages={playerPages}
+            playerLink={playerLink}
             squad={{
               data: squadQ.data,
               isPending: seasonsQ.isPending || squadQ.isPending,
