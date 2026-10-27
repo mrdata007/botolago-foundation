@@ -1082,6 +1082,9 @@ export const fr = {
   "fantasy.meta.player_title": "{name} : prix, points et forme — BotolaGO Fantasy",
   "fantasy.meta.player_description":
     "{name} : statistiques, forme, prix et prochains matchs, pour décider de sa place dans votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.player_club_title": "{name} ({club}) : stats, matchs et Fantasy | BotolaGO",
+  "fantasy.meta.player_club_description":
+    "{name} ({club}), {position} en Botola Pro : statistiques de la saison, derniers matchs, prix et points BotolaGO Fantasy.",
   "fantasy.meta.player_unknown_title": "Fiche joueur — BotolaGO Fantasy",
   "fantasy.meta.player_unknown_description":
     "Statistiques, forme, prix et prochains matchs d'un joueur de la Botola Pro pour votre équipe BotolaGO Fantasy.",

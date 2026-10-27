@@ -25,8 +25,9 @@ type LastMatch = FootballPlayerSeasonProfileDto["lastMatches"][number];
  *
  * Everything comes from `api.football_player_season_profile`. It is read by
  * this section alone: while it loads, fails or has nothing to show, the rest of
- * the page is untouched. It is a client-only query, like the gameweek history,
- * so the server and the browser's first render agree (see the route's loader).
+ * the page is untouched. The route's loader reads it too and seeds the query,
+ * so the server HTML and the browser's first render both carry the figures;
+ * when that read failed the query runs in the browser, skeleton first.
  *
  * The figures only cover the finished matches the post-match pipeline has
  * written rows for. When that is fewer than the club has played, the section
@@ -37,14 +38,18 @@ type LastMatch = FootballPlayerSeasonProfileDto["lastMatches"][number];
 export function PlayerFootballProfile({
   playerId,
   clubs,
+  initialProfile,
 }: {
   playerId: string;
   clubs: readonly Club[];
+  /** The route loader's read: the server HTML then carries the figures. */
+  initialProfile?: FootballPlayerSeasonProfileDto;
 }) {
   const { t } = useI18n();
   const profileQ = useQuery({
     queryKey: ["football-player-season-profile", playerId],
     queryFn: () => fantasyService.getPlayerSeasonProfile(playerId),
+    initialData: initialProfile,
   });
 
   return (

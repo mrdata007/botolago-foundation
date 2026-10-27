@@ -37,6 +37,8 @@ export type KitPattern =
   | "two-tone-sleeves";
 
 export interface FantasyPlayer extends Player {
+  /** The football catalogue's id for the same player (the club squad lists carry it). */
+  footballPlayerId?: string;
   // extra fantasy-only fields
   nextOpponentClubId?: string;
   nextIsHome?: boolean;

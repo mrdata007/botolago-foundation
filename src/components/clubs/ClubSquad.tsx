@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Section } from "@/components/common/Section";
 import { SectionGroupHeader } from "@/components/common/SectionHeader";
 import { PlayerRowSkeleton, SkeletonList } from "@/components/common/Skeletons";
@@ -16,10 +17,19 @@ import type { SectionData } from "./ClubOverview";
  * defenders, midfielders, forwards, each line with how many it holds. Each
  * row is the shirt number on a disc in the club's colour, then the name; a
  * player the provider gave no number keeps the row's rhythm with an empty
- * disc rather than an invented one. There is no football player page, so a
- * row opens nothing.
+ * disc rather than an invented one. A player who is in the Fantasy pool
+ * (`playerPages`: catalogue id to Fantasy player id) links to his page; the
+ * others open nothing.
  */
-export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<SquadPlayer[]> }) {
+export function ClubSquad({
+  club,
+  squad,
+  playerPages,
+}: {
+  club: Club;
+  squad: SectionData<SquadPlayer[]>;
+  playerPages?: ReadonlyMap<string, string>;
+}) {
   const { t } = useI18n();
 
   if (squad.isPending) {
@@ -68,7 +78,7 @@ export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<Squa
           <UiCard padding="none" className="overflow-hidden">
             <ul>
               {group.players.map((player) => (
-                <SquadRow key={player.id} player={player} />
+                <SquadRow key={player.id} player={player} pageId={playerPages?.get(player.id)} />
               ))}
             </ul>
           </UiCard>
@@ -78,7 +88,7 @@ export function ClubSquad({ club, squad }: { club: Club; squad: SectionData<Squa
   );
 }
 
-function SquadRow({ player }: { player: SquadPlayer }) {
+function SquadRow({ player, pageId }: { player: SquadPlayer; pageId?: string }) {
   const { t } = useI18n();
   return (
     <li
@@ -116,7 +126,17 @@ function SquadRow({ player }: { player: SquadPlayer }) {
           ui.tone.default,
         )}
       >
-        {player.name}
+        {pageId ? (
+          <Link
+            to="/fantasy/players/$playerId"
+            params={{ playerId: pageId }}
+            className="hover:underline focus-visible:underline"
+          >
+            {player.name}
+          </Link>
+        ) : (
+          player.name
+        )}
       </span>
       {player.role === "captain" ? (
         <UiBadge tone="outline">{t("club.squad.captain")}</UiBadge>

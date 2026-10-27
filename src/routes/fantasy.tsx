@@ -3,6 +3,8 @@ import { useEffect } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { FANTASY_PLAYER_ROUTE_ID, fantasyShownCopy, shownHeadTitle } from "@/lib/fantasy-meta";
+import { findClub } from "@/components/fantasy/club-identity";
+import { clubSearchName } from "@/lib/seo-titles";
 
 export const Route = createFileRoute("/fantasy")({
   head: () => ({
@@ -51,7 +53,7 @@ export const Route = createFileRoute("/fantasy")({
  * title is enough to follow for both.
  */
 function FantasyLayout() {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const routeId = useRouterState({ select: (state) => state.matches.at(-1)?.routeId });
   const player = useRouterState({
     select: (state) => {
@@ -59,8 +61,35 @@ function FantasyLayout() {
       return shown?.routeId === FANTASY_PLAYER_ROUTE_ID ? shown.loaderData?.player.name : undefined;
     },
   });
+  // The player's club and position, for the title "Name (Club) : ...".
+  const playerClub = useRouterState({
+    select: (state) => {
+      const shown = state.matches.at(-1);
+      if (shown?.routeId !== FANTASY_PLAYER_ROUTE_ID) return undefined;
+      const data = shown.loaderData;
+      return findClub(data?.clubs, data?.player.clubId);
+    },
+  });
+  const playerPosition = useRouterState({
+    select: (state) => {
+      const shown = state.matches.at(-1);
+      return shown?.routeId === FANTASY_PLAYER_ROUTE_ID
+        ? shown.loaderData?.player.position
+        : undefined;
+    },
+  });
   const headTitle = useRouterState({ select: (state) => shownHeadTitle(state.matches) });
-  const copy = fantasyShownCopy(routeId, player ? tr(player) : null, t);
+  const copy = fantasyShownCopy(
+    routeId,
+    player ? tr(player) : null,
+    t,
+    playerClub && playerPosition
+      ? {
+          name: lang === "ar" ? playerClub.name.ar : clubSearchName(playerClub),
+          position: playerPosition,
+        }
+      : null,
+  );
   const title = copy?.title;
   const description = copy?.description;
 
