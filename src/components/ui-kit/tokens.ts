@@ -100,6 +100,8 @@ export const UI_TOKENS = [
   "--ui-on-surface",
   "--ui-on-surface-muted",
   "--ui-on-surface-faint",
+  "--ui-on-surface-faint-text",
+  "--ui-control-edge",
   "--ui-rule",
   "--ui-rule-strong",
   "--ui-scrim",
@@ -139,6 +141,9 @@ export const UI_TOKENS = [
   "--ui-caution",
   "--ui-live",
   "--ui-live-fg",
+  "--ui-positive-text",
+  "--ui-negative-text",
+  "--ui-live-text",
   // the foreground each status fill carries
   "--ui-on-positive",
   "--ui-on-negative",
@@ -217,6 +222,8 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-on-surface",
   "--ui-on-surface-muted",
   "--ui-on-surface-faint",
+  "--ui-on-surface-faint-text",
+  "--ui-control-edge",
   "--ui-rule",
   "--ui-rule-strong",
   "--ui-scrim",
@@ -242,6 +249,9 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-caution",
   "--ui-live",
   "--ui-live-fg",
+  "--ui-positive-text",
+  "--ui-negative-text",
+  "--ui-live-text",
   "--ui-on-positive",
   "--ui-on-negative",
   "--ui-on-caution",
@@ -521,7 +531,12 @@ export const ui = {
   tone: {
     default: "text-[color:var(--ui-on-surface)]",
     muted: "text-[color:var(--ui-on-surface-muted)]",
-    faint: "text-[color:var(--ui-on-surface-faint)]",
+    /**
+     * Readable faint text (hints, dates, placeholders). The raw
+     * `--ui-on-surface-faint` fails 4.5:1 in the light theme; this is the text
+     * step of it (M4b). Disabled copy and decoration may still use the raw one.
+     */
+    faint: "text-[color:var(--ui-on-surface-faint-text)]",
     /** The brand foreground. Theme-correct — never `--ui-ink`, see BG-0083. */
     ink: "text-[color:var(--ui-ink-fg)]",
     onInk: "text-[color:var(--ui-on-ink)]",
@@ -549,10 +564,11 @@ export const ui = {
     onMesh: "text-[color:var(--ui-on-mesh)]",
     onMeshMuted: "text-[color:var(--ui-on-mesh-muted)]",
     onMeshFaint: "text-[color:var(--ui-on-mesh-faint)]",
-    positive: "text-[color:var(--ui-positive)]",
-    negative: "text-[color:var(--ui-negative)]",
-    /** A match in progress. The FOREGROUND step, never the fill (BG-0104). */
-    live: "text-[color:var(--ui-live-fg)]",
+    /** The text step of green and magenta (M4): 4.9:1 on their own tint. The fills keep `--ui-positive` / `--ui-negative`. */
+    positive: "text-[color:var(--ui-positive-text)]",
+    negative: "text-[color:var(--ui-negative-text)]",
+    /** A match in progress. The text step, never the fill (BG-0104, M4). */
+    live: "text-[color:var(--ui-live-text)]",
     /**
      * The foreground each status FILL carries. Never pick one yourself:
      * `--ui-positive` and `--ui-negative` invert across the themes — a

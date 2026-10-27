@@ -1074,9 +1074,9 @@ export function UiBadge({
         tone === "outline" && cn("bg-[color:var(--ui-surface)]", ui.rule.all, ui.tone.ink),
         tone === "action" && "text-[color:var(--ui-ink-deep)]",
         tone === "positive" &&
-          "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]",
+          "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive-text)]",
         tone === "negative" &&
-          "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]",
+          "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative-text)]",
         // Caution is the only status colour that cannot be a foreground: it is
         // a light amber in both themes and measured 1.78:1 as text. So unlike
         // its neighbours this tone is a FILL with `--ui-on-caution` on it —
@@ -1695,11 +1695,19 @@ function describedBy(own: string | undefined, ids: unknown[]): string | undefine
   );
 }
 
+/**
+ * Field text is never under 16px (M1): iOS Safari zooms the page when a
+ * focused field's text is smaller, and never zooms back, which is why the
+ * viewport used to be capped with `maximum-scale=1`. French body is 15px, so
+ * fields take `max(16px, body)`. Applied after `ui.text.body` so it wins.
+ */
+const FIELD_TEXT = cn(ui.text.body, "text-[length:max(16px,var(--ui-text-body))]");
+
 const FIELD_BOX = cn(
   "w-full min-h-[var(--ui-tap-min)] px-3",
   "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
   "border border-[color:var(--ui-rule)]",
-  "placeholder:text-[color:var(--ui-on-surface-faint)]",
+  "placeholder:text-[color:var(--ui-on-surface-faint-text)]",
   "disabled:opacity-50",
 );
 
@@ -1765,7 +1773,7 @@ export function UiInput({
       className={cn(
         FIELD_BOX,
         ui.radius.track,
-        ui.text.body,
+        FIELD_TEXT,
         ui.focus,
         error && "border-[color:var(--ui-negative)]",
         trailing && "pe-11",
@@ -1865,7 +1873,7 @@ export function UiSelect({
           className={cn(
             FIELD_BOX,
             ui.radius.track,
-            ui.text.body,
+            FIELD_TEXT,
             ui.focus,
             "appearance-none pe-9",
             error && "border-[color:var(--ui-negative)]",
@@ -2437,7 +2445,8 @@ export function UiPitchSurface({
   className?: string;
 }) {
   return (
-    <div className={cn("relative", className)}>
+    // `data-pitch-type-scale`: the pitch keeps its pre-M5 type steps (see styles.css).
+    <div data-pitch-type-scale className={cn("relative", className)}>
       <div
         className="relative overflow-hidden"
         style={{
@@ -2854,7 +2863,7 @@ export function UiTextarea({
           FIELD_BOX,
           "resize-y py-3",
           ui.radius.track,
-          ui.text.body,
+          FIELD_TEXT,
           ui.focus,
           error && "border-[color:var(--ui-negative)]",
           fieldClassName,
