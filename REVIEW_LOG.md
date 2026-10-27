@@ -299,3 +299,13 @@ Not answered: should the home team stay on the right in Arabic? It stays as toda
 - Not allowed: database, API, deploying, opening a pull request, merging.
 - AGENTS.md screen rules apply: write a brief first, take before/after screenshots in French and Arabic, and run the tests.
 
+**Builder round 1 – done, sent to the Tester.**
+- 9 commits on `claude/batch1-web-quick-wins`; all nine items built.
+- Tests: 10,890 pass, 1 known failure (Bun version).
+- 0 sideways scrolling.
+- Small coloured text now 6.0–6.2:1 contrast (was 3.9–4.0).
+- Legal links are now 44px tall.
+- The pitch and jerseys are identical (783 elements compared).
+
+Open concern sent to the Tester: the new player links load the whole Fantasy player list on match pages. The Tester must measure the extra data per page view.
+
