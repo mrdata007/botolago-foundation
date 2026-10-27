@@ -35,3 +35,38 @@ Started 2026-10-27. All five auditors ran at the same time.
 | 4. Mobile, Language & Access | Small screens (320–390px), tap target size, Arabic right-to-left, mixed text, contrast, font size, screen readers | Measured numbers, how to test Android without a phone |
 | 5. Fantasy Referee | Points maths, deadlines in Morocco time (incl. Ramadan time change), late stats, cheating risks for sponsored challenges | Worked scoring examples traced through the code |
 
+### Task 1 – Speed & Data
+
+**Round 1 – REVISE.** 13 findings plus a Sofascore call estimate. I checked the
+key ones against the code and they hold: the budget stop, the 15 manual
+GitHub jobs that spend Sofascore calls without counting them, the guard that
+switches itself off when the database read fails, Arabic readers getting a
+French page first, and the Fantasy check every 60 seconds. Sent back because:
+1. The monthly hard stop was given as two different numbers; say which one is in force.
+2. The 5,000-user load estimate assumed all 5,000 on the home page at once. Redo it with a realistic share online at the same time (normal evening and derby night).
+3. It guessed the hosting provider (Cloudflare) without proof; find out where the site is really served.
+4. No page-speed baseline (Lighthouse score, load time per page) yet. Phase 2 needs one.
+5. Add the plain statement that Sofascore calls do not grow with users.
+
+### Task 2 – Code Health & Security
+
+**Round 1 – REVISE.** No leaked keys, every table locked, admin checks done on
+the server, 1 failing test out of 10,870 (depends on the Bun version). Claims
+I re-checked held up. Sent back because:
+1. Photo storage (user avatars) was not checked.
+2. Of the 53 functions anyone can call without logging in, only one was read; read every one that returns user data and check for leaked emails or IDs.
+3. Security headers were guessed; measure them (3 public requests allowed).
+4. The local settings file has authenticator-app sign-in switched off; find out whether that reaches the live site.
+5. Report sign-up rate limits and whether any anti-bot check exists (needed for prize challenges).
+6. Check the public `/mcp` connection point: what it exposes and whether a faked header can mislead it.
+
+### Task 3 – UX & Design
+
+**Round 1 – REVISE.** 17 findings, seven places for sponsors, screenshots. Sent back because:
+1. Its biggest finding (no player page for fans) missed today's change that added a football profile to the player page. It must be restated.
+2. Tap counts were worked out from the code, not tapped through; they must be clicked for real.
+3. Three findings might come only from demo data; settle each from the code.
+4. Whether Google/Apple sign-in is on was asked instead of checked.
+5. The language-pop-up screenshot was lost; take it again.
+6. Confirm the main screens on the real site (5 public pages allowed).
+
