@@ -312,6 +312,7 @@ export const fr = {
   "club.tab.matches": "Matchs",
   "club.tab.standings": "Classement",
   "club.tab.squad": "Effectif",
+  "club.aliases": "Aussi appelé :",
   "club.key.played": "Joués",
   "club.key.goal_difference": "Diff.",
   "club.next_match": "Prochain match",
