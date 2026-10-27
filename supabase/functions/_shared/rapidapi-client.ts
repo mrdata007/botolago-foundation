@@ -282,8 +282,12 @@ export class RapidApiClient {
           signal: controller.signal,
         });
         counted = true;
+        // The guard keeps the last figure the run saw; the count gets only the
+        // figure this answer carried, so a reply without the headers never
+        // passes an earlier figure off as a fresh one.
+        const answered = readQuota(result.headers, { limit: null, remaining: null });
         this.lastQuota = readQuota(result.headers, this.lastQuota);
-        this.count(path, result.status, this.lastQuota);
+        this.count(path, result.status, answered);
         if (result.status === 429) {
           throw new RapidApiError("provider_rate_limited", `Rate limited on ${path}.`);
         }

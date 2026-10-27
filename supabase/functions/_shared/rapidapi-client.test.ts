@@ -314,4 +314,23 @@ describe("Edge RapidAPI client, the provider's own figure", () => {
     await api.getJson("matches/get-lineups?matchId=1");
     expect(seen).toHaveLength(2);
   });
+
+  test("a reply without quota headers reports no figure, while the guard keeps the earlier one", async () => {
+    const events: { quotaRemaining?: number; quotaLimit?: number }[] = [];
+    const replies = [withQuota("50"), new Response("{}")];
+    const api = new RapidApiClient({
+      host: SOFASCORE_RAPIDAPI_HOST,
+      key: KEY,
+      runtime,
+      minRemaining: 0,
+      budget: { used: 100, softLimit: 9600, hardLimit: 9990 },
+      onRequest: (event) => events.push(event),
+      fetch: async () => replies.shift()!,
+    });
+    await api.getJson("matches/get-incidents?matchId=1");
+    await api.getJson("matches/get-incidents?matchId=1");
+    expect(events[0]).toMatchObject({ quotaRemaining: 50, quotaLimit: 10000 });
+    expect(events[1]?.quotaRemaining).toBeUndefined();
+    expect(api.quota()).toEqual({ limit: 10000, remaining: 50 });
+  });
 });
