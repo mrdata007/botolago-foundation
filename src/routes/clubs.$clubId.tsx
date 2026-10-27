@@ -6,7 +6,7 @@ import {
   UNAVAILABLE,
   unavailableHeaders,
 } from "@/lib/page-availability";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
 import { ClubFollowButton } from "@/components/clubs/ClubFollowButton";
@@ -48,6 +48,7 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -66,6 +67,40 @@ interface ClubSearch {
 
 const isNotFound = (error: unknown) =>
   error instanceof FootballError && error.code === "team_not_found";
+
+/**
+ * The club's fixtures for the season the page opens on, in the server's HTML:
+ * the overview's next match and latest results are links to match pages, and
+ * they used to load only in the browser, so the HTML linked to none (SEO pass
+ * 1, 2026-10-27). Server only, within the render's budget (`@/lib/ssr-prefetch`);
+ * the queries are the page's own, handed to the browser by the router's
+ * dehydrate step so its first render draws the same rows. A read that fails
+ * leaves the section to its skeleton and its retry, as before: the club
+ * itself decides the page's 404 and 503, not its fixtures.
+ */
+async function prefetchClubFixtures(
+  queryClient: QueryClient,
+  clubId: string,
+  requestedSeasonId: string | undefined,
+) {
+  await prefetchForSsr(queryClient, [
+    {
+      queryKey: ["football", "seasons", "fr"],
+      queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+    },
+  ]);
+  const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+  if (!seasons) return;
+  // The season the page works out for itself: the one in the URL, else the current one.
+  const season =
+    seasons.find((candidate) => candidate.id === requestedSeasonId) ?? defaultSeason(seasons);
+  await prefetchForSsr(queryClient, [
+    {
+      queryKey: ["football", "club-matches", clubId, season?.id ?? "none", "fr"],
+      queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, "fr"),
+    },
+  ]);
+}
 
 export const Route = createFileRoute("/clubs/$clubId")({
   validateSearch: (search: Record<string, unknown>): ClubSearch => {
@@ -87,7 +122,8 @@ export const Route = createFileRoute("/clubs/$clubId")({
    * `@/lib/page-availability`); both used to answer 200, the first with an
    * indexable "Club introuvable".
    */
-  loader: async ({ params, context }) => {
+  loaderDeps: ({ search }) => ({ season: search.season }),
+  loader: async ({ params, context, deps }) => {
     if (!UUID.test(params.clubId)) throw notFound();
     try {
       const queryKey = ["football", "club", params.clubId, "fr"];
@@ -96,6 +132,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
         queryFn: () => footballService.getClub(params.clubId, "fr"),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
+      await prefetchClubFixtures(context.queryClient, params.clubId, deps.season);
       return { club, fetchedAt };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
