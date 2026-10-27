@@ -49,7 +49,19 @@ export const Route = createFileRoute("/curva")({
  * faces start a whole hydration earlier than an effect would start them. Only this component
  * refers to it, so it travels with the layout's lazy chunk and with the section off nothing runs.
  */
-const cardRendererStarted: true = (preloadCardRenderer(), true);
+const cardRendererStarted: true = (startCardRendererOnCurva(), true);
+
+/**
+ * Only while the address is Curva's. Every page warms the other sections' code once it has loaded
+ * (`SectionWarmup`), which evaluates this module on Home and everywhere else too, and then the
+ * renderer's chunk and all five card faces (Arabic ones included, in a French page) were fetched
+ * for a visitor who never opened Curva. From another page the layout's own effect below starts
+ * them when Curva is really shown.
+ */
+function startCardRendererOnCurva(): void {
+  if (typeof window === "undefined") return;
+  if (/^\/curva(\/|$)/.test(window.location.pathname)) preloadCardRenderer();
+}
 
 function CurvaLayout() {
   const { status } = useAuth();
