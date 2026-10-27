@@ -96,6 +96,18 @@ no anti-bot check.
 - Dropped as demo-only: three findings (a pre-filled squad for visitors, odd league names, the Arabic slider dots).
 - Google/Apple sign-in buttons are switched on in the code; whether they work on the live site depends on your Supabase settings.
 
+### Task 4 – Mobile, Language & Access
+
+**Round 1 – APPROVED.** 9 findings, all measured (sizes, contrast, tap areas)
+rather than guessed, at 320/360/390px in French and Arabic. I re-checked the
+pinch-zoom block, the French-first page and the 11px text size in the code.
+- High: pinch-zoom is switched off; Arabic readers get a French page first.
+- Medium: French tab titles in Arabic, low-contrast green/magenta chips, a lot of tiny text, and a possible problem on old Android phones.
+- Fine: no sideways scrolling, right-to-left layout solid, no unlabelled buttons.
+- Includes a step-by-step way to test Android without a phone.
+
+Overlap with Speed (French-first page for Arabic readers): same cause, merged into one item. No conflict.
+
 ### Task 5 – Fantasy Referee
 
 **Round 1 – REVISE (small).** 16 findings and 10 worked scoring examples, run
@@ -178,4 +190,17 @@ SportAPI stays on its free plan as a spare.
 - Fix them on a separate branch, `claude/rapidapi-call-reduction`, with tests.
 - Not allowed: touching the database, calling any provider, deploying, changing Fantasy scoring or screens, or building BSD.
 - Next: a separate Tester checks the work, then the Lead reviews it, then the owner decides.
+
+### Live call-counter check (27 Oct, read-only, approved by the owner)
+
+Only SELECT queries; nothing written.
+- RapidAPI refused 8 of 8 calls today: the allowance is used up.
+- 24–26 Oct: 6,795 calls. Re-downloading line-ups, timeline and stats during live matches accounts for about 5,800 of the month's calls.
+- These numbers were passed to the Builder as evidence.
+
+## Phase 1 result
+
+All five reports were approved, in 1–2 rounds each. The merged report is in
+`docs/review/PHASE1_AUDIT_REPORT_2026-10-27.md`, and the five full reports are
+in `docs/review/phase1-2026-10-27/`. Waiting for the owner's approval before Phase 2.
 
