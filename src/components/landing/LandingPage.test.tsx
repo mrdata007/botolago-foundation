@@ -123,9 +123,9 @@ describe("LandingPage (server render)", () => {
     expect(block).toContain("onClick={onLeave}");
   });
 
-  it("answers the objections in five native disclosures", async () => {
+  it("answers the questions in native disclosures (the FAQ list, prizes included)", async () => {
     const html = await render();
-    expect(html.match(/<details/g) ?? []).toHaveLength(5);
+    expect(html.match(/<details/g) ?? []).toHaveLength(10);
   });
 });
 
