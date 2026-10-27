@@ -60,6 +60,15 @@ I re-checked held up. Sent back because:
 5. Report sign-up rate limits and whether any anti-bot check exists (needed for prize challenges).
 6. Check the public `/mcp` connection point: what it exposes and whether a faked header can mislead it.
 
+**Round 2 – APPROVED.** All six points fixed, with proof. I re-checked two
+myself: each user can reach only their own photo in storage, and sign-up sends
+no anti-bot check.
+- Storage and public functions: no personal data leaks. Leaderboards show only team names or partly hidden usernames to people who are not logged in.
+- Security headers measured on the live site: most protections are in place; one extra browser protection is missing (Low).
+- The authenticator-app setting in the local file never reaches the live site. You still need to confirm it in the Supabase dashboard.
+- New: sign-up has no anti-bot check (Medium for prize challenges). This agrees with the Fantasy referee's finding; they are merged as one item, with no conflict between them.
+- The site is served through Cloudflare (measured), which settles the hosting question.
+
 ### Task 3 – UX & Design
 
 **Round 1 – REVISE.** 17 findings, seven places for sponsors, screenshots. Sent back because:
