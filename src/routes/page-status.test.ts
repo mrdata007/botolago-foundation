@@ -107,10 +107,14 @@ describe("detail pages tell crawlers the truth", () => {
     expect(head.meta?.find((tag) => "title" in tag)?.title).toBe("Match Botola Pro — BotolaGO");
   });
 
-  test("a club id that is not a club's, or an unknown club, is a 404; a failed read a 503", async () => {
+  test("an unknown club is a 404; a failed read a 503", async () => {
+    // A club is also addressed by its slug now (`@/lib/club-slug`), which only
+    // the catalogue can resolve: with the catalogue unreadable, a ref that is
+    // not an id may be a real club's slug, so it is a 503, not a 404.
     expect(
-      isNotFound((await outcome(ClubRoute, { clubId: "999999" }, new Error("unused"))).thrown),
-    ).toBe(true);
+      (await outcome(ClubRoute, { clubId: "999999" }, new Error("TimeoutError: signal timed out")))
+        .data,
+    ).toEqual(UNAVAILABLE);
     expect(
       isNotFound(
         (await outcome(ClubRoute, { clubId: ID }, new FootballError("team_not_found", "gone")))

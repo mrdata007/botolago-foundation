@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { clubPathParam } from "@/lib/club-slug";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { Logo } from "@/components/brand/Logo";
@@ -408,7 +409,7 @@ function AuthenticatedProfile({
                   <ClubCrest club={club} />
                   <Link
                     to="/clubs/$clubId"
-                    params={{ clubId: club.id }}
+                    params={{ clubId: clubPathParam(club) }}
                     className={cn(
                       "w-full truncate",
                       ui.text.meta,

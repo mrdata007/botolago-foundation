@@ -1,5 +1,11 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  isRedirect,
+  notFound,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import {
   isMissingContent,
   isUnavailable,
@@ -37,6 +43,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
 import { clubSearchName, clubSeoDescription, clubSeoTitle } from "@/lib/seo-titles";
+import { buildClubSlugMap, clubPath, isClubUuid, resolveClubRef } from "@/lib/club-slug";
 import { useBackTo } from "@/lib/back-navigation";
 import {
   clubSeasonAbsent,
@@ -118,31 +125,63 @@ export const Route = createFileRoute("/clubs/$clubId")({
    * serialized to the browser and the query cache is not, so the page seeds
    * its query with it (`initialData`) and both first renders agree.
    *
-   * An unknown or malformed club id is a 404 and a failed read a 503 (see
+   * The address segment is a readable slug (`rsb-berkane`) or a club id (the
+   * old addresses). Either is resolved against the French club catalogue
+   * (`@/lib/club-slug`); an id that has a slug answers a 301 to it, so one
+   * address per club is indexed.
+   *
+   * An unknown club is a 404 and a failed read a 503 (see
    * `@/lib/page-availability`); both used to answer 200, the first with an
    * indexable "Club introuvable".
    */
   loaderDeps: ({ search }) => ({ season: search.season }),
-  loader: async ({ params, context, deps }) => {
-    if (!UUID.test(params.clubId)) throw notFound();
+  loader: async ({ params, context, location, deps }) => {
+    const ref = params.clubId;
+    let catalogue: readonly Club[] | undefined;
     try {
-      const queryKey = ["football", "club", params.clubId, "fr"];
+      catalogue = await context.queryClient.ensureQueryData({
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: () => footballService.getClubs("fr"),
+      });
+    } catch {
+      // Without the catalogue only an id can be served, at its own address.
+      if (!isClubUuid(ref)) return UNAVAILABLE;
+    }
+    const known = catalogue ? resolveClubRef(ref, catalogue) : undefined;
+    if (!known && !isClubUuid(ref)) throw notFound();
+    const slug = known && catalogue ? buildClubSlugMap(catalogue).get(known.id) : undefined;
+    if (slug && isClubUuid(ref)) {
+      throw redirect({
+        to: "/clubs/$clubId",
+        params: { clubId: slug },
+        search: location.search,
+        statusCode: 301,
+      });
+    }
+    const id = known?.id ?? ref;
+    try {
+      const queryKey = ["football", "club", id, "fr"];
       const club = await context.queryClient.ensureQueryData({
         queryKey,
-        queryFn: () => footballService.getClub(params.clubId, "fr"),
+        queryFn: () => footballService.getClub(id, "fr"),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      await prefetchClubFixtures(context.queryClient, params.clubId, deps.season);
-      return { club, fetchedAt };
+      await prefetchClubFixtures(context.queryClient, id, deps.season);
+      return { club, fetchedAt, canonicalRef: slug ?? id };
     } catch (error) {
+      if (isRedirect(error)) throw error;
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
     }
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
-    const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
     const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
+    // The slug address when the club has one, else the id it was asked for.
+    const canonicalPath = clubPath(
+      (isUnavailable(loaderData) ? undefined : loaderData?.canonicalRef) ?? params.clubId,
+    );
+    const canonical = `${PUBLIC_SITE_ORIGIN}${canonicalPath}`;
     const name = club ? clubSearchName(club) : undefined;
     // Short name first, the words people search with (`@/lib/seo-titles`).
     const title = club ? clubSeoTitle(club) : "Club de Botola Pro — BotolaGO";
@@ -184,7 +223,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
                   breadcrumbJsonLd([
                     { name: "Accueil", path: "/" },
                     { name: "Clubs", path: "/clubs" },
-                    { name, path: `/clubs/${encodeURIComponent(params.clubId)}` },
+                    { name, path: canonicalPath },
                   ]),
                 ),
               },
@@ -216,7 +255,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
  * opened.
  */
 function ClubPage() {
-  const { clubId } = Route.useParams();
+  const { clubId: ref } = Route.useParams();
   const search = Route.useSearch();
   const tab: ClubTabKey = search.tab ?? "overview";
   const loaded = Route.useLoaderData();
@@ -225,6 +264,8 @@ function ClubPage() {
   const { t, tr, lang } = useI18n();
   const goBack = useBackTo("/clubs");
   const headingId = useId();
+  // The address holds a slug or an id; every query is keyed by the id.
+  const clubId = loaderData?.club.id ?? ref;
   const validId = UUID.test(clubId);
 
   const serverClub = lang === "fr" && loaderData?.club.id === clubId ? loaderData.club : undefined;
@@ -438,7 +479,7 @@ function ClubPage() {
             }
             standingsLink={{
               to: "/clubs/$clubId",
-              params: { clubId },
+              params: { clubId: ref },
               search: { ...search, tab: "standings" },
             }}
           />

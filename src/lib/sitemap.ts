@@ -1,4 +1,5 @@
 import { buildCanonicalArticleUrl, PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { buildClubSlugMap, clubPath } from "@/lib/club-slug";
 import { PEPITES_PROMOTED, PRIZES_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 
 export interface SitemapNewsEntry {
@@ -249,12 +250,23 @@ export function buildStaticSitemapXml(options: { readonly newsEnabled: boolean }
   ]);
 }
 
-/** Each club page once, at its canonical URL. */
-export function buildClubsSitemapXml(clubIds: readonly string[]): string {
+/**
+ * Each club page once, at its canonical URL: the readable slug address
+ * (`/clubs/rsb-berkane`, see `@/lib/club-slug`), else the id for a club whose
+ * French names have no Latin letters. `clubs` must be the French catalogue.
+ */
+export function buildClubsSitemapXml(
+  clubs: readonly {
+    readonly id: string;
+    readonly name: { readonly fr: string };
+    readonly shortName: { readonly fr: string };
+  }[],
+): string {
+  const slugs = buildClubSlugMap(clubs);
   return urlset(
-    [...new Set(clubIds)]
+    [...new Set(clubs.map((club) => slugs.get(club.id) ?? club.id))]
       .slice(0, SITEMAP_CLUB_LIMIT)
-      .map((id) => pageUrl(`/clubs/${encodeURIComponent(id)}`)),
+      .map((ref) => pageUrl(clubPath(ref))),
   );
 }
 

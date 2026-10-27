@@ -25,6 +25,7 @@ import {
   type LeagueTableRow,
   type TableResult,
 } from "@/lib/league-table";
+import { clubSlug } from "@/lib/club-slug";
 import { resolveMediaUrl } from "@/lib/media";
 import { matchDayKey } from "@/lib/match-kickoff";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
@@ -137,6 +138,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   return {
     id: team.id,
     slug: team.slug,
+    pathSlug: clubSlug({ shortName: { fr: team.shortName }, name: { fr: team.name } }),
     name: { fr: team.name, ar: team.name },
     shortName: { fr: team.shortName, ar: team.shortName },
     city: { fr: team.city ?? "", ar: team.city ?? "" },

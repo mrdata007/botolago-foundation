@@ -50,9 +50,7 @@ export const Route = createFileRoute("/sitemaps/$file")({
           case "clubs":
             try {
               const directory = await footballService.getClubDirectory("fr");
-              return sitemapXmlResponse(
-                buildClubsSitemapXml(directory.clubs.map((club) => club.id)),
-              );
+              return sitemapXmlResponse(buildClubsSitemapXml(directory.clubs));
             } catch {
               return sitemapUnavailable();
             }
