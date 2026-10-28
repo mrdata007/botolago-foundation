@@ -30,6 +30,7 @@ import { EventTimeline } from "@/components/matches/EventTimeline";
 import { GoalMoment } from "@/components/matches/GoalMoment";
 import { HeadToHead } from "@/components/matches/HeadToHead";
 import { LineupsView } from "@/components/matches/LineupsView";
+import { PreMatchPanel } from "@/components/matches/PreMatchPanel";
 import { LiveFreshnessNote } from "@/components/matches/LiveFreshnessNote";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import {
@@ -422,6 +423,19 @@ function MatchDetailPage() {
       placement="inline"
     />
   );
+  // "Avant-match" (a match not yet started): on a phone it leads the Résumé,
+  // the prediction right after it; on a desktop it takes the timeline's column.
+  const preMatchFirst = phase === "upcoming" && !wideLayout;
+  const preMatch = (
+    <PreMatch
+      season={season}
+      match={match}
+      home={home}
+      away={away}
+      palettes={palettes}
+      meetings={h2h}
+    />
+  );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
   const presented = presentScore(match);
   // The statistics under the timeline, once the match has started: what the
@@ -551,34 +565,49 @@ function MatchDetailPage() {
                 {/* A match still to be played leads with the prediction: it is
                     the one thing to do here. Once it is on, the timeline
                     leads and the prediction follows it. */}
+                {preMatchFirst ? <div className="mb-4">{preMatch}</div> : null}
                 {predictionInline && match.status === "scheduled" ? (
                   <div className="mb-4">{prediction}</div>
                 ) : null}
                 <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-                  {failed("timeline") ? (
-                    sectionError(t("matches.detail.section_failed.timeline"))
-                  ) : (
-                    <EventTimeline
-                      events={live.events}
-                      home={home}
-                      away={away}
-                      palettes={palettes}
-                      lineups={lineups}
-                      isLive={isLive}
-                      phase={phase}
-                      halfTime={
-                        match.halfTimeHomeScore !== undefined &&
-                        match.halfTimeAwayScore !== undefined
-                          ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
-                          : undefined
-                      }
-                      fullTime={
-                        presented.home !== null && presented.away !== null
-                          ? { home: presented.home, away: presented.away }
-                          : undefined
-                      }
-                    />
-                  )}
+                  <div className="min-w-0">
+                    {phase === "upcoming" ? (
+                      // Before kick-off there are no events to list: the page
+                      // says what it knows about the match instead of an empty
+                      // box. Any other phase keeps the timeline and its own
+                      // phase-aware wording. On a phone it leads the panel
+                      // (above), so only a desktop draws it here.
+                      preMatchFirst ? null : (
+                        preMatch
+                      )
+                    ) : failed("timeline") ? (
+                      sectionError(t("matches.detail.section_failed.timeline"))
+                    ) : (
+                      <EventTimeline
+                        events={live.events}
+                        home={home}
+                        away={away}
+                        palettes={palettes}
+                        lineups={lineups}
+                        isLive={isLive}
+                        phase={phase}
+                        halfTime={
+                          match.halfTimeHomeScore !== undefined &&
+                          match.halfTimeAwayScore !== undefined
+                            ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
+                            : undefined
+                        }
+                        fullTime={
+                          presented.home !== null && presented.away !== null
+                            ? { home: presented.home, away: presented.away }
+                            : undefined
+                        }
+                      />
+                    )}
+                    {/* Beside the line-ups the note sits under the timeline,
+                      in its own column, not under both. */}
+                    {wideLayout && statsNote ? <div className="mt-4">{statsNote}</div> : null}
+                  </div>
                   {wideLayout ? (
                     <LineupsView
                       lineups={lineups}
@@ -592,7 +621,7 @@ function MatchDetailPage() {
                     />
                   ) : null}
                 </div>
-                {statsNote ? <div className="mt-4">{statsNote}</div> : null}
+                {!wideLayout && statsNote ? <div className="mt-4">{statsNote}</div> : null}
                 {predictionInline && match.status !== "scheduled" ? (
                   <div className="mt-4">{prediction}</div>
                 ) : null}
@@ -716,6 +745,54 @@ function HeadToHeadTab({ season, ...rest }: HeadToHeadTabProps) {
 }
 
 /**
+ * The season's table, as the Classement tab reads it, with its key and its
+ * function, so the Classement tab, the "Face à face" tab and the "Avant-match"
+ * module share one cache entry and one ranking.
+ *
+ * A switch of language puts the whole page back to loading (the detail is
+ * read again), so a reader's tab comes back new, with no previous read of its
+ * own to show. Until this language's table is in, the other language's copy of
+ * the same one stands in, from the cache: the ranks are the same in both
+ * (`buildStandings`), the clubs' names on the rows are the match's, and the key
+ * never names another season.
+ */
+function useSeasonStandings(season: MatchSeason) {
+  const { lang } = useI18n();
+  const queryClient = useQueryClient();
+  const other = lang === "ar" ? "fr" : "ar";
+  return useQuery({
+    queryKey: ["football", "standings", season.id, lang],
+    queryFn: () => footballService.getStandings(season, lang),
+    placeholderData: () =>
+      queryClient.getQueryData<FootballStandings>(["football", "standings", season.id, other]),
+  });
+}
+
+/**
+ * The "Avant-match" module of a match still to be played. Only a league's match
+ * has a table to read (`hasLeagueTable`); any other competition shows the
+ * module with the kick-off and the last meeting, and dashes for the places. The
+ * table is read here, in the browser, as the "Face à face" tab reads it: the
+ * server render and the first browser render both hold the dashes.
+ */
+function PreMatch({
+  season,
+  ...rest
+}: { season: MatchSeason | undefined } & Omit<ComponentProps<typeof PreMatchPanel>, "standings">) {
+  if (!season || !hasLeagueTable(season)) return <PreMatchPanel {...rest} />;
+  return <LeaguePreMatch season={season} {...rest} />;
+}
+
+function LeaguePreMatch({
+  season,
+  ...rest
+}: { season: MatchSeason } & Omit<ComponentProps<typeof PreMatchPanel>, "standings">) {
+  const standingsQ = useSeasonStandings(season);
+  // A failed or empty read is a dash, not a 0 and not a made-up place.
+  return <PreMatchPanel {...rest} standings={standingsQ.data?.overall} />;
+}
+
+/**
  * A league match's "Face à face" tab. The table is the Classement tab's
  * query, with its key and its function, so the two share one cache entry and
  * one ranking: the same tie order, shared ranks and provisional note. Only
@@ -734,19 +811,8 @@ function LeagueHeadToHeadTab({
 }: HeadToHeadTabProps) {
   const { lang } = useI18n();
   const queryClient = useQueryClient();
-  // A switch of language puts the whole page back to loading (the detail is
-  // read again), so this tab comes back new, with no previous read of its
-  // own to show. Until this language's table and season list are in, the
-  // other language's copies of the same ones stand in, from the cache: the
-  // ranks are the same in both (`buildStandings`), the clubs' names on the
-  // rows are the match's, and the key never names another season.
   const other = lang === "ar" ? "fr" : "ar";
-  const standingsQ = useQuery({
-    queryKey: ["football", "standings", season.id, lang],
-    queryFn: () => footballService.getStandings(season, lang),
-    placeholderData: () =>
-      queryClient.getQueryData<FootballStandings>(["football", "standings", season.id, other]),
-  });
+  const standingsQ = useSeasonStandings(season);
   // The season's status says whether a table worked out from the results is
   // provisional or, the season over, unofficial. The detail cannot say it
   // (`MatchSeason`), so it comes from the season list; when that read fails,

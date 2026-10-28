@@ -27,8 +27,10 @@ const PERIOD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set(["period_start", "
  * A home event reads icon · text on the inline start with the minute pill in
  * the middle; an away event mirrors it — text · icon on the inline end — so
  * each side's events sit on its own side of the column, and Arabic flips both
- * with no extra rule. A goal is louder (heavier name, a wash of its club's
- * colour behind the row); a card is a small shape. The colours are the page's
+ * with no extra rule. A goal is the loudest row (the heaviest
+ * weight, its club's edge bar, a bigger ball, its minute in a pill of its club colour; never a wash
+ * of the club colour, which is pink for a red club); a card is a small shape
+ * on a short, quiet row. The colours are the page's
  * resolved pair (`palettes`), so a clash-resolved away club is the same colour
  * here as in the header.
  *
@@ -134,8 +136,11 @@ export function EventTimeline({
   if (phase === "finished") items.push({ kind: "full", key: "ft" });
   items.reverse();
 
+  // One element, not a fragment: the Résumé panel puts this and the line-ups in
+  // a two-column grid, and a fragment's two children (the "Moments forts" row,
+  // then the list) became two grid items, which left the left column empty.
   return (
-    <>
+    <div className="min-w-0">
       {substitutionCount > 0 ? (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <UiChip selected={highlights} onClick={() => setHighlights((on) => !on)}>
@@ -164,7 +169,7 @@ export function EventTimeline({
           if (item.kind === "full") {
             return (
               <li key={item.key}>
-                <Separator label={t("matches.status.ft")} score={fullTime} />
+                <Separator final label={t("matches.status.ft")} score={fullTime} />
               </li>
             );
           }
@@ -196,7 +201,7 @@ export function EventTimeline({
           );
         })}
       </ol>
-    </>
+    </div>
   );
 }
 
@@ -224,14 +229,23 @@ function showSubstitutionsLabel(
 /** "MI-TEMPS · 1 – 0" or "TERMINÉ · 1 – 1" as a quiet band across the list, the
  * score only when the data has one. Plain text, not `role="separator"`, whose
  * content assistive tech does not read. */
-function Separator({ label, score }: { label: string; score?: { home: number; away: number } }) {
+function Separator({
+  label,
+  score,
+  final = false,
+}: {
+  label: string;
+  score?: { home: number; away: number };
+  /** The full-time band: navy, the anchor of a finished match's list. */
+  final?: boolean;
+}) {
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-1.5 px-3 py-1.5",
-        ui.surface.sunken,
-        ui.text.label,
-        ui.tone.muted,
+        "flex items-center justify-center gap-1.5 px-3",
+        final
+          ? cn("py-2.5", ui.surface.inkPlain, ui.text.label)
+          : cn("py-1.5", ui.surface.sunken, ui.text.label, ui.tone.muted),
       )}
     >
       {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
@@ -300,7 +314,8 @@ function typeLabel(t: (key: TranslationKey) => string, type: MatchEvent["type"])
 function EventGlyph({ event }: { event: MatchEvent }) {
   const glyph = "h-4 w-4 shrink-0";
   if (GOAL_EVENT_TYPES.has(event.type)) {
-    return <BallIcon className={cn(glyph, ui.tone.club)} />;
+    // The biggest glyph of the list, in the club's own text colour (≥ 4.5:1).
+    return <BallIcon className={cn("h-5 w-5 shrink-0", ui.tone.club)} />;
   }
   if (CARD_TYPES.has(event.type)) {
     return (
@@ -388,11 +403,21 @@ function EventRow({
 
   const away = event.side === "away";
   const text = (
-    <p className={cn("min-w-0 break-words", ui.text.secondary, away && "text-end")}>
+    <p
+      className={cn(
+        "min-w-0 break-words",
+        // A goal is read first: the heaviest weight, on the taller row. A card
+        // is an aside: the small step, in the body weight.
+        isCard ? ui.text.meta : ui.text.secondary,
+        away && "text-end",
+      )}
+    >
       {isCard && player ? <span className="sr-only">{label} · </span> : null}
       <span
         className={cn(
-          isGoal ? "[font-weight:var(--ui-weight-heavy)]" : "[font-weight:var(--ui-weight-strong)]",
+          isGoal
+            ? cn("[font-weight:var(--ui-weight-hero)]", ui.tone.club)
+            : "[font-weight:var(--ui-weight-strong)]",
           isCard && "[font-weight:var(--ui-weight-body)]",
         )}
       >
@@ -405,7 +430,7 @@ function EventRow({
       ) : null}
     </p>
   );
-  // The minute sits in a pill in the middle of the column: navy for a goal
+  // The minute sits in a pill in the middle of the column: the scoring club's colour for a goal
   // or a penalty, light grey for a card and everything else.
   const pill = (
     <span
@@ -415,7 +440,7 @@ function EventRow({
         ui.text.meta,
         ui.text.tabular,
         "[font-weight:var(--ui-weight-heavy)]",
-        isGoal ? ui.surface.inkPlain : ui.surface.sunken,
+        isGoal ? ui.club.fill : ui.surface.sunken,
       )}
     >
       <bdi>
@@ -445,10 +470,19 @@ function EventRow({
     <div
       {...clubStyle(palette)}
       className={cn(
-        "grid min-h-11 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 px-2.5 py-1.5",
-        isGoal && "bg-[color:var(--ui-club-tint)]",
+        "relative grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 px-2.5",
+        isGoal ? "min-h-14 py-2.5" : isCard ? "min-h-9 py-1" : "min-h-11 py-1.5",
       )}
     >
+      {/* A goal is marked by its club's edge bar on the club's own side (the
+          device the tables use), not by a wash of the club colour: a red
+          club's wash is pink and reads as bad news. */}
+      {isGoal ? (
+        <span
+          aria-hidden
+          className={cn("absolute inset-y-0 w-1", away ? "end-0" : "start-0", ui.club.edgeFill)}
+        />
+      ) : null}
       {away ? (
         <>
           <span />

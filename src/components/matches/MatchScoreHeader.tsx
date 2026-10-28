@@ -530,9 +530,10 @@ function ScoreEvents({
           type="button"
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}
-          aria-label={open ? t("matches.detail.events_hide") : t("matches.detail.events_show")}
           className={cn(
-            "group mx-auto grid place-items-center",
+            // A labelled control: the words say what the + opens, and
+            // `aria-expanded` says whether it is open.
+            "group mx-auto inline-flex items-center gap-2 px-2",
             ui.radius.full,
             ui.space.tap,
             ui.focus,
@@ -540,7 +541,7 @@ function ScoreEvents({
         >
           <span
             className={cn(
-              "grid h-8 w-8 place-items-center transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+              "grid h-8 w-8 shrink-0 place-items-center transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
               ui.radius.full,
               ui.surface.sunken,
               ui.tone.ink,
@@ -554,6 +555,13 @@ function ScoreEvents({
                 open && "rotate-45",
               )}
             />
+          </span>
+          <span className={cn(ui.text.meta, ui.tone.ink, "[font-weight:var(--ui-weight-heavy)]")}>
+            {hasAssists && cards.length > 0
+              ? t("matches.detail.events_more_both")
+              : hasAssists
+                ? t("matches.detail.events_more_assists")
+                : t("matches.detail.cards")}
           </span>
         </button>
       )}
