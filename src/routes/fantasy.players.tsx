@@ -127,6 +127,27 @@ const compareForm = (a: number | null, b: number | null, dir: SortDir) => {
 
 const compareNumber = (a: number, b: number, dir: SortDir) => (dir === "desc" ? b - a : a - b);
 
+/**
+ * Position colours, screen-local (2026-10-28 "more life" brief, item 6). Each
+ * fill is paired with the foreground the design system already measures on
+ * it, in both themes: amber carries ink-deep (`--ui-on-caution`), the two
+ * action-gradient stops (spring, sky) are light in both themes and carry
+ * ink-deep, and the pink is `--ui-negative` with `--ui-on-negative`.
+ */
+const POS_SELECTED: Record<Position, string> = {
+  GK: "bg-[color:var(--ui-caution)] text-[color:var(--ui-on-caution)]",
+  DEF: "bg-[color:var(--ui-accent-spring)] text-[color:var(--ui-ink-deep)]",
+  MID: "bg-[color:var(--ui-accent-sky)] text-[color:var(--ui-ink-deep)]",
+  FWD: "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-negative)]",
+};
+/** The same colour as a small decorative dot beside a row's position. */
+const POS_DOT: Record<Position, string> = {
+  GK: "bg-[color:var(--ui-caution)]",
+  DEF: "bg-[color:var(--ui-accent-spring)]",
+  MID: "bg-[color:var(--ui-accent-sky)]",
+  FWD: "bg-[color:var(--ui-negative)]",
+};
+
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
   // The router hands on the URL's own keys beside the validated ones, so the
@@ -374,7 +395,7 @@ function PlayersPage() {
             {positions.map((p) => (
               <UiChip
                 key={p}
-                className="justify-center px-1"
+                className={cn("justify-center px-1", pos === p && POS_SELECTED[p])}
                 selected={pos === p}
                 // Tapping the selected chip clears it.
                 onClick={() => setPos(pos === p ? "" : p)}
@@ -663,10 +684,16 @@ function PlayerListRow({
       style={clubColours?.style}
       // The hairline BEFORE the edge: `ui.rule.block` sets the colour of every
       // side, and after the edge it would repaint the club bar in the rule.
+      // The club edge at 6px (was 4) and a faint wash of the same colour
+      // fading in from it, mirrored for Arabic: the club reads at a glance
+      // without the row turning into a coloured band.
       className={cn(
         "flex items-center gap-3 py-2.5 pe-3 ps-3",
         !last && ui.rule.block,
         ui.edge.start,
+        "border-s-[6px]",
+        "ltr:bg-[linear-gradient(to_right,color-mix(in_oklab,var(--ui-club-edge)_13%,transparent),transparent_42%)]",
+        "rtl:bg-[linear-gradient(to_left,color-mix(in_oklab,var(--ui-club-edge)_13%,transparent),transparent_42%)]",
       )}
     >
       <PlayerKitDisc club={club} kitPattern={player.kitPattern} imageUrl={player.jerseyImageUrl} />
@@ -697,19 +724,34 @@ function PlayerListRow({
             {tr(player.name)}
           </span>
           {player.status !== "available" ? (
-            <PlayerStatusBadge status={player.status} className="shrink-0" />
+            <PlayerStatusBadge
+              status={player.status}
+              // Injured is a bright pill here: the full negative fill with
+              // its measured foreground, rather than the quiet tint.
+              className={cn(
+                "shrink-0",
+                player.status === "injured" &&
+                  "bg-[color:var(--ui-negative)] text-[color:var(--ui-on-negative)]",
+              )}
+            />
           ) : null}
         </span>
         <span
           className={cn(
-            "truncate",
+            "flex min-w-0 items-center gap-1.5",
             ui.text.meta,
             "[font-weight:var(--ui-weight-strong)]",
             ui.tone.muted,
           )}
         >
-          {t(`player.pos.${player.position}` as TranslationKey)}
-          {club ? ` · ${clubLabel(club, tr)}` : ""}
+          <span
+            aria-hidden
+            className={cn("h-2 w-2 shrink-0", ui.radius.full, POS_DOT[player.position])}
+          />
+          <span className="truncate">
+            {t(`player.pos.${player.position}` as TranslationKey)}
+            {club ? ` · ${clubLabel(club, tr)}` : ""}
+          </span>
         </span>
         {/* Two items that never break inside: with the Arabic +1px the line
             wrapped mid-item at 320px ("المستوى الأخير" / "8,6 ·" / "الاختيار"). The row
@@ -724,9 +766,19 @@ function PlayerListRow({
         </span>
       </Link>
 
-      <span className="flex shrink-0 flex-col items-end">
-        <FantasyAmount value={player.price} className={cn(ui.stat.md, ui.tone.default)} />
-        <span className={cn(ui.text.meta, ui.tone.muted)}>
+      {/* Price over points on the action gradient (spring to sky, `to
+          bottom`, so nothing to mirror). Both stops are light in both themes;
+          ink-deep on them clears AA in each. */}
+      <span
+        data-player-figures=""
+        className={cn(
+          "flex min-w-[4.75rem] shrink-0 flex-col items-center px-2.5 py-1.5",
+          ui.radius.control,
+          "bg-[image:var(--ui-grad-action)] text-[color:var(--ui-ink-deep)]",
+        )}
+      >
+        <FantasyAmount value={player.price} className={ui.stat.md} />
+        <span className={ui.text.meta}>
           <bdi className={ui.stat.sm}>{nf.format(player.totalPoints)}</bdi>{" "}
           {pointsUnit(player.totalPoints, t)}
         </span>
@@ -745,6 +797,15 @@ function PlayerListRow({
       ) : (
         <UiIconButton
           variant={watched ? "ink" : "soft"}
+          // "+" sits on the action gradient; once watched it is the navy check.
+          className={
+            watched
+              ? undefined
+              : cn(
+                  "bg-[image:var(--ui-grad-action)] text-[color:var(--ui-ink-deep)]",
+                  ui.shadow.card,
+                )
+          }
           aria-pressed={watched}
           aria-label={watched ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")}
           aria-describedby={nameId}
