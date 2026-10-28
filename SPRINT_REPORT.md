@@ -193,19 +193,20 @@ Still needed:
 3. **iPhone deep links:** your Apple **Team ID** (Apple Developer > Membership details,
    10 characters). The bundle ID is already known from the app settings:
    `botolago.com`. Please confirm that is the one registered with Apple.
-4. **Approval to publish** Sprint 1, then Sprint 2, after you have tried the previews
-   (checklist below). Sprint 2's preview is on pull request #578, Sprint 1's on #573.
+4. **How you want to try the changes before they go live** (see the next section), then
+   **approval to publish** Sprint 1 (pull request #573), then Sprint 2 (#578).
 
 The step-by-step for 1–3 is also in `docs/mobile/PHONE_APP.md`, section "Links to
 botolago.com open the app".
 
 ## What to test yourself on your phone (simple step-by-step checklist)
 
-Nothing here is live yet. The pull request for this branch is marked ready for
-review, so the hosting service builds a preview of it. Its link appears on the pull
-request page on GitHub, in the "Vercel" comment or check, a few minutes after it opens.
-
-On the preview link, with your phone:
+Nothing here is live yet. There is no automatic preview link for this repository at the
+moment: the Vercel previews stopped working (they answer "payment required", already
+noted in `docs/production/2026-10-19-go-live-pack.md`), so no pull request gets one. To
+try these changes on a phone before they go live, the Vercel account needs its plan
+sorted out, or another way to put a branch online has to be chosen. Once there is a
+link, or after publishing, check the following with your phone:
 
 1. Open the home page. It should look exactly as it does today.
 2. Tap **Matchs**, then a match. Check the score and the details show.
@@ -221,10 +222,10 @@ On the preview link, with your phone:
 
 If anything looks different from today, take a screenshot and send it to me.
 
-Sprint 2, on the preview link of pull request #578 (it includes Sprint 1 too):
+Sprint 2 (pull request #578, which includes Sprint 1 too):
 
 10. Set your phone to Arabic (or choose Arabic once), close the browser, and open the
-    preview again: the page should appear in Arabic straight away, with no French
+    site again: the page should appear in Arabic straight away, with no French
     first and no jump.
 11. On a phone that has never visited, set to Arabic: the page is Arabic, the
     language chooser opens with **العربية** selected. Choose **Français**: it switches
