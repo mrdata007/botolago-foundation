@@ -352,7 +352,8 @@ export interface CatalogRapidClient extends SofascoreShadowClient {
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
-const IMAGE_PATH = /\/(teams\/get-logo|players\/get-image)\?/;
+// The Sofascore host's image paths and SportAPI's native ones (the URL actually sent).
+const IMAGE_PATH = /\/(teams\/get-logo|players\/get-image)\?|\/api\/v1\/(team|player)\/\d+\/image$/;
 
 /**
  * A RapidAPI client that can also return image bytes. It IS the RapidAPI
@@ -369,6 +370,7 @@ export function createCatalogRapidClient(
     readonly runtime?: RapidApiRuntime;
     readonly onRequest?: (event: RapidApiRequestEvent) => void;
     readonly budget?: RapidApiBudget;
+    readonly essentialEndpoints?: ReadonlySet<string>;
   } = {},
 ): CatalogRapidClient {
   const send: FetchLike = baseFetch ?? ((input, init) => globalThis.fetch(input, init));

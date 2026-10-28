@@ -1,0 +1,357 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 1,
+      "awayScore": 1
+    },
+    {
+      "id": 367145926,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 90,
+      "isHome": false,
+      "from": "penalty",
+      "homeScore": 1,
+      "awayScore": 1,
+      "player": {
+        "id": 1177366,
+        "name": "Mouad Mouchtanim",
+        "shortName": "M. Mouchtanim"
+      }
+    },
+    {
+      "id": 125859306,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 87,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 1488437,
+        "name": "Youssef Riani",
+        "shortName": "Y. Riani"
+      }
+    },
+    {
+      "id": 125859305,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 86,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 1140899,
+        "name": "Youssef Michte",
+        "shortName": "Y. Michte"
+      }
+    },
+    {
+      "id": 125859304,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 83,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 2800520,
+        "name": "Ibra Aly Lo",
+        "shortName": "I. A. Lo"
+      }
+    },
+    {
+      "id": 125859303,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 83,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 919701,
+        "name": "Abdelkarim Baadi",
+        "shortName": "A. Baadi"
+      }
+    },
+    {
+      "id": 127219324,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 82,
+      "isHome": true,
+      "playerIn": {
+        "id": 1418569,
+        "name": "Mahmoud El Kayssoumi",
+        "shortName": "M. E. Kayssoumi"
+      },
+      "playerOut": {
+        "id": 1140927,
+        "name": "Saleh Al Sellami",
+        "shortName": "S. A. Sellami"
+      }
+    },
+    {
+      "id": 125859302,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 77,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 2322814,
+        "name": "Anass Mostakime",
+        "shortName": "A. Mostakime"
+      }
+    },
+    {
+      "id": 127219337,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 69,
+      "isHome": false,
+      "playerIn": {
+        "id": 1095721,
+        "name": "Abdellah Farah",
+        "shortName": "A. Farah"
+      },
+      "playerOut": {
+        "id": 1140899,
+        "name": "Youssef Michte",
+        "shortName": "Y. Michte"
+      }
+    },
+    {
+      "id": 127219323,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 68,
+      "isHome": true,
+      "playerIn": {
+        "id": 1488437,
+        "name": "Youssef Riani",
+        "shortName": "Y. Riani"
+      },
+      "playerOut": {
+        "id": 1004247,
+        "name": "Jawad Rhabra",
+        "shortName": "J. Rhabra"
+      }
+    },
+    {
+      "id": 127219322,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 68,
+      "isHome": true,
+      "playerIn": {
+        "id": 1592653,
+        "name": "Oussama Haffari",
+        "shortName": "O. Haffari"
+      },
+      "playerOut": {
+        "id": 1952096,
+        "name": "Ayoub Maamouri",
+        "shortName": "A. Maamouri"
+      }
+    },
+    {
+      "id": 127219331,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 57,
+      "isHome": false,
+      "playerIn": {
+        "id": 2268400,
+        "name": "Zakaria Oubraim",
+        "shortName": "Z. Oubraim"
+      },
+      "playerOut": {
+        "id": 2161836,
+        "name": "Ayoub El Khaffi",
+        "shortName": "A. E. Khaffi"
+      }
+    },
+    {
+      "id": 127219327,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 57,
+      "isHome": false,
+      "playerIn": {
+        "id": 919738,
+        "name": "Achraf El Idrissi",
+        "shortName": "A. E. Idrissi"
+      },
+      "playerOut": {
+        "id": 2127600,
+        "name": "Reda Ech-Chgraoui",
+        "shortName": "R. Ech-Chgraoui"
+      }
+    },
+    {
+      "id": 127219326,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "playerIn": {
+        "id": 2805021,
+        "name": "Yassine Lhjale",
+        "shortName": "Y. Lhjale"
+      },
+      "playerOut": {
+        "id": 2800519,
+        "name": "Boulkassou Diarra",
+        "shortName": "B. Diarra"
+      }
+    },
+    {
+      "id": 127219321,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 919701,
+        "name": "Abdelkarim Baadi",
+        "shortName": "A. Baadi"
+      },
+      "playerOut": {
+        "id": 1168590,
+        "name": "Abdellah Haimoud",
+        "shortName": "A. Haimoud"
+      }
+    },
+    {
+      "id": 127219320,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 1413546,
+        "name": "Ismail El Alami",
+        "shortName": "I. E. Alami"
+      },
+      "playerOut": {
+        "id": 1392058,
+        "name": "Nabil Khali",
+        "shortName": "N. Khali"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 1,
+      "awayScore": 0
+    },
+    {
+      "id": 125859301,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 45,
+      "addedTime": 7,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1140943,
+        "name": "Oussama Mahrous",
+        "shortName": "O. Mahrous"
+      }
+    },
+    {
+      "id": 125859300,
+      "incidentType": "card",
+      "incidentClass": "red",
+      "time": 45,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1004521,
+        "name": "Mouhcine Rabja",
+        "shortName": "M. Rabja"
+      }
+    },
+    {
+      "id": 125859299,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 40,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1004247,
+        "name": "Jawad Rhabra",
+        "shortName": "J. Rhabra"
+      }
+    },
+    {
+      "id": 127219325,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 38,
+      "isHome": false,
+      "playerIn": {
+        "id": 2322814,
+        "name": "Anass Mostakime",
+        "shortName": "A. Mostakime"
+      },
+      "playerOut": {
+        "id": 1140816,
+        "name": "Abderrazak Ennakouss",
+        "shortName": "A. Ennakouss"
+      }
+    },
+    {
+      "id": 125859298,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 20,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 2161836,
+        "name": "Ayoub El Khaffi",
+        "shortName": "A. E. Khaffi"
+      }
+    },
+    {
+      "id": 367145925,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 19,
+      "isHome": true,
+      "from": "penalty",
+      "homeScore": 1,
+      "awayScore": 0,
+      "player": {
+        "id": 1004247,
+        "name": "Jawad Rhabra",
+        "shortName": "J. Rhabra"
+      }
+    },
+    {
+      "id": 125859297,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 16,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 2800519,
+        "name": "Boulkassou Diarra",
+        "shortName": "B. Diarra"
+      }
+    }
+  ]
+}

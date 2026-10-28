@@ -84,11 +84,55 @@ describe("RapidAPI client", () => {
     expect(seen).toHaveLength(1);
   });
 
-  test("a 429 and a 5xx are retried, then succeed", async () => {
+  test("nothing is retried by default: a 429 or a 5xx is one billed call", async () => {
+    for (const status of [429, 503]) {
+      const seen: { url: string }[] = [];
+      const api = client([reply(status, {}), reply(200, { ok: true })], seen);
+      await expect(api.getJson("x")).rejects.toBeInstanceOf(FootballError);
+      expect(seen).toHaveLength(1);
+      expect(api.requestsSent()).toBe(1);
+    }
+  });
+
+  test("on the SofaScore host it stops at the request cap and below the reserve", async () => {
     const seen: { url: string }[] = [];
-    const api = client([reply(429, {}), reply(503, {}), reply(200, { ok: true })], seen);
-    expect(await api.getJson("x")).toEqual({ ok: true });
-    expect(seen).toHaveLength(3);
+    const capped = new RapidApiClient({
+      host: "sofascore.p.rapidapi.com",
+      key: KEY,
+      runtime,
+      maxRequests: 2,
+      minRemaining: 0,
+      fetch: async (url) => {
+        seen.push({ url });
+        return reply(200, {}, "9000");
+      },
+    });
+    await capped.getJson("a");
+    await capped.getJson("b");
+    await expect(capped.getJson("c")).rejects.toMatchObject({ code: "provider_rate_limited" });
+    expect(seen).toHaveLength(2);
+
+    // Default reserve: 1,500 calls left of the plan. 400 left stops the second call.
+    const seen2: { url: string }[] = [];
+    const reserve = client([reply(200, {}, "400"), reply(200, {})], seen2);
+    await reserve.getJson("a");
+    await expect(reserve.getJson("b")).rejects.toMatchObject({ code: "provider_rate_limited" });
+    expect(seen2).toHaveLength(1);
+  });
+
+  test("another host keeps the 100-call floor and has no request cap", async () => {
+    const seen: { url: string }[] = [];
+    const other = new RapidApiClient({
+      host: "flashlive.example",
+      key: KEY,
+      runtime,
+      fetch: async (url) => {
+        seen.push({ url });
+        return reply(200, {}, "400");
+      },
+    });
+    for (let i = 0; i < 150; i += 1) await other.getJson("a");
+    expect(seen).toHaveLength(150);
   });
 
   test("errors never carry the key or the response body", async () => {

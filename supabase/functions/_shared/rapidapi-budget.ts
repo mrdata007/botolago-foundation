@@ -4,12 +4,20 @@
 // counted in the current quota window (app_private.rapidapi_call_counts plus
 // the owner's offset), the soft and the hard limit. The Edge Function reads it
 // once per run, before the first provider call; the client adds the run's own
-// requests on top. A read that fails returns null and is logged: the run goes
-// on without the guard, as it did before the guard existed.
+// requests on top. A read that fails returns null and is logged: the caller
+// then fails closed (football-live-refresh.ts UNREADABLE_BUDGET: essential
+// endpoints only).
+//
+// Each provider host has its own budget (migration 20261028100000): the Sofascore
+// host is read with api.service_rapidapi_budget(), any other with
+// api.service_rapidapi_host_budget(p_host). A database without that migration
+// cannot answer for another host, which reads as unreadable: fail closed.
 //
 // Dependency-free apart from sibling shared modules.
 
 import type { RapidApiBudget } from "./rapidapi-client.ts";
+
+const SOFASCORE_HOST = "sofascore.p.rapidapi.com";
 
 export interface RapidApiBudgetClient {
   schema(name: "api"): {
@@ -25,6 +33,8 @@ export interface RapidApiBudgetReading extends RapidApiBudget {
   readonly windowStart: string | null;
   /** Seconds between live polls as the database has them (60 unless stretched). */
   readonly liveIntervalSeconds: number;
+  /** Minutes between the periodic incidents reads of a match in play (1-120; 15 when the database does not say). */
+  readonly incidentsIntervalMinutes: number;
 }
 
 function whole(value: unknown): number | null {
@@ -35,6 +45,7 @@ export async function loadRapidApiBudget(
   client: RapidApiBudgetClient,
   job: string,
   log: (line: string) => void = (line) => console.log(line),
+  host: string = SOFASCORE_HOST,
 ): Promise<RapidApiBudgetReading | null> {
   const failed = (reason: string): null => {
     try {
@@ -45,7 +56,10 @@ export async function loadRapidApiBudget(
     return null;
   };
   try {
-    const result = await client.schema("api").rpc("service_rapidapi_budget", {});
+    const result =
+      host === SOFASCORE_HOST
+        ? await client.schema("api").rpc("service_rapidapi_budget", {})
+        : await client.schema("api").rpc("service_rapidapi_host_budget", { p_host: host });
     if (result.error) return failed("database_error");
     const data = result.data;
     if (typeof data !== "object" || data === null) return failed("unreadable");
@@ -59,6 +73,10 @@ export async function loadRapidApiBudget(
       softLimit,
       hardLimit,
       windowStart: typeof record.windowStart === "string" ? record.windowStart : null,
+      incidentsIntervalMinutes: (() => {
+        const minutes = whole(record.incidentsIntervalMinutes);
+        return minutes !== null && minutes >= 1 && minutes <= 120 ? minutes : 15;
+      })(),
       liveIntervalSeconds: (() => {
         const seconds = whole(record.liveIntervalSeconds);
         return seconds !== null && seconds >= 60 && seconds <= 300 ? seconds : 60;

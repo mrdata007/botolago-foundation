@@ -1,0 +1,109 @@
+{
+  "seasons": [
+    {
+      "name": "Botola Pro D1 26/27",
+      "year": "26/27",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 1
+      },
+      "id": 102220
+    },
+    {
+      "name": "Botola Pro D1 25/26",
+      "year": "25/26",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 1
+      },
+      "id": 78750
+    },
+    {
+      "name": "Botola Pro D1 24/25",
+      "year": "24/25",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 1
+      },
+      "id": 65433
+    },
+    {
+      "name": "Botola 23/24",
+      "year": "23/24",
+      "editor": false,
+      "id": 54108
+    },
+    {
+      "name": "Botola 22/23",
+      "year": "22/23",
+      "editor": false,
+      "id": 45552
+    },
+    {
+      "name": "Botola 21/22",
+      "year": "21/22",
+      "editor": false,
+      "id": 38546
+    },
+    {
+      "name": "Botola 20/21",
+      "year": "20/21",
+      "editor": false,
+      "id": 34906
+    },
+    {
+      "name": "Botola 19/20",
+      "year": "19/20",
+      "editor": false,
+      "id": 25365
+    },
+    {
+      "name": "Botola 18/19",
+      "year": "18/19",
+      "editor": false,
+      "id": 18460
+    },
+    {
+      "name": "Botola 17/18",
+      "year": "17/18",
+      "editor": false,
+      "id": 14397
+    },
+    {
+      "name": "Botola 16/17",
+      "year": "16/17",
+      "editor": false,
+      "id": 12228
+    },
+    {
+      "name": "Botola 15/16",
+      "year": "15/16",
+      "editor": false,
+      "id": 10754
+    },
+    {
+      "name": "Botola 14/15",
+      "year": "14/15",
+      "editor": false,
+      "id": 8764
+    },
+    {
+      "name": "Botola 13/14",
+      "year": "13/14",
+      "editor": false,
+      "id": 6993
+    },
+    {
+      "name": "Botola 12/13",
+      "year": "12/13",
+      "editor": false,
+      "id": 5445
+    },
+    {
+      "name": "Botola 11/12",
+      "year": "11/12",
+      "editor": false,
+      "id": 3771
+    }
+  ]
+}

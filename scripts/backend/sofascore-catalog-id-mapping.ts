@@ -355,7 +355,8 @@ async function main() {
     });
     const collected = await collect(query, ids.seasonId, showNames);
 
-    const client = new RapidApiClient({ host: HOST, key });
+    // The season pages (at most 2 x 30) and then the lineups, capped by --max-lineup-requests.
+    const client = new RapidApiClient({ host: HOST, key, maxRequests: 60 + maxRequests });
     const { events } = await fetchAllEvents(client);
     const bySofaId = new Map<string, EventSides>(
       events.map((e) => [String(e.id), { homeTeamId: e.homeTeam.id, awayTeamId: e.awayTeam.id }]),
