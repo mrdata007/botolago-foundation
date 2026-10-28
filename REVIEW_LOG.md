@@ -414,3 +414,25 @@ The first Builder was stopped from the owner's side (it cannot be resumed).
 
 Sent to a separate Tester.
 
+**Tester round 1 – PASS WITH CONDITIONS** (no Critical/High, 3 Medium).
+
+Simulated match days:
+- Live job calls: 4 matches 204 → 128, and 8 matches 361 → 209.
+- Whole day: about 188 calls for 4 matches and about 281 for 8.
+- Scores, line-ups, final events and stats are stored correctly. Nothing is fetched twice.
+
+SportAPI translation: works with the real captured replies. An unset address behaves as today; a wrong address is refused safely.
+
+Migration: correct and safe. Database tests were not run (no Docker); CI decides.
+
+Problems:
+1. Cards between goals show up to about 62 minutes late.
+2. Late-published team stats may stay partial for up to 3 days.
+3. The owner steps were in an unsafe order (key set before the new code), with no pause/wait, no check, and an incomplete undo.
+
+Lead sent fixes:
+- A capped timeline read every 15 minutes, as an owner setting.
+- One follow-up stats read 90 minutes after the match, only if the stats are partial.
+- The owner steps rewritten in a safe order, click by click.
+- Formatting fixed.
+
