@@ -120,6 +120,7 @@ language sql stable set search_path = '' as $$
       'id', edition.id,
       'language', edition.language,
       'slug', edition.slug,
+      'title', edition.title,
       'publishedAt', edition.published_at,
       'updatedAt', edition.updated_at,
       'contentUpdatedAt', greatest(edition.published_at, last_revision.created_at),
@@ -429,13 +430,13 @@ select extensions.ok(exists (select 1 from app_private.news_sitemap_snapshot whe
 select extensions.ok(
   (select bool_and(
      (select array_agg(key order by key) from jsonb_object_keys(entry) key)
-       = array['contentUpdatedAt', 'id', 'language', 'publishedAt', 'slug', 'translations', 'updatedAt']
+       = array['contentUpdatedAt', 'id', 'language', 'publishedAt', 'slug', 'title', 'translations', 'updatedAt']
      and jsonb_typeof(entry -> 'translations') = 'array'
      and (entry ->> 'language') in ('fr', 'ar')
      and (entry ->> 'id')::uuid is not null
      and (entry ->> 'publishedAt')::timestamptz is not null)
    from jsonb_array_elements(api.news_sitemap_entries(50000)) entry),
-  'every entry has the same keys as before: id, language, slug, publishedAt, updatedAt, contentUpdatedAt, translations');
+  'every entry has the same keys as before, plus title (20261027150000): id, language, slug, title, publishedAt, updatedAt, contentUpdatedAt, translations');
 select extensions.ok(
   (select coalesce(bool_and(
      (select array_agg(key order by key) from jsonb_object_keys(translation) key) = array['id', 'language']), true)

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Star } from "lucide-react";
 import { useId, type CSSProperties, type ReactNode } from "react";
@@ -33,12 +33,14 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
+import { clubSearchName } from "@/lib/seo-titles";
 import { useBackTo } from "@/lib/back-navigation";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
+import { clubPathParam } from "@/lib/club-slug";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
   /**
@@ -61,6 +63,12 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
    * it as `initialData` makes both first renders identical, which is the
    * actual requirement; it also means the page paints from the server payload
    * instead of re-fetching what it already has.
+   *
+   * SEO (brief 3.3): the clubs and the season profile ride along, each read
+   * on its own and `null` when it fails, so a crawler's HTML holds the club
+   * (and its link), the colours and the season figures and not their
+   * skeletons. The clubs are the French list, so they seed the query only
+   * for a French reader (`PlayerDetailPage`).
    */
   loader: async ({ params, context }) => {
     try {
@@ -68,12 +76,31 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
         queryKey: ["fantasy-player", params.playerId],
         queryFn: () => fantasyService.getPlayer(params.playerId),
       });
-      return player ? { player } : null;
+      if (!player) return null;
+      const [clubs, profile] = await Promise.all([
+        footballService.getClubs("fr").catch(() => null),
+        fantasyService.getPlayerSeasonProfile(params.playerId).catch(() => null),
+      ]);
+      return { player, clubs, profile };
     } catch {
       return null;
     }
   },
-  head: ({ params, loaderData }) => fantasyPlayerHead(params.playerId, loaderData?.player.name.fr),
+  head: ({ params, loaderData }) => {
+    const player = loaderData?.player;
+    const club = player ? findClub(loaderData?.clubs, player.clubId) : undefined;
+    return fantasyPlayerHead(params.playerId, player?.name.fr, {
+      club: club
+        ? {
+            id: club.id,
+            pathSlug: club.pathSlug,
+            name: clubSearchName(club),
+            position: player!.position,
+          }
+        : null,
+      photoUrl: player?.photoUrl,
+    });
+  },
   component: PlayerDetailFramed,
 });
 
@@ -139,6 +166,8 @@ function PlayerDetailPage() {
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
+    // The loader read the French list; a reader in Arabic fetches their own.
+    initialData: lang === "fr" ? (loaderData?.clubs ?? undefined) : undefined,
   });
   const fixturesQ = useQuery({
     queryKey: ["fixture-difficulty"],
@@ -153,10 +182,11 @@ function PlayerDetailPage() {
   const p = playerQ.data;
   const watched = p ? watchlist.isWatched(p.id) : false;
 
+  // No bar title once the player is there: his name below is the page's `h1`.
   const header = (
     <UiHeader
       kicker={t("nav.fantasy")}
-      title={t("fpl.player")}
+      title={p ? undefined : t("fpl.player")}
       onBack={goBack}
       trailing={
         p ? (
@@ -222,11 +252,6 @@ function PlayerDetailPage() {
   const orNone = (value: number | null | undefined) =>
     value === null || value === undefined ? t("fantasy.stat.none") : nf.format(value);
 
-  const facts = [
-    t(`player.pos.${p.position}` as TranslationKey),
-    club ? clubLabel(club, tr) : null,
-  ].filter(Boolean);
-
   return (
     <>
       {header}
@@ -241,8 +266,22 @@ function PlayerDetailPage() {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className={cn("truncate", ui.text.label)}>{facts.join(" · ")}</p>
-            <h2 id={nameId} className="mt-1">
+            <p className={cn("truncate", ui.text.label)}>
+              {t(`player.pos.${p.position}` as TranslationKey)}
+              {club ? (
+                <>
+                  {" · "}
+                  <Link
+                    to="/clubs/$clubId"
+                    params={{ clubId: clubPathParam(club) }}
+                    className="underline-offset-2 hover:underline focus-visible:underline"
+                  >
+                    {clubLabel(club, tr)}
+                  </Link>
+                </>
+              ) : null}
+            </p>
+            <h1 id={nameId} className="mt-1">
               {name.first ? (
                 <span
                   dir="auto"
@@ -264,7 +303,7 @@ function PlayerDetailPage() {
               >
                 {name.last}
               </span>
-            </h2>
+            </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span
                 className={cn(
@@ -384,7 +423,11 @@ function PlayerDetailPage() {
           )}
         </section>
 
-        <PlayerFootballProfile playerId={playerId} clubs={clubs} />
+        <PlayerFootballProfile
+          playerId={playerId}
+          clubs={clubs}
+          initialProfile={loaderData?.profile ?? undefined}
+        />
 
         <section className="mt-6 px-4">
           <SectionHeader

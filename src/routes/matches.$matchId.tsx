@@ -64,6 +64,9 @@ import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
 import { useFantasyPlayerLinks } from "@/services/use-fantasy-player-links";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
+import { clubPath, clubPathParam } from "@/lib/club-slug";
+import type { Club } from "@/types/domain";
+import { clubSearchName, matchSeoDescription, matchSeoTitle } from "@/lib/seo-titles";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -122,15 +125,17 @@ export const Route = createFileRoute("/matches/$matchId")({
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/matches/${encodeURIComponent(params.matchId)}`;
     const detail = isUnavailable(loaderData) ? undefined : loaderData?.detail;
-    const home = detail?.clubs.find((club) => club.id === detail.match.homeClubId)?.name.fr;
-    const away = detail?.clubs.find((club) => club.id === detail.match.awayClubId)?.name.fr;
-    const named = home && away ? { home, away } : null;
+    const homeClub = detail?.clubs.find((club) => club.id === detail.match.homeClubId);
+    const awayClub = detail?.clubs.find((club) => club.id === detail.match.awayClubId);
+    const named = detail && homeClub && awayClub ? { home: homeClub, away: awayClub } : null;
+    // Short names and the words people search with (`@/lib/seo-titles`).
     const title = named
-      ? `${named.home} — ${named.away} | BotolaGO`
+      ? matchSeoTitle(detail!.match, named.home, named.away)
       : "Match Botola Pro — BotolaGO";
     const description = named
-      ? `${named.home} contre ${named.away} : score en direct, composition, statistiques et temps forts sur BotolaGO.`
+      ? matchSeoDescription(detail!.match, named.home, named.away)
       : "Score en direct, compositions, statistiques et temps forts du match sur BotolaGO.";
+    const clubUrl = (club: Club) => `${PUBLIC_SITE_ORIGIN}${clubPath(clubPathParam(club))}`;
     // The match and the trail to it, only from what the page loaded (see
     // `@/lib/structured-data`); nothing for a page whose read failed.
     const structured =
@@ -139,14 +144,25 @@ export const Route = createFileRoute("/matches/$matchId")({
             sportsEventJsonLd({
               canonicalUrl: canonical,
               match: detail.match,
-              homeName: named.home,
-              awayName: named.away,
+              home: {
+                name: clubSearchName(named.home),
+                url: clubUrl(named.home),
+                logoUrl: named.home.crestUrl,
+              },
+              away: {
+                name: clubSearchName(named.away),
+                url: clubUrl(named.away),
+                logoUrl: named.away.crestUrl,
+              },
+              league: hasLeagueTable(detail.season),
+              description,
+              imageUrl: `${PUBLIC_SITE_ORIGIN}/og-image.jpg`,
             }),
             breadcrumbJsonLd([
               { name: "Accueil", path: "/" },
               { name: "Matchs", path: "/matches" },
               {
-                name: `${named.home} – ${named.away}`,
+                name: `${clubSearchName(named.home)} – ${clubSearchName(named.away)}`,
                 path: `/matches/${encodeURIComponent(params.matchId)}`,
               },
             ]),

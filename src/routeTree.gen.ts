@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ClassicoWacFarRouteImport } from './routes/classico-wac-far'
 import { Route as CurvaRouteImport } from './routes/curva'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as DerbyCasablancaRouteImport } from './routes/derby-casablanca'
 import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as JouerRouteImport } from './routes/jouer'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -84,6 +86,7 @@ import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
+import { Route as NewsArchiveRouteImport } from './routes/news.archive'
 import { Route as PepitesIndexRouteImport } from './routes/pepites.index'
 import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as PepitesComparerRouteImport } from './routes/pepites.comparer'
@@ -94,6 +97,7 @@ import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as ProfileSavedRouteImport } from './routes/profile.saved'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
+import { Route as SitemapsFileRouteImport } from './routes/sitemaps.$file'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AdminFootballPlayerMappingsRouteImport } from './routes/admin.football.player-mappings'
@@ -128,6 +132,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClassicoWacFarRoute = ClassicoWacFarRouteImport.update({
+  id: '/classico-wac-far',
+  path: '/classico-wac-far',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CurvaRoute = CurvaRouteImport.update({
   id: '/curva',
   path: '/curva',
@@ -136,6 +145,11 @@ const CurvaRoute = CurvaRouteImport.update({
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DerbyCasablancaRoute = DerbyCasablancaRouteImport.update({
+  id: '/derby-casablanca',
+  path: '/derby-casablanca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FantasyRoute = FantasyRouteImport.update({
@@ -492,6 +506,11 @@ const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   path: '/$articleId',
   getParentRoute: () => NewsRoute,
 } as any)
+const NewsArchiveRoute = NewsArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => NewsRoute,
+} as any)
 const PepitesIndexRoute = PepitesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -541,6 +560,11 @@ const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PronosticsRoute,
+} as any)
+const SitemapsFileRoute = SitemapsFileRouteImport.update({
+  id: '/sitemaps/$file',
+  path: '/sitemaps/$file',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   id: '/.lovable/oauth/consent',
@@ -643,8 +667,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/classico-wac-far': typeof ClassicoWacFarRoute
   '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
+  '/derby-casablanca': typeof DerbyCasablancaRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
@@ -710,6 +736,7 @@ export interface FileRoutesByFullPath {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -717,6 +744,7 @@ export interface FileRoutesByFullPath {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -747,7 +775,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/classico-wac-far': typeof ClassicoWacFarRoute
   '/demo': typeof DemoRoute
+  '/derby-casablanca': typeof DerbyCasablancaRoute
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
@@ -809,6 +839,7 @@ export interface FileRoutesByTo {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -816,6 +847,7 @@ export interface FileRoutesByTo {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth': typeof AuthIndexRoute
   '/clubs': typeof ClubsIndexRoute
   '/curva': typeof CurvaIndexRoute
@@ -848,8 +880,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/classico-wac-far': typeof ClassicoWacFarRoute
   '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
+  '/derby-casablanca': typeof DerbyCasablancaRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
@@ -915,6 +949,7 @@ export interface FileRoutesById {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/news/archive': typeof NewsArchiveRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
@@ -922,6 +957,7 @@ export interface FileRoutesById {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/saved': typeof ProfileSavedRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/sitemaps/$file': typeof SitemapsFileRoute
   '/auth/': typeof AuthIndexRoute
   '/clubs/': typeof ClubsIndexRoute
   '/curva/': typeof CurvaIndexRoute
@@ -955,8 +991,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/classico-wac-far'
     | '/curva'
     | '/demo'
+    | '/derby-casablanca'
     | '/fantasy'
     | '/jouer'
     | '/mcp'
@@ -1022,6 +1060,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1029,6 +1068,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth/'
     | '/clubs/'
     | '/curva/'
@@ -1059,7 +1099,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/classico-wac-far'
     | '/demo'
+    | '/derby-casablanca'
     | '/jouer'
     | '/mcp'
     | '/news'
@@ -1121,6 +1163,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1128,6 +1171,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth'
     | '/clubs'
     | '/curva'
@@ -1159,8 +1203,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/classico-wac-far'
     | '/curva'
     | '/demo'
+    | '/derby-casablanca'
     | '/fantasy'
     | '/jouer'
     | '/mcp'
@@ -1226,6 +1272,7 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/news/archive'
     | '/pepites/classement'
     | '/pepites/comparer'
     | '/pepites/methode'
@@ -1233,6 +1280,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/saved'
     | '/profile/security'
+    | '/sitemaps/$file'
     | '/auth/'
     | '/clubs/'
     | '/curva/'
@@ -1265,8 +1313,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  ClassicoWacFarRoute: typeof ClassicoWacFarRoute
   CurvaRoute: typeof CurvaRouteWithChildren
   DemoRoute: typeof DemoRoute
+  DerbyCasablancaRoute: typeof DerbyCasablancaRoute
   FantasyRoute: typeof FantasyRouteWithChildren
   JouerRoute: typeof JouerRoute
   McpRoute: typeof McpRoute
@@ -1296,6 +1346,7 @@ export interface RootRouteChildren {
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
+  SitemapsFileRoute: typeof SitemapsFileRoute
   ClubsIndexRoute: typeof ClubsIndexRoute
   MatchesIndexRoute: typeof MatchesIndexRoute
   PrizesIndexRoute: typeof PrizesIndexRoute
@@ -1326,6 +1377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/classico-wac-far': {
+      id: '/classico-wac-far'
+      path: '/classico-wac-far'
+      fullPath: '/classico-wac-far'
+      preLoaderRoute: typeof ClassicoWacFarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/curva': {
       id: '/curva'
       path: '/curva'
@@ -1338,6 +1396,13 @@ declare module '@tanstack/react-router' {
       path: '/demo'
       fullPath: '/demo'
       preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/derby-casablanca': {
+      id: '/derby-casablanca'
+      path: '/derby-casablanca'
+      fullPath: '/derby-casablanca'
+      preLoaderRoute: typeof DerbyCasablancaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fantasy': {
@@ -1830,6 +1895,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsArticleIdRouteImport
       parentRoute: typeof NewsRoute
     }
+    '/news/archive': {
+      id: '/news/archive'
+      path: '/archive'
+      fullPath: '/news/archive'
+      preLoaderRoute: typeof NewsArchiveRouteImport
+      parentRoute: typeof NewsRoute
+    }
     '/pepites/': {
       id: '/pepites/'
       path: '/'
@@ -1899,6 +1971,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pronostics/'
       preLoaderRoute: typeof PronosticsIndexRouteImport
       parentRoute: typeof PronosticsRoute
+    }
+    '/sitemaps/$file': {
+      id: '/sitemaps/$file'
+      path: '/sitemaps/$file'
+      fullPath: '/sitemaps/$file'
+      preLoaderRoute: typeof SitemapsFileRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/.lovable/oauth/consent': {
       id: '/.lovable/oauth/consent'
@@ -2224,10 +2303,12 @@ const FantasyRouteWithChildren =
 
 interface NewsRouteChildren {
   NewsArticleIdRoute: typeof NewsArticleIdRoute
+  NewsArchiveRoute: typeof NewsArchiveRoute
 }
 
 const NewsRouteChildren: NewsRouteChildren = {
   NewsArticleIdRoute: NewsArticleIdRoute,
+  NewsArchiveRoute: NewsArchiveRoute,
 }
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
@@ -2290,8 +2371,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  ClassicoWacFarRoute: ClassicoWacFarRoute,
   CurvaRoute: CurvaRouteWithChildren,
   DemoRoute: DemoRoute,
+  DerbyCasablancaRoute: DerbyCasablancaRoute,
   FantasyRoute: FantasyRouteWithChildren,
   JouerRoute: JouerRoute,
   McpRoute: McpRoute,
@@ -2322,6 +2405,7 @@ const rootRouteChildren: RootRouteChildren = {
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,
+  SitemapsFileRoute: SitemapsFileRoute,
   ClubsIndexRoute: ClubsIndexRoute,
   MatchesIndexRoute: MatchesIndexRoute,
   PrizesIndexRoute: PrizesIndexRoute,

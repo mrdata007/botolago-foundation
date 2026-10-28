@@ -7,6 +7,7 @@ import {
   defaultSeason,
   footballService,
   HOME_LIST_SIZE,
+  type FootballMatchCollection,
   type FootballSeason,
 } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
@@ -40,9 +41,9 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { latestResultDayBefore, matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
-import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { prefetchForSsr, prefetchOptionalForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import type { Match } from "@/types/domain";
+import type { Club, Match } from "@/types/domain";
 
 const MATCHES_TITLE = "Matches Botola Pro — scores en direct | BotolaGO";
 const MATCHES_DESCRIPTION =
@@ -94,6 +95,23 @@ export const Route = createFileRoute("/matches/")({
         // season, else the day the season opens on.
         const day = deps.date ? clampMatchDay(deps.date, season) : openingMatchDay(season, today);
         await prefetchForSsr(queryClient, [matchDayQuery(day, "fr", season?.id)]);
+        // A day with nothing on it points at the fixtures still to come, and
+        // those are read here too, so the HTML links to real match pages
+        // instead of holding an empty state alone (SEO pass 1, 2026-10-27).
+        // Only for an empty day: a busy one already links its matches. An
+        // extra: if it fails the page still answers 200 with its empty state.
+        if (
+          queryClient.getQueryData<FootballMatchCollection>(
+            matchDayQuery(day, "fr", season?.id).queryKey,
+          )?.matches.length === 0
+        ) {
+          await prefetchOptionalForSsr(queryClient, [
+            {
+              queryKey: ["football", "home-matches", "fr"],
+              queryFn: () => footballService.getHomeMatches("fr"),
+            },
+          ]);
+        }
       }
       // Both reads above count: every key `prefetchForSsr` was handed, the
       // day's `matchDayQuery` key included, has to have loaded. A season
@@ -366,6 +384,20 @@ function MatchesPage() {
   const nextDayLabel = nextDay ? dayLabel(nextDay) : null;
   const resultsDayLabel = resultsDay ? dayLabel(resultsDay) : null;
 
+  // The matches of that next day, listed under the empty state: the same rows
+  // as a busy day, so the way on is also a link to each match page.
+  const nextDayMatches = useMemo(() => {
+    if (!nextDay) return [];
+    return (upcomingQ.data?.matches ?? [])
+      .filter(
+        (m) =>
+          (m.status === "scheduled" || m.status === "live") &&
+          matchDayKey(new Date(m.kickoff)) === nextDay,
+      )
+      .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  }, [upcomingQ.data, nextDay]);
+  const nextDayGameweeks = matchRounds(nextDayMatches);
+
   const visibleByBucket = useMemo(() => {
     const buckets: Record<"live" | "upcoming" | "finished" | "calledOff", Match[]> = {
       live: [],
@@ -402,17 +434,22 @@ function MatchesPage() {
   ];
   const results = filter === "all" || filter === "finished" ? visibleByBucket.finished : [];
 
-  const rows = (list: readonly Match[]) =>
-    list.map((m, index) => {
-      const home = clubById(m.homeClubId);
-      const away = clubById(m.awayClubId);
+  const rows = (
+    list: readonly Match[],
+    findClub: (id: string) => Club | undefined = clubById,
+    listGameweek: number | undefined = dayGameweek,
+  ) =>
+    list.map((m) => {
+      const home = findClub(m.homeClubId);
+      const away = findClub(m.awayClubId);
       if (!home || !away) return null;
       return (
         <div key={m.id} className="min-w-0">
-          <MatchCard match={m} home={home} away={away} variant="list" listGameweek={dayGameweek} />
+          <MatchCard match={m} home={home} away={away} variant="list" listGameweek={listGameweek} />
         </div>
       );
     });
+  const upcomingClubById = (id: string) => upcomingQ.data?.clubs.find((club) => club.id === id);
 
   return (
     <AppShell
@@ -498,6 +535,31 @@ function MatchesPage() {
           </EmptyState>
         </div>
       )}
+
+      {/* The next match day's fixtures under an empty day. */}
+      {!loading &&
+        !failed &&
+        totalDay === 0 &&
+        nextDay &&
+        nextDayLabel &&
+        nextDayMatches.length > 0 && (
+          <Section>
+            <SectionHeader
+              as="h3"
+              title={t("matches.empty.next").replace("{date}", nextDayLabel)}
+            />
+            <UiCard
+              padding="none"
+              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+            >
+              {rows(
+                nextDayMatches,
+                upcomingClubById,
+                nextDayGameweeks.length === 1 ? nextDayGameweeks[0] : undefined,
+              )}
+            </UiCard>
+          </Section>
+        )}
 
       {/* The day's live and upcoming matches. The card clips the rows' club
           edge bars to its corners. */}

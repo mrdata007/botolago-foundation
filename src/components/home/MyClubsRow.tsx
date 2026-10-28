@@ -10,6 +10,7 @@ import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { ui, UiBadge, UiButton, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubPathParam } from "@/lib/club-slug";
 import { rowClubName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { sharedPositions } from "@/lib/league-table";
@@ -152,7 +153,7 @@ function MyClubCard({
           {/* The name is the link; its ::after makes the header the target. */}
           <Link
             to="/clubs/$clubId"
-            params={{ clubId: club.id }}
+            params={{ clubId: clubPathParam(club) }}
             className={cn(
               "truncate",
               ui.text.body,

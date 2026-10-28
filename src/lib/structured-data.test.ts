@@ -93,11 +93,13 @@ describe("structured data", () => {
     sportsEventJsonLd({
       canonicalUrl: "https://botolago.com/matches/m1",
       match: value,
-      homeName: "Wydad AC",
-      awayName: "AS FAR",
+      home: { name: "Wydad AC" },
+      away: { name: "AS FAR" },
     });
 
   test("a confirmed match carries its start, status, teams and venue", () => {
+    const wydad = { "@type": "SportsTeam", name: "Wydad AC" };
+    const far = { "@type": "SportsTeam", name: "AS FAR" };
     expect(event(match())).toEqual({
       "@context": "https://schema.org",
       "@type": "SportsEvent",
@@ -105,11 +107,55 @@ describe("structured data", () => {
       url: "https://botolago.com/matches/m1",
       sport: "Football",
       startDate: "2026-09-26T19:00:00.000Z",
+      endDate: "2026-09-26T20:55:00.000Z",
       eventStatus: "https://schema.org/EventScheduled",
-      homeTeam: { "@type": "SportsTeam", name: "Wydad AC" },
-      awayTeam: { "@type": "SportsTeam", name: "AS FAR" },
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      homeTeam: wydad,
+      awayTeam: far,
+      competitor: [wydad, far],
+      performer: [wydad, far],
       location: { "@type": "Place", name: "Stade Mohammed V" },
     });
+  });
+
+  // Search Console, 2026-10-27: four invalid Events items, all for a missing
+  // `location`. A league match always has one, and never an invented stadium.
+  test("a league match always has a location, its organiser, teams' pages and crests", () => {
+    const value = sportsEventJsonLd({
+      canonicalUrl: "https://botolago.com/matches/m1",
+      match: match({ venue: { fr: "", ar: "" } }),
+      home: {
+        name: "Wydad AC",
+        url: "https://botolago.com/clubs/h",
+        logoUrl: "https://media.example.test/wac.png",
+      },
+      away: { name: "AS FAR", url: "https://botolago.com/clubs/a", logoUrl: " " },
+      league: true,
+      description: "Wydad AC – AS FAR en Botola Pro.",
+      imageUrl: "https://botolago.com/og-image.jpg",
+    });
+    expect(value.location).toEqual({
+      "@type": "Place",
+      name: "Maroc",
+      address: { "@type": "PostalAddress", addressCountry: "MA" },
+    });
+    expect(value.organizer).toMatchObject({ "@type": "SportsOrganization", alternateName: "LNFP" });
+    expect(value.homeTeam).toEqual({
+      "@type": "SportsTeam",
+      name: "Wydad AC",
+      url: "https://botolago.com/clubs/h",
+      logo: "https://media.example.test/wac.png",
+    });
+    expect(value.awayTeam).toEqual({
+      "@type": "SportsTeam",
+      name: "AS FAR",
+      url: "https://botolago.com/clubs/a",
+    });
+    expect(value.image).toEqual([
+      "https://media.example.test/wac.png",
+      "https://botolago.com/og-image.jpg",
+    ]);
+    expect(value.description).toBe("Wydad AC – AS FAR en Botola Pro.");
   });
 
   test("an unconfirmed kick-off, a postponed or called-off match is not given a start", () => {
@@ -149,14 +195,15 @@ describe("structured data", () => {
     }
   });
 
-  test("no venue, no location; a team name cannot close the script tag", () => {
+  test("a cup match without a venue gets no invented location; a team name cannot close the script tag", () => {
     const value = event(match({ venue: { fr: "", ar: "" } }));
     expect(value).not.toHaveProperty("location");
+    expect(value).not.toHaveProperty("organizer");
     const hostile = sportsEventJsonLd({
       canonicalUrl: "https://botolago.com/matches/m1",
       match: match(),
-      homeName: "</script><script>alert(1)</script>",
-      awayName: "AS FAR",
+      home: { name: "</script><script>alert(1)</script>" },
+      away: { name: "AS FAR" },
     });
     const serialized = serializeJsonLd(hostile);
     expect(serialized).not.toContain("</script>");

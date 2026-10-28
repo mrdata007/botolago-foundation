@@ -82,3 +82,15 @@ export function bodyParagraphs(bodyHtml: string): string[] {
     .map(readerText)
     .filter((paragraph) => paragraph.length > 0);
 }
+
+/**
+ * How many words a reader finds in the body: the paragraphs' text split at
+ * white space. Arabic and French both separate words by spaces, so one rule
+ * serves both editions.
+ */
+export function bodyWordCount(bodyHtml: string): number {
+  return bodyParagraphs(bodyHtml)
+    .join(" ")
+    .split(/\s+/)
+    .filter((word) => word.length > 0).length;
+}
