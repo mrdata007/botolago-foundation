@@ -9,10 +9,12 @@ import {
 import { mapFootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { tableZones } from "@/lib/league-table";
+import { RIVALRIES } from "@/lib/rivalries";
 import {
   buildStandings,
   completeHomeMatches,
   footballService,
+  getFootballRepository,
   HOME_MATCHES_LIMIT,
   HOME_UPCOMING_LIMIT,
   hasLeagueTable,
@@ -269,6 +271,43 @@ describe("club pages", () => {
     const kickoffs = page.matches.map((m) => Date.parse(m.kickoff));
     expect(kickoffs).toEqual([...kickoffs].sort((a, b) => a - b));
     expect(page.clubs.some((c) => c.id === club!.id)).toBe(true);
+  });
+
+  // Codex review on PR #567: the history stopped at the club's latest 100
+  // fixtures, so older meetings were missing from it and from the tally.
+  test("a rivalry counts every meeting the club's fixture pages hold, past the first 100", async () => {
+    const repository = getFootballRepository();
+    const original = repository.getTeamFixtures.bind(repository);
+    const [wac, far] = [
+      "00000010-0000-4000-8000-000000000001",
+      "00000010-0000-4000-8000-000000000003",
+    ];
+    const meeting = (await original({ teamId: wac, language: "fr", limit: 100 }, context)).find(
+      (fixture) =>
+        fixture.status === "finished" &&
+        [fixture.homeTeam.id, fixture.awayTeam.id].sort().join() === [wac, far].sort().join(),
+    )!;
+    expect(meeting).toBeDefined();
+    // 250 finished meetings, one a week back from 2026-01-01, newest first.
+    const history: MatchCardDto[] = Array.from({ length: 250 }, (_, i) => ({
+      ...meeting,
+      id: `7b1f2c3d-0000-4000-8000-${i.toString().padStart(12, "0")}`,
+      kickoffAt: new Date(Date.UTC(2026, 0, 1) - i * 7 * 86_400_000).toISOString(),
+    }));
+    const asked: (string | null)[] = [];
+    repository.getTeamFixtures = async (query) => {
+      asked.push(query.before?.id ?? null);
+      const start = query.before ? history.findIndex((f) => f.id === query.before!.id) + 1 : 0;
+      return history.slice(start, start + (query.limit ?? 100));
+    };
+    try {
+      const rivalry = await footballService.getRivalry(RIVALRIES["classico-wac-far"], "fr");
+      expect(rivalry?.results).toHaveLength(250);
+      // Three pages: 100, 100, then 50, which ends the read.
+      expect(asked).toEqual([null, history[99]!.id, history[199]!.id]);
+    } finally {
+      repository.getTeamFixtures = original;
+    }
   });
 
   test("a club's played seasons are those with a result for it, the past season among them", async () => {
