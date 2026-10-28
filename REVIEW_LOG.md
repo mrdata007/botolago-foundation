@@ -388,3 +388,11 @@ Seen on the live Fantasy page: Gameweek 5 still shows "EN DIRECT", with a deadli
 
 **Owner check on the live site (28 Oct): "nothing looks wrong."** Batch 1 is closed.
 
+### Build task A (Batch 0) – restarted (28 Oct)
+
+The first Builder was stopped from the owner's side (it cannot be resumed).
+- Its unfinished work (16 files) was saved as a clearly labelled "wip" commit 71f819c on `claude/rapidapi-call-reduction`.
+- With the owner's yes, a new Builder took over from that commit.
+- Its brief adds: check the earlier unfinished work critically, bring in the latest `main`, save to GitHub after every step, separate call budgets for each provider, and owner steps written click by click.
+- Target: ready to put live before Friday 30 Oct 17:30 UTC.
+
