@@ -805,6 +805,28 @@ export const footballService = {
   },
 
   /**
+   * Every fixture of a season, as the calendar's rows and with the clubs that
+   * play them. The Matches calendar reads the round of the day on show from it
+   * (the round summary, the whole round, the "Résultats" fallback) and the days
+   * that have a match (the day strip's dots). The same fixture list as
+   * `getStandings` and `getSeasonResultDays`; nothing new is asked of the
+   * backend. Kept in fixture order (kick-off, then id).
+   */
+  async getSeasonMatches(
+    season: Pick<FootballSeason, "id" | "competitionId">,
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<FootballMatchCollection> {
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      language,
+      requestContext(signal),
+    );
+    return { matches: fixtures.map(toMatch), clubs: uniqueClubs(fixtures), standings: [] };
+  },
+
+  /**
    * The season's table: its fixtures and any stored table, read together (see
    * `buildStandings`). Every surface that shows a rank reads it here, under
    * `["football", "standings", seasonId, language]`: the Classement tab, Home,
