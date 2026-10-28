@@ -1,14 +1,23 @@
-import { useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { homeStoriesQuery } from "./home-stories-query";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { getNewsDataMode } from "@/services/news";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
-import { StoryViewer } from "./StoryViewer";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+
+/**
+ * The full-screen viewer opens on a tap, so its code is not part of the page's
+ * first load: it is fetched once the rail is on screen and the browser is idle,
+ * and at the latest on the first touch of a story, so the tap that opens it has
+ * (nearly) nothing left to wait for.
+ */
+const loadStoryViewer = () => import("./StoryViewer").then((m) => ({ default: m.StoryViewer }));
+const StoryViewer = lazy(loadStoryViewer);
+const warmStoryViewer = () => void loadStoryViewer().catch(() => undefined);
 
 /** Published news images only. An empty feed does not become navigation. */
 export function HomeStories() {
@@ -50,7 +59,17 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
   const { lang, t } = useI18n();
   const trigger = useRef<HTMLButtonElement | null>(null);
   const [view, setView] = useState<{ items: readonly HomeStory[]; index: number } | null>(null);
-  if (stories.length === 0) return null;
+  const hasStories = stories.length > 0;
+  useEffect(() => {
+    if (!hasStories) return;
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warmStoryViewer, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(warmStoryViewer, 1500);
+    return () => window.clearTimeout(id);
+  }, [hasStories]);
+  if (!hasStories) return null;
   return (
     <>
       <section
@@ -68,9 +87,11 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
                 type="button"
                 aria-haspopup="dialog"
                 aria-label={lang === "ar" ? story.titleAr : story.titleFr}
-                onFocus={(event) =>
-                  event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })
-                }
+                onFocus={(event) => {
+                  event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
+                  warmStoryViewer();
+                }}
+                onPointerDown={warmStoryViewer}
                 onClick={(event) => {
                   trigger.current = event.currentTarget;
                   setView({ items: stories, index });
@@ -121,13 +142,15 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
         </ul>
       </section>
       {view && (
-        <StoryViewer
-          stories={view.items}
-          index={view.index}
-          onIndexChange={(index) => setView({ ...view, index })}
-          onClose={() => setView(null)}
-          restoreFocus={() => trigger.current?.focus()}
-        />
+        <Suspense fallback={null}>
+          <StoryViewer
+            stories={view.items}
+            index={view.index}
+            onIndexChange={(index) => setView({ ...view, index })}
+            onClose={() => setView(null)}
+            restoreFocus={() => trigger.current?.focus()}
+          />
+        </Suspense>
       )}
     </>
   );
