@@ -1,101 +1,100 @@
 {
   "summary": {
     "url": "http://127.0.0.1:4174/",
-    "measuredAt": "2026-10-28T02:03:04.313Z",
+    "measuredAt": "2026-10-28T02:35:59.407Z",
     "firstLoad": {
-      "requests": 120,
-      "jsFiles": 86,
-      "jsBytes": 528824
+      "requests": 119,
+      "jsFiles": 85,
+      "jsBytes": 522481
     },
     "includingBackgroundWarmup": {
-      "requests": 220,
-      "jsFiles": 178,
-      "jsBytes": 656304
+      "requests": 219,
+      "jsFiles": 177,
+      "jsBytes": 649946
     },
-    "domContentLoadedMs": 736,
-    "loadMs": 1109,
-    "lcpMs": 1512,
+    "domContentLoadedMs": 758,
+    "loadMs": 1110,
+    "lcpMs": 956,
     "cls": 0,
     "shifts": [],
     "jsUrls": [
       "/assets/rolldown-runtime-QTnfLwEv.js",
-      "/assets/radix-CT_BaCzg.js",
-      "/assets/tanstack-CBUair7b.js",
       "/assets/icons-ynvYL7Yt.js",
-      "/assets/supabase-BRpPtBkl.js",
-      "/assets/index-D4tmSIWr.js",
       "/assets/provider-YhabwBWA.js",
-      "/assets/dist-DZp9vCBm.js",
-      "/assets/Logo-jf-YXW7P.js",
-      "/assets/AuthProvider-CKZus78X.js",
-      "/assets/fantasy-hub-share-D3k8u8Wu.js",
+      "/assets/tanstack-CBUair7b.js",
+      "/assets/index-Cp43_FU4.js",
       "/assets/react-Ckuujoqd.js",
-      "/assets/contracts-CCTGOmW-.js",
-      "/assets/schemas--zWuLHVL.js",
+      "/assets/Logo-jf-YXW7P.js",
+      "/assets/fantasy-hub-share-B0r-uVZB.js",
+      "/assets/AuthProvider-CKZus78X.js",
+      "/assets/radix-CT_BaCzg.js",
+      "/assets/supabase-BRpPtBkl.js",
+      "/assets/dist-DZp9vCBm.js",
       "/assets/second-factor-b1DZvDAF.js",
+      "/assets/contracts-CCTGOmW-.js",
       "/assets/step-up-BcGt42Ur.js",
       "/assets/errors-nLTeAu9L.js",
-      "/assets/football-Q7DcNvkl.js",
       "/assets/auth-HeWMOPwA.js",
       "/assets/contracts-COiObKuc.js",
-      "/assets/editorial-markdown-D5i_NL9v.js",
-      "/assets/contracts-Biy8varV.js",
+      "/assets/schemas--zWuLHVL.js",
       "/assets/use-premium-DE58VBP3.js",
+      "/assets/contracts-Biy8varV.js",
+      "/assets/editorial-markdown-D5i_NL9v.js",
       "/assets/use-pepites-CaRnxkGt.js",
-      "/assets/v2-client-C_5o9Bre.js",
+      "/assets/football-Q7DcNvkl.js",
       "/assets/use-live-matches-CP5hqgyq.js",
       "/assets/client-Bc3gYUvY.js",
-      "/assets/primitives-CkLpAdN-.js",
+      "/assets/v2-client-C_5o9Bre.js",
       "/assets/analytics-CTPbr-mm.js",
       "/assets/seo-titles-CTOP3UL-.js",
       "/assets/article-meta-CFbfJBjy.js",
-      "/assets/morocco-time-Cj--aPfD.js",
-      "/assets/media-xScUovRN.js",
+      "/assets/primitives-CkLpAdN-.js",
       "/assets/club-palette-D1uPik_Y.js",
       "/assets/motion-DPbVf-7_.js",
+      "/assets/media-xScUovRN.js",
+      "/assets/morocco-time-Cj--aPfD.js",
       "/assets/native-app-CpbuGLUU.js",
       "/assets/ssr-prefetch-C-jjCj0x.js",
-      "/assets/storage-Cnigny9H.js",
-      "/assets/news-BAE65VjK.js",
-      "/assets/manager-card-status-CAB3g4oh.js",
       "/assets/page-availability-H4UxU0af.js",
-      "/assets/fantasy-N7PMIstV.js",
+      "/assets/storage-Cnigny9H.js",
+      "/assets/manager-card-status-CAB3g4oh.js",
+      "/assets/news-BAE65VjK.js",
       "/assets/home-band-stadium-800-BLyQoyEe.js",
-      "/assets/BrandedText-DzILnzBj.js",
-      "/assets/stretched-link-C3lDdaJ0.js",
+      "/assets/fantasy-N7PMIstV.js",
       "/assets/create-team-OAVpwuH9.js",
-      "/assets/routes-m1EMLhhv.js",
-      "/assets/ArticleCard-D_vbR0Nb.js",
-      "/assets/Section-sZi_oH_r.js",
+      "/assets/routes-R-K_xf1h.js",
+      "/assets/stretched-link-C3lDdaJ0.js",
+      "/assets/ArticleCard-CUVPW1Bc.js",
+      "/assets/BrandedText-DzILnzBj.js",
       "/assets/AnimatedNumber-Bi10NwBF.js",
-      "/assets/MatchCard-yMe-aeZW.js",
+      "/assets/Section-sZi_oH_r.js",
       "/assets/Skeletons-fRhLpoNH.js",
-      "/assets/States-DDvQ0xts.js",
       "/assets/SectionHeader-BOBDbObg.js",
-      "/assets/FantasyUnavailableState-CioIvV_6.js",
+      "/assets/MatchCard-Bx5THuDw.js",
+      "/assets/States-DDvQ0xts.js",
       "/assets/rank-ordinal-C07YGr42.js",
-      "/assets/standings-copy-DFtVdwdT.js",
-      "/assets/StandingsTable-BYJuaTtx.js",
-      "/assets/my-clubs-DJ0FKR7u.js",
       "/assets/deadline-EKtNgwM1.js",
+      "/assets/FantasyUnavailableState-CioIvV_6.js",
+      "/assets/use-match-votes-Cb6ZReD_.js",
+      "/assets/StandingsTable-DCCv2vEw.js",
+      "/assets/standings-copy-DFtVdwdT.js",
+      "/assets/my-clubs-DJ0FKR7u.js",
+      "/assets/match-days-DRlBE7-v.js",
       "/assets/use-reader-document-title-rBByPvqg.js",
       "/assets/points-unit-BnF1kzl6.js",
-      "/assets/match-days-DRlBE7-v.js",
       "/assets/fantasy-next-action-D7EoFbNU.js",
-      "/assets/use-match-votes-Cb6ZReD_.js",
       "/assets/follows-CFstTGjy.js",
-      "/assets/use-fantasy-availability-CJZH1lqZ.js",
+      "/assets/botolago-wordmark-light-CvTZoBLt.js",
       "/assets/contracts-DR7ez-fU.js",
       "/assets/lazy-repository-Bgp_zUQG.js",
-      "/assets/botolago-wordmark-light-CvTZoBLt.js",
+      "/assets/use-fantasy-availability-d6srYEA2.js",
       "/assets/colour-Brv36sDQ.js",
-      "/assets/account-standing-A1_DmGjo.js",
-      "/assets/data-NNvx1D1f.js",
-      "/assets/errors-a3SKcCos.js",
-      "/assets/card-reads-BNpmT9Tt.js",
       "/assets/types-DQEWgzoR.js",
-      "/assets/errors-CoGW96Cm.js",
+      "/assets/account-standing-A1_DmGjo.js",
       "/assets/pepites-DffHjchX.js",
+      "/assets/errors-CoGW96Cm.js",
+      "/assets/card-reads-BNpmT9Tt.js",
+      "/assets/errors-a3SKcCos.js",
       "/seline.js",
       "/assets/format-time-6kq5A3ul.js",
       "/assets/saved-articles-B6Hzdw0g.js",
@@ -111,637 +110,630 @@
       "url": "http://127.0.0.1:4174/",
       "type": "document",
       "status": 200,
-      "bytes": 24768,
-      "at": 687
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/styles-DXUURiAS.css",
-      "type": "stylesheet",
-      "status": 200,
-      "bytes": 33128,
-      "at": 697
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/botolago-wordmark-color-DW9xtM1W.svg",
-      "type": "image",
-      "status": 200,
-      "bytes": 3765,
-      "at": 707
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/home-band-stadium-800-CDrgQbty.webp",
-      "type": "image",
-      "status": 200,
-      "bytes": 20768,
-      "at": 707
+      "bytes": 24767,
+      "at": 660
     },
     {
       "url": "http://127.0.0.1:4174/assets/botolago-wordmark-light-B2pMfDk-.svg",
       "type": "image",
       "status": 200,
       "bytes": 3762,
-      "at": 713
+      "at": 689
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/styles-DXUURiAS.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 33132,
+      "at": 700
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/botolago-wordmark-color-DW9xtM1W.svg",
+      "type": "image",
+      "status": 200,
+      "bytes": 3765,
+      "at": 706
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/home-band-stadium-800-CDrgQbty.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 20768,
+      "at": 706
     },
     {
       "url": "http://127.0.0.1:4174/assets/rolldown-runtime-QTnfLwEv.js",
       "type": "script",
       "status": 200,
       "bytes": 406,
-      "at": 741
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/radix-CT_BaCzg.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 30505,
-      "at": 861
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/tanstack-CBUair7b.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 51262,
-      "at": 862
+      "at": 714
     },
     {
       "url": "http://127.0.0.1:4174/assets/icons-ynvYL7Yt.js",
       "type": "script",
       "status": 200,
       "bytes": 9400,
-      "at": 862
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/supabase-BRpPtBkl.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 49182,
-      "at": 863
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/index-D4tmSIWr.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 73176,
-      "at": 863
+      "at": 756
     },
     {
       "url": "http://127.0.0.1:4174/assets/provider-YhabwBWA.js",
       "type": "script",
       "status": 200,
-      "bytes": 63850,
-      "at": 870
+      "bytes": 63938,
+      "at": 829
     },
     {
-      "url": "http://127.0.0.1:4174/assets/dist-DZp9vCBm.js",
+      "url": "http://127.0.0.1:4174/assets/tanstack-CBUair7b.js",
       "type": "script",
       "status": 200,
-      "bytes": 8713,
-      "at": 870
+      "bytes": 51262,
+      "at": 835
     },
     {
-      "url": "http://127.0.0.1:4174/assets/Logo-jf-YXW7P.js",
+      "url": "http://127.0.0.1:4174/assets/index-Cp43_FU4.js",
       "type": "script",
       "status": 200,
-      "bytes": 649,
-      "at": 870
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/AuthProvider-CKZus78X.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 13115,
-      "at": 870
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/fantasy-hub-share-D3k8u8Wu.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 9617,
-      "at": 870
+      "bytes": 73184,
+      "at": 836
     },
     {
       "url": "http://127.0.0.1:4174/assets/react-Ckuujoqd.js",
       "type": "script",
       "status": 200,
       "bytes": 55996,
-      "at": 871
+      "at": 836
     },
     {
-      "url": "http://127.0.0.1:4174/assets/contracts-CCTGOmW-.js",
+      "url": "http://127.0.0.1:4174/assets/Logo-jf-YXW7P.js",
       "type": "script",
       "status": 200,
-      "bytes": 1281,
-      "at": 871
+      "bytes": 649,
+      "at": 836
     },
     {
-      "url": "http://127.0.0.1:4174/assets/schemas--zWuLHVL.js",
+      "url": "http://127.0.0.1:4174/assets/fantasy-hub-share-B0r-uVZB.js",
       "type": "script",
       "status": 200,
-      "bytes": 17990,
-      "at": 871
+      "bytes": 6309,
+      "at": 836
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/AuthProvider-CKZus78X.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 13115,
+      "at": 836
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/radix-CT_BaCzg.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 30505,
+      "at": 836
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/supabase-BRpPtBkl.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 49191,
+      "at": 836
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/dist-DZp9vCBm.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 8713,
+      "at": 836
     },
     {
       "url": "http://127.0.0.1:4174/assets/second-factor-b1DZvDAF.js",
       "type": "script",
       "status": 200,
       "bytes": 2488,
-      "at": 871
+      "at": 837
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/contracts-CCTGOmW-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1281,
+      "at": 837
     },
     {
       "url": "http://127.0.0.1:4174/assets/step-up-BcGt42Ur.js",
       "type": "script",
       "status": 200,
       "bytes": 276,
-      "at": 871
+      "at": 837
     },
     {
       "url": "http://127.0.0.1:4174/assets/errors-nLTeAu9L.js",
       "type": "script",
       "status": 200,
       "bytes": 168,
-      "at": 871
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/football-Q7DcNvkl.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 8236,
-      "at": 872
+      "at": 837
     },
     {
       "url": "http://127.0.0.1:4174/assets/auth-HeWMOPwA.js",
       "type": "script",
       "status": 200,
       "bytes": 7372,
-      "at": 872
+      "at": 837
     },
     {
       "url": "http://127.0.0.1:4174/assets/contracts-COiObKuc.js",
       "type": "script",
       "status": 200,
       "bytes": 1282,
-      "at": 880
+      "at": 837
     },
     {
-      "url": "http://127.0.0.1:4174/assets/editorial-markdown-D5i_NL9v.js",
+      "url": "http://127.0.0.1:4174/assets/schemas--zWuLHVL.js",
       "type": "script",
       "status": 200,
-      "bytes": 4564,
-      "at": 880
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/contracts-Biy8varV.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1428,
-      "at": 881
+      "bytes": 17990,
+      "at": 837
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-premium-DE58VBP3.js",
       "type": "script",
       "status": 200,
       "bytes": 2152,
-      "at": 881
+      "at": 838
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/contracts-Biy8varV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1428,
+      "at": 838
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/editorial-markdown-D5i_NL9v.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4564,
+      "at": 843
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-pepites-CaRnxkGt.js",
       "type": "script",
       "status": 200,
       "bytes": 1246,
-      "at": 881
+      "at": 843
     },
     {
-      "url": "http://127.0.0.1:4174/assets/v2-client-C_5o9Bre.js",
+      "url": "http://127.0.0.1:4174/assets/football-Q7DcNvkl.js",
       "type": "script",
       "status": 200,
-      "bytes": 144,
-      "at": 883
+      "bytes": 8236,
+      "at": 844
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-live-matches-CP5hqgyq.js",
       "type": "script",
       "status": 200,
       "bytes": 878,
-      "at": 883
+      "at": 844
     },
     {
       "url": "http://127.0.0.1:4174/assets/client-Bc3gYUvY.js",
       "type": "script",
       "status": 200,
       "bytes": 845,
-      "at": 884
+      "at": 845
     },
     {
-      "url": "http://127.0.0.1:4174/assets/primitives-CkLpAdN-.js",
+      "url": "http://127.0.0.1:4174/assets/v2-client-C_5o9Bre.js",
       "type": "script",
       "status": 200,
-      "bytes": 8305,
-      "at": 888
+      "bytes": 144,
+      "at": 845
     },
     {
       "url": "http://127.0.0.1:4174/assets/analytics-CTPbr-mm.js",
       "type": "script",
       "status": 200,
       "bytes": 800,
-      "at": 888
+      "at": 845
     },
     {
       "url": "http://127.0.0.1:4174/assets/seo-titles-CTOP3UL-.js",
       "type": "script",
       "status": 200,
       "bytes": 1681,
-      "at": 888
+      "at": 845
     },
     {
       "url": "http://127.0.0.1:4174/assets/article-meta-CFbfJBjy.js",
       "type": "script",
       "status": 200,
       "bytes": 3275,
-      "at": 889
+      "at": 846
     },
     {
-      "url": "http://127.0.0.1:4174/assets/morocco-time-Cj--aPfD.js",
+      "url": "http://127.0.0.1:4174/assets/primitives-CkLpAdN-.js",
       "type": "script",
       "status": 200,
-      "bytes": 831,
-      "at": 889
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/media-xScUovRN.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 966,
-      "at": 889
+      "bytes": 8305,
+      "at": 851
     },
     {
       "url": "http://127.0.0.1:4174/assets/club-palette-D1uPik_Y.js",
       "type": "script",
       "status": 200,
       "bytes": 2193,
-      "at": 896
+      "at": 851
     },
     {
       "url": "http://127.0.0.1:4174/assets/motion-DPbVf-7_.js",
       "type": "script",
       "status": 200,
       "bytes": 2229,
-      "at": 897
+      "at": 852
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/media-xScUovRN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 966,
+      "at": 852
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/morocco-time-Cj--aPfD.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 831,
+      "at": 852
     },
     {
       "url": "http://127.0.0.1:4174/assets/native-app-CpbuGLUU.js",
       "type": "script",
       "status": 200,
       "bytes": 439,
-      "at": 898
+      "at": 853
     },
     {
       "url": "http://127.0.0.1:4174/assets/ssr-prefetch-C-jjCj0x.js",
       "type": "script",
       "status": 200,
       "bytes": 598,
-      "at": 898
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/storage-Cnigny9H.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 288,
-      "at": 899
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/news-BAE65VjK.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 3570,
-      "at": 928
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/manager-card-status-CAB3g4oh.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 847,
-      "at": 928
+      "at": 865
     },
     {
       "url": "http://127.0.0.1:4174/assets/page-availability-H4UxU0af.js",
       "type": "script",
       "status": 200,
       "bytes": 218,
-      "at": 928
+      "at": 865
     },
     {
-      "url": "http://127.0.0.1:4174/assets/fantasy-N7PMIstV.js",
+      "url": "http://127.0.0.1:4174/assets/storage-Cnigny9H.js",
       "type": "script",
       "status": 200,
-      "bytes": 217,
-      "at": 929
+      "bytes": 288,
+      "at": 866
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/manager-card-status-CAB3g4oh.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 847,
+      "at": 866
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/news-BAE65VjK.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3570,
+      "at": 866
     },
     {
       "url": "http://127.0.0.1:4174/assets/home-band-stadium-800-BLyQoyEe.js",
       "type": "script",
       "status": 200,
       "bytes": 102,
-      "at": 931
+      "at": 867
     },
     {
-      "url": "http://127.0.0.1:4174/assets/BrandedText-DzILnzBj.js",
+      "url": "http://127.0.0.1:4174/assets/fantasy-N7PMIstV.js",
       "type": "script",
       "status": 200,
-      "bytes": 431,
-      "at": 936
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/stretched-link-C3lDdaJ0.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 126,
-      "at": 937
+      "bytes": 217,
+      "at": 867
     },
     {
       "url": "http://127.0.0.1:4174/assets/create-team-OAVpwuH9.js",
       "type": "script",
       "status": 200,
       "bytes": 77,
-      "at": 937
+      "at": 867
     },
     {
-      "url": "http://127.0.0.1:4174/assets/routes-m1EMLhhv.js",
+      "url": "http://127.0.0.1:4174/assets/routes-R-K_xf1h.js",
       "type": "script",
       "status": 200,
-      "bytes": 14646,
-      "at": 938
+      "bytes": 14648,
+      "at": 867
     },
     {
-      "url": "http://127.0.0.1:4174/assets/ArticleCard-D_vbR0Nb.js",
+      "url": "http://127.0.0.1:4174/assets/stretched-link-C3lDdaJ0.js",
       "type": "script",
       "status": 200,
-      "bytes": 4537,
-      "at": 938
+      "bytes": 126,
+      "at": 867
     },
     {
-      "url": "http://127.0.0.1:4174/assets/Section-sZi_oH_r.js",
+      "url": "http://127.0.0.1:4174/assets/ArticleCard-CUVPW1Bc.js",
       "type": "script",
       "status": 200,
-      "bytes": 160,
-      "at": 938
+      "bytes": 4538,
+      "at": 867
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/BrandedText-DzILnzBj.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 431,
+      "at": 868
     },
     {
       "url": "http://127.0.0.1:4174/assets/AnimatedNumber-Bi10NwBF.js",
       "type": "script",
       "status": 200,
       "bytes": 295,
-      "at": 938
+      "at": 884
     },
     {
-      "url": "http://127.0.0.1:4174/assets/MatchCard-yMe-aeZW.js",
+      "url": "http://127.0.0.1:4174/assets/Section-sZi_oH_r.js",
       "type": "script",
       "status": 200,
-      "bytes": 3733,
-      "at": 957
+      "bytes": 160,
+      "at": 884
     },
     {
       "url": "http://127.0.0.1:4174/assets/Skeletons-fRhLpoNH.js",
       "type": "script",
       "status": 200,
       "bytes": 714,
-      "at": 957
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/States-DDvQ0xts.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 898,
-      "at": 957
+      "at": 884
     },
     {
       "url": "http://127.0.0.1:4174/assets/SectionHeader-BOBDbObg.js",
       "type": "script",
       "status": 200,
       "bytes": 854,
-      "at": 957
+      "at": 884
     },
     {
-      "url": "http://127.0.0.1:4174/assets/FantasyUnavailableState-CioIvV_6.js",
+      "url": "http://127.0.0.1:4174/assets/MatchCard-Bx5THuDw.js",
       "type": "script",
       "status": 200,
-      "bytes": 377,
-      "at": 957
+      "bytes": 3733,
+      "at": 885
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/States-DDvQ0xts.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 898,
+      "at": 897
     },
     {
       "url": "http://127.0.0.1:4174/assets/rank-ordinal-C07YGr42.js",
       "type": "script",
       "status": 200,
       "bytes": 219,
-      "at": 957
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/standings-copy-DFtVdwdT.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 630,
-      "at": 957
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/StandingsTable-BYJuaTtx.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 2705,
-      "at": 957
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/my-clubs-DJ0FKR7u.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 258,
-      "at": 957
+      "at": 897
     },
     {
       "url": "http://127.0.0.1:4174/assets/deadline-EKtNgwM1.js",
       "type": "script",
       "status": 200,
       "bytes": 613,
-      "at": 958
+      "at": 897
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-reader-document-title-rBByPvqg.js",
+      "url": "http://127.0.0.1:4174/assets/FantasyUnavailableState-CioIvV_6.js",
       "type": "script",
       "status": 200,
-      "bytes": 173,
-      "at": 958
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/points-unit-BnF1kzl6.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 107,
-      "at": 958
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/match-days-DRlBE7-v.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 607,
-      "at": 958
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/fantasy-next-action-D7EoFbNU.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 516,
-      "at": 958
+      "bytes": 377,
+      "at": 897
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-match-votes-Cb6ZReD_.js",
       "type": "script",
       "status": 200,
       "bytes": 2003,
-      "at": 958
+      "at": 904
     },
     {
-      "url": "http://127.0.0.1:4174/assets/follows-CFstTGjy.js",
+      "url": "http://127.0.0.1:4174/assets/StandingsTable-DCCv2vEw.js",
       "type": "script",
       "status": 200,
-      "bytes": 506,
-      "at": 958
+      "bytes": 2706,
+      "at": 904
     },
     {
-      "url": "http://127.0.0.1:4174/assets/botolago-mark-light-Co-4oQMn.svg",
-      "type": "image",
+      "url": "http://127.0.0.1:4174/assets/standings-copy-DFtVdwdT.js",
+      "type": "script",
       "status": 200,
-      "bytes": 2711,
-      "at": 962
+      "bytes": 630,
+      "at": 904
     },
     {
-      "url": "http://127.0.0.1:4174/assets/botolago-mark-color-B08aaeEZ.svg",
-      "type": "image",
+      "url": "http://127.0.0.1:4174/assets/my-clubs-DJ0FKR7u.js",
+      "type": "script",
       "status": 200,
-      "bytes": 2806,
-      "at": 962
+      "bytes": 258,
+      "at": 904
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/match-days-DRlBE7-v.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 607,
+      "at": 904
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-reader-document-title-rBByPvqg.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 173,
+      "at": 912
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/points-unit-BnF1kzl6.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 107,
+      "at": 913
     },
     {
       "url": "http://127.0.0.1:4174/fonts/manrope-latin-wght-normal.woff2",
       "type": "font",
       "status": 200,
       "bytes": 24836,
-      "at": 963
+      "at": 914
     },
     {
-      "url": "http://127.0.0.1:4174/assets/plate-latest-480-DpJe49Hc.webp",
-      "type": "image",
+      "url": "http://127.0.0.1:4174/assets/fantasy-next-action-D7EoFbNU.js",
+      "type": "script",
       "status": 200,
-      "bytes": 13452,
-      "at": 963
+      "bytes": 516,
+      "at": 914
     },
     {
-      "url": "http://127.0.0.1:4174/assets/topic-matchday-480-Clu1sR94.webp",
-      "type": "image",
+      "url": "http://127.0.0.1:4174/assets/follows-CFstTGjy.js",
+      "type": "script",
       "status": 200,
-      "bytes": 17138,
-      "at": 963
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/topic-goal-480-BofBZfX_.webp",
-      "type": "image",
-      "status": 200,
-      "bytes": 22522,
-      "at": 963
+      "bytes": 506,
+      "at": 914
     },
     {
       "url": "http://127.0.0.1:4174/fonts/changa-latin-wght-normal.woff2",
       "type": "font",
       "status": 200,
       "bytes": 23064,
-      "at": 963
+      "at": 943
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-fantasy-availability-CJZH1lqZ.js",
-      "type": "script",
+      "url": "http://127.0.0.1:4174/assets/botolago-mark-color-B08aaeEZ.svg",
+      "type": "image",
       "status": 200,
-      "bytes": 459,
-      "at": 963
+      "bytes": 2806,
+      "at": 945
     },
     {
-      "url": "http://127.0.0.1:4174/assets/contracts-DR7ez-fU.js",
-      "type": "script",
+      "url": "http://127.0.0.1:4174/assets/plate-latest-480-DpJe49Hc.webp",
+      "type": "image",
       "status": 200,
-      "bytes": 1477,
-      "at": 971
+      "bytes": 13452,
+      "at": 946
     },
     {
-      "url": "http://127.0.0.1:4174/assets/lazy-repository-Bgp_zUQG.js",
-      "type": "script",
+      "url": "http://127.0.0.1:4174/assets/botolago-mark-light-Co-4oQMn.svg",
+      "type": "image",
       "status": 200,
-      "bytes": 170,
-      "at": 971
+      "bytes": 2711,
+      "at": 949
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/topic-matchday-480-Clu1sR94.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 17138,
+      "at": 950
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/topic-goal-480-BofBZfX_.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 22522,
+      "at": 951
     },
     {
       "url": "http://127.0.0.1:4174/assets/botolago-wordmark-light-CvTZoBLt.js",
       "type": "script",
       "status": 200,
       "bytes": 90,
-      "at": 971
+      "at": 952
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/contracts-DR7ez-fU.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1477,
+      "at": 953
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/lazy-repository-Bgp_zUQG.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 170,
+      "at": 953
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-fantasy-availability-d6srYEA2.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 461,
+      "at": 954
     },
     {
       "url": "http://127.0.0.1:4174/assets/colour-Brv36sDQ.js",
       "type": "script",
       "status": 200,
       "bytes": 966,
-      "at": 971
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/account-standing-A1_DmGjo.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 423,
-      "at": 971
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/data-NNvx1D1f.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 3147,
-      "at": 972
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/errors-a3SKcCos.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 539,
-      "at": 977
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/card-reads-BNpmT9Tt.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1319,
-      "at": 977
+      "at": 954
     },
     {
       "url": "http://127.0.0.1:4174/assets/types-DQEWgzoR.js",
       "type": "script",
       "status": 200,
       "bytes": 105,
-      "at": 981
+      "at": 956
     },
     {
-      "url": "http://127.0.0.1:4174/assets/errors-CoGW96Cm.js",
+      "url": "http://127.0.0.1:4174/assets/account-standing-A1_DmGjo.js",
       "type": "script",
       "status": 200,
-      "bytes": 684,
-      "at": 981
+      "bytes": 423,
+      "at": 956
     },
     {
       "url": "http://127.0.0.1:4174/assets/pepites-DffHjchX.js",
       "type": "script",
       "status": 200,
       "bytes": 1823,
-      "at": 981
+      "at": 957
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/errors-CoGW96Cm.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 684,
+      "at": 957
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/card-reads-BNpmT9Tt.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1319,
+      "at": 960
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/errors-a3SKcCos.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 539,
+      "at": 960
     },
     {
       "url": "https://cdn.seline.com/seline.js",
       "type": "script",
       "status": 200,
-      "bytes": 4728,
+      "bytes": 4729,
       "at": 1112
     },
     {
@@ -749,903 +741,903 @@
       "type": "script",
       "status": 200,
       "bytes": 407,
-      "at": 1119
+      "at": 1121
     },
     {
       "url": "http://127.0.0.1:4174/assets/saved-articles-B6Hzdw0g.js",
       "type": "script",
       "status": 200,
       "bytes": 1812,
-      "at": 1123
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/off-status-copy-Z4PLdRwo.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 253,
-      "at": 1128
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/delivery-promise-BjkeBSNJ.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 183,
-      "at": 1129
+      "at": 1125
     },
     {
       "url": "http://127.0.0.1:4174/favicon.png?v=2",
       "type": "other",
       "status": 200,
       "bytes": 2915,
-      "at": 1134
+      "at": 1130
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/off-status-copy-Z4PLdRwo.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 253,
+      "at": 1138
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/delivery-promise-BjkeBSNJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 183,
+      "at": 1139
     },
     {
       "url": "http://127.0.0.1:4174/assets/motion-lib-B_gdkYfL.js",
       "type": "script",
       "status": 200,
       "bytes": 536,
-      "at": 1138
+      "at": 1141
     },
     {
       "url": "http://127.0.0.1:4174/assets/motion-CIi_tfr8.js",
       "type": "script",
       "status": 200,
       "bytes": 29376,
-      "at": 1145
+      "at": 1154
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/6af2e33c-2cb2-4476-9b40-11b38892a35b.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9222,
+      "at": 1285
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/1b0e2a95-97a4-4a3e-bf91-fafac139e35b.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9878,
+      "at": 1302
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55039/crest-1c206613bad0.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3699,
+      "at": 1305
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/2dbb0ce5-7851-4089-8c38-d7e88143f08a.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 8822,
+      "at": 1305
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/54273f41-985d-4eb1-af62-202a32340fa8.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9106,
+      "at": 1306
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/41757/crest-e49c13db652c.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3360,
+      "at": 1307
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/47696/crest-875297937888.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3825,
+      "at": 1307
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/24394/crest-ba2bf3e9a017.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2857,
+      "at": 1308
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/16ad62be-884f-4032-a691-a3f383d56cb2.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9096,
+      "at": 1310
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/80395/crest-ed5bd8a7e3ba.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2807,
+      "at": 1310
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/36268/crest-daaa57632547.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3507,
+      "at": 1310
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/87180/crest-c190a93d06dd.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2649,
+      "at": 1311
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55025/crest-62ba1e11f959.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3723,
+      "at": 1312
     },
     {
       "url": "http://127.0.0.1:4174/assets/magic-rings-C2sTGn2E.js",
       "type": "script",
       "status": 200,
       "bytes": 2362,
-      "at": 1234
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/2dbb0ce5-7851-4089-8c38-d7e88143f08a.png?width=160&height=160&resize=cover",
-      "type": "image",
-      "status": 200,
-      "bytes": 9108,
-      "at": 1360
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/47696/crest-875297937888.webp?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 3630,
-      "at": 1361
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/80395/crest-ed5bd8a7e3ba.webp?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 2777,
-      "at": 1363
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/41757/crest-e49c13db652c.png?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 3361,
-      "at": 1364
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/24394/crest-ba2bf3e9a017.png?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 2859,
-      "at": 1364
+      "at": 1313
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55035/crest-6ec00d6287c8.webp?width=64&height=64&resize=contain",
       "type": "image",
       "status": 200,
-      "bytes": 2691,
-      "at": 1365
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/54273f41-985d-4eb1-af62-202a32340fa8.png?width=160&height=160&resize=cover",
-      "type": "image",
-      "status": 200,
-      "bytes": 9364,
-      "at": 1367
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/87180/crest-c190a93d06dd.webp?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 2678,
-      "at": 1367
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55025/crest-62ba1e11f959.png?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 3501,
-      "at": 1367
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/6af2e33c-2cb2-4476-9b40-11b38892a35b.png?width=160&height=160&resize=cover",
-      "type": "image",
-      "status": 200,
-      "bytes": 8937,
-      "at": 1367
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/1b0e2a95-97a4-4a3e-bf91-fafac139e35b.png?width=160&height=160&resize=cover",
-      "type": "image",
-      "status": 200,
-      "bytes": 9879,
-      "at": 1370
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/16ad62be-884f-4032-a691-a3f383d56cb2.png?width=160&height=160&resize=cover",
-      "type": "image",
-      "status": 200,
-      "bytes": 9053,
-      "at": 1370
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/36268/crest-daaa57632547.png?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 3735,
-      "at": 1371
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55039/crest-1c206613bad0.png?width=64&height=64&resize=contain",
-      "type": "image",
-      "status": 200,
-      "bytes": 3710,
-      "at": 1497
+      "bytes": 2695,
+      "at": 1353
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
       "type": "fetch",
       "status": 200,
-      "bytes": 1662,
-      "at": 1926
+      "bytes": 1663,
+      "at": 1815
     },
     {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_live_matches",
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
       "type": "fetch",
       "status": 200,
-      "bytes": 404,
-      "at": 2065
+      "bytes": 633,
+      "at": 1817
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
       "type": "fetch",
       "status": 200,
-      "bytes": 413,
-      "at": 2067
+      "bytes": 417,
+      "at": 1817
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
       "type": "fetch",
       "status": 200,
-      "bytes": 590,
-      "at": 2067
-    },
-    {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/fantasy_hub",
-      "type": "fetch",
-      "status": 200,
-      "bytes": 629,
-      "at": 2069
+      "bytes": 589,
+      "at": 1817
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
       "type": "fetch",
       "status": 200,
-      "bytes": 2323,
-      "at": 2069
+      "bytes": 2321,
+      "at": 1819
     },
     {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_live_matches",
       "type": "fetch",
       "status": 200,
-      "bytes": 900,
-      "at": 2069
+      "bytes": 358,
+      "at": 2011
     },
     {
-      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/fantasy_hub",
       "type": "fetch",
       "status": 200,
-      "bytes": 588,
-      "at": 2530
+      "bytes": 939,
+      "at": 2012
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/fantasy_gameweek_summary",
       "type": "fetch",
       "status": 200,
-      "bytes": 475,
-      "at": 2667
+      "bytes": 482,
+      "at": 2348
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 592,
+      "at": 2551
     },
     {
       "url": "http://127.0.0.1:4174/assets/empty-matches-3Gw0fdIp.js",
       "type": "script",
       "status": 200,
       "bytes": 76,
-      "at": 3190
+      "at": 3192
     },
     {
-      "url": "http://127.0.0.1:4174/assets/MatchesTabs-BZPsQrqV.js",
+      "url": "http://127.0.0.1:4174/assets/MatchesTabs-BK61kZiV.js",
       "type": "script",
       "status": 200,
-      "bytes": 413,
-      "at": 3190
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/matches.index-5gwSwxXM.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 4457,
-      "at": 3191
+      "bytes": 414,
+      "at": 3193
     },
     {
       "url": "http://127.0.0.1:4174/assets/SeasonPicker-8218TnqT.js",
       "type": "script",
       "status": 200,
       "bytes": 1501,
-      "at": 3191
+      "at": 3197
     },
     {
-      "url": "http://127.0.0.1:4174/assets/fantasy-BLjpCh6D.js",
+      "url": "http://127.0.0.1:4174/assets/matches.index-7APeshv_.js",
       "type": "script",
       "status": 200,
-      "bytes": 562,
-      "at": 3215
+      "bytes": 4458,
+      "at": 3199
     },
     {
-      "url": "http://127.0.0.1:4174/assets/empty-leagues-Diq4CqMb.js",
+      "url": "http://127.0.0.1:4174/assets/fantasy-DA4ZdMr2.js",
       "type": "script",
       "status": 200,
-      "bytes": 79,
-      "at": 3218
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/PlusLockedSection-Cj6XEMyw.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1011,
-      "at": 3218
+      "bytes": 563,
+      "at": 3238
     },
     {
       "url": "http://127.0.0.1:4174/assets/FantasyAmount-DKTSvUHM.js",
       "type": "script",
       "status": 200,
       "bytes": 379,
-      "at": 3218
+      "at": 3239
     },
     {
-      "url": "http://127.0.0.1:4174/assets/fantasy.index-BdeKSUZm.js",
+      "url": "http://127.0.0.1:4174/assets/empty-leagues-Diq4CqMb.js",
       "type": "script",
       "status": 200,
-      "bytes": 11275,
-      "at": 3220
+      "bytes": 79,
+      "at": 3240
     },
     {
-      "url": "http://127.0.0.1:4174/assets/PlusBriefing-DIo7pDhQ.js",
+      "url": "http://127.0.0.1:4174/assets/PlusLockedSection-Cj6XEMyw.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1011,
+      "at": 3240
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/PlusBriefing-l1DK-J9u.js",
       "type": "script",
       "status": 200,
       "bytes": 9469,
-      "at": 3221
+      "at": 3240
     },
     {
-      "url": "http://127.0.0.1:4174/assets/PlusLockChip-DM5JG18E.js",
+      "url": "http://127.0.0.1:4174/assets/fantasy.index-D38x7jYE.js",
       "type": "script",
       "status": 200,
-      "bytes": 288,
-      "at": 3222
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/plus-embed-gjS1u8zI.css",
-      "type": "stylesheet",
-      "status": 200,
-      "bytes": 3440,
-      "at": 3230
+      "bytes": 11267,
+      "at": 3241
     },
     {
       "url": "http://127.0.0.1:4174/assets/PlusLogo-TVG7fgHV.css",
       "type": "stylesheet",
       "status": 200,
       "bytes": 4195,
-      "at": 3231
+      "at": 3242
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/plus-embed-gjS1u8zI.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 3440,
+      "at": 3249
     },
     {
       "url": "http://127.0.0.1:4174/assets/PlusBriefing-DBVY5Tfl.css",
       "type": "stylesheet",
       "status": 200,
       "bytes": 4307,
-      "at": 3232
+      "at": 3251
     },
     {
-      "url": "http://127.0.0.1:4174/assets/PlusLogo-Bj74uwn2.js",
+      "url": "http://127.0.0.1:4174/assets/PlusLockChip-DM5JG18E.js",
       "type": "script",
       "status": 200,
-      "bytes": 877,
-      "at": 3235
+      "bytes": 288,
+      "at": 3253
     },
     {
       "url": "http://127.0.0.1:4174/assets/wordmark-paths-CxB0_G5_.js",
       "type": "script",
       "status": 200,
       "bytes": 1955,
-      "at": 3235
+      "at": 3257
     },
     {
-      "url": "http://127.0.0.1:4174/assets/plus-copy-PhZzTZvQ.js",
+      "url": "http://127.0.0.1:4174/assets/PlusLogo-Bj74uwn2.js",
       "type": "script",
       "status": 200,
-      "bytes": 654,
-      "at": 3235
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/copy-Dn1qzT0r.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 3182,
-      "at": 3241
+      "bytes": 877,
+      "at": 3257
     },
     {
       "url": "http://127.0.0.1:4174/assets/interpolate-Ddmb8F2w.js",
       "type": "script",
       "status": 200,
       "bytes": 760,
-      "at": 3243
+      "at": 3282
     },
     {
       "url": "http://127.0.0.1:4174/assets/plus-season-context-DSVvuPQ3.js",
       "type": "script",
       "status": 200,
       "bytes": 2194,
-      "at": 3244
+      "at": 3283
     },
     {
-      "url": "http://127.0.0.1:4174/assets/prizes-BkYgUNQb.js",
+      "url": "http://127.0.0.1:4174/assets/copy-Dn1qzT0r.js",
       "type": "script",
       "status": 200,
-      "bytes": 1890,
-      "at": 3245
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/LeagueList-CvvcWv8-.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 683,
-      "at": 3247
+      "bytes": 3182,
+      "at": 3284
     },
     {
       "url": "http://127.0.0.1:4174/assets/contracts-BcSJBOGt.js",
       "type": "script",
       "status": 200,
       "bytes": 1154,
-      "at": 3247
+      "at": 3285
     },
     {
-      "url": "http://127.0.0.1:4174/assets/RankOrdinal-Dy5rGfB1.js",
+      "url": "http://127.0.0.1:4174/assets/prizes-BkYgUNQb.js",
       "type": "script",
       "status": 200,
-      "bytes": 411,
-      "at": 3269
+      "bytes": 1890,
+      "at": 3297
     },
     {
-      "url": "http://127.0.0.1:4174/assets/ManualCopyField-nRQaKaly.js",
+      "url": "http://127.0.0.1:4174/assets/plus-copy-PhZzTZvQ.js",
       "type": "script",
       "status": 200,
-      "bytes": 484,
-      "at": 3270
+      "bytes": 654,
+      "at": 3297
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/LeagueList-CvvcWv8-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 683,
+      "at": 3298
     },
     {
       "url": "http://127.0.0.1:4174/assets/copy-text-NRE5Hmbn.js",
       "type": "script",
       "status": 200,
       "bytes": 456,
-      "at": 3272
+      "at": 3298
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/RankOrdinal-Dy5rGfB1.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 411,
+      "at": 3298
     },
     {
       "url": "http://127.0.0.1:4174/assets/league-invite-DYaAbHl4.js",
       "type": "script",
       "status": 200,
       "bytes": 208,
-      "at": 3272
+      "at": 3298
     },
     {
-      "url": "http://127.0.0.1:4174/assets/invite-link-B-NddbqL.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 891,
-      "at": 3272
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/CreateLeagueInvite-WLEmvGay.js",
+      "url": "http://127.0.0.1:4174/assets/CreateLeagueInvite-BmR_JHvM.js",
       "type": "script",
       "status": 200,
       "bytes": 1290,
-      "at": 3272
+      "at": 3298
     },
     {
-      "url": "http://127.0.0.1:4174/assets/share-link-BfxKH0v9.js",
+      "url": "http://127.0.0.1:4174/assets/ManualCopyField-nRQaKaly.js",
       "type": "script",
       "status": 200,
-      "bytes": 229,
-      "at": 3272
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/fantasy-hub-layout-BsuXthqx.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 317,
-      "at": 3280
+      "bytes": 484,
+      "at": 3298
     },
     {
       "url": "http://127.0.0.1:4174/assets/gameweek-presentation-Bi6bdRMn.js",
       "type": "script",
       "status": 200,
       "bytes": 132,
-      "at": 3283
+      "at": 3302
     },
     {
-      "url": "http://127.0.0.1:4174/assets/FantasyFrame-DYkm3R03.js",
+      "url": "http://127.0.0.1:4174/assets/invite-link-B-NddbqL.js",
       "type": "script",
       "status": 200,
-      "bytes": 683,
-      "at": 3287
+      "bytes": 891,
+      "at": 3302
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/share-link-BfxKH0v9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 229,
+      "at": 3302
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/fantasy-hub-layout-BsuXthqx.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 317,
+      "at": 3302
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/FantasyFrame-BIZNZV3w.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 684,
+      "at": 3302
     },
     {
       "url": "http://127.0.0.1:4174/assets/StatusBarStrip-S3eayZe9.js",
       "type": "script",
       "status": 200,
       "bytes": 295,
-      "at": 3289
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/FantasyScreenGate-CNCc2O-V.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 940,
-      "at": 3291
+      "at": 3302
     },
     {
       "url": "http://127.0.0.1:4174/assets/GameweekStatusText-DG_QZtAx.js",
       "type": "script",
       "status": 200,
       "bytes": 426,
-      "at": 3294
+      "at": 3306
     },
     {
-      "url": "http://127.0.0.1:4174/assets/points-pending-D2cgJcbx.js",
+      "url": "http://127.0.0.1:4174/assets/FantasyScreenGate-DMjrPDjT.js",
       "type": "script",
       "status": 200,
-      "bytes": 80,
-      "at": 3298
+      "bytes": 942,
+      "at": 3307
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/useFantasyScreen-BLSIcDNx.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 817,
+      "at": 3308
     },
     {
       "url": "http://127.0.0.1:4174/assets/prize-art-Cj1r6cfL.js",
       "type": "script",
       "status": 200,
       "bytes": 204,
-      "at": 3300
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/useFantasyScreen-euDIx-w6.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 817,
-      "at": 3300
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/stadium-night-800-CCcYzaSd.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 81,
-      "at": 3300
+      "at": 3308
     },
     {
       "url": "http://127.0.0.1:4174/assets/podium-soon-DYPAypi4.js",
       "type": "script",
       "status": 200,
       "bytes": 76,
-      "at": 3300
+      "at": 3308
     },
     {
-      "url": "http://127.0.0.1:4174/assets/prize-presentation-DSXJp70X.js",
+      "url": "http://127.0.0.1:4174/assets/points-pending-D2cgJcbx.js",
       "type": "script",
       "status": 200,
-      "bytes": 721,
-      "at": 3301
+      "bytes": 80,
+      "at": 3310
     },
     {
       "url": "http://127.0.0.1:4174/assets/fantasy-create-draft-DA5g_t2b.js",
       "type": "script",
       "status": 200,
       "bytes": 384,
-      "at": 3302
+      "at": 3317
     },
     {
-      "url": "http://127.0.0.1:4174/assets/NewsSkeletons-lI0mzHt2.js",
+      "url": "http://127.0.0.1:4174/assets/prize-presentation-DSXJp70X.js",
       "type": "script",
       "status": 200,
-      "bytes": 396,
-      "at": 3324
+      "bytes": 721,
+      "at": 3317
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/stadium-night-800-CCcYzaSd.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 81,
+      "at": 3318
     },
     {
       "url": "http://127.0.0.1:4174/assets/empty-news-CbS5xKPY.js",
       "type": "script",
       "status": 200,
       "bytes": 77,
-      "at": 3324
+      "at": 3337
     },
     {
-      "url": "http://127.0.0.1:4174/assets/news-a3NWGlwi.js",
+      "url": "http://127.0.0.1:4174/assets/NewsSkeletons-lI0mzHt2.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 396,
+      "at": 3338
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/news-DyNuCXdU.js",
       "type": "script",
       "status": 200,
       "bytes": 3472,
-      "at": 3328
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/curva-COLY4CHb.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 470,
-      "at": 3366
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/CurvaLockScreen-DddmDE10.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1989,
-      "at": 3370
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/figures-CovVVjau.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 319,
-      "at": 3371
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/use-launch-gate-XA1TZubz.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 119,
-      "at": 3372
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/curva-state-CVKYYUMa.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1227,
-      "at": 3377
+      "at": 3339
     },
     {
       "url": "http://127.0.0.1:4174/assets/CardStage-CjVP6fh5.css",
       "type": "stylesheet",
       "status": 200,
       "bytes": 339,
-      "at": 3380
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/CardStage-NKCDTHmC.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 6864,
-      "at": 3388
+      "at": 3375
     },
     {
       "url": "http://127.0.0.1:4174/assets/CardBornPanel-B8HbqddG.css",
       "type": "stylesheet",
       "status": 200,
       "bytes": 883,
+      "at": 3380
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/curva-state-CVKYYUMa.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1227,
       "at": 3389
     },
     {
-      "url": "http://127.0.0.1:4174/assets/ManagerCard-CRYYzqwa.js",
+      "url": "http://127.0.0.1:4174/assets/use-launch-gate-XA1TZubz.js",
       "type": "script",
       "status": 200,
-      "bytes": 2175,
-      "at": 3400
+      "bytes": 119,
+      "at": 3390
     },
     {
-      "url": "http://127.0.0.1:4174/assets/crest-href-DRMsTndz.js",
+      "url": "http://127.0.0.1:4174/assets/figures-CovVVjau.js",
       "type": "script",
       "status": 200,
-      "bytes": 323,
-      "at": 3406
+      "bytes": 319,
+      "at": 3390
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/CurvaLockScreen-BE5xE62E.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1989,
+      "at": 3390
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/curva-f-I03Pks.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 472,
+      "at": 3390
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/CardStage-DLySAH-T.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 6863,
+      "at": 3390
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-card-renderer-DlJygNDb.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1399,
+      "at": 3391
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/ManagerCard-BOaOM2vy.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2179,
+      "at": 3391
     },
     {
       "url": "http://127.0.0.1:4174/assets/estimate-C-dSM2GC.js",
       "type": "script",
       "status": 200,
       "bytes": 76,
-      "at": 3408
+      "at": 3391
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-card-renderer-DHpg5ims.js",
+      "url": "http://127.0.0.1:4174/assets/crest-href-DRMsTndz.js",
       "type": "script",
       "status": 200,
-      "bytes": 1398,
-      "at": 3410
+      "bytes": 323,
+      "at": 3391
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/spring-Qdossiy9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1367,
+      "at": 3391
     },
     {
       "url": "http://127.0.0.1:4174/assets/storage-DOrYTRPG.js",
       "type": "script",
       "status": 200,
       "bytes": 695,
-      "at": 3412
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/spring-BaeBhDuu.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1366,
-      "at": 3412
+      "at": 3403
     },
     {
       "url": "http://127.0.0.1:4174/assets/tier-word-C1eTpkk2.js",
       "type": "script",
       "status": 200,
       "bytes": 201,
-      "at": 3412
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/tier-node-BCKnj9g4.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 239,
-      "at": 3412
+      "at": 3404
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-view-event-BBPwfHvi.js",
       "type": "script",
       "status": 200,
       "bytes": 233,
-      "at": 3417
+      "at": 3404
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-moment-gate-DSt7-9eq.js",
+      "url": "http://127.0.0.1:4174/assets/tier-node-BCKnj9g4.js",
       "type": "script",
       "status": 200,
-      "bytes": 2400,
-      "at": 3418
+      "bytes": 239,
+      "at": 3404
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-moment-gate-Dh6C0j-z.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2401,
+      "at": 3406
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-manager-card-CKY4GR8d.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1361,
+      "at": 3406
     },
     {
       "url": "http://127.0.0.1:4174/assets/manager-card-C87U_v_b.js",
       "type": "script",
       "status": 200,
       "bytes": 995,
-      "at": 3419
+      "at": 3406
     },
     {
       "url": "http://127.0.0.1:4174/assets/plus-sample-Di2NBvYJ.js",
       "type": "script",
       "status": 200,
       "bytes": 280,
-      "at": 3420
+      "at": 3409
     },
     {
       "url": "http://127.0.0.1:4174/assets/manager-card-mode-B4nUmy4N.js",
       "type": "script",
       "status": 200,
       "bytes": 240,
-      "at": 3420
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/use-manager-card-CmyMQqyW.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1360,
-      "at": 3420
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/StateBlocks-C_Nmp4Si.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 695,
-      "at": 3433
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/ranking-copy-BbE2EeE0.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 483,
-      "at": 3435
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/RoundGlance-Bu9Y3XE4.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 794,
-      "at": 3436
+      "at": 3409
     },
     {
       "url": "http://127.0.0.1:4174/assets/plus-season-fmt-CDBXUjSZ.js",
       "type": "script",
       "status": 200,
       "bytes": 3520,
+      "at": 3409
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/StateBlocks-C_Nmp4Si.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 695,
+      "at": 3409
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/curva.index-Day05NQf.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 8795,
+      "at": 3414
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/ranking-copy-BbE2EeE0.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 483,
+      "at": 3426
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/RoundGlance-Bu9Y3XE4.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 794,
+      "at": 3426
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/LeagueRows-DfD9UL2J.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2142,
+      "at": 3427
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-private-leagues-D31cMom4.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 946,
       "at": 3437
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/LeagueRows-xa3eGpeR.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 2143,
-      "at": 3438
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/curva.index-HQLkB2Zz.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 8809,
-      "at": 3441
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/use-private-leagues-S2BzSRXR.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 945,
-      "at": 3454
     },
     {
       "url": "http://127.0.0.1:4174/assets/report-targets-ByysaSbn.js",
       "type": "script",
       "status": 200,
       "bytes": 201,
-      "at": 3454
+      "at": 3437
     },
     {
       "url": "http://127.0.0.1:4174/assets/standings-DdrNALaZ.js",
       "type": "script",
       "status": 200,
       "bytes": 223,
-      "at": 3458
+      "at": 3439
     },
     {
       "url": "http://127.0.0.1:4174/assets/to-profile-CZPhsZhf.js",
       "type": "script",
       "status": 200,
       "bytes": 998,
-      "at": 3459
+      "at": 3439
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/CardToken-C5Pfylct.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 629,
+      "at": 3439
     },
     {
       "url": "http://127.0.0.1:4174/assets/trophy-copy-CKNI7YJl.js",
       "type": "script",
       "status": 200,
       "bytes": 1361,
-      "at": 3461
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/CardToken-PVXm3ByO.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 629,
-      "at": 3462
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/ReportNameMenu-Dfsd36jr.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1014,
-      "at": 3464
+      "at": 3442
     },
     {
       "url": "http://127.0.0.1:4174/assets/contracts-B25-fHUm.js",
       "type": "script",
       "status": 200,
       "bytes": 761,
-      "at": 3465
+      "at": 3444
     },
     {
       "url": "http://127.0.0.1:4174/assets/report-content-CRD39ndl.js",
       "type": "script",
       "status": 200,
       "bytes": 383,
-      "at": 3560
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/SeasonRack-CNztwXVf.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1121,
-      "at": 3561
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/use-ovr-change-BKSFHc0z.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1098,
-      "at": 3562
+      "at": 3445
     },
     {
       "url": "http://127.0.0.1:4174/assets/StatTiles-VdByINwV.js",
       "type": "script",
       "status": 200,
       "bytes": 1614,
-      "at": 3562
+      "at": 3448
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-curva-people-BLzZ_MIL.js",
+      "url": "http://127.0.0.1:4174/assets/SeasonRack-CI_QLqkG.js",
       "type": "script",
       "status": 200,
-      "bytes": 656,
-      "at": 3562
+      "bytes": 1114,
+      "at": 3450
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-curva-screen-CfMQDi0L.js",
+      "url": "http://127.0.0.1:4174/assets/use-ovr-change-jzr_uwce.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1098,
+      "at": 3451
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/ReportNameMenu-Dfsd36jr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1014,
+      "at": 3455
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-curva-people-CCgVlBxF.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 655,
+      "at": 3455
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/use-curva-screen-8IaBLuuB.js",
       "type": "script",
       "status": 200,
       "bytes": 476,
-      "at": 3562
+      "at": 3456
     },
     {
-      "url": "http://127.0.0.1:4174/assets/use-rating-change-S8if_ker.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 971,
-      "at": 3566
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/WebOnly-bfSxytzP.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 268,
-      "at": 3569
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/moment-text-Df2cu0bw.js",
-      "type": "script",
-      "status": 200,
-      "bytes": 1847,
-      "at": 3569
-    },
-    {
-      "url": "http://127.0.0.1:4174/assets/CardBornPanel-CBwyzY6y.js",
+      "url": "http://127.0.0.1:4174/assets/CardBornPanel-8BD31aQS.js",
       "type": "script",
       "status": 200,
       "bytes": 5044,
-      "at": 3569
+      "at": 3470
     },
     {
       "url": "http://127.0.0.1:4174/assets/use-native-image-actions-B4U7LAQd.js",
       "type": "script",
       "status": 200,
       "bytes": 1156,
-      "at": 3575
+      "at": 3472
     },
     {
-      "url": "http://127.0.0.1:4174/assets/ShareCardSheet-DZDcpPGc.js",
+      "url": "http://127.0.0.1:4174/assets/use-rating-change-Bg4Rmoip.js",
       "type": "script",
       "status": 200,
-      "bytes": 4981,
-      "at": 3575
+      "bytes": 969,
+      "at": 3473
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/moment-text-Df2cu0bw.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1847,
+      "at": 3476
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/WebOnly-bfSxytzP.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 268,
+      "at": 3476
+    },
+    {
+      "url": "http://127.0.0.1:4174/assets/ShareCardSheet-DNE9eZ7B.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4983,
+      "at": 3476
     },
     {
       "url": "http://127.0.0.1:4174/assets/pepites-design-SimpHIAq.js",
       "type": "script",
       "status": 200,
       "bytes": 666,
-      "at": 3575
+      "at": 3477
     },
     {
       "url": "http://127.0.0.1:4174/assets/share-image-cYVDjOFT.js",
       "type": "script",
       "status": 200,
       "bytes": 4496,
-      "at": 3576
+      "at": 3477
     },
     {
       "url": "http://127.0.0.1:4174/assets/pepites-format-CR-uAOuT.js",
       "type": "script",
       "status": 200,
       "bytes": 1229,
-      "at": 3576
+      "at": 3481
     },
     {
       "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/3be7f460-0d07-4b04-babd-1176485c4dc3.png?width=160&height=160&resize=cover",
       "type": "image",
       "status": 200,
-      "bytes": 8836,
-      "at": 3781
+      "bytes": 8835,
+      "at": 3757
     }
   ]
 }
