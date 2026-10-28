@@ -483,3 +483,8 @@ Pull request #572 opened so CI runs the database tests that could not run here. 
   - With no address set, the new code behaves as before the pause (Sofascore, refused until 10 Nov).
   - Remaining owner action: add the Supabase secret `RAPIDAPI_HOST=sportapi7.p.rapidapi.com` in the dashboard. It takes effect on the next run, with no redeploy. The Lead then checks.
 
+- Around 03:36 the owner set `RAPIDAPI_HOST=sportapi7.p.rapidapi.com` in Supabase.
+  - 03:47 check: no provider call yet. The jobs call only when something is due: fixtures update last at 03:30 (still Sofascore, before the secret), rating polls for 24–25 Oct between their scheduled checks, nothing live.
+  - Journée 5 is not stuck: its last 3 matches are on 28–29 Oct. What is missing is the ratings for the 24–25 Oct matches.
+  - Read-only checks scheduled for 10:00 UTC (first SportAPI calls) and 18:20 UTC (live, Raja v Hassania).
+
