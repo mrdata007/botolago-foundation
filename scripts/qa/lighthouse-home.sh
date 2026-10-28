@@ -31,4 +31,4 @@ console.log(JSON.stringify({
   speedIndex: a["speed-index"].displayValue,
   interactive: a["interactive"].displayValue,
 }, null, 2));
-' "$(pwd)/$out/lighthouse.report.json"
+' "$(cd "$out" && pwd)/lighthouse.report.json"
