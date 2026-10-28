@@ -69,12 +69,24 @@ Before screenshots in `docs/screens/2026-10-28-match-page/`.
      a link to the Face à face tab; the row is omitted when there is none.
      A row with nothing true to say is not drawn. Nothing is invented and nothing
      needs a new server query.
-2. **Goals are the loudest event.** The goal row loses the tint wash. It
-   becomes a neutral row with the scoring club's edge bar on its own side
-   (the same device the standings and head-to-head rows use), a larger heavier
-   name, a larger ball in the club's text colour and the navy minute pill.
-   Cards become quieter rows (smaller muted name, shorter row), so a goal
-   outweighs a yellow card at a glance.
+     **Alive, not pale (owner direction 2026-10-28, supersedes the pale card in
+     the first draft of this brief).** The module is a stage, not a grey box: a
+     navy band (`ui.surface.inkPlain`, the Home band's navy) holding "Avant-match",
+     the countdown as big Changa figures (days, hours, minutes at the 40px score
+     step) and the kick-off line; under it, the two clubs as two colour blocks
+     (`clubStyle` + `ui.club.fill`, so contrast stays measured), each with its
+     crest on a surface disc, its league position as a big Changa figure, its points
+     and its form chips on a small plain pill (the chips keep their own result
+     colours, which need a neutral ground). The last-meeting row sits under them
+     on the card surface. The gradient is not used.
+2. **Goals are the loudest event, in the scoring club's colour.** The goal row
+   loses the tint wash (a red club's wash is pink). It stays a plain row, but
+   its minute pill is the scoring club's colour (`ui.club.fill`), its name is set
+   in the club's text colour (`ui.tone.club`, AA on the card) at the heaviest
+   weight, its ball is bigger, and its club's edge bar runs down its own side
+   (the device the standings use). The full-time separator is a navy band, the
+   anchor of a finished match's list. Cards become quieter rows (smaller
+   name, shorter row), so a goal outweighs a yellow card at a glance.
 3. **The "+" says what it does.** The round button becomes a labelled control:
    "+ Passes décisives et cartons" (only "Passes décisives" or "Cartons" when
    that is all there is), "×" while open, `aria-expanded`, 44px tall.
@@ -90,13 +102,16 @@ Visual, in French and Arabic (right to left), at 320, 390 and 1440 px, light and
 dark: no horizontal overflow, measured on element boxes (not `scrollWidth`
 alone); text no smaller than 12 px; taps at least 44 px.
 
-- Upcoming match: the Résumé shows the prediction card, then "Avant-match" with
-  kick-off and countdown, the two clubs with position, points and five form
-  chips (or dashes), and the last meeting with its Face à face link. In Arabic
-  the home club is on the right. No "0" stands for an unknown value.
+- Upcoming match: the Résumé shows the prediction card, then "Avant-match": a
+  navy band with the countdown in big figures, two club-colour blocks with
+  position (big), points and five form chips (or dashes), and the last meeting
+  with its Face à face link. In Arabic the home club is on the right. No "0"
+  stands for an unknown value. Text on the blocks is AA (the club palette
+  measures it); dark mode stays calm.
 - Finished match: no pink wash on any row; the goal row is the heaviest row of
-  the list; cards read as secondary. Colour is never the only carrier: the ball
-  and the label stay.
+  the list, in the scoring club's colour (pill, name, edge bar); the full-time
+  band is navy; cards read as secondary. Colour is never the only carrier: the
+  ball and the label stay.
 - The "+" control shows its words in both languages.
 - Desktop: no empty left column; the timeline and the line-ups share the panel
   in two columns of equal width, the pitch is not stranded at half width.

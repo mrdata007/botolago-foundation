@@ -46,6 +46,7 @@ const FILES = [
   "src/components/matches/LiveFreshnessNote.tsx",
   "src/components/matches/MatchTabs.tsx",
   "src/components/matches/EventTimeline.tsx",
+  "src/components/matches/PreMatchPanel.tsx",
   "src/components/matches/StatComparison.tsx",
   "src/components/matches/PressureChart.tsx",
   "src/components/matches/Absences.tsx",
@@ -293,9 +294,18 @@ describe("match page — the Résumé timeline", () => {
       (m) => m[1]!,
     );
     expect(rows).toHaveLength(3);
-    // Goals carry the club wash; a card does not. No row is a card with an edge.
-    expect(rows[0]).toContain("bg-[color:var(--ui-club-tint)]");
-    expect(rows[1]).not.toContain("bg-[color:var(--ui-club-tint)]");
+    // No row is washed in its club's colour (a red club's wash is pink and
+    // reads as bad news): a goal is the tallest row and carries its club's edge
+    // bar on its own side (home: start, away: end); a card is the shortest.
+    for (const row of rows) expect(row).not.toContain("--ui-club-tint");
+    expect(html).not.toContain("--ui-club-tint");
+    expect(rows[0]).toContain("min-h-14");
+    expect(rows[1]).toContain("min-h-9");
+    expect(html).toMatch(
+      /<span aria-hidden="true" class="absolute inset-y-0 w-1 start-0 [^"]*edge/,
+    );
+    expect(html).toMatch(/<span aria-hidden="true" class="absolute inset-y-0 w-1 end-0 [^"]*edge/);
+    expect(html.match(/absolute inset-y-0 w-1/g)).toHaveLength(2);
     expect(html).not.toContain("border-s-4");
     expect(html).not.toContain("border-e-4");
     // Away rows put the text toward the end: `text-end` and `justify-end`.
@@ -346,16 +356,16 @@ describe("match page — the Résumé timeline", () => {
     expect(html).not.toContain("Remplace");
   });
 
-  it("puts each minute in a centre pill: navy for a goal, light grey for a card", () => {
+  it("puts each minute in a centre pill: the scoring club's colour for a goal, light grey for a card", () => {
     const pills = [...html.matchAll(/<span class="([^"]*rounded-full[^"]*)"><bdi>(\d+)/g)].map(
       (m) => [m[2]!, m[1]!] as const,
     );
     // Latest first.
     expect(pills.map(([minute]) => minute)).toEqual(["45", "33", "12"]);
-    expect(pills[2]![1]).toContain("bg-[color:var(--ui-ink)]");
+    expect(pills[2]![1]).toContain("bg-[color:var(--ui-club)]");
     expect(pills[1]![1]).toContain("bg-[color:var(--ui-surface-sunken)]");
     // A penalty is a goal for the pill's purposes.
-    expect(pills[0]![1]).toContain("bg-[color:var(--ui-ink)]");
+    expect(pills[0]![1]).toContain("bg-[color:var(--ui-club)]");
   });
 
   it("isolates each minute, stoppage time included, with the prime in the body face", () => {
@@ -736,5 +746,51 @@ describe("match page — tabs come straight after the identity (batch 2)", () =>
   it("leads with the prediction only while the match is still to be played", () => {
     expect(route).toContain('predictionInline && match.status === "scheduled"');
     expect(route).toContain('predictionInline && match.status !== "scheduled"');
+  });
+});
+
+describe("match page — the + under the scorers says what it opens", () => {
+  const finished: Match = { ...live, status: "finished", homeScore: 1, awayScore: 0 };
+  const lineup = {
+    id: "l1",
+    team: { id: "war" },
+    formation: "4-3-3",
+    confirmed: true,
+    publishedAt: null,
+    players: [
+      { id: "p1", slug: null, displayName: "Hamza Smaali", slot: "starting", order: 1 },
+      { id: "p2", slug: null, displayName: "Jawad Rhabra", slot: "starting", order: 2 },
+    ],
+  } as unknown as MatchLineupDto;
+  const header = (events: MatchEvent[]) =>
+    inFrench(
+      <MatchScoreHeader
+        match={finished}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        elapsed={90}
+        headingId="h"
+        events={events}
+        lineups={[lineup]}
+      />,
+    );
+  const goal = { ...event("g1", "goal", "home", 12), playerId: "p1" };
+  const assisted = { ...goal, relatedPlayerId: "p2" };
+  const card = { ...event("c1", "yellow_card", "away", 33), playerId: "p2" };
+
+  it("names assists and cards, or only the one that exists, in a 44px expandable button", () => {
+    const both = header([assisted, card]);
+    expect(both).toContain(dictionaries.fr["matches.detail.events_more_both"]);
+    expect(both).toMatch(
+      /<button type="button" aria-expanded="false"[^>]*min-h-\[var\(--ui-tap-min\)\]/,
+    );
+    expect(header([assisted])).toContain(dictionaries.fr["matches.detail.events_more_assists"]);
+    expect(header([assisted])).not.toContain(dictionaries.fr["matches.detail.events_more_both"]);
+    expect(header([goal, card])).toMatch(/<span[^>]*>Cartons<\/span><\/button>/);
+  });
+
+  it("draws no control when there is nothing to open", () => {
+    expect(header([goal])).not.toContain("aria-expanded");
   });
 });
