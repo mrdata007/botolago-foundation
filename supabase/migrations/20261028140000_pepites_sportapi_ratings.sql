@@ -22,7 +22,9 @@
 --   - goals, assists and saves: from the performance row when the match has
 --     one (unchanged), otherwise goals and assists from the match events and
 --     saves unknown (NULL, which the engine treats as unknown, not 0).
--- Every other match reads app.player_fixture_performances exactly as before.
+-- A player the capture does not name with one of our identities keeps his
+-- performance row for that match. Every other match reads
+-- app.player_fixture_performances exactly as before.
 -- Season-final runs (the 2025-26 final ranking) are untouched.
 --
 -- Sealed runs keep their snapshot, so published editions, the 2025-26 final
@@ -71,13 +73,15 @@ as $$
   rated as (
     select latest.fixture_id, latest.players from latest where latest.ready
   ),
-  api_rows as (
-    -- One row per player and match: two SportAPI ids never map to one
-    -- player today, and if they did the longer appearance would count.
+  captured as (
+    -- Every player of a ready capture with one of our identities, whether
+    -- he played or not. One row per player and match: two SportAPI ids
+    -- never map to one player today, and if they did the longer appearance
+    -- would count.
     select distinct on (rated.fixture_id, mapping.internal_entity_id)
       rated.fixture_id, mapping.internal_entity_id as player_id,
       (entry ->> 'side') = 'home' as home,
-      (entry ->> 'minutes')::integer as minutes,
+      coalesce((entry ->> 'minutes')::integer, 0) as minutes,
       coalesce((entry ->> 'starter')::boolean, false) as started,
       (entry ->> 'rating')::numeric as rating
     from rated
@@ -85,8 +89,11 @@ as $$
     join app_private.football_provider_mappings mapping
       on mapping.provider_name = 'sofascore' and mapping.entity_type = 'player'
       and mapping.active and mapping.external_id = entry ->> 'externalId'
-    where (entry ->> 'minutes')::integer > 0
-    order by rated.fixture_id, mapping.internal_entity_id, (entry ->> 'minutes')::integer desc
+    order by rated.fixture_id, mapping.internal_entity_id,
+      coalesce((entry ->> 'minutes')::integer, 0) desc
+  ),
+  api_rows as (
+    select captured.* from captured where captured.minutes > 0
   ),
   scored as (
     select event.fixture_id, event.player_id, count(*)::integer as goals
@@ -126,7 +133,13 @@ as $$
   where performance.football_season_id = p_season_id
     and performance.active
     and performance.minutes > 0
-    and performance.fixture_id not in (select rated.fixture_id from rated);
+    -- A rated match's rows stay for a player the capture does not name with
+    -- one of our identities, so his minutes there are not lost.
+    and not exists (
+      select 1 from captured
+      where captured.fixture_id = performance.fixture_id
+        and captured.player_id = performance.player_id
+    );
 $$;
 
 revoke all on function app_private.pepites_source_appearances(uuid, text, integer, timestamptz)

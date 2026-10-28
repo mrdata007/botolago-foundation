@@ -31,11 +31,11 @@ select pg_temp.rid(1000 + i), 'sportapi-player-' || i, 'SportAPI Player ' || i, 
   case when (i - 1) % 11 = 0 then 'goalkeeper'::app.football_position
     else 'forward'::app.football_position end
 from generate_series(1, 66) i;
--- Every player but 66 has a SportAPI identity (external id = 5000 + i).
+-- Every player but 30 and 66 has a SportAPI identity (external id = 5000 + i).
 insert into app_private.football_provider_mappings (provider_name, entity_type, external_id,
   internal_entity_id, source_version, last_seen_at)
 select 'sofascore', 'player', (5000 + i)::text, pg_temp.rid(1000 + i), 'test', now()
-from generate_series(1, 65) i;
+from generate_series(1, 65) i where i <> 30;
 
 insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
   kickoff_at, status, home_score, away_score, provider_updated_at, source_sequence, finalized_at)
@@ -129,6 +129,12 @@ select extensions.is(
   '2.3 and saves');
 select extensions.is((select count(*)::int from weekly where fixture_id = pg_temp.rid(102)), 20,
   '2.4 one row per player: the capture replaces the rows of that match');
+select extensions.is(
+  (select minutes || '/' || rating::numeric(3, 1) from weekly where player_id = pg_temp.rid(1030)), '60/5.0',
+  '2.5 a player the capture names with no identity of ours keeps his performance row');
+select extensions.is(
+  (select count(*)::int from weekly where player_id in (pg_temp.rid(1033), pg_temp.rid(1044))), 0,
+  '2.6 a player the capture says did not play is not brought back by his row');
 
 -- 3. A capture that is not ready.
 select extensions.is(
