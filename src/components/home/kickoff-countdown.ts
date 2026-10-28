@@ -4,7 +4,7 @@ import {
   matchDayKey,
 } from "@/lib/match-kickoff";
 import { moroccoDayBounds } from "@/lib/morocco-time";
-import type { Match } from "@/types/domain";
+import type { Language, Match } from "@/types/domain";
 
 /**
  * What the band card says about a match still to be played, from the kick-off
@@ -62,4 +62,20 @@ export function kickoffDay(kickoffIso: string, now: number): "today" | "tomorrow
   if (day === today) return "today";
   const end = moroccoDayBounds(today)?.end;
   return end && day === matchDayKey(end) ? "tomorrow" : null;
+}
+
+/**
+ * One unit's wording for a count, from a dictionary entry of four forms
+ * separated by `|`: one, two, three to ten, eleven and more ("ساعة|ساعتان|{n}
+ * ساعات|{n} ساعة"). Arabic names a unit by its own form for one and two, and
+ * agrees the noun with the figure after that (MSA); French and any entry with
+ * fewer than four forms use the last (first, for a single form) whatever the
+ * count. `{n}` stands for the figure.
+ */
+export function pluralForm(forms: string, count: number, lang: Language): string {
+  const list = forms.split("|");
+  if (list.length < 4) return list[0] ?? "";
+  const category = lang === "ar" ? new Intl.PluralRules("ar").select(count) : "other";
+  const index = category === "one" ? 0 : category === "two" ? 1 : category === "few" ? 2 : 3;
+  return list[index] ?? "";
 }

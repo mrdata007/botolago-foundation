@@ -1,7 +1,55 @@
 import { describe, expect, it } from "bun:test";
 
+import { dictionaries } from "@/i18n/dictionaries";
 import { clockNow, CLOCK_TICK_MS } from "./use-clock";
-import { kickoffClock, kickoffDay } from "./kickoff-countdown";
+import { kickoffClock, kickoffDay, pluralForm } from "./kickoff-countdown";
+
+describe("pluralForm: the Arabic countdown reads in words, agreed with the figure", () => {
+  const ar = dictionaries.ar;
+  const fr = dictionaries.fr;
+  const say = (key: "unit_day" | "unit_hour" | "unit_minute", n: number, lang: "ar" | "fr") =>
+    pluralForm(dictionaries[lang][`home.kickoff.${key}`], n, lang).replace("{n}", String(n));
+
+  it("names one and two by their own form, with no figure", () => {
+    expect(say("unit_minute", 1, "ar")).toBe("دقيقة");
+    expect(say("unit_minute", 2, "ar")).toBe("دقيقتان");
+    expect(say("unit_hour", 1, "ar")).toBe("ساعة");
+    expect(say("unit_hour", 2, "ar")).toBe("ساعتان");
+    expect(say("unit_day", 1, "ar")).toBe("يوم");
+    expect(say("unit_day", 2, "ar")).toBe("يومان");
+  });
+
+  it("uses the plural for three to ten and the singular after the figure from eleven", () => {
+    expect(say("unit_minute", 3, "ar")).toBe("3 دقائق");
+    expect(say("unit_minute", 10, "ar")).toBe("10 دقائق");
+    expect(say("unit_minute", 11, "ar")).toBe("11 دقيقة");
+    expect(say("unit_minute", 58, "ar")).toBe("58 دقيقة");
+    expect(say("unit_hour", 5, "ar")).toBe("5 ساعات");
+    expect(say("unit_hour", 23, "ar")).toBe("23 ساعة");
+    expect(say("unit_day", 4, "ar")).toBe("4 أيام");
+    expect(say("unit_day", 12, "ar")).toBe("12 يومًا");
+  });
+
+  it("has no one-letter abbreviation left in the Arabic countdown", () => {
+    const text = Object.entries(ar)
+      .filter(([key]) => key.startsWith("home.kickoff."))
+      .map(([, value]) => value)
+      .join(" ");
+    expect(text).not.toMatch(/(^|\s)[يسد](\s|$)/);
+  });
+
+  it("joins days and hours, and hours and minutes, with و", () => {
+    expect(ar["home.kickoff.in_days"]).toBe("{d} و{h}");
+    expect(ar["home.kickoff.in_hours"]).toBe("{h} و{m}");
+  });
+
+  it("leaves French as it was: 1 h, 58 min, whatever the count", () => {
+    expect(say("unit_hour", 1, "fr")).toBe("1 h");
+    expect(say("unit_minute", 58, "fr")).toBe("58 min");
+    expect(say("unit_day", 2, "fr")).toBe("2 j");
+    expect(fr["home.kickoff.in"]).toBe("Coup d'envoi dans");
+  });
+});
 
 const at = (iso: string) => Date.parse(iso);
 const match = (kickoff: string, status: "scheduled" | "postponed" = "scheduled") => ({

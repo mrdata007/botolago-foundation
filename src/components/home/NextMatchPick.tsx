@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type { MatchVoteChoice } from "@/backend/predictions/contracts";
 import type { Club, Match } from "@/types/domain";
 import { bandClubName } from "./band-matches";
-import { kickoffClock, kickoffDay } from "./kickoff-countdown";
+import { kickoffClock, kickoffDay, pluralForm } from "./kickoff-countdown";
 import { useClock } from "./use-clock";
 
 const PANEL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_10%,transparent)]";
@@ -310,18 +310,37 @@ function StatusLine({ match, now }: { match: Match; now: number | null }) {
     value = clock.kind === "imminent" ? t("home.kickoff.imminent") : t("home.kickoff.waiting");
   } else {
     label = t("home.kickoff.in");
-    if (clock.days > 0)
-      value = fillTemplate(t("home.kickoff.in_days"), {
-        d: number(clock.days),
-        h: number(clock.hours),
-      });
+    // Each unit is worded for its count (`pluralForm`): "1 h", "58 min" in
+    // French; "ساعة", "ساعتان", "5 ساعات", "58 دقيقة" in Arabic.
+    const unit = (forms: string, count: number) => {
+      const form = pluralForm(forms, count, lang);
+      if (!form.includes("{n}")) return <span>{form}</span>;
+      const [before = "", after = ""] = form.split("{n}");
+      return (
+        <span>
+          {before ? <span data-unit>{before}</span> : null}
+          {number(count)}
+          {after ? <span data-unit>{after}</span> : null}
+        </span>
+      );
+    };
+    const days = unit(t("home.kickoff.unit_day"), clock.days);
+    const hours = unit(t("home.kickoff.unit_hour"), clock.hours);
+    if (clock.days > 0) value = fillTemplate(t("home.kickoff.in_days"), { d: days, h: hours });
     else if (clock.hours > 0)
-      // "1 h 05", not "1 h 5": the minutes are a pair of figures.
-      value = fillTemplate(t("home.kickoff.in_hours"), {
-        h: number(clock.hours),
-        m: number(clock.minutes, true),
-      });
-    else value = fillTemplate(t("home.kickoff.in_minutes"), { m: number(clock.minutes) });
+      value =
+        lang === "ar" && clock.minutes === 0
+          ? hours
+          : fillTemplate(t("home.kickoff.in_hours"), {
+              h: hours,
+              // French: "1 h 05", not "1 h 5", the minutes a pair of figures.
+              // Arabic names them ("23 دقيقة").
+              m:
+                lang === "ar"
+                  ? unit(t("home.kickoff.unit_minute"), clock.minutes)
+                  : number(clock.minutes, true),
+            });
+    else value = unit(t("home.kickoff.unit_minute"), clock.minutes);
   }
   return (
     <p className={box} data-testid="home-kickoff-countdown" data-state={clock.kind}>

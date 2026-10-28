@@ -120,9 +120,12 @@ export const frCore = {
   "home.pick.title": "Votre favori\u00a0?",
   "home.kickoff.in": "Coup d'envoi dans",
   "home.kickoff.label": "Coup d'envoi",
-  "home.kickoff.in_days": "{d}\u00a0j {h}\u00a0h",
-  "home.kickoff.in_hours": "{h}\u00a0h {m}",
-  "home.kickoff.in_minutes": "{m}\u00a0min",
+  // Four forms (one, two, three to ten, eleven and more), `|`-separated, as Arabic needs them.
+  "home.kickoff.unit_day": "{n}\u00a0j|{n}\u00a0j|{n}\u00a0j|{n}\u00a0j",
+  "home.kickoff.unit_hour": "{n}\u00a0h|{n}\u00a0h|{n}\u00a0h|{n}\u00a0h",
+  "home.kickoff.unit_minute": "{n}\u00a0min|{n}\u00a0min|{n}\u00a0min|{n}\u00a0min",
+  "home.kickoff.in_days": "{d} {h}",
+  "home.kickoff.in_hours": "{h} {m}",
   "home.kickoff.imminent": "imminent",
   "home.kickoff.waiting": "en attente",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
