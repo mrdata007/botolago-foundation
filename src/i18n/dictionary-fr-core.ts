@@ -293,6 +293,22 @@ export const frCore = {
   "matches.section.no_live": "Aucun match en direct pour le moment.",
   "matches.section.no_upcoming": "Aucun match à venir.",
   "matches.section.no_finished": "Aucun résultat pour l'instant.",
+  /* The day's round: summary card, whole round, and the filters' fallback. */
+  "matches.round.title": "Journée {n}",
+  "matches.round.count_one": "1 match",
+  "matches.round.count_two": "2 matchs",
+  "matches.round.count_few": "{n} matchs",
+  "matches.round.count_other": "{n} matchs",
+  "matches.round.on_day": "Ce jour",
+  "matches.round.played": "Joués",
+  "matches.round.called_off": "Annulés",
+  "matches.round.next": "Prochain match :",
+  "matches.round.complete": "Journée terminée.",
+  "matches.round.show_all": "Voir toute la journée",
+  "matches.round.hide_all": "Masquer la journée",
+  "matches.round.fallback_results": "Aucun résultat ce jour. Résultats de la Journée {n} :",
+  "matches.round.fallback_upcoming": "Aucun match à venir ce jour. À venir, Journée {n} :",
+  "matches.date.has_matches": "jour de match",
 
   /* Club pages: the directory (/clubs) and one club (/clubs/$clubId). */
   "clubs.title": "Clubs",

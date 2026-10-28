@@ -485,7 +485,10 @@ export const BASELINES: Baselines = {
   // call site; `fpl.leagues` was already used); every new key
   // (club.live_match, fantasy.team.screen_title, fpl.join_code_hint, the eight
   // meta.*_title) is referenced. 251 -> 250.
-  W3: 250,
+  // Matches calendar round summary (2026-10-28): every new `matches.round.*` key
+  // and `matches.date.has_matches` is referenced, and the lit live card gives
+  // `matches.section.live` its first call site. 250 -> 249.
+  W3: 249,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

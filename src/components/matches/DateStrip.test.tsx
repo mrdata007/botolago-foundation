@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
-import { addMatchDays, matchDayFromKey, startOfMatchDay } from "@/lib/match-kickoff";
+import { addMatchDays, matchDayFromKey, matchDayKey, startOfMatchDay } from "@/lib/match-kickoff";
 import { DateStrip } from "./DateStrip";
 
 /**
@@ -85,6 +85,47 @@ describe("DateStrip — the day chips", () => {
     expect(away).toContain(`>${fr["matches.date.jump_today"]}</button>`);
     const onToday = render(<DateStrip selected={today} onSelect={noop} />);
     expect(onToday).not.toContain(`>${fr["matches.date.jump_today"]}</button>`);
+  });
+});
+
+describe("DateStrip — the days with a match", () => {
+  const matchDay = addMatchDays(today, 2);
+  const key = (day: Date) => matchDayKey(day);
+  const dots = (html: string) => html.match(/data-match-day=""/g)?.length ?? 0;
+
+  it("puts a dot, and a hidden label, on each chip whose day has a match", () => {
+    const html = render(
+      <DateStrip
+        selected={today}
+        onSelect={noop}
+        matchDays={new Set([key(today), key(matchDay)])}
+      />,
+    );
+    expect(dots(html)).toBe(2);
+    expect(html.match(new RegExp(`>${fr["matches.date.has_matches"]}<`, "g"))?.length).toBe(2);
+  });
+
+  it("marks nothing until the days are known, and nothing on a day without a match", () => {
+    expect(dots(render(<DateStrip selected={today} onSelect={noop} />))).toBe(0);
+    expect(dots(render(<DateStrip selected={today} onSelect={noop} matchDays={new Set()} />))).toBe(
+      0,
+    );
+  });
+
+  it("keeps one row for the dot on every chip, so the strip does not change height", () => {
+    const withDays = render(
+      <DateStrip selected={today} onSelect={noop} matchDays={new Set([key(today)])} />,
+    );
+    const without = render(<DateStrip selected={today} onSelect={noop} />);
+    const rows = (html: string) => html.match(/mt-1 h-2 w-2 shrink-0/g)?.length;
+    expect(rows(withDays)).toBe(rows(without));
+  });
+
+  it("anchors the hidden label inside the scrolling row, so it cannot widen the page", () => {
+    const html = render(
+      <DateStrip selected={today} onSelect={noop} matchDays={new Set([key(today)])} />,
+    );
+    expect(html).toContain('class="relative shrink-0"');
   });
 });
 
