@@ -852,7 +852,33 @@ describe("periodic incidents reads and the late statistics read", () => {
       { [SOFASCORE_LIVE_EVENTS_PATH]: { events: [half] } },
     );
     expect(atHalf.paths).toEqual([]);
-    expect((await run(quiet(), null, 15)).paths).toEqual(["matches/get-incidents?matchId=1"]);
+    // The schedule could not be read: unknown, so no periodic read (fail closed).
+    expect((await run(quiet(), null, 15)).paths).toEqual([]);
+    expect((await run(quiet(), "not an object", 15)).paths).toEqual([]);
+  });
+
+  test("an unreadable schedule keeps the score reads and skips the periodic and late-statistics reads", async () => {
+    // A goal is still read; a quiet tick and a finished match with partial statistics are not.
+    const goal = await run(state(1, { homeScore: 0, hasLineups: true }), null, 15);
+    expect(goal.paths).toEqual(["matches/get-incidents?matchId=1"]);
+    const quietTick = await run(quiet(), null, 15);
+    expect(quietTick.paths).toEqual([]);
+    const db = fakeDb(
+      {
+        mappings: mappings([1]),
+        fixtures: [
+          state(1, {
+            status: "finished",
+            finalizedAt: new Date(NOW.getTime() - 100 * 60_000).toISOString(),
+          }),
+        ],
+      },
+      [],
+      null,
+    );
+    const net = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [] } });
+    await tick("sofascore", "fixtures", db, net.fetch);
+    expect(detailPaths(net.paths)).toEqual([]);
   });
 
   test("one read per match per tick: a goal and a due interval make one incidents request", async () => {

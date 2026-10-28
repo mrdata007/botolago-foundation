@@ -91,6 +91,13 @@ export interface SofascoreDetailsSchedule {
   /** SofaScore event ids with a +30 min or +90 min mark passed and no details stored since it. */
   readonly followUps: ReadonlySet<string>;
   /**
+   * True when the schedule was read from the database. False (older database,
+   * error, unreadable answer) means "unknown": the periodic incidents reads and the
+   * late statistics read, which depend on it, are skipped (they fail closed);
+   * score-change and period reads are unaffected.
+   */
+  readonly loaded: boolean;
+  /**
    * SofaScore event ids of finished fixtures, 90 minutes to 3 hours after the
    * whistle, whose stored team statistics are missing or partial (fewer than 14
    * of the 18 figures a full reply gives: 9 figures per club) and for which
@@ -101,6 +108,7 @@ export interface SofascoreDetailsSchedule {
   readonly lastStored: ReadonlyMap<string, number>;
 }
 const NO_SCHEDULE: SofascoreDetailsSchedule = {
+  loaded: false,
   followUps: new Set(),
   statsPartial: new Set(),
   lastStored: new Map(),
@@ -378,6 +386,7 @@ export function selectLiveDetailTargets(
     if (
       rank === null &&
       options.periodicIncidentsMs !== undefined &&
+      schedule.loaded &&
       PERIODIC_STATUSES.has(event.status)
     ) {
       const lastRead =
@@ -585,7 +594,7 @@ async function loadDetailsSchedule(client: FixtureRpcClient): Promise<SofascoreD
         (id): id is string => typeof id === "string" && /^[1-9][0-9]{0,11}$/.test(id),
       ),
     );
-    return { followUps, statsPartial, lastStored };
+    return { loaded: true, followUps, statsPartial, lastStored };
   } catch {
     return NO_SCHEDULE;
   }
