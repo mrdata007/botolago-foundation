@@ -456,3 +456,12 @@ Sent to the Tester for round 2.
 
 Round 3 (last allowed) sent: when that read fails, skip the extra reads (fail closed), plus the owner-step tweaks.
 
+**Tester round 3 – PASS.**
+- N1 closed: if the schedule cannot be read, the extra reads are skipped.
+- Owner steps complete. Only nit: three stale line numbers in step g3, which is harmless.
+- Tests: 11,043 pass, 1 known failure.
+
+**Lead final review – APPROVED.** I read the address choice (unset = Sofascore as today; only the two approved addresses are accepted, anything else is refused before any call) and the database change (adds to what exists, keeps the Sofascore figures, every function locked with security definer and `search_path = ''`).
+
+Pull request #572 opened so CI runs the database tests that could not run here. Not merged: the owner's steps start with the merge.
+
