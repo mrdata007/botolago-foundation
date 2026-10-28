@@ -8,6 +8,7 @@ import { ui, UiBadge, UiButton, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { clubShortName } from "@/lib/club-identity";
 import { presentFootballClub } from "@/services/football";
 import {
   canEditPicks,
@@ -92,11 +93,13 @@ export function FixturePredictionCard({
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const home = presentFootballClub(fixture.home);
   const away = presentFootballClub(fixture.away);
-  const homeName = fixture.home.shortName || fixture.home.name;
-  const awayName = fixture.away.shortName || fixture.away.name;
+  // The club table's one short name, the same on every screen ("Wydad", never
+  // the data's "WCA").
+  const homeName = clubShortName(home, tr);
+  const awayName = clubShortName(away, tr);
 
   const editable = canEditPicks(personal);
   const unknown = pickIsUnknown(personal, pick);
@@ -160,7 +163,10 @@ export function FixturePredictionCard({
               {" · "}
             </>
           ) : null}
-          {resultReason(fixture, pick, scored, notCounted, unknown, t)}
+          {resultReason(fixture, pick, scored, notCounted, unknown, t, {
+            home: homeName,
+            away: awayName,
+          })}
           {fixture.corrected ? ` · ${t("predictions.result.corrected")}` : null}
         </p>
       </UiCard>
@@ -325,6 +331,7 @@ function resultReason(
   notCounted: boolean,
   unknown: boolean,
   t: Translate,
+  names: { home: string; away: string },
 ): string {
   if (notCounted) return t("predictions.result.not_counted");
   if (!pick) {
@@ -338,8 +345,10 @@ function resultReason(
     case "outcome": {
       const outcome = fixture.result ? matchOutcome(fixture.result) : "draw";
       if (outcome === "draw") return t("predictions.result.outcome_draw");
-      const winner = outcome === "home" ? fixture.home : fixture.away;
-      return t("predictions.result.outcome_win").replace("{team}", winner.shortName || winner.name);
+      return t("predictions.result.outcome_win").replace(
+        "{team}",
+        outcome === "home" ? names.home : names.away,
+      );
     }
     case "miss":
       return t("predictions.result.miss");

@@ -14,7 +14,7 @@ import type { Club, Match } from "@/types/domain";
  * are on the page.
  */
 
-type NamedClub = Pick<Club, "name" | "shortName">;
+type NamedClub = Pick<Club, "name" | "shortName" | "dataShortName">;
 
 /**
  * The name people use for a club: its short name ("RSB Berkane", "FAR
@@ -22,7 +22,9 @@ type NamedClub = Pick<Club, "name" | "shortName">;
  * way to the full name, as in the tables (`rowClubName`).
  */
 export function clubSearchName(club: NamedClub): string {
-  const short = club.shortName?.fr?.trim();
+  // The data's own short name, not the display name the club table gives
+  // (`withClubIdentity`): search titles stay as they were (owner, 2026-10-28).
+  const short = (club.dataShortName ?? club.shortName)?.fr?.trim();
   return short ? rowClubName(short, club.name.fr.trim()) : club.name.fr.trim();
 }
 

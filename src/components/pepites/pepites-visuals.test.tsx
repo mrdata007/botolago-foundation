@@ -6,7 +6,8 @@ import type { PepitesPlayerCard } from "@/backend/pepites/contracts";
 import { I18nProvider } from "@/i18n/provider";
 
 import { bandFigures, playerFiguresLine, teamAsClub } from "./pepites-format";
-import { PepitesIdentityDisc, RankPlate } from "./PepitesVisuals";
+import { PepitesIdentityDisc, RankPlate, Seg10Bar } from "./PepitesVisuals";
+import { SplitTitle } from "./PepitesShell";
 import { PercentileLegend, PercentileWheel } from "./PepitesWheel";
 
 /**
@@ -106,7 +107,7 @@ describe("the identity disc", () => {
 
   it("falls back to the club-colour disc with the club's initials without the catalogue", () => {
     const html = render(<PepitesIdentityDisc player={PLAYER} />);
-    expect(html).toContain(">HAS<");
+    expect(html).toContain(">HUSA<");
     expect(html).toContain("bg-[color:var(--ui-club)]");
     expect(html).not.toContain("<img");
   });
@@ -123,9 +124,9 @@ describe("the identity disc", () => {
     expect(club.slug).toBe(TEAM.slug);
     const bare = teamAsClub(TEAM)!;
     expect(bare.crestUrl).toBeUndefined();
-    expect(bare.crestPlaceholder).toBe("HAS");
+    expect(bare.crestPlaceholder).toBe("HUSA");
     // A blank catalogue code does not blank the disc.
-    expect(teamAsClub(TEAM, { crestPlaceholder: "  " })!.crestPlaceholder).toBe("HAS");
+    expect(teamAsClub(TEAM, { crestPlaceholder: "  " })!.crestPlaceholder).toBe("HUSA");
   });
 });
 
@@ -227,5 +228,23 @@ describe("the featured band's club edge", () => {
     expect(source).toContain(
       "shareClubColours(teamKit(player.team).primary, SHARE_PALETTE.ground).edge",
     );
+  });
+});
+
+describe("the two-part title and the score bar", () => {
+  it("stacks the parts of a title on a phone, with the bullet only from sm up", () => {
+    for (const title of ["Top 10 · Semaine 6", "توب 10 · الأسبوع 6"]) {
+      const html = render(<SplitTitle text={title} />);
+      expect(html).toContain('class="block sm:inline"');
+      expect(html).toContain('class="hidden sm:inline"');
+      // Still one heading's worth of text for assistive technology.
+      expect(html.replace(/<[^>]+>/g, "").replace(/\u00a0/g, " ")).toBe(title);
+    }
+    expect(render(<SplitTitle text="Classement final" />)).toBe("Classement final");
+  });
+
+  it("can light the bar in the club's colour", () => {
+    expect(render(<Seg10Bar value={82} club />)).toContain("bg-[color:var(--ui-club-edge)]");
+    expect(render(<Seg10Bar value={82} />)).toContain("bg-[color:var(--ui-ink-fg)]");
   });
 });

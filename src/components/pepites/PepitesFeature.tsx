@@ -219,7 +219,7 @@ export function PepitesFeature({
                   {scoreText(score, lang, t("pepites.unranked"))}
                 </bdi>
               </span>
-              <span className={cn(ui.text.label, ui.tone.onInkMuted)}>
+              <span className={cn("w-min text-center", ui.text.label, ui.tone.onInkMuted)}>
                 {t("pepites.score_name")}
               </span>
             </span>
@@ -279,7 +279,7 @@ export function PepitesFeature({
 /** A figure on the band: its label over it, centred, in the on-ink foregrounds. */
 function BandFact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-0.5 text-center">
+    <div className="flex min-w-0 flex-col items-center justify-end gap-0.5 text-center">
       <dt className={cn("max-w-full text-balance", ui.text.label, ui.tone.onInkMuted)}>{label}</dt>
       {/* Full width, so the box does not move when a dash becomes a figure. */}
       <dd className={cn("w-full", ui.stat.md, ui.tone.onInkPlain)}>

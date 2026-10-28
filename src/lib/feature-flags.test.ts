@@ -7,6 +7,7 @@ import {
   MANAGER_CARD_BUILD,
   MANAGER_CARD_ENABLED,
   MANAGER_CARD_PREVIEW,
+  MATCH_REMINDERS_DELIVERABLE,
   NEWS_ENABLED,
   OAUTH_PROVIDERS_ENABLED,
   PRIZES_ENABLED,
@@ -550,5 +551,26 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(
       (SITEMAP_STATIC_PATHS as readonly string[]).some((path) => path.startsWith("/curva")),
     ).toBe(false);
+  });
+});
+
+/**
+ * Design critique 2026-10-28: the match reminder bell is hidden while nothing
+ * is known to deliver a reminder (e-mail `off` at the last record, push off,
+ * and no public flag the app can read). One constant brings it back.
+ */
+describe("MATCH_REMINDERS_DELIVERABLE", () => {
+  test("is off, a plain boolean literal the match card reads", () => {
+    expect(MATCH_REMINDERS_DELIVERABLE).toBe(false);
+    expect(read("src/lib/feature-flags.ts")).toContain(
+      "export const MATCH_REMINDERS_DELIVERABLE: boolean = false;",
+    );
+  });
+
+  test("the match row shows the bell only behind it", () => {
+    const card = stripComments(read("src/components/common/MatchCard.tsx"));
+    expect(card.replace(/\s+/g, " ")).toContain(
+      "const showReminder = MATCH_REMINDERS_DELIVERABLE &&",
+    );
   });
 });

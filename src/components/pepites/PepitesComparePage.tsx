@@ -19,6 +19,7 @@ import {
   positionShort,
   scoreText,
   teamAsClub,
+  teamShortName,
 } from "./pepites-format";
 import {
   PepitesComingSoon,
@@ -444,7 +445,7 @@ function ComparePortrait({
       {player ? (
         <span className={cn("max-w-full", ui.text.meta, ui.tone.muted)}>
           {[
-            player.team ? tr(player.team.shortName) : null,
+            player.team ? teamShortName(player.team, tr) : null,
             player.age
               ? t("pepites.meta.age_short").replace("{n}", formatNumber(player.age, lang))
               : null,
@@ -526,7 +527,7 @@ function PlayerPicker({
               visual={<PepitesPlayerPhoto player={player} size="md" />}
               name={<bdi>{player.name}</bdi>}
               meta={[
-                player.team ? tr(player.team.shortName) : null,
+                player.team ? teamShortName(player.team, tr) : null,
                 player.positionGroup ? positionShort(player.positionGroup, t) : null,
               ]
                 .filter(Boolean)

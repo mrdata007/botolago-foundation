@@ -26,6 +26,13 @@ export interface Club {
   pathSlug?: string;
   name: LocalizedString;
   shortName: LocalizedString;
+  /**
+   * The short name the data itself gives the club, kept when the club table
+   * replaces `shortName` with its one display name (`withClubIdentity`). Search
+   * titles and descriptions read this one, so they do not move with a display
+   * name (`clubSearchName` in `@/lib/seo-titles`).
+   */
+  dataShortName?: LocalizedString;
   city: LocalizedString;
   primaryColor: string;
   /** Optional second club color used for jersey patterns. Falls back to a derived tone. */

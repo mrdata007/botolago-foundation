@@ -17,6 +17,8 @@ import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
+import { clubShortName } from "@/lib/club-identity";
+import { MATCH_REMINDERS_DELIVERABLE } from "@/lib/feature-flags";
 
 /**
  * Match card (Option A "Club colours").
@@ -166,13 +168,10 @@ export function MatchCard({
     month: "short",
   }).format(kickoff);
 
-  // A short name that is only a code ("WCA") gives way to the club's name:
-  // the crest disc already shows the code. Short names that are words stay —
-  // the full Arabic names ("الدفاع الحسني الجديدي") would not fit a row.
-  const rowName = (club: Club) => {
-    const short = tr(club.shortName);
-    return /^[A-Z0-9]{2,6}$/.test(short.trim()) ? tr(club.name) : short;
-  };
+  // The club's one short name (`clubShortName`: the club table's, the same on
+  // every screen). One that is only a code gives way to the club's name: the
+  // crest disc already shows the code.
+  const rowName = (club: Club) => clubShortName(club, tr);
   const homeName = isHero ? tr(home.name) : rowName(home);
   const awayName = isHero ? tr(away.name) : rowName(away);
   // An unknown score is a dash, announced as unavailable -- never a 0–0.
@@ -338,8 +337,14 @@ export function MatchCard({
   const hasScore = isLive || isFinished;
   // "Remind me": only for a match still to come whose kick-off is real (the
   // reminder is sent an hour before it), never on the hero or a history row.
+  // Off while nothing is known to deliver it (`MATCH_REMINDERS_DELIVERABLE`).
   const showReminder =
-    !isHero && variant !== "compact" && isScheduled && !unconfirmedDate && !unconfirmedTime;
+    MATCH_REMINDERS_DELIVERABLE &&
+    !isHero &&
+    variant !== "compact" &&
+    isScheduled &&
+    !unconfirmedDate &&
+    !unconfirmedTime;
   const scoreClass = (lost: boolean) =>
     cn(
       ui.score.row,

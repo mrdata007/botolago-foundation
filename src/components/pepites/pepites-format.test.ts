@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
 
-import { formatNumber, movementText, positionLabel, scoreText } from "./pepites-format";
+import {
+  formatNumber,
+  movementText,
+  positionLabel,
+  scoreText,
+  teamShortName,
+} from "./pepites-format";
 
 describe("Pépites formatting", () => {
   it("writes numbers in Latin digits in both languages, never with a space inside", () => {
@@ -27,5 +33,29 @@ describe("Pépites formatting", () => {
     const t = (key: string) => key;
     expect(positionLabel("GK", t as never)).toBe("pepites.position.gk");
     expect(positionLabel("FWD", t as never)).toBe("pepites.position.fwd");
+  });
+
+  it("prints a club's one short name, the same as every other screen", () => {
+    const tr = (value: { fr: string; ar: string }) => value.fr;
+    const team = (name: string, short: string, slug: string) => ({
+      id: "9f8c170d-24ed-41a3-99ca-a06167fd9c8b",
+      slug,
+      name: { fr: name, ar: name },
+      shortName: { fr: short, ar: short },
+    });
+    // The data's short name is the code "WCA"; the table's is "Wydad".
+    expect(
+      teamShortName(team("Wydad Casablanca", "WCA", "wydad-casablanca-80a3fb8202ae"), tr),
+    ).toBe("Wydad");
+    expect(
+      teamShortName(
+        team("Renaissance Club Athletic Zemamra", "RCA Zemamra", "cr-khemis-zemamra-dc6fb8196f3e"),
+        tr,
+      ),
+    ).toBe("Zemamra");
+    // A club outside the table keeps what the data says.
+    expect(
+      teamShortName(team("Olympic Safi", "Olympic Safi", "olympic-safi-32fb7b619af4"), tr),
+    ).toBe("Olympic Safi");
   });
 });

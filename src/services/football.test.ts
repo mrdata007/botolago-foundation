@@ -112,6 +112,27 @@ describe("Football frontend repository cutover", () => {
     ).toBeUndefined();
   });
 
+  test("gives a current club its one short name and code, and keeps its page address", async () => {
+    const matches = await new MockFootballRepository().getHomeMatches("fr", 1, context);
+    const team = {
+      ...matches[0]!.homeTeam,
+      id: "7b2e23bc-450f-4a1e-9d0c-222222222222",
+      slug: "wydad-casablanca-80a3fb8202ae",
+      name: "Wydad Casablanca",
+      shortName: "WCA",
+      code: "WCA",
+    };
+    const club = presentFootballClub(team);
+    // Ported from #375: the table's names, not the data's "WCA" short name.
+    expect([club.shortName.fr, club.shortName.ar, club.crestPlaceholder]).toEqual([
+      "Wydad",
+      "الوداد",
+      "WAC",
+    ]);
+    // The address comes from the data's names and does not follow the display name.
+    expect(club.pathSlug).toBe("wydad-casablanca");
+  });
+
   test("match detail page exposes lineups without fabricating data when the provider has none", async () => {
     const repository = new MockFootballRepository();
     const matches = await repository.getHomeMatches("fr", 1, context);

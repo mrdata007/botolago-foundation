@@ -39,7 +39,9 @@ function ScoreFigure({ score, ramp }: { score: number | null; ramp: string }) {
   const { t, lang } = useI18n();
   const ranked = typeof score === "number" && Number.isFinite(score);
   return (
-    <bdi className={cn(ranked ? ramp : ui.stat.md, ui.tone.ink)}>
+    // The club colour as text (`--ui-club-fg`, 4.5:1 on the card; the plain
+    // foreground in dark and wherever a club colour cannot pass).
+    <bdi className={cn(ranked ? ramp : ui.stat.md, "text-[color:var(--ui-club-fg)]")}>
       {scoreText(score, lang, t("pepites.unranked"))}
     </bdi>
   );
@@ -91,7 +93,7 @@ export function LeaderboardRow({
         ui.focus,
       )}
     >
-      <div className="flex items-center gap-3 @max-[11rem]:flex-wrap">
+      <div className="flex items-center gap-3 @max-[19.5rem]:flex-wrap">
         <RankPlate rank={item.rank} size="md" />
         <PepitesIdentityDisc player={player} listed={listed} size="md" />
         <div className="flex min-w-0 flex-1 flex-col gap-1 @max-[11rem]:basis-full">
@@ -113,15 +115,22 @@ export function LeaderboardRow({
             {playerMetaLine(player, null, { t, tr, lang })}
           </p>
           {figures ? (
-            <p className={cn("-mt-1", ui.text.meta, ui.tone.muted)}>
+            <p className={cn("-mt-1", ui.text.meta, ui.tone.default)}>
               {stats ? playerFiguresLine(stats, { t, lang }) : NBSP}
             </p>
           ) : null}
-          <Seg10Bar value={item.score} className="mt-1" />
+          <Seg10Bar value={item.score} club className="mt-1" />
         </div>
-        <span className="flex shrink-0 flex-col items-end gap-0.5">
-          <ScoreFigure score={item.score} ramp={ui.score.sm} />
-          <span className={cn(ui.text.label, ui.tone.muted)}>{t("pepites.score_name")}</span>
+        {/* Narrow (a 320px phone): the score and its name take a line of their own under
+            the row, so the two-line name label ("RÉSULTAT PROSPECTS") does not squeeze the
+            player's name. */}
+        <span className="flex shrink-0 flex-col items-end gap-0.5 @max-[19.5rem]:basis-full @max-[19.5rem]:flex-row @max-[19.5rem]:items-baseline @max-[19.5rem]:justify-end @max-[19.5rem]:gap-2">
+          <ScoreFigure score={item.score} ramp={ui.score.md} />
+          <span
+            className={cn("w-min text-end @max-[19.5rem]:w-auto", ui.text.label, ui.tone.muted)}
+          >
+            {t("pepites.score_name")}
+          </span>
         </span>
       </div>
       {reason ? <p className={cn("ps-12", ui.text.secondary, ui.tone.muted)}>{reason}</p> : null}
@@ -142,19 +151,28 @@ export function TopTenList({
   figures?: boolean;
   testId?: string;
 }) {
+  const { t } = useI18n();
   const catalogue = useClubCatalogue();
   return (
-    <ol className="flex flex-col gap-2.5" data-testid={testId} start={items[0]?.rank}>
-      {items.map((item, index) => (
-        <li key={item.player.id}>
-          <LeaderboardRow
-            item={item}
-            stats={stats.get(item.player.id)}
-            figures={figures}
-            listed={item.player.team ? catalogue.get(item.player.team.id) : undefined}
-          />
-        </li>
-      ))}
-    </ol>
+    <>
+      {/* The ten segments under each row are the score, drawn: said once, above them. */}
+      {items.length > 0 ? (
+        <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="pepites-bar-key">
+          {t("pepites.home.bar_key")}
+        </p>
+      ) : null}
+      <ol className="flex flex-col gap-2.5" data-testid={testId} start={items[0]?.rank}>
+        {items.map((item) => (
+          <li key={item.player.id}>
+            <LeaderboardRow
+              item={item}
+              stats={stats.get(item.player.id)}
+              figures={figures}
+              listed={item.player.team ? catalogue.get(item.player.team.id) : undefined}
+            />
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }

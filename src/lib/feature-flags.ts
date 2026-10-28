@@ -374,3 +374,23 @@ export const PREMIUM_PREVIEW: boolean =
 
 /** The build lets BotolaGO+ exist; the (mocked, for now) status decides whether it shows. */
 export const PREMIUM_SURFACES: boolean = PREMIUM_BUILD || PREMIUM_PREVIEW;
+
+/**
+ * Match reminder bell — OFF (design critique 2026-10-28, owner-approved scope).
+ *
+ * Every upcoming match row used to carry a bell that saves a reminder on the
+ * server. Nothing was known to deliver it: PRODUCT.md records the e-mail mode
+ * `off` at the last record (2026-10-04) and the push side shipped off, and the
+ * app cannot read the global send mode (`docs/backend/EMAIL_NOTIFICATIONS.md`,
+ * "Known gap": no public flag, RPC or setting exists). A bell that may do
+ * nothing is a promise the product does not keep, so it is hidden.
+ *
+ * It comes back by flipping this constant to `true`, once reminder delivery is
+ * confirmed live (a public read-only flag would be the better test, and needs a
+ * migration that is not part of this lane). The component, the reminder
+ * storage and the honest toast stay in the tree.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/components/common/MatchCard.tsx` — the bell on a scheduled match row
+ */
+export const MATCH_REMINDERS_DELIVERABLE: boolean = false;

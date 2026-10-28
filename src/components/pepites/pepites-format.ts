@@ -9,6 +9,7 @@ import type {
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
+import { clubShortName, withClubIdentity } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
 import type { Club } from "@/types/domain";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -52,7 +53,9 @@ export function teamAsClub(
   listed?: ListedClub | null,
 ): Club | undefined {
   if (!team) return undefined;
-  return {
+  // A current club takes its one short name and code from the club table, as
+  // on every other screen (`withClubIdentity`).
+  return withClubIdentity({
     id: team.id,
     slug: team.slug ?? undefined,
     name: team.name,
@@ -62,7 +65,20 @@ export function teamAsClub(
     crestPlaceholder:
       listed?.crestPlaceholder?.trim() || team.shortName.fr.slice(0, 3).toUpperCase(),
     ...(listed?.crestUrl ? { crestUrl: listed.crestUrl } : {}),
-  };
+  });
+}
+
+/**
+ * The name a Prospects row prints for a club: the club table's one short name
+ * for a current club ("Wydad", "Zemamra"), else the data's short name, and
+ * the full name when that is only a code.
+ */
+export function teamShortName(
+  team: PepitesTeam,
+  tr: (value: { fr: string; ar: string }) => string,
+): string {
+  const club = teamAsClub(team);
+  return club ? clubShortName(club, tr) : tr(team.shortName);
 }
 
 /** The approved photo's public URL, or null: the page then draws the silhouette. */
@@ -135,7 +151,7 @@ export function playerMetaLine(
 ): string {
   const iso = (text: string) => `\u2068${text}\u2069`;
   const parts: string[] = [];
-  if (player.team) parts.push(tr(long ? player.team.name : player.team.shortName));
+  if (player.team) parts.push(long ? tr(player.team.name) : teamShortName(player.team, tr));
   if (player.positionGroup) parts.push(positionShort(player.positionGroup, t));
   if (typeof player.age === "number") {
     parts.push(
