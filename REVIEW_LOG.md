@@ -386,3 +386,5 @@ Asked the owner before combining the two on `main`.
 
 Seen on the live Fantasy page: Gameweek 5 still shows "EN DIRECT", with a deadline of Saturday 24 Oct. This fits the Sofascore cut-off (ratings missing, gameweek cannot finish). Batch 0 (SportAPI) is the fix.
 
+**Owner check on the live site (28 Oct): "nothing looks wrong."** Batch 1 is closed.
+
