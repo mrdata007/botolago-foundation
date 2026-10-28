@@ -14,8 +14,8 @@ import type {
   StandingRowDto,
   TeamSummaryDto,
 } from "@/backend/football/contracts";
+import { lazyRepository } from "@/backend/contracts/lazy-repository";
 import { FootballError } from "@/backend/football/errors";
-import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
 import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
@@ -52,7 +52,16 @@ export function selectFootballDataMode(
   return "mock";
 }
 
-const mockRepository = new MockFootballRepository();
+// The sample data is loaded only when the mock mode is used. A production
+// build fixes VITE_FOOTBALL_DATA_MODE to `supabase`, so the comparison below
+// becomes `true` and the import is dropped from the build (FE-C3).
+const mockRepository = lazyRepository<FootballRepository>(() =>
+  import.meta.env.VITE_FOOTBALL_DATA_MODE === "supabase"
+    ? Promise.reject(new FootballError("data_unavailable", "This build has no sample data."))
+    : import("@/backend/football/mock-repository").then(
+        ({ MockFootballRepository }) => new MockFootballRepository(),
+      ),
+);
 const supabaseRepository = new SupabaseFootballRepository();
 
 export function getFootballRepository(): FootballRepository {

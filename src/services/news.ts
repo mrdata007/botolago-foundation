@@ -6,8 +6,8 @@ import type {
   NewsRepository,
   NewsTeamFilterDto,
 } from "@/backend/news/contracts";
+import { lazyRepository } from "@/backend/contracts/lazy-repository";
 import { NewsError } from "@/backend/news/errors";
-import { MockNewsRepository } from "@/backend/news/mock-repository";
 import { encodeSavedCursor, SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import type { SavedEntry } from "@/lib/saved-collection";
 import { authService } from "@/services/auth";
@@ -40,7 +40,15 @@ export function selectNewsDataMode(
   return "mock";
 }
 
-const mockRepository = new MockNewsRepository();
+// The sample articles are loaded only when the mock mode is used; a
+// production build drops the import (FE-C3, as in `src/services/football.ts`).
+const mockRepository = lazyRepository<NewsRepository>(() =>
+  import.meta.env.VITE_NEWS_DATA_MODE === "supabase"
+    ? Promise.reject(new NewsError("data_unavailable", "This build has no sample data."))
+    : import("@/backend/news/mock-repository").then(
+        ({ MockNewsRepository }) => new MockNewsRepository(),
+      ),
+);
 const supabaseRepository = new SupabaseNewsRepository();
 
 export function getNewsDataMode(): NewsDataMode {
