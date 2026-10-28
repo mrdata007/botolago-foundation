@@ -10,7 +10,7 @@ select set_config('app.environment', 'test', true);
 select extensions.is((select count(*)::int from app_private.rapidapi_budget_settings), 1, '1.1 one settings row');
 select extensions.is(
   (select to_jsonb(s) - 'updated_at' - 'id' from app_private.rapidapi_budget_settings s),
-  '{"soft_limit":8500,"hard_limit":9700,"reset_day_of_month":10,"used_offset":0,"live_interval_seconds":120,"season_quiet_hours":3,"season_match_hours":1}'::jsonb,
+  '{"soft_limit":8500,"hard_limit":9700,"reset_day_of_month":10,"used_offset":0,"live_interval_seconds":120,"season_quiet_hours":3,"season_match_hours":1,"incidents_interval_minutes":15}'::jsonb,
   '1.2 defaults: 8,500 soft, 9,700 hard, reset on the 10th, no offset, 120 s live poll, hourly season refresh near a match, 3 h on a quiet day');
 select extensions.ok((select relrowsecurity and relforcerowsecurity from pg_class
   where oid = 'app_private.rapidapi_budget_settings'::regclass), '1.3 the table forces RLS');
@@ -62,8 +62,8 @@ select extensions.throws_ok($$select api.service_rapidapi_budget()$$, 'PT403', '
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.is(api.service_rapidapi_budget(),
   jsonb_build_object('used', 480, 'softLimit', 8500, 'hardLimit', 9700, 'liveIntervalSeconds', 120,
-    'windowStart', app_private.rapidapi_window_start()),
-  '3.4 the Edge client reads the count, the limits, the live interval and the window start');
+    'windowStart', app_private.rapidapi_window_start(), 'incidentsIntervalMinutes', 15),
+  '3.4 the Edge client reads the count, the limits, the live interval, the window start and the incidents interval');
 select app_private.rapidapi_budget_configure(null, 9000, null, null);
 select extensions.throws_ok($$select app_private.rapidapi_budget_configure(9500, null, null, null)$$,
   '23514', null, '3.5 a soft limit above the hard limit is refused');

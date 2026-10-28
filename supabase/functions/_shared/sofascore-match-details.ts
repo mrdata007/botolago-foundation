@@ -581,6 +581,19 @@ export interface SofascoreDetailsTarget {
    */
   readonly withLineups?: boolean;
   /**
+   * A match in play: read `matches/get-lineups` only (1 request), once, when
+   * the match starts. The payload carries no events and no statistics (the RPC
+   * keeps what is stored); a lineup the provider has not published yet is
+   * `unavailable`, not a rejection.
+   */
+  readonly lineupsOnly?: boolean;
+  /**
+   * A finished match: read `matches/get-statistics` only (1 request), the late
+   * statistics read. No events and no lineups in the payload (the RPC keeps what
+   * is stored).
+   */
+  readonly statisticsOnly?: boolean;
+  /**
    * Replies already read by the caller (the staged statistics pulls of a
    * finished match): stored as they are, with no request.
    */
@@ -706,6 +719,8 @@ export async function fetchSofascoreMatchReplies(
   incidentsOnly = false,
   withLineups = false,
   failures?: SofascoreDetailsSection[],
+  lineupsOnly = false,
+  statisticsOnly = false,
 ): Promise<{ incidents: unknown; lineups: unknown; statistics: unknown }> {
   if (!/^[1-9][0-9]{0,11}$/.test(eventId)) throw new SofascoreDetailsPayloadError();
   const read = async (
@@ -713,7 +728,8 @@ export async function fetchSofascoreMatchReplies(
     section: SofascoreDetailsSection,
     expected: string,
   ): Promise<unknown> => {
-    const optional = section !== "incidents";
+    const optional =
+      section !== (lineupsOnly ? "lineups" : statisticsOnly ? "statistics" : "incidents");
     const path = eventPath(endpoint, eventId);
     try {
       const result = await rapid.getJson(path);
@@ -739,6 +755,20 @@ export async function fetchSofascoreMatchReplies(
       throw error;
     }
   };
+  if (statisticsOnly) {
+    return {
+      incidents: null,
+      lineups: null,
+      statistics: await read("get-statistics", "statistics", "statistics"),
+    };
+  }
+  if (lineupsOnly) {
+    return {
+      incidents: null,
+      lineups: await read("get-lineups", "lineups", "home"),
+      statistics: null,
+    };
+  }
   const incidents = await read("get-incidents", "incidents", "incidents");
   if (incidentsOnly) {
     return {
@@ -836,6 +866,8 @@ export async function runSofascoreMatchDetails(
           target.incidentsOnly === true,
           target.withLineups === true,
           failures,
+          target.lineupsOnly === true,
+          target.statisticsOnly === true,
         ));
       normalized = normalizeSofascoreMatchDetails(replies, target.teams, now.toISOString());
     } catch (error) {
@@ -850,7 +882,12 @@ export async function runSofascoreMatchDetails(
       // A match in play with no incidents yet: nothing to store, and nothing
       // wrong with the fixture. A finished one without them stays a rejection
       // (the backfill stops asking after two).
-      if (code === "data_unavailable" && target.incidentsOnly === true) {
+      if (
+        code === "data_unavailable" &&
+        (target.incidentsOnly === true ||
+          target.lineupsOnly === true ||
+          target.statisticsOnly === true)
+      ) {
         totals.unavailable += 1;
         continue;
       }

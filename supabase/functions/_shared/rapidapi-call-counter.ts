@@ -46,6 +46,12 @@ export interface RapidApiCallCounter {
 
 export interface RapidApiCallCounterOptions {
   readonly client: RapidApiCountClient;
+  /**
+   * The RapidAPI host the requests go to. The Sofascore host (the default) is
+   * recorded with api.service_record_rapidapi_calls / _quota as ever; any other host
+   * with the _host_ functions of migration 20261028100000, which count it in its own pool.
+   */
+  readonly host?: string;
   /** The Edge Function job: `fixtures`, `season_fixtures`, `match_details_backfill`. */
   readonly job: string;
   readonly timeoutMs?: number;
@@ -56,6 +62,8 @@ export function createRapidApiCallCounter(
   options: RapidApiCallCounterOptions,
 ): RapidApiCallCounter {
   const log = options.log ?? ((line: string) => console.log(line));
+  const host = options.host;
+  const otherHost = host !== undefined && host !== "sofascore.p.rapidapi.com";
   const timeoutMs = options.timeoutMs ?? RAPIDAPI_COUNT_TIMEOUT_MS;
   let totals = new Map<string, { endpoint: string; status: number; calls: number }>();
   let quota: { remaining: number; limit: number; observedAt: string } | null = null;
@@ -123,14 +131,17 @@ export function createRapidApiCallCounter(
       const batch = [...totals.values()];
       totals = new Map();
       const failure = await guarded(() =>
-        options.client.schema("api").rpc("service_record_rapidapi_calls", {
-          p_job: options.job,
-          p_calls: batch.map((item) => ({
-            endpoint: item.endpoint,
-            status: item.status,
-            calls: item.calls,
-          })),
-        }),
+        options.client
+          .schema("api")
+          .rpc(otherHost ? "service_record_rapidapi_host_calls" : "service_record_rapidapi_calls", {
+            ...(otherHost ? { p_host: host } : {}),
+            p_job: options.job,
+            p_calls: batch.map((item) => ({
+              endpoint: item.endpoint,
+              status: item.status,
+              calls: item.calls,
+            })),
+          }),
       );
       if (failure) {
         safeLog({
@@ -143,11 +154,14 @@ export function createRapidApiCallCounter(
     }
     if (observed) {
       const failure = await guarded(() =>
-        options.client.schema("api").rpc("service_record_rapidapi_quota", {
-          p_remaining: observed.remaining,
-          p_limit: observed.limit,
-          p_observed_at: observed.observedAt,
-        }),
+        options.client
+          .schema("api")
+          .rpc(otherHost ? "service_record_rapidapi_host_quota" : "service_record_rapidapi_quota", {
+            ...(otherHost ? { p_host: host } : {}),
+            p_remaining: observed.remaining,
+            p_limit: observed.limit,
+            p_observed_at: observed.observedAt,
+          }),
       );
       if (failure) {
         safeLog({

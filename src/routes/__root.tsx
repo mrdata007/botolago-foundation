@@ -14,6 +14,10 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+// Vite fingerprints these (`/assets/<name>-<hash>.woff2`, served immutable for a year), and
+// `src/fonts.css` references the same files, so the preload and the @font-face share one URL.
+import manropeLatin from "../assets/fonts/manrope-latin-wght-normal.woff2?url";
+import changaLatin from "../assets/fonts/changa-latin-wght-normal.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
@@ -278,14 +282,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/manrope-latin-wght-normal.woff2",
+        href: manropeLatin,
         crossOrigin: "anonymous",
       },
       {
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/changa-latin-wght-normal.woff2",
+        href: changaLatin,
         crossOrigin: "anonymous",
       },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of

@@ -35,8 +35,8 @@ const env = {
 export default defineConfig({
   root: demoRoot,
   base: "./",
-  // `src/fonts.css` asks for `/fonts/…`: serve the product's public folder so
-  // those resolve. The build then embeds each font (demo/scripts/build.ts).
+  // `src/fonts.css` references the woff2 files under `src/assets/fonts/`; the publicDir below only keeps
+  // the legacy `/fonts/…` URLs resolvable. The build embeds each font (demo/scripts/build.ts).
   publicDir: fileURLToPath(new URL("../public", import.meta.url)),
   envDir: false,
   plugins: [react(), tailwindcss()],

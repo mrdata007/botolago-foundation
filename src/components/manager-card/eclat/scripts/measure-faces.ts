@@ -11,7 +11,7 @@
  * and writes the table. It also reports how far the per-glyph estimate is from the canvas on the
  * fixtures' own names, which `README.md` quotes.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
@@ -106,8 +106,12 @@ const server = createServer((req, res) => {
       readFileSync(join(ROOT, "src/fonts.css"), "utf8") +
         readFileSync(join(HERE, "../eclat.css"), "utf8"),
     );
-  if (path.startsWith("/fonts/") && !path.includes(".."))
-    return send("font/woff2", readFileSync(join(ROOT, "public", path)));
+  // The faces live in `src/assets/fonts/` (Vite fingerprints them in the app); the CSS served
+  // above is raw, so its `./assets/fonts/…` and `../../../assets/fonts/…` URLs land here.
+  if (path.endsWith(".woff2") && !path.includes("..")) {
+    const file = join(ROOT, "src/assets/fonts", path.slice(path.lastIndexOf("/") + 1));
+    if (existsSync(file)) return send("font/woff2", readFileSync(file));
+  }
   return send("text/plain", "not found", 404);
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));

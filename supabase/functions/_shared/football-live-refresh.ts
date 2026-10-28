@@ -33,7 +33,12 @@ import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
 import { loadRapidApiBudget } from "./rapidapi-budget.ts";
-import { RapidApiError } from "./rapidapi-client.ts";
+import {
+  ESSENTIAL_ENDPOINTS,
+  RapidApiError,
+  rapidApiHostOf,
+  type RapidApiBudget,
+} from "./rapidapi-client.ts";
 import {
   createCatalogRapidClient,
   runCatalogWeekly,
@@ -75,6 +80,22 @@ const MAX_REQUEST_BYTES = 4096;
  * call asks for and the shared handler's 100-day window.
  */
 export const SEASON_REFRESH_DAYS_AHEAD = 42;
+
+/** Allowed above the soft limit for the rating_polls job: the live endpoints and the lineups. */
+const RATING_POLL_ENDPOINTS: ReadonlySet<string> = new Set([
+  ...ESSENTIAL_ENDPOINTS,
+  "matches/get-lineups",
+]);
+/**
+ * Used when api.service_rapidapi_budget cannot be read (rapidapi-budget.ts):
+ * every endpoint outside the essential set is refused (soft limit 0), so a
+ * database blip cannot lift the guard.
+ */
+export const UNREADABLE_BUDGET: RapidApiBudget = {
+  used: 0,
+  softLimit: 0,
+  hardLimit: Number.MAX_SAFE_INTEGER,
+};
 
 function json(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
@@ -166,11 +187,34 @@ export async function handleFootballLiveRefreshRequest(
     // An injected client (tests) is not counted. Counting never throws or waits long.
     let counter: RapidApiCallCounter | null = null;
     let liveIntervalSeconds: number | undefined;
+    let incidentsIntervalMinutes: number | undefined;
     if (!rapid) {
+      // The host the data comes from (RAPIDAPI_HOST; the Sofascore host unless it
+      // names SportAPI's). Each host has its own budget and its own counts.
+      let host: string;
+      try {
+        host = rapidApiHostOf(dependencies.environment);
+      } catch {
+        console.log(
+          JSON.stringify({
+            event: "football_live_refresh",
+            result: "error",
+            source,
+            job,
+            error: "provider_unavailable",
+          }),
+        );
+        return json(503, { error: "provider_not_configured", source, job });
+      }
       // The monthly budget, read once before the first provider call. At the
       // hard limit nothing is sent and the run says so; above the soft limit
       // the client sends only the live feed and incidents.
-      const budget = await loadRapidApiBudget(dependencies.client, job);
+      const budget = await loadRapidApiBudget(
+        dependencies.client,
+        job,
+        (line) => console.log(line),
+        host,
+      );
       if (budget && budget.used >= budget.hardLimit) {
         console.log(
           JSON.stringify({
@@ -178,6 +222,7 @@ export async function handleFootballLiveRefreshRequest(
             result: "skipped",
             reason: "monthly_budget_hard_limit",
             source,
+            host,
             job,
             used: budget.used,
             hardLimit: budget.hardLimit,
@@ -187,6 +232,7 @@ export async function handleFootballLiveRefreshRequest(
           status: "skipped",
           reason: "monthly_budget_hard_limit",
           source,
+          host,
           job,
           used: budget.used,
           hardLimit: budget.hardLimit,
@@ -194,8 +240,12 @@ export async function handleFootballLiveRefreshRequest(
         });
       }
       liveIntervalSeconds = budget?.liveIntervalSeconds;
+      // The periodic incidents reads (cards between goals) stop above the soft
+      // limit, and when the budget could not be read: only score and period reads remain.
+      incidentsIntervalMinutes =
+        budget && budget.used < budget.softLimit ? budget.incidentsIntervalMinutes : undefined;
       try {
-        counter = createRapidApiCallCounter({ client: dependencies.client, job });
+        counter = createRapidApiCallCounter({ client: dependencies.client, job, host });
         // The same RapidAPI client as ever; it can also return image bytes
         // for the catalog_weekly job (sofascore-catalog.ts).
         rapid = createCatalogRapidClient(
@@ -203,15 +253,18 @@ export async function handleFootballLiveRefreshRequest(
           dependencies.fetch as Parameters<typeof createCatalogRapidClient>[1],
           {
             onRequest: counter.record,
-            ...(budget
+            // The Fantasy rating polls are what the plan is kept for: their
+            // lineups request stays allowed above the soft limit, up to the hard one.
+            ...(job === "rating_polls" ? { essentialEndpoints: RATING_POLL_ENDPOINTS } : {}),
+            // A budget that could not be read fails closed: only the live feed
+            // and incidents (and the rating polls' lineups) are sent.
+            budget: budget
               ? {
-                  budget: {
-                    used: budget.used,
-                    softLimit: budget.softLimit,
-                    hardLimit: budget.hardLimit,
-                  },
+                  used: budget.used,
+                  softLimit: budget.softLimit,
+                  hardLimit: budget.hardLimit,
                 }
-              : {}),
+              : UNREADABLE_BUDGET,
           },
         );
       } catch (error) {
@@ -269,6 +322,7 @@ export async function handleFootballLiveRefreshRequest(
         environment: dependencies.environment,
         now,
         ...(liveIntervalSeconds ? { liveIntervalSeconds } : {}),
+        ...(incidentsIntervalMinutes ? { incidentsIntervalMinutes } : {}),
       });
       return json(outcome.status, outcome.body);
     } finally {

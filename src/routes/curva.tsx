@@ -1,6 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+// Fingerprinted by Vite; `shield.css` declares the same file, so the preload is the one fetch.
+import mrDafoeLatin from "@/assets/fonts/mr-dafoe-latin-400-normal.woff2?url";
+
 import { useAuth } from "@/auth/AuthProvider";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { CurvaLoading } from "@/components/curva/StateBlocks";
@@ -33,7 +36,7 @@ export const Route = createFileRoute("/curva")({
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/mr-dafoe-latin-400-normal.woff2",
+        href: mrDafoeLatin,
         crossOrigin: "anonymous",
       },
     ],

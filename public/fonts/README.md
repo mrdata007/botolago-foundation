@@ -1,5 +1,11 @@
 # BotolaGO fonts
 
+The web app loads the same files from `src/assets/fonts/` (identical bytes), where Vite fingerprints
+them (`/assets/<name>-<hash>.woff2`): the host serves `/assets/*` with a year-long immutable cache,
+and it serves this folder without any Cache-Control. `public/fonts/` is kept for one release so
+HTML and CSS cached before the change keep resolving, and for tools that want a stable URL
+(`scripts/qa/manager-card-gallery.ts`, the demo's publicDir). Change a font in both places.
+
 Self-hosted variable WOFF2 assets from Fontsource:
 
 - manrope 5.3.0
