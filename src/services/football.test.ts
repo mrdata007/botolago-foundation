@@ -881,4 +881,35 @@ describe("Home's payload keeps the whole round when live fixtures fill it (BG-01
       repository.getUpcomingMatches = storedUpcoming;
     }
   });
+
+  test("the season's match list keeps each club's crest, as the day's rows do", async () => {
+    const repository = MockFootballRepository.prototype;
+    const stored = repository.getSeasonFixtures;
+    const [template] = await new MockFootballRepository().getHomeMatches("fr", 1, context);
+    const crest = "https://crests.example.test/home.png";
+    const team = (club: TeamSummaryDto, url: string) => ({
+      ...club,
+      crestUrl: url,
+      crestPath: null,
+    });
+    const fixture = {
+      ...template!,
+      homeTeam: team(template!.homeTeam, crest),
+      awayTeam: team(template!.awayTeam, "https://crests.example.test/away.png"),
+    };
+    repository.getSeasonFixtures = async () => [fixture];
+    try {
+      const season = (await footballService.getSeasons("fr"))[0]!;
+      const { matches, clubs } = await footballService.getSeasonMatches(season, "fr");
+      expect(matches).toHaveLength(1);
+      const home = clubs.find((club) => club.id === fixture.homeTeam.id);
+      expect(home?.crestUrl).toBe(crest);
+      expect(home).toEqual(presentFootballClub(fixture.homeTeam));
+      expect(clubs.find((club) => club.id === fixture.awayTeam.id)?.crestUrl).toBe(
+        "https://crests.example.test/away.png",
+      );
+    } finally {
+      repository.getSeasonFixtures = stored;
+    }
+  });
 });
