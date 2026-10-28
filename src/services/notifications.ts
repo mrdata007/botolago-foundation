@@ -1,3 +1,4 @@
+import { requireMock } from "@/backend/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   NotificationCategory,
@@ -43,13 +44,16 @@ export function selectNotificationsDataMode(
   return "mock";
 }
 
-const mock = {
-  notifications: new MockNotificationRepository(),
-  preferences: new MockNotificationPreferenceRepository(),
-  devices: new MockNotificationDeviceRepository(),
-  emailUnsubscribe: new MockNotificationEmailUnsubscribeRepository(),
-  subscriptions: new MockNotificationSubscriptionRepository(),
-};
+const mock =
+  import.meta.env.VITE_NOTIFICATIONS_DATA_MODE === "supabase"
+    ? undefined
+    : {
+        notifications: new MockNotificationRepository(),
+        preferences: new MockNotificationPreferenceRepository(),
+        devices: new MockNotificationDeviceRepository(),
+        emailUnsubscribe: new MockNotificationEmailUnsubscribeRepository(),
+        subscriptions: new MockNotificationSubscriptionRepository(),
+      };
 const cloud = {
   notifications: new SupabaseNotificationRepository(),
   preferences: new SupabaseNotificationPreferenceRepository(),
@@ -72,7 +76,7 @@ export function getNotificationRepositories(): {
   emailUnsubscribe: NotificationEmailUnsubscribeRepository;
   subscriptions: NotificationSubscriptionRepository;
 } {
-  return getNotificationsDataMode() === "supabase" ? cloud : mock;
+  return getNotificationsDataMode() === "supabase" ? cloud : requireMock(mock, "Notifications");
 }
 
 export function notificationContext(): RepositoryContext {

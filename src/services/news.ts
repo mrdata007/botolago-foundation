@@ -1,3 +1,4 @@
+import { requireMock } from "@/backend/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   ArticleCardDto,
@@ -40,7 +41,8 @@ export function selectNewsDataMode(
   return "mock";
 }
 
-const mockRepository = new MockNewsRepository();
+const mockRepository =
+  import.meta.env.VITE_NEWS_DATA_MODE === "supabase" ? undefined : new MockNewsRepository();
 const supabaseRepository = new SupabaseNewsRepository();
 
 export function getNewsDataMode(): NewsDataMode {
@@ -48,7 +50,9 @@ export function getNewsDataMode(): NewsDataMode {
 }
 
 export function getNewsRepository(): NewsRepository {
-  return getNewsDataMode() === "supabase" ? supabaseRepository : mockRepository;
+  return getNewsDataMode() === "supabase"
+    ? supabaseRepository
+    : requireMock(mockRepository, "News");
 }
 
 function context(): RepositoryContext {
