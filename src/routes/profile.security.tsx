@@ -320,7 +320,7 @@ function SecurityPage() {
                 "grid h-10 w-10 shrink-0 place-items-center",
                 ui.radius.full,
                 enrolled
-                  ? "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive)]"
+                  ? "bg-[color:color-mix(in_oklab,var(--ui-positive)_20%,transparent)] text-[color:var(--ui-positive-text)]"
                   : cn(ui.surface.sunken, ui.tone.muted),
               )}
               aria-hidden

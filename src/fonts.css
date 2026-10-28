@@ -1,4 +1,38 @@
 /* Same product faces, self-hosted; see public/fonts/README.md. */
+
+/* Stand-ins that take the product faces' space while those load (font-display
+   is swap, so the real face replaces them): a system sans scaled and
+   re-spaced to Manrope's and Changa's measures (size-adjust from the average
+   advance of French text at weight 400 against Arial's; ascent, descent and
+   line gap from each face's own metrics divided by that scale). Text then
+   wraps and stacks at the same size before and after the swap, so the page
+   does not shift when the face arrives. They name only local faces and are
+   never downloaded; where none is installed the stack falls on to the next
+   family, as it did before. Latin only (unicode-range): Arabic keeps the Noto stack. */
+@font-face {
+  font-family: "Manrope Fallback";
+  src: local("Arial"), local("Liberation Sans"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 102.74%;
+  ascent-override: 103.76%;
+  descent-override: 29.2%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122;
+}
+
+@font-face {
+  font-family: "Changa Fallback";
+  src: local("Arial"), local("Liberation Sans"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 99.13%;
+  ascent-override: 123.77%;
+  descent-override: 61.84%;
+  line-gap-override: 0%;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122;
+}
+
 /* manrope-latin-ext-wght-normal */
 @font-face {
   font-family: "Manrope";

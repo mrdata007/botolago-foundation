@@ -153,7 +153,7 @@ describe("the rating change chip", () => {
   it("shows « +3 ▲ » in the positive colour, in one left-to-right run, with the sentence for a screen reader", () => {
     const html = line({ delta: 3, pop: false });
     expect(html).toContain('<bdi dir="ltr" aria-hidden="true">+3 ▲</bdi>');
-    expect(html).toContain("text-[color:var(--ui-positive)]");
+    expect(html).toContain("text-[color:var(--ui-positive-text)]");
     expect(html).toContain(">note en hausse de 3<");
     expect(chip(html)).toContain('data-change="up"');
   });
@@ -161,7 +161,7 @@ describe("the rating change chip", () => {
   it("shows « −2 ▼ » with the true minus sign, in the negative colour", () => {
     const html = line({ delta: -2, pop: false });
     expect(html).toContain('<bdi dir="ltr" aria-hidden="true">−2 ▼</bdi>');
-    expect(html).toContain("text-[color:var(--ui-negative)]");
+    expect(html).toContain("text-[color:var(--ui-negative-text)]");
     expect(html).toContain(">note en baisse de 2<");
     expect(chip(html)).toContain('data-change="down"');
   });

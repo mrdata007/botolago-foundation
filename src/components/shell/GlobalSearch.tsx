@@ -235,6 +235,8 @@ export function GlobalSearch({
           "placeholder:text-[color:var(--ui-on-surface-muted)]",
           ui.radius.full,
           ui.text.meta,
+          // 16px: a field under it zooms the page on iOS when focused (M1).
+          "text-[length:max(16px,var(--ui-text-meta))]",
           ui.focus,
         )}
       />

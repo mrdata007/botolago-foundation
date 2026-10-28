@@ -686,7 +686,8 @@
   background: var(--pb-s2);
   color: var(--pb-ink);
   font: inherit;
-  font-size: 14px;
+  /* 16px: a select under it zooms the page on iOS when focused (M1). */
+  font-size: 16px;
 }
 .pb-stamps {
   display: flex;

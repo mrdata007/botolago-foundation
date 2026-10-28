@@ -1,5 +1,15 @@
 # iPhone zoom and pitch touchlines: screen brief
 
+> **Update, 2026-10-27 (Batch 1, M1).** The `maximum-scale=1` cap described
+> below has been removed. Every input, select and textarea is now at least
+> 16px (the kit's `FIELD_TEXT`, the header search, the Plus selects), which is
+> what stops iOS zooming in on focus, and the viewport tag reads
+> `width=device-width, initial-scale=1, viewport-fit=cover`. Pinch zoom works
+> again on Android browsers and iPhone Safari; the phone app is unchanged
+> (Capacitor `zoomEnabled: false`). The cap and its trade-off are kept below as
+> the history of the 2026-10-06 decision. The pitch half of this brief
+> (touchlines, bench) is unchanged and still in force.
+
 Owner report, 2026-10-06, from the iPhone app (two issues):
 
 1. "The names of the players get out of the line of the pitch." On the squad

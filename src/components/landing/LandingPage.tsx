@@ -185,8 +185,11 @@ export function LandingPage({
           src={stadiumBand}
           srcSet={`${stadiumBandSmall} 800w, ${stadiumBand} 1600w`}
           sizes="100vw"
+          width={1600}
+          height={600}
           alt=""
           aria-hidden
+          loading="eager"
           decoding="async"
           fetchPriority="high"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_30%] opacity-60 rtl:-scale-x-100"
