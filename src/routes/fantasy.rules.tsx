@@ -13,8 +13,18 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { Fragment, useMemo, type ComponentType, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
+import "@/components/fantasy-rules/rules-screen.css";
 import { chipDescription } from "@/components/fpl/chip-copy";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
@@ -110,23 +120,46 @@ function RulesPage() {
   const chips = useMemo(() => (rules ? buildChipList(rules.chips) : []), [rules]);
   const policy = scoringPolicyView(rules);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Re-run once the ruleset arrives: the chips card is added then.
+  useRiseOnScroll(rootRef, rules);
+
   const sections: {
     icon: ComponentType<{ className?: string }>;
+    /** The card's accent (`rules-accent-*` in rules-screen.css). */
+    accent: RuleAccent;
     titleKey: TranslationKey;
     descKey?: TranslationKey;
     /** Read from the ruleset: shown once it has arrived, never guessed before. */
     body?: ReactNode;
   }[] = [
-    { icon: Users, titleKey: "fantasy.rules.squad", descKey: "fantasy.rules.squad_desc" },
-    { icon: Coins, titleKey: "fantasy.rules.budget", descKey: "fantasy.rules.budget_desc" },
+    {
+      icon: Users,
+      accent: "squad",
+      titleKey: "fantasy.rules.squad",
+      descKey: "fantasy.rules.squad_desc",
+    },
+    {
+      icon: Coins,
+      accent: "budget",
+      titleKey: "fantasy.rules.budget",
+      descKey: "fantasy.rules.budget_desc",
+    },
     {
       icon: LayoutGrid,
+      accent: "formation",
       titleKey: "fantasy.rules.formation",
       descKey: "fantasy.rules.formation_desc",
     },
-    { icon: Star, titleKey: "fantasy.rules.captaincy", descKey: "fantasy.rules.captaincy_desc" },
+    {
+      icon: Star,
+      accent: "captaincy",
+      titleKey: "fantasy.rules.captaincy",
+      descKey: "fantasy.rules.captaincy_desc",
+    },
     {
       icon: ArrowRightLeft,
+      accent: "transfers",
       titleKey: "fantasy.rules.transfers_r",
       // The ruleset's own numbers: free transfers, how many can be carried,
       // and the cost of each extra one.
@@ -148,6 +181,7 @@ function RulesPage() {
       ? [
           {
             icon: Zap,
+            accent: "chips" as const,
             titleKey: "fantasy.rules.chips" as const,
             body: <ChipsList chips={chips} nf={nf} />,
           },
@@ -155,6 +189,7 @@ function RulesPage() {
       : []),
     {
       icon: Timer,
+      accent: "deadlines",
       titleKey: "fantasy.rules.deadlines",
       body: rules ? (
         <RuleText>
@@ -169,6 +204,7 @@ function RulesPage() {
     },
     {
       icon: Trophy,
+      accent: "scoring",
       titleKey: "fantasy.rules.scoring",
       // "Points by position" is the category scale's line; under the rating rule
       // the rating line below says it instead.
@@ -194,34 +230,56 @@ function RulesPage() {
         <RulesPending failed={false} />
       ),
     },
-    { icon: Medal, titleKey: "fantasy.rules.tiebreak", descKey: "fantasy.rules.tiebreak_desc" },
+    {
+      icon: Medal,
+      accent: "tiebreak",
+      titleKey: "fantasy.rules.tiebreak",
+      descKey: "fantasy.rules.tiebreak_desc",
+    },
   ];
 
   return (
-    <div>
-      <img
-        src={rulesArt}
-        alt=""
-        aria-hidden
-        decoding="async"
-        className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
-      />
-      {/* An h2: the header above already renders the page's h1. */}
-      <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
+    <div ref={rootRef} className="rules-screen">
+      {/* The hero: the illustration and the intro on one coloured band (a light
+          sky in the light theme, the header gradient in the dark one), its text
+          in the band's own foreground. */}
+      <div className={cn("rules-hero overflow-hidden px-4 pb-4 pt-3", ui.radius.card)}>
+        <img
+          src={rulesArt}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="rules-hero-art mx-auto mb-3 h-auto max-h-40 w-full object-contain"
+        />
+        {/* An h2: the header above already renders the page's h1. */}
+        <h2 className={ui.display.section}>{t("fantasy.rules.title")}</h2>
+        <p className={cn("mt-1", ui.text.secondary)}>{t("fantasy.rules.intro")}</p>
+      </div>
 
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />
       ) : rulesQ.isError || !rulesQ.data ? (
         <UiErrorState onRetry={() => void rulesQ.refetch()} />
       ) : (
-        <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <RuleValue label={t("fantasy.rules.squad")} value={nf.format(rulesQ.data.squadSize)} />
+        <dl className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <RuleValue
+            index={0}
+            accent="squad"
+            icon={Users}
+            label={t("fantasy.rules.squad")}
+            value={nf.format(rulesQ.data.squadSize)}
+          />
+          <RuleValue
+            index={1}
+            accent="budget"
+            icon={Coins}
             label={t("fantasy.rules.budget")}
             value={<FantasyAmount value={rulesQ.data.budget} />}
           />
           <RuleValue
+            index={2}
+            accent="transfers"
+            icon={ArrowRightLeft}
             label={t("fantasy.rules.transfers_r")}
             value={
               // "1 / -4" is a figure pair, not prose: isolated left-to-right so
@@ -233,20 +291,23 @@ function RulesPage() {
             }
           />
           <RuleValue
+            index={3}
+            accent="deadlines"
+            icon={Timer}
             label={t("fantasy.rules.deadlines")}
             value={
               <>
                 <bdi>{nf.format(rulesQ.data.deadline.minutesBeforeFirstFixture)}</bdi>{" "}
-                <span className={cn(ui.text.meta, ui.tone.muted)}>{t("home.minutes")}</span>
+                <span className={ui.text.meta}>{t("home.minutes")}</span>
               </>
             }
           />
         </dl>
       )}
 
-      <div className="mt-4 grid gap-2">
+      <div className="mt-4 grid gap-3">
         {sections.map((s) => (
-          <RuleCard key={s.titleKey} icon={s.icon} title={t(s.titleKey)}>
+          <RuleCard key={s.titleKey} icon={s.icon} accent={s.accent} title={t(s.titleKey)}>
             {s.descKey ? <RuleText>{t(s.descKey)}</RuleText> : null}
             {s.body}
           </RuleCard>
@@ -256,7 +317,11 @@ function RulesPage() {
       {/* The points screen links here (#scoring-policy). Provisional points
           and corrections apply to every ruleset; the fixture policy and the
           reviewed-estimates line only where the ruleset declares them. */}
-      <UiCard as="section" id="scoring-policy" className="mt-4 scroll-mt-20">
+      <UiCard
+        as="section"
+        id="scoring-policy"
+        className="rules-card rules-accent-policy rules-rise mt-4 scroll-mt-20"
+      >
         <h3 className={cn(ui.display.teamSm, ui.tone.default)}>
           {t("fantasy.rules.policy_title")}
         </h3>
@@ -299,26 +364,50 @@ function RulesPage() {
   );
 }
 
-/** A rule: a round gradient icon disc, its title, then its body. */
+type RuleAccent =
+  | "squad"
+  | "budget"
+  | "formation"
+  | "captaincy"
+  | "transfers"
+  | "chips"
+  | "deadlines"
+  | "scoring"
+  | "tiebreak";
+
+/** The accent class of each rule (light stops, navy icon: see rules-screen.css). */
+const ACCENT_CLASS: Record<RuleAccent, string> = {
+  squad: "rules-accent-squad",
+  budget: "rules-accent-budget",
+  formation: "rules-accent-formation",
+  captaincy: "rules-accent-captaincy",
+  transfers: "rules-accent-transfers",
+  chips: "rules-accent-chips",
+  deadlines: "rules-accent-deadlines",
+  scoring: "rules-accent-scoring",
+  tiebreak: "rules-accent-tiebreak",
+};
+
+/**
+ * A rule: its own accent (a line on top, a short wash under the title), an
+ * icon badge on the accent's gradient, its title, then its body.
+ */
 function RuleCard({
   icon: Icon,
+  accent,
   title,
   children,
 }: {
   icon: ComponentType<{ className?: string }>;
+  accent: RuleAccent;
   title: string;
   children?: ReactNode;
 }) {
   return (
-    <UiCard as="section">
+    <UiCard as="section" className={cn("rules-card rules-rise", ACCENT_CLASS[accent])}>
       <div className="flex items-center gap-3">
         <span
-          className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center",
-            ui.radius.full,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
+          className={cn("rules-badge grid h-11 w-11 shrink-0 place-items-center", ui.radius.card)}
           aria-hidden
         >
           <Icon className="h-5 w-5" />
@@ -328,6 +417,44 @@ function RuleCard({
       {children}
     </UiCard>
   );
+}
+
+/**
+ * The cards rise once as they scroll into view. Never from blank: a card
+ * already on screen is left as drawn (its badge bobs once); one below the
+ * fold waits at 60% opacity, a few pixels down, and settles when it enters
+ * (`[data-rise]` in rules-screen.css). Nothing happens on the server, without
+ * IntersectionObserver or under reduced motion: every card stays at rest.
+ */
+function useRiseOnScroll(rootRef: RefObject<HTMLElement | null>, key: unknown) {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const items = Array.from(
+      root.querySelectorAll<HTMLElement>('.rules-rise:not([data-rise="in"])'),
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          (entry.target as HTMLElement).dataset.rise = "in";
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -6% 0px" },
+    );
+    const fold = window.innerHeight;
+    for (const item of items) {
+      if (item.getBoundingClientRect().top < fold) {
+        item.dataset.rise = "in";
+      } else {
+        item.dataset.rise = "wait";
+        observer.observe(item);
+      }
+    }
+    return () => observer.disconnect();
+  }, [rootRef, key]);
 }
 
 function RuleText({ children }: { children: ReactNode }) {
@@ -367,16 +494,22 @@ function ScoringTable({ table, nf }: { table: ScoringTableModel; nf: Intl.Number
         caption={t("fantasy.rules.scoring")}
         className={cn("-mx-4 mt-3 w-auto", table.fullAppearanceMinutes === null && "-mb-4")}
       >
-        <UiTHead>
+        {/* A navy head band with a spring line under it; the labels in its
+            plain foreground. */}
+        <UiTHead className="rules-thead">
           <tr>
-            <UiTH className="ps-4">{t("fantasy.rules.table_event")}</UiTH>
+            <UiTH className={cn("ps-4", ui.tone.onInkPlain)}>{t("fantasy.rules.table_event")}</UiTH>
             {table.columns.map((code, index) => (
               <UiTH
                 key={code}
                 numeric
                 // From 640px the figures keep a column each and the events take
                 // the rest, instead of spreading across the whole card.
-                className={cn("text-center sm:w-16", index === table.columns.length - 1 && "pe-4")}
+                className={cn(
+                  "text-center sm:w-16",
+                  ui.tone.onInkPlain,
+                  index === table.columns.length - 1 && "pe-4",
+                )}
               >
                 <span aria-hidden>{positionShort(code, t)}</span>
                 <span className="sr-only">{positionFull(code, t)}</span>
@@ -487,11 +620,24 @@ function PointsFigure({ value, nf }: { value: number | null; nf: Intl.NumberForm
       </>
     );
   }
+  // Gains in green, penalties in red, each on a pill of its own tint; 0 stays
+  // plain, being neither.
   if (value < 0) {
     return (
-      <bdi dir="ltr" className={ui.tone.negative}>
-        {`−${nf.format(-value)}`}
-      </bdi>
+      <span className="rules-pt rules-pt-neg">
+        <bdi dir="ltr" className={ui.tone.negative}>
+          {`−${nf.format(-value)}`}
+        </bdi>
+      </span>
+    );
+  }
+  if (value > 0) {
+    return (
+      <span className="rules-pt rules-pt-pos">
+        <bdi dir="ltr" className={ui.tone.positive}>
+          {nf.format(value)}
+        </bdi>
+      </span>
     );
   }
   return <bdi dir="ltr">{nf.format(value)}</bdi>;
@@ -662,11 +808,35 @@ function chipWindow(window: ChipWindow, t: Translate, nf: Intl.NumberFormat): Re
   );
 }
 
-function RuleValue({ label, value }: { label: string; value: React.ReactNode }) {
+/** A key figure on a bright tile of its rule's accent, navy text in both themes. */
+function RuleValue({
+  index,
+  accent,
+  icon: Icon,
+  label,
+  value,
+}: {
+  index: number;
+  accent: RuleAccent;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: ReactNode;
+}) {
   return (
-    <div className={cn("px-3 py-3 text-center", ui.radius.card, ui.surface.card)}>
-      <dt className={cn(ui.text.label, ui.tone.muted)}>{label}</dt>
-      <dd className={cn("mt-1", ui.stat.lg, ui.tone.default)}>{value}</dd>
+    <div
+      className={cn(
+        "rules-tile relative overflow-hidden px-3 pb-3 pt-4 text-center",
+        ui.radius.card,
+        ACCENT_CLASS[accent],
+      )}
+      style={{ "--rules-i": index } as CSSProperties}
+    >
+      <Icon
+        className="pointer-events-none absolute end-1.5 top-1.5 h-4 w-4 opacity-60"
+        aria-hidden
+      />
+      <dt className={ui.text.label}>{label}</dt>
+      <dd className={cn("mt-1", ui.stat.lg)}>{value}</dd>
     </div>
   );
 }
