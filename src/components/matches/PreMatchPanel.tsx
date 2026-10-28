@@ -128,7 +128,7 @@ export function PreMatchPanel({
                 <ClubCrest club={club} palette={palette} size="sm" tone="inverse" />
                 <p
                   className={cn(
-                    "min-w-0 truncate [font-weight:var(--ui-weight-heavy)]",
+                    "line-clamp-2 min-w-0 break-words [font-weight:var(--ui-weight-heavy)]",
                     ui.text.secondary,
                   )}
                 >
