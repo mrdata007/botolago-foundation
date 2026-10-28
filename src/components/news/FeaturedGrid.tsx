@@ -2,6 +2,7 @@ import type { ArticleCardDto } from "@/backend/news/contracts";
 import type { Club } from "@/types/domain";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { PlacementBadge } from "./PlacementBadge";
+import { useNewsFixtures, type NewsFixture } from "./news-fixtures";
 import { featuredTreatmentForIndex, isBreaking, presentArticleForDisplay } from "./news-data";
 
 /**
@@ -25,19 +26,26 @@ export function FeaturedGrid({
   const hero = featured[0];
   const compactItems = featured.slice(1, 3);
   const restItems = featured.slice(3);
+  const fixtures = useNewsFixtures();
 
   return (
     <div className="grid gap-2.5">
-      {hero && <FeaturedCard dto={hero} clubs={clubs} variant="imageLed" />}
+      {hero && <FeaturedCard dto={hero} clubs={clubs} fixtures={fixtures} variant="imageLed" />}
       {compactItems.map((dto) => (
-        <FeaturedCard key={dto.id} dto={dto} clubs={clubs} variant="compact" />
+        <FeaturedCard key={dto.id} dto={dto} clubs={clubs} fixtures={fixtures} variant="compact" />
       ))}
       {restItems.length > 0 && (
         // Two-up only when there are two: a lone card in a two-column grid
         // left half the row empty on desktop.
         <div className={restItems.length > 1 ? "grid gap-2.5 sm:grid-cols-2" : "grid gap-2.5"}>
           {restItems.map((dto) => (
-            <FeaturedCard key={dto.id} dto={dto} clubs={clubs} variant="horizontal" />
+            <FeaturedCard
+              key={dto.id}
+              dto={dto}
+              clubs={clubs}
+              fixtures={fixtures}
+              variant="horizontal"
+            />
           ))}
         </div>
       )}
@@ -48,10 +56,12 @@ export function FeaturedGrid({
 function FeaturedCard({
   dto,
   clubs,
+  fixtures,
   variant,
 }: {
   dto: ArticleCardDto;
   clubs: readonly Club[];
+  fixtures: readonly NewsFixture[] | undefined;
   variant: "imageLed" | "compact" | "horizontal";
 }) {
   return (
@@ -59,6 +69,7 @@ function FeaturedCard({
       article={presentArticleForDisplay(dto)}
       variant={variant}
       clubs={clubs}
+      fixtures={fixtures}
       flag={isBreaking(dto.placement) ? <PlacementBadge /> : undefined}
     />
   );

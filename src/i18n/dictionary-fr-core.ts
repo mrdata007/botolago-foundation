@@ -125,6 +125,9 @@ export const frCore = {
   "news.tab.transfers": "Mercato",
   "news.tab.analysis": "Analyses",
   "news.tab.interviews": "Interviews",
+  // The label of a story tied to a fixture (a card's tag, the article eyebrow).
+  "news.kicker.preview": "Avant-match",
+  "news.kicker.result": "Résultat",
   "news.filter_clubs": "Filtrer par club",
   "news.filter_categories": "Filtrer par rubrique",
   "news.filter_all": "Tous",

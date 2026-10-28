@@ -1,10 +1,14 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Article, Club } from "@/types/domain";
+import { frText } from "@/i18n/fr-sections";
 import { useI18n } from "@/i18n/provider";
 import { formatRelativeTime } from "@/lib/format-time";
 import { SavedButton } from "@/components/news/SavedButton";
+import { articleKicker, fixtureKickerLabel } from "@/components/news/article-kicker";
+import { ARABIC_CATEGORY_LABELS } from "@/components/news/category-labels";
 import { categoryLabel, clubsForArticle, plateEdgeClass } from "@/components/news/news-data";
+import { linkArticleToFixture, type NewsFixture } from "@/components/news/news-fixtures";
 import { cn } from "@/lib/utils";
 import { ui, UiPill } from "@/components/ui-kit";
 import { crestStyle } from "./club-crest-style";
@@ -115,12 +119,20 @@ export function ArticleCard({
   article,
   variant = "row",
   clubs,
+  fixtures,
   flag,
 }: {
   article: Article;
   variant?: "row" | "lead" | "compact" | "horizontal" | "imageLed";
   /** The club directory the article's `clubIds` are looked up in. */
   clubs?: readonly Club[];
+  /**
+   * The current season's fixtures (`useNewsFixtures`). With them a story about
+   * two clubs that play a fixture near its publication is drawn with that
+   * fixture's score or kick-off time and labelled "Avant-match" / "Résultat".
+   * Without them the card is the same, minus those two.
+   */
+  fixtures?: readonly NewsFixture[];
   /** An editorial flag shown with the card's label — the breaking-news pill. */
   flag?: ReactNode;
 }) {
@@ -130,35 +142,80 @@ export function ArticleCard({
     lang: contentLanguage,
     dir: contentLanguage === "ar" ? "rtl" : "ltr",
   };
-  const leadClub = clubsForArticle(article.clubIds, clubs ?? [])[0];
+  const articleClubs = clubsForArticle(article.clubIds, clubs ?? []);
+  const leadClub = articleClubs[0];
   const club = leadClub ? crestStyle(leadClub) : null;
+  const fixture = linkArticleToFixture(article, fixtures);
+  // The plate's clubs: the fixture's home and away when the story is tied to
+  // one, else the story's own order. Never more than two.
+  const plateClubs = (() => {
+    if (fixture) {
+      const home = articleClubs.find((c) => c.id === fixture.homeClubId);
+      const away = articleClubs.find((c) => c.id === fixture.awayClubId);
+      if (home && away) return [home, away];
+    }
+    return articleClubs.slice(0, 2);
+  })();
 
   /**
    * The branded plate that stands in for a missing or broken photo (BG-0076).
    * `MediaImage` paints it behind the photo and shows it only when there is no
-   * URL or the one we have fails, so a card with a real photo is untouched.
+   * URL or the one we have fails, so a card with a real photo is untouched. A
+   * story that names a club gets a plate drawn from it; the stock photographs
+   * are for the story that names none.
    */
-  const heroPlaceholder = (sizes: string) => (
-    <ArticleHeroFallback category={article.category} headline={tr(article.title)} sizes={sizes} />
+  const heroPlaceholder = (sizes: string, plateSize: "thumb" | "card") => (
+    <ArticleHeroFallback
+      category={article.category}
+      headline={tr(article.title)}
+      sizes={sizes}
+      clubs={plateClubs}
+      fixture={fixture}
+      plateSize={plateSize}
+    />
   );
 
   /**
-   * The story's label: its editorial tag, in the edition's own language, or
-   * else its category in the reader's. An Arabic tag read from the French UI
-   * resets the label type's tracking itself: Tailwind's `ltr:` also matches
-   * inside a `dir="rtl"` subtree of an LTR page, and letter-spacing is
-   * inherited, so the pill would pull the joined letters apart (BG-0069).
+   * The story's label (`articleKicker`): its editorial tag, in the edition's
+   * own language; "Avant-match" / "Résultat" for a story tied to a fixture; a
+   * real section; the club's name for a one-club story; else none. An Arabic
+   * label read from the French UI resets the label type's tracking itself:
+   * Tailwind's `ltr:` also matches inside a `dir="rtl"` subtree of an LTR
+   * page, and letter-spacing is inherited, so the pill would pull the joined
+   * letters apart (BG-0069).
    */
-  const kicker = article.tag ? (
-    <span
-      {...contentAttributes}
-      className={contentLanguage === "ar" ? "ltr:tracking-normal" : undefined}
-    >
-      {tr(article.tag)}
-    </span>
-  ) : (
-    categoryLabel({ slug: article.category, name: article.category }, t)
-  );
+  const kickerFor = articleKicker({
+    tag: article.tag,
+    category: article.category,
+    clubs: articleClubs,
+    clubCount: article.clubIds.length,
+    fixture,
+  });
+  const ownLanguageClass = contentLanguage === "ar" ? "ltr:tracking-normal" : undefined;
+  let kicker: ReactNode = null;
+  if (kickerFor?.type === "tag" && article.tag) {
+    kicker = (
+      <span {...contentAttributes} className={ownLanguageClass}>
+        {tr(article.tag)}
+      </span>
+    );
+  } else if (kickerFor?.type === "fixture") {
+    // In the story's language, like its headline: an Arabic story read from
+    // the French UI says "قبل المباراة", not "Avant-match".
+    kicker = (
+      <span {...contentAttributes} className={ownLanguageClass}>
+        {contentLanguage === lang
+          ? fixtureKickerLabel(kickerFor.key, t)
+          : ((contentLanguage === "ar"
+              ? ARABIC_CATEGORY_LABELS[kickerFor.key]
+              : frText(kickerFor.key)) ?? fixtureKickerLabel(kickerFor.key, t))}
+      </span>
+    );
+  } else if (kickerFor?.type === "club") {
+    kicker = tr(kickerFor.club.shortName);
+  } else if (kickerFor?.type === "category") {
+    kicker = categoryLabel({ slug: article.category, name: article.category }, t);
+  }
 
   const time = formatRelativeTime(article.publishedAt, lang);
   const readTime = readTimeLabel(article.readMinutes, lang, t);
@@ -191,7 +248,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
-            placeholder={heroPlaceholder(READING_COLUMN_SIZES)}
+            placeholder={heroPlaceholder(READING_COLUMN_SIZES, "card")}
             loading={isLead ? "eager" : undefined}
             fetchPriority={isLead ? "high" : undefined}
             frame={isLead ? LEAD_FRAME : IMAGE_LED_FRAME}
@@ -206,10 +263,14 @@ export function ArticleCard({
                 content, and a one-line pill has no smaller minimum — without a
                 cap a long tag widened the row past the card, where the card's
                 overflow clipped it instead of the pill truncating it. */}
-            <div className="flex max-w-full flex-wrap items-center gap-1.5">
-              <CardPill>{isLead ? t("news.section.lead") : kicker}</CardPill>
-              {flag}
-            </div>
+            {(isLead || kicker || flag) && (
+              <div className="flex max-w-full flex-wrap items-center gap-1.5">
+                {(isLead || kicker) && (
+                  <CardPill>{isLead ? t("news.section.lead") : kicker}</CardPill>
+                )}
+                {flag}
+              </div>
+            )}
             <h3
               {...contentAttributes}
               className={cn(
@@ -300,26 +361,23 @@ export function ArticleCard({
           </h3>
           <p
             className={cn(
-              "mt-1 flex min-w-0 items-center gap-1.5",
+              "mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1",
               ui.text.meta,
               "[font-weight:var(--ui-weight-strong)]",
               ui.tone.muted,
             )}
           >
-            <span className="min-w-0 truncate">{kicker}</span>
-            {time && (
-              <>
-                <Dot />
-                <span className="shrink-0">{time}</span>
-              </>
-            )}
+            {/* A bold chip in the club's colour, not a grey word: the tag is
+                the first thing a reader scans for, and it carries the club. */}
+            {kicker && <CardPill>{kicker}</CardPill>}
+            {time && <span className="shrink-0">{time}</span>}
           </p>
         </div>
         <MediaImage
           src={article.heroUrl}
           alt=""
           fallback={article.heroGradient}
-          placeholder={heroPlaceholder("88px")}
+          placeholder={heroPlaceholder("88px", "thumb")}
           frame={{ sizes: "88px", ratio: 22 / 17 }}
           className={cn("h-17 w-22", ui.radius.track)}
           imageClassName={cn("group-hover:scale-[1.05]", IMAGE_ZOOM)}
