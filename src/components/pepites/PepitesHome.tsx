@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { ui, UiChip, UiEmptyState, UiIconLinkButton, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { useManagerCardLive } from "@/services/manager-card-status";
+import { useCurvaInBar } from "@/components/shell/primary-nav";
 
 import { editionItems, formatNumber, POSITION_GROUPS, positionShort } from "./pepites-format";
 import {
@@ -99,10 +99,12 @@ function HomeChips({
  */
 export function PepitesHome() {
   const { t, lang } = useI18n();
-  // While Curva is live, Pépites lives inside Fantasy (plan 3.4): the title band names the way
-  // back. Off, the band has no back pill, as before.
-  const live = useManagerCardLive();
-  const back = live ? { backTo: "/fantasy", backLabel: t("nav.fantasy") } : {};
+  // For a signed-in member with Curva in the bar, Prospects lives inside Fantasy (plan 3.4): the
+  // title band names the way back. Everyone else (a visitor, or a member while Curva is off) has
+  // Prospects as a tab of its own, so it is a top-level page and has no back pill (owner
+  // decision, 2026-10-28).
+  const curvaInBar = useCurvaInBar();
+  const back = curvaInBar ? { backTo: "/fantasy", backLabel: t("nav.fantasy") } : {};
   const [filter, setFilter] = useState<HomeFilter>(null);
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);

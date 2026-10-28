@@ -2,9 +2,12 @@ import { describe, expect, it } from "bun:test";
 
 import { MANAGER_CARD_BUILD } from "@/lib/feature-flags";
 import {
+  curvaInBar,
   isPrimaryRouteActive,
   liveNavItems,
+  navItemsFor,
   primaryNavItems,
+  useCurvaInBar,
   usePrimaryNavItems,
   withFifthSlot,
   withPepitesSlot,
@@ -112,7 +115,63 @@ describe("the fifth slot (Curva, plan 3.3)", () => {
   it("with the build switch on the bar's hook is the live-aware one", () => {
     // Not called: with the build on it reads the status through React Query, so it needs React.
     expect(MANAGER_CARD_BUILD).toBe(true);
-    expect(usePrimaryNavItems.name).toBe("useLiveAwareNavItems");
+    expect(usePrimaryNavItems.name).toBe("useMemberAwareNavItems");
+    expect(useCurvaInBar.name).toBe("useMemberCurvaInBar");
+  });
+});
+
+// Owner decision 2026-10-28: Curva is for signed-in members only.
+describe("who has Curva in the bar (owner decision, 2026-10-28)", () => {
+  const STATUSES = ["loading", "guest", "anonymous", "mfa_required", "mfa_unconfirmed"] as const;
+
+  it("is a signed-in member while Curva is live, nobody else", () => {
+    expect(curvaInBar(true, "authenticated")).toBe(true);
+    for (const status of STATUSES) expect(curvaInBar(true, status)).toBe(false);
+  });
+
+  it("is nobody while Curva is not live, members included", () => {
+    for (const status of ["authenticated", ...STATUSES] as const) {
+      expect(curvaInBar(false, status)).toBe(false);
+    }
+  });
+});
+
+describe("the two bars", () => {
+  const head = ["/", "/matches", "/fantasy", "/news"];
+
+  it("signed out: Accueil, Matchs, Fantasy, Actualites, Prospects, with no way to Curva", () => {
+    // A visitor, and the session still loading, both read as not in the bar.
+    for (const status of ["guest", "anonymous", "loading"] as const) {
+      const items = navItemsFor(curvaInBar(true, status));
+      expect(tos(items)).toEqual([...head, "/pepites"]);
+      expect(tos(items)).not.toContain("/curva");
+      expect(items.find((entry) => entry.to === "/pepites")?.labelKey).toBe("nav.pepites");
+    }
+  });
+
+  it("signed in with Curva live: the fifth tab is Curva", () => {
+    const items = navItemsFor(curvaInBar(true, "authenticated"));
+    expect(tos(items)).toEqual([...head, "/curva"]);
+    expect(tos(items)).not.toContain("/pepites");
+  });
+
+  it("signed in with Curva off: the fifth tab is Prospects, the same bar as a visitor's", () => {
+    const items = navItemsFor(curvaInBar(false, "authenticated"));
+    expect(tos(items)).toEqual([...head, "/pepites"]);
+    expect(items).toBe(primaryNavItems);
+  });
+
+  it("both bars have five tabs, so the bar's layout does not change with the session", () => {
+    expect(primaryNavItems).toHaveLength(5);
+    expect(liveNavItems).toHaveLength(5);
+  });
+
+  it("has the same labels in French and Arabic for the two fifth tabs", async () => {
+    const { dictionaries } = await import("@/i18n/dictionaries");
+    expect(dictionaries.fr["nav.pepites"]).toBe("Prospects");
+    expect(dictionaries.ar["nav.pepites"]).toBe("المواهب");
+    expect(dictionaries.fr["nav.curva"]).toBe("Curva");
+    expect(dictionaries.ar["nav.curva"]).toBe("كورفا");
   });
 });
 
@@ -141,6 +200,25 @@ describe("isPrimaryRouteActive with Curva live (plan 3.3)", () => {
     expect(isPrimaryRouteActive("/pronostics", "/matches", true)).toBe(true);
     expect(isPrimaryRouteActive("/", "/", true)).toBe(true);
     expect(isPrimaryRouteActive("/fantasy", "/", true)).toBe(false);
+  });
+
+  it("a visitor's bar lights Prospects on every /pepites page and never lights Curva", () => {
+    for (const path of [
+      "/pepites",
+      "/pepites/classement",
+      "/pepites/comparer",
+      "/pepites/methode",
+      "/pepites/revelation",
+      "/pepites/joueur/abc",
+      "/pepites/semaine/4",
+    ]) {
+      expect(isPrimaryRouteActive(path, "/pepites", false)).toBe(true);
+      expect(isPrimaryRouteActive(path, "/fantasy", false)).toBe(false);
+    }
+    // Nothing is lit on the locked Curva page: Curva is not in a visitor's bar.
+    for (const route of ["/", "/matches", "/fantasy", "/news", "/pepites", "/curva"] as const) {
+      expect(isPrimaryRouteActive("/curva", route, false)).toBe(false);
+    }
   });
 
   it("with Curva off nothing about /pepites or /curva changes (the default argument)", () => {

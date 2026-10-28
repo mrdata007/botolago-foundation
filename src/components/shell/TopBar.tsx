@@ -20,14 +20,13 @@ import { Logo } from "@/components/brand/Logo";
 import { ui, UiIconButton, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { usePlusAccess } from "@/components/plus/plus-access";
-import { PEPITES_PROMOTED, PREMIUM_SURFACES } from "@/lib/feature-flags";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { recallSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { useManagerCardLive } from "@/services/manager-card-status";
-import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
+import { isPrimaryRouteActive, useCurvaInBar, usePrimaryNavItems } from "./primary-nav";
 
 /**
  * For a BotolaGO+ member the wordmark is the BotolaGO+ logo (the same wordmark, with the "+").
@@ -56,8 +55,8 @@ export function TopBar({
 }) {
   const { t } = useI18n();
   const plusMember = usePlusAccess() === "member";
-  // Curva takes the fifth slot while it is live, and Profil is in this bar either way.
-  const curvaLive = useManagerCardLive();
+  // Profil is in this bar whenever the bottom bar's fifth slot is Prospects or Curva.
+  const profileInBottomBar = usePrimaryNavItems().some((item) => item.to === "/profile");
   const [searchOpen, setSearchOpen] = useState(false);
   // Back from a search result: the field is open again, holding the query
   // (`GlobalSearch` restores it), and not focused, so no keyboard rises.
@@ -118,13 +117,13 @@ export function TopBar({
           </UiIconButton>
           <NotificationBell />
           <LanguageSwitcher />
-          {/* Pépites takes Profil's slot in the bar once promoted, so the
-              profile moves here. */}
-          {PEPITES_PROMOTED || curvaLive ? (
+          {/* Prospects (or, for a member, Curva) takes Profil's slot in the bar,
+              so the profile moves here. */}
+          {profileInBottomBar ? null : (
             <UiIconLinkButton to="/profile" aria-label={t("nav.profile")}>
               <UserRound aria-hidden />
             </UiIconLinkButton>
-          ) : null}
+          )}
         </div>
       </div>
       {/* Over the page, not in the bar's flow: `--topbar-h` is the height the
@@ -152,14 +151,14 @@ export function PrimaryNavLinks() {
   const { t } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const primaryNavItems = usePrimaryNavItems();
-  const curvaLive = useManagerCardLive();
+  const curvaInBar = useCurvaInBar();
   return (
     <nav
       aria-label={t("nav.primary")}
       className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex"
     >
       {primaryNavItems.map((item) => {
-        const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
+        const active = isPrimaryRouteActive(pathname, item.to, curvaInBar);
         return (
           <Link
             key={item.to}
