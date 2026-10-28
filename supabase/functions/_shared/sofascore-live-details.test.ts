@@ -291,8 +291,8 @@ describe("sofascore details on the live tick", () => {
     expect(detailPaths(paths)).toEqual([]);
   });
 
-  test("finalized fixtures are read again once, at +90 minutes, when the database says a follow-up is due, within the cap", async () => {
-    const recent = new Date(NOW.getTime() - 95 * 60 * 1000).toISOString();
+  test("a finished fixture is read again only when the database says a retry is due and nothing was stored since the whistle, within the cap", async () => {
+    const recent = new Date(NOW.getTime() - 35 * 60 * 1000).toISOString();
     const snapshotOf = () => ({
       mappings: mappings([1, 2, 3]),
       fixtures: [
@@ -318,23 +318,19 @@ describe("sofascore details on the live tick", () => {
       named(db, "ingest_football_match_details").map((c) => c.args.p_fixture_external_id),
     ).toEqual(["1"]);
     expect(detailPaths(paths)).toHaveLength(3);
-    // The +30 minute mark is listed by the database but not read.
-    const early = fakeDb(
-      {
-        mappings: mappings([1]),
-        fixtures: [
-          state(1, {
-            status: "finished",
-            finalizedAt: new Date(NOW.getTime() - 35 * 60 * 1000).toISOString(),
-          }),
-        ],
-      },
-      [],
-      { followUps: ["1"], lastStored: {} },
-    );
-    const earlyRun = fakeFetch(lists);
-    await tick("sofascore", "fixtures", early, earlyRun.fetch);
-    expect(detailPaths(earlyRun.paths)).toEqual([]);
+    // Details already stored after the whistle (here 5 minutes ago): a mark
+    // passing does not buy a second read.
+    const storedAt = new Date(NOW.getTime() - 5 * 60 * 1000).toISOString();
+    const stored = fakeDb(snapshotOf(), [], {
+      followUps: ["1", "2"],
+      lastStored: { "1": storedAt },
+    });
+    const storedRun = fakeFetch(lists);
+    await tick("sofascore", "fixtures", stored, storedRun.fetch);
+    expect(
+      named(stored, "ingest_football_match_details").map((c) => c.args.p_fixture_external_id),
+    ).toEqual(["2"]);
+    expect(detailPaths(storedRun.paths)).toHaveLength(3);
   });
 
   test("unchanged final scores still refresh details without duplicate targets", async () => {
@@ -634,13 +630,20 @@ describe("the live minute on the live tick", () => {
     expect(known.details).toEqual([]);
   });
 
-  test("a goal or a status change with the clock still reads the incidents", async () => {
+  test("a goal with the clock reads the incidents; a status change without a goal does not", async () => {
     const goal = await clockTick({ minute: 10 }, START + 3000, { homeScore: { current: 2 } });
     expect(goal.writes).toHaveLength(1);
     expect(goal.details).toEqual(["matches/get-incidents?matchId=1"]);
-    const status = await clockTick({ minute: 10, status: "half_time" }, START + 3000);
-    expect(status.writes).toHaveLength(1);
-    expect(status.details).toEqual(["matches/get-incidents?matchId=1"]);
+    // Stored half time, the feed says the second half began: written, nothing worth a read.
+    const resumed = await clockTick({ minute: 10, status: "half_time" }, START + 3000);
+    expect(resumed.writes).toHaveLength(1);
+    expect(resumed.details).toEqual([]);
+    // Stored first half, the feed says half time: one incidents read.
+    const half = await clockTick({ minute: 10 }, START + 3000, {
+      status: { code: 31, type: "inprogress", description: "x" },
+    });
+    expect(half.writes).toHaveLength(1);
+    expect(half.details).toEqual(["matches/get-incidents?matchId=1"]);
   });
 
   test("the clock disappearing clears a stored minute instead of freezing it", async () => {
@@ -658,7 +661,7 @@ describe("the live minute on the live tick", () => {
 describe("lineups in play and statistics after the post-match window", () => {
   const liveEvent = (score: number) => event(1, LIVE, START + 100, score);
 
-  test("a match in play never reads its lineups, stored or not: the incidents alone", async () => {
+  test("a goal in a match with no stored lineup reads the incidents and the lineups; with one, the incidents alone", async () => {
     // Snapshot (migration 20261014120000) says no lineup is stored; the score moved.
     const db = fakeDb({
       mappings: mappings([1]),
@@ -666,19 +669,65 @@ describe("lineups in play and statistics after the post-match window", () => {
     });
     const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
     await tick("sofascore", "fixtures", db, run.fetch);
-    expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
-  });
-
-  test("once a lineup is stored, or on a database without the flag, the incidents alone", async () => {
+    expect(detailPaths(run.paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+    ]);
     for (const over of [{ hasLineups: true }, {}]) {
-      const db = fakeDb({
+      const stored = fakeDb({
         mappings: mappings([1]),
         fixtures: [state(1, { homeScore: 0, ...over })],
       });
-      const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
-      await tick("sofascore", "fixtures", db, run.fetch);
-      expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+      const again = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
+      await tick("sofascore", "fixtures", stored, again.fetch);
+      expect(detailPaths(again.paths)).toEqual(["matches/get-incidents?matchId=1"]);
     }
+  });
+
+  test("the tick that sees the match start reads the lineups alone, once", async () => {
+    const kickoff = (over: Record<string, unknown>) =>
+      fakeDb({
+        mappings: mappings([1]),
+        // Stored as not started, score 0-0; the feed says 1st half, 0-0.
+        fixtures: [state(1, { status: "scheduled", period: "none", ...over })],
+      });
+    const feed = { [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, LIVE, START + 100, 0)] } };
+    const first = kickoff({});
+    const firstRun = fakeFetch(feed);
+    await tick("sofascore", "fixtures", first, firstRun.fetch);
+    expect(detailPaths(firstRun.paths)).toEqual(["matches/get-lineups?matchId=1"]);
+    const sent = named(first, "ingest_football_match_details");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args.p_details).toMatchObject({ events: null, statistics: [] });
+    // The next tick: the match is in play, no score change, a lineup is stored.
+    const second = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { hasLineups: true })],
+    });
+    const secondRun = fakeFetch(feed);
+    await tick("sofascore", "fixtures", second, secondRun.fetch);
+    expect(detailPaths(secondRun.paths)).toEqual([]);
+  });
+
+  test("a lineup the provider has not published yet is unavailable, not a rejection", async () => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { status: "scheduled", period: "none" })],
+    });
+    const paths: string[] = [];
+    const fetch = async (input: string) => {
+      const path = new URL(input).pathname.slice(1) + new URL(input).search;
+      paths.push(path);
+      if (path.startsWith("matches/get-lineups"))
+        return Response.json({ error: { code: 404, message: "Not Found" } });
+      return Response.json({ events: [event(1, LIVE, START + 100, 0)] });
+    };
+    const outcome = await tick("sofascore", "fixtures", db, fetch);
+    expect(paths.filter((p) => p.startsWith("matches/"))).toEqual([
+      "matches/get-lineups?matchId=1",
+    ]);
+    expect(named(db, "ingest_football_match_details")).toHaveLength(0);
+    expect(JSON.stringify(outcome)).toContain('"unavailable":1');
   });
 
   test("a provider change alone (nothing written) reads nothing, missing lineups included", async () => {

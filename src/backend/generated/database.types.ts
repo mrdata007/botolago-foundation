@@ -2263,6 +2263,7 @@ export type Database = {
         Returns: Json
       }
       service_rapidapi_budget: { Args: never; Returns: Json }
+      service_rapidapi_host_budget: { Args: { p_host: string }; Returns: Json }
       service_recalculate_fantasy_rankings: {
         Args: {
           p_calculation_version?: number
@@ -2316,6 +2317,19 @@ export type Database = {
       service_record_rapidapi_calls: {
         Args: { p_calls: Json; p_job: string }
         Returns: number
+      }
+      service_record_rapidapi_host_calls: {
+        Args: { p_calls: Json; p_host: string; p_job: string }
+        Returns: number
+      }
+      service_record_rapidapi_host_quota: {
+        Args: {
+          p_host: string
+          p_limit: number
+          p_observed_at?: string
+          p_remaining: number
+        }
+        Returns: boolean
       }
       service_record_rapidapi_quota: {
         Args: { p_limit: number; p_observed_at?: string; p_remaining: number }

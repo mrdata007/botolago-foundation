@@ -23,13 +23,17 @@
 // Match details (events, lineups, team statistics) come after the scores, from
 // sofascore-match-details.ts, at most SOFASCORE_DETAILS_PER_TICK (default 4)
 // fixtures per live tick. Chosen fixtures: a mapped fixture written as finished
-// this tick (the whistle fetch: incidents, lineups, statistics, 3 requests, which
-// also feed the Fantasy step), then mapped fixtures in play whose score, status or
-// period was written (the incidents only, 1 request; a write that only moves the
-// live minute does not count, and neither does the provider's changeTimestamp
-// moving; never the lineups or statistics of a match in play), then one
-// post-match follow-up at +90 minutes (api.service_football_details_schedule), 3
-// requests. The season job fetches none. `rating_polls` (runSofascoreRatingPolls)
+// this tick (the whistle fetch, once: incidents, lineups, statistics, 3 requests,
+// which also feed the Fantasy step), then mapped fixtures in play on a tick that
+// wrote a change (a write that only moves the live minute does not count, and
+// neither does the provider's changeTimestamp moving): the incidents (1 request)
+// when the score moved or the match reached half time, extra time or penalties,
+// and the lineups (1 request) once, on the tick that sees the match start (again
+// on a written tick only while none is stored); never the statistics of a match in
+// play. Last, a retry (3 requests) of a finished match, within 3 hours of the
+// whistle, whose details were never stored (api.service_football_details_schedule);
+// a stored match is not read again. The season job fetches none. `rating_polls`
+// (runSofascoreRatingPolls)
 // is the Fantasy rating polls alone: one lineups request per poll due, no live
 // feed. `runSofascoreDetailsBackfill` serves the `match_details_backfill` job.
 // Details never hold a score back: they run after the scores are written, and a
@@ -84,7 +88,7 @@ export type SofascoreRefreshMode = "sofascore" | "shadow";
 export type SofascoreRefreshJob = "fixtures" | "season_fixtures";
 /** Per-fixture post-match schedule from the database (api.service_football_details_schedule). */
 export interface SofascoreDetailsSchedule {
-  /** SofaScore event ids whose +30 min or +90 min follow-up is due. */
+  /** SofaScore event ids with a +30 min or +90 min mark passed and no details stored since it. */
   readonly followUps: ReadonlySet<string>;
   /** When the fixture's details were last stored (ms), by SofaScore event id. */
   readonly lastStored: ReadonlyMap<string, number>;
@@ -120,8 +124,8 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
   "extra_time",
   "penalties",
 ]);
-/** The only post-match follow-up read of a finished fixture's details. */
-const FOLLOW_UP_AFTER_MS = 90 * 60 * 1000;
+/** Statuses whose arrival is worth one incidents read (the score is read on its own). */
+const INCIDENT_STATUSES: ReadonlySet<string> = new Set(["half_time", "extra_time", "penalties"]);
 
 export interface SofascoreRefreshDependencies {
   readonly mode: SofascoreRefreshMode;
@@ -303,11 +307,12 @@ function detailsTeams(
 
 /**
  * Fixtures whose details are worth fetching this tick, in priority order:
- * written as finished first (the whistle fetch), then in play and changed
- * (written, or the provider's changeTimestamp moved within the last 90 s and the
- * details are 5 minutes old; incidents only), newest change first, then the
- * post-match follow-ups the database says are due, even if absent from the live
- * feed. Without a schedule (older database) there are no follow-ups.
+ * written as finished first (the whistle fetch, once), then in play and written
+ * with a score, half-time or start change (the incidents, or the lineups once),
+ * newest change first, then the retries the database says are due (a finished
+ * match, within 3 hours of the whistle, whose details were never stored), even
+ * if absent from the live feed. Without a schedule (older database) there are
+ * no retries.
  */
 export function selectLiveDetailTargets(
   events: readonly SofascoreFixtureEvent[],
@@ -333,28 +338,50 @@ export function selectLiveDetailTargets(
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
-    // A finished match reads all three replies and feeds the Fantasy step with
-    // them. A match in play reads the incidents only (1 request), and only on a
-    // tick that wrote a score, status or period change: never the lineups or the
-    // statistics (display data BSD will serve; the Fantasy ratings read the
-    // lineups after full time). A provider changeTimestamp moving is not a
-    // reason to read: it moves for every minor edit.
+    // A finished match reads all three replies once (the whistle fetch) and
+    // feeds the Fantasy step with them. A match in play is read sparingly, and
+    // only on a tick that wrote a change (never on the provider's
+    // changeTimestamp moving, which it does for every minor edit):
+    //  - the incidents (1 request) when the score moved, or at half time, extra
+    //    time or penalties; the cards and substitutions between two goals wait
+    //    for the whistle fetch;
+    //  - the lineups (1 request), once per match: on the tick that sees it start,
+    //    and again on a written tick only while none is stored. Never the
+    //    statistics (display data; read at full time).
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
+    let incidents = false;
+    let lineups = false;
+    if (rank === 1) {
+      const starting = !DETAILS_LIVE_STATUSES.has(state.status);
+      lineups = starting || state.hasLineups === false;
+      incidents =
+        state.homeScore !== event.homeScore ||
+        state.awayScore !== event.awayScore ||
+        (event.status !== state.status && INCIDENT_STATUSES.has(event.status));
+      if (!incidents && !lineups) continue;
+    }
+    const liveFixtureId = lineups && state.id ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
         teams,
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
-        ...(rank === 1 ? { incidentsOnly: true } : {}),
+        ...(liveFixtureId ? { liveFixtureId } : {}),
+        ...(rank === 1 && incidents ? { incidentsOnly: true } : {}),
+        ...(rank === 1 && lineups
+          ? incidents
+            ? { withLineups: true }
+            : { lineupsOnly: true }
+          : {}),
       },
       rank,
       changed,
     });
   }
   // Finished matches leave the live list and need no score write on later
-  // ticks. The database names the ones whose +30 min or +90 min follow-up is
-  // due (their details were last stored before that mark), so a match is
-  // read once or twice after the whistle fetch, not on every call.
+  // ticks. The database names the ones with a mark (+30 min, +90 min) passed
+  // and nothing stored since; only those never stored after the whistle are
+  // read (below), so a stored match costs nothing more.
   const selected = new Set(ranked.map((item) => item.target.eventId));
   for (const fixture of snapshot.fixtures) {
     if (
@@ -367,9 +394,12 @@ export function selectLiveDetailTargets(
     }
     const finalized = Date.parse(fixture.finalizedAt);
     if (!Number.isFinite(finalized)) continue;
-    // One follow-up, at +90 minutes (the +30 minute mark the database also
-    // lists is not read: the whistle fetch and this one are the two reads).
-    if (now.getTime() - finalized < FOLLOW_UP_AFTER_MS) continue;
+    // A retry, not a routine re-read: only a match whose details were not
+    // stored since the final whistle (the whistle fetch failed or was refused).
+    // A stored match is never read again here; the staged statistics pulls
+    // refresh the late statistics.
+    const storedAt = schedule.lastStored.get(fixture.externalId);
+    if (storedAt !== undefined && storedAt >= finalized) continue;
     const teams = detailsTeams(fixture, teamIds, undefined);
     if (teams)
       ranked.push({
@@ -452,7 +482,7 @@ export function skipReason(
 /**
  * The post-match schedule from api.service_football_details_schedule. A missing
  * function (migration not applied) or any failure is an empty schedule: no
- * follow-ups, and a moved change timestamp is read as before.
+ * retries.
  */
 async function loadDetailsSchedule(client: FixtureRpcClient): Promise<SofascoreDetailsSchedule> {
   try {
