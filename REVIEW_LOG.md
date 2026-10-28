@@ -465,3 +465,5 @@ Round 3 (last allowed) sent: when that read fails, skip the extra reads (fail cl
 
 Pull request #572 opened so CI runs the database tests that could not run here. Not merged: the owner's steps start with the merge.
 
+**PR #572 CI: green**, including `database-quality`: the new database tests passed in CI. The branch was updated with `main` (#571, font caching only, no database change); the checks are re-running. Waiting for the owner: steps by themselves (1) or authorise the Lead (2).
+
