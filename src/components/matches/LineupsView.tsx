@@ -1,3 +1,4 @@
+import { Shirt } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import type { MatchAbsenceDto, MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -12,7 +13,35 @@ import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { Absences } from "./Absences";
 import { lineBlockStart, pitchLines, slotInlineStart, sortStartingXi } from "./lineup-pitch";
-import { noLineupsMessage, type MatchDataPhase } from "./match-empty-states";
+import { isDataUnavailable, noLineupsMessage, type MatchDataPhase } from "./match-empty-states";
+
+/**
+ * No line-ups yet, while they are still expected (before kick-off, or the page
+ * is still checking): a small panel outlined in the brand navy with a shirt
+ * glyph in fresh-turf on a navy disc, instead of a grey box. The words are the
+ * panel's own (`noLineupsMessage`) and promise nothing about when they come.
+ */
+function LineupsPending({ message }: { message: string }) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 border-2 border-[color:var(--ui-ink-fg)] bg-[color:var(--ui-surface)] px-4 py-4",
+        ui.radius.sheet,
+      )}
+    >
+      <span
+        className={cn(
+          "grid h-10 w-10 shrink-0 place-items-center",
+          ui.radius.full,
+          ui.surface.inkPlain,
+        )}
+      >
+        <Shirt aria-hidden className="h-5 w-5 text-[color:var(--ui-accent-spring)]" />
+      </span>
+      <p className={cn("min-w-0", ui.text.secondary, ui.tone.default)}>{message}</p>
+    </div>
+  );
+}
 
 // Pinned by `LineupsView.test.ts`; the helper itself lives in `lineup-pitch.ts`.
 export { sortStartingXi };
@@ -112,9 +141,12 @@ export function LineupsView({
   if (!homeLineup && !awayLineup) {
     return (
       <div className="grid gap-4">
-        {unavailable?.lineups ?? (
-          <MatchDataState phase={phase} message={noLineupsMessage(phase, t)} />
-        )}
+        {unavailable?.lineups ??
+          (isDataUnavailable(phase) ? (
+            <MatchDataState phase={phase} message={noLineupsMessage(phase, t)} />
+          ) : (
+            <LineupsPending message={noLineupsMessage(phase, t)} />
+          ))}
         {absent}
       </div>
     );

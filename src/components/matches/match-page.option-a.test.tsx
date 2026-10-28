@@ -747,6 +747,45 @@ describe("match page — tabs come straight after the identity (batch 2)", () =>
     expect(route).toContain('predictionInline && match.status === "scheduled"');
     expect(route).toContain('predictionInline && match.status !== "scheduled"');
   });
+
+  it("on a phone, puts Avant-match first before kick-off, the prediction right after it", () => {
+    expect(route).toContain('const preMatchFirst = phase === "upcoming" && !wideLayout;');
+    const first = route.indexOf("{preMatchFirst ? <div");
+    expect(first).toBeGreaterThan(-1);
+    expect(first).toBeLessThan(route.indexOf('predictionInline && match.status === "scheduled"'));
+    // A desktop draws it in the timeline's column instead, not twice.
+    expect(route).toContain("preMatchFirst ? null : (");
+  });
+});
+
+describe("match page — line-ups not out yet", () => {
+  const html = (phase: "upcoming" | "finished") =>
+    inFrench(
+      <LineupsView
+        lineups={[]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        phase={phase}
+        absences={[]}
+      />,
+    );
+
+  it("while they are still expected, is a navy-outlined panel with a turf glyph, not a grey box", () => {
+    const pending = html("upcoming").replace(/&#x27;/g, "'");
+    expect(pending).toContain(dictionaries.fr["matches.detail.no_lineups"]);
+    expect(pending).toContain("border-[color:var(--ui-ink-fg)]");
+    expect(pending).toContain("text-[color:var(--ui-accent-spring)]");
+    expect(pending).not.toContain("surface-sunken");
+    // The wording promises nothing about when they will appear.
+    expect(dictionaries.fr["matches.detail.no_lineups"]).not.toMatch(/bient|dès|sera|seront/i);
+  });
+
+  it("keeps the unavailable panel for a match whose line-ups will not come", () => {
+    const gone = html("finished");
+    expect(gone).toContain(dictionaries.fr["matches.detail.no_lineups_unavailable"]);
+    expect(gone).not.toContain("text-[color:var(--ui-accent-spring)]");
+  });
 });
 
 describe("match page — the + under the scorers says what it opens", () => {

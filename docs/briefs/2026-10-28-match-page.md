@@ -96,6 +96,15 @@ Before screenshots in `docs/screens/2026-10-28-match-page/`.
    width. For a match still to play, the "Avant-match" module takes the
    timeline's column.
 
+5. **Review changes (2026-10-28).** The countdown units are plain plural words
+   under each figure ("heures", "minutes" / "ساعات", "دقائق"), never
+   single-letter abbreviations. On a phone before kick-off Avant-match is the
+   first thing on the Résumé, the prediction card right after it (desktop
+   unchanged). The line-ups panel, while they are still expected, is a small
+   navy-outlined panel with a fresh-turf shirt glyph on a navy disc instead of a
+   grey box; its wording is unchanged and promises nothing about timing. A
+   match whose line-ups will not come keeps the unavailable panel.
+
 ## Acceptance criteria
 
 Visual, in French and Arabic (right to left), at 320, 390 and 1440 px, light and

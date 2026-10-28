@@ -78,19 +78,21 @@ export function PreMatchPanel({
             <p className={cn("mt-2", ui.text.meta, ui.tone.onInkMuted)}>
               {t("matches.pre.starts_in")}
             </p>
-            {/* Whole days, hours and minutes, each a big figure with its unit.
+            {/* Whole days, hours and minutes as a clock: a big figure with its
+                unit under it, the unit a plain plural word ("jours", "أيام"),
+                never an abbreviation, so it reads the same at any count.
                 Empty until the browser has read its own clock; the height is
                 kept so nothing moves when it arrives. */}
-            <p className="flex min-h-11 flex-wrap items-baseline justify-center gap-x-3">
+            <p className="flex min-h-[4.25rem] justify-center gap-x-6">
               {left && !left.passed
                 ? [
-                    ...(left.days > 0 ? [{ n: left.days, unit: t("home.days") }] : []),
-                    { n: left.hours, unit: t("home.hours") },
-                    { n: left.minutes, unit: t("home.minutes") },
+                    ...(left.days > 0 ? [{ n: left.days, unit: t("matches.pre.unit_days") }] : []),
+                    { n: left.hours, unit: t("matches.pre.unit_hours") },
+                    { n: left.minutes, unit: t("matches.pre.unit_minutes") },
                   ].map(({ n, unit }) => (
-                    <span key={unit} className="inline-flex items-baseline gap-1">
+                    <span key={unit} className="inline-flex flex-col items-center">
                       <bdi className={ui.score.lg}>{n}</bdi>
-                      <span className={cn(ui.text.secondary, ui.tone.onInkMuted)}>{unit}</span>
+                      <span className={cn(ui.text.meta, ui.tone.onInkMuted)}>{unit}</span>
                     </span>
                   ))
                 : null}

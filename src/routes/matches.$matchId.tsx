@@ -423,6 +423,19 @@ function MatchDetailPage() {
       placement="inline"
     />
   );
+  // "Avant-match" (a match not yet started): on a phone it leads the Résumé,
+  // the prediction right after it; on a desktop it takes the timeline's column.
+  const preMatchFirst = phase === "upcoming" && !wideLayout;
+  const preMatch = (
+    <PreMatch
+      season={season}
+      match={match}
+      home={home}
+      away={away}
+      palettes={palettes}
+      meetings={h2h}
+    />
+  );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
   const presented = presentScore(match);
   // The statistics under the timeline, once the match has started: what the
@@ -552,6 +565,7 @@ function MatchDetailPage() {
                 {/* A match still to be played leads with the prediction: it is
                     the one thing to do here. Once it is on, the timeline
                     leads and the prediction follows it. */}
+                {preMatchFirst ? <div className="mb-4">{preMatch}</div> : null}
                 {predictionInline && match.status === "scheduled" ? (
                   <div className="mb-4">{prediction}</div>
                 ) : null}
@@ -561,15 +575,11 @@ function MatchDetailPage() {
                       // Before kick-off there are no events to list: the page
                       // says what it knows about the match instead of an empty
                       // box. Any other phase keeps the timeline and its own
-                      // phase-aware wording.
-                      <PreMatch
-                        season={season}
-                        match={match}
-                        home={home}
-                        away={away}
-                        palettes={palettes}
-                        meetings={h2h}
-                      />
+                      // phase-aware wording. On a phone it leads the panel
+                      // (above), so only a desktop draws it here.
+                      preMatchFirst ? null : (
+                        preMatch
+                      )
                     ) : failed("timeline") ? (
                       sectionError(t("matches.detail.section_failed.timeline"))
                     ) : (

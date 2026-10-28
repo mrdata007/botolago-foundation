@@ -433,6 +433,9 @@ export const frCore = {
   "matches.detail.events_more_assists": "Passes décisives",
   "matches.pre.title": "Avant-match",
   "matches.pre.starts_in": "Débute dans",
+  "matches.pre.unit_days": "jours",
+  "matches.pre.unit_hours": "heures",
+  "matches.pre.unit_minutes": "minutes",
   "matches.pre.kickoff_at": "Coup d'envoi à {time} (heure du Maroc)",
   "matches.pre.standing": "Classement",
   "matches.pre.form_note":
