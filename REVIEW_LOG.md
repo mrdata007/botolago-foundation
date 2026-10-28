@@ -370,3 +370,9 @@ The Lead tested `main` combined with Lovable's change:
 
 Asked the owner before combining the two on `main`.
 
+**Owner approved (28 Oct): bring Lovable's change into `main`.** Pull request #570 opened.
+- Codex found nothing; both checks passed.
+- `main` moved twice while it waited: #569, then #567 "SEO pass 1" from another session. The branch was brought up to date each time, and the checks are running again.
+- Publishing will also put #566 (page speed) and #567 (SEO) live, because both are on `main`.
+- #567's database change (20261027150000) is written so the website behaves the same before and after it is applied (migration header, "Rollout"). Safe to publish without it.
+
