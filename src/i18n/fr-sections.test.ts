@@ -260,6 +260,28 @@ describe("no page lacks a key it renders", () => {
     expect(unhooked).toEqual([]);
   });
 
+  test("the layout of each section's pages carries the section, so the HTML preloads it", () => {
+    // `provideFrSection` + a static import in the layout's module puts the
+    // section in the layout's chunk (`fr-sections.ts`). The admin screens are
+    // drawn in the browser only: there is no HTML to preload for.
+    const missing: string[] = [];
+    for (const file of routeFiles(ROOT)) {
+      const path = routePath(file);
+      if (path === "/admin" || path.startsWith("/admin/")) continue;
+      const wanted = frSectionsForPath(path);
+      if (wanted.length === 0) continue;
+      const carried = new Set<string>();
+      for (const candidate of [file, ...layoutFilesAbove(file)]) {
+        const source = readFileSync(candidate, "utf8");
+        for (const match of source.matchAll(/provideFrSection\("(\w+)"/g)) carried.add(match[1]);
+      }
+      for (const name of wanted) {
+        if (!carried.has(name)) missing.push(`${file.slice(ROOT.length + 1)}: ${name}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
   test("the browser waits for the sections of its address before it hydrates", () => {
     const router = readFileSync(join(ROOT, "src/router.tsx"), "utf8");
     expect(router).toContain("loadFrSectionsForPath(window.location.pathname)");
@@ -291,16 +313,34 @@ describe("the first load stays small", () => {
     expect(offenders).toEqual([]);
   });
 
-  test("a section is imported by the loader only, never statically", () => {
+  test("only a section's own pages import it statically; the shell and the first load never do", () => {
+    const importsSection = /(?:from|import)\s*\(?\s*["'][^"']*fr-sections\/[^"']*["']/;
     const offenders = appFiles
       .filter((file) => !file.endsWith("src/i18n/fr-sections.ts"))
-      .filter((file) =>
-        /(?:from|import)\s*\(?\s*["'][^"']*fr-sections\/[^"']*["']/.test(
-          readFileSync(file, "utf8"),
-        ),
-      )
+      .filter((file) => !file.startsWith(join(ROOT, "src", "routes") + "/"))
+      .filter((file) => importsSection.test(readFileSync(file, "utf8")))
       .map((file) => file.slice(ROOT.length + 1));
     expect(offenders).toEqual([]);
+
+    // And nothing the first load runs reaches a route file that does.
+    const scanner = createRouteKeyScanner(ROOT, []);
+    const reached: string[] = [];
+    for (const entry of [
+      "src/routes/__root.tsx",
+      "src/router.tsx",
+      "src/start.ts",
+      "src/server.ts",
+    ]) {
+      for (const file of scanner.importClosure(join(ROOT, entry))) {
+        if (
+          importsSection.test(readFileSync(file, "utf8")) &&
+          !file.endsWith("src/i18n/fr-sections.ts")
+        ) {
+          reached.push(`${entry} -> ${file.slice(ROOT.length + 1)}`);
+        }
+      }
+    }
+    expect(reached).toEqual([]);
   });
 
   test("the core part is under its budget", () => {

@@ -1,7 +1,11 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { loadFrSectionsForPath } from "@/i18n/fr-sections";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frFantasy } from "@/i18n/fr-sections/fantasy";
+import { frPlus } from "@/i18n/fr-sections/plus";
+import { frPredictions } from "@/i18n/fr-sections/predictions";
+import { frPrizes } from "@/i18n/fr-sections/prizes";
 import { useI18n } from "@/i18n/provider";
 import { FANTASY_PLAYER_ROUTE_ID, fantasyShownCopy, shownHeadTitle } from "@/lib/fantasy-meta";
 import { findClub } from "@/components/fantasy/club-identity";
@@ -56,6 +60,11 @@ export const Route = createFileRoute("/fantasy")({
  * title is enough to follow for both.
  */
 function FantasyLayout() {
+  // Imported here so the layout's chunk carries them and the HTML preloads them (`fr-sections.ts`).
+  provideFrSection("fantasy", frFantasy);
+  provideFrSection("plus", frPlus);
+  provideFrSection("prizes", frPrizes);
+  provideFrSection("predictions", frPredictions);
   const { t, tr, lang } = useI18n();
   const routeId = useRouterState({ select: (state) => state.matches.at(-1)?.routeId });
   const player = useRouterState({

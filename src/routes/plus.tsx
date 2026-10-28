@@ -3,7 +3,8 @@ import { useEffect } from "react";
 
 import { PlusPage } from "@/components/plus/PlusPage";
 import { frCore as fr } from "@/i18n/dictionary-fr-core";
-import { loadFrSectionsForPath } from "@/i18n/fr-sections";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPlus } from "@/i18n/fr-sections/plus";
 import { useI18n } from "@/i18n/provider";
 import { shouldRedirectFromPlus } from "@/lib/premium-gate";
 
@@ -29,6 +30,8 @@ export const Route = createFileRoute("/plus")({
 });
 
 function PlusRoute() {
+  // Imported here so the page's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("plus", frPlus);
   const { t } = useI18n();
   const title = t("plus.meta.offer");
   useEffect(() => {

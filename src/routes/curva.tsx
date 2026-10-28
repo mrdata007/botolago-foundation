@@ -9,7 +9,8 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { CurvaLoading } from "@/components/curva/StateBlocks";
 import { CurvaLockScreen } from "@/components/curva/CurvaLockScreen";
 import { preloadCardRenderer } from "@/components/manager-card/use-card-renderer";
-import { loadFrSectionsForPath } from "@/i18n/fr-sections";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPlus } from "@/i18n/fr-sections/plus";
 import { curvaAccess } from "@/services/curva-access";
 import { shouldRedirectFromCurva } from "@/services/manager-card-status";
 
@@ -70,6 +71,8 @@ function startCardRendererOnCurva(): void {
 }
 
 function CurvaLayout() {
+  // Imported here so the layout's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("plus", frPlus);
   const { status } = useAuth();
   useEffect(() => {
     preloadCardRenderer(); // idempotent; covers a layout whose module was evaluated on the server

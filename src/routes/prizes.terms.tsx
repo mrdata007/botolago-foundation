@@ -6,7 +6,8 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiHeader } from "@/components/ui-kit";
 import { PRIZE_TERMS } from "@/content/legal/prize-terms";
 import { frCore as fr } from "@/i18n/dictionary-fr-core";
-import { loadFrSectionsForPath } from "@/i18n/fr-sections";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPrizes } from "@/i18n/fr-sections/prizes";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
@@ -44,6 +45,8 @@ export const Route = createFileRoute("/prizes/terms")({
 });
 
 function PrizeTermsRoute() {
+  // Imported here so the page's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("prizes", frPrizes);
   const { t, lang } = useI18n();
   const title = t("prizes.terms.meta_title");
   useEffect(() => {

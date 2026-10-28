@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
-import { loadFrSectionsForPath } from "@/i18n/fr-sections";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPredictions } from "@/i18n/fr-sections/predictions";
 import { PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 
 /**
@@ -17,5 +18,11 @@ export const Route = createFileRoute("/pronostics")({
   beforeLoad: redirectWhilePronosticsAreHidden,
   // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
   loader: ({ location }) => loadFrSectionsForPath(location.pathname),
-  component: () => <Outlet />,
+  component: PronosticsLayout,
 });
+
+function PronosticsLayout() {
+  // Imported here so the layout's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("predictions", frPredictions);
+  return <Outlet />;
+}

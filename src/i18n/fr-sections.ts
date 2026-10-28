@@ -10,13 +10,18 @@ import { retryableImport, type RetryableImport } from "./retryable-import";
  *
  * HOW A SECTION ARRIVES
  *
- *   - Server: the layout route of a section (`beforeLoad`) awaits it before the
+ *   - Server: the layout route of a section (`loader`) awaits it before the
  *     page renders, so every key is there when React renders the HTML.
  *   - Browser, first load: the router waits for `hydrate` (`router.tsx`), which
  *     loads the sections of the address before React hydrates, so the first
  *     render is the HTML the server sent.
- *   - Browser, navigation (and a preload): the same `beforeLoad` runs before
- *     the new page is shown. A page never renders with a section missing.
+ *   - Browser, navigation (and a preload): the same `loader` runs before the
+ *     new page is shown. A page never renders with a section missing.
+ *   - The layout also imports its sections and hands them over
+ *     (`provideFrSection`), which makes them part of its chunk: the HTML
+ *     preloads them with the layout, so a first load does not wait for the
+ *     entry to run before it asks for them. The loader and `hydrate` stay as
+ *     the guarantee; the import is the speed.
  *
  * WHICH SECTIONS A PAGE NEEDS is `SECTIONS_BY_PATH` below, by address. It is
  * checked against what each route file really uses by `fr-sections.test.ts`,
@@ -80,6 +85,21 @@ export function frSectionsForPath(pathname: string): FrSectionName[] {
       names.forEach((n) => wanted.add(n));
   }
   return [...wanted];
+}
+
+/**
+ * A section handed over by a module that imports it itself: the layout of the
+ * pages that use it. The import makes the section a dependency of that
+ * layout's chunk, so the server's HTML preloads it with the layout and the
+ * browser has it in the same round trip, instead of asking for it after the
+ * entry has run (the loader and the router's `hydrate` would otherwise be the
+ * only way it arrives, one request later). Idempotent, and a no-op once the
+ * section is here by either way.
+ */
+export function provideFrSection(name: FrSectionName, dictionary: Dictionary): void {
+  if (arrived.has(name)) return;
+  Object.assign(loaded, dictionary);
+  arrived.add(name);
 }
 
 /** Loads one section; resolves at once when it is already here. */
