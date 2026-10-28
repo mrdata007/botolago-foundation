@@ -33,11 +33,45 @@ page.on("requestfinished", async (request) => {
     at,
   });
 });
+// MEASURE_LANG=ar measures the page as an Arabic reader gets it (the stored
+// language choice); MEASURE_SLOW=1 slows the network to a phone's 4G so late
+// fonts and images show their effect on layout.
+if (process.env.MEASURE_LANG) {
+  await page.addInitScript((lang) => {
+    try {
+      localStorage.setItem("botolago.language", lang);
+    } catch {
+      /* ignore */
+    }
+  }, process.env.MEASURE_LANG);
+}
+if (process.env.MEASURE_SLOW) {
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("Network.emulateNetworkConditions", {
+    offline: false,
+    latency: 150,
+    downloadThroughput: (1.6 * 1024 * 1024) / 8,
+    uploadThroughput: (750 * 1024) / 8,
+  });
+}
 await page.addInitScript(() => {
   window.__cls = 0;
+  window.__shifts = [];
   window.__lcp = 0;
   new PerformanceObserver((list) => {
-    for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__cls += entry.value;
+    for (const entry of list.getEntries()) {
+      if (entry.hadRecentInput) continue;
+      window.__cls += entry.value;
+      window.__shifts.push({
+        at: Math.round(entry.startTime),
+        value: Number(entry.value.toFixed(4)),
+        nodes: entry.sources.map((source) => {
+          const node = source.node;
+          if (!node || node.nodeType !== 1) return node?.nodeName ?? "?";
+          return `${node.tagName.toLowerCase()}.${String(node.className).slice(0, 60)}`;
+        }),
+      });
+    }
   }).observe({ type: "layout-shift", buffered: true });
   new PerformanceObserver((list) => {
     const entries = list.getEntries();
@@ -59,6 +93,7 @@ const timing = await page.evaluate(() => {
     loadMs: Math.round(nav.loadEventEnd),
     lcpMs: Math.round(window.__lcp),
     cls: Number(window.__cls.toFixed(4)),
+    shifts: window.__shifts,
   };
 });
 await browser.close();
