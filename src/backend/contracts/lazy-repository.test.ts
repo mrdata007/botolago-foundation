@@ -38,6 +38,20 @@ describe("lazyRepository", () => {
     expect(attempts).toBe(2);
   });
 
+  it("with `eager`, starts the load at once and still loads only once", async () => {
+    let loads = 0;
+    const repository = lazyRepository<Counter>(
+      async () => {
+        loads += 1;
+        return new CounterImpl();
+      },
+      { eager: true },
+    );
+    expect(loads).toBe(1);
+    expect(await repository.add(4)).toBe(4);
+    expect(loads).toBe(1);
+  });
+
   it("is not a thenable, so awaiting it gives it back", async () => {
     const repository = lazyRepository<Counter>(async () => new CounterImpl());
     expect(await repository).toBe(repository);

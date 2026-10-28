@@ -55,12 +55,14 @@ export function selectFootballDataMode(
 // The sample data is loaded only when the mock mode is used. A production
 // build fixes VITE_FOOTBALL_DATA_MODE to `supabase`, so the comparison below
 // becomes `true` and the import is dropped from the build (FE-C3).
-const mockRepository = lazyRepository<FootballRepository>(() =>
-  import.meta.env.VITE_FOOTBALL_DATA_MODE === "supabase"
-    ? Promise.reject(new FootballError("data_unavailable", "This build has no sample data."))
-    : import("@/backend/football/mock-repository").then(
-        ({ MockFootballRepository }) => new MockFootballRepository(),
-      ),
+const mockRepository = lazyRepository<FootballRepository>(
+  () =>
+    import.meta.env.VITE_FOOTBALL_DATA_MODE === "supabase"
+      ? Promise.reject(new FootballError("data_unavailable", "This build has no sample data."))
+      : import("@/backend/football/mock-repository").then(
+          ({ MockFootballRepository }) => new MockFootballRepository(),
+        ),
+  { eager: import.meta.env.VITE_FOOTBALL_DATA_MODE !== "supabase" },
 );
 const supabaseRepository = new SupabaseFootballRepository();
 

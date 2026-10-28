@@ -11,7 +11,10 @@
  * Every method of the repositories wrapped here returns a promise, so callers
  * see no difference: each call waits for the implementation, then runs on it.
  */
-export function lazyRepository<T extends object>(load: () => Promise<T>): T {
+export function lazyRepository<T extends object>(
+  load: () => Promise<T>,
+  { eager = false }: { eager?: boolean } = {},
+): T {
   let loading: Promise<T> | null = null;
   const implementation = () => {
     loading ??= load().catch((error: unknown) => {
@@ -21,6 +24,12 @@ export function lazyRepository<T extends object>(load: () => Promise<T>): T {
     });
     return loading;
   };
+  // `eager` starts the load at once, as the static import did, for a mode
+  // that will use it. Loaded only on the first call instead, the sample
+  // repository answered later than the screens around it expected: after a
+  // sign-in, the match page kept the votes it had read before the visitor's
+  // vote moved to the account (tests/e2e/pronostics.e2e.ts).
+  if (eager) void implementation().catch(() => undefined);
   return new Proxy({} as T, {
     get(_target, property) {
       // Not a thenable: `await repository` must give the repository back, not hang.

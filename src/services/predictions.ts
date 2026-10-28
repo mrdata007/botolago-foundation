@@ -44,14 +44,16 @@ export function selectPredictionsDataMode(
 
 // The sample data is loaded only when the mock mode is used; a production
 // build drops the import (FE-C3, as in `src/services/football.ts`).
-const mockRepository = lazyRepository<PredictionsRepository>(() =>
-  import.meta.env.VITE_PREDICTIONS_DATA_MODE === "supabase"
-    ? Promise.reject(
-        new BackendError("data_unavailable", "This build has no sample data.", { status: 503 }),
-      )
-    : import("@/backend/predictions/mock-repository").then(
-        ({ MockPredictionsRepository }) => new MockPredictionsRepository(),
-      ),
+const mockRepository = lazyRepository<PredictionsRepository>(
+  () =>
+    import.meta.env.VITE_PREDICTIONS_DATA_MODE === "supabase"
+      ? Promise.reject(
+          new BackendError("data_unavailable", "This build has no sample data.", { status: 503 }),
+        )
+      : import("@/backend/predictions/mock-repository").then(
+          ({ MockPredictionsRepository }) => new MockPredictionsRepository(),
+        ),
+  { eager: import.meta.env.VITE_PREDICTIONS_DATA_MODE !== "supabase" },
 );
 const supabaseRepository = new SupabasePredictionsRepository();
 
