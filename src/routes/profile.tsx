@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
   type Ref,
 } from "react";
@@ -20,6 +21,7 @@ import {
   FileText,
   Globe,
   KeyRound,
+  LifeBuoy,
   Loader2,
   LockKeyhole,
   LogIn,
@@ -27,10 +29,14 @@ import {
   Mail,
   Palette,
   Pencil,
+  Scale,
   ShieldCheck,
+  SlidersHorizontal,
   Star,
   Trash2,
+  TriangleAlert,
   Trophy,
+  UserCog,
   UserPlus,
   UserRound,
   X,
@@ -83,7 +89,6 @@ import { footballService } from "@/services/football";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, FantasySummary } from "@/types/domain";
-import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -126,7 +131,12 @@ const ROW_INTERACTIVE = cn(
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
 );
 
-/** The 36px round glyph disc — decorative, so it may sit below the 44px floor. */
+/**
+ * The 36px round glyph disc — decorative, so it may sit below the 44px floor.
+ * Inside a `Group` it wears the group's accent (`--pg-accent`, a gradient or a
+ * fill, with `--pg-accent-fg` on it); outside one it falls back to the sunken
+ * disc in the brand foreground.
+ */
 function RowDisc({
   children,
   tone = "sunken",
@@ -140,7 +150,11 @@ function RowDisc({
       className={cn(
         "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-4.5 [&_svg]:w-4.5",
         ui.radius.full,
-        tone === "sunken" && cn(ui.surface.sunken, ui.tone.ink),
+        tone === "sunken" &&
+          cn(
+            "[background:var(--pg-accent,var(--ui-surface-sunken))]",
+            "text-[color:var(--pg-accent-fg,var(--ui-ink-fg))]",
+          ),
         tone === "negative" &&
           cn("bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,transparent)]", ui.tone.negative),
       )}
@@ -229,14 +243,85 @@ function RowButton({
 }
 
 /**
- * A titled card of rows. The heading is the shared Option A section header —
- * Changa 22/800, sentence case — over one 14px card.
+ * Each settings group has its own accent, all from the theme's tokens, so
+ * the page reads as colour-coded sections instead of one grey list. The pair
+ * is a background (a gradient or a fill) and the foreground measured for it
+ * in both themes: navy on the light end of the header gradient and white on
+ * its dark one (`--ui-on-grad-header`), ink-deep on the mint-to-sky action
+ * gradient and on amber, plain white on the navy ink. Gradients run
+ * `to bottom`, so they need no mirroring in Arabic.
  */
-function Group({ title, children }: { title: string; children: ReactNode }) {
+const GROUP_ACCENTS = {
+  sky: { "--pg-accent": "var(--ui-grad-header)", "--pg-accent-fg": "var(--ui-on-grad-header)" },
+  action: { "--pg-accent": "var(--ui-grad-action)", "--pg-accent-fg": "var(--ui-ink-deep)" },
+  ink: { "--pg-accent": "var(--ui-ink)", "--pg-accent-fg": "var(--ui-on-ink-plain)" },
+  caution: { "--pg-accent": "var(--ui-caution)", "--pg-accent-fg": "var(--ui-on-caution)" },
+} as const;
+
+type GroupAccent = keyof typeof GROUP_ACCENTS;
+
+/**
+ * A section heading led by a square icon badge. The badge is decorative (the
+ * heading names the section); `badgeClassName` paints it, the group's accent
+ * by default.
+ */
+function GroupHeader({
+  title,
+  icon,
+  badgeClassName = "[background:var(--pg-accent)] text-[color:var(--pg-accent-fg)]",
+}: {
+  title: string;
+  icon: ReactNode;
+  badgeClassName?: string;
+}) {
+  return (
+    <SectionHeader
+      title={
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span
+            aria-hidden
+            className={cn(
+              "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-5 [&_svg]:w-5",
+              ui.radius.control,
+              ui.shadow.card,
+              badgeClassName,
+            )}
+          >
+            {icon}
+          </span>
+          <span className="min-w-0 truncate">{title}</span>
+        </span>
+      }
+    />
+  );
+}
+
+/**
+ * A titled card of rows. The heading is the shared Option A section header —
+ * Changa 22/800, sentence case — led by the group's icon badge, over one 14px
+ * card whose block-start edge is a 4px band of the same accent. The rows'
+ * discs pick the accent up from the custom properties set here.
+ */
+function Group({
+  title,
+  icon,
+  accent,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  accent: GroupAccent;
+  children: ReactNode;
+}) {
   return (
     <Section>
-      <SectionHeader title={title} />
-      <div className={cn("overflow-hidden", ui.surface.card)}>{children}</div>
+      <div style={GROUP_ACCENTS[accent] as CSSProperties}>
+        <GroupHeader title={title} icon={icon} />
+        <div className={cn("overflow-hidden", ui.surface.card)}>
+          <div aria-hidden className="h-1 [background:var(--pg-accent)]" />
+          {children}
+        </div>
+      </div>
     </Section>
   );
 }
@@ -392,6 +477,9 @@ function AuthenticatedProfile({
                   className={cn(
                     "relative flex min-h-28 min-w-0 flex-col items-center justify-end gap-2 px-2 pb-3 pt-8 text-center",
                     ui.surface.card,
+                    // A wash of the club's own tint from the top of the tile
+                    // into the card surface (the palette's per-theme tint).
+                    "bg-[image:linear-gradient(to_bottom,var(--ui-club-tint),var(--ui-surface)_75%)]",
                     ui.edge.blockEnd,
                     "press-tile",
                   )}
@@ -434,7 +522,7 @@ function AuthenticatedProfile({
         </Suspense>
       ) : null}
 
-      <Group title={t("profile.section.preferences")}>
+      <Group title={t("profile.section.preferences")} icon={<SlidersHorizontal />} accent="sky">
         <LanguageRow signedIn />
         {/* One row for the three switches, with how many are on. They are
             edited on the wizard's notifications step — there is no other
@@ -454,7 +542,7 @@ function AuthenticatedProfile({
         <ThemeRow ruled />
       </Group>
 
-      <Group title={t("profile.section.account")}>
+      <Group title={t("profile.section.account")} icon={<UserCog />} accent="action">
         {/* Saved articles — hidden at launch (NEWS_ENABLED); there is no
             News surface to save from. The count is the way in to the list. */}
         {NEWS_ENABLED && (
@@ -492,7 +580,7 @@ function AuthenticatedProfile({
       {/* Legal — its own group, with both documents: a reader has to be able
           to reach what they agreed to. Plain router links, since they go to
           a page. */}
-      <Group title={t("profile.section.legal")}>
+      <Group title={t("profile.section.legal")} icon={<Scale />} accent="ink">
         <RowLink to="/terms" icon={<FileText />} label={t("profile.legal.terms")} />
         <RowLink to="/privacy" ruled icon={<LockKeyhole />} label={t("profile.legal.privacy")} />
       </Group>
@@ -507,15 +595,28 @@ function AuthenticatedProfile({
 /* ------------------------------ identity card ----------------------------- */
 
 /**
- * The club-colour identity card (A-Profile). The favourite club's colours come
- * from the club palette — a real colour from data, else the kit table, else
- * the ink — so a reader with no favourite gets the navy card, with the same
- * stripes. The text on it is the palette's measured foreground.
+ * The cover band over the identity card: the brand's hero gradient, fading at
+ * its foot into the favourite club's colour so the two read as one block. It
+ * carries no text, so nothing on it has a contrast to meet. `to bottom` only:
+ * no physical angle to mirror in Arabic.
+ */
+const HERO_COVER: CSSProperties = {
+  backgroundImage:
+    "linear-gradient(to bottom, transparent 35%, color-mix(in oklab, var(--ui-club) 90%, transparent) 100%), var(--ui-grad-hero)",
+};
+
+/**
+ * The club-colour identity card (A-Profile), opened by a gradient cover. The
+ * favourite club's colours come from the club palette — a real colour from
+ * data, else the kit table, else the ink — so a reader with no favourite gets
+ * the navy card, with the same stripes. The text on it is the palette's
+ * measured foreground.
  *
  * Each part renders only from data the account has: the photo or the
- * initials, the name, the username and e-mail (isolated left-to-right, so
- * "@" stays at the front in Arabic), the supporter chip when there is a
- * favourite, and the Fantasy strip when there is a team summary.
+ * initials (in a ring of the action gradient, lifted half over the cover),
+ * the name, the username and e-mail (isolated left-to-right, so "@" stays at
+ * the front in Arabic), the supporter chip when there is a favourite, and the
+ * Fantasy panel when there is a team summary.
  */
 function IdentityCard({
   user,
@@ -526,9 +627,8 @@ function IdentityCard({
   club: Club | undefined;
   summary: FantasySummary | undefined;
 }) {
-  const { t, tr, lang } = useI18n();
+  const { t, tr } = useI18n();
   const initials = profileInitials(user.displayName, user.username);
-  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
 
   return (
     <section
@@ -542,46 +642,65 @@ function IdentityCard({
         ui.club.stripes,
       )}
     >
-      <div className="flex items-center gap-3.5 p-4">
-        {/* The avatar: a surface disc lifted off the club block. */}
+      <div aria-hidden className="h-24" style={HERO_COVER} />
+
+      <div className="px-4 pb-4">
+        {/* The avatar: a surface disc in a ring of the action gradient,
+            lifted half over the cover. */}
         <span
-          className={cn(
-            "grid h-16 w-16 shrink-0 place-items-center overflow-hidden",
-            ui.radius.full,
-            ui.club.inverse,
-            ui.shadow.lifted,
-          )}
+          className={cn("-mt-12 inline-block p-1", ui.radius.full, ui.shadow.lifted)}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
         >
-          {user.avatarDataUrl ? (
-            <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
-          ) : initials ? (
-            <span aria-hidden className={ui.display.section}>
-              {initials}
-            </span>
-          ) : (
-            <UserRound className="h-8 w-8" aria-hidden />
-          )}
+          <span
+            className={cn(
+              "grid h-20 w-20 place-items-center overflow-hidden",
+              ui.radius.full,
+              ui.club.inverse,
+            )}
+          >
+            {user.avatarDataUrl ? (
+              <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
+            ) : initials ? (
+              <span aria-hidden className={ui.display.title}>
+                {initials}
+              </span>
+            ) : (
+              <UserRound className="h-9 w-9" aria-hidden />
+            )}
+          </span>
         </span>
 
-        <div className="min-w-0 flex-1">
-          <h2 id="profile-hero-name" className={cn("truncate", ui.display.section)}>
-            {user.displayName || `@${user.username}`}
-          </h2>
-          {user.username ? (
-            <p className={cn("truncate", ui.text.meta)}>
-              <bdi dir="ltr">@{user.username}</bdi>
-            </p>
-          ) : null}
-          {user.email ? (
-            <p className={cn("truncate", ui.text.meta)}>
-              <bdi dir="ltr">{user.email}</bdi>
-            </p>
-          ) : null}
-          {PlusMemberMark ? (
-            <Suspense fallback={null}>
-              <PlusMemberMark className="mt-2" />
-            </Suspense>
-          ) : null}
+        <div className="mt-2 flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <h2 id="profile-hero-name" className={cn("truncate", ui.display.title)}>
+              {user.displayName || `@${user.username}`}
+            </h2>
+            {user.username ? (
+              <p className={cn("mt-1 truncate", ui.text.meta)}>
+                <bdi dir="ltr">@{user.username}</bdi>
+              </p>
+            ) : null}
+            {user.email ? (
+              <p className={cn("truncate", ui.text.meta)}>
+                <bdi dir="ltr">{user.email}</bdi>
+              </p>
+            ) : null}
+          </div>
+
+          <UiIconLinkButton
+            variant="glass"
+            to="/auth/profile-setup"
+            search={{ next: "/profile" }}
+            aria-label={t("profile.edit")}
+            className="-me-1.5 shrink-0"
+          >
+            <Pencil aria-hidden />
+          </UiIconLinkButton>
+        </div>
+
+        {/* `empty:hidden`: a reader with no favourite and no membership gets
+            no blank line here. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 empty:hidden">
           {club ? (
             // The supporter chip: a white pill with the club's own crest
             // disc. The board's "Supporter du …" cannot be written for every
@@ -590,12 +709,13 @@ function IdentityCard({
             // A `div`: the crest disc is one, and a `p` may not hold it.
             <div
               className={cn(
-                "mt-2 inline-flex max-w-full items-center gap-1.5 py-0.5 pe-3 ps-0.5",
+                "inline-flex max-w-full items-center gap-2 py-1 pe-3.5 ps-1",
                 ui.radius.full,
                 ui.surface.bar,
+                ui.shadow.card,
               )}
             >
-              <ClubCrest club={club} size="xs" className="h-6 w-6" />
+              <ClubCrest club={club} size="xs" className="h-7 w-7" />
               <span
                 className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
               >
@@ -604,50 +724,99 @@ function IdentityCard({
               </span>
             </div>
           ) : null}
+          {PlusMemberMark ? (
+            <Suspense fallback={null}>
+              <PlusMemberMark />
+            </Suspense>
+          ) : null}
         </div>
-
-        <UiIconLinkButton
-          variant="glass"
-          to="/auth/profile-setup"
-          search={{ next: "/profile" }}
-          aria-label={t("profile.edit")}
-          className="-me-1.5 self-start"
-        >
-          <Pencil aria-hidden />
-        </UiIconLinkButton>
       </div>
 
-      {summary ? (
-        // The Fantasy strip: the team and its points on the action gradient,
-        // ink-deep text as the gradient requires, into the team page.
-        <Link
-          to="/fantasy/team"
-          className={cn(
-            "flex min-h-[var(--ui-tap-min)] items-center gap-2.5 px-4 py-2.5",
-            "text-[color:var(--ui-ink-deep)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-        >
-          <Trophy className="h-4.5 w-4.5 shrink-0" aria-hidden />
-          <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
-            <span className={cn("min-w-0 truncate", ui.text.bodyStrong)}>{summary.teamName}</span>
-            <span aria-hidden className={ui.text.bodyStrong}>
-              ·
-            </span>
-            <bdi className={cn("shrink-0", ui.stat.md)}>{nf.format(summary.totalPoints)}</bdi>
-            <span
-              aria-hidden
-              className={cn("shrink-0", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
-            >
-              {pointsUnit(summary.totalPoints, t)}
-            </span>
-            <span className="sr-only">{t("fpl.points")}</span>
-          </span>
-          <ChevronRight className="h-4.5 w-4.5 shrink-0" aria-hidden />
-        </Link>
-      ) : null}
+      {summary ? <FantasyPanel summary={summary} /> : null}
     </section>
+  );
+}
+
+/**
+ * The Fantasy panel at the foot of the identity card: the team on the action
+ * gradient (ink-deep text, as the gradient requires, in both themes) with its
+ * figures as stat tiles, all one link into the team page. Every figure is
+ * from the summary Home already loads; a rank or a round that has no value
+ * yet is left out rather than shown as a 0.
+ */
+function FantasyPanel({ summary }: { summary: FantasySummary }) {
+  const { t, lang } = useI18n();
+  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
+
+  const tiles: { key: string; label: string; value: string }[] = [
+    {
+      key: "total",
+      label: t("fantasy.total_points"),
+      value: nf.format(summary.totalPoints),
+    },
+  ];
+  if (summary.overallRank !== null) {
+    tiles.push({
+      key: "rank",
+      label: t("fpl.overall_rank"),
+      value: nf.format(summary.overallRank),
+    });
+  }
+  if (summary.pointsGameweek !== null) {
+    tiles.push({
+      key: "round",
+      label: t("fpl.gw_points").replace("{n}", nf.format(summary.pointsGameweek)),
+      value: nf.format(summary.gameweekPoints),
+    });
+  }
+
+  return (
+    <Link
+      to="/fantasy/team"
+      className={cn(
+        "mx-3 mb-3 block p-3",
+        ui.radius.card,
+        ui.shadow.lifted,
+        "text-[color:var(--ui-ink-deep)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-club)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+      )}
+      style={{ backgroundImage: "var(--ui-grad-action)" }}
+    >
+      <span className="flex min-h-9 items-center gap-2.5">
+        <span
+          aria-hidden
+          className={cn(
+            "grid h-9 w-9 shrink-0 place-items-center",
+            ui.radius.full,
+            "bg-[color:var(--ui-ink-deep)] text-[color:var(--ui-on-ink-plain)]",
+          )}
+        >
+          <Trophy className="h-4.5 w-4.5" />
+        </span>
+        <span className={cn("min-w-0 flex-1 truncate", ui.text.bodyStrong)}>
+          {summary.teamName}
+        </span>
+        <ChevronRight className="h-4.5 w-4.5 shrink-0" aria-hidden />
+      </span>
+      <span
+        className="mt-2.5 grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}
+      >
+        {tiles.map((tile) => (
+          <span
+            key={tile.key}
+            className={cn(
+              "flex min-w-0 flex-col justify-between gap-1 px-2.5 py-2",
+              ui.radius.control,
+              "bg-[color:color-mix(in_oklab,var(--ui-scorebox)_55%,transparent)]",
+            )}
+          >
+            <span className={cn("text-pretty", ui.text.label)}>{tile.label}</span>
+            <bdi className={cn("truncate", ui.stat.lg)}>{tile.value}</bdi>
+          </span>
+        ))}
+      </span>
+    </Link>
   );
 }
 
@@ -763,7 +932,7 @@ function SavedArticlesCount() {
 function DevicePreferences() {
   const { t } = useI18n();
   return (
-    <Group title={t("profile.section.preferences")}>
+    <Group title={t("profile.section.preferences")} icon={<SlidersHorizontal />} accent="sky">
       <LanguageRow signedIn={false} />
       <ThemeRow ruled />
     </Group>
@@ -779,7 +948,7 @@ function DevicePreferences() {
 function HelpGroup() {
   const { t } = useI18n();
   return (
-    <Group title={t("profile.section.help")}>
+    <Group title={t("profile.section.help")} icon={<LifeBuoy />} accent="caution">
       <a href={SUPPORT_MAILTO} className={cn(ROW, ROW_INTERACTIVE)}>
         <RowInner
           icon={<Mail />}
@@ -873,7 +1042,14 @@ function DeleteAccountSection() {
           product owes the reader. Same heading as the groups above, over a
           card washed in the negative tint. */}
       <Section>
-        <SectionHeader title={t("profile.section.danger")} />
+        <GroupHeader
+          title={t("profile.section.danger")}
+          icon={<TriangleAlert />}
+          badgeClassName={cn(
+            "bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,var(--ui-surface))]",
+            ui.tone.negative,
+          )}
+        />
         <div
           className={cn(
             "overflow-hidden border",

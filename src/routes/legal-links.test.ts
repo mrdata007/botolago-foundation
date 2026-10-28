@@ -73,7 +73,8 @@ describe("/profile links to both documents", () => {
     expect(source).toContain('t("profile.section.legal")');
     // Rendered through the page's own `Group`, not a bespoke card, so it
     // matches the Personal / Preferences / Security sections.
-    expect(source).toMatch(/<Group title=\{t\("profile\.section\.legal"\)\}>/);
+    // (It carries its icon badge and accent like the others.)
+    expect(source).toMatch(/<Group title=\{t\("profile\.section\.legal"\)\}[^>]*>/);
   });
 
   it.each([
