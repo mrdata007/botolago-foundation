@@ -50,6 +50,8 @@ import {
   PULL_QUOTE_CSS,
 } from "@/components/news/article-reading";
 import { articleLeadPlacement } from "@/components/news/article-lead";
+import { articleKicker } from "@/components/news/article-kicker";
+import { linkArticleToFixture, useNewsFixtures } from "@/components/news/news-fixtures";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import {
@@ -186,6 +188,7 @@ function ArticlePage() {
   });
   const article = articleQ.data;
   const related = relatedQ.data ?? [];
+  const fixtures = useNewsFixtures();
 
   if (articleQ.isLoading) {
     return (
@@ -235,6 +238,41 @@ function ArticlePage() {
   // from the directory when it has the club, else from the team's own slug and
   // name, which the club palette resolves through the kit table.
   const firstClub = articleClubs[0];
+  // The hero's plate when the article has no picture of its own, and its
+  // label, drawn from the same reading of the data as the cards (see
+  // `linkArticleToFixture` and `articleKicker`).
+  const knownClubs = articleClubs.flatMap(({ club }) => (club ? [club] : []));
+  const fixture = linkArticleToFixture(
+    { clubIds: article.teams.map((team) => team.id), publishedAt: article.publishedAt },
+    fixtures,
+  );
+  const plateClubs = (() => {
+    if (fixture) {
+      const home = knownClubs.find((club) => club.id === fixture.homeClubId);
+      const away = knownClubs.find((club) => club.id === fixture.awayClubId);
+      if (home && away) return [home, away];
+    }
+    return knownClubs.slice(0, 2);
+  })();
+  const kickerFor = articleKicker({
+    tag: article.tags[0] ? { fr: article.tags[0].name, ar: article.tags[0].name } : undefined,
+    category: article.primaryCategory?.slug,
+    clubs: knownClubs,
+    clubCount: article.teams.length,
+    fixture,
+  });
+  const kickerLabels = (key: string) =>
+    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : frText(key)) ?? key;
+  const kickerText =
+    kickerFor?.type === "tag"
+      ? article.tags[0]?.name
+      : kickerFor?.type === "fixture"
+        ? kickerLabels(kickerFor.key)
+        : kickerFor?.type === "category" && article.primaryCategory
+          ? categoryLabel(article.primaryCategory, kickerLabels)
+          : kickerFor?.type === "club"
+            ? tr(kickerFor.club.shortName)
+            : null;
   const colour = firstClub
     ? firstClub.club
       ? crestStyle(firstClub.club)
@@ -340,6 +378,9 @@ function ArticlePage() {
                     category={article.primaryCategory?.slug}
                     headline={article.title}
                     sizes={FULL_COLUMN_SIZES}
+                    clubs={plateClubs}
+                    fixture={fixture}
+                    plateSize="hero"
                   />
                 }
                 loading="eager"
@@ -375,8 +416,10 @@ function ArticlePage() {
             caption ? "pt-3" : cn(SHEET_TOP, "pt-5"),
           )}
         >
-          {/* Category pill, in the article's club colour */}
-          {article.primaryCategory && (
+          {/* The label (a tag, "Avant-match" / "Résultat", a real section or the
+              club), in the article's club colour. Never the generic category
+              every article is filed under. */}
+          {kickerText && (
             <UiPill
               className={cn(
                 "h-6 max-w-full px-2.5 py-0",
@@ -395,13 +438,7 @@ function ArticlePage() {
                   an edition served in the other language must not carry a
                   UI-language label under the wrong lang tag. One line: a
                   long category ends in an ellipsis inside the 24px pill. */}
-              <span className="min-w-0 truncate">
-                {categoryLabel(
-                  article.primaryCategory,
-                  (key) =>
-                    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : frText(key)) ?? key,
-                )}
-              </span>
+              <span className="min-w-0 truncate">{kickerText}</span>
             </UiPill>
           )}
 
@@ -612,7 +649,13 @@ function ArticlePage() {
               <SectionHeader title={t("article.related")} />
               <div className="grid gap-2.5">
                 {related.map((a) => (
-                  <ArticleCard key={a.id} article={a} variant="horizontal" clubs={clubs} />
+                  <ArticleCard
+                    key={a.id}
+                    article={a}
+                    variant="horizontal"
+                    clubs={clubs}
+                    fixtures={fixtures}
+                  />
                 ))}
               </div>
             </Section>

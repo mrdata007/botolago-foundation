@@ -126,6 +126,9 @@ export const ar = {
   "news.tab.transfers": "سوق الانتقالات",
   "news.tab.analysis": "تحليلات",
   "news.tab.interviews": "مقابلات",
+  // The label of a story tied to a fixture (a card's tag, the article eyebrow).
+  "news.kicker.preview": "قبل المباراة",
+  "news.kicker.result": "النتيجة",
   "news.filter_clubs": "تصفية حسب النادي",
   "news.filter_categories": "تصفية حسب القسم",
   "news.filter_all": "الكل",

@@ -32,9 +32,11 @@ import topicStadiumSmall from "@/assets/news/topics/topic-stadium-480.webp";
 import topicTrainingSmall from "@/assets/news/topics/topic-training-480.webp";
 import topicTransferSmall from "@/assets/news/topics/topic-transfer-480.webp";
 import topicTrophySmall from "@/assets/news/topics/topic-trophy-480.webp";
+import { ArticleClubPlate, type ClubPlateSize } from "@/components/news/ArticleClubPlate";
+import type { ArticleFixture } from "@/components/news/news-fixtures";
 import { READING_COLUMN_SIZES } from "@/lib/media";
 import { topicForHeadline, type NewsTopic } from "@/lib/news-topic";
-import type { ArticleCategory } from "@/types/domain";
+import type { ArticleCategory, Club } from "@/types/domain";
 
 /**
  * BG-0076 — the branded plate a News card paints where a hero photo would be.
@@ -74,6 +76,11 @@ import type { ArticleCategory } from "@/types/domain";
  *     translated copy, so there is no string for the i18n gate to miss.
  *   - The photos carry no text, logos or faces, so they never pass for the
  *     article's own picture of a real event.
+ *
+ * A story that names a club no longer gets a stock photograph at all: the
+ * plate is drawn from the club's colours and crest (`ArticleClubPlate`), so a
+ * page of photo-less match stories is a page of different club plates, not one
+ * empty stadium repeated. The photographs stay for a story with no club.
  *
  * When the headline names a subject (a transfer, an injury, a referee
  * decision… see `topicForHeadline`), the plate uses that subject's
@@ -169,6 +176,9 @@ export function ArticleHeroFallback({
   category,
   headline,
   sizes = READING_COLUMN_SIZES,
+  clubs,
+  fixture,
+  plateSize = "card",
 }: {
   /** The edition's primary category; an unknown slug falls back to `latest`. */
   category?: string;
@@ -180,7 +190,20 @@ export function ArticleHeroFallback({
    * 480px file for a small box and the full file for a large one.
    */
   sizes?: string;
+  /**
+   * The clubs the story names (at most the first two are drawn). With any, the
+   * plate is drawn from them (`ArticleClubPlate`) instead of a stock photograph:
+   * the photographs below are for a story that names no club.
+   */
+  clubs?: readonly Club[];
+  /** The fixture the story is about, for the score or kick-off time on the plate. */
+  fixture?: ArticleFixture | null;
+  /** How big the box is, which sets how the club plate is laid out. */
+  plateSize?: ClubPlateSize;
 }) {
+  if (clubs && clubs.length > 0) {
+    return <ArticleClubPlate clubs={clubs.slice(0, 2)} fixture={fixture} size={plateSize} />;
+  }
   const known = knownCategory(category);
   const token = PLATE_TOKEN[known];
   const topic = topicForHeadline(headline);

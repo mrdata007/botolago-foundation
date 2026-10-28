@@ -22,6 +22,7 @@ import {
   presentNewsTeam,
   publicNewsContext,
 } from "@/components/news/news-data";
+import { useNewsFixtures } from "@/components/news/news-fixtures";
 import { useI18n } from "@/i18n/provider";
 import { UNAVAILABLE, unavailableHeaders } from "@/lib/page-availability";
 import { isServerRender, prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
@@ -109,6 +110,7 @@ function NewsArchivePage() {
       (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
   });
   const clubs = clubsQ.data ?? [];
+  const fixtures = useNewsFixtures();
   const items = pageQ.data?.items ?? [];
   const last = plan ? archivePageCount(plan) : null;
 
@@ -151,6 +153,7 @@ function NewsArchivePage() {
                   article={presentArticleForDisplay(dto)}
                   variant="horizontal"
                   clubs={clubs}
+                  fixtures={fixtures}
                 />
               </li>
             ))}

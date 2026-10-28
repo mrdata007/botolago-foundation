@@ -11,6 +11,7 @@ import type { Club } from "@/types/domain";
 import { NewsRowSkeleton } from "./NewsSkeletons";
 import { presentArticleForDisplay } from "./news-data";
 import { newsFeedQuery } from "./news-feed-query";
+import { useNewsFixtures } from "./news-fixtures";
 
 /**
  * Chronological "Latest" feed with real keyset pagination: each "load more"
@@ -33,6 +34,7 @@ export function LatestFeed({
 }) {
   const { t } = useI18n();
   const query = useInfiniteQuery(newsFeedQuery(language, categorySlug, teamId));
+  const fixtures = useNewsFixtures();
 
   const fetched = (query.data?.pages ?? []).flatMap((page) => page.items);
   const items = fetched.filter((item) => !excludeIds?.has(item.id));
@@ -65,6 +67,7 @@ export function LatestFeed({
           article={presentArticleForDisplay(dto)}
           variant="horizontal"
           clubs={clubs}
+          fixtures={fixtures}
         />
       ))}
       {query.hasNextPage && (
