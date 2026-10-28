@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 const tone: Record<Player["status"], string> = {
   available: cn(ui.surface.sunken, ui.tone.muted),
   injured:
-    "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative)]",
+    "bg-[color:color-mix(in_oklab,var(--ui-negative)_18%,transparent)] text-[color:var(--ui-negative-text)]",
   doubtful: "bg-[color:var(--ui-caution)] text-[color:var(--ui-ink-deep)]",
   suspended: ui.surface.inkPlain,
 };

@@ -4,6 +4,7 @@ import { dehydrate, hydrate, QueryClient } from "@tanstack/react-query";
 import {
   prefetchFirstPageForSsr,
   prefetchForSsr,
+  prefetchOptionalForSsr,
   ssrAvailability,
   SSR_DEHYDRATE_OPTIONS,
   SSR_PREFETCH_BUDGET_MS,
@@ -68,6 +69,24 @@ describe("server-rendered page data", () => {
     ]);
     expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
     expect(ssrAvailability(server)).toEqual({ unavailable: true });
+  });
+
+  test("an optional read that fails leaves the page available; one that loads is handed over", async () => {
+    onServer();
+    const server = client();
+    await prefetchOptionalForSsr(server, [
+      {
+        queryKey: ["football", "home-matches", "fr"],
+        queryFn: async () => {
+          throw new Error("statement timeout");
+        },
+      },
+      { queryKey: ["football", "seasons", "fr"], queryFn: async () => ["2026/2027"] },
+    ]);
+    expect(ssrAvailability(server)).toBeUndefined();
+    expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries.map((query) => query.queryKey)).toEqual(
+      [["football", "seasons", "fr"]],
+    );
   });
 
   // 2026-09-25: with production's database overloaded, reads neither answered

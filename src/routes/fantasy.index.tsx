@@ -6,10 +6,12 @@ import {
   CalendarDays,
   ChevronRight,
   CircleHelp,
+  ListOrdered,
   SlidersHorizontal,
   Star,
   TrendingUp,
   Trophy,
+  Users,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
@@ -144,8 +146,8 @@ function FantasyHub() {
   // the explanation of the game comes after them.
   const closedGuest = layout.intro !== null && gameweek?.enrolment === null;
 
-  // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
-  // the hub's "News & Video" rail is not rendered and its feed is not fetched.
+  // The hub's "News & Video" rail and its feed follow `NEWS_ENABLED`
+  // (`@/lib/feature-flags`): off, the rail is not rendered and the feed not fetched.
   const articles = useQuery({
     queryKey: ["fantasy-articles", lang],
     queryFn: () => newsService.getArticles(lang, { category: "for_you" }),
@@ -220,6 +222,8 @@ function FantasyHub() {
         />
       ) : null}
 
+      {!hasTeam ? <VisitorBoardTiles /> : null}
+
       {/* BotolaGO+ « Briefing avant la deadline »: nothing while the feature is off. */}
       {hasTeam && gameweek && screen.phase === "ready" ? (
         <div className={ui.space.gutter}>
@@ -273,7 +277,7 @@ function FantasyHub() {
         leaguesLoading={leagues.isPending && leagues.isEnabled}
       />
 
-      {/* News & Video — hidden at launch (NEWS_ENABLED). */}
+      {/* News & Video — follows NEWS_ENABLED. */}
       {NEWS_ENABLED && (
         <section className="mt-6">
           <div className={ui.space.gutter}>
@@ -349,10 +353,77 @@ function FantasyHub() {
 /* Shortcuts                                                            */
 /* ------------------------------------------------------------------ */
 
+type Tile = { to: string; label: string; icon: ReactNode };
+
+function TileGrid({ tiles }: { tiles: Tile[] }) {
+  return (
+    <ul className="grid grid-cols-2 gap-2">
+      {tiles.map((tile) => (
+        <li key={tile.to} className="min-w-0">
+          <Link
+            to={tile.to}
+            className={cn(
+              "flex h-full items-center gap-2.5 px-2.5 py-2",
+              ui.surface.card,
+              ui.space.row,
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.default,
+              "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+              ui.focus,
+            )}
+          >
+            <span
+              className={cn(
+                "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
+                ui.radius.full,
+                ui.surface.sunken,
+                ui.tone.ink,
+              )}
+            >
+              {tile.icon}
+            </span>
+            {/* Two lines, not an ellipsis: "Difficulté des matchs" and
+                "Statistiques joueurs" need them at 390px. */}
+            <span className="min-w-0 text-balance">{tile.label}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * A visitor with no team has no "Mes ligues" row to reach the board from (the
+ * owner's hub carries them), and the guest proposition fills the first screens.
+ * The ranking and the leagues are the best proof that the game is alive, so
+ * they sit right under the deadline card, one short scroll from the top (U18).
+ * The board names teams only to a visitor; the API resolves that. The leagues
+ * need an account: the tile says so ("créer ou rejoindre"), and the page it
+ * opens asks to sign in.
+ */
+function VisitorBoardTiles() {
+  const { t } = useI18n();
+  return (
+    <div className={cn("mt-3", ui.space.gutter)}>
+      <TileGrid
+        tiles={[
+          { to: "/fantasy/rankings", label: t("fpl.rankings"), icon: <ListOrdered aria-hidden /> },
+          {
+            to: "/fantasy/leagues",
+            label: t("fantasy.hub.visitor_leagues"),
+            icon: <Users aria-hidden />,
+          },
+        ]}
+      />
+    </div>
+  );
+}
+
 function ShortcutTiles() {
   const { t } = useI18n();
   const live = useManagerCardLive();
-  const tiles: Array<{ to: string; label: string; icon: ReactNode }> = [
+  const tiles: Tile[] = [
     { to: "/matches", label: t("fpl.fixtures"), icon: <CalendarDays aria-hidden /> },
     { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
     { to: "/fantasy/players", label: t("fpl.player_stats"), icon: <TrendingUp aria-hidden /> },
@@ -360,39 +431,7 @@ function ShortcutTiles() {
   ];
   return (
     <div className={cn("mt-2.5", ui.space.gutter)}>
-      <ul className="grid grid-cols-2 gap-2">
-        {tiles.map((tile) => (
-          <li key={tile.to} className="min-w-0">
-            <Link
-              to={tile.to}
-              className={cn(
-                "flex h-full items-center gap-2.5 px-2.5 py-2",
-                ui.surface.card,
-                ui.space.row,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.tone.default,
-                "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-                ui.focus,
-              )}
-            >
-              <span
-                className={cn(
-                  "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
-                  ui.radius.full,
-                  ui.surface.sunken,
-                  ui.tone.ink,
-                )}
-              >
-                {tile.icon}
-              </span>
-              {/* Two lines, not an ellipsis: "Difficulté des matchs" and
-                  "Statistiques joueurs" need them at 390px. */}
-              <span className="min-w-0 text-balance">{tile.label}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <TileGrid tiles={tiles} />
       {live ? (
         // Pépites lives inside Fantasy while the section is live (plan 3.4): its own row, under
         // the four shortcuts, for every audience.

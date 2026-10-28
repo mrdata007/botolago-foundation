@@ -41,6 +41,7 @@ import { SQUAD_RULES } from "@/types/fantasy";
 import { DemoPitch } from "./DemoPitch";
 import { LandingBotolaNow, LandingPlayersToWatch } from "./LandingLive";
 import { landingCta, type LandingCta } from "./landing-cta";
+import { landingFaqItems } from "./landing-faq";
 
 /**
  * The landing page: what BotolaGO Fantasy is, why a Botola fan would enjoy
@@ -185,8 +186,11 @@ export function LandingPage({
           src={stadiumBand}
           srcSet={`${stadiumBandSmall} 800w, ${stadiumBand} 1600w`}
           sizes="100vw"
+          width={1600}
+          height={600}
           alt=""
           aria-hidden
+          loading="eager"
           decoding="async"
           fetchPriority="high"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_30%] opacity-60 rtl:-scale-x-100"
@@ -523,11 +527,9 @@ export function LandingPage({
         </div>
         <div className="min-w-0">
           <div className="mt-6 divide-y divide-[color:var(--ui-rule)] border-y border-[color:var(--ui-rule)] lg:mt-0">
-            <Faq q={t("landing.faq_free_q")} a={t("landing.faq_free_a")} />
-            <Faq q={t("landing.faq_late_q")} a={t("landing.faq_late_a")} />
-            <Faq q={t("landing.faq_points_q")} a={t("landing.faq_points_a")} />
-            <Faq q={t("landing.faq_account_q")} a={t("landing.faq_account_a")} />
-            <Faq q={t("landing.faq_deadline_q")} a={t("landing.faq_deadline_a")} />
+            {landingFaqItems(t, { prizes: PRIZES_ENABLED }).map((item) => (
+              <Faq key={item.question} q={item.question} a={item.answer} />
+            ))}
           </div>
           <div className="mt-4 flex flex-wrap gap-x-6">
             <Link

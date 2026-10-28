@@ -420,7 +420,8 @@ Known gaps (**Unknown** whether intended):
   It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone (the
   app, and the website in Safari upright and sideways) and on Android phones with a recent and an
   older WebView is not yet checked.
-- Decided 2026-10-06 (owner report from the iPhone app): the viewport meta carries
-  `maximum-scale=1`, so the app never zooms. Cost: on Android browsers (Chrome, Edge, Firefox) and
-  some other apps' built-in browsers, the website can no longer be pinch-zoomed unless the reader
-  switches on "force enable zoom". iPhone Safari still pinches. Not yet checked on a real iPhone.
+- Decided 2026-10-06 (owner report from the iPhone app): the viewport meta carried
+  `maximum-scale=1`, so the app never zoomed. Reversed 2026-10-27 (Batch 1, M1): the cap is gone and
+  every text field is at least 16px, which is what stops iOS zooming in on focus; the website can
+  be pinch-zoomed again on Android, and the phone app still does not pinch (Capacitor
+  `zoomEnabled: false`). Not yet checked on a real iPhone.

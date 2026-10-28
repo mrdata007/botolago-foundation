@@ -231,6 +231,8 @@ export const fr = {
   "standings.view.away": "Extérieur",
   "standings.a11y.views": "Vue du classement",
   "standings.final": "classement final",
+  /* The standings page's own heading (its H1): what people search for. */
+  "standings.page_title": "Classement",
   "standings.after_rounds_one": "après 1 journée",
   "standings.after_rounds_two": "après 2 journées",
   "standings.after_rounds_few": "après {n} journées",
@@ -310,9 +312,22 @@ export const fr = {
   "club.tab.matches": "Matchs",
   "club.tab.standings": "Classement",
   "club.tab.squad": "Effectif",
+  "club.aliases": "Aussi appelé :",
   "club.key.played": "Joués",
   "club.key.goal_difference": "Diff.",
+  /* Document titles for the routes whose <title> is set by `head()` in French: the
+     reader's own language is set after mount (`useReaderDocumentTitle`). */
+  "meta.home_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
+  "meta.matches_title": "Matches Botola Pro — scores en direct | BotolaGO",
+  "meta.standings_title": "Classement Botola Pro — points, forme et buts | BotolaGO",
+  "meta.clubs_title": "Clubs de Botola Pro — BotolaGO",
+  "meta.news_title": "Actualités — BotolaGO",
+  "meta.login_title": "Se connecter — BotolaGO",
+  "meta.register_title": "Créer un compte — BotolaGO",
+  "meta.notifications_title": "Notifications — BotolaGO",
   "club.next_match": "Prochain match",
+  "club.live_match": "En direct",
+  "fantasy.hub.visitor_leagues": "Créer ou rejoindre une ligue",
   "club.recent_results": "Derniers résultats",
   "club.full_table": "Classement complet",
   "club.stats.title": "Statistiques",
@@ -1080,6 +1095,9 @@ export const fr = {
   "fantasy.meta.player_title": "{name} : prix, points et forme — BotolaGO Fantasy",
   "fantasy.meta.player_description":
     "{name} : statistiques, forme, prix et prochains matchs, pour décider de sa place dans votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.player_club_title": "{name} ({club}) : stats, matchs et Fantasy | BotolaGO",
+  "fantasy.meta.player_club_description":
+    "{name} ({club}), {position} en Botola Pro : statistiques de la saison, derniers matchs, prix et points BotolaGO Fantasy.",
   "fantasy.meta.player_unknown_title": "Fiche joueur — BotolaGO Fantasy",
   "fantasy.meta.player_unknown_description":
     "Statistiques, forme, prix et prochains matchs d'un joueur de la Botola Pro pour votre équipe BotolaGO Fantasy.",
@@ -1243,6 +1261,7 @@ export const fr = {
   "fpl.squad": "Effectif",
   "fpl.list": "Liste",
   "fpl.pick_team": "Composer l’équipe",
+  "fantasy.team.screen_title": "Mon équipe",
   "fantasy.transfers.incoming_owned": "Ce joueur est déjà dans votre équipe.",
   "fantasy.transfers.incoming_unavailable":
     "Ce joueur n’est plus disponible dans la saison Fantasy en cours.",
@@ -1334,6 +1353,8 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code de la ligue privée fourni par son administrateur.",
+  "fpl.join_code_hint":
+    "Le bouton s’active dès que le code est saisi. Le code compte 32 caractères (chiffres 0 à 9, lettres A à F) : copiez-le depuis l’invitation reçue.",
   "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":
@@ -2878,9 +2899,9 @@ export const fr = {
   "welcome.guest_hint":
     "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
   // The landing page for new visitors (src/components/landing).
-  "landing.meta_title": "Fantasy Botola Pro gratuite — BotolaGO",
+  "landing.meta_title": "Botola Fantasy : la Fantasy Botola Pro gratuite — BotolaGO",
   "landing.meta_description":
-    "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée. Jeu gratuit.",
+    "Botola Fantasy : composez votre équipe de Fantasy Botola Pro, choisissez votre capitaine et défiez les fans à chaque journée. Gratuit, sans pari.",
   "landing.sign_in": "Se connecter",
   "landing.kicker": "Fantasy Botola Pro · Gratuit",
   "landing.title_1": "Vous connaissez la Botola.",
@@ -2946,6 +2967,21 @@ export const fr = {
   "landing.faq_title": "Questions fréquentes",
   "landing.faq_free_q": "C’est vraiment gratuit ?",
   "landing.faq_free_a": "Oui. BotolaGO Fantasy est un jeu gratuit : aucun achat, aucun pari.",
+  "landing.faq_what_q": "Qu’est-ce que Botola Fantasy ?",
+  "landing.faq_what_a":
+    "BotolaGO Fantasy est un jeu gratuit de Fantasy Botola Pro : vous composez une équipe de joueurs de Botola Pro, vous choisissez un capitaine, et vos joueurs vous rapportent des points selon leurs performances en match. Vous vous mesurez aux autres managers à chaque journée.",
+  "landing.faq_create_q": "Comment créer mon équipe Fantasy Botola Pro ?",
+  "landing.faq_create_a":
+    "Choisissez 15 joueurs de Botola Pro, alignez 11 titulaires et donnez le brassard à votre capitaine. Vous pouvez composer votre équipe sans compte ; un compte gratuit est demandé seulement pour l’enregistrer.",
+  "landing.faq_squad_q": "Quel est le budget et quelles sont les règles de l’effectif ?",
+  "landing.faq_squad_a":
+    "Votre budget de départ est de 100 millions. Votre effectif compte 15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, avec au maximum 3 joueurs par club. Chaque journée, vous alignez 11 titulaires.",
+  "landing.faq_transfers_q": "Comment fonctionnent les transferts ?",
+  "landing.faq_transfers_a":
+    "Vous avez 1 transfert gratuit par journée, cumulable jusqu’à 2. Chaque transfert supplémentaire déduit 4 points du total de la journée. Les transferts se font avant la date limite de la journée.",
+  "landing.faq_prizes_q": "Y a-t-il des lots à gagner ?",
+  "landing.faq_prizes_a":
+    "Oui. Des lots récompensent les meilleurs managers : lot de la journée, lot du mois et lot de la saison, attribués selon le règlement des lots. Le jeu reste 100 % gratuit : aucun achat, aucun pari.",
   "landing.faq_late_q": "La saison a commencé : puis-je encore jouer ?",
   "landing.faq_late_a":
     "Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.",
@@ -3878,6 +3914,13 @@ export const fr = {
   "clubs.load_failed": "Les clubs n’ont pas pu être chargés. Réessayez.",
   "club.load_failed": "Les informations du club n’ont pas pu être chargées. Réessayez.",
   "news.load_more": "Voir plus d’articles",
+  "news.archive.title": "Archives des actualités",
+  "news.archive.link": "Toutes les actualités",
+  "news.archive.pages": "Pages des archives",
+  "news.archive.page_of": "Page {page} sur {total}",
+  "news.archive.page_n": "Page {page}",
+  "news.archive.prev": "Page précédente",
+  "news.archive.next": "Page suivante",
   "news.no_matching_articles": "Aucun article ne correspond à ces filtres.",
   "matches.standings_failed": "Le classement n’a pas pu être chargé. Réessayez.",
 

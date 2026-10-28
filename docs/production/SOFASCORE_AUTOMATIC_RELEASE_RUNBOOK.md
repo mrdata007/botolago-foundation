@@ -1039,3 +1039,13 @@ RPC, so an early deploy only logs `rapidapi_quota_unavailable`. Details are in
 player page. It changes no existing function, table or grant and writes
 nothing. Apply it before publishing the website build that calls it, or the
 section shows its error state until it is applied.
+
+`20261027150000_news_sitemap_entry_titles.sql` is not a football migration: it
+replaces `app_private.news_sitemap_compute` with the same body plus each
+edition's `title`, for the Google News sitemap (`/sitemaps/news-recent.xml`).
+Grants, the snapshot and the 120-second rule are unchanged, and it writes
+nothing. The website works before it is applied (the Google News file is then
+empty but valid); the next `news-sitemap-refresh` run after it puts the titles
+in the snapshot. It is applied with the guarded
+`scripts/backend/apply-20261027150000-news-sitemap-entry-titles.sql`
+(rehearsal, then commit).

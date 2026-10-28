@@ -5,6 +5,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubPathParam } from "@/lib/club-slug";
 import { clubStyle } from "@/lib/club-palette";
 import { useFlip } from "@/lib/motion";
 import {
@@ -202,7 +203,7 @@ export function StandingsTable({
                       is exactly as tall as without it. */}
                   <Link
                     to="/clubs/$clubId"
-                    params={{ clubId: club.id }}
+                    params={{ clubId: clubPathParam(club) }}
                     className={cn(
                       "-ms-1 flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 py-2.5 ps-1",
                       ui.radius.control,

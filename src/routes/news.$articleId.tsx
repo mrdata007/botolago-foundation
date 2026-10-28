@@ -21,6 +21,7 @@ import {
   UiPill,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubPathParam } from "@/lib/club-slug";
 import { useBackTo } from "@/lib/back-navigation";
 import { shareLink } from "@/lib/share-link";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
@@ -50,6 +51,7 @@ import {
 } from "@/components/news/article-reading";
 import { articleLeadPlacement } from "@/components/news/article-lead";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import {
   isMissingContent,
   isUnavailable,
@@ -73,11 +75,21 @@ export const Route = createFileRoute("/news/$articleId")({
   // to be `null` for both, served as 200 + noindex.
   loader: async ({ params, context }) => {
     try {
-      return await context.queryClient.ensureQueryData({
+      const article = await context.queryClient.ensureQueryData({
         queryKey: ["news", "article-detail-v2", "fr", params.articleId],
         queryFn: () =>
           getArticleByPermalink(getNewsRepository(), params.articleId, "fr", publicNewsContext()),
       });
+      // The related articles are links to other articles: in the server's HTML
+      // they tie the archive together for a crawler (a failed read leaves them
+      // to the browser, and never fails the article).
+      await prefetchForSsr(context.queryClient, [
+        {
+          queryKey: ["news", "related", "fr", params.articleId],
+          queryFn: () => newsService.getRelated(params.articleId, "fr"),
+        },
+      ]);
+      return article;
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
@@ -327,6 +339,7 @@ function ArticlePage() {
                   <ArticleHeroFallback
                     category={article.primaryCategory?.slug}
                     headline={article.title}
+                    sizes={FULL_COLUMN_SIZES}
                   />
                 }
                 loading="eager"
@@ -546,7 +559,7 @@ function ArticlePage() {
                       <li key={team.id} className="max-w-full">
                         <Link
                           to="/clubs/$clubId"
-                          params={{ clubId: team.id }}
+                          params={{ clubId: club ? clubPathParam(club) : team.id }}
                           className={cn(
                             "inline-flex max-w-full items-center gap-2 py-1.5 pe-4",
                             club ? "ps-1.5" : "ps-4",

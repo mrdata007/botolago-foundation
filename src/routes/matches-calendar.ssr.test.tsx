@@ -60,6 +60,7 @@ const original = {
   getSeasons: footballService.getSeasons,
   getMatchDay: footballService.getMatchDay,
   getLiveMatches: footballService.getLiveMatches,
+  getHomeMatches: footballService.getHomeMatches,
 };
 function stubFootball() {
   footballService.getSeasons = async () => [SEASON];
@@ -195,6 +196,41 @@ describe("/matches in the server's HTML", () => {
     const browserHtml = await renderMatches(browser);
     expect(asked).toHaveLength(1);
     expect(browserHtml).toBe(serverHtml);
+  });
+
+  // SEO pass 1 (2026-10-27): the day the page opens on can be empty (a break
+  // in the calendar), and its HTML then held no link to any match page.
+  test("an empty day lists the next match day's fixtures, linked, and the browser agrees", async () => {
+    stubFootball();
+    const tomorrow = matchDayKey(new Date(Date.now() + 36 * 3_600_000));
+    footballService.getMatchDay = async () => ({ matches: [], clubs: [], standings: [] });
+    footballService.getHomeMatches = async () => ({
+      matches: [
+        {
+          id: "9c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+          gameweek: 4,
+          homeClubId: HOME.id,
+          awayClubId: AWAY.id,
+          kickoff: `${tomorrow}T20:00:00Z`,
+          status: "scheduled",
+          venue: { fr: "Stade Mohammed V", ar: "Stade Mohammed V" },
+        },
+      ],
+      clubs: [HOME, AWAY],
+      standings: [],
+    });
+    delete globals.window;
+    const server = appClient();
+    let handover: unknown;
+    const serverHtml = await renderMatches(server, () => {
+      handover = JSON.parse(JSON.stringify(dehydrate(server, SSR_DEHYDRATE_OPTIONS)));
+    });
+    expect(serverHtml).toContain("/matches/9c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f");
+
+    globals.window = {};
+    const browser = appClient();
+    hydrate(browser, handover);
+    expect(await renderMatches(browser)).toBe(serverHtml);
   });
 
   test("a read that fails leaves the page to load in the browser, with its skeleton", async () => {

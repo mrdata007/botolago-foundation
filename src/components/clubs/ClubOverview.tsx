@@ -20,6 +20,7 @@ import {
   type ClubSeasonStats,
   type RecordLine,
 } from "@/lib/club-season";
+import { clubPathParam } from "@/lib/club-slug";
 import { rowClubName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -108,12 +109,15 @@ export function ClubOverview({
         </Section>
       ) : next ? (
         <Section>
-          <SectionHeader title={t("club.next_match")} />
+          {/* A live match is not "next": the card says so (U11). */}
+          <SectionHeader
+            title={next.status === "live" ? t("club.live_match") : t("club.next_match")}
+          />
           <MatchRow match={next} clubById={clubById} variant="row" />
         </Section>
       ) : null}
 
-      {/* 2. News — hidden at launch (NEWS_ENABLED). Its fetch is gated on the
+      {/* 2. News — follows NEWS_ENABLED. Its fetch is gated on the
           same flag by the page, so with the flag off a club page makes no
           News request at all; the cards link to /news/$articleId, which
           redirects Home while the flag is off. */}
@@ -285,7 +289,7 @@ function MiniTableRow({
         // The name is the link; its ::after makes the whole row the target.
         <Link
           to="/clubs/$clubId"
-          params={{ clubId: club.id }}
+          params={{ clubId: clubPathParam(club) }}
           className={cn(nameClass, STRETCHED_LINK)}
         >
           {rowClubName(tr(club.shortName), tr(club.name))}

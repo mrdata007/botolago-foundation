@@ -25,8 +25,15 @@ import {
   type LeagueTableRow,
   type TableResult,
 } from "@/lib/league-table";
+import { clubSlug } from "@/lib/club-slug";
 import { resolveMediaUrl } from "@/lib/media";
 import { matchDayKey } from "@/lib/match-kickoff";
+import {
+  findRivalryClubs,
+  splitMeetings,
+  type Rivalry,
+  type RivalryMeetings,
+} from "@/lib/rivalries";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
 
 export type FootballDataMode = "mock" | "supabase";
@@ -137,6 +144,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   return {
     id: team.id,
     slug: team.slug,
+    pathSlug: clubSlug({ shortName: { fr: team.shortName }, name: { fr: team.name } }),
     name: { fr: team.name, ar: team.name },
     shortName: { fr: team.shortName, ar: team.shortName },
     city: { fr: team.city ?? "", ar: team.city ?? "" },
@@ -878,6 +886,44 @@ export const footballService = {
     };
   },
 
+  /**
+   * Every fixture of the current season and of the one before it in the same
+   * competition, for the match sitemap: match pages are the site's largest
+   * source of search impressions, and the server's HTML links to none of
+   * them (the calendar loads its days in the browser), so the sitemap is how
+   * a crawler finds them.
+   */
+  async getSitemapMatches(
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<{ id: string; kickoff: string }[]> {
+    const seasons = await footballService.getSeasons(language, signal);
+    const current = defaultSeason(seasons);
+    if (!current) return [];
+    const previous = seasons
+      .filter(
+        (season) =>
+          season.competitionId === current.competitionId &&
+          season.id !== current.id &&
+          season.startsOn < current.startsOn,
+      )
+      .sort((a, b) => b.startsOn.localeCompare(a.startsOn))[0];
+    const repository = getFootballRepository();
+    const lists = await Promise.all(
+      [current, previous]
+        .filter((season): season is FootballSeason => Boolean(season))
+        .map((season) =>
+          repository.getSeasonFixtures(
+            season.competitionId,
+            season.id,
+            language,
+            requestContext(signal),
+          ),
+        ),
+    );
+    return lists.flat().map((fixture) => ({ id: fixture.id, kickoff: fixture.kickoffAt }));
+  },
+
   async getClub(id: string, language: FootballLanguage): Promise<Club> {
     return presentFootballClub(
       await getFootballRepository().getTeam(id, language, requestContext()),
@@ -968,6 +1014,32 @@ export const footballService = {
       collected.map((item) => ({ seasonId: item.seasonId, match: toMatch(item) })),
       clubId,
     );
+  },
+
+  /**
+   * A rivalry page (`@/lib/rivalries`): the two clubs, found among the
+   * current season's, and their next and past meetings, read from the first
+   * club's fixtures across every season the API pages back through. `null`
+   * when either club is not in the directory.
+   */
+  async getRivalry(
+    rivalry: Rivalry,
+    language: FootballLanguage,
+  ): Promise<({ clubs: readonly [Club, Club] } & RivalryMeetings) | null> {
+    // The clubs are identified from the French names: an Arabic response has
+    // translated them, and the match is on the names and the slug.
+    const french = findRivalryClubs(rivalry, (await footballService.getClubDirectory("fr")).clubs);
+    if (!french) return null;
+    const [first, second] = french;
+    let clubs: readonly [Club, Club] = french;
+    if (language !== "fr") {
+      const named = (await footballService.getClubDirectory(language)).clubs;
+      const a = named.find((club) => club.id === first.id);
+      const b = named.find((club) => club.id === second.id);
+      if (a && b) clubs = [a, b];
+    }
+    const { matches } = await footballService.getClubSeasonMatches(first.id, null, language);
+    return { clubs, ...splitMeetings(matches, first.id, second.id, Date.now()) };
   },
 
   /** `seasonId` null: the club's current squad; a season id: its squad that season. */

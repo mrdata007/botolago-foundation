@@ -1,5 +1,5 @@
 import type { ArticleDetailDto } from "@/backend/news/contracts";
-import { bodyParagraphs, comparableText, ellipsisStem } from "@/lib/article-text";
+import { bodyParagraphs, bodyWordCount, comparableText, ellipsisStem } from "@/lib/article-text";
 import { resolveMediaUrl } from "@/lib/media";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 import { breadcrumbJsonLd } from "@/lib/structured-data";
@@ -265,6 +265,30 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
 }
 
 /**
+ * An edition whose body has fewer words than this answers
+ * `noindex, follow`: it stays readable and linked, and leaves the index.
+ *
+ * Why 60: on 120 published editions sampled from the live sitemap on
+ * 2026-10-27 the shortest body had 62 words and the median 122, so 60 catches
+ * only a stub (a headline with a line or two under it) and nothing a reader
+ * would call an article; raising it to 80 would drop 7% of the sample, to 100
+ * a quarter. The owner tunes it here (see docs/seo/NEWS_QUALITY_PROPOSAL.md);
+ * `0` turns the rule off.
+ *
+ * Kept at 60 on 2026-10-27, measured on production (15,771 public editions):
+ * 205 fall under 60 words, 1,980 under 80. Of those 1,980, 1,920 are Arabic
+ * (14% of the Arabic archive), whose words run longer than French ones, so 80
+ * would hide one Arabic article in seven while Arabic search is the site's
+ * weakest. Raise it only with the sitemap filtering the same editions out.
+ */
+export const MIN_INDEXABLE_BODY_WORDS = 60;
+
+/** Whether the edition's body is too short to be worth an index entry. */
+export function isThinArticle(article: Pick<ArticleDetailDto, "bodyHtml">): boolean {
+  return bodyWordCount(article.bodyHtml) < MIN_INDEXABLE_BODY_WORDS;
+}
+
+/**
  * Route `head()` metadata for an article edition. Reads whichever
  * language edition actually loaded (`article.language`) instead of
  * assuming French, so an Arabic edition's real title/summary populate the
@@ -321,6 +345,11 @@ export function buildArticleHead(
       // answers 503 and must NOT say noindex: the article exists, and a
       // search engine would drop it (audit 2026-09-24, P1-3).
       ...(article || unavailable ? [] : [{ name: "robots", content: "noindex" }]),
+      // A body under MIN_INDEXABLE_BODY_WORDS is thin content: kept out of the
+      // index, but its links are still followed.
+      ...(article && isThinArticle(article)
+        ? [{ name: "robots", content: "noindex, follow" }]
+        : []),
       // Licensed content from another publisher is indexed like BotolaGO's
       // own (owner decision, 2026-09-24); it still credits its source on the
       // page and in JSON-LD `isBasedOn`.

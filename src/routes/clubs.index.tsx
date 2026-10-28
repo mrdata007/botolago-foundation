@@ -1,3 +1,4 @@
+import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -5,6 +6,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
@@ -60,6 +62,7 @@ export const Route = createFileRoute("/clubs/")({
  */
 function ClubsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.clubs_title"));
   const directoryQ = useQuery({
     queryKey: ["football", "club-directory", lang],
     queryFn: () => footballService.getClubDirectory(lang),
@@ -119,7 +122,7 @@ function ClubTile({ club }: { club: Club }) {
   return (
     <Link
       to="/clubs/$clubId"
-      params={{ clubId: club.id }}
+      params={{ clubId: clubPathParam(club) }}
       data-club={colours["data-club"]}
       style={colours.style}
       className={cn(

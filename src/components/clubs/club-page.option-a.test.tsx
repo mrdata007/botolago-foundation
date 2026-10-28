@@ -91,9 +91,19 @@ describe("club pages — design-system rules in source", () => {
 
   it("seeds the club query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/clubs.$clubId.tsx");
-    expect(route).toMatch(/return \{ club, fetchedAt \};/);
+    expect(route).toMatch(/return \{ club, fetchedAt, canonicalRef: slug \?\? id \};/);
     expect(route).toMatch(/initialData: serverClub/);
     expect(route).toMatch(/initialDataUpdatedAt: serverClub \? loaderData\?\.fetchedAt/);
+  });
+
+  it("answers an id with a 301 to the club's slug, and canonicalises on the slug", () => {
+    const route = code("src/routes/clubs.$clubId.tsx");
+    expect(route).toMatch(/if \(slug && isClubUuid\(ref\)\)/);
+    expect(route).toMatch(/params: \{ clubId: slug \},[\s\S]*statusCode: 301/);
+    expect(route).toContain("const canonical = `${PUBLIC_SITE_ORIGIN}${canonicalPath}`");
+    expect(route).toContain("{ name, path: canonicalPath }");
+    // Every query is keyed by the id, whichever address was opened.
+    expect(route).toContain("const clubId = loaderData?.club.id ?? ref;");
   });
 
   it("the tab labels are literal keys and fit a 390px column in Changa", () => {

@@ -150,6 +150,55 @@ describe("Fantasy page heads (audit A17)", () => {
     ]);
   });
 
+  test("a player with a club: title with the club, Person and breadcrumb data, no invented facts", () => {
+    const head = fantasyPlayerHead("p7", "Adam Nafati", {
+      club: { id: "c1", name: "RSB Berkane", position: "MID" },
+      photoUrl: null,
+    });
+    expect(titleOf(head)).toBe("Adam Nafati (RSB Berkane) : stats, matchs et Fantasy | BotolaGO");
+    expect(contentOf(head, "name", "description")).toContain("milieu en Botola Pro");
+    expect(head.links).toEqual([
+      { rel: "canonical", href: "https://botolago.com/fantasy/players/p7" },
+    ]);
+    const [person, crumbs] = (head.scripts ?? []).map((script) => JSON.parse(script.children));
+    expect(person).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Adam Nafati",
+      url: "https://botolago.com/fantasy/players/p7",
+      jobTitle: "Footballeur (milieu)",
+      memberOf: {
+        "@type": "SportsTeam",
+        name: "RSB Berkane",
+        url: "https://botolago.com/clubs/c1",
+        sport: "Football",
+      },
+    });
+    expect(person).not.toHaveProperty("nationality");
+    expect(person).not.toHaveProperty("birthDate");
+    expect(crumbs.itemListElement.map((item: { name: string }) => item.name)).toEqual([
+      "Accueil",
+      "RSB Berkane",
+      "Adam Nafati",
+    ]);
+    expect(crumbs.itemListElement.at(-1).item).toBe("https://botolago.com/fantasy/players/p7");
+  });
+
+  test("the reader's own title names the club in Arabic too", () => {
+    const copy = fantasyShownCopy(FANTASY_PLAYER_ROUTE_ID, "نافاتي", translate.ar, {
+      name: "نهضة بركان",
+      position: "FWD",
+    });
+    expect(copy?.title).toContain("نافاتي (نهضة بركان)");
+    expect(copy?.description).toContain("مهاجم");
+    expect(copy?.title).not.toContain("{");
+    expect(copy?.description).not.toContain("{");
+  });
+
+  test("a player the loader did not return gets no structured data", () => {
+    expect(fantasyPlayerHead("p1", null).scripts).toBeUndefined();
+  });
+
   test("a player the loader did not return still gets a truthful head, never a placeholder", () => {
     for (const name of [undefined, null, "  "]) {
       const head = fantasyPlayerHead("p1", name);
@@ -300,7 +349,7 @@ describe("the Fantasy layout sets the reader's title after mount", () => {
     expect(component).toContain("state.matches.at(-1)?.routeId");
     expect(component).toContain("shown?.routeId === FANTASY_PLAYER_ROUTE_ID");
     expect(component).toContain("shown.loaderData?.player.name");
-    expect(component).toContain("fantasyShownCopy(routeId, player ? tr(player) : null, t)");
+    expect(component).toContain("fantasyShownCopy(\n    routeId,\n    player ? tr(player) : null,");
   });
 
   test("in an effect, like the legal pages, so the server's HTML stays French", () => {

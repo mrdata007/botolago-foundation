@@ -3,6 +3,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
 import { formatGoalDifference } from "@/components/matches/head-to-head";
 import { ui, UiCard } from "@/components/ui-kit";
+import { clubAliasNames } from "@/content/club-aliases";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ export function ClubHero({
   const { t, tr, lang } = useI18n();
   const colours = clubStyle(club);
   const name = tr(club.name);
+  const aliases = clubAliasNames(club, [name, tr(club.shortName)]);
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const position = row ? rankOrdinal(row.position, lang, t, (n) => nf.format(n)) : null;
 
@@ -79,6 +81,31 @@ export function ClubHero({
             >
               {name}
             </h1>
+            {aliases.latin.length || aliases.arabic ? (
+              // The other names people search the club by, in the page's
+              // text. Each name carries its own language and direction, so an
+              // Arabic name reads right-to-left inside French and the Latin
+              // letters stay left-to-right inside Arabic.
+              <p className={cn("mt-1.5 text-pretty", ui.text.meta)}>
+                {t("club.aliases")}{" "}
+                {aliases.latin.map((alias, index) => (
+                  <span key={alias}>
+                    {index ? (lang === "ar" ? "، " : ", ") : ""}
+                    <bdi lang="fr" dir="ltr">
+                      {alias}
+                    </bdi>
+                  </span>
+                ))}
+                {aliases.arabic ? (
+                  <>
+                    {aliases.latin.length ? " · " : ""}
+                    <bdi lang="ar" dir="rtl">
+                      {aliases.arabic}
+                    </bdi>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
           </div>
         </div>
         {actions ? <div className="mt-4 flex flex-wrap items-center gap-2">{actions}</div> : null}

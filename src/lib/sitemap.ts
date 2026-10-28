@@ -1,10 +1,13 @@
 import { buildCanonicalArticleUrl, PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { buildClubSlugMap, clubPath } from "@/lib/club-slug";
 import { PEPITES_PROMOTED, PRIZES_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 
 export interface SitemapNewsEntry {
   readonly id: string;
   readonly language: "fr" | "ar";
   readonly publishedAt: string;
+  /** The edition's title; absent before migration 20261027150000. */
+  readonly title?: string | null;
   /** When the text last really changed; absent before migration 20260924200600. */
   readonly contentUpdatedAt?: string | null;
   readonly translations: readonly { readonly id: string; readonly language: "fr" | "ar" }[];
@@ -19,13 +22,17 @@ export const SITEMAP_STATIC_PATHS = [
   "/",
   "/matches",
   "/matches/standings",
+  // The two rivalry pages: the next meeting and the past results.
+  "/derby-casablanca",
+  "/classico-wac-far",
   "/clubs",
   "/fantasy",
   // The landing page: what Fantasy is, for a visitor who has never played.
   "/jouer",
-  "/fantasy/players",
+  // Not /fantasy/players or /fantasy/fixtures: Search Console reported them as
+  // duplicates (the lists load in the browser, so their server HTML is the
+  // Fantasy frame alone). They stay reachable and indexable through links.
   "/fantasy/top-players",
-  "/fantasy/fixtures",
   "/fantasy/rankings",
   "/fantasy/rules",
   "/fantasy/help",
@@ -88,8 +95,10 @@ export const SITEMAP_CACHE_CONTROL = [
 export const SITEMAP_CLUB_LIMIT = 100;
 
 /**
- * How many News editions fit alongside the static pages and the /news hub
- * without exceeding `SITEMAP_MAX_URLS`.
+ * How many News editions are read for the sitemaps. Each month's file holds
+ * only its own, so this bounds the read, not a file; it was set when every
+ * article shared one file with the other pages, and still leaves room for
+ * them under `SITEMAP_MAX_URLS`.
  */
 export const SITEMAP_NEWS_LIMIT =
   SITEMAP_MAX_URLS - SITEMAP_STATIC_PATHS.length - 1 - SITEMAP_CLUB_LIMIT;
@@ -104,56 +113,255 @@ function escapeXml(value: string): string {
 }
 
 /**
- * The sitemap XML.
+ * `/sitemap.xml` is a sitemap index (SEO brief, 2026-10-27), pointing at one
+ * file per kind of page under `/sitemaps/<name>.xml`:
  *
- * News is listed only when `newsEnabled` (while the flag is off, `/news` and
- * every article redirect Home, so advertising them would be wrong). Each
- * article appears once, under its canonical URL (`/news/<edition id>`), with
- * `xhtml:link` alternates for itself and for every counterpart the API
- * returned -- and the API only returns counterparts that are public now.
+ * - `static`: the public pages that are the same for every visitor (and
+ *   `/news` while News is on);
+ * - `clubs`: the club pages of the directory's season;
+ * - `matches`: every fixture of the current season and the one before;
+ * - `news-recent`: the Google News file, titled articles of the last 48 hours;
+ * - `players`: the player pages of the current season's pool;
+ * - `news-YYYY-MM`: the articles published that month (UTC).
+ *
+ * Search Console then reports each kind apart, a slow News read no longer
+ * holds the club and match pages back, and no file comes near the protocol's
+ * 50,000 URLs.
  */
-export function buildSitemapXml(options: {
+export const SITEMAP_SECTIONS = ["static", "clubs", "matches", "players"] as const;
+export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
+
+/** How many fixtures the match sitemap lists at most (two seasons are ~480). */
+export const SITEMAP_MATCH_LIMIT = 5_000;
+
+/** The Google News sitemap lists only articles from the last 48 hours (Google's rule). */
+export const NEWS_RECENT_SITEMAP_NAME = "news-recent";
+export const NEWS_RECENT_WINDOW_MS = 48 * 60 * 60 * 1000;
+/** Google News: at most 1,000 `<url>` per news sitemap. */
+export const NEWS_RECENT_MAX_URLS = 1_000;
+
+/** How many player pages the sitemap lists at most (the pool is ~540). */
+export const SITEMAP_PLAYER_LIMIT = 5_000;
+
+const NEWS_MONTH = /^news-(\d{4})-(0[1-9]|1[0-2])$/;
+
+export function sitemapUrl(name: string): string {
+  return `${PUBLIC_SITE_ORIGIN}/sitemaps/${name}.xml`;
+}
+
+/** The month an article is filed under, `news-YYYY-MM` (UTC), or `null` for a bad date. */
+export function newsSitemapName(entry: Pick<SitemapNewsEntry, "publishedAt">): string | null {
+  const ms = Date.parse(entry.publishedAt);
+  if (Number.isNaN(ms)) return null;
+  return `news-${new Date(ms).toISOString().slice(0, 7)}`;
+}
+
+/**
+ * What a `/sitemaps/<file>` name asks for: one of the sections, or a news
+ * month, or `null` for anything else (a 404).
+ */
+export function parseSitemapName(
+  file: string,
+):
+  | { kind: "section"; section: SitemapSection }
+  | { kind: "news"; name: string }
+  | { kind: "news-recent" }
+  | null {
+  const name = file.replace(/\.xml$/, "");
+  if (name === file) return null;
+  if (name === NEWS_RECENT_SITEMAP_NAME) return { kind: "news-recent" };
+  if ((SITEMAP_SECTIONS as readonly string[]).includes(name)) {
+    return { kind: "section", section: name as SitemapSection };
+  }
+  return NEWS_MONTH.test(name) ? { kind: "news", name } : null;
+}
+
+function entryLastmod(entry: SitemapNewsEntry): string | null {
+  // The last real change, else publication: never `updatedAt`, which a
+  // bulk update moved on every article on 2026-09-24 (audit P1-4).
+  const modified = entry.contentUpdatedAt ?? entry.publishedAt;
+  const ms = Date.parse(modified);
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+}
+
+/**
+ * The index: the sections, then one file per month that has an article
+ * (newest first), each month with the latest change of its articles.
+ */
+export function buildSitemapIndexXml(options: {
   readonly newsEnabled: boolean;
   readonly news: readonly SitemapNewsEntry[];
-  /** The clubs of the club directory; each club page is its own canonical. */
-  readonly clubIds?: readonly string[];
+  /** The clock for the Google News window; tests pass a fixed one. */
+  readonly now?: Date;
 }): string {
-  const urls: string[] = [];
-  for (const path of SITEMAP_STATIC_PATHS) {
-    urls.push(`  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}${path}`)}</loc></url>`);
-  }
-  for (const clubId of [...new Set(options.clubIds ?? [])].slice(0, SITEMAP_CLUB_LIMIT)) {
-    urls.push(
-      `  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(clubId)}`)}</loc></url>`,
-    );
-  }
+  const months = new Map<string, string | null>();
   if (options.newsEnabled) {
-    urls.push(`  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}/news`)}</loc></url>`);
     for (const entry of options.news) {
-      const own = buildCanonicalArticleUrl(entry.id);
-      const alternates =
-        entry.translations.length === 0
-          ? ""
-          : [{ id: entry.id, language: entry.language }, ...entry.translations]
-              .map(
-                (edition) =>
-                  `<xhtml:link rel="alternate" hreflang="${edition.language}" href="${escapeXml(
-                    buildCanonicalArticleUrl(edition.id),
-                  )}"/>`,
-              )
-              .join("");
-      // The last real change, else publication: never `updatedAt`, which a
-      // bulk update moved on every article on 2026-09-24 (audit P1-4).
-      const modified = entry.contentUpdatedAt ?? entry.publishedAt;
-      const lastmod = Number.isNaN(Date.parse(modified))
-        ? ""
-        : `<lastmod>${new Date(modified).toISOString()}</lastmod>`;
-      urls.push(`  <url><loc>${escapeXml(own)}</loc>${lastmod}${alternates}</url>`);
+      const name = newsSitemapName(entry);
+      if (!name) continue;
+      const modified = entryLastmod(entry);
+      const known = months.get(name);
+      if (!months.has(name) || (modified && (!known || modified > known))) {
+        months.set(name, modified);
+      }
     }
   }
+  const recent = options.newsEnabled ? recentNewsEntries(options.news, options.now) : [];
+  const items = [
+    ...SITEMAP_SECTIONS.map((name) => ({ name, lastmod: null as string | null })),
+    // The Google News file, listed while News is on even when it is empty.
+    ...(options.newsEnabled
+      ? [
+          {
+            name: NEWS_RECENT_SITEMAP_NAME as string,
+            lastmod: recent[0] ? new Date(Date.parse(recent[0].publishedAt)).toISOString() : null,
+          },
+        ]
+      : []),
+    ...[...months.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([name, lastmod]) => ({ name, lastmod })),
+  ];
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...items.map(
+      ({ name, lastmod }) =>
+        `  <sitemap><loc>${escapeXml(sitemapUrl(name))}</loc>${
+          lastmod ? `<lastmod>${lastmod}</lastmod>` : ""
+        }</sitemap>`,
+    ),
+    "</sitemapindex>",
+    "",
+  ].join("\n");
+}
+
+function urlset(urls: readonly string[]): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+    ...urls,
+    "</urlset>",
+    "",
+  ].join("\n");
+}
+
+const pageUrl = (path: string) =>
+  `  <url><loc>${escapeXml(`${PUBLIC_SITE_ORIGIN}${path}`)}</loc></url>`;
+
+/** The static pages, and the /news hub and archive while News is on. */
+export function buildStaticSitemapXml(options: { readonly newsEnabled: boolean }): string {
+  return urlset([
+    ...SITEMAP_STATIC_PATHS.map(pageUrl),
+    // The hub and the archive, whose numbered pages link every article.
+    ...(options.newsEnabled ? [pageUrl("/news"), pageUrl("/news/archive")] : []),
+  ]);
+}
+
+/**
+ * Each club page once, at its canonical URL: the readable slug address
+ * (`/clubs/rsb-berkane`, see `@/lib/club-slug`), else the id for a club whose
+ * French names have no Latin letters. `clubs` must be the French catalogue.
+ */
+export function buildClubsSitemapXml(
+  clubs: readonly {
+    readonly id: string;
+    readonly name: { readonly fr: string };
+    readonly shortName: { readonly fr: string };
+  }[],
+): string {
+  const slugs = buildClubSlugMap(clubs);
+  return urlset(
+    [...new Set(clubs.map((club) => slugs.get(club.id) ?? club.id))]
+      .slice(0, SITEMAP_CLUB_LIMIT)
+      .map((ref) => pageUrl(clubPath(ref))),
+  );
+}
+
+/** Each match page once, at its canonical URL (`/matches/<id>`, no `?tab`). */
+export function buildMatchesSitemapXml(matchIds: readonly string[]): string {
+  return urlset(
+    [...new Set(matchIds)]
+      .slice(0, SITEMAP_MATCH_LIMIT)
+      .map((id) => pageUrl(`/matches/${encodeURIComponent(id)}`)),
+  );
+}
+
+/** Each player page once, at its canonical URL (`/fantasy/players/<id>`). */
+export function buildPlayersSitemapXml(playerIds: readonly string[]): string {
+  return urlset(
+    [...new Set(playerIds)]
+      .slice(0, SITEMAP_PLAYER_LIMIT)
+      .map((id) => pageUrl(`/fantasy/players/${encodeURIComponent(id)}`)),
+  );
+}
+
+/**
+ * The articles, each once under its canonical URL (`/news/<edition id>`), with
+ * `xhtml:link` alternates for itself and for every counterpart the API
+ * returned -- and the API only returns counterparts that are public now.
+ * `month` (`news-YYYY-MM`) keeps only that month's.
+ */
+export function buildNewsSitemapXml(news: readonly SitemapNewsEntry[], month?: string): string {
+  const urls: string[] = [];
+  for (const entry of news) {
+    if (month && newsSitemapName(entry) !== month) continue;
+    const own = buildCanonicalArticleUrl(entry.id);
+    const alternates =
+      entry.translations.length === 0
+        ? ""
+        : [{ id: entry.id, language: entry.language }, ...entry.translations]
+            .map(
+              (edition) =>
+                `<xhtml:link rel="alternate" hreflang="${edition.language}" href="${escapeXml(
+                  buildCanonicalArticleUrl(edition.id),
+                )}"/>`,
+            )
+            .join("");
+    const modified = entryLastmod(entry);
+    const lastmod = modified ? `<lastmod>${modified}</lastmod>` : "";
+    urls.push(`  <url><loc>${escapeXml(own)}</loc>${lastmod}${alternates}</url>`);
+  }
+  return urlset(urls);
+}
+
+/**
+ * The entries that belong in the Google News sitemap: published within the
+ * last 48 hours (and not in the future), with a non-blank title, newest first,
+ * at most 1,000. An entry without a title (an API build before migration
+ * 20261027150000) is left out: Google News requires one, and none is invented.
+ */
+export function recentNewsEntries(
+  news: readonly SitemapNewsEntry[],
+  now: Date = new Date(),
+): readonly SitemapNewsEntry[] {
+  const to = now.getTime();
+  const from = to - NEWS_RECENT_WINDOW_MS;
+  return news
+    .filter((entry) => {
+      const ms = Date.parse(entry.publishedAt);
+      return !Number.isNaN(ms) && ms >= from && ms <= to && Boolean(entry.title?.trim());
+    })
+    .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt))
+    .slice(0, NEWS_RECENT_MAX_URLS);
+}
+
+/**
+ * The Google News sitemap (`/sitemaps/news-recent.xml`): `news:news` with the
+ * publication name and language, the publication date and the title. Always a
+ * valid `urlset`, empty when nothing was published in the window.
+ */
+export function buildNewsRecentSitemapXml(
+  news: readonly SitemapNewsEntry[],
+  now: Date = new Date(),
+): string {
+  const urls = recentNewsEntries(news, now).map((entry) => {
+    const published = new Date(Date.parse(entry.publishedAt)).toISOString();
+    return `  <url><loc>${escapeXml(buildCanonicalArticleUrl(entry.id))}</loc><news:news><news:publication><news:name>BotolaGO</news:name><news:language>${entry.language}</news:language></news:publication><news:publication_date>${published}</news:publication_date><news:title>${escapeXml(entry.title!.trim())}</news:title></news:news></url>`;
+  });
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">',
     ...urls,
     "</urlset>",
     "",

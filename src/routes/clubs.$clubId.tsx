@@ -1,12 +1,18 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  isRedirect,
+  notFound,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import {
   isMissingContent,
   isUnavailable,
   UNAVAILABLE,
   unavailableHeaders,
 } from "@/lib/page-availability";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
 import { ClubFollowButton } from "@/components/clubs/ClubFollowButton";
@@ -33,9 +39,12 @@ import {
 } from "@/components/matches/StandingsTable";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
+import { clubAliasNames } from "@/content/club-aliases";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
+import { clubSearchName, clubSeoDescription, clubSeoTitle } from "@/lib/seo-titles";
+import { buildClubSlugMap, clubPath, isClubUuid, resolveClubRef } from "@/lib/club-slug";
 import { useBackTo } from "@/lib/back-navigation";
 import {
   clubSeasonAbsent,
@@ -45,8 +54,10 @@ import {
 } from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import { useFantasyPlayerLinks } from "@/services/use-fantasy-player-links";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -61,6 +72,66 @@ interface ClubSearch {
   tab?: Exclude<ClubTabKey, "overview">;
   /** Absent: the current season. */
   season?: string;
+}
+
+/**
+ * The club's latest stories and its season's matches, as the page and the
+ * loader both ask them: one definition, so the keys the server warms are the
+ * keys the page reads.
+ */
+const clubNewsQuery = (clubId: string, lang: "fr" | "ar") => ({
+  queryKey: ["news", "club", clubId, lang],
+  queryFn: async () =>
+    newsArticlesForCategory(
+      await newsService.getArticles(lang, { teamId: clubId }),
+      "latest",
+    ).slice(0, CLUB_NEWS_COUNT),
+});
+const clubMatchesQuery = (
+  clubId: string,
+  season: FootballSeason | undefined,
+  lang: "fr" | "ar",
+) => ({
+  queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
+  queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+});
+
+/**
+ * Warms what the overview links to -- the club's matches and, while News is
+ * on, its latest stories -- so the HTML a crawler gets holds those links
+ * (`@/lib/ssr-prefetch`). Server only. It never throws: a read that fails or
+ * runs late is simply left to the browser, as before, and never changes the
+ * page's status.
+ */
+async function warmClubLinks(
+  queryClient: QueryClient,
+  clubId: string,
+  requestedSeasonId: string | undefined,
+): Promise<void> {
+  try {
+    const seasonsKey = ["football", "seasons", "fr"];
+    await Promise.all([
+      (async () => {
+        await prefetchForSsr(queryClient, [
+          {
+            queryKey: seasonsKey,
+            queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+          },
+        ]);
+        const seasons = queryClient.getQueryData<FootballSeason[]>(seasonsKey);
+        // The season the page opens on: the one in the address, else the current one.
+        if (seasons) {
+          const season =
+            seasons.find((candidate) => candidate.id === requestedSeasonId) ??
+            defaultSeason(seasons);
+          await prefetchForSsr(queryClient, [clubMatchesQuery(clubId, season, "fr")]);
+        }
+      })(),
+      NEWS_ENABLED ? prefetchForSsr(queryClient, [clubNewsQuery(clubId, "fr")]) : undefined,
+    ]);
+  } catch {
+    // Left to the browser.
+  }
 }
 
 const isNotFound = (error: unknown) =>
@@ -82,35 +153,73 @@ export const Route = createFileRoute("/clubs/$clubId")({
    * serialized to the browser and the query cache is not, so the page seeds
    * its query with it (`initialData`) and both first renders agree.
    *
-   * An unknown or malformed club id is a 404 and a failed read a 503 (see
+   * The address segment is a readable slug (`rsb-berkane`) or a club id (the
+   * old addresses). Either is resolved against the French club catalogue
+   * (`@/lib/club-slug`); an id that has a slug answers a 301 to it, so one
+   * address per club is indexed.
+   *
+   * An unknown club is a 404 and a failed read a 503 (see
    * `@/lib/page-availability`); both used to answer 200, the first with an
    * indexable "Club introuvable".
    */
-  loader: async ({ params, context }) => {
-    if (!UUID.test(params.clubId)) throw notFound();
+  loaderDeps: ({ search }) => ({ season: search.season }),
+  loader: async ({ params, context, location, deps }) => {
+    const ref = params.clubId;
+    let catalogue: readonly Club[] | undefined;
     try {
-      const queryKey = ["football", "club", params.clubId, "fr"];
+      catalogue = await context.queryClient.ensureQueryData({
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: () => footballService.getClubs("fr"),
+      });
+    } catch {
+      // Without the catalogue only an id can be served, at its own address.
+      if (!isClubUuid(ref)) return UNAVAILABLE;
+    }
+    const known = catalogue ? resolveClubRef(ref, catalogue) : undefined;
+    if (!known && !isClubUuid(ref)) throw notFound();
+    const slug = known && catalogue ? buildClubSlugMap(catalogue).get(known.id) : undefined;
+    if (slug && isClubUuid(ref)) {
+      throw redirect({
+        to: "/clubs/$clubId",
+        params: { clubId: slug },
+        search: location.search,
+        statusCode: 301,
+      });
+    }
+    const id = known?.id ?? ref;
+    // The overview's links, read alongside the club (see `warmClubLinks`).
+    const links = warmClubLinks(context.queryClient, id, deps.season);
+    try {
+      const queryKey = ["football", "club", id, "fr"];
       const club = await context.queryClient.ensureQueryData({
         queryKey,
-        queryFn: () => footballService.getClub(params.clubId, "fr"),
+        queryFn: () => footballService.getClub(id, "fr"),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      return { club, fetchedAt };
+      await links;
+      return { club, fetchedAt, canonicalRef: slug ?? id };
     } catch (error) {
+      if (isRedirect(error)) throw error;
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
     }
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
-    const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
     const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
-    const name = club?.name.fr;
-    const title = name
-      ? `${name} — matchs, classement et effectif | BotolaGO`
-      : "Club de Botola Pro — BotolaGO";
-    const description = name
-      ? `${name} en Botola Pro : prochain match, résultats, classement, statistiques et effectif sur BotolaGO.`
+    // The slug address when the club has one, else the id it was asked for.
+    const canonicalPath = clubPath(
+      (isUnavailable(loaderData) ? undefined : loaderData?.canonicalRef) ?? params.clubId,
+    );
+    const canonical = `${PUBLIC_SITE_ORIGIN}${canonicalPath}`;
+    const name = club ? clubSearchName(club) : undefined;
+    const aliases = club
+      ? clubAliasNames(club, [name ?? "", club.name.fr])
+      : { latin: [], arabic: null };
+    // Short name first, the words people search with (`@/lib/seo-titles`).
+    const title = club ? clubSeoTitle(club) : "Club de Botola Pro — BotolaGO";
+    const description = club
+      ? clubSeoDescription(club)
       : "Prochain match, résultats, classement, statistiques et effectif d'un club de Botola Pro sur BotolaGO.";
     return {
       meta: [
@@ -137,6 +246,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
                     name,
                     city: club?.city?.fr,
                     logoUrl: club?.crestUrl,
+                    alternateNames: [club?.name.fr, ...aliases.latin, aliases.arabic],
                   }),
                 ),
               },
@@ -146,7 +256,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
                   breadcrumbJsonLd([
                     { name: "Accueil", path: "/" },
                     { name: "Clubs", path: "/clubs" },
-                    { name, path: `/clubs/${encodeURIComponent(params.clubId)}` },
+                    { name, path: canonicalPath },
                   ]),
                 ),
               },
@@ -178,7 +288,7 @@ export const Route = createFileRoute("/clubs/$clubId")({
  * opened.
  */
 function ClubPage() {
-  const { clubId } = Route.useParams();
+  const { clubId: ref } = Route.useParams();
   const search = Route.useSearch();
   const tab: ClubTabKey = search.tab ?? "overview";
   const loaded = Route.useLoaderData();
@@ -187,6 +297,8 @@ function ClubPage() {
   const { t, tr, lang } = useI18n();
   const goBack = useBackTo("/clubs");
   const headingId = useId();
+  // The address holds a slug or an id; every query is keyed by the id.
+  const clubId = loaderData?.club.id ?? ref;
   const validId = UUID.test(clubId);
 
   const serverClub = lang === "fr" && loaderData?.club.id === clubId ? loaderData.club : undefined;
@@ -214,8 +326,7 @@ function ClubPage() {
     seasons.find((candidate) => candidate.id === search.season) ?? defaultSeason(seasons);
 
   const matchesQ = useQuery({
-    queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
-    queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+    ...clubMatchesQuery(clubId, season, lang),
     enabled: validId && seasonsQ.isSuccess,
   });
   // The season's table, worked out from its results: the Classement tab's
@@ -228,6 +339,8 @@ function ClubPage() {
   // The current squad is the club's active memberships; a past season's is
   // the squad stored for it.
   const squadSeason = season && !season.isCurrent ? season.id : null;
+  // Names open the player's page when the Fantasy pool lists the player (U1).
+  const playerLink = useFantasyPlayerLinks([clubId], tab === "squad");
   const squadQ = useQuery({
     queryKey: ["football", "club-squad", clubId, squadSeason ?? "current", lang],
     queryFn: () => footballService.getClubSquad(clubId, squadSeason, lang),
@@ -236,12 +349,7 @@ function ClubPage() {
   // The club's latest stories. A News surface, so it is gated on the same
   // flag as every other: with the flag off this query never runs.
   const newsQ = useQuery({
-    queryKey: ["news", "club", clubId, lang],
-    queryFn: async () =>
-      newsArticlesForCategory(
-        await newsService.getArticles(lang, { teamId: clubId }),
-        "latest",
-      ).slice(0, CLUB_NEWS_COUNT),
+    ...clubNewsQuery(clubId, lang),
     enabled: NEWS_ENABLED && validId,
   });
 
@@ -400,7 +508,7 @@ function ClubPage() {
             }
             standingsLink={{
               to: "/clubs/$clubId",
-              params: { clubId },
+              params: { clubId: ref },
               search: { ...search, tab: "standings" },
             }}
           />
@@ -447,6 +555,7 @@ function ClubPage() {
         {tab === "squad" && (
           <ClubSquad
             club={club}
+            playerLink={playerLink}
             squad={{
               data: squadQ.data,
               isPending: seasonsQ.isPending || squadQ.isPending,

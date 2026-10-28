@@ -275,8 +275,9 @@ function JoinLeagueBody() {
         title={t("fpl.join_a_league")}
         backTo="/fantasy/leagues"
         trailing={
+          // Nothing has been done on this screen yet: it leaves, it does not finish (U9).
           <UiLinkButton to="/fantasy/leagues" size="sm" variant="ghost">
-            {t("fpl.done")}
+            {t("fpl.cancel")}
           </UiLinkButton>
         }
       />
@@ -350,6 +351,10 @@ function JoinLeagueBody() {
               <UiButton type="submit" className="mt-3" disabled={!code.trim() || busy}>
                 {busy ? t("fpl.saving") : t("fpl.join_a_league")}
               </UiButton>
+              {/* Why the button is grey, and what a code looks like (U9). */}
+              <p className={cn("mt-3 text-center", ui.text.meta, ui.tone.muted)}>
+                {t("fpl.join_code_hint")}
+              </p>
             </form>
           ) : (
             <div>

@@ -343,6 +343,10 @@ describe("ui-kit: one scale of each kind", () => {
       const duplicates: string[] = [];
       for (const [token, value] of valuesOf(prefix)) {
         const previous = seen.get(value);
+        // M5 (2026-10-27): micro was raised to 12px, the label size, on purpose.
+        // They stay two tokens because Arabic gives both 13px and the pitch pins
+        // both back to 11/12 (`[data-pitch-type-scale]`); the one exception.
+        if (previous && token === "--ui-text-micro" && previous === "--ui-text-label") continue;
         if (previous) duplicates.push(`${token} duplicates ${previous} (${value})`);
         else seen.set(value, token);
       }

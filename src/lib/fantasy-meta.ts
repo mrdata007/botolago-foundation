@@ -1,6 +1,9 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { fr } from "@/i18n/dictionary-fr";
+import { serializeJsonLd } from "@/lib/article-meta";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+import { breadcrumbJsonLd, personJsonLd } from "@/lib/structured-data";
+import { clubPath, clubPathParam } from "@/lib/club-slug";
 
 /**
  * The `head()` of every Fantasy page (audit A17), and its title and
@@ -170,8 +173,32 @@ export function fantasyPageCopy(page: FantasyPage, t: Translate): FantasyPageCop
  * gets a truthful title, never a placeholder: it is not proof the player is
  * gone.
  */
-export function fantasyPlayerCopy(name: string | null | undefined, t: Translate): FantasyPageCopy {
+export function fantasyPlayerCopy(
+  name: string | null | undefined,
+  t: Translate,
+  club?: FantasyPlayerClub | null,
+): FantasyPageCopy {
   const named = name?.trim();
+  const clubName = club?.name.trim();
+  if (named && club && clubName) {
+    const position =
+      club.position === "GK"
+        ? t("player.pos_full.GK")
+        : club.position === "DEF"
+          ? t("player.pos_full.DEF")
+          : club.position === "MID"
+            ? t("player.pos_full.MID")
+            : t("player.pos_full.FWD");
+    return {
+      title: t("fantasy.meta.player_club_title")
+        .replace("{name}", () => named)
+        .replace("{club}", () => clubName),
+      description: t("fantasy.meta.player_club_description")
+        .replace("{name}", () => named)
+        .replace("{club}", () => clubName)
+        .replace("{position}", () => position),
+    };
+  }
   return named
     ? {
         title: t("fantasy.meta.player_title").replace("{name}", () => named),
@@ -181,6 +208,12 @@ export function fantasyPlayerCopy(name: string | null | undefined, t: Translate)
         title: t("fantasy.meta.player_unknown_title"),
         description: t("fantasy.meta.player_unknown_description"),
       };
+}
+
+/** The club a player's page names in its title (its short name), and his position. */
+export interface FantasyPlayerClub {
+  readonly name: string;
+  readonly position: "GK" | "DEF" | "MID" | "FWD";
 }
 
 /**
@@ -220,8 +253,9 @@ export function fantasyShownCopy(
   routeId: string | undefined,
   playerName: string | null | undefined,
   t: Translate,
+  club?: FantasyPlayerClub | null,
 ): FantasyPageCopy | null {
-  if (routeId === FANTASY_PLAYER_ROUTE_ID) return fantasyPlayerCopy(playerName, t);
+  if (routeId === FANTASY_PLAYER_ROUTE_ID) return fantasyPlayerCopy(playerName, t, club);
   if (routeId === undefined || !Object.hasOwn(FANTASY_ROUTE_PAGES, routeId)) return null;
   return fantasyPageCopy(FANTASY_ROUTE_PAGES[routeId as keyof typeof FANTASY_ROUTE_PAGES], t);
 }
@@ -301,11 +335,73 @@ export function fantasyHead(page: FantasyPage, context?: HeadMatches) {
  * French name: the page head is French). Always its own canonical address,
  * found or not: a failed read is not proof the player is gone.
  */
-export function fantasyPlayerHead(playerId: string, playerName: string | null | undefined) {
-  return head({
-    ...fantasyPlayerCopy(playerName, french),
-    canonical: `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(playerId)}`,
+export function fantasyPlayerHead(
+  playerId: string,
+  playerName: string | null | undefined,
+  details?: {
+    readonly club?:
+      | (FantasyPlayerClub & { readonly id: string; readonly pathSlug?: string })
+      | null;
+    readonly photoUrl?: string | null;
+  },
+) {
+  const path = `/fantasy/players/${encodeURIComponent(playerId)}`;
+  const canonical = `${PUBLIC_SITE_ORIGIN}${path}`;
+  const name = playerName?.trim();
+  const club = details?.club;
+  // The club's readable address when it has one (`@/lib/club-slug`).
+  const clubHref = club ? clubPath(clubPathParam(club)) : null;
+  const base = head({
+    ...fantasyPlayerCopy(playerName, french, club),
+    canonical,
     personal: false,
     type: "profile",
   });
+  // Structured data only for a player the loader found, and a club only when
+  // it resolved: a failed read is not proof of either.
+  if (!name) return base;
+  return {
+    ...base,
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: serializeJsonLd(
+          personJsonLd({
+            canonicalUrl: canonical,
+            name,
+            jobTitle: club ? `Footballeur (${positionWord(club.position)})` : "Footballeur",
+            imageUrl: details?.photoUrl,
+            team: club
+              ? {
+                  name: club.name,
+                  url: `${PUBLIC_SITE_ORIGIN}${clubHref}`,
+                }
+              : null,
+          }),
+        ),
+      },
+      {
+        type: "application/ld+json",
+        children: serializeJsonLd(
+          breadcrumbJsonLd([
+            { name: "Accueil", path: "/" },
+            club
+              ? { name: club.name, path: clubHref! }
+              : { name: "Joueurs", path: "/fantasy/players" },
+            { name, path },
+          ]),
+        ),
+      },
+    ],
+  };
+}
+
+function positionWord(position: FantasyPlayerClub["position"]): string {
+  return position === "GK"
+    ? french("player.pos_full.GK")
+    : position === "DEF"
+      ? french("player.pos_full.DEF")
+      : position === "MID"
+        ? french("player.pos_full.MID")
+        : french("player.pos_full.FWD");
 }

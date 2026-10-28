@@ -24,6 +24,7 @@ import { YourClubCard } from "@/components/matches/YourClubCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiChip, UiPageTitle } from "@/components/ui-kit";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
@@ -102,6 +103,7 @@ const EMPTY_SEASONS: readonly FootballSeason[] = [];
  */
 function StandingsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.standings_title"));
   const { user } = useAuth();
   const { season: requestedSeasonId } = Route.useSearch();
   // The season the other tab was on, else (below) the current one.
@@ -213,8 +215,10 @@ function StandingsPage() {
       backgroundVariant="matches"
       pageHeader={
         <>
+          {/* Its own heading, not the calendar's "Matchs": the page's H1 is
+              what a search for "classement botola" is matched against. */}
           <UiPageTitle
-            title={t("matches.title")}
+            title={t("standings.page_title")}
             trailing={
               <SeasonPicker
                 seasons={seasons}
@@ -284,7 +288,7 @@ function StandingsPage() {
               <div
                 role="group"
                 aria-label={t("standings.a11y.views")}
-                className="flex min-w-0 items-center gap-1.5 max-[359px]:gap-1"
+                className="flex min-w-0 flex-wrap items-center gap-1.5 max-[359px]:gap-1"
               >
                 {views.map((option) => (
                   <UiChip
@@ -292,7 +296,9 @@ function StandingsPage() {
                     selected={shown === option.value}
                     onClick={() => setView(option.value)}
                     // Four chips share one line; narrower than 360px each gives
-                    // ground and truncates rather than scrolling one away.
+                    // ground and truncates rather than scrolling one away. If the
+                    // labels no longer fit (Arabic at 320px since M5), the row
+                    // wraps to a second line instead of cutting "العام" to "ال...".
                     // As the Matchs filter row: the chip may shrink under 44px at 320px,
                     // its hit area may not.
                     className={cn("min-w-0 shrink max-[359px]:px-2", ui.hitFloor)}

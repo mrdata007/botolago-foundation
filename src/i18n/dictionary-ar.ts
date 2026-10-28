@@ -217,6 +217,7 @@ export const ar = {
   "standings.view.away": "خارج الميدان",
   "standings.a11y.views": "طريقة عرض الترتيب",
   "standings.final": "الترتيب النهائي",
+  "standings.page_title": "الترتيب",
   "standings.after_rounds_one": "بعد جولة واحدة",
   "standings.after_rounds_two": "بعد جولتين",
   "standings.after_rounds_few": "بعد {n} جولات",
@@ -295,9 +296,22 @@ export const ar = {
   "club.tab.matches": "المباريات",
   "club.tab.standings": "الترتيب",
   "club.tab.squad": "اللاعبون",
+  "club.aliases": "يُعرف أيضًا بـ",
   "club.key.played": "لعب",
   "club.key.goal_difference": "الفارق",
+  /* Document titles for the routes whose <title> is set by `head()` in French: the
+     reader's own language is set after mount (`useReaderDocumentTitle`). */
+  "meta.home_title": "BotolaGO — الأخبار والمباريات وفانتازي كرة القدم المغربية",
+  "meta.matches_title": "مباريات البطولة الاحترافية — النتائج المباشرة | BotolaGO",
+  "meta.standings_title": "ترتيب البطولة الاحترافية — النقاط والمستوى والأهداف | BotolaGO",
+  "meta.clubs_title": "أندية البطولة الاحترافية — BotolaGO",
+  "meta.news_title": "الأخبار — BotolaGO",
+  "meta.login_title": "تسجيل الدخول — BotolaGO",
+  "meta.register_title": "إنشاء حساب — BotolaGO",
+  "meta.notifications_title": "الإشعارات — BotolaGO",
   "club.next_match": "المباراة القادمة",
+  "club.live_match": "مباشر الآن",
+  "fantasy.hub.visitor_leagues": "إنشاء دوري أو الانضمام إليه",
   "club.recent_results": "آخر النتائج",
   "club.full_table": "الترتيب الكامل",
   "club.stats.title": "الإحصائيات",
@@ -1026,6 +1040,9 @@ export const ar = {
   "fantasy.meta.player_title": "{name}: السعر والنقاط والمستوى الأخير — BotolaGO Fantasy",
   "fantasy.meta.player_description":
     "{name}: الإحصائيات والمستوى الأخير والسعر والمباريات القادمة، لتقرّر إن كان يستحق مكانًا في فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.player_club_title": "{name} ({club}): الإحصائيات والمباريات والنقاط | BotolaGO",
+  "fantasy.meta.player_club_description":
+    "{name} ({club})، {position} في البطولة الاحترافية: إحصائيات الموسم وآخر المباريات والسعر ونقاط BotolaGO Fantasy.",
   "fantasy.meta.player_unknown_title": "بطاقة اللاعب — BotolaGO Fantasy",
   "fantasy.meta.player_unknown_description":
     "إحصائيات لاعب من البطولة الاحترافية ومستواه الأخير وسعره ومبارياته القادمة، لفريقك على BotolaGO Fantasy.",
@@ -1174,6 +1191,7 @@ export const ar = {
   "fpl.squad": "التشكيلة",
   "fpl.list": "القائمة",
   "fpl.pick_team": "اختيار الفريق",
+  "fantasy.team.screen_title": "فريقي",
   "fantasy.transfers.incoming_owned": "هذا اللاعب موجود بالفعل في فريقك.",
   "fantasy.transfers.incoming_unavailable": "هذا اللاعب لم يعد متاحًا في موسم فانتازي الحالي.",
   "fpl.transfers": "الانتقالات",
@@ -1261,6 +1279,8 @@ export const ar = {
   "fpl.private": "خاصة",
   "fpl.public": "عامة",
   "fpl.private_code_help": "أدخل رمز الدوري الخاص الذي زوّدك به مسؤول الدوري.",
+  "fpl.join_code_hint":
+    "يُفعَّل الزر بمجرد إدخال الرمز. يتكوّن الرمز من 32 خانة (أرقام من 0 إلى 9 وحروف من A إلى F): انسخه من الدعوة التي وصلتك.",
   "fpl.create_own_league": "يمكنك إنشاء دوريك الخاص من «إنشاء دوري».",
   "fpl.private_league_code": "رمز الدوري الخاص",
   "fpl.invalid_code": "رمز غير صالح. تحقق من الرمز وتأكد مع مسؤول الدوري إذا استمرت المشكلة.",
@@ -2770,6 +2790,21 @@ export const ar = {
   "landing.faq_title": "أسئلة شائعة",
   "landing.faq_free_q": "هل اللعبة مجانية فعلاً؟",
   "landing.faq_free_a": "نعم. فانتازي BotolaGO لعبة مجانية: لا شراء ولا رهان.",
+  "landing.faq_what_q": "ما هي لعبة Botola Fantasy؟",
+  "landing.faq_what_a":
+    "فانتازي BotolaGO لعبة مجانية للبطولة الاحترافية: تكوّن فريقاً من لاعبي البطولة الاحترافية وتختار قائداً، ويحصد لاعبوك نقاطاً بحسب أدائهم في المباريات. تنافس المدربين الآخرين في كل جولة.",
+  "landing.faq_create_q": "كيف أنشئ فريقي في فانتازي البطولة الاحترافية؟",
+  "landing.faq_create_a":
+    "اختر 15 لاعباً من البطولة الاحترافية، وضع 11 لاعباً أساسياً وامنح شارة القيادة لقائدك. يمكنك تكوين فريقك دون حساب؛ ولا يُطلب حساب مجاني إلا لحفظه.",
+  "landing.faq_squad_q": "ما الميزانية وما قواعد التشكيلة؟",
+  "landing.faq_squad_a":
+    "تبدأ بميزانية قدرها 100 مليون. تضم تشكيلتك 15 لاعباً: حارسين و5 مدافعين و5 لاعبي وسط و3 مهاجمين، بحد أقصى 3 لاعبين من كل نادٍ. في كل جولة تضع 11 لاعباً أساسياً.",
+  "landing.faq_transfers_q": "كيف تعمل الانتقالات؟",
+  "landing.faq_transfers_a":
+    "لديك انتقال مجاني واحد لكل جولة، ويمكن جمع انتقالين كحد أقصى. كل انتقال إضافي يخصم 4 نقاط من مجموع الجولة. تُجرى الانتقالات قبل الموعد النهائي للجولة.",
+  "landing.faq_prizes_q": "هل هناك جوائز للفوز بها؟",
+  "landing.faq_prizes_a":
+    "نعم. تكافئ الجوائز أفضل المدربين: جائزة الجولة والجائزة الشهرية وجائزة الموسم، وتُمنح وفق قواعد الجوائز. تبقى اللعبة مجانية 100%: دون أي شراء أو رهان.",
   "landing.faq_late_q": "بدأ الموسم، هل ما زال بإمكاني اللعب؟",
   "landing.faq_late_a":
     "نعم. الفريق الذي تنشئه الآن يدخل الجولة المفتوحة التالية ويجمع النقاط ابتداءً منها.",
@@ -3660,6 +3695,13 @@ export const ar = {
   "clubs.load_failed": "تعذّر تحميل الأندية. أعد المحاولة.",
   "club.load_failed": "تعذّر تحميل معلومات النادي. أعد المحاولة.",
   "news.load_more": "عرض المزيد من المقالات",
+  "news.archive.title": "أرشيف الأخبار",
+  "news.archive.link": "كل الأخبار",
+  "news.archive.pages": "صفحات الأرشيف",
+  "news.archive.page_of": "الصفحة {page} من {total}",
+  "news.archive.page_n": "الصفحة {page}",
+  "news.archive.prev": "الصفحة السابقة",
+  "news.archive.next": "الصفحة التالية",
   "news.no_matching_articles": "لا توجد مقالات تطابق هذه الفلاتر.",
   "matches.standings_failed": "تعذّر تحميل الترتيب. أعد المحاولة.",
 

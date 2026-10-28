@@ -18,8 +18,9 @@ import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SkeletonList } from "@/components/common/Skeletons";
 import { ErrorState } from "@/components/common/States";
+import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
-import { UiIconLinkButton, UiPageTitle } from "@/components/ui-kit";
+import { UiIconLinkButton, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
 import { Bookmark } from "lucide-react";
 import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
@@ -119,14 +120,19 @@ export const Route = createFileRoute("/news")({
 });
 
 function NewsRoute() {
-  const isArticle = useRouterState({
-    select: (state) => state.matches.some((match) => match.routeId === "/news/$articleId"),
+  // An article and the archive each replace the hub with a page of their own.
+  const isChildPage = useRouterState({
+    select: (state) =>
+      state.matches.some(
+        (match) => match.routeId === "/news/$articleId" || match.routeId === "/news/archive",
+      ),
   });
-  return isArticle ? <Outlet /> : <NewsPage />;
+  return isChildPage ? <Outlet /> : <NewsPage />;
 }
 
 function NewsPage() {
   const { t, lang } = useI18n();
+  useReaderDocumentTitle(t("meta.news_title"));
   const { user } = useAuth();
   // The filters are the URL's, not this page's state: an article replaces
   // this page with its own, so state held here is gone when Retour comes back.
@@ -302,6 +308,11 @@ function NewsPage() {
           clubs={clubs}
           excludeIds={excludeFromLatest}
         />
+        {/* The whole archive as plain pages: "load more" is a button, which a
+            crawler does not press, so this link is how it reaches the rest. */}
+        <UiLinkButton to="/news/archive" variant="soft" className="mt-3 w-full">
+          {t("news.archive.link")}
+        </UiLinkButton>
       </Section>
     </AppShell>
   );

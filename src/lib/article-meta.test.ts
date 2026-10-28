@@ -6,10 +6,12 @@ import {
   buildArticleHead,
   buildArticleJsonLd,
   buildCanonicalArticleUrl,
+  MIN_INDEXABLE_BODY_WORDS,
   SEARCH_DESCRIPTION_LENGTH,
   serializeJsonLd,
   unclippedSeoText,
 } from "./article-meta";
+import { bodyWordCount } from "./article-text";
 import type { ArticleDetailDto } from "@/backend/news/contracts";
 import { dictionaries } from "@/i18n/dictionaries";
 import {
@@ -51,7 +53,7 @@ function detail(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
     competitionIds: [],
     placement: null,
     isSaved: false,
-    bodyHtml: "<p>Contenu</p>",
+    bodyHtml: `<p>${Array.from({ length: MIN_INDEXABLE_BODY_WORDS }, () => "mot").join(" ")}</p>`,
     bodyFormat: "rich_text",
     seo: { title: null, description: null },
     taxonomies: [],
@@ -65,6 +67,49 @@ function detail(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
 describe("buildCanonicalArticleUrl", () => {
   it("encodes the identifier into a stable botolago.com URL", () => {
     expect(buildCanonicalArticleUrl("article 1")).toBe("https://botolago.com/news/article%201");
+  });
+});
+
+describe("thin articles", () => {
+  const words = (count: number) =>
+    `<p>${Array.from({ length: count }, (_, index) => `mot${index}`).join(" ")}</p>`;
+  const robots = (article: ArticleDetailDto) =>
+    buildArticleHead(article, article.id).meta.find(
+      (tag) => "name" in tag && tag.name === "robots",
+    );
+
+  it("a body under the threshold is noindex, follow", () => {
+    expect(robots(detail({ bodyHtml: words(MIN_INDEXABLE_BODY_WORDS - 1) }))).toEqual({
+      name: "robots",
+      content: "noindex, follow",
+    });
+    expect(robots(detail({ bodyHtml: "<p>Contenu</p>" }))).toEqual({
+      name: "robots",
+      content: "noindex, follow",
+    });
+  });
+
+  it("a body at the threshold stays indexable", () => {
+    expect(robots(detail({ bodyHtml: words(MIN_INDEXABLE_BODY_WORDS) }))).toBeUndefined();
+  });
+
+  it("counts the words across paragraphs and markup, in Arabic too", () => {
+    expect(bodyWordCount("<p>un <b>deux</b></p><p>trois&nbsp;quatre</p>")).toBe(4);
+    expect(bodyWordCount("<p>الرجاء يسافر صوب مكناس</p>")).toBe(4);
+    expect(bodyWordCount("")).toBe(0);
+  });
+
+  it("applies to licensed articles like any other", () => {
+    const source = { name: "ElBotola", url: null };
+    expect(robots(detail({ source, bodyHtml: words(10) }))).toBeDefined();
+    expect(robots(detail({ source }))).toBeUndefined();
+  });
+
+  it("a missing article keeps its single plain noindex", () => {
+    const tags = buildArticleHead(null, "missing").meta.filter(
+      (tag) => "name" in tag && tag.name === "robots",
+    );
+    expect(tags).toEqual([{ name: "robots", content: "noindex" }]);
   });
 });
 
