@@ -10,6 +10,7 @@ import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
+import { clubShortName } from "@/lib/club-identity";
 import { cn } from "@/lib/utils";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService } from "@/services/football";
@@ -52,9 +53,10 @@ export const Route = createFileRoute("/clubs/")({
 /**
  * Every club of the season (A-Clubs): a white title band — "Clubs", then the
  * competition and the season the list is drawn from — over a grid of club
- * tiles, two across on a phone and three from `sm`. Each tile is the crest
- * disc, the name and a 4px base in the club's edge colour, as Profile draws
- * "Mes clubs"; each opens its club page.
+ * tiles, three across on a phone, four from `sm` and six from `lg`. Each
+ * tile is filled with the club's own colour (club-palette tokens, AA text),
+ * with its crest on an inverse disc and its one short name; each opens its
+ * club page (owner direction 2026-10-28: dense, and the colour shows).
  *
  * The list is the current season's clubs (its table, or before there is one,
  * its fixtures), by name — not the whole team catalogue, which still holds
@@ -86,10 +88,10 @@ function ClubsPage() {
       }
     >
       {directoryQ.isPending ? (
-        <ul aria-hidden className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+        <ul aria-hidden className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-6">
           {Array.from({ length: 6 }, (_, index) => (
             <li key={index}>
-              <UiSkeleton className={cn("h-36", ui.radius.card)} />
+              <UiSkeleton className={cn("h-[7.25rem]", ui.radius.card)} />
             </li>
           ))}
         </ul>
@@ -98,7 +100,7 @@ function ClubsPage() {
       ) : clubs.length === 0 ? (
         <EmptyState>{t("clubs.empty")}</EmptyState>
       ) : (
-        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2.5 lg:grid-cols-6">
           {clubs.map((club) => (
             // A flex cell, so every tile fills its row's height and the
             // club-colour edges line up when one name wraps and its
@@ -126,24 +128,31 @@ function ClubTile({ club }: { club: Club }) {
       data-club={colours["data-club"]}
       style={colours.style}
       className={cn(
-        "flex min-h-36 w-full min-w-0 flex-col items-center justify-center gap-2.5 px-3 pb-4 pt-5 text-center",
-        ui.surface.card,
-        ui.edge.blockEnd,
+        // The club's own colour as the tile: the fill and the text measured for
+        // it (`--ui-on-club`, AA in both themes), the diagonal club texture, and
+        // an inverse crest plate that stays a disc on a light kit.
+        "flex min-h-[7.25rem] w-full min-w-0 flex-col items-center justify-center gap-2 px-1.5 pb-3 pt-3.5 text-center",
+        ui.radius.card,
+        ui.shadow.card,
+        ui.club.fill,
+        ui.club.stripes,
+        // The inner edge ring keeps a white kit (Zemamra) a tile on a light page.
+        ui.club.ring,
         "press-tile",
         ui.focus,
       )}
     >
-      <ClubCrest club={club} size="lg" />
-      {/* Two lines at most, broken between words only. */}
+      <ClubCrest club={club} size="md" tone="inverse" />
+      {/* Two lines at most, broken between words only: the one short name
+          every screen prints for the club. */}
       <span
         className={cn(
-          "line-clamp-2 w-full text-balance",
-          ui.text.body,
+          "line-clamp-2 w-full text-balance [overflow-wrap:anywhere]",
+          ui.text.meta,
           "[font-weight:var(--ui-weight-heavy)]",
-          ui.tone.default,
         )}
       >
-        {tr(club.name)}
+        {clubShortName(club, tr)}
       </span>
     </Link>
   );
