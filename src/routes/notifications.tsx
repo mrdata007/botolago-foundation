@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  BellRing,
+  CheckCheck,
   CircleDot,
-  Info,
+  Inbox as InboxGlyph,
   LogIn,
   Newspaper,
-  ShieldCheck,
   Trophy,
   UserPlus,
   X,
@@ -17,7 +18,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useAuthReturnSearch } from "@/auth/use-auth-return";
 import { authOutlineClass } from "@/components/auth/auth-classes";
-import { EmptyState, ErrorState } from "@/components/common/States";
+import { ErrorState } from "@/components/common/States";
+import { NOTIFICATION_BADGE, notificationKind } from "@/components/notifications/notification-kind";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
@@ -44,6 +46,7 @@ import {
   useMyNotifications,
   useNotificationActions,
   useUnreadNotificationCount,
+  useUnreadNotificationState,
 } from "@/services/use-my-notifications";
 
 export const Route = createFileRoute("/notifications")({
@@ -53,14 +56,41 @@ export const Route = createFileRoute("/notifications")({
   component: NotificationsPage,
 });
 
-const CATEGORY_ICON: Record<NotificationCategory, LucideIcon> = {
+/** The icon each filter chip carries, in the chip's own text colour. */
+const FILTER_ICON: Partial<Record<NotificationCategory, LucideIcon>> = {
   football: CircleDot,
   fantasy: Trophy,
   news: Newspaper,
-  account: ShieldCheck,
-  security: ShieldCheck,
-  system: Info,
 };
+
+/**
+ * The page title on the header gradient, with a surface wash over its lower
+ * half: the token's last stop is deep enough in the light theme that navy text
+ * there measures under 4.5:1, and the wash lifts it (in the dark theme, where
+ * the band is deep and the text pale, it deepens it). Same recipe as the
+ * "Mon classement" band in `standings-flair.tsx`. `to bottom`, so it does not
+ * mirror wrong in Arabic.
+ */
+const HEADER_BAND = cn(
+  "border-b-0 text-[color:var(--ui-on-grad-header)]",
+  "[background-image:linear-gradient(to_bottom,transparent_35%,color-mix(in_oklab,var(--ui-surface)_38%,transparent)_100%),var(--ui-grad-header)]",
+);
+
+/** A glass disc on the header band, in the band's own foreground. */
+const BAND_ORB = cn(
+  "grid h-11 w-11 place-items-center",
+  ui.radius.full,
+  "bg-[color:color-mix(in_oklab,var(--ui-on-grad-header)_14%,transparent)]",
+  "ring-1 ring-inset ring-[color:color-mix(in_oklab,var(--ui-on-grad-header)_28%,transparent)]",
+);
+
+/**
+ * An unread row: a light wash of the action gradient (spring to sky) over the
+ * surface, so the body text keeps its contrast, and a 4px action-gradient bar
+ * on the inline-start edge (the right edge in Arabic).
+ */
+const UNREAD_ROW =
+  "[background-image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-spring)_14%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-sky)_14%,var(--ui-surface)))] dark:[background-image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-spring)_9%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-sky)_9%,var(--ui-surface)))]";
 
 function NotificationsPage() {
   const { t } = useI18n();
@@ -69,11 +99,52 @@ function NotificationsPage() {
   const signedIn = status === "authenticated";
 
   return (
-    <AppShell pageHeader={<UiPageTitle title={t("notifications.title")} />}>
+    <AppShell
+      pageHeader={
+        <UiPageTitle
+          title={t("notifications.title")}
+          className={HEADER_BAND}
+          trailing={
+            <span aria-hidden className={BAND_ORB}>
+              <Bell className="h-5 w-5" />
+            </span>
+          }
+        >
+          {signedIn ? <UnreadSummary /> : null}
+        </UiPageTitle>
+      }
+    >
       {/* Keyed by account: the locally hidden cards are one account's, and a
           different account signing in on this page starts with none. */}
       {signedIn ? <Inbox key={user?.id ?? "me"} /> : status === "loading" ? null : <SignInPrompt />}
     </AppShell>
+  );
+}
+
+/** The header band's second line: how many are unread, or that all are read. */
+function UnreadSummary() {
+  const { t } = useI18n();
+  const { count, ready } = useUnreadNotificationState();
+  // The line keeps its height while the count is on its way, so the band does
+  // not grow under the reader when it lands.
+  if (!ready) return <p aria-hidden className="min-h-7" />;
+  return (
+    <p className="flex min-h-7 items-center gap-2">
+      {count > 0 ? (
+        <>
+          <BellRing className="h-4 w-4 shrink-0" aria-hidden />
+          <bdi className={ui.score.sm}>{count}</bdi>
+          <span className={ui.text.bodyStrong}>
+            {count === 1 ? t("notifications.header_unread_one") : t("notifications.header_unread")}
+          </span>
+        </>
+      ) : (
+        <>
+          <CheckCheck className="h-4 w-4 shrink-0" aria-hidden />
+          <span className={ui.text.bodyStrong}>{t("notifications.header_caught_up")}</span>
+        </>
+      )}
+    </p>
   );
 }
 
@@ -83,7 +154,17 @@ function SignInPrompt() {
   const returnSearch = useAuthReturnSearch();
   return (
     <UiCard padding="lg" className="text-center">
-      <Bell className={cn("mx-auto h-8 w-8", ui.tone.ink)} aria-hidden />
+      <span
+        aria-hidden
+        className={cn(
+          "mx-auto grid h-14 w-14 place-items-center text-[color:var(--ui-ink-deep)]",
+          ui.radius.full,
+          ui.shadow.lifted,
+          "[background-image:var(--ui-grad-action)]",
+        )}
+      >
+        <Bell className="h-7 w-7" />
+      </span>
       <h2 className={cn("mt-3", ui.display.section, ui.tone.default)}>
         {t("notifications.signin_title")}
       </h2>
@@ -168,13 +249,16 @@ function Inbox() {
           {t("notifications.filter.all")}
         </UiChip>
         <UiChip selected={category === "football"} onClick={() => setCategory("football")}>
+          <FilterIcon category="football" />
           {t("notifications.filter.football")}
         </UiChip>
         <UiChip selected={category === "fantasy"} onClick={() => setCategory("fantasy")}>
+          <FilterIcon category="fantasy" />
           {t("notifications.filter.fantasy")}
         </UiChip>
         {NEWS_ENABLED ? (
           <UiChip selected={category === "news"} onClick={() => setCategory("news")}>
+            <FilterIcon category="news" />
             {t("notifications.filter.news")}
           </UiChip>
         ) : null}
@@ -211,22 +295,31 @@ function Inbox() {
             <ul className="divide-y divide-[color:var(--ui-rule)]">
               <ExitPresence>
                 {cards.map((card, index) => {
-                  const Icon = CATEGORY_ICON[card.category];
+                  const badge = NOTIFICATION_BADGE[notificationKind(card.type, card.category)];
+                  const Icon = badge.icon;
                   const isUnread = !card.readAt;
                   return (
                     <ExitCollapse as="li" key={card.id}>
                       <div
                         className={cn(
                           "flex items-stretch",
+                          isUnread && UNREAD_ROW,
                           arrived.has(card.id) && "enter-rise stagger",
                         )}
                         style={arrived.has(card.id) ? staggerStyle(index) : undefined}
                       >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "w-1 shrink-0",
+                            isUnread && "[background-image:var(--ui-grad-action)]",
+                          )}
+                        />
                         <button
                           type="button"
                           onClick={() => open(card)}
                           className={cn(
-                            "flex min-w-0 flex-1 items-start gap-3 py-3 ps-4 pe-2 text-start",
+                            "flex min-w-0 flex-1 items-start gap-3 py-3 ps-3 pe-2 text-start",
                             "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
                           )}
@@ -234,13 +327,13 @@ function Inbox() {
                           <span
                             aria-hidden
                             className={cn(
-                              "mt-0.5 grid h-9 w-9 shrink-0 place-items-center",
+                              "mt-0.5 grid h-10 w-10 shrink-0 place-items-center",
                               ui.radius.full,
-                              ui.surface.sunken,
-                              ui.tone.ink,
+                              badge.className,
+                              isUnread && ui.shadow.lifted,
                             )}
                           >
-                            <Icon className="h-4 w-4" />
+                            <Icon className="h-5 w-5" />
                           </span>
                           <span className="min-w-0 flex-1" dir={card.direction}>
                             <span
@@ -298,14 +391,7 @@ function Inbox() {
               </ExitPresence>
             </ul>
           </UiCard>
-          {cards.length === 0 && emptyShown ? (
-            <EmptyState>
-              <p className={cn(ui.display.section, ui.tone.default)}>
-                {t("notifications.empty_title")}
-              </p>
-              <p>{t("notifications.empty_body")}</p>
-            </EmptyState>
-          ) : null}
+          {cards.length === 0 && emptyShown ? <EmptyInbox /> : null}
           {cards.length > 0 && inboxQ.hasNextPage ? (
             <UiButton
               variant="soft"
@@ -317,6 +403,68 @@ function Inbox() {
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+function FilterIcon({ category }: { category: NotificationCategory }) {
+  const Icon = FILTER_ICON[category];
+  return Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null;
+}
+
+/**
+ * Nothing in the inbox: the bell on the action gradient, ringed by the badges
+ * of what will arrive here (a goal, a kick-off, a Fantasy deadline, the
+ * results), over a light wash of the header gradient. Static: it is drawn in
+ * full on the first frame.
+ */
+function EmptyInbox() {
+  const { t } = useI18n();
+  const satellites = (["goal", "kickoff", "deadline", "results"] as const).map(
+    (kind) => NOTIFICATION_BADGE[kind],
+  );
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden px-5 py-8 text-center",
+        ui.surface.card,
+        "[background-image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-sky)_16%,var(--ui-surface)),var(--ui-surface)_70%)]",
+      )}
+    >
+      <div aria-hidden className="relative mx-auto h-28 w-28">
+        <span
+          className={cn(
+            "absolute inset-3 grid place-items-center text-[color:var(--ui-ink-deep)]",
+            ui.radius.full,
+            ui.shadow.lifted,
+            "[background-image:var(--ui-grad-action)]",
+          )}
+        >
+          <InboxGlyph className="h-9 w-9" />
+        </span>
+        {satellites.map((badge, index) => {
+          const Icon = badge.icon;
+          return (
+            <span
+              key={index}
+              className={cn(
+                "absolute grid h-8 w-8 place-items-center ring-2 ring-[color:var(--ui-surface)]",
+                ui.radius.full,
+                badge.className,
+                ["top-0 start-0", "top-0 end-0", "bottom-0 start-0", "bottom-0 end-0"][index],
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+          );
+        })}
+      </div>
+      <p className={cn("mt-4", ui.display.section, ui.tone.default)}>
+        {t("notifications.empty_title")}
+      </p>
+      <p className={cn("mx-auto mt-1 max-w-[30ch]", ui.text.secondary, ui.tone.muted)}>
+        {t("notifications.empty_body")}
+      </p>
     </div>
   );
 }
