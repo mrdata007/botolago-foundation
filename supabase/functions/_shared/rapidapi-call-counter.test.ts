@@ -28,6 +28,7 @@ describe("RapidApiClient onRequest", () => {
       host: HOST,
       key: "k",
       runtime,
+      maxRetries: 2,
       onRequest,
       fetch: async () => {
         const next = responses[i++];

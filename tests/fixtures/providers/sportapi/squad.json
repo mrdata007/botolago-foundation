@@ -1,0 +1,69 @@
+{
+  "players": [
+    {
+      "player": {
+        "id": 1140927,
+        "name": "Saleh Al Sellami",
+        "position": "F",
+        "shirtNumber": 11,
+        "jerseyNumber": "11"
+      }
+    },
+    {
+      "player": {
+        "id": 1004247,
+        "name": "Jawad Rhabra",
+        "position": "F",
+        "shirtNumber": 19,
+        "jerseyNumber": "19"
+      }
+    },
+    {
+      "player": {
+        "id": 796155,
+        "name": "Sabir Bougrine",
+        "position": "M",
+        "shirtNumber": 28,
+        "jerseyNumber": "28"
+      }
+    },
+    {
+      "player": {
+        "id": 1392058,
+        "name": "Nabil Khali",
+        "position": "M",
+        "shirtNumber": 25,
+        "jerseyNumber": "25"
+      }
+    },
+    {
+      "player": {
+        "id": 1952096,
+        "name": "Ayoub Maamouri",
+        "position": "M",
+        "shirtNumber": 11,
+        "jerseyNumber": "11"
+      }
+    },
+    {
+      "player": {
+        "id": 1168590,
+        "name": "Abdellah Haimoud",
+        "position": "M",
+        "shirtNumber": 8,
+        "jerseyNumber": "8"
+      }
+    }
+  ],
+  "foreignPlayers": [
+    {
+      "player": {
+        "id": 1392058,
+        "name": "Nabil Khali",
+        "position": "M",
+        "shirtNumber": 25,
+        "jerseyNumber": "25"
+      }
+    }
+  ]
+}

@@ -49,6 +49,12 @@ export const STAGED_PULLS_PER_TICK_MAX = 8;
 export const REQUESTS_PER_PULL = 3;
 /** The due list is empty once this many calls were counted in the quota window (the guard's soft limit). */
 export const STAGED_BUDGET_STOP = 8500;
+/**
+ * The same stop on SportAPI's plan (15,000 calls, soft limit 13,500): the database
+ * reads the active host's count (migration 20261028100000), so this is the stop for
+ * that count.
+ */
+export const STAGED_BUDGET_STOP_SPORTAPI = 12000;
 const MAX_PLAYER_IDS = 120;
 
 export interface StagedStatsConfig {
@@ -69,7 +75,10 @@ export function readStagedConfig(
       Number.isInteger(parsed) && parsed >= 0 && parsed <= STAGED_PULLS_PER_TICK_MAX
         ? parsed
         : STAGED_PULLS_PER_TICK_DEFAULT,
-    budgetStop: STAGED_BUDGET_STOP,
+    budgetStop:
+      environment.RAPIDAPI_HOST?.trim().toLowerCase() === "sportapi7.p.rapidapi.com"
+        ? STAGED_BUDGET_STOP_SPORTAPI
+        : STAGED_BUDGET_STOP,
   };
 }
 

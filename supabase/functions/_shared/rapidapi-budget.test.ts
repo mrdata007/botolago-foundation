@@ -16,6 +16,7 @@ describe("loadRapidApiBudget", () => {
           hardLimit: 9700,
           windowStart: "2026-10-10",
           liveIntervalSeconds: 180,
+          incidentsIntervalMinutes: 10,
         },
         error: null,
       })),
@@ -27,7 +28,21 @@ describe("loadRapidApiBudget", () => {
       hardLimit: 9700,
       windowStart: "2026-10-10",
       liveIntervalSeconds: 180,
+      incidentsIntervalMinutes: 10,
     });
+  });
+
+  test("the incidents interval is 15 minutes when the database does not say or says something odd", async () => {
+    for (const odd of [undefined, 0, 500, "ten"]) {
+      const budget = await loadRapidApiBudget(
+        clientOf(async () => ({
+          data: { used: 1, softLimit: 2, hardLimit: 3, incidentsIntervalMinutes: odd },
+          error: null,
+        })),
+        "fixtures",
+      );
+      expect(budget?.incidentsIntervalMinutes).toBe(15);
+    }
   });
 
   test("an interval outside 60-300 reads as 60", async () => {

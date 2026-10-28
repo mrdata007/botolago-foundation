@@ -788,7 +788,9 @@ describe("automatic Fantasy: catch-up of a finished match never attempted", () =
   });
 
   test("the cap and the window come from the environment", async () => {
-    const db = fakeDb({ dueCatchUp: listed });
+    // Distinct matches: the client never reads the same match twice in a run.
+    const distinct = listed.map((item, n) => ({ ...item, eventId: String(Number(EVENT) + n) }));
+    const db = fakeDb({ dueCatchUp: distinct });
     const { run, net } = makeRun(db, "sofascore", { SOFASCORE_FANTASY_CATCHUP_PER_TICK: "2" });
     await run.sweep();
     expect(net.paths).toHaveLength(6);

@@ -47,6 +47,8 @@ async function main() {
   const client = new RapidApiClient({
     host: "sofascore.p.rapidapi.com",
     key,
+    // At most 300 fixtures, a lineups request and possibly an incidents one each.
+    maxRequests: 600,
     policy: { maxRetries: 0 },
   });
   const results: unknown[] = [];
