@@ -396,3 +396,21 @@ The first Builder was stopped from the owner's side (it cannot be resumed).
 - Its brief adds: check the earlier unfinished work critically, bring in the latest `main`, save to GitHub after every step, separate call budgets for each provider, and owner steps written click by click.
 - Target: ready to put live before Friday 30 Oct 17:30 UTC.
 
+**Builder (restarted) – done**, pushed 6571fbe on `claude/rapidapi-call-reduction`. Report: `docs/review/batch0-2026-10-28/BUILDER_REPORT.md`.
+
+- **Call waste:**
+  - During a match, the goal/card timeline is read only when the score changes or a half/extra time/penalties starts.
+  - Line-ups are read once at kick-off; stats once at the final whistle.
+  - Finished matches are never read again, and nothing is fetched twice in one run.
+  - If the counter cannot be read, the safety stop stays on.
+  - The manual scripts are capped and keep a 1,500-call reserve.
+  - Estimate (a calculation, not a measurement): about 185 calls on a 4-match day; 8-match day 425 → 275.
+- **SportAPI switch:** setting `RAPIDAPI_HOST=sportapi7.p.rapidapi.com` turns it on. Any other value is refused. 35 tests.
+- **Per-provider budgets:** migration 20261028100000 plus a guarded apply script and 60 database tests. The database tests were not run (no Docker); CI decides.
+- **Tests:** 11,035 pass, 1 known failure. Lint, typecheck, migrations check and build are clean.
+- **Lead check:** confirmed `main` never read a `RAPIDAPI_HOST` setting before (always Sofascore).
+- **Lead note:** the Builder tried its SQL on a local throwaway PostgreSQL. This is not a shared database, so the one-writer rule is not affected. Flagged.
+- **Trade-off to put to the owner:** cards between goals appear only at half time and full time. Showing them as they happen would cost about 4 more calls per match.
+
+Sent to a separate Tester.
+
