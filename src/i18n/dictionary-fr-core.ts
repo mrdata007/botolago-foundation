@@ -115,6 +115,16 @@ export const frCore = {
   "home.carousel.slide_role": "diapositive",
   "home.carousel.skip": "Passer les matchs",
   "home.carousel.announce": "{slide} : {home} – {away}",
+  // The band card's matchday lines (owner decision 2026-10-28): "Votre favori ?"
+  // over the two clubs, and the kick-off countdown in Casablanca time.
+  "home.pick.title": "Votre favori\u00a0?",
+  "home.kickoff.in": "Coup d'envoi dans",
+  "home.kickoff.label": "Coup d'envoi",
+  "home.kickoff.in_days": "{d}\u00a0j {h}\u00a0h",
+  "home.kickoff.in_hours": "{h}\u00a0h {m}",
+  "home.kickoff.in_minutes": "{m}\u00a0min",
+  "home.kickoff.imminent": "imminent",
+  "home.kickoff.waiting": "en attente",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
   // what the server renders and a crawler reads.
   "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
