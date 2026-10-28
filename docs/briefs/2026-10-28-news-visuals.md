@@ -35,11 +35,11 @@ file. Nothing is duplicated.
      (result) or the kick-off time in Morocco time (preview);
    - one club: a club-colour plate with its crest;
    - no club: the existing category plate, unchanged.
-   The fixture is inferred, not stored: both clubs of the article play a fixture
-   of the current season whose kick-off lies within four days after / three days
-   before the article's publication; the nearest one wins. The card carries no
-   fixture id (the API does not send one), so this is the honest reading of the
-   data we have. No score or time is drawn when no fixture matches.
+     The fixture is inferred, not stored: both clubs of the article play a fixture
+     of the current season whose kick-off lies within four days after / three days
+     before the article's publication; the nearest one wins. The card carries no
+     fixture id (the API does not send one), so this is the honest reading of the
+     data we have. No score or time is drawn when no fixture matches.
 2. **A tag that says something.** "Dernières actualités" on every card was the
    category's label (every article is `latest`). The tag is now, in order: the
    editorial tag; "Avant-match" / "Résultat" when the article is tied to a fixture
@@ -53,6 +53,18 @@ file. Nothing is duplicated.
 4. **"GMT" in article text.** Not a frontend template: the text is stored article
    copy written by the content generator. Source reported to the orchestrator
    (no data or function changed here).
+
+5. **Alive, not pale (owner direction 2026-10-28, added after the first
+   draft).** The page was white cards on near-white with colour in thin lines.
+   Applied with the existing system only:
+   - the club-colour halves are full-strength fills (`clubMatchPalettes`, so
+     contrast and the home/away clash rule hold), with the score or kick-off
+     time as the loudest figure on the card (kit score steps, Changa);
+   - the tag is a bold chip in the club's colour on every row, not a grey word;
+   - the lead / newest-stories carousel sits on a deep-navy stage (edge to
+     edge on a phone, a rounded sheet in the column on desktop), so the page
+     opens on one dark, confident band; its arrows and dots use the on-ink
+     tokens. No new colour, no gradient added; dark mode keeps the same band.
 
 ## Acceptance criteria
 
