@@ -18,21 +18,23 @@ import { PepitesPageTitle } from "./PepitesShell";
 import { pepitesKeys, rankingStatsQueryOptions } from "./use-pepites";
 
 /**
- * While Curva is live Pépites lives inside Fantasy (plan 3.4), so the home's title band opens
- * with a « Fantasy » back pill. Off, the band is what it was. The live state is the section's own
- * status hook, replaced here for the length of this file.
+ * For a signed-in member with Curva in the bar, Prospects lives inside Fantasy (plan 3.4), so the
+ * home's title band opens with a « Fantasy » back pill. For everyone else (a visitor, or a member
+ * while Curva is off) Prospects is a tab of its own and the band has no back pill (owner decision,
+ * 2026-10-28). "Curva in the bar" is the shell's own hook, replaced here for the length of this
+ * file; the rule behind it (live and signed in) is tested in `primary-nav.test.ts`.
  */
 
 const status = { live: false };
-const original = { ...(await import("@/services/manager-card-status")) };
+const original = { ...(await import("@/components/shell/primary-nav")) };
 beforeAll(() => {
-  mock.module("@/services/manager-card-status", () => ({
+  mock.module("@/components/shell/primary-nav", () => ({
     ...original,
-    useManagerCardLive: () => status.live,
+    useCurvaInBar: () => status.live,
   }));
 });
 afterAll(() => {
-  mock.module("@/services/manager-card-status", () => original);
+  mock.module("@/components/shell/primary-nav", () => original);
 });
 afterEach(() => {
   status.live = false;
@@ -107,7 +109,7 @@ describe("PepitesPageTitle's back pill", () => {
 describe("the Pépites home's title band", () => {
   for (const source of ["edition", "previous_season"] as const) {
     describe(source === "edition" ? "a published edition" : "last season's ranking", () => {
-      it("has no back pill with the switch off", async () => {
+      it("has no back pill for a visitor, or a member while Curva is off", async () => {
         const html = await render(<PepitesHome />, await seeded(source));
         expect(html).toContain(
           source === "edition" ? "pepites-edition-title" : "pepites-previous-title",
@@ -116,7 +118,7 @@ describe("the Pépites home's title band", () => {
         expect(html).not.toContain('data-testid="pepites-back"');
       });
 
-      it("opens with a « Fantasy » back pill to /fantasy, above the PÉPITES label, when live", async () => {
+      it("opens with a « Fantasy » back pill to /fantasy, above the PÉPITES label, for a member with Curva in the bar", async () => {
         status.live = true;
         const html = await render(<PepitesHome />, await seeded(source));
         const back = html.indexOf('data-testid="pepites-back"');

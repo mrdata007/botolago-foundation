@@ -38,8 +38,7 @@ import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/lib/motion";
 import { STRETCH_MS, stretchKeyframes } from "@/lib/pill-stretch";
 import { cn } from "@/lib/utils";
-import { useManagerCardLive } from "@/services/manager-card-status";
-import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
+import { isPrimaryRouteActive, useCurvaInBar, usePrimaryNavItems } from "./primary-nav";
 
 /**
  * Where the pill was and which tab was active when the last bar went away.
@@ -64,12 +63,13 @@ const POP_MS = 320;
 export function BottomNav() {
   const { t, lang } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  // Today's five items, or Curva' while it is live (src/lib/feature-flags.ts).
+  // The visitor bar (fifth tab: Prospects), or a signed-in member's with Curva in the fifth slot
+  // while it is live (primary-nav.ts). Until the session is known it is the visitor bar.
   const primaryNavItems = usePrimaryNavItems();
-  const curvaLive = useManagerCardLive();
+  const curvaInBar = useCurvaInBar();
 
   const activeTo = primaryNavItems.find((item) =>
-    isPrimaryRouteActive(pathname, item.to, curvaLive),
+    isPrimaryRouteActive(pathname, item.to, curvaInBar),
   )?.to;
   const rowRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef(new Map<string, HTMLSpanElement>());
@@ -222,7 +222,7 @@ export function BottomNav() {
           />
         ) : null}
         {primaryNavItems.map((item) => {
-          const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
+          const active = isPrimaryRouteActive(pathname, item.to, curvaInBar);
           const Icon = item.icon;
           return (
             <Link

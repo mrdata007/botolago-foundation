@@ -167,6 +167,35 @@ describe("Option A shell — bottom nav", () => {
   });
 });
 
+// Owner decision 2026-10-28: Curva is for signed-in members. Every surface that draws or lights the
+// primary tabs asks the one rule (`useCurvaInBar`: live AND signed in), never the raw live status,
+// so a visitor's bar cannot offer Curva and the lit tab is always one that is in the bar.
+describe("Option A shell — Curva is for members (owner decision, 2026-10-28)", () => {
+  for (const file of [
+    "src/components/shell/BottomNav.tsx",
+    "src/components/shell/TopBar.tsx",
+    "src/components/shell/PendingScreen.tsx",
+  ]) {
+    it(`${file} reads who has Curva in the bar, not the raw live status`, () => {
+      const source = code(file);
+      expect(source).toContain("useCurvaInBar");
+      expect(source).not.toContain("useManagerCardLive");
+    });
+  }
+
+  it("neither bar links to Curva by hand: Curva reaches a bar only through the member list", () => {
+    for (const file of ["src/components/shell/BottomNav.tsx", "src/components/shell/TopBar.tsx"]) {
+      expect(code(file)).not.toMatch(/["'`]\/curva/);
+    }
+  });
+
+  it("the top bar shows the Profil icon exactly when the bottom bar does not hold Profil", () => {
+    const topBar = code("src/components/shell/TopBar.tsx");
+    expect(topBar).toContain('.some((item) => item.to === "/profile")');
+    expect(topBar).not.toContain("PEPITES_PROMOTED");
+  });
+});
+
 describe("Option A shell — page background", () => {
   const bg = code("src/components/shell/PageBackground.tsx");
 

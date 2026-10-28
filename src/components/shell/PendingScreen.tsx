@@ -16,10 +16,9 @@ import { useRouterState } from "@tanstack/react-router";
 
 import { UiPageTitle, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { useManagerCardLive } from "@/services/manager-card-status";
 import { AppShell } from "./AppShell";
 import { pendingHidesBottomNav, pendingWithoutShell } from "./pending-screen-rules";
-import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
+import { isPrimaryRouteActive, useCurvaInBar, usePrimaryNavItems } from "./primary-nav";
 
 /** How long a navigation waits before this shows, and the least time it stays once shown. */
 export const PENDING_MS = 150;
@@ -29,7 +28,7 @@ export function PendingScreen() {
   const { t } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const items = usePrimaryNavItems();
-  const curvaLive = useManagerCardLive();
+  const curvaInBar = useCurvaInBar();
 
   const loading = <UiStatePanel kind="loading" testId="pending-screen" />;
   if (pendingWithoutShell(pathname)) return <div className="px-4">{loading}</div>;
@@ -39,7 +38,7 @@ export function PendingScreen() {
   // Home has none (its hero is the title), and neither has a detail page.
   const section = hideBottomNav
     ? undefined
-    : items.find((item) => item.to !== "/" && isPrimaryRouteActive(pathname, item.to, curvaLive));
+    : items.find((item) => item.to !== "/" && isPrimaryRouteActive(pathname, item.to, curvaInBar));
 
   return (
     <AppShell
