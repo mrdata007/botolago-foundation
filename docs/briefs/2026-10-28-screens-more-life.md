@@ -85,3 +85,34 @@ Scope:
 - French and Arabic screenshots, Arabic laid out right to left with the
   podium and gradients mirrored correctly.
 - Before / after screenshots added to the review gallery for the owner.
+
+## Added during the review (same session, same rules)
+
+The owner kept commenting while the first seven were in progress. Each added
+screen follows the same preserve list and acceptance criteria above.
+
+8. **Fantasy league page** (`/fantasy/leagues/$leagueId`): "bring more life".
+   The same treatment as the rankings table (shared helpers in
+   `src/components/fantasy-lists/standings-flair.tsx`), plus a "Mon
+   classement" card when the reader's row is loaded.
+9. **Pronostics** (`/pronostics`, Ligues tab): "bring more life", "add
+   gradients to the boxes". Gameweek band on the header gradient with
+   progress, match cards washed in both clubs' colours, score pickers on the
+   action gradient, league boxes on brand gradients. Shared prediction card
+   and stepper take an optional look that defaults to today's (match page
+   unchanged).
+10. **Pépites** (`/pepites`): "animate this". Leader sheen, wheel slices that
+    open, and below-the-fold scores and bars that count up and grow once as
+    they scroll into view. Anything on screen at load stays as drawn.
+11. **Curva** (`/curva`): "remove the letter from the card and make it more
+    animated", "too pale, add brand colours". The faint monogram initial is
+    removed from the shield card face and its share image; a periodic light
+    sweep, a tier-coloured halo and a one-off OVR count-up are added (all off
+    under reduced motion); the home blocks get brand colour.
+12. **Notifications** (`/notifications`): "too pale". Colour and icon per
+    notification kind, gradient header with the unread count, unread rows on
+    the action gradient. Three new labels in both dictionaries.
+13. **Profile** (`/profile`): "change style to something more exciting",
+    "too pale". Gradient cover into the favourite club's colours, a Fantasy
+    panel from the data the page already loads, settings groups with an icon
+    and an accent each.
