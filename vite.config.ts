@@ -25,6 +25,48 @@ if (!process.env.VITE_RELEASE_SHA) {
   }
 }
 
+// FE-C2: the browser build puts the big libraries in a few stable files
+// instead of dozens of tiny ones. Before this, the home page downloaded about
+// 120 separate scripts, many of them a few hundred bytes (one per icon, one
+// per router hook), each one a separate request for a phone to make.
+// The groups are claimed in priority order, highest first, so React lands in
+// `react` and not in a group whose library depends on it. Browser build only:
+// the server build keeps its own layout.
+const libraryGroups = [
+  { name: "react", test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/, priority: 60 },
+  {
+    name: "tanstack",
+    // Not the start-up code (`hydrateStart`, `StartClient`, the default
+    // entry): it imports the app's own router, and a group takes in what its
+    // modules import, so it would pull the whole app into this file.
+    test: (id: string) =>
+      /[\\/]node_modules[\\/](@tanstack|seroval|seroval-plugins)[\\/]/.test(id) &&
+      !/(hydrateStart|StartClient|default-entry)/.test(id),
+    priority: 50,
+  },
+  { name: "supabase", test: /[\\/]node_modules[\\/]@supabase[\\/]/, priority: 40 },
+  {
+    name: "motion",
+    test: /[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/,
+    priority: 30,
+  },
+  { name: "radix", test: /[\\/]node_modules[\\/]@radix-ui[\\/]/, priority: 20 },
+  // Each icon is a few hundred bytes; on their own they were a request each.
+  { name: "icons", test: /[\\/]node_modules[\\/]lucide-react[\\/]/, priority: 10 },
+];
+
+function clientLibraryChunks() {
+  return {
+    name: "botolago:client-library-chunks",
+    configEnvironment(name: string) {
+      if (name !== "client") return;
+      return {
+        build: { rolldownOptions: { output: { codeSplitting: { groups: libraryGroups } } } },
+      };
+    },
+  };
+}
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -36,6 +78,6 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: [mcpPlugin()],
+    plugins: [mcpPlugin(), clientLibraryChunks()],
   },
 });
