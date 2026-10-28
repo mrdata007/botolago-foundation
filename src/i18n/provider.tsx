@@ -11,8 +11,10 @@ import {
 import type { TranslationKey } from "./dictionaries";
 import { dictionaryInChunk } from "./dictionary-chunk";
 import { frText } from "./fr-sections";
-import { INITIAL_LANGUAGE_STATE, languageNotice, languageReducer } from "./language-state";
+import { writeLanguageCookie } from "./language-cookie";
+import { initialLanguageState, languageNotice, languageReducer } from "./language-state";
 import { LanguageLoadNotice } from "./language-load-notice";
+import { requestLanguage } from "./request-language";
 import { retryableImport } from "./retryable-import";
 import { useSplashDone } from "@/lib/launch-sequence";
 import { withViewTransition } from "@/lib/motion";
@@ -65,6 +67,31 @@ function translate(lang: Language, key: string): string | undefined {
   return arabicStrings ? arabicStrings[key] : frText(key);
 }
 
+/**
+ * Loads the words of the language the server drew the page in, before the
+ * browser takes the page over (the router's hydrate step awaits it,
+ * `src/router.tsx`), so the first render in the browser is the server's page
+ * and nothing flips from French to Arabic (FE-H1). A failure is not thrown:
+ * the page then starts in French and says the Arabic words did not come.
+ */
+export function preloadLanguage(lang: Language): Promise<void> {
+  if (lang !== "ar") return Promise.resolve();
+  return arabic.load().then(
+    () => undefined,
+    () => undefined,
+  );
+}
+
+/** The language the page was drawn in; French where no request or page says otherwise. */
+function startingLanguage(): Language {
+  try {
+    return requestLanguage() ?? "fr";
+  } catch {
+    // Rendered outside a request (a unit test of a component): the old default.
+    return "fr";
+  }
+}
+
 interface I18nContextValue {
   lang: Language;
   dir: "ltr" | "rtl";
@@ -111,9 +138,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 }
 
 function LanguageProvider({ children }: { children: ReactNode }) {
-  // SSR and first client render MUST match. Server always renders `fr`/`ltr`,
-  // so the initial client state is also `fr` — we upgrade after mount.
-  const [state, dispatch] = useReducer(languageReducer, INITIAL_LANGUAGE_STATE);
+  // SSR and first client render MUST match. Both start from the language the
+  // server drew the page in (the cookie, else the browser's preference: FE-H1);
+  // the stored choice is read after mount.
+  const [state, dispatch] = useReducer(languageReducer, undefined, () => {
+    const lang = startingLanguage();
+    return initialLanguageState(lang, isReady(lang));
+  });
   const { lang, hasChosen, loading, failed } = state;
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -128,6 +159,9 @@ function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = readStored();
+    // The server reads the choice from the cookie; a choice made before the
+    // cookie existed reaches it from the next page on.
+    if (stored) writeLanguageCookie(stored);
     setIsHydrated(true);
     const ready = stored === null || isReady(stored);
     dispatch({ type: "restored", stored, ready });
@@ -152,6 +186,7 @@ function LanguageProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
+      writeLanguageCookie(l);
       const ready = isReady(l);
       // A language that is already loaded cross-fades in; one still being
       // downloaded switches when it arrives, as before.

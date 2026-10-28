@@ -113,6 +113,13 @@ export function withSiteHeaders(
   ) {
     values["cache-control"] = "private, no-store";
   }
+  // A page is drawn in the reader's language, from the language cookie or the
+  // browser's preference (FE-H1), so a cache must keep French and Arabic
+  // copies apart.
+  if ((response.headers.get("content-type") ?? "").toLowerCase().includes("text/html")) {
+    const vary = response.headers.get("vary");
+    values.vary = vary ? `${vary}, Cookie, Accept-Language` : "Cookie, Accept-Language";
+  }
   if (PRODUCTION_HOSTS.has(host)) {
     values["content-security-policy"] = "frame-ancestors 'self'";
     values["x-frame-options"] = "SAMEORIGIN";

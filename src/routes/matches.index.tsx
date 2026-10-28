@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
@@ -76,6 +77,8 @@ export const Route = createFileRoute("/matches/")({
     // costs a navigation nothing.
     staleReloadMode: "blocking",
     handler: async ({ context, deps }) => {
+      // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+      const lang = requestLanguage();
       // Today by the competition's calendar, whatever the server's zone
       // (UTC), decided here once: the browser's first render reads this day
       // back from the loader data rather than its own clock, so it opens on
@@ -84,17 +87,17 @@ export const Route = createFileRoute("/matches/")({
       const { queryClient } = context;
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "seasons", "fr"],
-          queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+          queryKey: ["football", "seasons", lang],
+          queryFn: ({ signal }) => footballService.getSeasons(lang, signal),
         },
       ]);
-      const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+      const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", lang]);
       if (seasons) {
         const season = openingSeason(seasons, deps.season);
         // The same day the page works out: the one in the URL kept inside the
         // season, else the day the season opens on.
         const day = deps.date ? clampMatchDay(deps.date, season) : openingMatchDay(season, today);
-        await prefetchForSsr(queryClient, [matchDayQuery(day, "fr", season?.id)]);
+        await prefetchForSsr(queryClient, [matchDayQuery(day, lang, season?.id)]);
         // A day with nothing on it points at the fixtures still to come, and
         // those are read here too, so the HTML links to real match pages
         // instead of holding an empty state alone (SEO pass 1, 2026-10-27).
@@ -102,13 +105,13 @@ export const Route = createFileRoute("/matches/")({
         // extra: if it fails the page still answers 200 with its empty state.
         if (
           queryClient.getQueryData<FootballMatchCollection>(
-            matchDayQuery(day, "fr", season?.id).queryKey,
+            matchDayQuery(day, lang, season?.id).queryKey,
           )?.matches.length === 0
         ) {
           await prefetchOptionalForSsr(queryClient, [
             {
-              queryKey: ["football", "home-matches", "fr"],
-              queryFn: () => footballService.getHomeMatches("fr"),
+              queryKey: ["football", "home-matches", lang],
+              queryFn: () => footballService.getHomeMatches(lang),
             },
           ]);
         }

@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import {
   INITIAL_LANGUAGE_STATE,
+  initialLanguageState,
   languageNotice,
   languageReducer,
   type LanguageEvent,
@@ -30,6 +31,43 @@ describe("the language on the server and the first client render", () => {
       loading: null,
       failed: null,
     });
+  });
+});
+
+describe("a page the server drew in Arabic (FE-H1)", () => {
+  it("starts settled in Arabic when the words are here, so hydration matches", () => {
+    expect(initialLanguageState("ar")).toEqual({
+      lang: "ar",
+      hasChosen: true,
+      loading: null,
+      failed: null,
+    });
+  });
+
+  it("starts in French and reports it when the Arabic words did not arrive", () => {
+    expect(initialLanguageState("ar", false)).toEqual({ ...INITIAL_LANGUAGE_STATE, failed: "ar" });
+  });
+
+  it("is the old French start for a French page", () => {
+    expect(initialLanguageState("fr")).toBe(INITIAL_LANGUAGE_STATE);
+  });
+
+  it("keeps Arabic on a first visit, with the chooser opening over it", () => {
+    expect(
+      run([{ type: "restored", stored: null, ready: true }], initialLanguageState("ar")),
+    ).toEqual({ lang: "ar", hasChosen: false, loading: null, failed: null });
+  });
+
+  it("stays Arabic for a returning Arabic reader, with nothing to download", () => {
+    expect(
+      run([{ type: "restored", stored: "ar", ready: true }], initialLanguageState("ar")),
+    ).toEqual(initialLanguageState("ar"));
+  });
+
+  it("follows the stored choice when it differs from the cookie", () => {
+    expect(
+      run([{ type: "restored", stored: "fr", ready: true }], initialLanguageState("ar")).lang,
+    ).toBe("fr");
   });
 });
 
@@ -307,7 +345,8 @@ describe("the provider's wiring", () => {
     .replace(/\/\/[^\n]*/g, " ");
 
   it("drives this reducer", () => {
-    expect(provider).toContain("useReducer(languageReducer, INITIAL_LANGUAGE_STATE)");
+    expect(provider).toContain("useReducer(languageReducer, undefined, () => {");
+    expect(provider).toContain("return initialLanguageState(lang, isReady(lang));");
   });
 
   it("downloads Arabic through the retryable import, resolved against its own module", () => {

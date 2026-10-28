@@ -452,6 +452,43 @@ To check on a phone after Publish: close the app fully and open it again, then
 tap the sign-in email field and the search on `/fantasy/players`; the page must
 not zoom, and two quick taps must not zoom either.
 
+## Links to botolago.com open the app (deep links)
+
+A botolago.com link tapped on a phone that has the app (in a message, an
+email, a search result) opens the app on that page instead of the browser.
+Three parts, all in the repository:
+
+- **The site says which app may open its links.** Android reads
+  `public/.well-known/assetlinks.json`; Apple reads
+  `/.well-known/apple-app-site-association`, served as JSON by
+  `src/routes/[.]well-known.apple-app-site-association.ts` (the content is in
+  `src/lib/app-links.ts`). Both must be reachable at
+  `https://botolago.com/.well-known/...` with no redirect.
+- **The app says it answers for botolago.com.** `bun run mobile:prepare` adds
+  the verified link filter (`android:autoVerify="true"`) to the Android
+  manifest and `applinks:botolago.com` (Associated Domains) to the iPhone
+  entitlements.
+- **The site opens the page.** In the app, `NativeLinkBridge` listens for the
+  link the phone hands over (Capacitor's `appUrlOpen`, and the link that
+  started the app) and opens that page.
+
+What only the owner can provide, still `TODO_OWNER_…` in the files:
+
+1. **Android:** the SHA-256 fingerprint of the release signing key. Google
+   Play Console > the app > Test and release > App integrity > App signing:
+   "SHA-256 certificate fingerprint" of the **app signing key** (Google signs
+   the published app). Goes in `public/.well-known/assetlinks.json`.
+2. **Apple:** the Team ID (Apple Developer > Membership details, ten
+   characters). Goes in `src/lib/app-links.ts` in front of `.botolago.com`.
+3. **Apple, before the next iPhone build:** Apple Developer > Certificates,
+   Identifiers & Profiles > Identifiers > `botolago.com` > tick **Associated
+   Domains**, save. Without it the signing profile the cloud build fetches
+   does not cover the new entitlement and the iPhone build fails at signing.
+
+Then publish the site, and check on a phone: long-press a botolago.com link,
+or open one from a note; it opens the app. Android can show whether it has
+verified the site: `adb shell pm get-app-links botolago.com`.
+
 ## Still open before a store submission
 
 Not part of the push work, and not done here: Google's sign-in is refused inside a

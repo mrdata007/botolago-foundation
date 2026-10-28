@@ -6,6 +6,9 @@ import { viewTransitionOption } from "@/lib/page-transition";
 import { armTabSlide } from "@/lib/tab-slide";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { createAppQueryClient } from "@/services/query-client";
+import { preloadLanguage } from "@/i18n/provider";
+import { requestLanguage } from "@/i18n/request-language";
+import type { Language } from "@/types/domain";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -31,21 +34,30 @@ export const getRouter = () => {
     // travels with the HTML and seeds the browser's cache before its first
     // render, so the first render is the page the server sent. Only queries
     // marked for it: the detail pages already carry theirs as loader data.
+    //
+    // The language the server drew the page in travels too (FE-H1): when it is
+    // Arabic, the browser loads the Arabic words before it takes the page
+    // over, so its first render is the server's Arabic page, not French.
     dehydrate: () =>
       ({
         queryClientState: dehydrate(queryClient, SSR_DEHYDRATE_OPTIONS),
+        lang: requestLanguage(),
       }) as never,
-    // Waited for before React hydrates: the French copy of the section the
-    // address belongs to has to be here for the first render to be the page the
-    // server sent (`src/i18n/fr-sections.ts`). A page outside the sections
-    // waits for nothing.
-    hydrate: async (dehydrated: { queryClientState?: DehydratedState }) => {
+    // Waited for before React hydrates: the words the server drew the page
+    // with have to be here for the first render to be the page the server
+    // sent. The French copy of the section the address belongs to
+    // (`src/i18n/fr-sections.ts`; a page outside the sections waits for
+    // nothing), and the Arabic words when the page is Arabic (FE-H1).
+    hydrate: async (dehydrated: { queryClientState?: DehydratedState; lang?: Language }) => {
       if (dehydrated?.queryClientState) hydrate(queryClient, dehydrated.queryClientState);
-      // Once more when the first request fails: a section that never arrives
-      // would hydrate the page in key names.
-      await loadFrSectionsForPath(window.location.pathname).catch(() =>
-        loadFrSectionsForPath(window.location.pathname),
-      );
+      await Promise.all([
+        // Once more when the first request fails: a section that never arrives
+        // would hydrate the page in key names.
+        loadFrSectionsForPath(window.location.pathname).catch(() =>
+          loadFrSectionsForPath(window.location.pathname),
+        ),
+        dehydrated?.lang ? preloadLanguage(dehydrated.lang) : undefined,
+      ]);
     },
   });
 

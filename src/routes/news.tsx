@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { unavailableHeaders } from "@/lib/page-availability";
 import {
@@ -76,23 +77,25 @@ export const Route = createFileRoute("/news")({
   // to a crawler before. Only for /news itself: an article page, which this
   // route also wraps, loads its own.
   loader: async ({ context, location }) => {
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     if (location.pathname.replace(/\/$/, "") !== "/news") return;
     const { queryClient } = context;
     await Promise.all([
       prefetchForSsr(queryClient, [
         {
-          queryKey: ["news", "home-modules-v2", "fr"],
-          queryFn: () => getNewsRepository().getHomeModules("fr", 6, publicNewsContext()),
+          queryKey: ["news", "home-modules-v2", lang],
+          queryFn: () => getNewsRepository().getHomeModules(lang, 6, publicNewsContext()),
         },
         {
-          queryKey: ["news", "team-filters-v2", "fr"],
+          queryKey: ["news", "team-filters-v2", lang],
           queryFn: async () =>
-            (await getNewsRepository().getTeamFilters("fr", publicNewsContext())).map(
+            (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(
               presentNewsTeam,
             ),
         },
       ]),
-      prefetchFirstPageForSsr(queryClient, newsFeedQuery("fr", null, null)),
+      prefetchFirstPageForSsr(queryClient, newsFeedQuery(lang, null, null)),
     ]);
     return { ...ssrAvailability(queryClient), isNewsIndex: true };
   },

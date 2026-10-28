@@ -109,7 +109,7 @@ describe("match page — design-system rules in source", () => {
 
   it("seeds the detail query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/matches.$matchId.tsx");
-    expect(route).toMatch(/return \{ detail, fetchedAt \};/);
+    expect(route).toMatch(/return \{ detail, fetchedAt, lang \};/);
     expect(route).toMatch(/initialData: serverDetail/);
     // With its age, so a copy the router kept from an earlier visit is
     // refetched rather than trusted as fresh.

@@ -1,0 +1,178 @@
+[
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu FR BotolaGO — Actualité, matchs et Fantasy du football marocain",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/matches",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu FR Matchs 2026/2027 Calendrier Classement Pronostics Tous En di",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/news",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu FR Actualités Tous Dernières actualités À la une DERNIÈRES ACTU",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/fantasy",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu FR Fantasy JOURNÉE 5 · DATE LIMITE sam. 24 oct., 14:30 EN DI",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/fantasy/create",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu Retour FANTASY Sélection de l’effectif EFFECTIF 0/15 joueurs ",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/profile",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu FR Profil Connectez-vous à Créez un compte pour sauvegarder v",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/auth/login",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu Retour FR Le football marocain, réuni. Heureux de vous revoir",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "fr",
+    "scheme": "light",
+    "path": "/auth/register",
+    "status": 200,
+    "htmlLang": "fr",
+    "dir": "ltr",
+    "text": "Aller au contenu Retour FR Le football marocain, réuni. Créer votre compte Nom",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى ع BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية FAR V ",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/matches",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى ع المباريات 2026/2027 الرزنامة الترتيب التوقعات الكل مباشر قاد",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/news",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى ع الأخبار الكل آخر الأخبار الأبرز آخر الأخبار مواجهة مرتقبة بي",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/fantasy",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى ع فانتازي الجولة 5 · الموعد النهائي السبت، 24 أكتوبر، 14:30 ",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/fantasy/create",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى رجوع فانتازي اختيار التشكيلة التشكيلة 0/15 لاعبًا الميزانية ",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/profile",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى ع الملف الشخصي سجّل الدخول إلى أنشئ حسابًا لحفظ فريق الفانتا",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/auth/login",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى رجوع ع كرة القدم المغربية، في مكان واحد. مرحبًا بعودتك سجّل",
+    "overflow": false,
+    "problems": []
+  },
+  {
+    "lang": "ar",
+    "scheme": "dark",
+    "path": "/auth/register",
+    "status": 200,
+    "htmlLang": "ar",
+    "dir": "rtl",
+    "text": "انتقل إلى المحتوى رجوع ع كرة القدم المغربية، في مكان واحد. إنشاء حسابك الاسم ا",
+    "overflow": false,
+    "problems": []
+  }
+]

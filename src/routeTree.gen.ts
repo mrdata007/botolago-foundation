@@ -28,9 +28,11 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SuppressionCompteRouteImport } from './routes/suppression-compte'
+import { Route as SwDotjsRouteImport } from './routes/sw[.]js'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as DotwellKnownAppleAppSiteAssociationRouteImport } from './routes/[.]well-known.apple-app-site-association'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
@@ -212,6 +214,11 @@ const SuppressionCompteRoute = SuppressionCompteRouteImport.update({
   path: '/suppression-compte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SwDotjsRoute = SwDotjsRouteImport.update({
+  id: '/sw.js',
+  path: '/sw.js',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -226,6 +233,12 @@ const Char91DotmcpChar93ListToolsRoute =
   Char91DotmcpChar93ListToolsRouteImport.update({
     id: '/.mcp/list-tools',
     path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownAppleAppSiteAssociationRoute =
+  DotwellKnownAppleAppSiteAssociationRouteImport.update({
+    id: '/.well-known/apple-app-site-association',
+    path: '/.well-known/apple-app-site-association',
     getParentRoute: () => rootRouteImport,
   } as any)
 const Char91DotwellKnownChar93OauthProtectedResourceRoute =
@@ -683,9 +696,11 @@ export interface FileRoutesByFullPath {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/apple-app-site-association': typeof DotwellKnownAppleAppSiteAssociationRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -787,9 +802,11 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/apple-app-site-association': typeof DotwellKnownAppleAppSiteAssociationRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -896,9 +913,11 @@ export interface FileRoutesById {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/apple-app-site-association': typeof DotwellKnownAppleAppSiteAssociationRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -1007,9 +1026,11 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
+    | '/.well-known/apple-app-site-association'
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
@@ -1111,9 +1132,11 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
+    | '/.well-known/apple-app-site-association'
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
@@ -1219,9 +1242,11 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
+    | '/.well-known/apple-app-site-association'
     | '/.well-known/oauth-protected-resource'
     | '/admin/approvals'
     | '/admin/audit'
@@ -1329,9 +1354,11 @@ export interface RootRouteChildren {
   PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SuppressionCompteRoute: typeof SuppressionCompteRoute
+  SwDotjsRoute: typeof SwDotjsRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  DotwellKnownAppleAppSiteAssociationRoute: typeof DotwellKnownAppleAppSiteAssociationRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevAdminShellSampleRoute: typeof DevAdminShellSampleRoute
@@ -1489,6 +1516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuppressionCompteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sw.js': {
+      id: '/sw.js'
+      path: '/sw.js'
+      fullPath: '/sw.js'
+      preLoaderRoute: typeof SwDotjsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -1508,6 +1542,13 @@ declare module '@tanstack/react-router' {
       path: '/.mcp/list-tools'
       fullPath: '/.mcp/list-tools'
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/apple-app-site-association': {
+      id: '/.well-known/apple-app-site-association'
+      path: '/.well-known/apple-app-site-association'
+      fullPath: '/.well-known/apple-app-site-association'
+      preLoaderRoute: typeof DotwellKnownAppleAppSiteAssociationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/oauth-protected-resource': {
@@ -2387,9 +2428,12 @@ const rootRouteChildren: RootRouteChildren = {
   PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SuppressionCompteRoute: SuppressionCompteRoute,
+  SwDotjsRoute: SwDotjsRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  DotwellKnownAppleAppSiteAssociationRoute:
+    DotwellKnownAppleAppSiteAssociationRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,

@@ -27,14 +27,14 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
     expect(page).toContain("return { season, date };");
     expect(page).toMatch(/loader: \{[\s\S]*?handler: async \(\{ context, deps \}\) =>/);
     expect(page).toMatch(
-      /prefetchForSsr\(queryClient, \[\s*\{\s*queryKey: \["football", "seasons", "fr"\]/,
+      /prefetchForSsr\(queryClient, \[\s*\{\s*queryKey: \["football", "seasons", lang\]/,
     );
     expect(page).toContain("const season = openingSeason(seasons, deps.season);");
     expect(page).toMatch(
       /deps\.date\s*\? clampMatchDay\(deps\.date, season\)\s*: openingMatchDay\(season, today\)/,
     );
     expect(page).toMatch(
-      /prefetchForSsr\(queryClient, \[matchDayQuery\(day, "fr", season\?\.id\)\]\)/,
+      /prefetchForSsr\(queryClient, \[matchDayQuery\(day, lang, season\?\.id\)\]\)/,
     );
   });
 

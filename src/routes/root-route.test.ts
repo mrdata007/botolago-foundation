@@ -22,6 +22,8 @@ describe("the root route and the Manager Card status", () => {
         "component",
         "errorComponent",
         "head",
+        // Waits for the Arabic words on a page the server draws in Arabic (FE-H1).
+        "loader",
         "notFoundComponent",
         // Shows nothing while the root is pending: the router's loading screen
         // is for the pages inside it (docs/engineering/SECTION_LOADING.md).

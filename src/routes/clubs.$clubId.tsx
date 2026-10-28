@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import {
   createFileRoute,
@@ -165,12 +166,14 @@ export const Route = createFileRoute("/clubs/$clubId")({
    */
   loaderDeps: ({ search }) => ({ season: search.season }),
   loader: async ({ params, context, location, deps }) => {
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     const ref = params.clubId;
     let catalogue: readonly Club[] | undefined;
     try {
       catalogue = await context.queryClient.ensureQueryData({
-        queryKey: ["football", "clubs", "fr"],
-        queryFn: () => footballService.getClubs("fr"),
+        queryKey: ["football", "clubs", lang],
+        queryFn: () => footballService.getClubs(lang),
       });
     } catch {
       // Without the catalogue only an id can be served, at its own address.
@@ -191,14 +194,14 @@ export const Route = createFileRoute("/clubs/$clubId")({
     // The overview's links, read alongside the club (see `warmClubLinks`).
     const links = warmClubLinks(context.queryClient, id, deps.season);
     try {
-      const queryKey = ["football", "club", id, "fr"];
+      const queryKey = ["football", "club", id, lang];
       const club = await context.queryClient.ensureQueryData({
         queryKey,
-        queryFn: () => footballService.getClub(id, "fr"),
+        queryFn: () => footballService.getClub(id, lang),
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
       await links;
-      return { club, fetchedAt, canonicalRef: slug ?? id };
+      return { club, fetchedAt, canonicalRef: slug ?? id, lang };
     } catch (error) {
       if (isRedirect(error)) throw error;
       if (isMissingContent(error)) throw notFound();
@@ -303,7 +306,8 @@ function ClubPage() {
   const clubId = loaderData?.club.id ?? ref;
   const validId = UUID.test(clubId);
 
-  const serverClub = lang === "fr" && loaderData?.club.id === clubId ? loaderData.club : undefined;
+  const serverClub =
+    loaderData?.lang === lang && loaderData.club.id === clubId ? loaderData.club : undefined;
   const clubQ = useQuery({
     queryKey: ["football", "club", clubId, lang],
     queryFn: () => footballService.getClub(clubId, lang),

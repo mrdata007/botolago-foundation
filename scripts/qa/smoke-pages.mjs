@@ -33,6 +33,9 @@ for (const variant of VARIANTS) {
     hasTouch: true,
     colorScheme: variant.scheme,
   });
+  await context.addCookies([
+    { name: "botolago_lang", value: variant.lang, url: new URL(base).origin },
+  ]);
   await context.addInitScript((lang) => {
     try {
       localStorage.setItem("botolago.language", lang);
