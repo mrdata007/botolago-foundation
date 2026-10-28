@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { PrizesPage } from "@/components/prizes/PrizesPage";
 import { UiHeader } from "@/components/ui-kit";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPrizes } from "@/i18n/fr-sections/prizes";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
@@ -22,6 +24,8 @@ function redirectWhilePrizesAreHidden(): void {
 
 export const Route = createFileRoute("/prizes/")({
   beforeLoad: redirectWhilePrizesAreHidden,
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     meta: [
       { title: fr["prizes.meta_title"] },
@@ -40,6 +44,8 @@ export const Route = createFileRoute("/prizes/")({
 });
 
 function PrizesRoute() {
+  // Imported here so the page's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("prizes", frPrizes);
   const { t } = useI18n();
   const title = t("prizes.meta_title");
   // `head()` has no reader language (it runs at match time, server side too),

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { CurvaPlusPage } from "@/components/plus/PlusPage";
 import { clampContext, clampStep, type PlusContext } from "@/components/plus/plus-steps";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { shouldRedirectFromPlus } from "@/lib/premium-gate";
 

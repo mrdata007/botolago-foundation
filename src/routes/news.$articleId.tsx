@@ -32,7 +32,7 @@ import { HeroParallax, ReadingProgress } from "@/components/common/ReadingProgre
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
-import { fr } from "@/i18n/dictionary-fr";
+import { frText } from "@/i18n/fr-sections";
 import { ARABIC_CATEGORY_LABELS } from "@/components/news/category-labels";
 import { FULL_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
 import { articleModifiedAt, buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
@@ -399,7 +399,7 @@ function ArticlePage() {
                 {categoryLabel(
                   article.primaryCategory,
                   (key) =>
-                    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : fr[key]) ?? key,
+                    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : frText(key)) ?? key,
                 )}
               </span>
             </UiPill>

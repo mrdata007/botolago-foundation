@@ -2,7 +2,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { PlusPage } from "@/components/plus/PlusPage";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPlus } from "@/i18n/fr-sections/plus";
 import { useI18n } from "@/i18n/provider";
 import { shouldRedirectFromPlus } from "@/lib/premium-gate";
 
@@ -15,6 +17,8 @@ export const Route = createFileRoute("/plus")({
   beforeLoad: () => {
     if (shouldRedirectFromPlus()) throw redirect({ to: "/", replace: true });
   },
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     meta: [
       { title: fr["plus.meta.offer"] },
@@ -26,6 +30,8 @@ export const Route = createFileRoute("/plus")({
 });
 
 function PlusRoute() {
+  // Imported here so the page's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("plus", frPlus);
   const { t } = useI18n();
   const title = t("plus.meta.offer");
   useEffect(() => {
