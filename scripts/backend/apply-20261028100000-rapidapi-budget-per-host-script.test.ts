@@ -9,7 +9,7 @@ import { join } from "node:path";
  * scripts, it records the migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so the file must be
  * carried byte for byte, once, and the hash it checks must be the file's. It must
- * stay a rehearsal unless edited on purpose, and the md5 pins of the seven
+ * stay a rehearsal unless edited on purpose, and the md5 pins of the eight
  * functions it replaces must be those the earlier migrations define.
  */
 
@@ -108,6 +108,11 @@ describe(`apply-${VERSION}-rapidapi-budget-per-host.sql`, () => {
         "20261027100000_rapidapi_provider_quota_floor.sql",
         "api.service_record_rapidapi_quota",
       ],
+      [
+        "api.service_football_details_schedule()",
+        "20261026143000_rapidapi_budget_guard_and_poll_schedule.sql",
+        "api.service_football_details_schedule",
+      ],
     ];
     const pinned = script.slice(
       0,
@@ -133,7 +138,7 @@ describe(`apply-${VERSION}-rapidapi-budget-per-host.sql`, () => {
     expect(script).toContain("the Sofascore budget answer changed");
     expect(script).toContain("the live interval changed");
     expect(script).toContain(
-      '{"host":"sportapi7.p.rapidapi.com","quota_limit":15000,"soft_limit":13500,"hard_limit":14700,"reset_day_of_month":27,"used_offset":0}',
+      '{"host":"sportapi7.p.rapidapi.com","quota_limit":15000,"soft_limit":13500,"hard_limit":14700,"reset_day_of_month":27,"used_offset":0,"incidents_interval_minutes":15}',
     );
     expect(script).toContain("the new service functions are not service-role only");
   });

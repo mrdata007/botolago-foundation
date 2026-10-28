@@ -1056,8 +1056,9 @@ provider host, so the SportAPI plan (`sportapi7.p.rapidapi.com`, 15,000 calls fr
 it. It adds a `host` column to `app_private.rapidapi_call_counts` and
 `app_private.rapidapi_provider_quota`, `app_private.rapidapi_host_budgets` (SportAPI
 seeded), `api.service_rapidapi_host_budget`, `api.service_record_rapidapi_host_calls`
-and `api.service_record_rapidapi_host_quota`, and re-creates seven functions with the
-Sofascore answers unchanged. It is applied with the guarded
+and `api.service_record_rapidapi_host_quota`, and re-creates eight functions with the
+Sofascore answers unchanged (one gains a key, `incidentsIntervalMinutes`; the schedule
+gains `statsPartial`). It is applied with the guarded
 `scripts/backend/apply-20261028100000-rapidapi-budget-per-host.sql` (rehearsal, then
 commit), before `RAPIDAPI_HOST` is set to the SportAPI host and before
 `football-live-refresh` is deployed. Details are in

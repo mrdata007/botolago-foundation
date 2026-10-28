@@ -187,6 +187,7 @@ export async function handleFootballLiveRefreshRequest(
     // An injected client (tests) is not counted. Counting never throws or waits long.
     let counter: RapidApiCallCounter | null = null;
     let liveIntervalSeconds: number | undefined;
+    let incidentsIntervalMinutes: number | undefined;
     if (!rapid) {
       // The host the data comes from (RAPIDAPI_HOST; the Sofascore host unless it
       // names SportAPI's). Each host has its own budget and its own counts.
@@ -239,6 +240,10 @@ export async function handleFootballLiveRefreshRequest(
         });
       }
       liveIntervalSeconds = budget?.liveIntervalSeconds;
+      // The periodic incidents reads (cards between goals) stop above the soft
+      // limit, and when the budget could not be read: only score and period reads remain.
+      incidentsIntervalMinutes =
+        budget && budget.used < budget.softLimit ? budget.incidentsIntervalMinutes : undefined;
       try {
         counter = createRapidApiCallCounter({ client: dependencies.client, job, host });
         // The same RapidAPI client as ever; it can also return image bytes
@@ -317,6 +322,7 @@ export async function handleFootballLiveRefreshRequest(
         environment: dependencies.environment,
         now,
         ...(liveIntervalSeconds ? { liveIntervalSeconds } : {}),
+        ...(incidentsIntervalMinutes ? { incidentsIntervalMinutes } : {}),
       });
       return json(outcome.status, outcome.body);
     } finally {

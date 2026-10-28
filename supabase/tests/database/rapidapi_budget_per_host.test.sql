@@ -31,11 +31,11 @@ select extensions.ok(
   '1.4 only the service role reads a host budget and records its calls and quota');
 select extensions.is(
   (select to_jsonb(h) - 'updated_at' from app_private.rapidapi_host_budgets h),
-  '{"host":"sportapi7.p.rapidapi.com","quota_limit":15000,"soft_limit":13500,"hard_limit":14700,"reset_day_of_month":27,"used_offset":0}'::jsonb,
+  '{"host":"sportapi7.p.rapidapi.com","quota_limit":15000,"soft_limit":13500,"hard_limit":14700,"reset_day_of_month":27,"used_offset":0,"incidents_interval_minutes":15}'::jsonb,
   '1.5 SportAPI is seeded: 15,000 calls, soft 13,500, hard 14,700, window starting on the 27th');
 select extensions.is(
   (select to_jsonb(s) - 'updated_at' - 'id' from app_private.rapidapi_budget_settings s),
-  '{"soft_limit":8500,"hard_limit":9700,"reset_day_of_month":10,"used_offset":0,"live_interval_seconds":120,"season_quiet_hours":3,"season_match_hours":1}'::jsonb,
+  '{"soft_limit":8500,"hard_limit":9700,"reset_day_of_month":10,"used_offset":0,"live_interval_seconds":120,"season_quiet_hours":3,"season_match_hours":1,"incidents_interval_minutes":15}'::jsonb,
   '1.6 the Sofascore settings row is as it was');
 select extensions.throws_ok(
   $$insert into app_private.rapidapi_host_budgets (host, quota_limit, soft_limit, hard_limit, reset_day_of_month)
@@ -90,7 +90,7 @@ select extensions.is(
   api.service_rapidapi_host_budget('sportapi7.p.rapidapi.com'),
   jsonb_build_object('used', 5, 'softLimit', 13500, 'hardLimit', 14700,
     'liveIntervalSeconds', 120, 'windowStart', app_private.rapidapi_window_start_for('sportapi7.p.rapidapi.com'),
-    'host', 'sportapi7.p.rapidapi.com'),
+    'host', 'sportapi7.p.rapidapi.com', 'incidentsIntervalMinutes', 15),
   '3.11 the Edge client reads the SportAPI count, its limits and its window start');
 select extensions.is((api.service_rapidapi_budget() ->> 'used')::int, 9036,
   '3.12 the Sofascore read is unchanged');
@@ -112,7 +112,8 @@ select extensions.is(app_private.rapidapi_calls_for_host('sportapi7.p.rapidapi.c
 -- 4 an unknown host
 select extensions.is(api.service_rapidapi_host_budget('other.example'),
   jsonb_build_object('used', 0, 'softLimit', 0, 'hardLimit', 0, 'liveIntervalSeconds', 180,
-    'windowStart', app_private.rapidapi_window_start_for('other.example'), 'host', 'other.example'),
+    'windowStart', app_private.rapidapi_window_start_for('other.example'), 'host', 'other.example',
+    'incidentsIntervalMinutes', 15),
   '4.1 an unknown host has zero limits: nothing is sent');
 select extensions.throws_ok($$select api.service_record_rapidapi_host_calls('other.example', 'fixtures', '[]'::jsonb)$$,
   '22023', 'unknown_rapidapi_host', '4.2 calls cannot be recorded for it');
@@ -195,6 +196,21 @@ select extensions.is(
 select extensions.is(
   (select used_offset from app_private.rapidapi_host_budgets where host = 'sportapi7.p.rapidapi.com'),
   25, '7.6 and is stored');
+
+-- 8 the periodic incidents interval, per host
+select extensions.is(app_private.rapidapi_incidents_interval_configure('sportapi7.p.rapidapi.com', 10), 10,
+  '8.1 the interval of a host can be set');
+select extensions.is(api.service_rapidapi_host_budget('sportapi7.p.rapidapi.com') ->> 'incidentsIntervalMinutes', '10',
+  '8.2 and the Edge client reads it');
+select extensions.is(api.service_rapidapi_budget() ->> 'incidentsIntervalMinutes', '15',
+  '8.3 the Sofascore read has its own, 15 by default');
+select extensions.is(app_private.rapidapi_incidents_interval_configure('sofascore.p.rapidapi.com', 20), 20,
+  '8.4 the Sofascore interval is set on its settings row');
+select extensions.is(api.service_rapidapi_budget() ->> 'incidentsIntervalMinutes', '20', '8.5 and read');
+select extensions.throws_ok($$select app_private.rapidapi_incidents_interval_configure('sportapi7.p.rapidapi.com', 0)$$,
+  '23514', null, '8.6 zero minutes is refused');
+select extensions.throws_ok($$select app_private.rapidapi_incidents_interval_configure('other.example', 10)$$,
+  '22023', 'unknown_rapidapi_host', '8.7 an unknown host is refused');
 
 select * from extensions.finish();
 rollback;

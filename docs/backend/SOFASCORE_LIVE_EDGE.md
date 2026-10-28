@@ -436,16 +436,25 @@ which never get an observation and so stayed "never attempted" for ever (the
 **Now:**
 
 - Live play: one `get-live-events` per poll, shared by all matches. Incidents (1
-  request) only on a tick that wrote a score change, or the arrival of half time,
-  extra time or penalties; the provider's `changeTimestamp` moving is not a reason
-  (it moves for every minor edit), and cards and substitutions between two goals wait
-  for the whistle. Lineups (1 request) once, on the tick that sees the match start
+  request) on a tick that wrote a score change, or the arrival of half time, extra
+  time or penalties, and, so that a card or substitution between goals shows, once
+  every `incidents_interval_minutes` (default 15, per host, read as
+  `incidentsIntervalMinutes`) since the match's details were last stored (or since
+  kickoff), at most one read per match per tick, never at half time, and only below
+  the soft limit. The provider's `changeTimestamp` moving is not a reason (it moves
+  for every minor edit). Worst delay of a card: about the interval (15 minutes, up to
+  18 with the poll). Lineups (1 request) once, on the tick that sees the match start
   (again on a written tick only while none is stored). Statistics never in play.
 - Full time: the trio once at the whistle. A finished match whose details were not
   stored since the whistle (that fetch failed or was refused) is retried when the
   database lists a mark (+30 / +90 min, `api.service_football_details_schedule()`)
-  and nothing was stored since; a match that is stored is not read again (the staged
-  statistics pulls refresh the late statistics). The season job's full pass is
+  and nothing was stored since; a match that is stored is not read again. One
+  exception, the late team statistics: 90 minutes to 3 hours after the whistle, a
+  finished match whose stored team statistics are missing or partial (fewer than 14
+  of the 18 figures a full reply stores: 9 per club) and with nothing stored since the
+  90 minute mark gets one `get-statistics` read (`statsPartial` of
+  `api.service_football_details_schedule()`); storing it takes it off the list. The
+  staged statistics pulls still refresh the rest. The season job's full pass is
   Mondays, not daily.
 - Within one run the client never sends the same path twice (it returns the answer it
   already has), and a request that is not on the essential list (live feed, incidents)
@@ -466,16 +475,18 @@ which never get an observation and so stayed "never attempted" for ever (the
 **Per-day model** (estimates, 2026-10-28). Per slot (matches kicking off together),
 at a live poll interval T: 2 ticks before kickoff, 1 for the announcement, 110 x
 60 / T in play, 1 fallback, 4 post-match ticks. T = 60: 118; T = 120: 63; T = 180:
-45; T = 240: 36. Per match, now: incidents about 4 (about 3 goals and half time), 1
-lineups at the start (about 1.2 with a retry), the trio once at the whistle (3),
-rating polls about 3: about 11 (it was about 29: incidents about 16 from score or
-status writes and "moved" reads, lineups, the trio, two follow-ups of 3, polls). A
+45; T = 240: 36. Per match, now: incidents about 9 (about 3 goals and half time, and about 5 periodic
+reads every 15 minutes), 1 lineups at the start (about 1.2 with a retry), the trio
+once at the whistle (3), 1 late statistics read when they are partial, rating polls
+about 3: about 17 (it was about 29: incidents about 16 from score or status writes
+and "moved" reads, lineups, the trio, two follow-ups of 3, polls). A
 day is the slots, the matches, the season job (hourly near a match: 2 requests an
 hour, 48 a day; 16 with `season_match_hours` = 3) and standings (about 4).
-At T = 180: a day of 4 matches in 2 slots is 90 + 4 x 11 + 48 + 4 = about 185 (it
-was 90 + 4 x 29 + 48 + 4 = about 260). A full round of 8 matches in 3 slots on one
-day is 135 + 8 x 11 + 48 + 4 = about 275 (it was about 425); with
-`season_match_hours` = 3 about 245, and with T = 240 as well about 215. Quiet days are
+At T = 180: a day of 4 matches in 2 slots is 90 + 4 x 17 + 48 + 4 = about 210 (it
+was 90 + 4 x 29 + 48 + 4 = about 260); with `season_match_hours` = 3 about 180. A full
+round of 8 matches in 3 slots on one day is 135 + 8 x 17 + 48 + 4 = about 325 (it was
+about 425); with `season_match_hours` = 3 about 295, and with T = 240 as well about 260. A longer `incidents_interval_minutes` (20 or 30) trades card freshness for about
+1 to 2 calls a match each step. Quiet days are
 the season job (16 to 24) plus the Monday full pass. Staged statistics pulls
 (about 15 requests a match over three weeks) are spread over the following days. For a
 window of 30 days with 4 rounds this is roughly 3,000 requests. The model is arithmetic on assumptions, not a measurement: read the counter after
@@ -527,9 +538,9 @@ list applies, under the Sofascore-host endpoint names on either host.
 
 Each host has its own budget, count and provider-quota floor:
 
-| Host                       | Quota  | Soft   | Hard   | Window starts | Settings                                                      |
-| -------------------------- | ------ | ------ | ------ | ------------- | ------------------------------------------------------------- |
-| `sofascore.p.rapidapi.com` | 10,000 | 8,500  | 9,700  | the 10th      | `app_private.rapidapi_budget_settings` (as before)            |
+| Host                       | Quota  | Soft   | Hard   | Window starts | Settings                                                              |
+| -------------------------- | ------ | ------ | ------ | ------------- | --------------------------------------------------------------------- |
+| `sofascore.p.rapidapi.com` | 10,000 | 8,500  | 9,700  | the 10th      | `app_private.rapidapi_budget_settings` (as before)                    |
 | `sportapi7.p.rapidapi.com` | 15,000 | 13,500 | 14,700 | the 27th      | `app_private.rapidapi_host_budgets`, `rapidapi_host_budget_configure` |
 
 ```sql

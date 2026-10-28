@@ -90,10 +90,31 @@ export type SofascoreRefreshJob = "fixtures" | "season_fixtures";
 export interface SofascoreDetailsSchedule {
   /** SofaScore event ids with a +30 min or +90 min mark passed and no details stored since it. */
   readonly followUps: ReadonlySet<string>;
+  /**
+   * SofaScore event ids of finished fixtures, 90 minutes to 3 hours after the
+   * whistle, whose stored team statistics are missing or partial (fewer than 14
+   * of the 18 figures a full reply gives: 9 figures per club) and for which
+   * nothing was stored since the 90 minute mark. One statistics read each.
+   */
+  readonly statsPartial: ReadonlySet<string>;
   /** When the fixture's details were last stored (ms), by SofaScore event id. */
   readonly lastStored: ReadonlyMap<string, number>;
 }
-const NO_SCHEDULE: SofascoreDetailsSchedule = { followUps: new Set(), lastStored: new Map() };
+const NO_SCHEDULE: SofascoreDetailsSchedule = {
+  followUps: new Set(),
+  statsPartial: new Set(),
+  lastStored: new Map(),
+};
+
+/** What `selectLiveDetailTargets` may add to the score-driven reads. */
+export interface DetailSelectionOptions {
+  /**
+   * A match in play whose details were last stored this long ago (or that has
+   * not been read since kickoff) gets one incidents read, so cards and
+   * substitutions between goals show within about this time. Absent = off.
+   */
+  readonly periodicIncidentsMs?: number;
+}
 
 export const DEFAULT_SOFASCORE_SEASON_ID = "102220";
 /** Pages per direction the daily full-season pull may read (30 or so events each). */
@@ -125,6 +146,15 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
   "penalties",
 ]);
 /** Statuses whose arrival is worth one incidents read (the score is read on its own). */
+/** In play and moving: the periodic incidents read applies (not half time). */
+const PERIODIC_STATUSES: ReadonlySet<string> = new Set([
+  "live_first_half",
+  "live_second_half",
+  "extra_time",
+  "penalties",
+]);
+/** The late statistics read: 90 minutes after the whistle. */
+const STATS_FOLLOW_UP_AFTER_MS = 90 * 60 * 1000;
 const INCIDENT_STATUSES: ReadonlySet<string> = new Set(["half_time", "extra_time", "penalties"]);
 
 export interface SofascoreRefreshDependencies {
@@ -140,6 +170,12 @@ export interface SofascoreRefreshDependencies {
    * "since the last poll" is judged against it. Absent: 60.
    */
   readonly liveIntervalSeconds?: number;
+  /**
+   * Minutes between the periodic incidents reads of a match in play
+   * (api.service_rapidapi_budget, default 15). Absent or 0: no periodic read,
+   * which is also what the caller passes above the soft limit.
+   */
+  readonly incidentsIntervalMinutes?: number;
   readonly log?: (line: string) => void;
 }
 
@@ -322,6 +358,7 @@ export function selectLiveDetailTargets(
   now: Date,
   limit: number,
   schedule: SofascoreDetailsSchedule = NO_SCHEDULE,
+  options: DetailSelectionOptions = {},
 ): SofascoreDetailsTarget[] {
   const written = new Set(toWrite.map((call) => call.p_external_id));
   const stateById = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
@@ -335,6 +372,21 @@ export function selectLiveDetailTargets(
     let rank: number | null = null;
     if (event.status === "finished" && isWritten) rank = 0;
     else if (DETAILS_LIVE_STATUSES.has(event.status) && isWritten) rank = 1;
+    // A quiet tick of a match in play (not at half time: nothing happens): the
+    // periodic incidents read, once the last read of the match is old enough.
+    let periodic = false;
+    if (
+      rank === null &&
+      options.periodicIncidentsMs !== undefined &&
+      PERIODIC_STATUSES.has(event.status)
+    ) {
+      const lastRead =
+        schedule.lastStored.get(event.sofascoreEventId) ?? Date.parse(event.startsAt);
+      if (Number.isFinite(lastRead) && now.getTime() - lastRead >= options.periodicIncidentsMs) {
+        rank = 1;
+        periodic = true;
+      }
+    }
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
@@ -353,8 +405,9 @@ export function selectLiveDetailTargets(
     let lineups = false;
     if (rank === 1) {
       const starting = !DETAILS_LIVE_STATUSES.has(state.status);
-      lineups = starting || state.hasLineups === false;
+      lineups = isWritten && (starting || state.hasLineups === false);
       incidents =
+        periodic ||
         state.homeScore !== event.homeScore ||
         state.awayScore !== event.awayScore ||
         (event.status !== state.status && INCIDENT_STATUSES.has(event.status));
@@ -411,6 +464,33 @@ export function selectLiveDetailTargets(
         rank: 2,
         changed: finalized,
       });
+  }
+  // One late statistics read per finished match whose stored statistics are
+  // missing or partial: SofaScore publishes some figures only after the post-match
+  // refresh. The database lists it once the 90 minute mark has passed and nothing
+  // was stored since; storing the read takes it off the list.
+  const taken = new Set(ranked.map((item) => item.target.eventId));
+  for (const fixture of snapshot.fixtures) {
+    if (
+      fixture.status !== "finished" ||
+      !fixture.finalizedAt ||
+      taken.has(fixture.externalId) ||
+      !schedule.statsPartial.has(fixture.externalId)
+    ) {
+      continue;
+    }
+    const finalized = Date.parse(fixture.finalizedAt);
+    if (!Number.isFinite(finalized) || now.getTime() - finalized < STATS_FOLLOW_UP_AFTER_MS) {
+      continue;
+    }
+    const teams = detailsTeams(fixture, teamIds, undefined);
+    if (teams) {
+      ranked.push({
+        target: { eventId: fixture.externalId, teams, statisticsOnly: true },
+        rank: 3,
+        changed: finalized,
+      });
+    }
   }
   ranked.sort((a, b) => a.rank - b.rank || b.changed - a.changed);
   return ranked.slice(0, limit).map((item) => item.target);
@@ -500,7 +580,12 @@ async function loadDetailsSchedule(client: FixtureRpcClient): Promise<SofascoreD
         if (Number.isFinite(at)) lastStored.set(eventId, at);
       }
     }
-    return { followUps, lastStored };
+    const statsPartial = new Set<string>(
+      (Array.isArray(result.data.statsPartial) ? result.data.statsPartial : []).filter(
+        (id): id is string => typeof id === "string" && /^[1-9][0-9]{0,11}$/.test(id),
+      ),
+    );
+    return { followUps, statsPartial, lastStored };
   } catch {
     return NO_SCHEDULE;
   }
@@ -832,6 +917,9 @@ export async function runSofascoreRefresh(
       now,
       cap,
       schedule,
+      dependencies.incidentsIntervalMinutes
+        ? { periodicIncidentsMs: dependencies.incidentsIntervalMinutes * 60_000 }
+        : {},
     );
     return runSofascoreMatchDetails(targets, {
       mode,

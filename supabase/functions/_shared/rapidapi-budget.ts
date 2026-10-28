@@ -33,6 +33,8 @@ export interface RapidApiBudgetReading extends RapidApiBudget {
   readonly windowStart: string | null;
   /** Seconds between live polls as the database has them (60 unless stretched). */
   readonly liveIntervalSeconds: number;
+  /** Minutes between the periodic incidents reads of a match in play (1-120; 15 when the database does not say). */
+  readonly incidentsIntervalMinutes: number;
 }
 
 function whole(value: unknown): number | null {
@@ -71,6 +73,10 @@ export async function loadRapidApiBudget(
       softLimit,
       hardLimit,
       windowStart: typeof record.windowStart === "string" ? record.windowStart : null,
+      incidentsIntervalMinutes: (() => {
+        const minutes = whole(record.incidentsIntervalMinutes);
+        return minutes !== null && minutes >= 1 && minutes <= 120 ? minutes : 15;
+      })(),
       liveIntervalSeconds: (() => {
         const seconds = whole(record.liveIntervalSeconds);
         return seconds !== null && seconds >= 60 && seconds <= 300 ? seconds : 60;

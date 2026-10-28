@@ -37,6 +37,18 @@
 --      service_record_rapidapi_quota, which now answer for that host only.
 --      An unknown host reads as a budget of zero: nothing is sent.
 --
+--   6. incidents_interval_minutes (default 15, 1-120) on both settings tables:
+--      how often a match in play gets one incidents read in addition to the
+--      score-change and period reads, so a card or substitution between goals shows
+--      within about that time (the Edge Function stops those reads above the soft
+--      limit). Read through the two budget functions as `incidentsIntervalMinutes`;
+--      changed with app_private.rapidapi_incidents_interval_configure.
+--   7. api.service_football_details_schedule() also lists `statsPartial`: finished
+--      fixtures 90 minutes to 3 hours after the whistle whose stored team statistics
+--      are missing or partial (fewer than 14 figures; a full reply stores 18) and
+--      for which nothing was stored since the 90 minute mark. The Edge Function
+--      reads their statistics once.
+--
 -- Apply before setting RAPIDAPI_HOST to the SportAPI host. Until the function
 -- runs with that host nothing changes: every row is the Sofascore host.
 
@@ -50,6 +62,7 @@ begin
     or to_regprocedure('api.service_rapidapi_budget()') is null
     or to_regprocedure('api.service_record_rapidapi_calls(text, jsonb)') is null
     or to_regprocedure('api.service_record_rapidapi_quota(integer, integer, timestamptz)') is null
+    or to_regprocedure('api.service_football_details_schedule()') is null
     or not exists (select 1 from app_private.rapidapi_budget_settings where id) then
     raise exception 'rapidapi_host_budget_unexpected_baseline';
   end if;
@@ -78,6 +91,12 @@ alter table app_private.rapidapi_provider_quota
 comment on column app_private.rapidapi_provider_quota.host is
   'The RapidAPI host the provider reported this quota for. One row per host and quota window.';
 
+alter table app_private.rapidapi_budget_settings
+  add column incidents_interval_minutes integer not null default 15
+  check (incidents_interval_minutes between 1 and 120);
+comment on column app_private.rapidapi_budget_settings.incidents_interval_minutes is
+  'Minutes between the periodic incidents reads of a match in play (cards and substitutions between goals); the Edge Function skips them above the soft limit.';
+
 -- 2. The limits of the other hosts ------------------------------------------------
 
 create table app_private.rapidapi_host_budgets (
@@ -90,6 +109,9 @@ create table app_private.rapidapi_host_budgets (
   reset_day_of_month integer not null check (reset_day_of_month between 1 and 31),
   -- Calls the provider counted that app_private.rapidapi_call_counts did not.
   used_offset integer not null default 0 check (used_offset >= 0),
+  -- Minutes between the periodic incidents reads of a match in play.
+  incidents_interval_minutes integer not null default 15
+    check (incidents_interval_minutes between 1 and 120),
   updated_at timestamptz not null default statement_timestamp(),
   constraint rapidapi_host_budgets_order check (soft_limit <= hard_limit and hard_limit <= quota_limit)
 );
@@ -146,6 +168,33 @@ begin
 end;
 $$;
 revoke all on function app_private.rapidapi_host_budget_configure(text, integer, integer, integer, integer, integer)
+  from public, anon, authenticated, service_role;
+
+-- Owner-run, any host: how often a match in play gets a periodic incidents read.
+--   select app_private.rapidapi_incidents_interval_configure('sportapi7.p.rapidapi.com', 10);
+create function app_private.rapidapi_incidents_interval_configure(p_host text, p_minutes integer)
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  if p_host = 'sofascore.p.rapidapi.com' then
+    update app_private.rapidapi_budget_settings
+    set incidents_interval_minutes = p_minutes, updated_at = statement_timestamp() where id;
+  else
+    update app_private.rapidapi_host_budgets
+    set incidents_interval_minutes = p_minutes, updated_at = statement_timestamp()
+    where host = p_host;
+    if not found then
+      raise exception using errcode = '22023', message = 'unknown_rapidapi_host';
+    end if;
+  end if;
+  return p_minutes;
+end;
+$$;
+revoke all on function app_private.rapidapi_incidents_interval_configure(text, integer)
   from public, anon, authenticated, service_role;
 
 -- 3. The limits, the window and the count of one host ------------------------------
@@ -414,7 +463,8 @@ begin
   return jsonb_build_object('used', app_private.rapidapi_calls_for_host('sofascore.p.rapidapi.com'),
     'softLimit', s.soft_limit, 'hardLimit', s.hard_limit,
     'liveIntervalSeconds', app_private.rapidapi_live_interval_seconds(),
-    'windowStart', app_private.rapidapi_window_start());
+    'windowStart', app_private.rapidapi_window_start(),
+    'incidentsIntervalMinutes', s.incidents_interval_minutes);
 end;
 $$;
 revoke all on function api.service_rapidapi_budget() from public, anon, authenticated;
@@ -435,6 +485,7 @@ declare
   s record;
   b app_private.rapidapi_budget_settings%rowtype;
   v_used bigint;
+  v_incidents integer;
 begin
   if not app_private.is_service_request() then
     raise exception using errcode = 'PT403', message = 'forbidden';
@@ -444,13 +495,18 @@ begin
   if s.soft_limit is null then
     return jsonb_build_object('used', 0, 'softLimit', 0, 'hardLimit', 0,
       'liveIntervalSeconds', greatest(b.live_interval_seconds, 180),
-      'windowStart', app_private.rapidapi_window_start_for(v_host), 'host', v_host);
+      'windowStart', app_private.rapidapi_window_start_for(v_host), 'host', v_host,
+      'incidentsIntervalMinutes', 15);
   end if;
   v_used := app_private.rapidapi_calls_for_host(v_host);
+  select case when v_host = 'sofascore.p.rapidapi.com' then b.incidents_interval_minutes
+    else (select t.incidents_interval_minutes from app_private.rapidapi_host_budgets t where t.host = v_host) end
+    into v_incidents;
   return jsonb_build_object('used', v_used, 'softLimit', s.soft_limit, 'hardLimit', s.hard_limit,
     'liveIntervalSeconds', case when v_used >= s.soft_limit
       then greatest(b.live_interval_seconds, 180) else b.live_interval_seconds end,
-    'windowStart', app_private.rapidapi_window_start_for(v_host), 'host', v_host);
+    'windowStart', app_private.rapidapi_window_start_for(v_host), 'host', v_host,
+    'incidentsIntervalMinutes', coalesce(v_incidents, 15));
 end;
 $$;
 revoke all on function api.service_rapidapi_host_budget(text) from public, anon, authenticated;
@@ -602,5 +658,65 @@ revoke all on function api.service_record_rapidapi_quota(integer, integer, times
 grant execute on function api.service_record_rapidapi_quota(integer, integer, timestamptz) to service_role;
 comment on function api.service_record_rapidapi_quota(integer, integer, timestamptz) is
   'Service role: stores the quota the Sofascore host''s provider reported (remaining of limit) for its current window. Kept only if not older than the stored observation and not from before the window start; returns whether it was kept.';
+
+-- The post-match schedule, with the late-statistics list (item 7 of the header).
+create or replace function api.service_football_details_schedule()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_now timestamptz := statement_timestamp();
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'forbidden';
+  end if;
+  return jsonb_build_object(
+    'followUps', (
+      select coalesce(jsonb_agg(x.external_id order by x.external_id), '[]'::jsonb)
+      from (
+        select m.external_id,
+          (select max(mark.step) from (values (interval '30 minutes'), (interval '90 minutes')) as mark(step)
+            where f.finalized_at + mark.step <= v_now) as due_mark,
+          sync.last_stored_at, f.finalized_at
+        from app.fixtures f
+        join app_private.football_provider_mappings m on m.provider_name = 'sofascore'
+          and m.entity_type = 'fixture' and m.active and m.internal_entity_id = f.id
+        left join app_private.football_match_details_syncs sync on sync.fixture_id = f.id
+        where f.status = 'finished' and f.finalized_at is not null
+          and f.finalized_at > v_now - interval '3 hours'
+      ) x
+      where x.due_mark is not null
+        and (x.last_stored_at is null or x.last_stored_at < x.finalized_at + x.due_mark)
+    ),
+    'statsPartial', (
+      select coalesce(jsonb_agg(m.external_id order by m.external_id), '[]'::jsonb)
+      from app.fixtures f
+      join app_private.football_provider_mappings m on m.provider_name = 'sofascore'
+        and m.entity_type = 'fixture' and m.active and m.internal_entity_id = f.id
+      left join app_private.football_match_details_syncs sync on sync.fixture_id = f.id
+      where f.status = 'finished' and f.finalized_at is not null
+        and f.finalized_at <= v_now - interval '90 minutes'
+        and f.finalized_at > v_now - interval '3 hours'
+        and (sync.last_stored_at is null or sync.last_stored_at < f.finalized_at + interval '90 minutes')
+        and (select count(*) from app.fixture_team_statistics st where st.fixture_id = f.id) < 14
+    ),
+    'lastStored', (
+      select coalesce(jsonb_object_agg(m.external_id, sync.last_stored_at), '{}'::jsonb)
+      from app.fixtures f
+      join app_private.football_provider_mappings m on m.provider_name = 'sofascore'
+        and m.entity_type = 'fixture' and m.active and m.internal_entity_id = f.id
+      join app_private.football_match_details_syncs sync on sync.fixture_id = f.id
+      where f.status in ('live_first_half', 'half_time', 'live_second_half', 'extra_time', 'penalties')
+         or (f.status = 'finished' and f.finalized_at > v_now - interval '3 hours')
+    ));
+end;
+$$;
+revoke all on function api.service_football_details_schedule() from public, anon, authenticated;
+grant execute on function api.service_football_details_schedule() to service_role;
+comment on function api.service_football_details_schedule() is
+  'Service role: SofaScore event ids of finished fixtures due their +30 min / +90 min details retry, those 90 minutes to 3 hours after the whistle whose stored team statistics are missing or partial (statsPartial), and when details were last stored for fixtures in play or finished within 3 hours. Read by the live refresh.';
 
 notify pgrst, 'reload schema';
