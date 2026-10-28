@@ -467,3 +467,19 @@ Pull request #572 opened so CI runs the database tests that could not run here. 
 
 **PR #572 CI: green**, including `database-quality`: the new database tests passed in CI. The branch was updated with `main` (#571, font caching only, no database change); the checks are re-running. Waiting for the owner: steps by themselves (1) or authorise the Lead (2).
 
+### Batch 0 – going live (28 Oct, Lead acting with the owner's authorisation, option 2)
+
+- 03:05 One-writer check. No other session was writing; one session was waiting for a command approval, and the owner was told not to approve it. Recorded the settings: mode `live`, live refresh on.
+- 03:10 #572 merged (150066b). Live refresh and email paused with `notification_email_configure('off', null, null, false)`.
+- 03:15 Waited 5 minutes. No run in flight and no data-job query active.
+- Guarded apply script, copied from `main`:
+  - Safety checks first: all 8 code fingerprints matched production.
+  - Full test run: "Rehearsal passed". Read back afterwards: nothing kept.
+  - Real run: "Applied".
+  - Read back: migration recorded; SportAPI 15,000 / 13,500 / 14,700, reset day 27, 0 used; Sofascore unchanged (10,000 of 10,000).
+- 03:21 Deploy workflow run #20 (exact commit 150066b): success. **It did not wait for the owner's approval:** the `production-admin-activation` environment has no required reviewer. This confirms Phase 1 finding C3.
+- Setting `RAPIDAPI_HOST`: the Supabase tool asks the owner to type the value, and the prompt went unanswered twice (not shown on the owner's phone). Not set yet.
+- 03:28 Live refresh and email restored to the recorded values (`live`, on); every other setting is unchanged.
+  - With no address set, the new code behaves as before the pause (Sofascore, refused until 10 Nov).
+  - Remaining owner action: add the Supabase secret `RAPIDAPI_HOST=sportapi7.p.rapidapi.com` in the dashboard. It takes effect on the next run, with no redeploy. The Lead then checks.
+
