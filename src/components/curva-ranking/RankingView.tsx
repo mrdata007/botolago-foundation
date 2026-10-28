@@ -17,6 +17,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
+import { isMedal, MEDALS, Podium, TierPlate } from "./Podium";
 import { useRankingCopy } from "./ranking-copy";
 import { STAT_TOTAL, type Ranking, type RankingEntry } from "./ranking";
 import "./ranking-motion.css";
@@ -179,6 +180,7 @@ function Body(props: RankingViewProps): JSX.Element {
   }
   return (
     <>
+      <Podium rows={ranking.rated} />
       {ranking.rated.length > 0 ? (
         <UiCard padding="none" className="overflow-hidden">
           <ol aria-label={copy.ratedTitle} data-testid="curva-ranking-rated">
@@ -286,7 +288,7 @@ function RankingRow({
       className={cn(
         "cr-row relative grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-3",
         ui.rule.block,
-        entry.own && "bg-[color:color-mix(in_oklab,var(--ui-ink-fg)_8%,var(--ui-surface))]",
+        entry.own && "cr-row-own",
         last && "border-b-0",
       )}
       style={{ "--cr-i": Math.min(index, STAGGER_CAP) } as CSSProperties}
@@ -302,16 +304,14 @@ function RankingRow({
           style={{ backgroundImage: "var(--ui-grad-action)" }}
         />
       ) : null}
-      <span className={cn("pt-0.5 text-center", ui.stat.sm, ui.tone.muted)}>
+      <span className={cn("flex justify-center pt-0.5", ui.stat.sm, ui.tone.muted)}>
         {rank === "outside" ? null : rank === null ? (
           <>
             <Waiting label={copy.waiting} />
           </>
         ) : (
           <>
-            <span aria-hidden>
-              <Figure>{rank}</Figure>
-            </span>
+            <RankBadge rank={rank} />
             <span className="sr-only">{copy.rankA11y(rank)}</span>
           </>
         )}
@@ -354,22 +354,39 @@ function RankingRow({
           {club && entry.tier ? <span aria-hidden>·</span> : null}
           {entry.tier ? <TierWord tier={entry.tier} /> : null}
         </p>
-        <dl className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5" data-testid="ranking-stats">
+        <dl
+          className="mt-1.5 grid max-w-[16rem] grid-cols-4 gap-x-2.5 gap-y-1 rtl:max-w-[14rem] rtl:grid-cols-2 rtl:gap-x-4"
+          data-testid="ranking-stats"
+        >
           {STAT_CODES.map((code) => (
-            <div key={code} className="flex items-baseline gap-1" data-stat={code}>
-              <dt className={CODE_CLASS}>{card.stat[code]}</dt>
-              <dd
-                className={cn(
-                  ui.text.meta,
-                  entry.stats[code] === null ? ui.tone.muted : ui.tone.default,
-                )}
+            <div key={code} className="flex flex-col gap-0.5" data-stat={code}>
+              <div className="flex items-baseline gap-1 whitespace-nowrap">
+                <dt className={CODE_CLASS}>{card.stat[code]}</dt>
+                <dd
+                  className={cn(
+                    ui.text.meta,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    entry.stats[code] === null ? ui.tone.muted : ui.tone.default,
+                  )}
+                >
+                  {entry.stats[code] === null ? (
+                    <Waiting label={copy.waiting} />
+                  ) : (
+                    <Figure>{entry.stats[code]}</Figure>
+                  )}
+                </dd>
+              </div>
+              <span
+                aria-hidden
+                className="cr-bar"
+                style={
+                  {
+                    "--cr-v": Math.max(0, Math.min(100, entry.stats[code] ?? 0)) / 100,
+                  } as CSSProperties
+                }
               >
-                {entry.stats[code] === null ? (
-                  <Waiting label={copy.waiting} />
-                ) : (
-                  <Figure>{entry.stats[code]}</Figure>
-                )}
-              </dd>
+                <span />
+              </span>
             </div>
           ))}
         </dl>
@@ -377,12 +394,9 @@ function RankingRow({
 
       <div className="text-end">
         {rated ? (
-          <>
-            <p className={cn(ui.stat.lg, ui.tone.default)} data-testid="ranking-ovr">
-              <Figure>{entry.ovr}</Figure>
-            </p>
-            <p className={CODE_CLASS}>{card.ovr}</p>
-          </>
+          <span data-testid="ranking-ovr" className="inline-flex">
+            <TierPlate tier={entry.tier} ovr={entry.ovr} size="sm" caption="ovr" />
+          </span>
         ) : (
           <p className={cn("max-w-[7rem] text-pretty", ui.text.meta, ui.tone.muted)}>
             {entry.filled === 0 && entry.minRated > 0
@@ -392,6 +406,31 @@ function RankingRow({
         )}
       </div>
     </li>
+  );
+}
+
+/** A rank: gold, silver and bronze for the first three, a quiet number after them. */
+function RankBadge({ rank }: { rank: number }): JSX.Element {
+  if (!isMedal(rank)) {
+    return (
+      <span aria-hidden className="pt-1">
+        <Figure>{rank}</Figure>
+      </span>
+    );
+  }
+  const medal = MEDALS[rank];
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-flex h-8 w-8 items-center justify-center rounded-full", ui.stat.sm)}
+      style={{
+        backgroundImage: medal.fill,
+        color: medal.ink,
+        boxShadow: "inset 0 -2px 0 rgb(0 0 0 / 0.18), 0 2px 6px -2px rgb(0 0 0 / 0.35)",
+      }}
+    >
+      <Figure>{rank}</Figure>
+    </span>
   );
 }
 
