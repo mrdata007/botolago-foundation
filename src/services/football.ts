@@ -427,6 +427,13 @@ function byClubName(language: FootballLanguage) {
  * reach. A season is 30 league matches; the cap only stops a runaway loop.
  */
 const CLUB_FIXTURE_PAGES = 5;
+
+/**
+ * How many pages a rivalry's history may read: every season the catalogue
+ * holds (about 40 matches a season, cups included), with room for decades;
+ * again only a stop for a runaway loop.
+ */
+const RIVALRY_FIXTURE_PAGES = 20;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ClubDirectory {
@@ -677,6 +684,32 @@ export function completeHomeMatches<T extends Pick<MatchCardDto, "id" | "status"
       (fixture) => !seen.has(fixture.id) && presentationStatus(fixture.status) !== "postponed",
     ),
   ];
+}
+
+/**
+ * A club's fixtures, newest first, read back page by page (100 a page) until
+ * the API has no more or `maxPages` pages are read: every season the catalogue
+ * holds for it, for a page that spans seasons (a rivalry's history).
+ */
+async function readClubFixturePages(
+  clubId: string,
+  language: FootballLanguage,
+  maxPages: number,
+): Promise<MatchCardDto[]> {
+  const repository = getFootballRepository();
+  const collected: MatchCardDto[] = [];
+  let before: MatchPageCursor | null = null;
+  for (let page = 0; page < maxPages; page += 1) {
+    const items = await repository.getTeamFixtures(
+      { teamId: clubId, language, before, limit: 100 },
+      requestContext(),
+    );
+    collected.push(...items);
+    const oldest = items.at(-1);
+    if (!oldest || items.length < 100) break;
+    before = { kickoffAt: oldest.kickoffAt, id: oldest.id };
+  }
+  return collected;
 }
 
 export const footballService = {
@@ -1038,7 +1071,12 @@ export const footballService = {
       const b = named.find((club) => club.id === second.id);
       if (a && b) clubs = [a, b];
     }
-    const { matches } = await footballService.getClubSeasonMatches(first.id, null, language);
+    // Every meeting the club's fixture pages hold, not only its latest 100:
+    // the history and the tally count them all (Codex review on PR #567).
+    const fixtures = await readClubFixturePages(first.id, language, RIVALRY_FIXTURE_PAGES);
+    const matches = fixtures
+      .sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt))
+      .map(toMatch);
     return { clubs, ...splitMeetings(matches, first.id, second.id, Date.now()) };
   },
 

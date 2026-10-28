@@ -5,6 +5,7 @@ import {
   notFound,
   redirect,
   useNavigate,
+  useRouter,
 } from "@tanstack/react-router";
 import {
   isMissingContent,
@@ -294,6 +295,7 @@ function ClubPage() {
   const loaded = Route.useLoaderData();
   const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
+  const router = useRouter();
   const { t, tr, lang } = useI18n();
   const goBack = useBackTo("/clubs");
   const headingId = useId();
@@ -404,6 +406,19 @@ function ClubPage() {
       className="pb-2"
     />
   );
+
+  // A slug the loader could not resolve because the catalogue read failed (it
+  // answered 503): the club may well exist, so this is a load error to retry,
+  // which runs the loader again, not "club not found" (Codex review, PR #567).
+  if (isUnavailable(loaded) && !validId) {
+    return (
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={bar}>
+        <div className="mt-8">
+          <ErrorState message={t("club.load_failed")} onRetry={() => void router.invalidate()} />
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!validId || (clubQ.isError && isNotFound(clubQ.error))) {
     return (
