@@ -63,9 +63,11 @@ describe("the shield's share art", () => {
     expect(art.height).toBeGreaterThan(art.width);
     expect(art.svg).not.toMatch(/<text|<tspan|<image|<style/);
     const texts = art.texts.map((run) => run.text);
-    for (const text of ["84", "OVR", "PRO", "A", "Ali", "RAJA CA", "91", "CAP", "RCA"]) {
+    for (const text of ["84", "OVR", "PRO", "Ali", "RAJA CA", "91", "CAP", "RCA"]) {
       expect(texts, text).toContain(text);
     }
+    // no monogram on the face since 2026-10-28: the initial is not drawn
+    expect(texts).not.toContain("A");
     // the serial is data, not drawn
     expect(texts.some((text) => text.includes("BOT #"))).toBe(false);
   });

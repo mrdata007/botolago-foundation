@@ -75,3 +75,24 @@
     }
   }
 }
+
+/* The tier's light behind the card (`CardStage`, `data-stage-aura`): drawn still at 60 % from the
+   first paint, it breathes slowly once the stage knows motion is allowed. Opacity and transform
+   only; nothing under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .mc-stage-aura {
+    animation: mc-stage-aura 5.6s ease-in-out infinite;
+  }
+
+  @keyframes mc-stage-aura {
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: scale(0.97);
+    }
+    50% {
+      opacity: 0.95;
+      transform: scale(1.03);
+    }
+  }
+}

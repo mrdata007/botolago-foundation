@@ -120,7 +120,20 @@ describe("the shield's tilt", () => {
     mountShieldTilt(host as unknown as HTMLElement);
     root.fire("pointermove", { pointerType: "touch", clientX: 20, clientY: 40 });
     flush();
-    expect(root.classes.size).toBe(1);
+    // the ambient class only (see below): no tilt, no light
+    expect([...root.classes].sort()).toEqual(["mc-shield", "mc-shield--alive"]);
+    expect(root.props.size).toBe(0);
+  });
+
+  it("marks the card alive (the ambient light) while mounted, and takes it off on cleanup", () => {
+    for (const touch of [false, true]) {
+      media["(hover: none)"] = touch;
+      const { host, root } = card();
+      const stop = mountShieldTilt(host as unknown as HTMLElement);
+      expect(root.classes.has("mc-shield--alive")).toBe(true);
+      stop();
+      expect(root.classes.has("mc-shield--alive")).toBe(false);
+    }
   });
 
   it("floats on a touch-only screen, and stops on cleanup", () => {

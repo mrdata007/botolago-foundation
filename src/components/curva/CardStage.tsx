@@ -47,6 +47,14 @@ import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
 import { useStageEntrance } from "./use-stage-entrance";
 
+/** The card's number as the renderers print it: Éclat's text runs and the shield's rating. */
+const NUMBER_RUNS = "[data-stage-lift] .mc-numtxt, [data-stage-lift] .mc-shield__ovr";
+/** The first view's count: from this many points under the card's number, over this long. */
+const INTRO_FROM = 9;
+const INTRO_MS = 950;
+/** The number whose first-view count has played in this page load (once, not on every visit). */
+let introCounted: number | null = null;
+
 /** The card on a phone: 296 px, and never closer than 16 px to either edge. */
 const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
 
@@ -152,7 +160,7 @@ export function CardStage({
   glow?: "up" | "down" | null;
   /**
    * The number the card's print shows while a rating change counts. The renderer drew the card's
-   * own number; only the print's text runs (`.mc-numtxt`) change, and they go back to it when the
+   * own number; only the print's number (`NUMBER_RUNS`) changes, and it goes back to it when the
    * count ends. Null leaves the drawing alone.
    */
   countOvr?: number | null;
@@ -199,7 +207,7 @@ export function CardStage({
     if (countOvr === null || profile.ovr === null || !section) return;
     const text = String(countOvr);
     const apply = () => {
-      section.querySelectorAll<SVGTextElement>("[data-stage-lift] .mc-numtxt").forEach((run) => {
+      section.querySelectorAll<Element>(NUMBER_RUNS).forEach((run) => {
         if (run.textContent !== text) run.textContent = text;
       });
     };
@@ -210,6 +218,75 @@ export function CardStage({
     observer.observe(section, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [countOvr, profile.ovr]);
+
+  // The first view's count: the card's number climbs to its value from a few points under it,
+  // once per page load. Client only (a layout effect, and the card's drawing never comes from the
+  // server), never under reduced motion, never while a rating change counts (that count owns the
+  // number). The number is set before the first frame it is painted in, so the card never shows its
+  // value and then drops back; it holds while the entrance plays and counts once the card has
+  // landed. Only the print's text changes: the label, the rating line and the data are the real
+  // number throughout, and a cut-short count puts the real number back.
+  const entering = useRef(stage.entering);
+  entering.current = stage.entering;
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    const target = profile.ovr;
+    if (!section || target === null || introCounted === target) return;
+    if (countOvr !== null) {
+      // a rating change counts this visit: it is the card's motion, and the intro is not replayed
+      // after it
+      introCounted = target;
+      return;
+    }
+    if (
+      prefersReducedMotion() ||
+      typeof MutationObserver === "undefined" ||
+      typeof requestAnimationFrame !== "function"
+    ) {
+      return;
+    }
+    const from = Math.max(0, target - INTRO_FROM);
+    let shown = from;
+    let started = false;
+    let frame = 0;
+    let t0: number | null = null;
+    const apply = () => {
+      const text = String(shown);
+      section.querySelectorAll<Element>(NUMBER_RUNS).forEach((run) => {
+        if (run.textContent !== text) run.textContent = text;
+      });
+    };
+    const tick = (now: number) => {
+      if (entering.current) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      t0 ??= now;
+      const k = Math.min(1, (now - t0) / INTRO_MS);
+      shown = Math.round(from + (target - from) * (1 - (1 - k) ** 3));
+      apply();
+      if (k < 1) frame = requestAnimationFrame(tick);
+      else observer.disconnect();
+    };
+    const start = () => {
+      if (started || !section.querySelector(NUMBER_RUNS)) return;
+      started = true;
+      introCounted = target;
+      apply();
+      frame = requestAnimationFrame(tick);
+    };
+    // The drawing arrives (or is drawn again, for the club's crest) while the count runs: it takes
+    // the counted number too.
+    const observer = new MutationObserver(() => (started ? apply() : start()));
+    observer.observe(section, { childList: true, subtree: true });
+    start();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      shown = target;
+      if (started) apply();
+    };
+  }, [profile.ovr, countOvr]);
 
   const flip = () => {
     const next = !back;
@@ -312,6 +389,19 @@ export function CardStage({
                 : FIT_HEIGHT_WIDTH,
         )}
       >
+        {/* The tier's own light behind the card: still and drawn from the first paint; it breathes
+            (opacity and scale, `card-motion.css`) once motion is known to be allowed. */}
+        <span
+          aria-hidden
+          data-stage-aura=""
+          className={cn(
+            "pointer-events-none absolute -inset-x-[10%] -inset-y-[5%] z-0 opacity-60",
+            motionOk && "mc-stage-aura",
+          )}
+          style={{
+            backgroundImage: `radial-gradient(closest-side, color-mix(in oklab, ${palette.glow} 50%, transparent), transparent)`,
+          }}
+        />
         <span
           aria-hidden
           data-stage-glow={glow ?? "off"}

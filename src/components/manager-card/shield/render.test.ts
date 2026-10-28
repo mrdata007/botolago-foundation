@@ -48,15 +48,15 @@ describe("the shield's full card", () => {
     expect(textOf(html, "mc-shield__crest")).toBe("RCA");
   });
 
-  it("writes the name as the autograph and its initials as the monogram, in the name's own script", () => {
+  it("writes the name as the autograph in the name's own script, with no monogram on the face", () => {
     const latin = draw(rated, "ar");
     expect(latin).toContain("mc-shield__sig--latin");
     expect(textOf(latin, "mc-shield__sig-line")).toBe("Ali");
-    expect(textOf(latin, "mc-shield__mono")).toBe("A");
+    expect(latin).not.toContain("mc-shield__mono");
     const arabic = draw(arabicName, "fr");
     expect(arabic).toContain("mc-shield__sig--arabic");
     expect(textOf(arabic, "mc-shield__sig-line")).toBe("فاطمة الزهراء");
-    expect(textOf(arabic, "mc-shield__mono")).toBe("فا");
+    expect(arabic).not.toContain("mc-shield__mono");
   });
 
   it("breaks a name too long for one line once, and keeps every line inside the art", () => {
@@ -152,7 +152,7 @@ describe("the shield's full card", () => {
     expect(draw(rated, "fr", { compact: true })).toContain("mc-shield--compact");
   });
 
-  it("escapes a hostile name in the autograph and the monogram", () => {
+  it("escapes a hostile name in the autograph", () => {
     for (const name of HOSTILE_NAMES) {
       for (const lang of ["fr", "ar"] as const) {
         const html = draw({ ...rated, name }, lang);
@@ -195,7 +195,7 @@ describe("the paid editions on the full card", () => {
         const html = draw({ ...rated, edition }, lang);
         expect(html).toContain(`mc-shield--ed mc-shield--ed-${edition}`);
         expect(html).toContain('data-mc-tier="pro"');
-        for (const cls of ["ovr", "ovrl", "tier", "club", "crest", "serial", "sig-line", "mono"]) {
+        for (const cls of ["ovr", "ovrl", "tier", "club", "crest", "serial", "sig-line"]) {
           expect(textOf(html, `mc-shield__${cls}`), `${edition} ${cls}`).toBe(
             textOf(free, `mc-shield__${cls}`),
           );

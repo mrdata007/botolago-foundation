@@ -217,9 +217,12 @@ export function ThisRoundBlock({
               className={cn(
                 "grid min-w-[4.25rem] shrink-0 place-items-center py-2",
                 ui.radius.card,
-                ui.surface.sunken,
                 ui.score.md,
+                // the counter on the action gradient, ink-deep figures (light in both themes)
+                "text-[color:var(--ui-ink-deep)]",
+                ui.shadow.raised,
               )}
+              style={{ backgroundImage: "var(--ui-grad-action)" }}
             >
               <span aria-hidden>
                 <Figure>
@@ -257,7 +260,7 @@ export function ThisRoundBlock({
           </div>
         )}
         {text.compose ? (
-          <UiLinkButton to="/fantasy/team" variant="soft" size="sm" className="self-start">
+          <UiLinkButton to="/fantasy/team" variant="gradient" size="sm" className="self-start">
             {composeLabel}
           </UiLinkButton>
         ) : null}

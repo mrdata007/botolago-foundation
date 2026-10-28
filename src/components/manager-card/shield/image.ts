@@ -23,14 +23,7 @@ import {
   inset,
 } from "./geometry";
 import { uid } from "./ids";
-import {
-  fitSignature,
-  initialsOf,
-  measureEm,
-  monogramSize,
-  scriptOf,
-  type MeasureEm,
-} from "./name";
+import { fitSignature, measureEm, type MeasureEm } from "./name";
 import { shieldDefs } from "./token";
 import { crestColours, makeView, mix, ovrText, statText, tierWord } from "./view";
 
@@ -136,26 +129,9 @@ export function cardImage(
     );
   }
 
-  // the monogram (one flat colour, faint) and the autograph
+  // the autograph (the face carries no monogram since 2026-10-28)
   const fit = fitSignature(p.name, measure);
   if (fit) {
-    const initials = initialsOf(p.name);
-    if (initials) {
-      const script = scriptOf(initials);
-      runs.push(
-        run(
-          initials,
-          mx(65),
-          28.5,
-          monogramSize(initials, script),
-          800,
-          script === "arabic" ? "arabic" : "display",
-          "middle",
-          script === "arabic" ? "rtl" : "ltr",
-          mix(m.sigSolid, m.faceStops[1]!, 0.68),
-        ),
-      );
-    }
     const rotate = fit.script === "arabic" ? 6 : -7;
     const lineGap = fit.size * 1.05;
     const first = 57 - (fit.lines.length - 1) * lineGap * 0.5;

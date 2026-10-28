@@ -5,8 +5,8 @@
  * that it says the same thing.
  *
  * A beat is a class on the card's root and nothing else (`beatRoot`), so the app plays it on the
- * card already in the page. Only these move: the art (`mc-sl--art`: the autograph and the
- * monogram), the frame (`mc-sl--frame`), the light layer's sheen and prism (`mc-sl--foil`), the
+ * card already in the page. Only these move: the art (`mc-sl--art`: the autograph and its
+ * swash), the frame (`mc-sl--frame`), the light layer's sheen and prism (`mc-sl--foil`), the
  * emblem (`mc-sl--emblem`), the newest forming mark (`mc-shield__mark--new`) and the founder's
  * capsule (`mc-shield__founder`). Never the number layer, the serial, the tier word or the text.
  */

@@ -96,6 +96,17 @@ export function StatTile({
 }
 
 /**
+ * G1's four tiles, each on its own wash of a brand colour (mint, sky, navy, mint again), fading
+ * down to the card's surface. 24 % at most, so the muted lines keep 4.5:1 in both themes.
+ */
+const TILE_WASH: Record<StatCode, string> = {
+  cap: "bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-spring)_24%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-spring)_8%,var(--ui-surface)))]",
+  sel: "bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-sky)_24%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-sky)_8%,var(--ui-surface)))]",
+  trf: "bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-ink-fg)_14%,var(--ui-surface)),color-mix(in_oklab,var(--ui-ink-fg)_4%,var(--ui-surface)))]",
+  con: "bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-sky)_24%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-spring)_10%,var(--ui-surface)))]",
+};
+
+/**
  * « Ce que dit votre carte »: the four statistics in a 2 × 2 grid inside one card, and the whole
  * card goes to « Votre carte » (G2), where each one is explained. A statistic that is not there
  * yet shows its reason, not a zero.
@@ -126,6 +137,7 @@ export function StatTiles({
             wait={wait}
             variant="quiet"
             className={cn(
+              TILE_WASH[code],
               index % 2 === 0 && "border-e border-[color:var(--ui-rule)]",
               index < 2 && "border-b border-[color:var(--ui-rule)]",
             )}
@@ -135,11 +147,13 @@ export function StatTiles({
       {facts && hasFacts(facts) ? <Facts facts={facts} /> : null}
       <span
         className={cn(
-          "flex min-h-[var(--ui-row-min)] items-center justify-between gap-2 border-t border-[color:var(--ui-rule)] px-4",
+          "flex min-h-[var(--ui-row-min)] items-center justify-between gap-2 px-4",
           ui.text.meta,
           "[font-weight:var(--ui-weight-heavy)]",
-          ui.tone.ink,
+          // the way to the card's page on the action gradient: ink-deep, light in both themes
+          "text-[color:var(--ui-ink-deep)]",
         )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
       >
         {moments.m4.heroDetail}
         <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />

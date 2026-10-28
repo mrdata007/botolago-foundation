@@ -27,21 +27,31 @@ export function SeasonsBlock({ card }: { card: MyCardDto }) {
   return (
     <section data-testid="curva-seasons" aria-label={copy.seasonsTitle}>
       <SectionHeader title={copy.seasonsTitle} />
-      <Link to="/curva/saisons" className={cn("press-tile block", ui.surface.card, ui.focus)}>
-        <span className="flex min-h-[var(--ui-row-min)] items-center justify-between gap-3 px-4 pt-3">
+      <Link
+        to="/curva/saisons"
+        className={cn("press-tile block overflow-hidden", ui.surface.card, ui.focus)}
+      >
+        {/* The current season on the brand's navy (white and cyan text on the ink fill, both
+            themes); the rack stays on the card's surface under it. */}
+        <span
+          className={cn(
+            "flex min-h-[var(--ui-row-min)] items-center justify-between gap-3 px-4 py-3",
+            ui.surface.inkPlain,
+          )}
+        >
           <span className="min-w-0">
-            <span className={cn("block", ui.text.bodyStrong, ui.tone.default)}>
+            <span className={cn("block", ui.text.bodyStrong)}>
               {fill(copy.seasonsSeason, { season: <Figure>{card.season.label}</Figure> })}
             </span>
             {current ? (
-              <span className={cn("block", ui.text.secondary, ui.tone.muted)}>
+              <span className={cn("block", ui.text.secondary, "text-[color:var(--ui-on-ink)]")}>
                 {copy.countedRounds(current.gameweeksCounted)}
               </span>
             ) : null}
           </span>
-          <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </span>
-        <span className="block px-4 pb-3 pt-1">
+        <span className="block px-4 pb-3 pt-2">
           <SeasonRack card={card} seasons={seasons} size={44} />
         </span>
       </Link>

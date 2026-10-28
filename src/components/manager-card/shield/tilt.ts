@@ -1,10 +1,15 @@
 /**
  * The tilt (`CardRenderer.mount`): on a mouse or a pen the shield turns toward the pointer and its
- * light follows (the autograph's and the monogram's foil slide, the glare moves, the holographic
+ * light follows (the autograph's foil slides, the glare moves, the holographic
  * frame turns its prism); on a touch-only screen it floats slowly while it is on screen. A finger
  * scrolls the page, so a touch never tilts it. At rest the card is flat 2D (no transform, no
  * `preserve-3d`), so its text is rasterised once and stays crisp; the 3D tree exists only while
  * the card is `--active` (a pointer over it), `--idle` (floating) or `--settle` (easing back).
+ *
+ * While it is mounted and the card is on screen and the page visible, the root also carries
+ * `mc-shield--alive`: the card's ambient motion (a slow light sweep across the face, the emblem's
+ * diamond breathing; `shield.css`) runs only under it. So it never plays in the first paint, under
+ * reduced motion, during a beat or on a card no screen asked to move (the sheets, the tokens).
  *
  * What it writes: the tilt's `transform`, `--mc-ax` and `--mc-ay` (the light, -1 to 1) on the root,
  * and those three classes; all removed again on cleanup. The card is a few dozen elements, so a
@@ -16,6 +21,7 @@
 const ACTIVE = "mc-shield--active";
 const IDLE = "mc-shield--idle";
 const SETTLE = "mc-shield--settle";
+const ALIVE = "mc-shield--alive";
 /** The settle's transition (`shield.css`), which the timer outlasts. */
 const SETTLE_MS = 620;
 /** Degrees at the card's edge. */
@@ -62,7 +68,35 @@ function mountOn(root: HTMLElement): () => void {
   if (root.hasAttribute("data-mc-beat")) return noop;
   const tilt = root.querySelector<HTMLElement>(".mc-shield__tilt");
   if (!tilt) return noop;
-  return media("(hover: none)") ? float(root) : follow(root, tilt);
+  const stopAlive = alive(root);
+  const stopMove = media("(hover: none)") ? float(root) : follow(root, tilt);
+  return () => {
+    stopMove();
+    stopAlive();
+  };
+}
+
+/** The ambient motion's class, while the card is on screen and the page is visible. */
+function alive(root: HTMLElement): () => void {
+  let visible = true;
+  const update = () => {
+    root.classList.toggle(ALIVE, visible && !document.hidden);
+  };
+  const observer =
+    typeof IntersectionObserver !== "undefined"
+      ? new IntersectionObserver((entries) => {
+          visible = entries.some((entry) => entry.isIntersecting);
+          update();
+        })
+      : null;
+  observer?.observe(root);
+  document.addEventListener("visibilitychange", update);
+  update();
+  return () => {
+    observer?.disconnect();
+    document.removeEventListener("visibilitychange", update);
+    root.classList.remove(ALIVE);
+  };
 }
 
 /** A touch-only screen: the card floats while it is on screen and the page is visible. */

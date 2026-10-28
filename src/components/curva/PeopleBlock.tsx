@@ -99,13 +99,15 @@ export function PeopleBlock({
         </UiCard>
       ) : (
         <UiCard padding="none" className="overflow-hidden">
+          {/* The league's name on the action gradient (mint to sky; ink-deep text, light in both
+              themes), so the block opens in the brand's colour. */}
           <p
             className={cn(
               "flex min-h-[var(--ui-row-min)] items-center px-4",
-              ui.rule.block,
               ui.text.bodyStrong,
-              ui.tone.default,
+              "text-[color:var(--ui-ink-deep)]",
             )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
           >
             <span className="min-w-0 truncate">
               <PersonName>{league.name}</PersonName>

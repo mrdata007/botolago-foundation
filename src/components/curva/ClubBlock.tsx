@@ -22,9 +22,10 @@ import { CAPTION_CLASS, PersonName } from "./figures";
  * league: there is no honest data for either, and counts of supporters are banned. What is true
  * is shown: the club, the people you actually play with, the match.
  *
- * The header is the app's own club header (the Home « Mes clubs » card) without its side bar:
- * the club's colours come from the club palette as a tint, and the crest disc carries the colour.
- * A coloured bar down one side of a card is a craft-floor ban, so the header has none. A card
+ * The header is a band in the club's own colour (the club palette's fill, with the text colour it
+ * measured for that fill in each theme, and the diagonal club texture), the crest raised on a
+ * surface disc, as the player sheet's club header. A coloured bar down one side of a card is a
+ * craft-floor ban, so the header has none. A card
  * with no club says so and offers the profile, where the club is chosen.
  */
 export function ClubBlock({
@@ -90,17 +91,27 @@ export function ClubBlock({
           data-club={colours["data-club"]}
           style={colours.style}
           className={cn(
-            "flex min-h-[var(--ui-row-min)] items-center gap-3 px-4 py-3",
-            ui.club.tint,
+            "flex min-h-[var(--ui-row-min)] items-center gap-3 px-4 py-4",
+            ui.club.fill,
+            ui.club.stripes,
           )}
         >
-          <ClubCrest club={club} size="md" />
+          <span
+            className={cn(
+              "grid shrink-0 place-items-center p-1",
+              ui.radius.full,
+              ui.club.inverse,
+              ui.shadow.lifted,
+            )}
+          >
+            <ClubCrest club={club} size="md" />
+          </span>
           <div className="min-w-0 flex-1">
-            <p className={cn("truncate", ui.display.team, ui.tone.default)}>
+            <p className={cn("truncate", ui.display.team)}>
               <PersonName>{fullName}</PersonName>
             </p>
             {city ? (
-              <p className={cn("truncate", ui.text.meta, ui.tone.muted)}>
+              <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
                 <PersonName>{city}</PersonName>
               </p>
             ) : null}

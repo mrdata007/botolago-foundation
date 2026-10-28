@@ -111,7 +111,9 @@ function LeagueRow({
       className={cn(
         "relative",
         ui.rule.block,
-        row.own && "bg-[color:color-mix(in_oklab,var(--ui-ink-fg)_8%,var(--ui-surface))]",
+        // the reader's row: a wash of the action gradient (mint to sky), text measured on it
+        row.own &&
+          "bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-spring)_30%,var(--ui-surface)),color-mix(in_oklab,var(--ui-accent-sky)_30%,var(--ui-surface)))]",
         last && "border-b-0",
       )}
       data-own={row.own ? "true" : undefined}

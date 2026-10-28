@@ -203,10 +203,9 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
-   The art: the monogram where a photo would be, and the autograph across the face
+   The art: the autograph across the face (no monogram since 2026-10-28)
    --------------------------------------------------------------------------------------------- */
 
-.mc-shield__mono,
 .mc-shield__sig-line,
 .mc-shield__swash {
   color: transparent;
@@ -216,31 +215,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   filter: var(--sh-sig-shadow);
-}
-
-.mc-shield__mono {
-  position: absolute;
-  top: 4.5%;
-  inset-inline-end: 3%;
-  width: 62%;
-  height: 24%;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  white-space: nowrap;
-  transform: skewX(-12deg);
-  opacity: 0.3;
-}
-
-.mc-shield__mono--arabic {
-  letter-spacing: 0;
-  transform: skewX(10deg);
-}
-
-.mc-shield--on-metal .mc-shield__mono {
-  opacity: 0.42;
 }
 
 .mc-shield__sig {
@@ -762,7 +736,6 @@
     animation: mc-sh-float 7s ease-in-out infinite alternate;
   }
 
-  .mc-shield--idle .mc-shield__mono,
   .mc-shield--idle .mc-shield__sig-line,
   .mc-shield--idle .mc-shield__swash {
     animation: mc-sh-foil 7s ease-in-out infinite alternate;
@@ -960,6 +933,62 @@
     }
     40% {
       filter: brightness(0.7) saturate(0.6);
+    }
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   The card alive (`tilt.ts` adds `mc-shield--alive` once it has mounted, client side only, never
+   under reduced motion, never during a beat, only while the card is on screen): a slow light that
+   crosses the face every few seconds, over the foil, the autograph and the metal, and the emblem's
+   diamond breathing. Transform and opacity only; at rest (and before it is mounted) the card is
+   fully drawn and still. The paid editions keep their own ambient light (later in this file, same
+   specificity, so theirs wins).
+   --------------------------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .mc-shield--alive:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--foil::after {
+    animation: mc-sh-glint 7.5s cubic-bezier(0.45, 0, 0.2, 1) 1.4s infinite;
+  }
+
+  .mc-shield--alive:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-shield__diamond {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mc-sh-breathe 4.2s ease-in-out infinite;
+  }
+
+  /* the sweep: in from the start edge, across in about a second and a half, then a long rest */
+  @keyframes mc-sh-glint {
+    0% {
+      opacity: 0;
+      transform: translateX(-70%);
+    }
+    3% {
+      opacity: 0.9;
+    }
+    20% {
+      opacity: 0;
+      transform: translateX(70%);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(70%);
+    }
+  }
+
+  @keyframes mc-sh-breathe {
+    0%,
+    100% {
+      transform: none;
+    }
+    50% {
+      transform: scale(1.1);
     }
   }
 }

@@ -7,7 +7,7 @@
  *       <span class="mc-shield__edge">             the card's thickness (a 2D offset at rest)
  *       <span class="mc-sl mc-sl--frame">          the metal, cut to the outline
  *       <span class="mc-sl mc-sl--face">           the face inside the frame: ribbon, wedge, band
- *       <span class="mc-sl mc-sl--art">            the monogram, the autograph and its swash
+ *       <span class="mc-sl mc-sl--art">            the autograph and its swash
  *       <span class="mc-sl mc-sl--text">           club, stats, crest, founder, serial, sample
  *       <span class="mc-sl mc-sl--num">            the rating, OVR, the tier word or forming marks
  *       <svg class="mc-sl mc-sl--lines">           rim, bevel and inner line
@@ -34,14 +34,7 @@ import {
 } from "./geometry";
 import { editionFx } from "./editions";
 import { cssVars } from "./metal";
-import {
-  fitSignature,
-  initialsOf,
-  measureEm,
-  monogramSize,
-  scriptOf,
-  type MeasureEm,
-} from "./name";
+import { fitSignature, measureEm, type MeasureEm } from "./name";
 import {
   crestColours,
   esc,
@@ -129,19 +122,13 @@ function rateBlock(v: ShieldView): string {
   return span("mc-shield__rate", span("mc-shield__ovr-row", number + unit) + under);
 }
 
-/** The monogram, the autograph and its swash. */
+/**
+ * The autograph and its swash. The face carries no monogram (owner, 2026-10-28: the faint initial
+ * behind the rating is gone); the name is written once, as the signature.
+ */
 function artBlock(v: ShieldView, measure: MeasureEm): string {
   const fit = fitSignature(v.p.name, measure);
   if (!fit) return "";
-  const initials = initialsOf(v.p.name);
-  const monoScript = scriptOf(initials);
-  const mono = initials
-    ? span(
-        `mc-shield__mono mc-shield__mono--${monoScript}`,
-        `<bdi>${esc(initials)}</bdi>`,
-        ` aria-hidden="true" style="font-size:${monogramSize(initials, monoScript)}cqw"`,
-      )
-    : "";
   const lines = fit.lines
     .map((line) =>
       span(
@@ -151,13 +138,10 @@ function artBlock(v: ShieldView, measure: MeasureEm): string {
       ),
     )
     .join("");
-  return (
-    mono +
-    span(
-      `mc-shield__sig mc-shield__sig--${fit.script}${fit.lines.length > 1 ? " mc-shield__sig--two" : ""}`,
-      lines + span("mc-shield__swash"),
-      ` aria-hidden="true" style="font-size:${fit.size}cqw"`,
-    )
+  return span(
+    `mc-shield__sig mc-shield__sig--${fit.script}${fit.lines.length > 1 ? " mc-shield__sig--two" : ""}`,
+    lines + span("mc-shield__swash"),
+    ` aria-hidden="true" style="font-size:${fit.size}cqw"`,
   );
 }
 

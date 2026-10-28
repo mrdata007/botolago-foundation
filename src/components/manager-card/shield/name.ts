@@ -38,8 +38,9 @@ export function signatureName(name: string): string {
 }
 
 /**
- * The monogram: the first letter of the first two words (one word gives one letter), capitals in a
- * Latin name. Digits and marks are skipped; an empty name has none.
+ * A name's initials: the first letter of the first two words (one word gives one letter), capitals
+ * in a Latin name. Digits and marks are skipped; an empty name has none. The card's face no longer
+ * draws them (2026-10-28); kept for whoever needs a name's initials.
  */
 export function initialsOf(name: string): string {
   const words = signatureName(name).split(" ").filter(Boolean);
@@ -193,12 +194,4 @@ export function fitSignature(name: string, measure: MeasureEm = measureEm): Sign
     script,
     size: round2(Math.max(two.floor, Math.min(two.max, SIG_BOX / best.width))),
   };
-}
-
-/** The monogram's size in `cqw`: it stands in a box 62 % wide, at most 30 % tall. */
-export function monogramSize(initials: string, script: Script): number {
-  const count = [...initials].length;
-  if (count === 0) return 0;
-  if (script === "arabic") return count === 1 ? 30 : 27;
-  return count === 1 ? 32 : 28;
 }
