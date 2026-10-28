@@ -20,6 +20,7 @@ import {
   patchManifest,
   patchManifestFileProvider,
   patchManifestNotificationIcon,
+  patchManifestAppLinks,
   patchManifestPortrait,
   patchPbxproj,
   patchPbxprojIphoneOnly,
@@ -814,6 +815,29 @@ describe("patchManifestPortrait", () => {
   });
 });
 
+describe("patchManifestAppLinks (ST-2)", () => {
+  test("answers https://botolago.com links, verified, inside the app's activity", () => {
+    const { text, changed } = patchManifestAppLinks(MANIFEST);
+    expect(changed).toBe(true);
+    const activity = text.slice(text.indexOf("<activity"), text.indexOf("</activity>"));
+    expect(activity).toContain('<intent-filter android:autoVerify="true">');
+    expect(activity).toContain('<action android:name="android.intent.action.VIEW" />');
+    expect(activity).toContain('<category android:name="android.intent.category.BROWSABLE" />');
+    expect(activity).toContain('<data android:scheme="https" android:host="botolago.com" />');
+    // The launcher filter is kept.
+    expect(activity).toContain('<category android:name="android.intent.category.LAUNCHER" />');
+  });
+
+  test("changes nothing the second time", () => {
+    const { text } = patchManifestAppLinks(MANIFEST);
+    expect(patchManifestAppLinks(text)).toEqual({ text, changed: false });
+  });
+
+  test("refuses a manifest with no MainActivity", () => {
+    expect(() => patchManifestAppLinks("<manifest></manifest>")).toThrow();
+  });
+});
+
 describe("patchManifestFileProvider and patchFilePaths", () => {
   test("Capacitor's template already has the provider @capacitor/share uses, with the cache", () => {
     expect(patchManifestFileProvider(MANIFEST)).toEqual({ text: MANIFEST, changed: false });
@@ -1013,8 +1037,8 @@ describe("prepareNative", () => {
     "android/app/src/main/res/drawable/splash.png": "Capacitor's logo",
     "android/app/build.gradle": BUILD_GRADLE,
   };
-  // 10 patched files, 4 written ones (entitlements, privacy manifest, 2 translations), 3 sets of images
-  const STEPS = 17;
+  // 11 patches, 4 written files (entitlements, privacy manifest, 2 translations), 3 sets of images
+  const STEPS = 18;
   // Checked, and already right in Capacitor's template: the file provider and its cache path.
   const TEMPLATE_HAS = 2;
 
@@ -1027,8 +1051,13 @@ describe("prepareNative", () => {
     expect(readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8")).toContain(
       "POST_NOTIFICATIONS",
     );
-    expect(readFileSync(join(root, "ios/App/App/App.entitlements"), "utf8")).toContain(
-      "<key>aps-environment</key>",
+    const entitlements = readFileSync(join(root, "ios/App/App/App.entitlements"), "utf8");
+    expect(entitlements).toContain("<key>aps-environment</key>");
+    expect(entitlements).toMatch(
+      /<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>\s*<string>applinks:botolago\.com<\/string>\s*<\/array>/,
+    );
+    expect(readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8")).toContain(
+      'android:host="botolago.com"',
     );
     const pbxproj = readFileSync(join(root, "ios/App/App.xcodeproj/project.pbxproj"), "utf8");
     expect(pbxproj).toContain("CODE_SIGN_ENTITLEMENTS");

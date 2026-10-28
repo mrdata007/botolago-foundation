@@ -7,8 +7,9 @@
 //
 //   iPhone   AppDelegate.swift passes the token Apple gives the app on to
 //            Capacitor (two methods, from the push plugin's own instructions).
-//            App.entitlements declares push, and the app target points at it
-//            (what Xcode's "+ Capability > Push Notifications" does).
+//            App.entitlements declares push and the botolago.com app links
+//            (Associated Domains), and the app target points at it (what
+//            Xcode's "+ Capability" does).
 //            iPhone only (no iPad), held upright. Info.plist: French first,
 //            Arabic second, and the camera and photo permission texts, reading
 //            and adding (also translated, in fr.lproj and ar.lproj
@@ -16,7 +17,8 @@
 //            manifest, in the app.
 //   Android  AndroidManifest.xml declares POST_NOTIFICATIONS. Without it Android
 //            13 and later never show the permission prompt. It also names the
-//            push alerts' small icon and colour, and holds the screen upright.
+//            push alerts' small icon and colour, holds the screen upright, and
+//            answers https://botolago.com links (verified app links).
 //            The file provider @capacitor/share hands the share picture
 //            through, with the app's cache in its paths (both in Capacitor's
 //            template; kept). Saving to the gallery needs no permission.
@@ -97,12 +99,21 @@ const ENTITLEMENTS_PATH = "App/App.entitlements";
 
 // `production`: every iPhone build the cloud makes is an App Store / TestFlight
 // one, signed for Apple's production push servers (the sender's default).
+//
+// `applinks:botolago.com` (ST-2): a botolago.com link opens the app, once Apple
+// finds the app in https://botolago.com/.well-known/apple-app-site-association.
+// The app id needs the Associated Domains capability in Apple Developer, or
+// the signing profile the cloud build fetches will not cover this file.
 const ENTITLEMENTS = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 \t<key>aps-environment</key>
 \t<string>production</string>
+\t<key>com.apple.developer.associated-domains</key>
+\t<array>
+\t\t<string>applinks:botolago.com</string>
+\t</array>
 </dict>
 </plist>
 `;
@@ -568,6 +579,31 @@ export function patchFilePaths(source) {
   return { text, changed: true };
 }
 
+const APP_LINKS_FILTER = `<intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="botolago.com" />
+            </intent-filter>`;
+
+/**
+ * `source` (AndroidManifest.xml) with the app answering https://botolago.com
+ * links (ST-2). `autoVerify`: Android checks
+ * https://botolago.com/.well-known/assetlinks.json and, when it names this app
+ * and its signing key, opens the links in the app without asking.
+ */
+export function patchManifestAppLinks(source) {
+  if (source.includes('android:host="botolago.com"')) return { text: source, changed: false };
+  const activity = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(source);
+  if (!activity)
+    throw new Error("AndroidManifest.xml is not the shape this expects (no MainActivity)");
+  const close = source.indexOf("</activity>", activity.index);
+  if (close === -1) throw new Error("AndroidManifest.xml is not the shape this expects");
+  const lineStart = source.lastIndexOf("\n", close - 1) + 1;
+  const text = `${source.slice(0, lineStart)}            ${APP_LINKS_FILTER}\n\n${source.slice(lineStart)}`;
+  return { text, changed: true };
+}
+
 /** `source` (AndroidManifest.xml) with the app's screen held upright, like the iPhone app. */
 export function patchManifestPortrait(source) {
   const activity = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(source);
@@ -717,6 +753,7 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
     "push alert icon and colour in AndroidManifest.xml",
   );
   apply(manifest, patchManifestPortrait, "portrait only in AndroidManifest.xml");
+  apply(manifest, patchManifestAppLinks, "botolago.com app links in AndroidManifest.xml");
   apply(
     manifest,
     patchManifestFileProvider,
@@ -731,7 +768,11 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
   );
 
   if (existsSync(pbxproj)) {
-    ensureFile(join(ios, ENTITLEMENTS_PATH), ENTITLEMENTS, "App.entitlements (declares push)");
+    ensureFile(
+      join(ios, ENTITLEMENTS_PATH),
+      ENTITLEMENTS,
+      "App.entitlements (declares push and applinks:botolago.com)",
+    );
     ensureFile(
       join(ios, PRIVACY_PATH),
       PRIVACY_MANIFEST,
