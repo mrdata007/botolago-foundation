@@ -70,6 +70,27 @@ retired. Everything else that brief and
    the club's short name from the app's club helper when the club is known. The
    story images are fixed pictures and are not touched.
 
+## Owner direction 2026-10-28: "not too pale, more alive, on brand" (applied)
+
+Only existing tokens, fonts and kit; no new section.
+
+- **Navy stays the stage.** The "Journée" band is the one dark anchor; the card
+  inside it carries the matchday.
+- **The countdown is the loudest thing on the card.** "Coup d'envoi dans" in the
+  small label style, then the time left ("1 h 13") in the Changa score style
+  (`ui.score.md`) in Fresh Turf (`--ui-accent-spring`, on navy, text on the
+  band only, never the gradient). A live or finished card says "En direct" /
+  "Terminé" in the same style.
+- **The result bar is in full club colours**, 16px tall on a surface plate (the
+  palette's edge colours are measured against it), and the two clubs' shares are
+  in the display face (`ui.score.row`); the draw stays a quiet line.
+- **The white sections below get life without a new section.** On the "À venir"
+  list, today's group leads with a Fresh Turf dot, a navy title and a 3px Fresh
+  Turf top edge on its card; the rows keep their club-colour edge bars. The
+  earned gradient stays on the Fantasy invitation's button, the one on the
+  screen: no second gradient is added.
+- Dark theme stays calm: the same navy band, the same measured club fills.
+
 ## Acceptance criteria
 
 - No row of three equal pills (1 / N / 2) anywhere on Home, in either language,
