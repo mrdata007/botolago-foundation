@@ -88,7 +88,7 @@ export function DeadlineCard({
           <>
             {/* One element, "Journée 14 · Date limite" — pinned by the e2e journey. */}
             <p className="flex flex-wrap items-baseline gap-x-2">
-              <span className={cn(ui.display.title, "uppercase")}>
+              <span className={cn(ui.display.hero, "uppercase")}>
                 {`${t("fpl.gameweek")} ${lead.number}`}
               </span>{" "}
               <span
@@ -110,13 +110,16 @@ export function DeadlineCard({
                 <div
                   key={label}
                   className={cn(
-                    "flex flex-col items-center px-1 py-2",
+                    "flex flex-col items-center px-1 py-2.5",
                     ui.radius.card,
-                    ui.surface.card,
+                    ui.surface.mesh,
                   )}
                 >
-                  <bdi className={cn(ui.score.md, ui.text.tabular, ui.tone.ink)}>{value}</bdi>
-                  <span className={cn(ui.text.micro, ui.tone.muted)}>{label}</span>
+                  {/* The countdown is the loudest thing on the screen. */}
+                  <bdi className={cn(ui.score.lg, ui.text.tabular, ui.tone.onInkPlain)}>
+                    {value}
+                  </bdi>
+                  <span className={cn(ui.text.micro, ui.tone.onInkMuted)}>{label}</span>
                 </div>
               ))}
             </div>
@@ -229,17 +232,17 @@ function RoundLine({ gameweek, now }: { gameweek: Gameweek; now: number }) {
         ? t("fantasy.deadline_card.round_cancelled")
         : t("fantasy.deadline_card.round_in_progress");
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5" data-live={headline.live}>
+    <span data-live={headline.live}>
       {headline.live ? (
         <span
           aria-hidden
           className={cn(
-            "live-breathe h-1.5 w-1.5 shrink-0 bg-[color:var(--ui-live)]",
+            "live-breathe me-2 inline-block h-2 w-2 align-middle bg-[color:var(--ui-live)]",
             ui.radius.full,
           )}
         />
       ) : null}
-      <span className="min-w-0">{template.replace("{n}", nf.format(current.number))}</span>
+      {template.replace("{n}", nf.format(current.number))}
     </span>
   );
 }

@@ -400,10 +400,11 @@ function TileGrid({ tiles, quiet = false }: { tiles: Tile[]; quiet?: boolean }) 
                 quiet
                   ? cn("h-5 w-5 [&_svg]:h-4 [&_svg]:w-4", ui.tone.ink)
                   : cn(
+                      // Navy discs: the shortcuts carry the brand colour, not
+                      // a grey wash (the gradient stays on the one action).
                       "h-9 w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]",
                       ui.radius.full,
-                      ui.surface.sunken,
-                      ui.tone.ink,
+                      ui.surface.inkControl,
                     ),
               )}
             >
@@ -513,8 +514,7 @@ function MoreAboutSection({ rules = true }: { rules?: boolean }) {
                   className={cn(
                     "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
                     ui.radius.full,
-                    ui.surface.sunken,
-                    ui.tone.ink,
+                    ui.surface.inkControl,
                   )}
                 >
                   {row.icon}

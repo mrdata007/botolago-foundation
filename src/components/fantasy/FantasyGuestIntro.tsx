@@ -251,15 +251,14 @@ function HowItWorks({ cardPoint = false }: { cardPoint?: boolean }) {
       <ul aria-labelledby={howId} className="mt-2 grid gap-3">
         {points.map((point) => (
           <li key={point.title} className="flex items-start gap-3">
-            {/* The rules page's gradient disc, with the rules page's icon
-                  for the same rule. */}
+            {/* A navy disc, with the rules page's icon for the same rule: the
+                  gradient on this card is the one button. */}
             <span
               className={cn(
                 "grid h-9 w-9 shrink-0 place-items-center",
                 ui.radius.full,
-                "text-[color:var(--ui-ink-deep)]",
+                ui.surface.inkControl,
               )}
-              style={{ backgroundImage: "var(--ui-grad-action)" }}
               aria-hidden
             >
               <point.icon className="h-[18px] w-[18px]" />

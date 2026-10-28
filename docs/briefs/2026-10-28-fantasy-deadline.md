@@ -53,18 +53,26 @@ to keep a merge trivial. Nothing is duplicated.
    query the live strip uses) holds a match of that round. Otherwise the sub-line
    says the round is in progress, with no dot. A live list that has not loaded or
    failed shows no dot.
-3. **Earned gradient.** DESIGN.md's Earned Gradient Rule lists the primary button,
-   the active nav pill, the deadline pill, progress, a selected Fantasy plate and
-   the promo card; a full-width slab is not on it. The card becomes a navy card
-   (ink fill, plain white text) in both themes; the gradient stays on the
-   deadline pill (clock, label, countdown, as DESIGN.md describes it) and on the
-   page's primary button. The three H/M/S tiles are replaced by that pill, which
-   reads "2 j 1 h 4 min" and also serves the next-deadline state.
+3. **Earned gradient, and a screen that is alive (owner decision 2026-10-28).**
+   DESIGN.md's Earned Gradient Rule lists the primary button, the active nav
+   pill, the deadline pill, progress, a selected Fantasy plate and the promo
+   card; a full-width slab is not on it. The card becomes a deep navy stage in
+   both themes, with the countdown as the loudest thing on the page: "Journée 6"
+   in the 46px Changa display step, and the three countdown tiles in 40px Changa
+   score digits on glass tiles. The tiles read days, hours and minutes from a
+   full day out ("02 jours 00 heures 41 minutes"), hours, minutes and seconds
+   inside the last day (padded with Latin digits as before). The gradient stays
+   on the one primary button ("Créer mon équipe" / the owner's next action). To
+   keep the rest of the hub from being a pale stack: the shortcut and "En savoir
+   plus" icon discs and the four "how it works" discs are navy (they were grey
+   washes and four extra gradient discs), and the visitor's secondary links are
+   flat pills.
 4. **One primary action, one rules link.** For a visitor "Créer mon équipe" is the
    one gradient action; "Classement général" and "Créer ou rejoindre une ligue"
-   become slim secondary links. "Règles du jeu" appears once (the "En savoir plus"
-   list); the second link inside the explanation card is removed, and the third
-   entry is renamed "Questions fréquentes" so it no longer repeats "Règles".
+   become slim secondary links. "Règles du jeu" appears once for a visitor (the
+   link under "Comment ça marche"; the "En savoir plus" list keeps it for owners,
+   who have no such card), and "Aide & Règles" is renamed "Questions fréquentes"
+   in that list so it no longer repeats "Règles".
 5. **Desktop width.** The hub uses the wide Fantasy canvas (`width="wide"`, the
    1024px token) and from `lg` a two-column board: deadline card, proposition or
    team card and the round on one side; shortcuts, leagues, News and "En savoir
@@ -83,10 +91,10 @@ card and cannot be checked without an account; flagged for the owner).
   closed; cancelled; unparsable date.
 - French and Arabic (RTL), light and dark, at 320, 390 and 1440px: no element
   crosses the viewport edge (measured with element boxes, not `scrollWidth`
-  alone); the card is navy, the only gradient objects above the fold are the
-  deadline pill and "Créer mon équipe".
+  alone); the card is navy and the only gradient object above the fold is
+  "Créer mon équipe".
 - With the live data of 2026-10-28 (J5 deadline passed, J6 on 30 Oct 17:30) the
   card reads "Journée 6 · Date limite", "ven. 30 oct., 17:30", the time left, and
   "Journée 5 en cours".
-- Relevant existing tests pass; changed expectations (tiles, rules button) are
+- Relevant existing tests pass; changed expectations (the card pins, the hub order pin) are
   updated, new logic has tests.
