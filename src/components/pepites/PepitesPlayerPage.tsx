@@ -31,9 +31,11 @@ import {
   componentLabel,
   formatCount,
   formatNumber,
+  META_SEPARATOR,
   playerPhotoUrl,
   positionLabel,
   teamAsClub,
+  teamShortName,
 } from "./pepites-format";
 import {
   PepitesComingSoon,
@@ -1010,7 +1012,7 @@ function RatingTrend({
                 <title>
                   {[
                     matchDate(match.kickoffAt),
-                    match.opponent ? tr(match.opponent.shortName) : null,
+                    match.opponent ? teamShortName(match.opponent, tr) : null,
                     formatNumber(match.rating, lang, 1),
                   ]
                     .filter(Boolean)
@@ -1077,7 +1079,7 @@ function MatchList({ matches, testId }: { matches: readonly PlayerMatch[]; testI
               : null,
           ]
             .filter(Boolean)
-            .join(" ");
+            .join(META_SEPARATOR);
           const place = match.home
             ? t("pepites.matches.home_long")
             : t("pepites.matches.away_long");

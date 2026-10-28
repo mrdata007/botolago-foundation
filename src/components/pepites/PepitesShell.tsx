@@ -141,6 +141,26 @@ const TITLE_FILLS_AND_WRAPS =
   "[&_:is(h1,h2)]:flex-[1_1_5em] [&_:is(h1,h2)]:whitespace-normal [&_:is(h1,h2)]:text-balance";
 
 /**
+ * A two-part title ("Top 10 · Semaine 6", "توب 10 · الأسبوع 6") for a phone:
+ * the parts stack, one per line, with no bullet. A bullet that wraps lands at
+ * the end of the first line with nothing after it ("توب 10 •"). From `sm` up
+ * the title is one line again and the bullet is back. The full text stays in
+ * the DOM (the separator is only hidden), so the heading still reads in one
+ * piece and assistive technology is unaffected.
+ */
+export function SplitTitle({ text }: { text: string }) {
+  const [lead, ...rest] = text.split(/\s*·\s*/);
+  if (!lead || rest.length === 0) return <>{text}</>;
+  return (
+    <>
+      <span className="block sm:inline">{lead}</span>
+      <span className="hidden sm:inline">{"\u00a0· "}</span>
+      <span className="block sm:inline">{rest.join(" · ")}</span>
+    </>
+  );
+}
+
+/**
  * A hub's title band: the kit's `UiPageTitle` (Changa h1, an inline-end
  * control, a chip row as `children`), with four Pépites needs on top:
  *

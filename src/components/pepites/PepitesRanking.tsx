@@ -42,6 +42,7 @@ import {
   positionShort,
   scoreText,
   teamAsClub,
+  teamShortName,
 } from "./pepites-format";
 import {
   PepitesComingSoon,
@@ -381,7 +382,7 @@ export function PepitesRanking({
             <option value="">{t("pepites.ranking.club")}</option>
             {teams.map((team) => (
               <option key={team.id} value={team.id}>
-                {tr(team.shortName)}
+                {teamShortName(team, tr)}
               </option>
             ))}
           </UiSelect>
@@ -610,7 +611,7 @@ function RankingTable({
                           {META_SEPARATOR}
                         </span>
                       ) : null}
-                      {row.team ? tr(row.team.shortName) : null}
+                      {row.team ? teamShortName(row.team, tr) : null}
                     </span>
                   </span>
                   {row.positionGroup ? (

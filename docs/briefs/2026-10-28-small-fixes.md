@@ -53,8 +53,8 @@ news-date, goal-difference, palette-clash and rankings changes are not touched. 
    clubs, Prospects, Pronostics) read the one helper.
 3. **Clubs page denser, colour stronger.** 16 clubs currently take about three phone
    screens of tall tiles with a thin bottom rule in the club colour. Becomes a compact
-   grid (three columns on a phone, crest above a short name) whose tile carries the club
-   colour as a visible top band and tint, from the existing club palette helpers.
+   grid (three columns on a phone, crest above a short name) whose tile is filled with the
+   club colour (see the owner direction below), from the existing club palette helpers.
 4. **Prospects wording.** « RISING » (English) becomes « Score » in French; the
    figures line « 0B 0PD » and the tile label « B+PD/90 » become words (« Buts … ·
    Passes déc. … », « Buts+passes / 90 min »); the ten dashed segments under each row
@@ -69,6 +69,22 @@ news-date, goal-difference, palette-clash and rankings changes are not touched. 
    `docs/backend/FANTASY_PLAYER_MAPPING_TABLE_AND_REVIEW_SCREEN_DESIGN.md` D5 records
    "no separately curated Arabic player-name spellings in v1". `name_ar` exists only on
    the legacy table in `src/integrations/supabase/types.ts`. Nothing changes; reported.
+
+## Owner direction 2026-10-28: "not too pale, more alive, on brand"
+
+Added after the first version of this brief; it supersedes the "thin colour rule" look
+of both screens. How it is applied, with existing tokens only:
+
+- **Clubs page:** each tile is filled with the club's own colour (`clubStyle` tokens,
+  `ui.club.fill`, the diagonal `club-stripes` texture, text measured for the fill, an
+  inverse crest plate, and the inner edge ring so a white kit such as Zemamra stays a
+  tile). Three across on a phone, four from `sm`, six from `lg`. Dark mode takes each
+  club's calmer dark answer from the same palette; nothing is added to the palette.
+- **Prospects rows:** the score is the loudest figure of the row (the `md` score ramp
+  instead of `sm`) in the club colour as text (`--ui-club-fg`, 4.5:1; plain foreground
+  in dark), the ten segments are lit in the club's edge colour, and the figures line
+  reads in the main text colour rather than muted grey. The leader's navy band stays
+  as the screen's anchor; no gradient is added.
 
 ## Acceptance criteria
 

@@ -76,7 +76,7 @@ describe("the Figma parts' helpers", () => {
       { t: t as never, tr: (value) => value.fr, lang: "fr" },
     );
     expect(line.replace(/[⁨⁩]/g, "")).toBe(
-      "IRT\u00a0· ATT\u00a0· 20A\u00a0· 1\u202f275’\u00a0· 0B 8PD",
+      "Ittihad Tanger\u00a0· ATT\u00a0· 20A\u00a0· 1\u202f275’\u00a0· 0B 8PD",
     );
     // A dot never starts a line: the space before it does not break.
     expect(line).not.toContain(" ·");

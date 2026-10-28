@@ -9,7 +9,13 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { useManagerCardLive } from "@/services/manager-card-status";
 
-import { editionItems, formatNumber, POSITION_GROUPS, positionShort } from "./pepites-format";
+import {
+  editionItems,
+  formatNumber,
+  META_SEPARATOR,
+  POSITION_GROUPS,
+  positionShort,
+} from "./pepites-format";
 import {
   PepitesBeforeFirstEdition,
   PepitesComingSoon,
@@ -20,7 +26,7 @@ import {
   UpdatedLine,
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
-import { PepitesChipRow, PepitesPageTitle, PepitesShell } from "./PepitesShell";
+import { PepitesChipRow, PepitesPageTitle, PepitesShell, SplitTitle } from "./PepitesShell";
 import { PepitesFeature } from "./PepitesFeature";
 import { TopTenList } from "./TopTenList";
 import {
@@ -184,7 +190,12 @@ export function PepitesHome() {
           : item.player.positionGroup === filter),
     );
     const [leader, ...rest] = filtered;
-    const kicker = t("pepites.hero.kicker").replace("{season}", edition.seasonLabel);
+    // "Semaine 6" is the editorial week of this Top 10; the rest of the app counts
+    // journées, so the journée it was drawn up after is named beside it.
+    const kicker = [
+      t("pepites.hero.kicker").replace("{season}", edition.seasonLabel),
+      t("pepites.home.after_round").replace("{round}", formatNumber(edition.round, lang)),
+    ].join(META_SEPARATOR);
     const title = t("pepites.home.week_title").replace("{n}", formatNumber(edition.week, lang));
     return (
       <PepitesShell
@@ -194,7 +205,7 @@ export function PepitesHome() {
             title={
               // The Top 10 below is labelled by this heading.
               <span id="pepites-edition-title" data-testid="pepites-edition-title">
-                {title}
+                <SplitTitle text={title} />
               </span>
             }
             trailing={

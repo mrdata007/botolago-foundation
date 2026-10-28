@@ -38,9 +38,12 @@ export function Seg10Bar({
   value,
   className,
   label,
+  club = false,
 }: {
   value: number | null | undefined;
   className?: string;
+  /** Lit segments in the club's own colour (edge token, 3:1 on the card) rather than the brand ink. */
+  club?: boolean;
   /** Names the bar (`role="img"`) when no figure beside it does. */
   label?: string;
 }) {
@@ -62,7 +65,11 @@ export function Seg10Bar({
             "h-full flex-1",
             ui.radius.full,
             "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-            index < lit ? "bg-[color:var(--ui-ink-fg)]" : "bg-[color:var(--ui-surface-sunken)]",
+            index < lit
+              ? club
+                ? "bg-[color:var(--ui-club-edge)]"
+                : "bg-[color:var(--ui-ink-fg)]"
+              : "bg-[color:var(--ui-surface-sunken)]",
           )}
           style={reveal === "played" ? { transitionDelay: `${index * 45}ms` } : undefined}
         />

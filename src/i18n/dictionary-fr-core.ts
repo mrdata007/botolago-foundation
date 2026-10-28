@@ -1251,7 +1251,7 @@ export const frCore = {
   "pepites.position_short.fwd": "ATT",
   "pepites.meta.age_short": "{n}A",
   "pepites.meta.age_long": "{n} ans",
-  "pepites.meta.goals_assists": "{g}B {a}PD",
+  "pepites.meta.goals_assists": "Buts\u00a0{g} · Passes\u00a0déc.\u00a0{a}",
   "pepites.movement.new_short": "NOUV.",
   "pepites.meta_title": "Prospects — le Top 10 des jeunes de Botola Pro | BotolaGO",
   "pepites.meta_description":
