@@ -714,32 +714,56 @@ function HomeContent() {
                   {shownDays.length === 0 ? (
                     <EmptyState compact>{t("home.mine_empty")}</EmptyState>
                   ) : null}
-                  {shownDays.map((day) => (
-                    <div key={day.key} className="min-w-0">
-                      <SectionGroupHeader as="h4" title={day.label} />
-                      {/* The card clips the rows' club edge bars to its corners. */}
-                      <UiCard
-                        padding="none"
-                        className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-                      >
-                        {day.matches.map((m) => {
-                          const home = clubById(m.homeClubId);
-                          const away = clubById(m.awayClubId);
-                          if (!home || !away) return null;
-                          return (
-                            <MatchCard
-                              key={m.id}
-                              match={m}
-                              home={home}
-                              away={away}
-                              variant="list"
-                              listGameweek={bandGameweekNumber}
-                            />
-                          );
-                        })}
-                      </UiCard>
-                    </div>
-                  ))}
+                  {shownDays.map((day) => {
+                    // Today's matches lead with a fresh-turf marker and top
+                    // edge (owner direction 2026-10-28: a matchday should read
+                    // as alive, not as one more grey list).
+                    const isToday = day.key === matchDayKey(now);
+                    return (
+                      <div key={day.key} className="min-w-0">
+                        <SectionGroupHeader
+                          as="h4"
+                          title={
+                            isToday ? (
+                              <span className="inline-flex items-center gap-2">
+                                <span
+                                  aria-hidden
+                                  className="size-2 rounded-full bg-[color:var(--ui-accent-spring)] ring-1 ring-[color:var(--ui-ink-fg)]"
+                                />
+                                <span className={ui.tone.ink}>{day.label}</span>
+                              </span>
+                            ) : (
+                              day.label
+                            )
+                          }
+                        />
+                        {/* The card clips the rows' club edge bars to its corners. */}
+                        <UiCard
+                          padding="none"
+                          className={cn(
+                            "divide-y divide-[color:var(--ui-rule)] overflow-hidden",
+                            isToday && "border-t-[3px] border-t-[color:var(--ui-accent-spring)]",
+                          )}
+                        >
+                          {day.matches.map((m) => {
+                            const home = clubById(m.homeClubId);
+                            const away = clubById(m.awayClubId);
+                            if (!home || !away) return null;
+                            return (
+                              <MatchCard
+                                key={m.id}
+                                match={m}
+                                home={home}
+                                away={away}
+                                variant="list"
+                                listGameweek={bandGameweekNumber}
+                              />
+                            );
+                          })}
+                        </UiCard>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </Section>

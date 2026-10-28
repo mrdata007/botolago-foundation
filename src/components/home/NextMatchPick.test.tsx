@@ -89,75 +89,144 @@ async function render(node: ReactElement, votes?: MatchVotesDto): Promise<string
 const pick = (props: Partial<Parameters<typeof NextMatchPick>[0]> = {}) => (
   <NextMatchPick match={MATCH} home={UTS} away={RSB} withVote {...props} />
 );
-const voteButtons = (html: string) => html.match(/aria-pressed=/g)?.length ?? 0;
+const pressed = (html: string) => html.match(/aria-pressed=/g)?.length ?? 0;
 
-describe("NextMatchPick — the vote row", () => {
-  it("holds the vote row's place while the votes are not known, as the server renders it", async () => {
+/** The winner question with the given tallies and the reader's own vote. */
+const withCounts = (
+  counts: { home: number; draw: number; away: number },
+  mine: "home" | "draw" | "away" | null = null,
+): MatchVotesDto => ({
+  ...OPEN,
+  questions: [
+    { question: "winner", counts, mine },
+    ...(OPEN as Extract<MatchVotesDto, { questions: unknown[] }>).questions.slice(1),
+  ],
+});
+
+describe("NextMatchPick — the vote area (owner decision 2026-10-28: not a 1X2 slip)", () => {
+  it("holds the vote area's place while the votes are not known, as the server renders it", async () => {
     const html = await render(pick());
     expect(html).toContain('data-testid="home-vote-hold"');
-    expect(voteButtons(html)).toBe(0);
-    // The hold is the question's line (invisible) and three blank capsules,
-    // hidden from assistive tech: nothing to read or press.
-    expect(html).toMatch(/<div class="mt-3" aria-hidden="true" data-testid="home-vote-hold">/);
+    expect(pressed(html)).toBe(0);
+    // Hidden from assistive tech: nothing to read or press yet.
+    expect(html).toMatch(/aria-hidden="true"[^>]*data-testid="home-vote-hold"/);
     expect(html).toContain("invisible");
-    expect(html.match(/min-h-\[var\(--ui-tap-min\)\]/g)?.length).toBe(3);
   });
 
-  it("holds the place in the buttons' own shape, labels kept invisible, so it wraps where they will", async () => {
-    const held = await render(pick());
-    const shown = await render(pick(), OPEN);
-    const hold = held.slice(held.indexOf('data-testid="home-vote-hold"'));
-    for (const label of ["UTS Rabat", fr["predictions.votes.draw"], "RSB Berkane"]) {
-      expect(hold).toContain(`<span class="invisible">${label}</span>`);
-    }
-    // The capsule's classes are the button's, up to the edge colour and fill.
-    const shell = (html: string, tag: string) =>
-      [...html.matchAll(new RegExp(`<${tag} [^>]*class="(flex min-h-[^"]+)"`, "g"))].map((m) =>
-        m[1]!.split(" ").filter((c) => !/^(border-|bg-|text-\[color|focus-visible)/.test(c)),
-      );
-    expect(shell(shown, "button")).toHaveLength(3);
-    expect(shell(hold, "span")).toEqual(shell(shown, "button"));
-    // Every state carries the 1px edge, so a chosen button is as tall as the rest.
-    expect(shell(shown, "button").every((classes) => classes.includes("border"))).toBe(true);
-  });
-
-  it("shows the question and its three buttons once the votes are in", async () => {
+  it("asks 'Votre favori ?' with the two clubs as the vote targets and the draw as quiet text", async () => {
     const html = await render(pick(), OPEN);
     expect(html).not.toContain("home-vote-hold");
-    expect(voteButtons(html)).toBe(3);
-    expect(html).toContain(fr["predictions.votes.winner"]);
-    expect(html).toContain(fr["predictions.votes.draw"]);
+    expect(html).toContain(fr["home.pick.title"]);
+    expect(html).not.toContain(fr["predictions.votes.winner"]);
+    // Two clubs and the draw: three controls, but never a row of three equal pills.
+    expect(pressed(html)).toBe(3);
+    expect(html).not.toContain("grid-cols-3");
+    const buttons = [...html.matchAll(/<button [^>]*aria-pressed[^>]*>(.*?)<\/button>/g)];
+    expect(buttons).toHaveLength(3);
+    expect(buttons[0]![0]).toContain("UTS Rabat");
+    expect(buttons[2]![0]).toContain(fr["predictions.votes.draw"]);
+    expect(buttons[2]![0]).not.toContain("border-[color");
+    expect(buttons[2]![0]).not.toContain("rounded-full");
+    // Home's club is on the start side, away on the end side, the draw under them.
+    expect(html.indexOf("UTS Rabat")).toBeLessThan(html.indexOf("RSB Berkane"));
+    // Every control is at least a tap target tall.
+    for (const [button] of buttons) expect(button).toContain("min-h-[var(--ui-tap-min)]");
   });
 
-  it("closes the row when there is no vote to cast", async () => {
+  it("shows no result before the reader has voted", async () => {
+    const html = await render(pick(), withCounts({ home: 52, draw: 14, away: 34 }));
+    expect(html).toContain('data-revealed="false"');
+    expect(html).not.toMatch(/52\s%/);
+  });
+
+  it("after a vote, shows the split as a bar in the clubs' colours with percentages", async () => {
+    const html = await render(pick(), withCounts({ home: 52, draw: 14, away: 34 }, "home"));
+    expect(html).toContain('data-revealed="true"');
+    expect(html).toMatch(/52\s%/);
+    expect(html).toMatch(/34\s%/);
+    expect(html).toMatch(/14\s%/);
+    // The bar's two club segments carry the club layer (`data-club`), the draw a neutral.
+    const bar = html.slice(html.indexOf('data-testid="home-vote-bar"'));
+    expect(bar.match(/data-club=""/g)).toHaveLength(2);
+    expect(bar).toContain("flex:52 1 0");
+    expect(bar).toContain("flex:14 1 0");
+    expect(bar).toContain("flex:34 1 0");
+    // The reader's choice is the pressed one.
+    expect(html).toMatch(/aria-pressed="true"[^>]*>(?:(?!<\/button>).)*UTS Rabat/s);
+  });
+
+  it("shows no percentage under the match page's threshold of votes, even after a vote", async () => {
+    const html = await render(pick(), withCounts({ home: 5, draw: 2, away: 3 }, "home"));
+    expect(html).toContain('data-revealed="false"');
+    expect(html).not.toMatch(/\d\s%/);
+  });
+
+  it("closes the area when there is no vote to cast", async () => {
     const html = await render(pick(), OFF);
     expect(html).not.toContain("home-vote-hold");
-    expect(voteButtons(html)).toBe(0);
+    expect(html).not.toContain("home-vote-split");
+    expect(pressed(html)).toBe(0);
+    expect(html).not.toContain(fr["home.pick.title"]);
   });
 
-  it("draws no vote row at all when the caller offers none", async () => {
+  it("draws no vote area at all when the caller offers none, nor for a match under way", async () => {
     const html = await render(pick({ withVote: false }));
     expect(html).not.toContain("home-vote-hold");
-    expect(voteButtons(html)).toBe(0);
+    expect(pressed(html)).toBe(0);
+    const live = await render(pick({ match: { ...MATCH, status: "live" } }), OPEN);
+    expect(pressed(live)).toBe(0);
   });
 
   it("holds nothing when the caller expects no vote, and still shows votes once read", async () => {
     const html = await render(pick({ holdVote: false }));
     expect(html).not.toContain("home-vote-hold");
-    expect(voteButtons(html)).toBe(0);
-    expect(voteButtons(await render(pick({ holdVote: false }), OPEN))).toBe(3);
+    expect(pressed(html)).toBe(0);
+    expect(pressed(await render(pick({ holdVote: false }), OPEN))).toBe(3);
   });
 
   it("tells the caller when a read finds the game closed (or fails), as it is true of every match", () => {
     const source = readFileSync(join(import.meta.dir, "NextMatchPick.tsx"), "utf8");
-    expect(source).toContain("const gameClosed = dto ? !dto.allowed : votes.failed;");
+    expect(source).toContain("wanted && (dto ? !dto.allowed : votes.failed)");
     expect(source).toMatch(/if \(gameClosed\) onGameClosed\?\.\(\);/);
-    expect(source).toContain("hold && votes.pending ? <WinnerPickHold");
+    expect(source).toContain("holding: hold && !view && votes.pending");
   });
 
-  it("waiting to read the votes holds the row, and shows votes it has already read", async () => {
+  it("waiting to read the votes holds the area, and shows votes it has already read", async () => {
     expect(await render(pick({ votesEnabled: false }))).toContain("home-vote-hold");
-    expect(voteButtons(await render(pick({ votesEnabled: false }), OPEN))).toBe(3);
+    expect(pressed(await render(pick({ votesEnabled: false }), OPEN))).toBe(3);
+  });
+
+  it("casts the same 'winner' vote as the match page", () => {
+    const source = readFileSync(join(import.meta.dir, "NextMatchPick.tsx"), "utf8");
+    expect(source).toContain('votes.cast("winner", choice)');
+    expect(source).toContain("useMatchVotes(match.id");
+  });
+});
+
+describe("NextMatchPick — the kick-off line", () => {
+  it("holds the countdown's two lines empty in the server render, so nothing moves when it fills", async () => {
+    const html = await render(pick());
+    expect(html).toMatch(/data-testid="home-kickoff-countdown" data-state="pending"/);
+  });
+
+  it("shows the kickoff time, the link to the match page and the weekday", async () => {
+    const html = await render(pick());
+    expect(html).toContain(`href="/matches/${MATCH.id}"`);
+    expect(html).toContain("16:00");
+  });
+
+  it("shows the score of a match under way or over, from the data the card already has", async () => {
+    const live = await render(
+      pick({ match: { ...MATCH, status: "live", homeScore: 2, awayScore: 1 } }),
+    );
+    expect(live).toContain('data-state="live"');
+    expect(live).toContain("<bdi>2</bdi>");
+    expect(live).not.toContain("16:00");
+    const done = await render(
+      pick({ match: { ...MATCH, status: "finished", homeScore: 0, awayScore: 0 } }),
+    );
+    expect(done).toContain('data-state="finished"');
+    expect(done).toContain(fr["matches.status.finished"]);
   });
 });
 
@@ -165,8 +234,10 @@ describe("NextMatchPick — in the band's carousel", () => {
   it("keeps today's top margin on its own, and fills its slide in the carousel", async () => {
     const alone = await render(pick());
     const slide = await render(pick({ fill: true }));
-    expect(alone).toMatch(/class="p-3 mt-5 [^"]*" data-testid="home-next-match"/);
-    expect(slide).toMatch(/class="p-3 flex flex-1 flex-col [^"]*" data-testid="home-next-match"/);
-    expect(slide).not.toMatch(/class="p-3 mt-5/);
+    expect(alone).toMatch(/class="relative p-3 mt-5 [^"]*" data-testid="home-next-match"/);
+    expect(slide).toMatch(
+      /class="relative p-3 flex flex-1 flex-col [^"]*" data-testid="home-next-match"/,
+    );
+    expect(slide).not.toMatch(/class="relative p-3 mt-5/);
   });
 });

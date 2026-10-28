@@ -8,6 +8,8 @@ import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { footballService } from "@/services/football";
+import { storyCaption } from "./story-caption";
 
 /**
  * The full-screen viewer opens on a tap, so its code is not part of the page's
@@ -56,7 +58,14 @@ function StoriesReserve() {
 }
 
 export function PublishedStories({ stories }: { stories: readonly HomeStory[] }) {
-  const { lang, t } = useI18n();
+  const { lang, t, tr } = useI18n();
+  // Arabic captions name the clubs from their codes. The clubs are the ones
+  // Home already reads (same key, so no second request); French needs none.
+  const clubs = useQuery({
+    queryKey: ["football", "clubs", lang],
+    queryFn: () => footballService.getClubs(lang),
+    enabled: lang === "ar" && stories.some((story) => story.generated),
+  });
   const trigger = useRef<HTMLButtonElement | null>(null);
   const [view, setView] = useState<{ items: readonly HomeStory[]; index: number } | null>(null);
   const hasStories = stories.length > 0;
@@ -70,6 +79,14 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
     return () => window.clearTimeout(id);
   }, [hasStories]);
   if (!hasStories) return null;
+  /** The line under a circle: a generated story's matchup, or a published story's own title. */
+  const caption = (story: HomeStory) => {
+    if (!story.generated) return <bdi>{lang === "ar" ? story.titleAr : story.titleFr}</bdi>;
+    if (story.railLabel === "ACTU" || !story.railLabel)
+      return <bdi dir="ltr">{lang === "ar" ? "أخبار" : "Actu"}</bdi>;
+    const { text, dir } = storyCaption(story.railLabel, { lang, clubs: clubs.data, tr });
+    return <bdi dir={dir}>{text}</bdi>;
+  };
   return (
     <>
       <section
@@ -124,17 +141,7 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
                     "block w-full truncate text-center leading-4 [font-weight:var(--ui-weight-heavy)] group-hover:underline",
                   )}
                 >
-                  <bdi dir={story.generated ? "ltr" : undefined}>
-                    {story.generated
-                      ? story.railLabel === "ACTU" || !story.railLabel
-                        ? lang === "ar"
-                          ? "أخبار"
-                          : "Actu"
-                        : story.railLabel
-                      : lang === "ar"
-                        ? story.titleAr
-                        : story.titleFr}
-                  </bdi>
+                  {caption(story)}
                 </span>
               </button>
             </li>

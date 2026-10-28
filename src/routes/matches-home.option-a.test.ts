@@ -29,7 +29,7 @@ describe("Home (A-Home)", () => {
     );
     expect(home).toMatch(/variant="list"/);
     // The card of rows clips the club edge bars to its corners.
-    expect(home).toMatch(/<UiCard[\s\S]{0,120}overflow-hidden[\s\S]{0,200}day\.matches\.map/);
+    expect(home).toMatch(/<UiCard[\s\S]{0,200}overflow-hidden[\s\S]{0,300}day\.matches\.map/);
   });
 
   it("follows a live score at the live strip's pace, and watches a match about to kick off", () => {
