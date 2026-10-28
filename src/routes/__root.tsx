@@ -25,6 +25,7 @@ import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { SectionWarmup } from "@/components/shell/SectionWarmup";
+import { IntentPreload } from "@/components/shell/IntentPreload";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -399,6 +400,7 @@ function RootComponent() {
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
               <ManagerCardLiveMarker />
               <SectionWarmup />
+              <IntentPreload />
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
