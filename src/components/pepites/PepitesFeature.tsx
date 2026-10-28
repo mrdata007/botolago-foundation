@@ -219,7 +219,7 @@ export function PepitesFeature({
                   {scoreText(score, lang, t("pepites.unranked"))}
                 </bdi>
               </span>
-              <span className={cn(ui.text.label, ui.tone.onInkMuted)}>
+              <span className={cn("w-min text-center", ui.text.label, ui.tone.onInkMuted)}>
                 {t("pepites.score_name")}
               </span>
             </span>

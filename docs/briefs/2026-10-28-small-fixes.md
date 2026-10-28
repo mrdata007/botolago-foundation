@@ -34,6 +34,9 @@ news-date, goal-difference, palette-clash and rankings changes are not touched. 
 - French and Arabic (RTL, logical properties, Latin digits, no Arabic letter-spacing),
   light and dark, 320 to 1440px, no horizontal overflow.
 
+Owner confirmation, 2026-10-28: the club codes WAC, FAR, AMT and WAT (the ones #375 left
+open) are confirmed.
+
 ## Findings and improvements
 
 1. **Reminder bell.** Inspected: the bell saves a match subscription on the server, and
@@ -60,10 +63,14 @@ news-date, goal-difference, palette-clash and rankings changes are not touched. 
    screens of tall tiles with a thin bottom rule in the club colour. Becomes a compact
    grid (three columns on a phone, crest above a short name) whose tile is filled with the
    club colour (see the owner direction below), from the existing club palette helpers.
-4. **Prospects wording.** The French « RISING » label is **kept as it is, pending owner
-   decision**: "Rising score" is the Prospects score's product name in the plans, so
-   renaming it is a brand decision that has not been made (the Arabic label is already
-   Arabic, « صعود »). The figures line « 0B 0PD » and the tile label « B+PD/90 » become words (« Buts … ·
+4. **Prospects wording.** Owner decision 2026-10-28: the French name of the Prospects
+   score is « Résultat Prospects », replacing « Rising » / « RISING » wherever the reader
+   sees it (score label, rank line, sort and compare labels, the share image subtitle),
+   in the casing each place used. Where space is tight it is a two-line label: under the
+   score in the hero and in the Top 10 rows (and on a 320px phone the row's score and
+   its name take their own line under the row, so the name label does not squeeze the
+   player's name), and under the ring on a player's page. Arabic is unchanged (« صعود »,
+   the owner named only the French); keys, events and URLs keep their names. The figures line « 0B 0PD » and the tile label « B+PD/90 » become words (« Buts … ·
    Passes déc. … », « Buts+passes / 90 min »); the ten dashed segments under each row
    get a one-line key ("barre = score sur 100, un segment par tranche de 10 points").
    « Semaine 6 » is the editorial week of the Top 10 (an edition is published each week;
@@ -103,7 +110,7 @@ of both screens. How it is applied, with existing tokens only:
   "WAC"/"Wydad", FAR is "FAR", never "WCA"/"ASFAR".
 - `/clubs` at 390px fits in about half the previous height; each tile shows the club's
   colour clearly; colours come from `clubStyle`/the palette, text contrast unchanged.
-- Prospects keeps the French « RISING » label (pending owner decision); no "0B 0PD"; the Top 10
+- Prospects names the score « Résultat Prospects » in French (Arabic unchanged), fitting at 320px; no "0B 0PD"; the Top 10
   title has no dangling bullet at 320 and 390px in Arabic; the key line is present in
   both languages.
 - `bunx tsc --noEmit`, eslint and prettier on changed files, and the related tests pass.

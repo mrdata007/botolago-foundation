@@ -365,8 +365,8 @@ export function PepitesShirt({
  * ScoreRing: the Pépites score on a ring, the arc in the brand foreground
  * (`--ui-ink-fg`) over the sunken track, from twelve o'clock clockwise,
  * `score / 100` of the way round. The figure is `ui.score.sm` (`ui.score.md`
- * from a 96px ring) in the brand foreground, the label under it
- * `ui.text.label` muted. The arc stays clockwise in Arabic, as a clock does.
+ * from a 96px ring) in the brand foreground, the label under the ring
+ * (`ui.text.label` muted). The arc stays clockwise in Arabic, as a clock does.
  */
 export function ScoreRing({
   score,
@@ -391,38 +391,46 @@ export function ScoreRing({
   return (
     <div
       ref={revealRef}
-      className="relative inline-flex shrink-0 items-center justify-center"
-      style={{ width: size, height: size }}
+      className="inline-flex shrink-0 flex-col items-center gap-1.5"
       data-testid={testId}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--ui-surface-sunken)"
-          strokeWidth={stroke}
-        />
-        {hasScore ? (
+      {/* The ring holds the figure; the name sits under it, where a long one
+          ("RÉSULTAT PROSPECTS") has room, not inside the arc. */}
+      <div
+        className="relative inline-flex shrink-0 items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
           <circle
-            className="transition-[stroke-dasharray] duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]"
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="var(--ui-ink-fg)"
+            stroke="var(--ui-surface-sunken)"
             strokeWidth={stroke}
-            strokeDasharray={`${circumference * share} ${circumference}`}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
           />
-        ) : null}
-      </svg>
-      <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-        <bdi className={cn(size >= 96 ? ui.score.md : ui.score.sm, ui.tone.ink)}>
-          {typeof score === "number" ? formatNumber(Math.round(score), lang) : "–"}
-        </bdi>
-        <span className={cn(ui.text.label, ui.tone.muted)}>{label}</span>
+          {hasScore ? (
+            <circle
+              className="transition-[stroke-dasharray] duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]"
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="var(--ui-ink-fg)"
+              strokeWidth={stroke}
+              strokeDasharray={`${circumference * share} ${circumference}`}
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+            />
+          ) : null}
+        </svg>
+        <span className="absolute inset-0 flex flex-col items-center justify-center">
+          <bdi className={cn(size >= 96 ? ui.score.md : ui.score.sm, ui.tone.ink)}>
+            {typeof score === "number" ? formatNumber(Math.round(score), lang) : "–"}
+          </bdi>
+        </span>
+      </div>
+      <span className={cn("max-w-40 text-balance text-center", ui.text.label, ui.tone.muted)}>
+        {label}
       </span>
     </div>
   );

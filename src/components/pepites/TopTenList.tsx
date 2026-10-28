@@ -93,7 +93,7 @@ export function LeaderboardRow({
         ui.focus,
       )}
     >
-      <div className="flex items-center gap-3 @max-[11rem]:flex-wrap">
+      <div className="flex items-center gap-3 @max-[19.5rem]:flex-wrap">
         <RankPlate rank={item.rank} size="md" />
         <PepitesIdentityDisc player={player} listed={listed} size="md" />
         <div className="flex min-w-0 flex-1 flex-col gap-1 @max-[11rem]:basis-full">
@@ -121,9 +121,16 @@ export function LeaderboardRow({
           ) : null}
           <Seg10Bar value={item.score} club className="mt-1" />
         </div>
-        <span className="flex shrink-0 flex-col items-end gap-0.5">
+        {/* Narrow (a 320px phone): the score and its name take a line of their own under
+            the row, so the two-line name label ("RÉSULTAT PROSPECTS") does not squeeze the
+            player's name. */}
+        <span className="flex shrink-0 flex-col items-end gap-0.5 @max-[19.5rem]:basis-full @max-[19.5rem]:flex-row @max-[19.5rem]:items-baseline @max-[19.5rem]:justify-end @max-[19.5rem]:gap-2">
           <ScoreFigure score={item.score} ramp={ui.score.md} />
-          <span className={cn(ui.text.label, ui.tone.muted)}>{t("pepites.score_name")}</span>
+          <span
+            className={cn("w-min text-end @max-[19.5rem]:w-auto", ui.text.label, ui.tone.muted)}
+          >
+            {t("pepites.score_name")}
+          </span>
         </span>
       </div>
       {reason ? <p className={cn("ps-12", ui.text.secondary, ui.tone.muted)}>{reason}</p> : null}
