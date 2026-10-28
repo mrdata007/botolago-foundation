@@ -196,149 +196,158 @@ function FantasyHub() {
   });
 
   return (
-    <FantasyFrame bottomNav topBar="always">
+    <FantasyFrame bottomNav topBar="always" width="wide">
       <UiPageTitle title={t("fantasy.title")} />
 
-      {gameweek && screen.phase === "ready" ? (
-        <DeadlineCard
-          gameweek={gameweek}
-          checklist={checklist}
-          freeTransfers={hasTeam && team ? team.freeTransfers : undefined}
-        />
-      ) : screen.phase === "loading" ? (
-        // Hold the height of the card that is coming, so nothing below moves
-        // when it arrives. A visitor with no account gets the countdown alone;
-        // anyone signed in is held at the manager's card (countdown, checklist
-        // and two buttons), the common case. Measured at 390px: French 199 and
-        // 317, Arabic 233 and 361. A signed-in reader with no team, or a
-        // gameweek past its deadline, gets a shorter card than the placeholder.
-        <UiSkeleton
-          className={cn(
-            "rounded-none",
-            DEADLINE_SKELETON_HEIGHT[
-              authStatus === "guest" || authStatus === "anonymous" ? "guest" : "owner"
-            ][lang === "ar" ? "ar" : "fr"],
-          )}
-        />
-      ) : null}
+      {/* Phones: one column, in the order the blocks are written (`contents`
+          removes both wrappers). From `lg` the board is two columns: the
+          deadline, the team and the round on one side, the shortcuts, leagues,
+          News and "more about" on the other. */}
+      <div className="contents lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start lg:gap-x-2">
+        <div className="contents lg:block lg:min-w-0">
+          {gameweek && screen.phase === "ready" ? (
+            <DeadlineCard
+              gameweek={gameweek}
+              checklist={checklist}
+              freeTransfers={hasTeam && team ? team.freeTransfers : undefined}
+            />
+          ) : screen.phase === "loading" ? (
+            // Hold the height of the card that is coming, so nothing below moves
+            // when it arrives. A visitor with no account gets the countdown alone;
+            // anyone signed in is held at the manager's card (countdown, checklist
+            // and two buttons), the common case. Measured at 390px: French 199 and
+            // 317, Arabic 233 and 361. A signed-in reader with no team, or a
+            // gameweek past its deadline, gets a shorter card than the placeholder.
+            <UiSkeleton
+              className={cn(
+                "rounded-none",
+                DEADLINE_SKELETON_HEIGHT[
+                  authStatus === "guest" || authStatus === "anonymous" ? "guest" : "owner"
+                ][lang === "ar" ? "ar" : "fr"],
+              )}
+            />
+          ) : null}
 
-      {!hasTeam ? <VisitorBoardTiles /> : null}
+          {!hasTeam ? <VisitorBoardTiles /> : null}
 
-      {/* BotolaGO+ « Briefing avant la deadline »: nothing while the feature is off. */}
-      {hasTeam && gameweek && screen.phase === "ready" ? (
-        <div className={ui.space.gutter}>
-          <PlusBriefingEntry gameweekNumber={gameweek.number} />
-        </div>
-      ) : null}
+          {/* BotolaGO+ « Briefing avant la deadline »: nothing while the feature is off. */}
+          {hasTeam && gameweek && screen.phase === "ready" ? (
+            <div className={ui.space.gutter}>
+              <PlusBriefingEntry gameweekNumber={gameweek.number} />
+            </div>
+          ) : null}
 
-      <div className={cn("pt-3.5", ui.space.gutter)}>
-        <FantasyHubTeamArea
-          layout={layout}
-          phase={screen.phase}
-          retry={screen.retry}
-          gameweek={gameweek}
-          team={team}
-          displayName={user?.displayName ?? null}
-          summary={summary.data ?? null}
-          summaryPending={summary.isPending}
-          summaryFailed={summary.isError}
-          prizes={(introPrizes.data?.length ?? 0) > 0}
-        />
-      </div>
-
-      {hasTeam && team && gameweek && screen.phase === "ready" ? (
-        <FantasyHubRound
-          team={team}
-          players={screen.players}
-          clubs={screen.clubs}
-          fixtures={fixtures.data ?? []}
-          fixturesPending={fixtures.isPending}
-          gameweek={gameweek}
-          summary={summary.data ?? null}
-          summaryPending={summary.isPending}
-        />
-      ) : null}
-
-      <ShortcutTiles />
-
-      {closedGuest ? (
-        <div className={cn("mt-4", ui.space.gutter)}>
-          <FantasyGuestExplainer prizes={(introPrizes.data?.length ?? 0) > 0} />
-        </div>
-      ) : null}
-
-      {/* Personal: an overall rank, private leagues, a cup to qualify for.
-          None of it can apply before there is a team. */}
-      <FantasyHubLeagues
-        layout={layout}
-        gameweek={gameweek?.number ?? null}
-        overallRank={summary.data?.overallRank ?? null}
-        leagues={leagues.data ?? []}
-        leaguesLoading={leagues.isPending && leagues.isEnabled}
-      />
-
-      {/* News & Video — follows NEWS_ENABLED. */}
-      {NEWS_ENABLED && (
-        <section className="mt-6">
-          <div className={ui.space.gutter}>
-            <SectionHeader
-              title={t("fpl.news_video")}
-              action={<SectionHeaderLink to="/news">{t("fpl.view_all")}</SectionHeaderLink>}
+          <div className={cn("pt-3.5", ui.space.gutter)}>
+            <FantasyHubTeamArea
+              layout={layout}
+              phase={screen.phase}
+              retry={screen.retry}
+              gameweek={gameweek}
+              team={team}
+              displayName={user?.displayName ?? null}
+              summary={summary.data ?? null}
+              summaryPending={summary.isPending}
+              summaryFailed={summary.isError}
+              prizes={(introPrizes.data?.length ?? 0) > 0}
             />
           </div>
-          <div
-            className={cn(
-              "flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]",
-              ui.space.gutter,
-            )}
-          >
-            {hubArticles.map((article) => (
-              <Link
-                key={article.id}
-                to="/news/$articleId"
-                params={{ articleId: article.id }}
+
+          {hasTeam && team && gameweek && screen.phase === "ready" ? (
+            <FantasyHubRound
+              team={team}
+              players={screen.players}
+              clubs={screen.clubs}
+              fixtures={fixtures.data ?? []}
+              fixturesPending={fixtures.isPending}
+              gameweek={gameweek}
+              summary={summary.data ?? null}
+              summaryPending={summary.isPending}
+            />
+          ) : null}
+        </div>
+        <div className="contents lg:block lg:min-w-0">
+          <ShortcutTiles />
+
+          {closedGuest ? (
+            <div className={cn("mt-4", ui.space.gutter)}>
+              <FantasyGuestExplainer prizes={(introPrizes.data?.length ?? 0) > 0} />
+            </div>
+          ) : null}
+
+          {/* Personal: an overall rank, private leagues, a cup to qualify for.
+          None of it can apply before there is a team. */}
+          <FantasyHubLeagues
+            layout={layout}
+            gameweek={gameweek?.number ?? null}
+            overallRank={summary.data?.overallRank ?? null}
+            leagues={leagues.data ?? []}
+            leaguesLoading={leagues.isPending && leagues.isEnabled}
+          />
+
+          {/* News & Video — follows NEWS_ENABLED. */}
+          {NEWS_ENABLED && (
+            <section className="mt-6">
+              <div className={ui.space.gutter}>
+                <SectionHeader
+                  title={t("fpl.news_video")}
+                  action={<SectionHeaderLink to="/news">{t("fpl.view_all")}</SectionHeaderLink>}
+                />
+              </div>
+              <div
                 className={cn(
-                  "w-[190px] shrink-0 snap-start overflow-hidden",
-                  ui.surface.card,
-                  ui.focus,
+                  "flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]",
+                  ui.space.gutter,
                 )}
               >
-                {article.heroUrl ? (
-                  <MediaImage
-                    src={article.heroUrl}
-                    alt={article.heroAlt ?? ""}
-                    fallback={article.heroGradient}
-                    frame={{ sizes: "190px", ratio: 16 / 10 }}
-                    className="aspect-[16/10] w-full"
-                  />
-                ) : null}
-                <p
-                  className={cn(
-                    "line-clamp-3 px-3 py-2",
-                    ui.text.meta,
-                    "[font-weight:var(--ui-weight-heavy)]",
-                    ui.tone.default,
-                  )}
-                >
-                  {article.title[lang] ?? article.title.fr}
-                </p>
-              </Link>
-            ))}
-            {articles.isPending
-              ? [0, 1, 2].map((index) => (
-                  <UiSkeleton
-                    key={index}
-                    className={cn("h-[170px] w-[190px] shrink-0", ui.radius.card)}
-                  />
-                ))
-              : null}
-          </div>
-        </section>
-      )}
+                {hubArticles.map((article) => (
+                  <Link
+                    key={article.id}
+                    to="/news/$articleId"
+                    params={{ articleId: article.id }}
+                    className={cn(
+                      "w-[190px] shrink-0 snap-start overflow-hidden",
+                      ui.surface.card,
+                      ui.focus,
+                    )}
+                  >
+                    {article.heroUrl ? (
+                      <MediaImage
+                        src={article.heroUrl}
+                        alt={article.heroAlt ?? ""}
+                        fallback={article.heroGradient}
+                        frame={{ sizes: "190px", ratio: 16 / 10 }}
+                        className="aspect-[16/10] w-full"
+                      />
+                    ) : null}
+                    <p
+                      className={cn(
+                        "line-clamp-3 px-3 py-2",
+                        ui.text.meta,
+                        "[font-weight:var(--ui-weight-heavy)]",
+                        ui.tone.default,
+                      )}
+                    >
+                      {article.title[lang] ?? article.title.fr}
+                    </p>
+                  </Link>
+                ))}
+                {articles.isPending
+                  ? [0, 1, 2].map((index) => (
+                      <UiSkeleton
+                        key={index}
+                        className={cn("h-[170px] w-[190px] shrink-0", ui.radius.card)}
+                      />
+                    ))
+                  : null}
+              </div>
+            </section>
+          )}
 
-      <FantasyHubReminders layout={layout} />
+          <FantasyHubReminders layout={layout} />
 
-      <MoreAboutSection />
+          <MoreAboutSection rules={layout.intro === null} />
+        </div>
+      </div>
 
       {/* The hub's one arrival dialog, shown once per device while prizes are
           on. It waits for the splash and the language chooser to let go, and
@@ -355,7 +364,7 @@ function FantasyHub() {
 
 type Tile = { to: string; label: string; icon: ReactNode };
 
-function TileGrid({ tiles }: { tiles: Tile[] }) {
+function TileGrid({ tiles, quiet = false }: { tiles: Tile[]; quiet?: boolean }) {
   return (
     <ul className="grid grid-cols-2 gap-2">
       {tiles.map((tile) => (
@@ -363,22 +372,40 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
           <Link
             to={tile.to}
             className={cn(
-              "flex h-full items-center gap-2.5 px-2.5 py-2",
-              ui.surface.card,
-              ui.space.row,
+              "flex h-full items-center",
               ui.text.meta,
               "[font-weight:var(--ui-weight-heavy)]",
               ui.tone.default,
-              "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
               ui.focus,
+              quiet
+                ? cn(
+                    // A secondary link beside the one primary action: a flat
+                    // pill, no card, no lifted shadow, no gradient.
+                    "min-h-[var(--ui-tap-min)] justify-center gap-1.5 px-3 py-1.5 text-center",
+                    ui.radius.full,
+                    ui.surface.sunken,
+                    "transition-colors hover:bg-[color:var(--ui-rule)] active:bg-[color:var(--ui-rule)]",
+                  )
+                : cn(
+                    "gap-2.5 px-2.5 py-2",
+                    ui.surface.card,
+                    ui.space.row,
+                    "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+                  ),
             )}
           >
             <span
               className={cn(
-                "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
-                ui.radius.full,
-                ui.surface.sunken,
-                ui.tone.ink,
+                "grid shrink-0 place-items-center",
+                quiet
+                  ? cn("h-5 w-5 [&_svg]:h-4 [&_svg]:w-4", ui.tone.ink)
+                  : cn(
+                      // Navy discs: the shortcuts carry the brand colour, not
+                      // a grey wash (the gradient stays on the one action).
+                      "h-9 w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]",
+                      ui.radius.full,
+                      ui.surface.inkControl,
+                    ),
               )}
             >
               {tile.icon}
@@ -405,8 +432,9 @@ function TileGrid({ tiles }: { tiles: Tile[] }) {
 function VisitorBoardTiles() {
   const { t } = useI18n();
   return (
-    <div className={cn("mt-3", ui.space.gutter)}>
+    <div className={cn("mt-1", ui.space.gutter)}>
       <TileGrid
+        quiet
         tiles={[
           { to: "/fantasy/rankings", label: t("fpl.rankings"), icon: <ListOrdered aria-hidden /> },
           {
@@ -447,14 +475,18 @@ function ShortcutTiles() {
 /* More about                                                           */
 /* ------------------------------------------------------------------ */
 
-function MoreAboutSection() {
+function MoreAboutSection({ rules = true }: { rules?: boolean }) {
   const { t } = useI18n();
   const rows: Array<{ to: string; label: string; icon: ReactNode }> = [
     ...(PRIZES_ENABLED
       ? [{ to: "/prizes", label: t("prizes.title"), icon: <Trophy aria-hidden /> }]
       : []),
-    { to: "/fantasy/rules", label: t("fpl.rules"), icon: <BookOpen aria-hidden /> },
-    { to: "/fantasy/help", label: t("fpl.help_rules"), icon: <CircleHelp aria-hidden /> },
+    // A visitor's proposition already links the rules, under "Comment ça
+    // marche": the hub names them once.
+    ...(rules
+      ? [{ to: "/fantasy/rules", label: t("fpl.rules"), icon: <BookOpen aria-hidden /> }]
+      : []),
+    { to: "/fantasy/help", label: t("fantasy.hub.faq_link"), icon: <CircleHelp aria-hidden /> },
   ];
   return (
     <section className={cn("mt-6", ui.space.gutter)}>
@@ -482,8 +514,7 @@ function MoreAboutSection() {
                   className={cn(
                     "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
                     ui.radius.full,
-                    ui.surface.sunken,
-                    ui.tone.ink,
+                    ui.surface.inkControl,
                   )}
                 >
                   {row.icon}

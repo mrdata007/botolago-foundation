@@ -503,7 +503,7 @@ describe("the hub places them", () => {
       "<FantasyHubLeagues",
       "{NEWS_ENABLED && (",
       "<FantasyHubReminders layout={layout} />",
-      "<MoreAboutSection />",
+      "<MoreAboutSection rules={layout.intro === null} />",
     ];
     for (const needle of order) expect(hub.split(needle)).toHaveLength(2);
     const at = order.map((needle) => hub.indexOf(needle));
