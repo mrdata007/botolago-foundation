@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
+import { readSitemapFiles } from "./sitemap-files";
 import { createHmac } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { gotoHydrated, initializeLanguage } from "./support";
@@ -53,8 +54,7 @@ async function sitemapWhen(
   const started = Date.now();
   let sitemap = "";
   for (let attempt = 0; ; attempt += 1) {
-    const response = await request.get(`${publicBase}/sitemap.xml?e2e=${run}-${attempt}`);
-    sitemap = response.ok() ? await response.text() : "";
+    sitemap = (await readSitemapFiles(request, publicBase, `?e2e=${run}-${attempt}`)) ?? "";
     if (ready(sitemap)) {
       note(`sitemap caught up after ${Math.round((Date.now() - started) / 1000)} s`);
       return sitemap;

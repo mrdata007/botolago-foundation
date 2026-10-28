@@ -215,8 +215,10 @@ function StandingsPage() {
       backgroundVariant="matches"
       pageHeader={
         <>
+          {/* Its own heading, not the calendar's "Matchs": the page's H1 is
+              what a search for "classement botola" is matched against. */}
           <UiPageTitle
-            title={t("matches.title")}
+            title={t("standings.page_title")}
             trailing={
               <SeasonPicker
                 seasons={seasons}

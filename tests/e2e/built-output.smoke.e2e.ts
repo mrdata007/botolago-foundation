@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readSitemapFiles } from "./sitemap-files";
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { dictionaries } from "../../src/i18n/dictionaries";
 import { REPOSITORY_ROOT, STUB_SUPABASE_ORIGIN } from "./built-output-env";
@@ -101,14 +102,17 @@ const PAGES: ReadonlyArray<{
     path: "/matches/standings",
     nav: true,
     content: (page) => page.locator("main table tbody tr"),
-    // A table row with a link to its club, which only a loaded table has.
-    server: new RegExp(`<tr\\b[^>]*>(?:(?!</tr>)[\\s\\S])*?\\bhref="/clubs/${ID}"`),
+    // A table row with a link to its club, which only a loaded table has. A
+    // club is addressed by its readable slug, or by its id where it has none
+    // (`src/lib/club-slug.ts`).
+    server: new RegExp(`<tr\\b[^>]*>(?:(?!</tr>)[\\s\\S])*?\\bhref="/clubs/(?:${ID}|[a-z0-9-]+)"`),
   },
   {
     path: "/clubs",
     nav: true,
     content: (page) => page.locator('main a[href^="/clubs/"]'),
-    server: linkTo("clubs"),
+    // A club card links to the club's readable slug (`src/lib/club-slug.ts`).
+    server: /<a\b[^>]*\bhref="\/clubs\/[a-z0-9-]+"/,
   },
   // The gameweek band, named "Journée 1", comes from `fantasy_hub`; the hub's
   // shortcut tiles and rule links are there whatever the hub answered.
@@ -242,8 +246,9 @@ test("robots.txt, sitemap.xml and an unknown address", async ({ request }) => {
   const sitemap = await request.get("/sitemap.xml");
   expect(sitemap.status()).toBe(200);
   expect(sitemap.headers()["content-type"]).toContain("application/xml");
-  const xml = await sitemap.text();
-  expect(xml).toMatch(/^<\?xml[^>]*>\s*<(urlset|sitemapindex)\b/);
+  expect(await sitemap.text()).toMatch(/^<\?xml[^>]*>\s*<(urlset|sitemapindex)\b/);
+  // An index: the pages are in the files it lists, read the same way.
+  const xml = (await readSitemapFiles(request)) ?? "";
   expect(xml).toContain("<loc>https://botolago.com/");
   // The articles, read by the server from `news_sitemap_entries`: each
   // edition once, the French and Arabic ones naming each other.

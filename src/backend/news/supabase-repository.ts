@@ -370,6 +370,8 @@ export class SupabaseNewsRepository implements NewsRepository {
           id: z.string().uuid(),
           language: z.enum(["fr", "ar"]),
           publishedAt: z.string(),
+          // Absent until migration 20261027150000 is applied.
+          title: z.string().nullable().optional(),
           contentUpdatedAt: z.string().nullable().optional(),
           translations: z.array(
             z.object({ id: z.string().uuid(), language: z.enum(["fr", "ar"]) }),

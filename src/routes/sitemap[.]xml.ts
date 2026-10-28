@@ -1,81 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import {
-  buildSitemapXml,
-  SITEMAP_CACHE_CONTROL,
-  SITEMAP_NEWS_LIMIT,
-  type SitemapNewsEntry,
-} from "@/lib/sitemap";
-import { footballService } from "@/services/football";
-import { getNewsDataMode } from "@/services/news";
+import { buildSitemapIndexXml } from "@/lib/sitemap";
+import { readSitemapNews, sitemapUnavailable, sitemapXmlResponse } from "@/lib/sitemap-responses";
 
 /**
- * /sitemap.xml. News articles are listed only while `NEWS_ENABLED` is on and
- * only from `api.news_sitemap_entries`, which lists nothing that was not
- * public when it was last computed.
+ * /sitemap.xml: a sitemap index (`buildSitemapIndexXml`) pointing at the
+ * static pages, the clubs, the matches and one file per month of News
+ * (`/sitemaps/<name>.xml`, `src/routes/sitemaps.$file.ts`).
  *
- * Freshness. The database serves the entries from a snapshot that pg_cron
- * recomputes every minute, and computes them live instead once the snapshot is
- * more than two minutes old (migration 20260926003050; computing the whole
- * archive on every request is what timed out, audit 2026-09-25 A01). A shared
- * cache may then keep this response for the remaining three minutes and a
- * browser for one (`SITEMAP_CACHE_CONTROL`), so an unpublished article leaves
- * the sitemap within five minutes and a new one appears within five, also
- * while the refresh job is paused.
- *
- * A News read failure answers 503 with Retry-After, never cached. It used to
- * serve the nine static pages alone, with 200 (audit 2026-09-24, P1-13): a
- * crawler reading that sitemap during a slow minute was told 15,700 articles
- * had gone. A 503 makes it keep the last good copy and come back, and a shared
- * cache that honours `stale-if-error` serves its last good copy instead.
- *
- * Every public article that fits in one sitemap is requested
- * (`SITEMAP_NEWS_LIMIT`); the licensed ElBotola archive alone is ~15,700
- * editions.
- *
- * Club pages (`/clubs/<id>`, the clubs of the directory's season) are listed
- * too, and so are the current season's match pages (`/matches/<id>`). A failed
- * football read leaves them out rather than failing the whole sitemap: leaving
- * a URL out of a sitemap does not remove it from the index.
+ * The months are those that have a public article, so the index reads the
+ * News entries too; a failed read is a 503 the crawler retries, as before
+ * (`@/lib/sitemap-responses`).
  */
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
-        let news: readonly SitemapNewsEntry[] = [];
-        if (NEWS_ENABLED && getNewsDataMode() === "supabase") {
-          try {
-            news = await new SupabaseNewsRepository().getSitemapEntries(SITEMAP_NEWS_LIMIT);
-          } catch {
-            return new Response("Sitemap temporarily unavailable", {
-              status: 503,
-              headers: {
-                "content-type": "text/plain; charset=utf-8",
-                "retry-after": "300",
-                "cache-control": "no-store",
-              },
-            });
-          }
-        }
-        // Clubs and matches are read side by side; each is left out alone
-        // when its read fails.
-        const [clubIds, matchIds] = await Promise.all([
-          footballService
-            .getClubDirectory("fr")
-            .then((directory) => directory.clubs.map((club) => club.id))
-            .catch((): readonly string[] => []),
-          footballService.getSeasonMatchIds("fr").catch((): readonly string[] => []),
-        ]);
-        return new Response(
-          buildSitemapXml({ newsEnabled: NEWS_ENABLED, news, clubIds, matchIds }),
-          {
-            headers: {
-              "content-type": "application/xml; charset=utf-8",
-              "cache-control": SITEMAP_CACHE_CONTROL,
-            },
-          },
-        );
+        const news = await readSitemapNews();
+        if (news === "failed") return sitemapUnavailable();
+        return sitemapXmlResponse(buildSitemapIndexXml({ newsEnabled: NEWS_ENABLED, news }));
       },
     },
   },

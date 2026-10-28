@@ -1,3 +1,4 @@
+import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -121,7 +122,7 @@ function ClubTile({ club }: { club: Club }) {
   return (
     <Link
       to="/clubs/$clubId"
-      params={{ clubId: club.id }}
+      params={{ clubId: clubPathParam(club) }}
       data-club={colours["data-club"]}
       style={colours.style}
       className={cn(

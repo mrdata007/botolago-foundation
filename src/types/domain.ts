@@ -18,6 +18,12 @@ export interface Club {
    * slug lets a presenter match on either key without guessing.
    */
   slug?: string;
+  /**
+   * The readable address segment of the club's page (`rsb-berkane`), derived
+   * from its French short name (`@/lib/club-slug`). Absent when the names are
+   * not Latin script (an Arabic-language response); links then use `id`.
+   */
+  pathSlug?: string;
   name: LocalizedString;
   shortName: LocalizedString;
   city: LocalizedString;
