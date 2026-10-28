@@ -435,14 +435,22 @@ which never get an observation and so stayed "never attempted" for ever (the
 
 **Now:**
 
-- Live play: one `get-live-events` per poll, shared by all matches. Incidents for a
-  match whose score or status was written, or whose `changeTimestamp` moved while
-  its details are 5 minutes old or more. Lineups once at kickoff (again only if none
-  is stored). Statistics at full time.
-- Full time: the trio once at the whistle, then at most two follow-ups (+30 min and
-  +90 min), chosen from `api.service_football_details_schedule()` (reads
-  `app_private.football_match_details_syncs.last_stored_at`; a fixture is due when
-  nothing was stored since the mark).
+- Live play: one `get-live-events` per poll, shared by all matches. Incidents (1
+  request) only on a tick that wrote a score change, or the arrival of half time,
+  extra time or penalties; the provider's `changeTimestamp` moving is not a reason
+  (it moves for every minor edit), and cards and substitutions between two goals wait
+  for the whistle. Lineups (1 request) once, on the tick that sees the match start
+  (again on a written tick only while none is stored). Statistics never in play.
+- Full time: the trio once at the whistle. A finished match whose details were not
+  stored since the whistle (that fetch failed or was refused) is retried when the
+  database lists a mark (+30 / +90 min, `api.service_football_details_schedule()`)
+  and nothing was stored since; a match that is stored is not read again (the staged
+  statistics pulls refresh the late statistics). The season job's full pass is
+  Mondays, not daily.
+- Within one run the client never sends the same path twice (it returns the answer it
+  already has), and a request that is not on the essential list (live feed, incidents)
+  is never retried. A budget that cannot be read fails closed: only the essential
+  endpoints (and the rating polls' lineups) are sent.
 - Rating polls (`fantasy-rating-polls`, every 5 minutes, calls the Edge job
   `rating_polls` only when a poll is due): one lineups request per fixture at +15
   min, +1 h, +3 h, +12 h, +24 h, +48 h, +4 d, +7 d, +14 d after full time, none once
@@ -452,21 +460,25 @@ which never get an observation and so stayed "never attempted" for ever (the
   either side of now; otherwise every `season_quiet_hours` (3; 0 = the 03:00 UTC
   daily pass only). Not 6 hours: the `provider_refresh` health check fails after 4
   without a season refresh.
-- Catch-up never fetches a native-rating fixture; staged pulls stop at 8,500.
+- Catch-up never fetches a native-rating fixture; staged pulls stop at 8,500 calls on
+  the Sofascore plan (12,000 on SportAPI's).
 
-**Per-round model** (estimates). Per slot (all matches kicking off together), at
-a poll interval T: 2 ticks before kickoff, 1 for the announcement, 110 x 60 / T in
-play, 1 fallback, 4 post-match ticks. T = 60: 2+1+110+1+4 = 118. T = 120: 2+1+55+1+4
-= 63. T = 180: 2+1+37+1+4 = 45. Per match: incidents about 16 (6 score or status
-writes, about 10 moved reads) + 1 lineups at start, trio 3, follow-ups 2 x 3 = 6,
-rating polls about 3 (2 polls, some incidents), so about 29 (it was 44, plus the
-polls). One slot of 8 matches at T = 60: 118 + 8 x 29 = 350 (T = 120: 63 + 232 = 295;
-T = 180: 45 + 232 = 277). An 8-match round in 3 slots at T = 60: 3 x 118 + 8 x 29 =
-354 + 232 = 586, plus the season job for the week (4 busy days x 48 + 3 quiet days
-x 16 = 240) and standings (about 10): about 840 a round-week, so about 3,400 for 4
-rounds, plus 3 quiet weeks x 112 = 340 for a month of 30 days: roughly 3,700. A
-no-match day is 16 (season job) plus the daily pass.
-The model is arithmetic on assumptions, not a measurement: read the counter after
+**Per-day model** (estimates, 2026-10-28). Per slot (matches kicking off together),
+at a live poll interval T: 2 ticks before kickoff, 1 for the announcement, 110 x
+60 / T in play, 1 fallback, 4 post-match ticks. T = 60: 118; T = 120: 63; T = 180:
+45; T = 240: 36. Per match, now: incidents about 4 (about 3 goals and half time), 1
+lineups at the start (about 1.2 with a retry), the trio once at the whistle (3),
+rating polls about 3: about 11 (it was about 29: incidents about 16 from score or
+status writes and "moved" reads, lineups, the trio, two follow-ups of 3, polls). A
+day is the slots, the matches, the season job (hourly near a match: 2 requests an
+hour, 48 a day; 16 with `season_match_hours` = 3) and standings (about 4).
+At T = 180: a day of 4 matches in 2 slots is 90 + 4 x 11 + 48 + 4 = about 185 (it
+was 90 + 4 x 29 + 48 + 4 = about 260). A full round of 8 matches in 3 slots on one
+day is 135 + 8 x 11 + 48 + 4 = about 275 (it was about 425); with
+`season_match_hours` = 3 about 245, and with T = 240 as well about 215. Quiet days are
+the season job (16 to 24) plus the Monday full pass. Staged statistics pulls
+(about 15 requests a match over three weeks) are spread over the following days. For a
+window of 30 days with 4 rounds this is roughly 3,000 requests. The model is arithmetic on assumptions, not a measurement: read the counter after
 the first match day.
 
 **Reading and changing the guard.**
@@ -487,11 +499,53 @@ rows from 14 Oct only). Above `soft_limit` the Edge client sends only
 least 180 s; at `hard_limit` no call is sent and the run answers
 `{"status":"skipped","reason":"monthly_budget_hard_limit"}`. Each run reads the
 count once (`api.service_rapidapi_budget`) and adds its own requests. The
-`rapidapi_budget` health check (warn 8,000, fail 9,500) uses the same window and
-offset. Everything through `football-live-refresh` (live, season, rating polls,
-details backfill, weekly catalog) goes through the guard; scripts under
-`scripts/backend/` and `src/backend/football/provider/` build their own clients and
-do not.
+`rapidapi_budget` health check (warn at 80% of the plan, fail at 95%: 8,000 / 9,500
+of 10,000) uses the same window and offset. Everything through
+`football-live-refresh` (live, season, rating polls, details backfill, weekly
+catalog) goes through the guard. Scripts under `scripts/backend/` and
+`src/backend/football/provider/` build their own client; it cannot write to the
+database, so it does not count into `app_private.rapidapi_call_counts`, but it never
+retries, refuses to send once the provider reports fewer than 1,500 calls left on the
+Sofascore host, and stops after 100 requests per run (`maxRequests`).
+
+## Provider hosts: Sofascore and SportAPI
+
+Migration `20261028100000_rapidapi_budget_per_host.sql`, applied with
+`scripts/backend/apply-20261028100000-rapidapi-budget-per-host.sql`; code in
+`rapidapi-client.ts`, `sportapi-translate.ts`, `rapidapi-budget.ts`,
+`rapidapi-call-counter.ts`.
+
+The Edge secret `RAPIDAPI_HOST` picks the host the football data is read from: the
+Sofascore host `sofascore.p.rapidapi.com` (the default, also when it is empty or
+absent) or SportAPI's `sportapi7.p.rapidapi.com`. Any other value is refused
+(`provider_not_configured`, nothing sent). `RAPIDAPI_KEY` is the key of that host's
+subscription. Callers do not change: they ask for the Sofascore-host paths, and on
+SportAPI the client sends the native path and hands back the same shapes
+(`sportapi-translate.ts`; the table of differences is in
+`tests/fixtures/providers/sportapi/README.md`). Calls are counted, and the essential
+list applies, under the Sofascore-host endpoint names on either host.
+
+Each host has its own budget, count and provider-quota floor:
+
+| Host                       | Quota  | Soft   | Hard   | Window starts | Settings                                                      |
+| -------------------------- | ------ | ------ | ------ | ------------- | ------------------------------------------------------------- |
+| `sofascore.p.rapidapi.com` | 10,000 | 8,500  | 9,700  | the 10th      | `app_private.rapidapi_budget_settings` (as before)            |
+| `sportapi7.p.rapidapi.com` | 15,000 | 13,500 | 14,700 | the 27th      | `app_private.rapidapi_host_budgets`, `rapidapi_host_budget_configure` |
+
+```sql
+select * from app_private.rapidapi_host_budgets;                                        -- as the owner
+select app_private.rapidapi_host_budget_configure('sportapi7.p.rapidapi.com', p_used_offset => 25);
+select api.admin_rapidapi_calls_this_month();   -- the active host's window, total, limits, by job; "hosts" lists both
+```
+
+`app_private.rapidapi_active_host()` is the host of the most recent request recorded
+today or yesterday; the readers with no host argument (the `rapidapi_budget` health
+check, the staged-statistics stop, the live cadence in
+`app_private.rapidapi_live_interval_seconds()`, the staff read) follow it, so they
+switch with the secret. The Edge client reads its own host with
+`api.service_rapidapi_host_budget(host)`; an unknown host reads as zero limits and
+nothing is sent. Rolling back is setting `RAPIDAPI_HOST` empty (or to the Sofascore
+host): the Sofascore count is untouched.
 
 ## The live minute
 

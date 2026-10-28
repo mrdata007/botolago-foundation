@@ -1049,3 +1049,16 @@ empty but valid); the next `news-sitemap-refresh` run after it puts the titles
 in the snapshot. It is applied with the guarded
 `scripts/backend/apply-20261027150000-news-sitemap-entry-titles.sql`
 (rehearsal, then commit).
+
+`20261028100000_rapidapi_budget_per_host.sql` counts the RapidAPI budget per
+provider host, so the SportAPI plan (`sportapi7.p.rapidapi.com`, 15,000 calls from
+27 Oct) has its own count and limits and the exhausted Sofascore plan does not block
+it. It adds a `host` column to `app_private.rapidapi_call_counts` and
+`app_private.rapidapi_provider_quota`, `app_private.rapidapi_host_budgets` (SportAPI
+seeded), `api.service_rapidapi_host_budget`, `api.service_record_rapidapi_host_calls`
+and `api.service_record_rapidapi_host_quota`, and re-creates seven functions with the
+Sofascore answers unchanged. It is applied with the guarded
+`scripts/backend/apply-20261028100000-rapidapi-budget-per-host.sql` (rehearsal, then
+commit), before `RAPIDAPI_HOST` is set to the SportAPI host and before
+`football-live-refresh` is deployed. Details are in
+`docs/backend/SOFASCORE_LIVE_EDGE.md` ("Provider hosts").

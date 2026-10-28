@@ -1,0 +1,241 @@
+{
+  "standings": [
+    {
+      "id": 309182,
+      "type": "total",
+      "name": "Botola Pro D1 26/27",
+      "updatedAtTimestamp": 1792022334,
+      "tournament": {
+        "uniqueTournament": {
+          "id": 937
+        }
+      },
+      "rows": [
+        {
+          "team": {
+            "id": 47696,
+            "name": "Kawkab Athletic Club Marrakech"
+          },
+          "position": 1,
+          "matches": 5,
+          "wins": 3,
+          "losses": 1,
+          "draws": 1,
+          "scoresFor": 7,
+          "scoresAgainst": 5,
+          "points": 10
+        },
+        {
+          "team": {
+            "id": 55025,
+            "name": "CODM Meknès"
+          },
+          "position": 2,
+          "matches": 5,
+          "wins": 3,
+          "losses": 1,
+          "draws": 1,
+          "scoresFor": 9,
+          "scoresAgainst": 4,
+          "points": 10
+        },
+        {
+          "team": {
+            "id": 36268,
+            "name": "Wydad Casablanca"
+          },
+          "position": 3,
+          "matches": 5,
+          "wins": 2,
+          "losses": 1,
+          "draws": 2,
+          "scoresFor": 5,
+          "scoresAgainst": 4,
+          "points": 8
+        },
+        {
+          "team": {
+            "id": 55039,
+            "name": "Hassania d'Agadir"
+          },
+          "position": 4,
+          "matches": 4,
+          "wins": 2,
+          "losses": 1,
+          "draws": 1,
+          "scoresFor": 11,
+          "scoresAgainst": 8,
+          "points": 7
+        },
+        {
+          "team": {
+            "id": 87180,
+            "name": "Ittihad Tanger"
+          },
+          "position": 5,
+          "matches": 4,
+          "wins": 2,
+          "losses": 1,
+          "draws": 1,
+          "scoresFor": 7,
+          "scoresAgainst": 5,
+          "points": 7
+        },
+        {
+          "team": {
+            "id": 55035,
+            "name": "Maghreb Fes"
+          },
+          "position": 6,
+          "matches": 4,
+          "wins": 2,
+          "losses": 1,
+          "draws": 1,
+          "scoresFor": 5,
+          "scoresAgainst": 4,
+          "points": 7
+        },
+        {
+          "team": {
+            "id": 55043,
+            "name": "Difaâ Hassani El-Jadidi"
+          },
+          "position": 7,
+          "matches": 5,
+          "wins": 2,
+          "losses": 2,
+          "draws": 1,
+          "scoresFor": 12,
+          "scoresAgainst": 12,
+          "points": 7
+        },
+        {
+          "team": {
+            "id": 118834,
+            "name": "Union Touarga Sport"
+          },
+          "position": 8,
+          "matches": 5,
+          "wins": 2,
+          "losses": 2,
+          "draws": 1,
+          "scoresFor": 3,
+          "scoresAgainst": 3,
+          "points": 7
+        },
+        {
+          "team": {
+            "id": 204302,
+            "name": "Wydad Sportive Témara"
+          },
+          "position": 9,
+          "matches": 5,
+          "wins": 2,
+          "losses": 3,
+          "draws": 0,
+          "scoresFor": 6,
+          "scoresAgainst": 4,
+          "points": 6
+        },
+        {
+          "team": {
+            "id": 41757,
+            "name": "Raja Club Athletic"
+          },
+          "position": 10,
+          "matches": 3,
+          "wins": 1,
+          "losses": 0,
+          "draws": 2,
+          "scoresFor": 2,
+          "scoresAgainst": 1,
+          "points": 5
+        },
+        {
+          "team": {
+            "id": 55027,
+            "name": "Fath Union Sport"
+          },
+          "position": 11,
+          "matches": 5,
+          "wins": 1,
+          "losses": 2,
+          "draws": 2,
+          "scoresFor": 3,
+          "scoresAgainst": 4,
+          "points": 5
+        },
+        {
+          "team": {
+            "id": 24394,
+            "name": "AS FAR Rabat"
+          },
+          "position": 12,
+          "matches": 2,
+          "wins": 1,
+          "losses": 0,
+          "draws": 1,
+          "scoresFor": 3,
+          "scoresAgainst": 2,
+          "points": 4
+        },
+        {
+          "team": {
+            "id": 223445,
+            "name": "Union Sportive Amal Tiznit"
+          },
+          "position": 13,
+          "matches": 5,
+          "wins": 1,
+          "losses": 3,
+          "draws": 1,
+          "scoresFor": 6,
+          "scoresAgainst": 11,
+          "points": 4
+        },
+        {
+          "team": {
+            "id": 80395,
+            "name": "RS Berkane"
+          },
+          "position": 14,
+          "matches": 3,
+          "wins": 0,
+          "losses": 0,
+          "draws": 3,
+          "scoresFor": 2,
+          "scoresAgainst": 2,
+          "points": 3
+        },
+        {
+          "team": {
+            "id": 55049,
+            "name": "Moghreb Atlético Tetuán"
+          },
+          "position": 15,
+          "matches": 5,
+          "wins": 0,
+          "losses": 2,
+          "draws": 3,
+          "scoresFor": 2,
+          "scoresAgainst": 8,
+          "points": 3
+        },
+        {
+          "team": {
+            "id": 263373,
+            "name": "Renaissance Zemamra"
+          },
+          "position": 16,
+          "matches": 5,
+          "wins": 0,
+          "losses": 4,
+          "draws": 1,
+          "scoresFor": 5,
+          "scoresAgainst": 11,
+          "points": 1
+        }
+      ]
+    }
+  ]
+}

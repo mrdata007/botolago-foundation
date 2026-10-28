@@ -788,7 +788,9 @@ describe("automatic Fantasy: catch-up of a finished match never attempted", () =
   });
 
   test("the cap and the window come from the environment", async () => {
-    const db = fakeDb({ dueCatchUp: listed });
+    // Distinct matches: the client never reads the same match twice in a run.
+    const distinct = listed.map((item, n) => ({ ...item, eventId: String(Number(EVENT) + n) }));
+    const db = fakeDb({ dueCatchUp: distinct });
     const { run, net } = makeRun(db, "sofascore", { SOFASCORE_FANTASY_CATCHUP_PER_TICK: "2" });
     await run.sweep();
     expect(net.paths).toHaveLength(6);
@@ -1008,7 +1010,7 @@ describe("automatic Fantasy: through the live tick", () => {
     });
   }
 
-  test("the tick that sees a match start reads the incidents only: no lineups, no live matching, nothing is recorded", async () => {
+  test("the tick that sees a match start reads its lineups too: players are offered to the matching, nothing is recorded", async () => {
     const db = tickDb(false, { status: "scheduled", period: "pre_match" });
     db.world.mapped.delete(STARTERS[2]);
     const net = tickFetch();
@@ -1046,11 +1048,16 @@ describe("automatic Fantasy: through the live tick", () => {
     expect(outcome.status).toBe(200);
     const called = db.calls.map((c) => c.name);
     expect(called).toContain("ingest_football_match_details");
-    // The live list and the incidents: lineups are read for the Fantasy ratings, after full time.
-    expect(net.paths).toHaveLength(2);
-    expect(net.paths.slice(1)).toEqual([`matches/get-incidents?matchId=${EVENT}`]);
+    // The live list, the incidents and the lineups (no statistics): the matching adds no request.
+    expect(net.paths).toHaveLength(3);
+    expect(net.paths.slice(1)).toEqual([
+      `matches/get-incidents?matchId=${EVENT}`,
+      `matches/get-lineups?matchId=${EVENT}`,
+    ]);
     const parsed = lines.map((l) => JSON.parse(l) as Record<string, unknown>);
-    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toHaveLength(0);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toEqual([
+      expect.objectContaining({ fixtureId: FIXTURE, eventId: EVENT, outcome: "offered" }),
+    ]);
     expect(parsed.filter((l) => l.event === "football_live_refresh_fantasy")).toHaveLength(0);
     expect(called).not.toContain("service_record_sofascore_fantasy_observation");
   });

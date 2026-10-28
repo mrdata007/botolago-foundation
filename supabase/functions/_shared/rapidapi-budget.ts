@@ -8,9 +8,16 @@
 // then fails closed (football-live-refresh.ts UNREADABLE_BUDGET: essential
 // endpoints only).
 //
+// Each provider host has its own budget (migration 20261028100000): the Sofascore
+// host is read with api.service_rapidapi_budget(), any other with
+// api.service_rapidapi_host_budget(p_host). A database without that migration
+// cannot answer for another host, which reads as unreadable: fail closed.
+//
 // Dependency-free apart from sibling shared modules.
 
 import type { RapidApiBudget } from "./rapidapi-client.ts";
+
+const SOFASCORE_HOST = "sofascore.p.rapidapi.com";
 
 export interface RapidApiBudgetClient {
   schema(name: "api"): {
@@ -36,6 +43,7 @@ export async function loadRapidApiBudget(
   client: RapidApiBudgetClient,
   job: string,
   log: (line: string) => void = (line) => console.log(line),
+  host: string = SOFASCORE_HOST,
 ): Promise<RapidApiBudgetReading | null> {
   const failed = (reason: string): null => {
     try {
@@ -46,7 +54,10 @@ export async function loadRapidApiBudget(
     return null;
   };
   try {
-    const result = await client.schema("api").rpc("service_rapidapi_budget", {});
+    const result =
+      host === SOFASCORE_HOST
+        ? await client.schema("api").rpc("service_rapidapi_budget", {})
+        : await client.schema("api").rpc("service_rapidapi_host_budget", { p_host: host });
     if (result.error) return failed("database_error");
     const data = result.data;
     if (typeof data !== "object" || data === null) return failed("unreadable");

@@ -294,10 +294,23 @@ describe("Edge RapidAPI client, monthly budget", () => {
     expect(seen).toHaveLength(0);
     const api = budgeted(9698, seen);
     await api.getJson("matches/get-incidents?matchId=1");
-    await api.getJson("matches/get-incidents?matchId=1");
-    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+    await api.getJson("matches/get-incidents?matchId=2");
+    await expect(api.getJson("matches/get-incidents?matchId=3")).rejects.toMatchObject({
       budget: "hard_limit",
     });
+    expect(seen).toHaveLength(2);
+  });
+
+  test("a path already answered in this run is answered again from memory, not sent and not counted", async () => {
+    const seen: Seen[] = [];
+    const api = budgeted(9698, seen);
+    const first = await api.getJson("matches/get-incidents?matchId=1");
+    const again = await api.getJson("matches/get-incidents?matchId=1");
+    expect(seen).toHaveLength(1);
+    expect(again.data).toBe(first.data);
+    expect(api.requestsSent()).toBe(1);
+    // Still one request of the budget's two left: the repeat cost nothing.
+    await api.getJson("matches/get-incidents?matchId=2");
     expect(seen).toHaveLength(2);
   });
 });
@@ -330,7 +343,7 @@ describe("Edge RapidAPI client, the provider's own figure", () => {
     const seen: Seen[] = [];
     const api = make(100, [withQuota("50")], seen);
     await api.getJson("matches/get-incidents?matchId=1");
-    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+    await expect(api.getJson("matches/get-incidents?matchId=2")).rejects.toMatchObject({
       code: "provider_rate_limited",
       budget: "hard_limit",
     });
@@ -344,10 +357,10 @@ describe("Edge RapidAPI client, the provider's own figure", () => {
     // 10,000 - 401 = 9,599: below the soft limit.
     await api.getJson("matches/get-lineups?matchId=1");
     // 10,000 - 400 = 9,600: at the soft limit, only the live feed and incidents.
-    await expect(api.getJson("matches/get-lineups?matchId=1")).rejects.toMatchObject({
+    await expect(api.getJson("matches/get-lineups?matchId=2")).rejects.toMatchObject({
       budget: "soft_limit",
     });
-    await api.getJson("matches/get-incidents?matchId=1");
+    await api.getJson("matches/get-incidents?matchId=2");
     expect(seen).toHaveLength(3);
   });
 
@@ -355,7 +368,7 @@ describe("Edge RapidAPI client, the provider's own figure", () => {
     const seen: Seen[] = [];
     const api = make(100, [new Response("{}"), new Response("{}")], seen);
     await api.getJson("matches/get-lineups?matchId=1");
-    await api.getJson("matches/get-lineups?matchId=1");
+    await api.getJson("matches/get-lineups?matchId=2");
     expect(seen).toHaveLength(2);
   });
 

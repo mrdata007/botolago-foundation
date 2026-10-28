@@ -33,7 +33,12 @@ import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
 import { loadRapidApiBudget } from "./rapidapi-budget.ts";
-import { ESSENTIAL_ENDPOINTS, RapidApiError, type RapidApiBudget } from "./rapidapi-client.ts";
+import {
+  ESSENTIAL_ENDPOINTS,
+  RapidApiError,
+  rapidApiHostOf,
+  type RapidApiBudget,
+} from "./rapidapi-client.ts";
 import {
   createCatalogRapidClient,
   runCatalogWeekly,
@@ -183,10 +188,32 @@ export async function handleFootballLiveRefreshRequest(
     let counter: RapidApiCallCounter | null = null;
     let liveIntervalSeconds: number | undefined;
     if (!rapid) {
+      // The host the data comes from (RAPIDAPI_HOST; the Sofascore host unless it
+      // names SportAPI's). Each host has its own budget and its own counts.
+      let host: string;
+      try {
+        host = rapidApiHostOf(dependencies.environment);
+      } catch {
+        console.log(
+          JSON.stringify({
+            event: "football_live_refresh",
+            result: "error",
+            source,
+            job,
+            error: "provider_unavailable",
+          }),
+        );
+        return json(503, { error: "provider_not_configured", source, job });
+      }
       // The monthly budget, read once before the first provider call. At the
       // hard limit nothing is sent and the run says so; above the soft limit
       // the client sends only the live feed and incidents.
-      const budget = await loadRapidApiBudget(dependencies.client, job);
+      const budget = await loadRapidApiBudget(
+        dependencies.client,
+        job,
+        (line) => console.log(line),
+        host,
+      );
       if (budget && budget.used >= budget.hardLimit) {
         console.log(
           JSON.stringify({
@@ -194,6 +221,7 @@ export async function handleFootballLiveRefreshRequest(
             result: "skipped",
             reason: "monthly_budget_hard_limit",
             source,
+            host,
             job,
             used: budget.used,
             hardLimit: budget.hardLimit,
@@ -203,6 +231,7 @@ export async function handleFootballLiveRefreshRequest(
           status: "skipped",
           reason: "monthly_budget_hard_limit",
           source,
+          host,
           job,
           used: budget.used,
           hardLimit: budget.hardLimit,
@@ -211,7 +240,7 @@ export async function handleFootballLiveRefreshRequest(
       }
       liveIntervalSeconds = budget?.liveIntervalSeconds;
       try {
-        counter = createRapidApiCallCounter({ client: dependencies.client, job });
+        counter = createRapidApiCallCounter({ client: dependencies.client, job, host });
         // The same RapidAPI client as ever; it can also return image bytes
         // for the catalog_weekly job (sofascore-catalog.ts).
         rapid = createCatalogRapidClient(

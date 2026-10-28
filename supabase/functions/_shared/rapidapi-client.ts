@@ -1,4 +1,4 @@
-// RapidAPI client for Edge Functions (SofaScore and Flashscore hosts).
+// RapidAPI client for Edge Functions (SofaScore, SportAPI and Flashscore hosts).
 //
 // Mirrors src/backend/football/provider/rapidapi-client.ts, rapidapi-config.server.ts
 // and resilience.ts. Edge shared code does not import from src/ (it must run
@@ -13,9 +13,23 @@
 // error message, and error messages carry the path and status but never the
 // response body (third-party content).
 //
-// Dependency-free: no Deno global is read here. The caller passes
-// `Deno.env.toObject()` as `environment`.
+// Hosts. Callers always ask for the paths of the Sofascore host
+// (`matches/get-lineups?matchId=1`). When RAPIDAPI_HOST is SportAPI's host
+// (`sportapi7.p.rapidapi.com`, which serves Sofascore's own data under native paths)
+// the client sends the equivalent native path and hands back the answer in the
+// shape the callers already parse (sportapi-translate.ts). Counting, the budget
+// guard and the essential-endpoint list keep using the Sofascore-host path.
+//
+// Dependency-free apart from sibling shared modules: no Deno global is read here.
+// The caller passes `Deno.env.toObject()` as `environment`.
 
+import {
+  SPORTAPI_RAPIDAPI_HOST,
+  translateToSportApi,
+  type TranslatedRequest,
+} from "./sportapi-translate.ts";
+
+export { SPORTAPI_RAPIDAPI_HOST };
 export const SOFASCORE_RAPIDAPI_HOST = "sofascore.p.rapidapi.com";
 export const DEFAULT_MIN_REMAINING = 100;
 export const RAPIDAPI_TIMEOUT_MS = 15_000;
@@ -105,7 +119,7 @@ export interface RapidApiRuntime {
 export interface RapidApiClientConfig {
   readonly host: string;
   readonly key: string;
-  /** Hosts a client may be created for. Defaults to SofaScore only. */
+  /** Hosts a client may be created for. Defaults to the SofaScore and SportAPI hosts. */
   readonly allowedHosts?: readonly string[];
   /** Refuse to send once the provider says fewer than this many remain. */
   readonly minRemaining?: number;
@@ -149,13 +163,19 @@ export class RapidApiClient {
   private readonly onRequest: ((event: RapidApiRequestEvent) => void) | undefined;
   private lastQuota: RapidApiQuota = { limit: null, remaining: null };
   private requestCount = 0;
+  /**
+   * Answers already read in this client's life (one Edge Function run), by path.
+   * Asking for the same path again returns the answer and sends nothing: a match
+   * is never read twice in a run, whichever step asks. Failures are not kept.
+   */
+  private readonly answered = new Map<string, unknown>();
 
   constructor(config: RapidApiClientConfig) {
     const host = config.host.trim().toLowerCase();
     const key = config.key.trim();
     if (!key || !host || !/^[a-z0-9.-]+$/.test(host)) throw configurationError();
-    const allowed = (config.allowedHosts ?? [SOFASCORE_RAPIDAPI_HOST]).map((value) =>
-      value.trim().toLowerCase(),
+    const allowed = (config.allowedHosts ?? [SOFASCORE_RAPIDAPI_HOST, SPORTAPI_RAPIDAPI_HOST]).map(
+      (value) => value.trim().toLowerCase(),
     );
     if (!allowed.includes(host)) throw configurationError();
     const fetchImpl = config.fetch ?? globalThis.fetch?.bind(globalThis);
@@ -194,6 +214,12 @@ export class RapidApiClient {
 
   requestsSent(): number {
     return this.requestCount;
+  }
+
+  /** The request to send for `path` on this client's host; null when the host has no equivalent. */
+  private target(path: string): TranslatedRequest | null {
+    if (this.host === SPORTAPI_RAPIDAPI_HOST) return translateToSportApi(path);
+    return { path, normalise: (data) => data };
   }
 
   /** The error to throw instead of sending `path`, or null when the budget allows it. */
@@ -239,9 +265,23 @@ export class RapidApiClient {
       );
     }
     const path = pathAndQuery.replace(/^\//, "");
+    if (this.answered.has(path)) {
+      return {
+        data: this.answered.get(path),
+        quota: this.lastQuota,
+        requestsSent: this.requestCount,
+      };
+    }
+    const target = this.target(path);
+    if (target === null) {
+      throw new RapidApiError(
+        "provider_unavailable",
+        `The host ${this.host} has no equivalent for ${endpointOf(path)}.`,
+      );
+    }
     const refused = this.budgetRefusal(path);
     if (refused) throw refused;
-    const url = `https://${this.host}/${path}`;
+    const url = `https://${this.host}/${target.path}`;
 
     const response = await this.sendWithRetries(url, path);
 
@@ -267,6 +307,16 @@ export class RapidApiClient {
         error,
       );
     }
+    try {
+      data = target.normalise(data);
+    } catch (error) {
+      throw new RapidApiError(
+        "invalid_provider_payload",
+        `The response for ${path} cannot be read.`,
+        error,
+      );
+    }
+    this.answered.set(path, data);
     return { data, quota: this.lastQuota, requestsSent: this.requestCount };
   }
 
@@ -369,9 +419,23 @@ type ClientOverrides = Pick<
 >;
 
 /**
+ * The RapidAPI host the football data comes from: `RAPIDAPI_HOST` when set (the
+ * Sofascore or the SportAPI host, case and surrounding spaces ignored), the
+ * Sofascore host when it is empty or absent. Any other value is a configuration
+ * error: nothing is sent to a host nobody reviewed.
+ */
+export function rapidApiHostOf(environment: Environment): string {
+  const raw = environment.RAPIDAPI_HOST?.trim().toLowerCase();
+  if (!raw) return SOFASCORE_RAPIDAPI_HOST;
+  if (raw === SOFASCORE_RAPIDAPI_HOST || raw === SPORTAPI_RAPIDAPI_HOST) return raw;
+  throw configurationError();
+}
+
+/**
  * Build a client from the environment (pass `Deno.env.toObject()`):
- * `RAPIDAPI_KEY`, `SOFASCORE_MIN_REMAINING` (default 100) and, for Flashscore,
- * `FLASHSCORE_RAPIDAPI_HOST`. Only those two hosts are allowed.
+ * `RAPIDAPI_KEY`, `RAPIDAPI_HOST` (the Sofascore host unless it names SportAPI's),
+ * `SOFASCORE_MIN_REMAINING` (default 100) and, for Flashscore,
+ * `FLASHSCORE_RAPIDAPI_HOST`. Only those hosts are allowed.
  */
 export function createRapidApiClient(
   provider: "sofascore" | "flashscore",
@@ -381,11 +445,11 @@ export function createRapidApiClient(
   const key = environment.RAPIDAPI_KEY?.trim();
   if (!key) throw configurationError();
   const flashscoreHost = environment.FLASHSCORE_RAPIDAPI_HOST?.trim();
-  const host = provider === "sofascore" ? SOFASCORE_RAPIDAPI_HOST : flashscoreHost;
+  const host = provider === "sofascore" ? rapidApiHostOf(environment) : flashscoreHost;
   if (!host) throw configurationError();
   const allowedHosts = flashscoreHost
-    ? [SOFASCORE_RAPIDAPI_HOST, flashscoreHost]
-    : [SOFASCORE_RAPIDAPI_HOST];
+    ? [SOFASCORE_RAPIDAPI_HOST, SPORTAPI_RAPIDAPI_HOST, flashscoreHost]
+    : [SOFASCORE_RAPIDAPI_HOST, SPORTAPI_RAPIDAPI_HOST];
   return new RapidApiClient({
     host,
     key,

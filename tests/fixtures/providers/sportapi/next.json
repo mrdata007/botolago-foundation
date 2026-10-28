@@ -1,0 +1,119 @@
+{
+  "events": [
+    {
+      "id": 17371449,
+      "startTimestamp": 1793210400,
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "roundInfo": {
+        "round": 5
+      },
+      "season": {
+        "id": 102220
+      },
+      "tournament": {
+        "name": "Botola Pro",
+        "uniqueTournament": {
+          "id": 937,
+          "name": "Botola Pro"
+        }
+      },
+      "homeTeam": {
+        "id": 41757,
+        "name": "Raja Club Athletic",
+        "shortName": "Raja CA"
+      },
+      "awayTeam": {
+        "id": 55039,
+        "name": "Hassania d'Agadir",
+        "shortName": "HUSA"
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      }
+    },
+    {
+      "id": 17371458,
+      "startTimestamp": 1793217600,
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "roundInfo": {
+        "round": 5
+      },
+      "season": {
+        "id": 102220
+      },
+      "tournament": {
+        "name": "Botola Pro",
+        "uniqueTournament": {
+          "id": 937,
+          "name": "Botola Pro"
+        }
+      },
+      "homeTeam": {
+        "id": 24394,
+        "name": "AS FAR Rabat",
+        "shortName": "AS FAR"
+      },
+      "awayTeam": {
+        "id": 87180,
+        "name": "Ittihad Tanger",
+        "shortName": "Ittihad Tanger"
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      }
+    },
+    {
+      "id": 17371452,
+      "startTimestamp": 1793293200,
+      "status": {
+        "code": 0,
+        "description": "Not started",
+        "type": "notstarted"
+      },
+      "roundInfo": {
+        "round": 5
+      },
+      "season": {
+        "id": 102220
+      },
+      "tournament": {
+        "name": "Botola Pro",
+        "uniqueTournament": {
+          "id": 937,
+          "name": "Botola Pro"
+        }
+      },
+      "homeTeam": {
+        "id": 55035,
+        "name": "Maghreb Fes",
+        "shortName": "MAS"
+      },
+      "awayTeam": {
+        "id": 80395,
+        "name": "RS Berkane",
+        "shortName": "RS Berkane"
+      },
+      "homeScore": {},
+      "awayScore": {},
+      "time": {},
+      "changes": {
+        "changeTimestamp": 0
+      }
+    }
+  ],
+  "hasNextPage": false
+}

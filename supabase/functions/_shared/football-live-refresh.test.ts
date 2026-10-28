@@ -563,6 +563,78 @@ describe("football live refresh, data-source switch", () => {
     }
   });
 
+  it("RAPIDAPI_HOST=SportAPI reads and stops on that host's own budget, not the Sofascore one", async () => {
+    const calls: { name: string; args: unknown }[] = [];
+    const client = {
+      schema() {
+        return {
+          rpc(name: string, args: unknown) {
+            calls.push({ name, args });
+            const data: Record<string, unknown> = {
+              football_data_source: "sofascore",
+              service_rapidapi_host_budget: {
+                used: 14700,
+                softLimit: 13500,
+                hardLimit: 14700,
+                windowStart: "2026-10-27",
+                liveIntervalSeconds: 180,
+              },
+            };
+            return Promise.resolve({ data: data[name] ?? null, error: null });
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+    const sportApi = {
+      ...environment,
+      RAPIDAPI_KEY: "k",
+      RAPIDAPI_HOST: "sportapi7.p.rapidapi.com",
+    };
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"fixtures"}'),
+      {
+        environment: sportApi,
+        now,
+        client,
+        fetch: async (input) => {
+          paths.push(String(input));
+          return Response.json({});
+        },
+      },
+    );
+    expect(await response.json()).toMatchObject({
+      status: "skipped",
+      reason: "monthly_budget_hard_limit",
+      host: "sportapi7.p.rapidapi.com",
+      used: 14700,
+      hardLimit: 14700,
+    });
+    expect(paths).toEqual([]);
+    expect(calls).toEqual([
+      { name: "football_data_source", args: {} },
+      { name: "service_rapidapi_host_budget", args: { p_host: "sportapi7.p.rapidapi.com" } },
+    ]);
+  });
+
+  it("a RAPIDAPI_HOST nobody reviewed is a configuration error and nothing is sent", async () => {
+    const calls: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"fixtures"}'),
+      {
+        environment: { ...environment, RAPIDAPI_KEY: "k", RAPIDAPI_HOST: "other.example" },
+        now,
+        client: withSource("sofascore", calls),
+        fetch: async () => {
+          throw new Error("must not be called");
+        },
+      },
+    );
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({ error: "provider_not_configured" });
+    expect(calls).toEqual(["football_data_source"]);
+  });
+
   it("the rating_polls job is skipped unless SofaScore is the source", async () => {
     const calls: string[] = [];
     const { response, paths } = await run(
