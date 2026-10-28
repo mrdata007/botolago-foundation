@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { scrollBehavior } from "@/lib/motion";
 import { capitalizeFirst } from "@/lib/match-days";
 import { ui, UiButton, UiChip, UiIconButton } from "@/components/ui-kit";
-import { addMatchDays, isSameMatchDay, startOfMatchDay } from "@/lib/match-kickoff";
+import { addMatchDays, isSameMatchDay, matchDayKey, startOfMatchDay } from "@/lib/match-kickoff";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
@@ -57,6 +57,7 @@ export function DateStrip({
   minDate,
   maxDate,
   gameweeks = [],
+  matchDays,
   className,
 }: {
   selected: Date;
@@ -73,6 +74,12 @@ export function DateStrip({
   maxDate?: Date;
   /** The rounds the selected day's matches belong to, once they are known. */
   gameweeks?: readonly number[];
+  /**
+   * The competition days (`YYYY-MM-DD`) that have a match, once the season's
+   * fixtures are known: each such chip gets a dot. Left out while they load,
+   * no chip is marked (and none is claimed to be empty).
+   */
+  matchDays?: ReadonlySet<string>;
   className?: string;
 }) {
   const { t, lang } = useI18n();
@@ -232,8 +239,13 @@ export function DateStrip({
             const active = isSameDay(d, selectedDay);
             const isDayToday = isSameDay(d, today);
             const dayLabel = isDayToday ? t("matches.date.today") : weekdayFmt.format(d);
+            const hasMatches = matchDays?.has(matchDayKey(d)) ?? false;
             return (
-              <div key={d.toISOString()} ref={active ? activeRef : undefined} className="shrink-0">
+              <div
+                key={d.toISOString()}
+                ref={active ? activeRef : undefined}
+                className="relative shrink-0"
+              >
                 <UiChip
                   selected={active}
                   // Every chip states whether it is the day on show, so none
@@ -252,6 +264,26 @@ export function DateStrip({
                     {dayLabel}
                   </span>
                   <span className={ui.stat.md}>{dayFmt.format(d)}</span>
+                  {/* A dot under the number on a day with a match. The row is
+                      always there, so the chips keep one height while the
+                      season's fixtures load. Fresh turf, with a hairline ring
+                      of the deep navy: the turf alone is too light to be
+                      seen on an idle chip, and the ring gives it its edge
+                      on the light selected chip in dark mode. */}
+                  <span
+                    aria-hidden
+                    data-match-day={hasMatches ? "" : undefined}
+                    className={cn(
+                      "mt-1 h-2 w-2 shrink-0",
+                      ui.radius.full,
+                      hasMatches
+                        ? "bg-[color:var(--ui-accent-spring)] ring-1 ring-[color:var(--ui-ink-deep)]"
+                        : "bg-transparent",
+                    )}
+                  />
+                  {hasMatches ? (
+                    <span className="sr-only">{t("matches.date.has_matches")}</span>
+                  ) : null}
                 </UiChip>
               </div>
             );
