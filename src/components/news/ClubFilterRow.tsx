@@ -55,11 +55,14 @@ export function ClubFilterRow({
           // the follow control is standing there. `py-1` keeps the focus ring
           // inside the scroller.
           "-ms-[var(--ui-gutter)] flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 ps-[var(--ui-gutter)]",
-          "scroll-ps-[var(--ui-gutter)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "scroll-ps-[var(--ui-gutter)]",
           !chosen && "-me-[var(--ui-gutter)] pe-[var(--ui-gutter)]",
-          // On a wide screen the clubs wrap inside the column: a mouse has no
-          // easy way to scroll sideways past a hidden scrollbar.
-          "md:mx-0 md:flex-wrap md:overflow-visible md:px-0",
+          // One line on every width (sixteen clubs, not a wall of chips). A
+          // phone hides the scrollbar; a wide screen keeps a thin one, since a
+          // mouse has no easy way to scroll sideways without it. The row sits
+          // in the column there, not bleeding to the screen edge.
+          "max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden md:[scrollbar-width:thin]",
+          "md:mx-0 md:px-0 md:pb-2",
         )}
       >
         <UiChip

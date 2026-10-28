@@ -9,6 +9,7 @@ import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { presentArticleForDisplay } from "./news-data";
+import { useNewsFixtures } from "./news-fixtures";
 
 /** How many of the newest articles fill the top slot when none is picked. */
 export const LATEST_CAROUSEL_SIZE = 5;
@@ -33,6 +34,7 @@ export function LatestCarousel({
   clubs: readonly Club[];
 }) {
   const { t } = useI18n();
+  const fixtures = useNewsFixtures();
   const scroller = useRef<HTMLUListElement>(null);
   const [active, setActive] = useState(0);
   const count = articles.length;
@@ -87,7 +89,12 @@ export function LatestCarousel({
               .replace("{total}", String(count))}
             className="min-w-0 shrink-0 basis-[88%] snap-start sm:basis-[80%]"
           >
-            <ArticleCard article={presentArticleForDisplay(dto)} variant="imageLed" clubs={clubs} />
+            <ArticleCard
+              article={presentArticleForDisplay(dto)}
+              variant="imageLed"
+              clubs={clubs}
+              fixtures={fixtures}
+            />
           </li>
         ))}
       </ul>
@@ -95,7 +102,7 @@ export function LatestCarousel({
       {count > 1 && (
         <div className="flex flex-wrap items-center justify-center gap-x-1">
           <UiIconButton
-            variant="ghost"
+            variant="glass"
             aria-label={t("news.carousel.previous")}
             disabled={active === 0}
             onClick={() => goTo(active - 1)}
@@ -125,15 +132,15 @@ export function LatestCarousel({
                   className={cn(
                     "block h-2 rounded-full transition-[width,background-color] duration-200",
                     index === active
-                      ? "w-5 bg-[color:var(--ui-ink-fg)]"
-                      : "w-2 bg-[color:var(--ui-rule-strong)]",
+                      ? "w-5 bg-[color:var(--ui-on-ink-plain)]"
+                      : "w-2 bg-[color:var(--ui-on-ink-muted)]",
                   )}
                 />
               </button>
             ))}
           </div>
           <UiIconButton
-            variant="ghost"
+            variant="glass"
             aria-label={t("news.carousel.next")}
             disabled={active === count - 1}
             onClick={() => goTo(active + 1)}

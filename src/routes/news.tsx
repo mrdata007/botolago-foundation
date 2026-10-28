@@ -20,6 +20,7 @@ import { SkeletonList } from "@/components/common/Skeletons";
 import { ErrorState } from "@/components/common/States";
 import { useReaderDocumentTitle } from "@/hooks/use-reader-document-title";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { UiIconLinkButton, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
 import { Bookmark } from "lucide-react";
 import { CategoryChips } from "@/components/news/CategoryChips";
@@ -28,9 +29,17 @@ import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
 import { newsFeedQuery } from "@/components/news/news-feed-query";
 import { newsSearchFrom, validateNewsSearch } from "@/components/news/news-search";
-import { ssrAvailability, prefetchFirstPageForSsr, prefetchForSsr } from "@/lib/ssr-prefetch";
+import {
+  ssrAvailability,
+  prefetchFirstPageForSsr,
+  prefetchForSsr,
+  prefetchOptionalForSsr,
+} from "@/lib/ssr-prefetch";
+import { footballService } from "@/services/football";
 import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
+import { isGenericCategory } from "@/components/news/article-kicker";
+import { useNewsFixtures } from "@/components/news/news-fixtures";
 import {
   deriveCategoryOptions,
   presentArticleForDisplay,
@@ -65,6 +74,19 @@ export function redirectWhileNewsIsHidden(): void {
   if (!NEWS_ENABLED) throw redirect({ to: "/", replace: true });
 }
 
+/**
+ * The front page's stage: the lead story or the newest stories sit on the
+ * brand's deep navy, edge to edge on a phone and a rounded sheet in the column
+ * from `md`, so the page opens on one dark, confident band (owner direction
+ * 2026-10-28, "not too pale") instead of white cards on near-white. The cards
+ * on it are photo cards with their own scrim, so nothing on the stage depends
+ * on the page's text colour.
+ */
+const NEWS_STAGE = cn(
+  "-mx-[var(--ui-gutter)] bg-[color:var(--ui-ink-deep)] px-[var(--ui-gutter)] py-4",
+  "md:mx-0 md:rounded-[var(--ui-radius-sheet)] md:px-4",
+);
+
 export const Route = createFileRoute("/news")({
   beforeLoad: redirectWhileNewsIsHidden,
   // The category and club filters are the URL's, so an article read does not
@@ -93,6 +115,15 @@ export const Route = createFileRoute("/news")({
         },
       ]),
       prefetchFirstPageForSsr(queryClient, newsFeedQuery("fr", null, null)),
+      // The current season's clubs, which the club filter is limited to; a page
+      // can do without them (the row appears in the browser), so a failed read
+      // does not make the page unavailable.
+      prefetchOptionalForSsr(queryClient, [
+        {
+          queryKey: ["football", "club-directory", "fr"],
+          queryFn: ({ signal }) => footballService.getClubDirectory("fr", signal),
+        },
+      ]),
     ]);
     return { ...ssrAvailability(queryClient), isNewsIndex: true };
   },
@@ -158,6 +189,14 @@ function NewsPage() {
     queryFn: async () =>
       (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
   });
+  // The clubs of the current season, as the Clubs page lists them (same query,
+  // so one read). The filter row offers these only: the team filter also holds
+  // clubs that have since left the league and a placeholder club, which every
+  // article about them still names (the cards below keep the whole list).
+  const directoryQ = useQuery({
+    queryKey: ["football", "club-directory", lang],
+    queryFn: ({ signal }) => footballService.getClubDirectory(lang, signal),
+  });
   // Keyed by the account, not by "signed in": see `followedTeamIdsQuery`.
   const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const followedIds = useMemo(() => new Set(followedQ.data ?? []), [followedQ.data]);
@@ -174,8 +213,13 @@ function NewsPage() {
     [lead, featured, homeQ.data?.latest],
   );
 
+  // "Dernières actualités" is every article's category: as a chip it meant
+  // "Tous". Only the sections that narrow the feed are offered.
   const categories = useMemo(
-    () => deriveCategoryOptions([lead ? [lead] : [], featured, homeQ.data?.latest ?? []]),
+    () =>
+      deriveCategoryOptions([lead ? [lead] : [], featured, homeQ.data?.latest ?? []]).filter(
+        (category) => !isGenericCategory(category.slug),
+      ),
     [lead, featured, homeQ.data?.latest],
   );
 
@@ -186,8 +230,16 @@ function NewsPage() {
     search.category && (!homeQ.data || categories.some((c) => c.slug === search.category))
       ? search.category
       : null;
+  // The row offers the current season's clubs (none when that list is not
+  // there: a wall of every club ever is not a fallback).
+  const clubChips = useMemo(() => {
+    const season = directoryQ.data;
+    if (!season?.season) return [];
+    const current = new Set(season.clubs.map((club) => club.id));
+    return (clubsQ.data ?? []).filter((club) => current.has(club.id));
+  }, [directoryQ.data, clubsQ.data]);
   const clubId =
-    search.club && (!clubsQ.data || clubsQ.data.some((c) => c.id === search.club))
+    search.club && (!clubsQ.data || !directoryQ.data || clubChips.some((c) => c.id === search.club))
       ? search.club
       : null;
 
@@ -219,6 +271,7 @@ function NewsPage() {
   }, [categorySlug, clubId, lead, featured, carousel]);
 
   const clubs = clubsQ.data ?? [];
+  const fixtures = useNewsFixtures();
 
   return (
     <AppShell
@@ -241,11 +294,13 @@ function NewsPage() {
           {/* Content discovery — real taxonomy-driven category chips. They
               filter the Latest feed below; the editorial placements above
               it are not filtered. */}
-          <CategoryChips
-            categories={categories}
-            selected={categorySlug}
-            onSelect={setCategorySlug}
-          />
+          {categories.length > 0 && (
+            <CategoryChips
+              categories={categories}
+              selected={categorySlug}
+              onSelect={setCategorySlug}
+            />
+          )}
         </UiPageTitle>
       }
     >
@@ -265,9 +320,14 @@ function NewsPage() {
             // The first thing under the band, as the board sets it: no
             // visible heading (the card's own pill says "À la une"), but the
             // section keeps one for the page outline.
-            <Section className="mt-0 min-w-0 sm:mt-0">
+            <Section className={cn("mt-0 min-w-0 sm:mt-0", NEWS_STAGE)}>
               <h2 className="sr-only">{t("news.section.lead")}</h2>
-              <ArticleCard article={presentArticleForDisplay(lead)} variant="lead" clubs={clubs} />
+              <ArticleCard
+                article={presentArticleForDisplay(lead)}
+                variant="lead"
+                clubs={clubs}
+                fixtures={fixtures}
+              />
             </Section>
           )}
 
@@ -279,7 +339,7 @@ function NewsPage() {
           )}
 
           {carousel.length > 0 && (
-            <Section className="mt-0 sm:mt-0">
+            <Section className={cn("mt-0 sm:mt-0", NEWS_STAGE)}>
               <h2 className="sr-only">{t("news.section.lead")}</h2>
               <LatestCarousel articles={carousel} clubs={clubs} />
             </Section>
@@ -291,10 +351,10 @@ function NewsPage() {
       <Section>
         <SectionHeader title={t("news.section.latest")} />
         {/* Club discovery: it filters this feed, so it sits on it. */}
-        {clubs.length > 0 && (
+        {clubChips.length > 0 && (
           <div className="mb-2.5">
             <ClubFilterRow
-              clubs={clubs}
+              clubs={clubChips}
               selected={clubId}
               onSelect={setClubId}
               followedIds={followedIds}
