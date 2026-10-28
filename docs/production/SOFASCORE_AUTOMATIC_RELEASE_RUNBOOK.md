@@ -1063,3 +1063,14 @@ gains `statsPartial`). It is applied with the guarded
 commit), before `RAPIDAPI_HOST` is set to the SportAPI host and before
 `football-live-refresh` is deployed. Details are in
 `docs/backend/SOFASCORE_LIVE_EDGE.md` ("Provider hosts").
+
+`20261028140000_pepites_sportapi_ratings.sql` is not a football migration: it
+replaces `app_private.pepites_source_appearances` so that Pépites weekly runs
+read minutes, starts and ratings from the SportAPI captures
+(`app_private.fantasy_api_rating_sources`) of every ready match, with goals and
+assists from the performance rows or, where a match has none, the match events.
+It writes no table; season-final runs and sealed runs are unchanged. It is
+applied with the guarded
+`scripts/backend/apply-20261028140000-pepites-sportapi-ratings.sql` (rehearsal,
+then commit), which holds the `pepites_tick` lock while it runs. Details are in
+`docs/engineering/PEPITES_ARCHITECTURE.md` §4.1.

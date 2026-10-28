@@ -65,7 +65,11 @@ The Arabic page jump and installability targets are reached.
   Pronostics and Pépites, and (with your OK) not by Fantasy either. Fantasy's
   "import the team I built on my phone" feature still works the same; it now fetches
   its sample data only at the moment it needs it. The test files are kept, because
-  development and the automatic tests use them.
+  development and the automatic tests use them. Note: while this was waiting, another
+  piece of work (pull request #575) removed the same sample data from Football, News,
+  Pronostics and Pépites (and also Prizes, Notifications and the sample login) in a
+  simpler way, and was merged into `main` first. I merged `main` in and kept its
+  version for those sections; my Fantasy change is the part #575 did not cover.
 - **FE-M1 (real release version): already done, small addition.** The live site
   already shows the real code version (`9d2f38e…`) in its page and its response. I
   added a backup: if a hosting service ever builds without the code history, the
@@ -238,13 +242,11 @@ Each change is a separate saved step ("commit") on the branch, so any one can be
 removed without touching the others. Give me the item code and I will undo it, or
 a developer can run `git revert <code>` with the code from this list:
 
-| Item  | What it changed                             | Commit    |
-| ----- | ------------------------------------------- | --------- |
-| FE-C2 | Grouped the libraries into a few files      | `a2521bf` |
-| FE-C3 | Test data no longer ships for four sections | `79b4113` |
-| FE-C3 | Fantasy test data loads only when needed    | `bd5ed75` |
-| FE-C3 | Sample data starts loading at once in tests | `799ff5e` |
-| FE-M1 | Backup source for the version number        | `0f14902` |
+| Item  | What it changed                          | Commit    |
+| ----- | ---------------------------------------- | --------- |
+| FE-C2 | Grouped the libraries into a few files   | `a2521bf` |
+| FE-C3 | Fantasy test data loads only when needed | `bd5ed75` |
+| FE-M1 | Backup source for the version number     | `0f14902` |
 
 Sprint 2 (branch `sprint-2-installable`):
 
@@ -255,7 +257,7 @@ Sprint 2 (branch `sprint-2-installable`):
 | FE-H2 | Installable app, saved files, offline page         | `128d456` |
 | ST-2  | Links open the phone app                           | `cbd070f` |
 
-Undoing FE-C3 needs both of its commits undone together (newest first). Undoing FE-H2
+Undoing FE-H2
 is safe too: once its commit is removed and published, phones that installed the
 helper that saves files ask for it again, find it gone, and remove it by themselves.
 

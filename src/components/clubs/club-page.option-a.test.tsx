@@ -106,6 +106,21 @@ describe("club pages — design-system rules in source", () => {
     expect(route).toContain("const clubId = loaderData?.club.id ?? ref;");
   });
 
+  // Codex review on PR #567: with the catalogue unreadable a slug cannot be
+  // resolved, the loader answers 503, and the page said "club not found".
+  it("shows a slug it could not resolve as a load error to retry, never as not found", () => {
+    const route = code("src/routes/clubs.$clubId.tsx");
+    const unresolved = route.indexOf("if (isUnavailable(loaded) && !validId) {");
+    const notFoundBranch = route.indexOf(
+      "if (!validId || (clubQ.isError && isNotFound(clubQ.error))) {",
+    );
+    expect(unresolved).toBeGreaterThan(0);
+    expect(unresolved).toBeLessThan(notFoundBranch);
+    expect(route.slice(unresolved, notFoundBranch)).toContain(
+      'message={t("club.load_failed")} onRetry={() => void router.invalidate()}',
+    );
+  });
+
   it("the tab labels are literal keys and fit a 390px column in Changa", () => {
     const tabs = code("src/components/clubs/ClubTabs.tsx");
     expect(tabs).toContain('label: t("club.tab.overview")');
