@@ -117,7 +117,8 @@ keep the background downloads (kept), and open a pull request for a preview (don
 
 Still needed:
 
-- **Approval to publish** Sprint 1, after you have tried the preview (checklist below).
+- **How you want to try the changes before they go live** (see the next section), then
+  **approval to publish** Sprint 1.
 
 Needed later, for Sprint 2 (deep links), please get these ready:
 
@@ -127,11 +128,12 @@ Needed later, for Sprint 2 (deep links), please get these ready:
 
 ## What to test yourself on your phone (simple step-by-step checklist)
 
-Nothing here is live yet. The pull request for this branch is marked ready for
-review, so the hosting service builds a preview of it. Its link appears on the pull
-request page on GitHub, in the "Vercel" comment or check, a few minutes after it opens.
-
-On the preview link, with your phone:
+Nothing here is live yet. There is no automatic preview link for this repository at the
+moment: the Vercel previews stopped working (they answer "payment required", already
+noted in `docs/production/2026-10-19-go-live-pack.md`), so no pull request gets one. To
+try these changes on a phone before they go live, the Vercel account needs its plan
+sorted out, or another way to put a branch online has to be chosen. Once there is a
+link, or after publishing, check the following with your phone:
 
 1. Open the home page. It should look exactly as it does today.
 2. Tap **Matchs**, then a match. Check the score and the details show.
