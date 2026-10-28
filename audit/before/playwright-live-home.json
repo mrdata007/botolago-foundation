@@ -1,0 +1,2003 @@
+{
+  "summary": {
+    "url": "https://botolago.com/",
+    "measuredAt": "2026-10-28T01:18:04.988Z",
+    "firstLoad": {
+      "requests": 151,
+      "jsFiles": 124,
+      "jsBytes": 582493
+    },
+    "includingBackgroundWarmup": {
+      "requests": 265,
+      "jsFiles": 222,
+      "jsBytes": 707598
+    },
+    "domContentLoadedMs": 11216,
+    "loadMs": 11238,
+    "lcpMs": 3620,
+    "cls": 0.0092,
+    "jsUrls": [
+      "/seline.js",
+      "/assets/jsx-runtime-C27Mmbu5.js",
+      "/assets/preload-helper-zJ_50EbN.js",
+      "/assets/index-D1XVk4KE.js",
+      "/assets/mutation-PiSizBGV.js",
+      "/assets/useQuery-DFohmDxj.js",
+      "/assets/primitives-BME_wYEN.js",
+      "/assets/client-0SiXRaaX.js",
+      "/assets/QueryClientProvider-C-Q_mrG0.js",
+      "/assets/ClientOnly-BB9vnFrJ.js",
+      "/assets/link-DwmtLxJE.js",
+      "/assets/matchContext-B3bI0Yqa.js",
+      "/assets/useMatch-R5gaeoS8.js",
+      "/assets/useSelector-DSe8QkO8.js",
+      "/assets/useRouterState-CmzNx0jb.js",
+      "/assets/useNavigate-DngURzg6.js",
+      "/assets/root-CDpNo7ef.js",
+      "/assets/provider-CiX3CxEO.js",
+      "/assets/utils-DCvbpOtd.js",
+      "/assets/dist-B61YH9Kh.js",
+      "/assets/BottomNav-De32fzXO.js",
+      "/assets/motion-jdz1TxIl.js",
+      "/assets/AuthProvider-Cg9zwYvv.js",
+      "/assets/schemas--zWuLHVL.js",
+      "/assets/fantasy-hub-share-DdTRbSaf.js",
+      "/assets/Logo-Ca6UFuuW.js",
+      "/assets/contracts-CCTGOmW-.js",
+      "/assets/second-factor-b1DZvDAF.js",
+      "/assets/errors-nLTeAu9L.js",
+      "/assets/auth-CYMxGXQR.js",
+      "/assets/football-DZ_74xGP.js",
+      "/assets/step-up-BcGt42Ur.js",
+      "/assets/contracts-COiObKuc.js",
+      "/assets/editorial-markdown-Dl5GBWSg.js",
+      "/assets/contracts-Biy8varV.js",
+      "/assets/news-CxA8q6h7.js",
+      "/assets/use-live-matches-D3gPshe6.js",
+      "/assets/use-pepites-Bny5coe-.js",
+      "/assets/analytics-CTPbr-mm.js",
+      "/assets/v2-client-Cak-_hww.js",
+      "/assets/media-xScUovRN.js",
+      "/assets/article-meta-CFbfJBjy.js",
+      "/assets/club-palette-D1uPik_Y.js",
+      "/assets/native-app-CpbuGLUU.js",
+      "/assets/morocco-time-Cj--aPfD.js",
+      "/assets/page-availability-CdLSX8um.js",
+      "/assets/ssr-prefetch-CDwVeHYV.js",
+      "/assets/seo-titles-CTOP3UL-.js",
+      "/assets/fantasy-runtime-JB8EDnnG.js",
+      "/assets/storage-Cnigny9H.js",
+      "/assets/manager-card-status-CH27Pk0g.js",
+      "/assets/routes-BxdaXlmj.js",
+      "/assets/MatchCard-DAdF4vSY.js",
+      "/assets/follows-DD1iS72v.js",
+      "/assets/fantasy-N7PMIstV.js",
+      "/assets/arrow-right-BIJD41A5.js",
+      "/assets/calendar-days-REK4X9Nu.js",
+      "/assets/bell-VMVu6e4r.js",
+      "/assets/chevron-left-YTSy_o4R.js",
+      "/assets/chevron-right-BkriWfFQ.js",
+      "/assets/circle-dot-RVq18V3o.js",
+      "/assets/ArticleCard-2q9Nn7WH.js",
+      "/assets/clock-sOYZoxMr.js",
+      "/assets/States-Cg3ivVg7.js",
+      "/assets/play-EVp-U6TT.js",
+      "/assets/newspaper-C_6PKeoN.js",
+      "/assets/refresh-cw-CUPCSjm5.js",
+      "/assets/gem-CS1HWYIg.js",
+      "/assets/pause-Cecpf0Yh.js",
+      "/assets/star-DbD_-CTo.js",
+      "/assets/shield-alert-ucF2-BKc.js",
+      "/assets/shield-CSIfgIVR.js",
+      "/assets/trophy-Dm3hlzcB.js",
+      "/assets/target-CFh_TxZF.js",
+      "/assets/home-band-stadium-800-BLyQoyEe.js",
+      "/assets/BrandedText-C1nkf7Ms.js",
+      "/assets/user-round-BHt9pIiL.js",
+      "/assets/stretched-link-C3lDdaJ0.js",
+      "/assets/AnimatedNumber-StF7px5q.js",
+      "/assets/create-team-OAVpwuH9.js",
+      "/assets/SectionHeader-CmVC81av.js",
+      "/assets/Section-vEqbeSPl.js",
+      "/assets/deadline-D9jQyM7I.js",
+      "/assets/rank-ordinal-C07YGr42.js",
+      "/assets/Skeletons-BPTxnmBL.js",
+      "/assets/my-clubs-BNTIZ0LO.js",
+      "/assets/FantasyUnavailableState-D24vF-7I.js",
+      "/assets/StandingsTable-aeQLmu0_.js",
+      "/assets/standings-copy-DFtVdwdT.js",
+      "/assets/use-reader-document-title-CUXMeDYZ.js",
+      "/assets/use-match-votes-CMc_z-Cr.js",
+      "/assets/use-fantasy-availability-DLtPdo6n.js",
+      "/assets/match-days-DRlBE7-v.js",
+      "/assets/points-unit-BnF1kzl6.js",
+      "/assets/useInfiniteQuery-Fy-Ay2ab.js",
+      "/assets/fantasy-next-action-D7EoFbNU.js",
+      "/assets/useMutation-0Dvz3cmM.js",
+      "/assets/tslib.es6-Tae09705.js",
+      "/assets/user-CqI5E9w9.js",
+      "/assets/data-Bu6iSZZd.js",
+      "/assets/LanguageSwitcher-BMs3KE1U.js",
+      "/assets/contracts-DR7ez-fU.js",
+      "/assets/search-rYn-4pQY.js",
+      "/assets/plus-access-BxXjbTi9.js",
+      "/assets/botolago-wordmark-light-CvTZoBLt.js",
+      "/assets/account-standing-xKNtYeNA.js",
+      "/assets/errors-CoGW96Cm.js",
+      "/assets/types-DQEWgzoR.js",
+      "/assets/use-premium-BKb5N5gR.js",
+      "/assets/colour-Brv36sDQ.js",
+      "/assets/pepites-Boc-UcMK.js",
+      "/assets/card-reads-cg135-qN.js",
+      "/assets/errors-a3SKcCos.js",
+      "/~flock.js",
+      "/assets/mock-repository-BNF_H4Mq.js",
+      "/__l5e/events.b21a279f52bb8621.js",
+      "/assets/bookmark-b9DpmR-U.js",
+      "/assets/delivery-promise-BjkeBSNJ.js",
+      "/assets/off-status-copy-Z4PLdRwo.js",
+      "/assets/calendar-clock-DBWQ2ncz.js",
+      "/assets/saved-articles-03PI59QL.js",
+      "/assets/motion-lib-DCGYIfv_.js",
+      "/assets/format-time-6kq5A3ul.js",
+      "/assets/store-BHxvIawv.js"
+    ]
+  },
+  "requests": [
+    {
+      "url": "https://botolago.com/",
+      "type": "document",
+      "status": 200,
+      "bytes": 28799,
+      "at": 2916
+    },
+    {
+      "url": "https://botolago.com/assets/styles-DXUURiAS.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 36427,
+      "at": 3217
+    },
+    {
+      "url": "https://botolago.com/assets/home-band-stadium-800-CDrgQbty.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 20768,
+      "at": 3571
+    },
+    {
+      "url": "https://cdn.seline.com/seline.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4726,
+      "at": 3607
+    },
+    {
+      "url": "https://botolago.com/assets/botolago-wordmark-color-DW9xtM1W.svg",
+      "type": "image",
+      "status": 200,
+      "bytes": 3986,
+      "at": 3646
+    },
+    {
+      "url": "https://botolago.com/assets/jsx-runtime-C27Mmbu5.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3280,
+      "at": 3647
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/6af2e33c-2cb2-4476-9b40-11b38892a35b.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9226,
+      "at": 3663
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/16ad62be-884f-4032-a691-a3f383d56cb2.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9055,
+      "at": 3681
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/54273f41-985d-4eb1-af62-202a32340fa8.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9109,
+      "at": 3684
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/1b0e2a95-97a4-4a3e-bf91-fafac139e35b.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 9879,
+      "at": 3685
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/41757/crest-e49c13db652c.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3361,
+      "at": 3700
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/36268/crest-daaa57632547.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3731,
+      "at": 3700
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/47696/crest-875297937888.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3598,
+      "at": 3705
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/80395/crest-ed5bd8a7e3ba.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2809,
+      "at": 3705
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55025/crest-62ba1e11f959.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3501,
+      "at": 3705
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/2dbb0ce5-7851-4089-8c38-d7e88143f08a.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 8853,
+      "at": 3708
+    },
+    {
+      "url": "https://botolago.com/assets/preload-helper-zJ_50EbN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 695,
+      "at": 3712
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55039/crest-1c206613bad0.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 3702,
+      "at": 3715
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/87180/crest-c190a93d06dd.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2647,
+      "at": 3723
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/55035/crest-6ec00d6287c8.webp?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2915,
+      "at": 3740
+    },
+    {
+      "url": "https://botolago.com/assets/index-D1XVk4KE.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 162723,
+      "at": 3842
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/football-media/football/sofascore/teams/24394/crest-ba2bf3e9a017.png?width=64&height=64&resize=contain",
+      "type": "image",
+      "status": 200,
+      "bytes": 2857,
+      "at": 3948
+    },
+    {
+      "url": "https://botolago.com/assets/mutation-PiSizBGV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1142,
+      "at": 3968
+    },
+    {
+      "url": "https://botolago.com/assets/botolago-wordmark-light-B2pMfDk-.svg",
+      "type": "image",
+      "status": 200,
+      "bytes": 3996,
+      "at": 4028
+    },
+    {
+      "url": "https://botolago.com/assets/useQuery-DFohmDxj.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 7796,
+      "at": 4102
+    },
+    {
+      "url": "https://botolago.com/assets/primitives-BME_wYEN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 34614,
+      "at": 4131
+    },
+    {
+      "url": "https://botolago.com/assets/client-0SiXRaaX.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 52247,
+      "at": 4157
+    },
+    {
+      "url": "https://botolago.com/assets/QueryClientProvider-C-Q_mrG0.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 288,
+      "at": 4266
+    },
+    {
+      "url": "https://botolago.com/assets/ClientOnly-BB9vnFrJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 238,
+      "at": 4372
+    },
+    {
+      "url": "https://botolago.com/assets/link-DwmtLxJE.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2967,
+      "at": 4473
+    },
+    {
+      "url": "https://botolago.com/assets/matchContext-B3bI0Yqa.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 140,
+      "at": 4506
+    },
+    {
+      "url": "https://botolago.com/assets/useMatch-R5gaeoS8.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 413,
+      "at": 4555
+    },
+    {
+      "url": "https://botolago.com/assets/useSelector-DSe8QkO8.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 870,
+      "at": 4556
+    },
+    {
+      "url": "https://botolago.com/assets/useRouterState-CmzNx0jb.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 186,
+      "at": 4641
+    },
+    {
+      "url": "https://botolago.com/assets/useNavigate-DngURzg6.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 228,
+      "at": 4708
+    },
+    {
+      "url": "https://botolago.com/assets/root-CDpNo7ef.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 141,
+      "at": 4840
+    },
+    {
+      "url": "https://botolago.com/assets/provider-CiX3CxEO.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 68614,
+      "at": 4869
+    },
+    {
+      "url": "https://botolago.com/assets/utils-DCvbpOtd.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1504,
+      "at": 4955
+    },
+    {
+      "url": "https://botolago.com/assets/dist-B61YH9Kh.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 9061,
+      "at": 4985
+    },
+    {
+      "url": "https://botolago.com/assets/BottomNav-De32fzXO.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 9530,
+      "at": 5004
+    },
+    {
+      "url": "https://botolago.com/assets/motion-jdz1TxIl.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3505,
+      "at": 5016
+    },
+    {
+      "url": "https://botolago.com/assets/AuthProvider-Cg9zwYvv.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 18213,
+      "at": 5265
+    },
+    {
+      "url": "https://botolago.com/assets/schemas--zWuLHVL.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 18766,
+      "at": 5320
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-hub-share-DdTRbSaf.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 9919,
+      "at": 5323
+    },
+    {
+      "url": "https://botolago.com/assets/Logo-Ca6UFuuW.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 704,
+      "at": 5344
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-CCTGOmW-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1372,
+      "at": 5377
+    },
+    {
+      "url": "https://botolago.com/assets/second-factor-b1DZvDAF.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2679,
+      "at": 5444
+    },
+    {
+      "url": "https://botolago.com/assets/errors-nLTeAu9L.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 177,
+      "at": 5549
+    },
+    {
+      "url": "https://botolago.com/assets/auth-CYMxGXQR.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 7685,
+      "at": 5702
+    },
+    {
+      "url": "https://botolago.com/assets/football-DZ_74xGP.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 10229,
+      "at": 5724
+    },
+    {
+      "url": "https://botolago.com/assets/step-up-BcGt42Ur.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 307,
+      "at": 5750
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-COiObKuc.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1341,
+      "at": 5897
+    },
+    {
+      "url": "https://botolago.com/assets/editorial-markdown-Dl5GBWSg.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4730,
+      "at": 5948
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-Biy8varV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1500,
+      "at": 6108
+    },
+    {
+      "url": "https://botolago.com/assets/news-CxA8q6h7.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4955,
+      "at": 6116
+    },
+    {
+      "url": "https://botolago.com/assets/use-live-matches-D3gPshe6.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 916,
+      "at": 6141
+    },
+    {
+      "url": "https://botolago.com/assets/use-pepites-Bny5coe-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1339,
+      "at": 6162
+    },
+    {
+      "url": "https://botolago.com/assets/analytics-CTPbr-mm.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 859,
+      "at": 6184
+    },
+    {
+      "url": "https://botolago.com/assets/v2-client-Cak-_hww.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 170,
+      "at": 6195
+    },
+    {
+      "url": "https://botolago.com/assets/media-xScUovRN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1008,
+      "at": 6475
+    },
+    {
+      "url": "https://botolago.com/assets/article-meta-CFbfJBjy.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3476,
+      "at": 6507
+    },
+    {
+      "url": "https://botolago.com/assets/club-palette-D1uPik_Y.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2282,
+      "at": 6572
+    },
+    {
+      "url": "https://botolago.com/assets/native-app-CpbuGLUU.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 477,
+      "at": 6594
+    },
+    {
+      "url": "https://botolago.com/assets/morocco-time-Cj--aPfD.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 859,
+      "at": 6742
+    },
+    {
+      "url": "https://botolago.com/assets/page-availability-CdLSX8um.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 243,
+      "at": 6872
+    },
+    {
+      "url": "https://botolago.com/assets/ssr-prefetch-CDwVeHYV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 625,
+      "at": 6926
+    },
+    {
+      "url": "https://botolago.com/assets/seo-titles-CTOP3UL-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1763,
+      "at": 6927
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-runtime-JB8EDnnG.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 6372,
+      "at": 6991
+    },
+    {
+      "url": "https://botolago.com/assets/storage-Cnigny9H.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 324,
+      "at": 7011
+    },
+    {
+      "url": "https://botolago.com/assets/manager-card-status-CH27Pk0g.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 911,
+      "at": 7180
+    },
+    {
+      "url": "https://botolago.com/assets/routes-BxdaXlmj.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 15647,
+      "at": 7188
+    },
+    {
+      "url": "https://botolago.com/assets/MatchCard-DAdF4vSY.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4079,
+      "at": 7276
+    },
+    {
+      "url": "https://botolago.com/assets/follows-DD1iS72v.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 534,
+      "at": 7327
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-N7PMIstV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 238,
+      "at": 7344
+    },
+    {
+      "url": "https://botolago.com/assets/arrow-right-BIJD41A5.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 167,
+      "at": 7442
+    },
+    {
+      "url": "https://botolago.com/assets/calendar-days-REK4X9Nu.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 271,
+      "at": 7522
+    },
+    {
+      "url": "https://botolago.com/assets/bell-VMVu6e4r.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 240,
+      "at": 7603
+    },
+    {
+      "url": "https://botolago.com/assets/chevron-left-YTSy_o4R.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 148,
+      "at": 7698
+    },
+    {
+      "url": "https://botolago.com/assets/chevron-right-BkriWfFQ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 145,
+      "at": 7723
+    },
+    {
+      "url": "https://botolago.com/assets/circle-dot-RVq18V3o.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 154,
+      "at": 7725
+    },
+    {
+      "url": "https://botolago.com/assets/ArticleCard-2q9Nn7WH.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4858,
+      "at": 7832
+    },
+    {
+      "url": "https://botolago.com/assets/clock-sOYZoxMr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 172,
+      "at": 7881
+    },
+    {
+      "url": "https://botolago.com/assets/States-Cg3ivVg7.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1159,
+      "at": 7957
+    },
+    {
+      "url": "https://botolago.com/assets/play-EVp-U6TT.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 183,
+      "at": 8035
+    },
+    {
+      "url": "https://botolago.com/assets/newspaper-C_6PKeoN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 252,
+      "at": 8060
+    },
+    {
+      "url": "https://botolago.com/assets/refresh-cw-CUPCSjm5.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 227,
+      "at": 8155
+    },
+    {
+      "url": "https://botolago.com/assets/gem-CS1HWYIg.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 249,
+      "at": 8166
+    },
+    {
+      "url": "https://botolago.com/assets/pause-Cecpf0Yh.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 171,
+      "at": 8265
+    },
+    {
+      "url": "https://botolago.com/assets/star-DbD_-CTo.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 299,
+      "at": 8357
+    },
+    {
+      "url": "https://botolago.com/assets/shield-alert-ucF2-BKc.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 263,
+      "at": 8363
+    },
+    {
+      "url": "https://botolago.com/assets/shield-CSIfgIVR.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 231,
+      "at": 8397
+    },
+    {
+      "url": "https://botolago.com/assets/trophy-Dm3hlzcB.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 280,
+      "at": 8528
+    },
+    {
+      "url": "https://botolago.com/assets/target-CFh_TxZF.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 165,
+      "at": 8556
+    },
+    {
+      "url": "https://botolago.com/assets/home-band-stadium-800-BLyQoyEe.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 114,
+      "at": 8602
+    },
+    {
+      "url": "https://botolago.com/assets/BrandedText-C1nkf7Ms.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 488,
+      "at": 8618
+    },
+    {
+      "url": "https://botolago.com/assets/user-round-BHt9pIiL.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 182,
+      "at": 8698
+    },
+    {
+      "url": "https://botolago.com/assets/stretched-link-C3lDdaJ0.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 150,
+      "at": 8777
+    },
+    {
+      "url": "https://botolago.com/assets/AnimatedNumber-StF7px5q.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 347,
+      "at": 8803
+    },
+    {
+      "url": "https://botolago.com/assets/create-team-OAVpwuH9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 88,
+      "at": 8823
+    },
+    {
+      "url": "https://botolago.com/assets/SectionHeader-CmVC81av.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 900,
+      "at": 8879
+    },
+    {
+      "url": "https://botolago.com/assets/Section-vEqbeSPl.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 194,
+      "at": 9022
+    },
+    {
+      "url": "https://botolago.com/assets/deadline-D9jQyM7I.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 638,
+      "at": 9091
+    },
+    {
+      "url": "https://botolago.com/assets/rank-ordinal-C07YGr42.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 238,
+      "at": 9098
+    },
+    {
+      "url": "https://botolago.com/assets/Skeletons-BPTxnmBL.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 773,
+      "at": 9113
+    },
+    {
+      "url": "https://botolago.com/assets/my-clubs-BNTIZ0LO.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 288,
+      "at": 9237
+    },
+    {
+      "url": "https://botolago.com/assets/FantasyUnavailableState-D24vF-7I.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 423,
+      "at": 9247
+    },
+    {
+      "url": "https://botolago.com/assets/StandingsTable-aeQLmu0_.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2820,
+      "at": 9287
+    },
+    {
+      "url": "https://botolago.com/assets/standings-copy-DFtVdwdT.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 681,
+      "at": 9358
+    },
+    {
+      "url": "https://botolago.com/assets/use-reader-document-title-CUXMeDYZ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 175,
+      "at": 9514
+    },
+    {
+      "url": "https://botolago.com/assets/use-match-votes-CMc_z-Cr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2123,
+      "at": 9536
+    },
+    {
+      "url": "https://botolago.com/assets/use-fantasy-availability-DLtPdo6n.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 504,
+      "at": 9574
+    },
+    {
+      "url": "https://botolago.com/assets/match-days-DRlBE7-v.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 649,
+      "at": 9619
+    },
+    {
+      "url": "https://botolago.com/assets/points-unit-BnF1kzl6.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 127,
+      "at": 9672
+    },
+    {
+      "url": "https://botolago.com/fonts/changa-latin-wght-normal.woff2",
+      "type": "font",
+      "status": 200,
+      "bytes": 23064,
+      "at": 9854
+    },
+    {
+      "url": "https://botolago.com/assets/useInfiniteQuery-Fy-Ay2ab.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 473,
+      "at": 9899
+    },
+    {
+      "url": "https://botolago.com/fonts/manrope-latin-wght-normal.woff2",
+      "type": "font",
+      "status": 200,
+      "bytes": 24836,
+      "at": 9955
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-next-action-D7EoFbNU.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 550,
+      "at": 9966
+    },
+    {
+      "url": "https://botolago.com/assets/useMutation-0Dvz3cmM.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 985,
+      "at": 9983
+    },
+    {
+      "url": "https://botolago.com/assets/tslib.es6-Tae09705.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 537,
+      "at": 10023
+    },
+    {
+      "url": "https://botolago.com/assets/user-CqI5E9w9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 187,
+      "at": 10228
+    },
+    {
+      "url": "https://botolago.com/assets/data-Bu6iSZZd.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3394,
+      "at": 10240
+    },
+    {
+      "url": "https://botolago.com/assets/LanguageSwitcher-BMs3KE1U.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 933,
+      "at": 10316
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-DR7ez-fU.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1570,
+      "at": 10321
+    },
+    {
+      "url": "https://botolago.com/assets/search-rYn-4pQY.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 172,
+      "at": 10379
+    },
+    {
+      "url": "https://botolago.com/assets/plus-access-BxXjbTi9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 202,
+      "at": 10418
+    },
+    {
+      "url": "https://botolago.com/assets/botolago-wordmark-light-CvTZoBLt.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 99,
+      "at": 10474
+    },
+    {
+      "url": "https://botolago.com/assets/account-standing-xKNtYeNA.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 469,
+      "at": 10480
+    },
+    {
+      "url": "https://botolago.com/assets/errors-CoGW96Cm.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 766,
+      "at": 10647
+    },
+    {
+      "url": "https://botolago.com/assets/types-DQEWgzoR.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 111,
+      "at": 10681
+    },
+    {
+      "url": "https://botolago.com/assets/use-premium-BKb5N5gR.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2220,
+      "at": 10687
+    },
+    {
+      "url": "https://botolago.com/assets/colour-Brv36sDQ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1003,
+      "at": 10695
+    },
+    {
+      "url": "https://botolago.com/assets/pepites-Boc-UcMK.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1293,
+      "at": 10809
+    },
+    {
+      "url": "https://botolago.com/assets/card-reads-cg135-qN.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1382,
+      "at": 10912
+    },
+    {
+      "url": "https://botolago.com/assets/botolago-mark-color-B08aaeEZ.svg",
+      "type": "image",
+      "status": 200,
+      "bytes": 2944,
+      "at": 10921
+    },
+    {
+      "url": "https://botolago.com/assets/errors-a3SKcCos.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 591,
+      "at": 10973
+    },
+    {
+      "url": "https://botolago.com/~flock.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 8342,
+      "at": 11082
+    },
+    {
+      "url": "https://botolago.com/assets/mock-repository-BNF_H4Mq.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4553,
+      "at": 11113
+    },
+    {
+      "url": "https://botolago.com/assets/botolago-mark-light-Co-4oQMn.svg",
+      "type": "image",
+      "status": 200,
+      "bytes": 2880,
+      "at": 11211
+    },
+    {
+      "url": "https://botolago.com/assets/plate-latest-480-DpJe49Hc.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 13452,
+      "at": 11212
+    },
+    {
+      "url": "https://botolago.com/__l5e/events.b21a279f52bb8621.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 10402,
+      "at": 11219
+    },
+    {
+      "url": "https://botolago.com/assets/topic-matchday-480-Clu1sR94.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 17138,
+      "at": 11246
+    },
+    {
+      "url": "https://botolago.com/assets/topic-goal-480-BofBZfX_.webp",
+      "type": "image",
+      "status": 200,
+      "bytes": 22522,
+      "at": 11413
+    },
+    {
+      "url": "https://botolago.com/assets/bookmark-b9DpmR-U.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 203,
+      "at": 11468
+    },
+    {
+      "url": "https://botolago.com/assets/delivery-promise-BjkeBSNJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 205,
+      "at": 11488
+    },
+    {
+      "url": "https://botolago.com/assets/off-status-copy-Z4PLdRwo.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 280,
+      "at": 11641
+    },
+    {
+      "url": "https://botolago.com/assets/calendar-clock-DBWQ2ncz.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 258,
+      "at": 11722
+    },
+    {
+      "url": "https://botolago.com/assets/saved-articles-03PI59QL.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1913,
+      "at": 11767
+    },
+    {
+      "url": "https://botolago.com/assets/motion-lib-DCGYIfv_.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 11634,
+      "at": 11790
+    },
+    {
+      "url": "https://botolago.com/assets/format-time-6kq5A3ul.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 442,
+      "at": 11869
+    },
+    {
+      "url": "https://botolago.com/__l5e/trackevents",
+      "type": "fetch",
+      "status": 202,
+      "bytes": 17,
+      "at": 11986
+    },
+    {
+      "url": "https://botolago.com/assets/store-BHxvIawv.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 16181,
+      "at": 12049
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/fantasy_hub",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 872,
+      "at": 12288
+    },
+    {
+      "url": "https://botolago.com/assets/magic-rings-C2sTGn2E.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2424,
+      "at": 12341
+    },
+    {
+      "url": "https://botolago.com/favicon.png?v=2",
+      "type": "other",
+      "status": 200,
+      "bytes": 2915,
+      "at": 12360
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 614,
+      "at": 12448
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/premium_status",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 415,
+      "at": 12452
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_live_matches",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 332,
+      "at": 12462
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/football_matches_by_date",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 1395,
+      "at": 12466
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 853,
+      "at": 12479
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/match_votes",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 589,
+      "at": 12481
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/predictions_round",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 2348,
+      "at": 12484
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/storage/v1/render/image/public/news-media/news/ai-stories/3be7f460-0d07-4b04-babd-1176485c4dc3.png?width=160&height=160&resize=cover",
+      "type": "image",
+      "status": 200,
+      "bytes": 8832,
+      "at": 12602
+    },
+    {
+      "url": "https://tkewgajrljbwgwedqsxn.supabase.co/rest/v1/rpc/fantasy_gameweek_summary",
+      "type": "fetch",
+      "status": 200,
+      "bytes": 476,
+      "at": 12682
+    },
+    {
+      "url": "https://botolago.com/assets/empty-matches-3Gw0fdIp.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 90,
+      "at": 14131
+    },
+    {
+      "url": "https://botolago.com/assets/matches.index-DG7cCAit.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 4690,
+      "at": 14146
+    },
+    {
+      "url": "https://botolago.com/assets/SeasonPicker-BSFh9n9x.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 8131,
+      "at": 14220
+    },
+    {
+      "url": "https://botolago.com/assets/MatchesTabs-DHi9ivja.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 473,
+      "at": 14332
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-BcNQX7Ed.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 595,
+      "at": 14585
+    },
+    {
+      "url": "https://botolago.com/assets/PlusLogo-TVG7fgHV.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 4353,
+      "at": 14751
+    },
+    {
+      "url": "https://botolago.com/assets/PlusBriefing-DBVY5Tfl.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 4388,
+      "at": 14780
+    },
+    {
+      "url": "https://botolago.com/assets/plus-embed-gjS1u8zI.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 3591,
+      "at": 14789
+    },
+    {
+      "url": "https://botolago.com/assets/arrow-down-up-zGcPnAlu.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 194,
+      "at": 14951
+    },
+    {
+      "url": "https://botolago.com/assets/podium-soon-DYPAypi4.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 88,
+      "at": 15082
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy.index-CmdPCO9v.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 12438,
+      "at": 15095
+    },
+    {
+      "url": "https://botolago.com/assets/empty-leagues-Diq4CqMb.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 90,
+      "at": 15149
+    },
+    {
+      "url": "https://botolago.com/assets/prize-art-C-4--Zbq.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 375,
+      "at": 15177
+    },
+    {
+      "url": "https://botolago.com/assets/points-pending-D2cgJcbx.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 91,
+      "at": 15218
+    },
+    {
+      "url": "https://botolago.com/assets/stadium-night-800-CCcYzaSd.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 94,
+      "at": 15337
+    },
+    {
+      "url": "https://botolago.com/assets/circle-question-mark-xgDbVJFY.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 211,
+      "at": 15350
+    },
+    {
+      "url": "https://botolago.com/assets/settings-2-DF1XIxGS.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 199,
+      "at": 15478
+    },
+    {
+      "url": "https://botolago.com/assets/coins-Cr2ZVQ8Z.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 232,
+      "at": 15514
+    },
+    {
+      "url": "https://botolago.com/assets/shirt-3BMk30Yz.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 234,
+      "at": 15564
+    },
+    {
+      "url": "https://botolago.com/assets/plus-CdoCeOA0.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 154,
+      "at": 15569
+    },
+    {
+      "url": "https://botolago.com/assets/sliders-horizontal-LtHOjDYr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 246,
+      "at": 15608
+    },
+    {
+      "url": "https://botolago.com/assets/mail-DlkHqFoD.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 203,
+      "at": 15731
+    },
+    {
+      "url": "https://botolago.com/assets/timer-q8EQaJ1s.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 190,
+      "at": 15899
+    },
+    {
+      "url": "https://botolago.com/assets/users-xwcrSzeO.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 229,
+      "at": 15923
+    },
+    {
+      "url": "https://botolago.com/assets/PlusLockedSection-D_ZyBk4i.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1034,
+      "at": 15959
+    },
+    {
+      "url": "https://botolago.com/assets/trending-up-CWVAZk0s.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 175,
+      "at": 15966
+    },
+    {
+      "url": "https://botolago.com/assets/PlusBriefing-CQ4gAtKC.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 9841,
+      "at": 15995
+    },
+    {
+      "url": "https://botolago.com/assets/FantasyAmount-DLASgbp3.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 429,
+      "at": 16028
+    },
+    {
+      "url": "https://botolago.com/assets/lock-BpF4EraB.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 194,
+      "at": 16139
+    },
+    {
+      "url": "https://botolago.com/assets/wordmark-paths-CxB0_G5_.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2014,
+      "at": 16168
+    },
+    {
+      "url": "https://botolago.com/assets/PlusLogo-DEpEKMov.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 916,
+      "at": 16175
+    },
+    {
+      "url": "https://botolago.com/assets/PlusLockChip-BDwNlX2U.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 325,
+      "at": 16273
+    },
+    {
+      "url": "https://botolago.com/assets/interpolate-BbCH90F9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 798,
+      "at": 16370
+    },
+    {
+      "url": "https://botolago.com/assets/plus-season-context-Bi_jsniK.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2222,
+      "at": 16409
+    },
+    {
+      "url": "https://botolago.com/assets/plus-copy-zHlO_sXr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 683,
+      "at": 16414
+    },
+    {
+      "url": "https://botolago.com/assets/prizes-DZ-OfAoV.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1961,
+      "at": 16421
+    },
+    {
+      "url": "https://botolago.com/assets/copy-DgUzVWbJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3276,
+      "at": 16479
+    },
+    {
+      "url": "https://botolago.com/assets/LeagueList-INGlv_4I.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 753,
+      "at": 16614
+    },
+    {
+      "url": "https://botolago.com/assets/CreateLeagueInvite-DXK-Anbl.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1397,
+      "at": 16674
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-BcSJBOGt.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1236,
+      "at": 16686
+    },
+    {
+      "url": "https://botolago.com/assets/link-2-1d8Wl4u9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 208,
+      "at": 16743
+    },
+    {
+      "url": "https://botolago.com/assets/ManualCopyField-BH4wwsNQ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 634,
+      "at": 16746
+    },
+    {
+      "url": "https://botolago.com/assets/RankOrdinal-DzWLcqLH.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 455,
+      "at": 16804
+    },
+    {
+      "url": "https://botolago.com/assets/share-2-B409ouwI.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 237,
+      "at": 16915
+    },
+    {
+      "url": "https://botolago.com/assets/copy-text-NRE5Hmbn.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 519,
+      "at": 16966
+    },
+    {
+      "url": "https://botolago.com/assets/share-link-BfxKH0v9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 247,
+      "at": 17072
+    },
+    {
+      "url": "https://botolago.com/assets/invite-link-BWws2L7W.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 949,
+      "at": 17084
+    },
+    {
+      "url": "https://botolago.com/assets/gameweek-presentation-Bi6bdRMn.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 148,
+      "at": 17156
+    },
+    {
+      "url": "https://botolago.com/assets/FantasyScreenGate-BQE5jkFv.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1007,
+      "at": 17321
+    },
+    {
+      "url": "https://botolago.com/assets/league-invite-CRjbRkl5.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 239,
+      "at": 17347
+    },
+    {
+      "url": "https://botolago.com/assets/StatusBarStrip-BqA6zK6i.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 332,
+      "at": 17386
+    },
+    {
+      "url": "https://botolago.com/assets/GameweekStatusText-CZ6JrfX3.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 462,
+      "at": 17387
+    },
+    {
+      "url": "https://botolago.com/assets/FantasyFrame-DB2oX1EC.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 733,
+      "at": 17459
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-hub-layout-BsuXthqx.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 339,
+      "at": 17531
+    },
+    {
+      "url": "https://botolago.com/assets/useFantasyScreen-C7xVX7Lw.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 857,
+      "at": 17573
+    },
+    {
+      "url": "https://botolago.com/assets/fantasy-create-draft-BoLp9FF0.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 422,
+      "at": 17678
+    },
+    {
+      "url": "https://botolago.com/assets/prize-presentation-DSXJp70X.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 798,
+      "at": 17745
+    },
+    {
+      "url": "https://botolago.com/assets/empty-news-CbS5xKPY.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 87,
+      "at": 17994
+    },
+    {
+      "url": "https://botolago.com/assets/NewsSkeletons-Bna1j6TF.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 433,
+      "at": 17996
+    },
+    {
+      "url": "https://botolago.com/assets/news-BzMfF8UJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3791,
+      "at": 18105
+    },
+    {
+      "url": "https://botolago.com/assets/zap-B6d9Ee-B.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 211,
+      "at": 18406
+    },
+    {
+      "url": "https://botolago.com/assets/CardStage-CjVP6fh5.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 371,
+      "at": 18657
+    },
+    {
+      "url": "https://botolago.com/assets/CurvaLockScreen-KewQ__MI.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2093,
+      "at": 18689
+    },
+    {
+      "url": "https://botolago.com/assets/CardBornPanel-B8HbqddG.css",
+      "type": "stylesheet",
+      "status": 200,
+      "bytes": 971,
+      "at": 18696
+    },
+    {
+      "url": "https://botolago.com/assets/curva-CS0LtXH-.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 495,
+      "at": 18797
+    },
+    {
+      "url": "https://botolago.com/assets/use-launch-gate-mse2zUG2.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 147,
+      "at": 18934
+    },
+    {
+      "url": "https://botolago.com/assets/figures-DQofo-9D.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 355,
+      "at": 18991
+    },
+    {
+      "url": "https://botolago.com/assets/use-card-renderer-Bl0dHswu.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1430,
+      "at": 19051
+    },
+    {
+      "url": "https://botolago.com/assets/curva-state-CbSgX_07.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1306,
+      "at": 19152
+    },
+    {
+      "url": "https://botolago.com/assets/CardStage-B2rFgJwX.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 7181,
+      "at": 19172
+    },
+    {
+      "url": "https://botolago.com/assets/ManagerCard-DsqkRGEk.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2282,
+      "at": 19275
+    },
+    {
+      "url": "https://botolago.com/assets/spring-_DABKdM9.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1402,
+      "at": 19318
+    },
+    {
+      "url": "https://botolago.com/assets/crest-href-DRMsTndz.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 346,
+      "at": 19380
+    },
+    {
+      "url": "https://botolago.com/assets/estimate-C-dSM2GC.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 87,
+      "at": 19393
+    },
+    {
+      "url": "https://botolago.com/assets/tier-word-BuzMQqWr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 238,
+      "at": 19741
+    },
+    {
+      "url": "https://botolago.com/assets/tier-node-WxFZfILH.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 252,
+      "at": 19837
+    },
+    {
+      "url": "https://botolago.com/assets/use-view-event-DJ-yiEIC.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 241,
+      "at": 19894
+    },
+    {
+      "url": "https://botolago.com/assets/use-manager-card-D5s_T3I6.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1467,
+      "at": 19910
+    },
+    {
+      "url": "https://botolago.com/assets/manager-card-B-NWqaYE.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1059,
+      "at": 19975
+    },
+    {
+      "url": "https://botolago.com/assets/use-moment-gate-9TSqEfws.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2488,
+      "at": 20090
+    },
+    {
+      "url": "https://botolago.com/assets/storage-DOrYTRPG.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 736,
+      "at": 20098
+    },
+    {
+      "url": "https://botolago.com/assets/plus-season-fmt-lOikb63a.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 3633,
+      "at": 20178
+    },
+    {
+      "url": "https://botolago.com/assets/plus-sample-Di2NBvYJ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 298,
+      "at": 20228
+    },
+    {
+      "url": "https://botolago.com/assets/manager-card-mode-B4nUmy4N.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 271,
+      "at": 20322
+    },
+    {
+      "url": "https://botolago.com/assets/StateBlocks-wp2_dz98.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 755,
+      "at": 20337
+    },
+    {
+      "url": "https://botolago.com/assets/curva.index-BBG0W840.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 9636,
+      "at": 20392
+    },
+    {
+      "url": "https://botolago.com/assets/ranking-copy-QVWGWjLB.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 491,
+      "at": 20459
+    },
+    {
+      "url": "https://botolago.com/assets/RoundGlance-Bn8YbMxC.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 833,
+      "at": 20478
+    },
+    {
+      "url": "https://botolago.com/assets/flag-CWNXX8t8.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 215,
+      "at": 20588
+    },
+    {
+      "url": "https://botolago.com/assets/report-content-CRD39ndl.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 410,
+      "at": 20639
+    },
+    {
+      "url": "https://botolago.com/assets/LeagueRows-rusqlU4S.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 2272,
+      "at": 20651
+    },
+    {
+      "url": "https://botolago.com/assets/use-private-leagues-C_XgU_Vu.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 994,
+      "at": 20779
+    },
+    {
+      "url": "https://botolago.com/assets/report-targets-ByysaSbn.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 220,
+      "at": 20782
+    },
+    {
+      "url": "https://botolago.com/assets/CardToken-XCfHNXO2.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 675,
+      "at": 20891
+    },
+    {
+      "url": "https://botolago.com/assets/to-profile-CZPhsZhf.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1063,
+      "at": 20914
+    },
+    {
+      "url": "https://botolago.com/assets/ReportNameMenu-pNL9wI3c.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1135,
+      "at": 20919
+    },
+    {
+      "url": "https://botolago.com/assets/trophy-copy-Do-oT71N.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1442,
+      "at": 20999
+    },
+    {
+      "url": "https://botolago.com/assets/standings-CHR8LG57.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 255,
+      "at": 21010
+    },
+    {
+      "url": "https://botolago.com/assets/SeasonRack-CXO3diSZ.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1194,
+      "at": 21125
+    },
+    {
+      "url": "https://botolago.com/assets/contracts-Hp53INOr.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 820,
+      "at": 21136
+    },
+    {
+      "url": "https://botolago.com/assets/StatTiles-BkqlhPMd.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1693,
+      "at": 21153
+    },
+    {
+      "url": "https://botolago.com/assets/use-ovr-change-znlB8IHu.js",
+      "type": "script",
+      "status": 200,
+      "bytes": 1162,
+      "at": 21163
+    }
+  ]
+}
