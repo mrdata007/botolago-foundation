@@ -522,3 +522,13 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - 12:43 health check: `provider_refresh` is OK. The only failing check is `fantasy_fixture_coverage` (the 2 Journée 5 matches), which clears on its own at the next rating checks: 28 Oct 22:00 and 29 Oct 18:00 UTC.
 - Side note for later: the configure function's reply shows the active host's count (SportAPI) next to Sofascore's limits. Display only; the server function uses each host's own budget.
 
+
+**Live check on SportAPI (28 Oct, 18:21 UTC, read-only).**
+- Raja Casablanca v Hassania Agadir was live: 0-0 at about 20 minutes, last updated 18:20.
+- The live score updated about every 3 minutes (10' → 13' → 16' → 20').
+- Line-ups were fetched once. The match timeline was fetched twice. Both were stored.
+- SportAPI calls today: 28, all answered OK (200). The provider says 14,972 of 15,000 are left.
+- No errors and no "too many requests" refusals.
+- FAR Rabat v Ittihad Tanger kicks off at 20:00 UTC.
+- Rollback is unchanged: delete the `RAPIDAPI_HOST` secret.
+- Verdict: the switch to SportAPI works for live matches.
