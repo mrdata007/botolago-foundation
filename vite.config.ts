@@ -33,6 +33,16 @@ export default defineConfig({
     router: {
       // Keep colocated route tests out of TanStack's file-based route discovery.
       routeFileIgnorePattern: "\\.test\\.",
+      codeSplittingOptions: {
+        // The Admin screens' loading shells (`pendingComponent`) are staff-only
+        // pages built from the Admin kit. By default a route's `pendingComponent`
+        // stays in the main bundle, which put the Admin kit in every visitor's
+        // first load; here they are split out with the screen itself.
+        splitBehavior: ({ routeId }: { routeId: string }) =>
+          routeId === "/admin" || routeId.startsWith("/admin/")
+            ? [["component"], ["pendingComponent"], ["errorComponent"], ["notFoundComponent"]]
+            : undefined,
+      },
     },
   },
   vite: {
