@@ -21,7 +21,7 @@ import {
   type RecordLine,
 } from "@/lib/club-season";
 import { clubPathParam } from "@/lib/club-slug";
-import { rowClubName } from "@/lib/club-identity";
+import { clubShortName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -284,7 +284,7 @@ function MiniTableRow({
       </span>
       <ClubCrest club={club} size="sm" />
       {current ? (
-        <span className={nameClass}>{rowClubName(tr(club.shortName), tr(club.name))}</span>
+        <span className={nameClass}>{clubShortName(club, tr)}</span>
       ) : (
         // The name is the link; its ::after makes the whole row the target.
         <Link
@@ -292,7 +292,7 @@ function MiniTableRow({
           params={{ clubId: clubPathParam(club) }}
           className={cn(nameClass, STRETCHED_LINK)}
         >
-          {rowClubName(tr(club.shortName), tr(club.name))}
+          {clubShortName(club, tr)}
         </Link>
       )}
       <span

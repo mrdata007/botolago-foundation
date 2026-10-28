@@ -13,7 +13,16 @@
  * Casablanca it is already the literal short code "WCA", which is returned
  * unchanged. Nothing here reads `code` — callers pass it in and it is used
  * only when it actually carries letters.
+ *
+ * The sixteen clubs of the current season no longer go through that
+ * derivation: their short name and code are written in the club table
+ * (`ClubIdentity` in `kits.ts`) and applied by `withClubIdentity`. The
+ * derivation stays for any other club (former clubs in the history).
  */
+
+import type { Club, LocalizedString } from "@/types/domain";
+
+import { findClubIdentity } from "./kits";
 
 const NON_LETTER = /[^\p{L}\p{N}]+/gu;
 
@@ -70,6 +79,32 @@ export function clubInitials(shortName: string | null | undefined): string {
  */
 export function rowClubName(shortName: string, name: string): string {
   return /^[A-Z0-9]{2,6}$/.test(shortName.trim()) ? name : shortName;
+}
+
+/**
+ * A club's one short name, the way every screen should print it: the name the
+ * club table gives it (`withClubIdentity`, applied by the presenters), or,
+ * for a club outside the table, its short name unless that is only a code.
+ * "Zemamra" on the header, the stats and the pressure legend alike, and
+ * "Wydad", never "WCA".
+ */
+export function clubShortName(
+  club: { shortName: LocalizedString; name: LocalizedString },
+  tr: (text: LocalizedString) => string,
+): string {
+  const short = tr(club.shortName).trim();
+  return short ? rowClubName(short, tr(club.name)) : tr(club.name);
+}
+
+/**
+ * A club as the presenters hand it to the screens, with the short name and
+ * code from the club table (`findClubIdentity`, in `kits.ts`) when it is one
+ * of the current season's clubs. Any other club is returned as it is.
+ */
+export function withClubIdentity<T extends Club>(club: T): T {
+  const identity = findClubIdentity(club);
+  if (!identity) return club;
+  return { ...club, shortName: { ...identity.short }, crestPlaceholder: identity.code };
 }
 
 /**

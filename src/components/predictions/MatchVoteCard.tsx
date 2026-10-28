@@ -6,6 +6,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { clubShortName } from "@/lib/club-identity";
 import { presentFootballClub } from "@/services/football";
 import { formatShare, formatVoteTotal, sharesVisible, type VoteQuestionView } from "./match-votes";
 
@@ -41,13 +42,15 @@ export function MatchVoteCard({
   open: boolean;
   onVote: (choice: MatchVoteChoice) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const titleId = useId();
   const [editing, setEditing] = useState(false);
   const home = presentFootballClub(fixture.home);
   const away = presentFootballClub(fixture.away);
-  const homeName = fixture.home.shortName || fixture.home.name;
-  const awayName = fixture.away.shortName || fixture.away.name;
+  // The club table's one short name, the same on every screen ("Wydad", never
+  // the data's "WCA").
+  const homeName = clubShortName(home, tr);
+  const awayName = clubShortName(away, tr);
   const voted = view.mine !== null;
   const revealed = !open || (voted && !editing);
   const showShares = sharesVisible(view.total);

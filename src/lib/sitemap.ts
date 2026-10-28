@@ -268,6 +268,7 @@ export function buildClubsSitemapXml(
     readonly id: string;
     readonly name: { readonly fr: string };
     readonly shortName: { readonly fr: string };
+    readonly pathSlug?: string;
   }[],
 ): string {
   const slugs = buildClubSlugMap(clubs);

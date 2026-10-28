@@ -18,7 +18,7 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
-import { clubShortCode } from "@/lib/club-identity";
+import { clubShortCode, withClubIdentity } from "@/lib/club-identity";
 import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
 import {
   computeLeagueTable,
@@ -142,8 +142,11 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   // The API has already translated `name` and `shortName` into the language
   // asked for, so both halves below hold that one language: `.fr` is Arabic
   // in an Arabic response. Display only — anything that orders or keys clubs
-  // uses `id` or `slug` (see `buildStandings`).
-  return {
+  // uses `id` or `slug` (see `buildStandings`). A current club then takes its
+  // one short name (in both languages) and its code from the club table
+  // (`withClubIdentity`, ported from #375): "Zemamra" and RCAZ, "FAR" and
+  // "Wydad" on every screen, never "ASFAR" or "WCA" for the same club.
+  return withClubIdentity({
     id: team.id,
     slug: team.slug,
     pathSlug: clubSlug({ shortName: { fr: team.shortName }, name: { fr: team.name } }),
@@ -163,7 +166,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
       { sourceUrl: team.crestUrl, storagePath: team.crestPath },
       supabaseUrl,
     ),
-  };
+  });
 }
 
 export function toMatch(match: MatchCardDto): Match {

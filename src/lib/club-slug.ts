@@ -43,6 +43,13 @@ interface NamedClub {
   readonly id: string;
   readonly name: { readonly fr: string };
   readonly shortName: { readonly fr: string };
+  /**
+   * The address the football presenter derived from the data's own names
+   * (`presentFootballClub`). It is kept as it is: the club table's one short
+   * name ("Raja") replaces the data's on the presented club, and an address
+   * must not move with a display name.
+   */
+  readonly pathSlug?: string;
 }
 
 /**
@@ -57,7 +64,9 @@ export function clubSlug(club: Pick<NamedClub, "name" | "shortName">): string | 
 
 /** Club id → unique address segment, for every club of a French catalogue. */
 export function buildClubSlugMap(clubs: readonly NamedClub[]): Map<string, string> {
-  const plain = new Map<string, string | undefined>(clubs.map((club) => [club.id, clubSlug(club)]));
+  const plain = new Map<string, string | undefined>(
+    clubs.map((club) => [club.id, club.pathSlug || clubSlug(club)]),
+  );
   const counts = new Map<string, number>();
   for (const slug of plain.values()) if (slug) counts.set(slug, (counts.get(slug) ?? 0) + 1);
   const result = new Map<string, string>();

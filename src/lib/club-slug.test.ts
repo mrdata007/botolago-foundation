@@ -99,4 +99,14 @@ describe("club slugs", () => {
     expect(clubPathParam({ id: "x" })).toBe("x");
     expect(clubPath("rsb-berkane")).toBe("/clubs/rsb-berkane");
   });
+
+  test("a presented club keeps the address the data's names gave it, whatever short name it prints", () => {
+    // `presentFootballClub` swaps in the club table's short name ("Raja"); the address must not follow it.
+    const raja = { ...club(uuid(7), "Raja", "Raja Casablanca"), pathSlug: "raja-casablanca" };
+    const wydad = { ...club(uuid(8), "Wydad", "Wydad Casablanca"), pathSlug: "wydad-casablanca" };
+    const clubs = [raja, wydad];
+    expect(buildClubSlugMap(clubs).get(raja.id)).toBe("raja-casablanca");
+    expect(resolveClubRef("raja-casablanca", clubs)).toBe(raja);
+    expect(resolveClubRef("raja", clubs)).toBeUndefined();
+  });
 });
