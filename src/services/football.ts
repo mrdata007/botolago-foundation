@@ -1,3 +1,4 @@
+import { requireMock } from "@/backend/errors";
 import type { Club, Match, MatchOffStatus, MatchStatus, TableRow } from "@/types/domain";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
@@ -52,7 +53,8 @@ export function selectFootballDataMode(
   return "mock";
 }
 
-const mockRepository = new MockFootballRepository();
+const mockRepository =
+  import.meta.env.VITE_FOOTBALL_DATA_MODE === "supabase" ? undefined : new MockFootballRepository();
 const supabaseRepository = new SupabaseFootballRepository();
 
 export function getFootballRepository(): FootballRepository {
@@ -60,7 +62,7 @@ export function getFootballRepository(): FootballRepository {
     import.meta.env.VITE_FOOTBALL_DATA_MODE,
     import.meta.env.PROD,
   );
-  return mode === "supabase" ? supabaseRepository : mockRepository;
+  return mode === "supabase" ? supabaseRepository : requireMock(mockRepository, "Football");
 }
 
 /**

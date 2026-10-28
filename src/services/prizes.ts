@@ -1,5 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { BackendError } from "@/backend/errors";
+import { BackendError, requireMock } from "@/backend/errors";
 import type {
   PrizeWinnerCursor,
   PrizesRepository,
@@ -26,14 +26,15 @@ export function selectPrizesDataMode(
   return "mock";
 }
 
-const mockRepository = new MockPrizesRepository();
+const mockRepository =
+  import.meta.env.VITE_PRIZES_DATA_MODE === "supabase" ? undefined : new MockPrizesRepository();
 const supabaseRepository = new SupabasePrizesRepository();
 
 export function getPrizesRepository(): PrizesRepository {
   return selectPrizesDataMode(import.meta.env.VITE_PRIZES_DATA_MODE, import.meta.env.PROD) ===
     "supabase"
     ? supabaseRepository
-    : mockRepository;
+    : requireMock(mockRepository, "Prizes");
 }
 
 function context(): RepositoryContext {

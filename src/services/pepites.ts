@@ -1,5 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { BackendError } from "@/backend/errors";
+import { BackendError, requireMock } from "@/backend/errors";
 import type {
   EditionResponse,
   FollowState,
@@ -36,7 +36,8 @@ export function selectPepitesDataMode(
   return production ? "supabase" : "mock";
 }
 
-const mockRepository = new MockPepitesRepository();
+const mockRepository =
+  import.meta.env.VITE_PEPITES_DATA_MODE === "supabase" ? undefined : new MockPepitesRepository();
 const supabaseRepository = new SupabasePepitesRepository();
 
 export function pepitesDataMode(): PepitesDataMode {
@@ -44,7 +45,9 @@ export function pepitesDataMode(): PepitesDataMode {
 }
 
 export function getPepitesRepository(): PepitesRepository {
-  return pepitesDataMode() === "supabase" ? supabaseRepository : mockRepository;
+  return pepitesDataMode() === "supabase"
+    ? supabaseRepository
+    : requireMock(mockRepository, "Pépites");
 }
 
 function context(signal?: AbortSignal): RepositoryContext {

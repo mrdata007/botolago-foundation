@@ -1,5 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { BackendError } from "@/backend/errors";
+import { BackendError, requireMock } from "@/backend/errors";
 import type { FootballLanguage } from "@/backend/football/contracts";
 import type {
   ClaimGuestPredictionsDto,
@@ -42,7 +42,10 @@ export function selectPredictionsDataMode(
   return "mock";
 }
 
-const mockRepository = new MockPredictionsRepository();
+const mockRepository =
+  import.meta.env.VITE_PREDICTIONS_DATA_MODE === "supabase"
+    ? undefined
+    : new MockPredictionsRepository();
 const supabaseRepository = new SupabasePredictionsRepository();
 
 export function predictionsDataMode(): PredictionsDataMode {
@@ -53,7 +56,9 @@ export function predictionsDataMode(): PredictionsDataMode {
 }
 
 export function getPredictionsRepository(): PredictionsRepository {
-  return predictionsDataMode() === "supabase" ? supabaseRepository : mockRepository;
+  return predictionsDataMode() === "supabase"
+    ? supabaseRepository
+    : requireMock(mockRepository, "Predictions");
 }
 
 /**
