@@ -516,3 +516,9 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - Cause: `season_match_hours = 6`, set on 26 Oct to save Sofascore calls. The check expects hourly.
 - Owner action: `select app_private.rapidapi_budget_configure(p_season_match_hours => 1);` (about +40 SportAPI calls on a match day).
 
+**Owner approved; Lead ran it (12:39 UTC).**
+- Command: `app_private.rapidapi_budget_configure(p_season_match_hours => 1)`. Settings read before and after; only `season_match_hours` changed, from 6 to 1.
+- 12:40 the fixtures update ran on SportAPI: 2 calls, both 200.
+- 12:43 health check: `provider_refresh` is OK. The only failing check is `fantasy_fixture_coverage` (the 2 Journée 5 matches), which clears on its own at the next rating checks: 28 Oct 22:00 and 29 Oct 18:00 UTC.
+- Side note for later: the configure function's reply shows the active host's count (SportAPI) next to Sofascore's limits. Display only; the server function uses each host's own budget.
+
