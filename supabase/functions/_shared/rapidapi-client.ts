@@ -19,7 +19,12 @@
 export const SOFASCORE_RAPIDAPI_HOST = "sofascore.p.rapidapi.com";
 export const DEFAULT_MIN_REMAINING = 100;
 export const RAPIDAPI_TIMEOUT_MS = 15_000;
-export const RAPIDAPI_MAX_RETRIES = 2;
+/**
+ * Retries per request, for ESSENTIAL_ENDPOINTS only. Every try is a billed call
+ * and a timed-out request is billed too, so any other endpoint is sent once: the
+ * next tick asks again anyway.
+ */
+export const RAPIDAPI_MAX_RETRIES = 1;
 
 /** Endpoints that still run above the soft limit: the live score feed and the incidents of a match. */
 export const ESSENTIAL_ENDPOINTS: ReadonlySet<string> = new Set([
@@ -106,6 +111,11 @@ export interface RapidApiClientConfig {
   readonly minRemaining?: number;
   readonly timeoutMs?: number;
   readonly maxRetries?: number;
+  /**
+   * Endpoints that stay allowed above the soft limit and that may be retried.
+   * Defaults to ESSENTIAL_ENDPOINTS; the rating polls add `matches/get-lineups`.
+   */
+  readonly essentialEndpoints?: ReadonlySet<string>;
   /** The monthly budget guard; none when absent (tests, scripts). */
   readonly budget?: RapidApiBudget;
   readonly fetch?: FetchLike;
@@ -133,6 +143,7 @@ export class RapidApiClient {
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly budget: RapidApiBudget | undefined;
+  private readonly essential: ReadonlySet<string>;
   private readonly fetchImpl: FetchLike;
   private readonly runtime: RapidApiRuntime;
   private readonly onRequest: ((event: RapidApiRequestEvent) => void) | undefined;
@@ -155,6 +166,7 @@ export class RapidApiClient {
     this.timeoutMs = config.timeoutMs ?? RAPIDAPI_TIMEOUT_MS;
     this.maxRetries = config.maxRetries ?? RAPIDAPI_MAX_RETRIES;
     this.budget = config.budget;
+    this.essential = config.essentialEndpoints ?? ESSENTIAL_ENDPOINTS;
     this.fetchImpl = fetchImpl;
     this.runtime = config.runtime ?? defaultRuntime;
     this.onRequest = config.onRequest;
@@ -204,7 +216,7 @@ export class RapidApiClient {
         "hard_limit",
       );
     }
-    if (used >= budget.softLimit && !ESSENTIAL_ENDPOINTS.has(endpointOf(path))) {
+    if (used >= budget.softLimit && !this.essential.has(endpointOf(path))) {
       return new RapidApiError(
         "provider_rate_limited",
         `Monthly RapidAPI soft limit reached (${used} of ${budget.softLimit}): only live calls are sent.`,
@@ -260,7 +272,8 @@ export class RapidApiClient {
 
   private async sendWithRetries(url: string, path: string): Promise<Response> {
     let lastError: RapidApiError | undefined;
-    for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
+    const maxRetries = this.essential.has(endpointOf(path)) ? this.maxRetries : 0;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
       const remaining = this.lastQuota.remaining;
       if (remaining !== null && remaining < this.minRemaining) {
         throw new RapidApiError(
@@ -310,7 +323,7 @@ export class RapidApiClient {
                   : "The provider request failed.",
               );
         // A 429 is never sent again: the retry would only spend another call.
-        if (lastError.code === "provider_rate_limited" || attempt === this.maxRetries) {
+        if (lastError.code === "provider_rate_limited" || attempt === maxRetries) {
           throw lastError;
         }
         const exponential = Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** attempt);
@@ -345,7 +358,14 @@ export function readQuota(headers: Headers, previous: RapidApiQuota): RapidApiQu
 type Environment = Readonly<Record<string, string | undefined>>;
 type ClientOverrides = Pick<
   RapidApiClientConfig,
-  "fetch" | "runtime" | "timeoutMs" | "maxRetries" | "minRemaining" | "onRequest" | "budget"
+  | "fetch"
+  | "runtime"
+  | "timeoutMs"
+  | "maxRetries"
+  | "minRemaining"
+  | "onRequest"
+  | "budget"
+  | "essentialEndpoints"
 >;
 
 /**

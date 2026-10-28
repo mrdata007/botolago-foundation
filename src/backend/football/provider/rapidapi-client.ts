@@ -15,6 +15,11 @@ export interface RapidApiClientConfig {
   readonly key: string;
   /** Refuse to send a request once the provider says fewer than this many remain. */
   readonly minRemaining?: number;
+  /**
+   * Refuse to send more than this many requests (retries included) from this
+   * client. SofaScore default: SOFASCORE_SCRIPT_MAX_REQUESTS.
+   */
+  readonly maxRequests?: number;
   readonly policy?: Partial<ProviderResiliencePolicy>;
   readonly fetch?: FetchLike;
   readonly runtime?: RetryRuntime;
@@ -22,17 +27,28 @@ export interface RapidApiClientConfig {
 }
 
 /**
- * The monthly plans are 500 requests and a failed call (404, 422) still
- * counts, so only 429, 5xx, timeouts and network errors are retried, and
- * fewer times than the SportMonks default.
+ * Every try is a billed call and a failed call (404, 422, 429, 5xx, a timeout)
+ * counts too, and these scripts are run by hand and can be run again, so nothing
+ * is retried. (It used to retry 429 and 5xx twice: a rate-limited answer made
+ * three billed calls.)
  */
 const RAPIDAPI_POLICY: ProviderResiliencePolicy = {
   ...DEFAULT_PROVIDER_RESILIENCE,
   timeoutMs: 15_000,
-  maxRetries: 2,
+  maxRetries: 0,
 };
 
 const DEFAULT_MIN_REMAINING = 100;
+export const SOFASCORE_RAPIDAPI_HOST = "sofascore.p.rapidapi.com";
+/**
+ * These scripts do not go through the Edge budget guard and their calls are not
+ * in app_private.rapidapi_call_counts. On the SofaScore host they therefore
+ * refuse to send once the provider reports fewer than this many calls left (the
+ * live refresh and the Fantasy rating polls keep that reserve of the 10,000), and
+ * stop after a fixed number of requests per run.
+ */
+export const SOFASCORE_SCRIPT_MIN_REMAINING = 1500;
+export const SOFASCORE_SCRIPT_MAX_REQUESTS = 100;
 
 /**
  * One RapidAPI host. The key goes in a header only: it is never put in a URL,
@@ -43,6 +59,7 @@ export class RapidApiClient {
   private readonly host: string;
   private readonly key: string;
   private readonly minRemaining: number;
+  private readonly maxRequests: number;
   private readonly policy: ProviderResiliencePolicy;
   private readonly fetchImpl: FetchLike;
   private readonly runtime: RetryRuntime | undefined;
@@ -57,7 +74,11 @@ export class RapidApiClient {
     if (!fetchImpl) throw configurationError();
     this.host = config.host.trim();
     this.key = config.key.trim();
-    this.minRemaining = config.minRemaining ?? DEFAULT_MIN_REMAINING;
+    const sofascore = config.host.trim().toLowerCase() === SOFASCORE_RAPIDAPI_HOST;
+    this.minRemaining =
+      config.minRemaining ?? (sofascore ? SOFASCORE_SCRIPT_MIN_REMAINING : DEFAULT_MIN_REMAINING);
+    this.maxRequests =
+      config.maxRequests ?? (sofascore ? SOFASCORE_SCRIPT_MAX_REQUESTS : Number.MAX_SAFE_INTEGER);
     this.policy = { ...RAPIDAPI_POLICY, ...config.policy };
     this.fetchImpl = fetchImpl;
     this.runtime = config.runtime;
@@ -87,6 +108,12 @@ export class RapidApiClient {
       throw new FootballError(
         "provider_rate_limited",
         `Provider quota is low (${remaining} left): not sending the request.`,
+      );
+    }
+    if (this.requestCount >= this.maxRequests) {
+      throw new FootballError(
+        "provider_rate_limited",
+        `Request cap reached (${this.maxRequests} per run): not sending the request.`,
       );
     }
     const path = pathAndQuery.replace(/^\//, "");

@@ -21,12 +21,18 @@ function reply(status: number, body: unknown, remaining = "400") {
 
 type Seen = { url: string; init?: RequestInit };
 
-function client(responses: Array<Response | Error>, seen: Seen[] = [], minRemaining?: number) {
+function client(
+  responses: Array<Response | Error>,
+  seen: Seen[] = [],
+  minRemaining?: number,
+  maxRetries?: number,
+) {
   return new RapidApiClient({
     host: SOFASCORE_RAPIDAPI_HOST,
     key: KEY,
     runtime,
     minRemaining,
+    maxRetries,
     fetch: async (url, init) => {
       seen.push({ url, init });
       const next = responses.shift();
@@ -80,7 +86,9 @@ describe("Edge RapidAPI client", () => {
     for (const status of [429, 503]) {
       const seen: Seen[] = [];
       const api = client([reply(status, {}, "99"), reply(200, {})], seen);
-      await expect(api.getJson("x")).rejects.toMatchObject({ code: "provider_rate_limited" });
+      await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+        code: "provider_rate_limited",
+      });
       expect(seen).toHaveLength(1);
       expect(api.requestsSent()).toBe(1);
       expect(api.quota().remaining).toBe(99);
@@ -106,8 +114,10 @@ describe("Edge RapidAPI client", () => {
     const api = client(
       [reply(503, {}), new TypeError("network down"), reply(200, { ok: 1 })],
       seen,
+      undefined,
+      2,
     );
-    expect((await api.getJson("x")).data).toEqual({ ok: 1 });
+    expect((await api.getJson("matches/get-incidents?matchId=1")).data).toEqual({ ok: 1 });
     expect(seen).toHaveLength(3);
     expect(api.requestsSent()).toBe(3);
   });
@@ -120,12 +130,44 @@ describe("Edge RapidAPI client", () => {
     expect(api.requestsSent()).toBe(1);
   });
 
-  test("gives up after 2 retries", async () => {
+  test("gives up after the retries (one by default) on an essential endpoint", async () => {
     const seen: Seen[] = [];
     await expect(
-      client([reply(503, {}), reply(503, {}), reply(503, {}), reply(200, {})], seen).getJson("x"),
+      client([reply(503, {}), reply(503, {}), reply(503, {}), reply(200, {})], seen).getJson(
+        "matches/get-incidents?matchId=1",
+      ),
     ).rejects.toMatchObject({ code: "provider_unavailable" });
-    expect(seen).toHaveLength(3);
+    expect(seen).toHaveLength(2);
+  });
+
+  test("any other endpoint is sent once: a 5xx or a timeout is not billed again", async () => {
+    const seen: Seen[] = [];
+    const api = client([reply(503, {}), reply(200, {})], seen, undefined, 2);
+    await expect(api.getJson("matches/get-statistics?matchId=1")).rejects.toMatchObject({
+      code: "provider_unavailable",
+    });
+    expect(seen).toHaveLength(1);
+    expect(api.requestsSent()).toBe(1);
+  });
+
+  test("essentialEndpoints widens what the soft limit and the retries allow", async () => {
+    const seen: Seen[] = [];
+    const api = new RapidApiClient({
+      host: SOFASCORE_RAPIDAPI_HOST,
+      key: KEY,
+      runtime,
+      budget: { used: 9000, softLimit: 8500, hardLimit: 9700 },
+      essentialEndpoints: new Set(["matches/get-lineups"]),
+      fetch: async (url, init) => {
+        seen.push({ url, init });
+        return reply(200, { ok: 1 });
+      },
+    });
+    expect((await api.getJson("matches/get-lineups?matchId=1")).data).toEqual({ ok: 1 });
+    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toMatchObject({
+      budget: "soft_limit",
+    });
+    expect(seen).toHaveLength(1);
   });
 
   test("a hung request times out and is retried", async () => {
@@ -143,7 +185,9 @@ describe("Edge RapidAPI client", () => {
         });
       },
     });
-    await expect(api.getJson("x")).rejects.toThrow("The provider request timed out.");
+    await expect(api.getJson("matches/get-incidents?matchId=1")).rejects.toThrow(
+      "The provider request timed out.",
+    );
     expect(seen).toHaveLength(2);
   });
 

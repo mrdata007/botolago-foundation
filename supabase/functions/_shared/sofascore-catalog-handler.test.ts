@@ -12,7 +12,7 @@ const request = () =>
   });
 const environment = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN, RAPIDAPI_KEY: "k" };
 
-function database(source: string) {
+function database(source: string, budgetReadable = true) {
   const calls: string[] = [];
   const client = {
     schema() {
@@ -21,6 +21,12 @@ function database(source: string) {
           calls.push(name);
           if (name === "football_data_source")
             return Promise.resolve({ data: source, error: null });
+          if (name === "service_rapidapi_budget" && budgetReadable) {
+            return Promise.resolve({
+              data: { used: 100, softLimit: 8500, hardLimit: 9700, liveIntervalSeconds: 60 },
+              error: null,
+            });
+          }
           if (name === "football_sofascore_catalog_snapshot") {
             return Promise.resolve({
               data: {
@@ -79,5 +85,20 @@ describe("handler: the catalog_weekly job", () => {
       "football_sofascore_catalog_snapshot",
       "service_record_rapidapi_calls",
     ]);
+  });
+
+  test("a budget that cannot be read fails closed: the squad request is not sent", async () => {
+    const fake = database("sofascore", false);
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(request(), {
+      environment,
+      client: fake.client,
+      fetch: async (input) => {
+        paths.push(new URL(String(input)).pathname.slice(1));
+        return Response.json({ players: [] });
+      },
+    });
+    expect(paths).toEqual([]);
+    expect(response.status).toBe(429);
   });
 });

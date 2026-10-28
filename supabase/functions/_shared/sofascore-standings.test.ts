@@ -395,7 +395,7 @@ describe("the season job", () => {
     expect(net.paths).toEqual([nextPath(0), lastPath(0)]);
   });
 
-  test("in the daily hour: the whole schedule (pages until the end) and the table", async () => {
+  test("on Monday in the daily hour: the whole schedule (pages until the end) and the table", async () => {
     const db = fakeDb("sofascore", [1]);
     const net = fakeNet({
       [nextPath(0)]: { events: [], hasNextPage: true },
@@ -411,7 +411,7 @@ describe("the season job", () => {
       db,
       net,
       {},
-      new Date("2026-10-13T03:10:00Z"),
+      new Date("2026-10-12T03:10:00Z"),
     );
     expect(outcome.status).toBe(200);
     expect(net.paths.filter((p) => p.startsWith("tournaments/get-next"))).toEqual([
@@ -428,6 +428,30 @@ describe("the season job", () => {
     expect(outcome.body).toMatchObject({ standings: { status: "ok", trigger: "daily" } });
   });
 
+  test("on another weekday in the daily hour: page 0 of each direction and the table, no full pull", async () => {
+    const db = fakeDb("sofascore", [1]);
+    const net = fakeNet({
+      [nextPath(0)]: { events: [], hasNextPage: true },
+      [lastPath(0)]: { events: [], hasNextPage: true },
+      ...standingsRoute,
+    });
+    const { outcome } = await tick(
+      "sofascore",
+      "season_fixtures",
+      db,
+      net,
+      {},
+      new Date("2026-10-13T03:10:00Z"), // a Tuesday
+    );
+    expect(outcome.status).toBe(200);
+    expect(net.paths.filter((p) => /get-(next|last)-matches/.test(p))).toEqual([
+      nextPath(0),
+      lastPath(0),
+    ]);
+    expect(standingsRequests(net)).toHaveLength(1);
+    expect(outcome.body).toMatchObject({ standings: { status: "ok", trigger: "daily" } });
+  });
+
   test("the full pull is bounded by SOFASCORE_SEASON_FULL_MAX_PAGES", async () => {
     const db = fakeDb("sofascore", [1]);
     const net = fakeNet({
@@ -441,7 +465,7 @@ describe("the season job", () => {
       db,
       net,
       { SOFASCORE_SEASON_FULL_MAX_PAGES: "3" },
-      new Date("2026-10-13T03:10:00Z"),
+      new Date("2026-10-12T03:10:00Z"),
     );
     expect(net.paths.filter((p) => p.startsWith("tournaments/get-next"))).toHaveLength(3);
     expect(net.paths.filter((p) => p.startsWith("tournaments/get-last"))).toHaveLength(3);

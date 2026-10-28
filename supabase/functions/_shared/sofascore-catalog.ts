@@ -369,6 +369,7 @@ export function createCatalogRapidClient(
     readonly runtime?: RapidApiRuntime;
     readonly onRequest?: (event: RapidApiRequestEvent) => void;
     readonly budget?: RapidApiBudget;
+    readonly essentialEndpoints?: ReadonlySet<string>;
   } = {},
 ): CatalogRapidClient {
   const send: FetchLike = baseFetch ?? ((input, init) => globalThis.fetch(input, init));

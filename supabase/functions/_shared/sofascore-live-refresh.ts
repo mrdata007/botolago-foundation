@@ -21,21 +21,19 @@
 // nothing written.
 //
 // Match details (events, lineups, team statistics) come after the scores, from
-// sofascore-match-details.ts: 3 requests per fixture, at most
-// SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
-// more requests. Chosen fixtures: a mapped fixture written as finished this
-// tick (the whistle fetch), then mapped fixtures in play whose score or status
-// was written (a write that only moves the live minute does not count) or
-// whose changeTimestamp moved in the last 90 seconds while their details were
-// last stored 5 minutes ago or more (incidents only: 1 request, plus the
-// lineups on the tick that sees the match start; statistics are read at full
-// time), then the post-match follow-ups: a finished fixture whose details were
-// last stored before its +30 minute or +90 minute mark
-// (api.service_football_details_schedule), one fetch each. The
-// season job fetches none. `rating_polls` (runSofascoreRatingPolls) is the
-// Fantasy rating polls alone: one lineups request per poll due, no live feed. `runSofascoreDetailsBackfill` serves the
-// `match_details_backfill` job. Details never hold a score back: they run after
-// the scores are written, and a failure is reported in `matchDetails`.
+// sofascore-match-details.ts, at most SOFASCORE_DETAILS_PER_TICK (default 4)
+// fixtures per live tick. Chosen fixtures: a mapped fixture written as finished
+// this tick (the whistle fetch: incidents, lineups, statistics, 3 requests, which
+// also feed the Fantasy step), then mapped fixtures in play whose score, status or
+// period was written (the incidents only, 1 request; a write that only moves the
+// live minute does not count, and neither does the provider's changeTimestamp
+// moving; never the lineups or statistics of a match in play), then one
+// post-match follow-up at +90 minutes (api.service_football_details_schedule), 3
+// requests. The season job fetches none. `rating_polls` (runSofascoreRatingPolls)
+// is the Fantasy rating polls alone: one lineups request per poll due, no live
+// feed. `runSofascoreDetailsBackfill` serves the `match_details_backfill` job.
+// Details never hold a score back: they run after the scores are written, and a
+// failure is reported in `matchDetails`.
 //
 // Unmapped events are logged and never ingested: api.ingest_football_fixture
 // creates a fixture when it finds no mapping. Events with a status the status
@@ -98,6 +96,8 @@ export const DEFAULT_SOFASCORE_SEASON_ID = "102220";
 export const SOFASCORE_SEASON_FULL_MAX_PAGES_DEFAULT = 12;
 export const SOFASCORE_SEASON_FULL_MAX_PAGES_MAX = 20;
 export const SOFASCORE_SEASON_REFRESH_DAYS_AHEAD = 42;
+/** UTC weekday (0 = Sunday) of the full-season pull; the hourly page 0 reads cover the near rounds. */
+export const SOFASCORE_SEASON_FULL_PASS_WEEKDAY = 1;
 /** A not-yet-started fixture this recent is expected to be in play. */
 const RECENT_KICKOFF_MS = 3 * 60 * 60 * 1000;
 /** Statuses production keeps while a match is on (as the live refresh cadence). */
@@ -120,25 +120,8 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
   "extra_time",
   "penalties",
 ]);
-/**
- * A provider change newer than this counts as "moved since the last tick". The
- * live tick runs every 60 s, so 90 s covers one late tick and no more: a change
- * is fetched once or twice, not for as long as 150 s.
- */
-const DETAILS_CHANGE_WINDOW_MS = 90_000;
-
-/** The change window for a live poll every `intervalSeconds`: one interval and 30 s of lateness. */
-export function detailsChangeWindowMs(intervalSeconds: number | undefined): number {
-  if (!intervalSeconds || !Number.isFinite(intervalSeconds) || intervalSeconds <= 60) {
-    return DETAILS_CHANGE_WINDOW_MS;
-  }
-  return Math.min(330, intervalSeconds + 30) * 1000;
-}
-/**
- * A match in play whose provider change timestamp moved (without a score or
- * status write) is read again only when its details were stored this long ago.
- */
-const DETAILS_LIVE_MIN_GAP_MS = 5 * 60 * 1000;
+/** The only post-match follow-up read of a finished fixture's details. */
+const FOLLOW_UP_AFTER_MS = 90 * 60 * 1000;
 
 export interface SofascoreRefreshDependencies {
   readonly mode: SofascoreRefreshMode;
@@ -334,7 +317,6 @@ export function selectLiveDetailTargets(
   now: Date,
   limit: number,
   schedule: SofascoreDetailsSchedule = NO_SCHEDULE,
-  changeWindowMs: number = DETAILS_CHANGE_WINDOW_MS,
 ): SofascoreDetailsTarget[] {
   const written = new Set(toWrite.map((call) => call.p_external_id));
   const stateById = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
@@ -345,40 +327,25 @@ export function selectLiveDetailTargets(
     if (!state) continue; // not mapped to a fixture: the RPC would refuse it
     const changed = event.changeTimestamp === null ? -1 : event.changeTimestamp * 1000;
     const isWritten = written.has(event.sofascoreEventId);
-    const lastStored = schedule.lastStored.get(event.sofascoreEventId);
-    const moved =
-      changed >= 0 &&
-      now.getTime() - changed <= changeWindowMs &&
-      (lastStored === undefined || now.getTime() - lastStored >= DETAILS_LIVE_MIN_GAP_MS);
     let rank: number | null = null;
     if (event.status === "finished" && isWritten) rank = 0;
-    else if (DETAILS_LIVE_STATUSES.has(event.status) && (isWritten || moved)) rank = 1;
+    else if (DETAILS_LIVE_STATUSES.has(event.status) && isWritten) rank = 1;
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
     // A finished match reads all three replies and feeds the Fantasy step with
-    // them. A match in play reads the incidents only (1 request): goals, cards and
-    // substitutions; statistics wait for full time. The one exception is the tick
-    // that sees the match start (stored status not yet in play): it also reads the
-    // lineups (2 requests), once, so unknown players reach the staff's matching
-    // list before full time, as they did when every tick read all three.
+    // them. A match in play reads the incidents only (1 request), and only on a
+    // tick that wrote a score, status or period change: never the lineups or the
+    // statistics (display data BSD will serve; the Fantasy ratings read the
+    // lineups after full time). A provider changeTimestamp moving is not a
+    // reason to read: it moves for every minor edit.
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
-    const starting = rank === 1 && !DETAILS_LIVE_STATUSES.has(state.status);
-    // Lineups the provider had not published on the kickoff tick are read
-    // again with the incidents, on a tick that wrote the score or status (not
-    // on a changeTimestamp move alone), until one is stored: at most a few
-    // more requests per match, none once a lineup is stored.
-    const lineupsMissing = rank === 1 && isWritten && state.hasLineups === false;
-    const withLineups = starting || lineupsMissing;
-    const liveFixtureId = withLineups ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
         teams,
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
-        ...(liveFixtureId ? { liveFixtureId } : {}),
         ...(rank === 1 ? { incidentsOnly: true } : {}),
-        ...(withLineups ? { withLineups: true } : {}),
       },
       rank,
       changed,
@@ -400,6 +367,9 @@ export function selectLiveDetailTargets(
     }
     const finalized = Date.parse(fixture.finalizedAt);
     if (!Number.isFinite(finalized)) continue;
+    // One follow-up, at +90 minutes (the +30 minute mark the database also
+    // lists is not read: the whistle fetch and this one are the two reads).
+    if (now.getTime() - finalized < FOLLOW_UP_AFTER_MS) continue;
     const teams = detailsTeams(fixture, teamIds, undefined);
     if (teams)
       ranked.push({
@@ -589,6 +559,7 @@ export async function runSofascoreRefresh(
   // 2. Independent season feeds: unavailable upcoming data never becomes an
   // empty schedule, and cannot suppress validated completed-match updates.
   const dailyPass = job === "season_fixtures" && isDailyStandingsHour(now, environment);
+  const fullSeasonPass = dailyPass && now.getUTCDay() === SOFASCORE_SEASON_FULL_PASS_WEEKDAY;
   const readErrors: { path: string; code: string }[] = [];
   let firstSeasonError: unknown;
   /** `hasNextPage` of the last page read per endpoint (the daily full pull). */
@@ -644,8 +615,9 @@ export async function runSofascoreRefresh(
       await readSeasonPage(eventListPath("get-next-matches", tournamentId, seasonId));
       await readSeasonPage(eventListPath("get-last-matches", tournamentId, seasonId));
       if (parsedLists.length === 0) throw firstSeasonError;
-      if (dailyPass) {
-        // Once a day (the hour SOFASCORE_DAILY_HOUR_UTC, default 03 UTC) the
+      if (fullSeasonPass) {
+        // Once a week (Monday, in the hour SOFASCORE_DAILY_HOUR_UTC, default 03
+        // UTC; it was daily, 10 to 24 requests a day for little) the
         // whole season schedule: the hourly pass above reads page 0 of each
         // direction only (about 30 events each way), so a kickoff moved or a
         // postponement far from today is caught here. Pages 1.. until the
@@ -830,7 +802,6 @@ export async function runSofascoreRefresh(
       now,
       cap,
       schedule,
-      detailsChangeWindowMs(dependencies.liveIntervalSeconds),
     );
     return runSofascoreMatchDetails(targets, {
       mode,

@@ -4,8 +4,9 @@
 // counted in the current quota window (app_private.rapidapi_call_counts plus
 // the owner's offset), the soft and the hard limit. The Edge Function reads it
 // once per run, before the first provider call; the client adds the run's own
-// requests on top. A read that fails returns null and is logged: the run goes
-// on without the guard, as it did before the guard existed.
+// requests on top. A read that fails returns null and is logged: the caller
+// then fails closed (football-live-refresh.ts UNREADABLE_BUDGET: essential
+// endpoints only).
 //
 // Dependency-free apart from sibling shared modules.
 

@@ -3,11 +3,7 @@ import { readFileSync } from "node:fs";
 import type { LiveRefreshRpcClient } from "./football-live-refresh.ts";
 import { createRapidApiClient } from "./rapidapi-client.ts";
 import { BOTOLA_UNIQUE_TOURNAMENT_ID, SOFASCORE_LIVE_EVENTS_PATH } from "./sofascore-fixtures.ts";
-import {
-  detailsChangeWindowMs,
-  runSofascoreDetailsBackfill,
-  runSofascoreRefresh,
-} from "./sofascore-live-refresh.ts";
+import { runSofascoreDetailsBackfill, runSofascoreRefresh } from "./sofascore-live-refresh.ts";
 
 // The SofaScore side of match details: which fixtures get fetched, how many,
 // what is written. Synthetic ids; the three replies are a committed fixture.
@@ -230,7 +226,7 @@ describe("sofascore details on the live tick", () => {
     ).toEqual(["2"]);
   });
 
-  test("an in-play fixture with nothing new is not fetched; a recent change is", async () => {
+  test("an in-play fixture with nothing written is not fetched, however recent its provider change", async () => {
     const quiet = state(1, { homeScore: 1 }); // identical to SofaScore: not written
     const old = event(1, LIVE, START + 100); // changed an hour ago
     const dbQuiet = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
@@ -238,24 +234,15 @@ describe("sofascore details on the live tick", () => {
     await tick("sofascore", "fixtures", dbQuiet, quietRun.fetch);
     expect(detailPaths(quietRun.paths)).toEqual([]);
 
-    // changed 60 seconds ago: the match page needs its new card or substitution
+    // changed 60 seconds ago: still nothing is read. The provider's change
+    // timestamp moves for every minor edit; only a written score, status or
+    // period change earns the incidents request.
     const recent = event(1, LIVE, START + 3540);
     const dbRecent = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
     const recentRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [recent] } });
     await tick("sofascore", "fixtures", dbRecent, recentRun.fetch);
-    // in play: the incidents only (1 request); lineups and statistics wait for full time
-    expect(detailPaths(recentRun.paths)).toEqual(["matches/get-incidents?matchId=1"]);
-    expect(named(dbRecent, "ingest_football_fixture")).toHaveLength(0);
-    const sent = named(dbRecent, "ingest_football_match_details");
-    expect(sent).toHaveLength(1);
-    expect(sent[0].args.p_details).toMatchObject({ lineups: [], statistics: [] });
-
-    // changed 120 seconds ago: older than one polling interval, so not fetched again
-    const stale = event(1, LIVE, START + 3480);
-    const dbStale = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
-    const staleRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [stale] } });
-    await tick("sofascore", "fixtures", dbStale, staleRun.fetch);
-    expect(detailPaths(staleRun.paths)).toEqual([]);
+    expect(detailPaths(recentRun.paths)).toEqual([]);
+    expect(named(dbRecent, "ingest_football_match_details")).toHaveLength(0);
   });
 
   test("a fixture that just finished reads all three replies", async () => {
@@ -271,33 +258,28 @@ describe("sofascore details on the live tick", () => {
     ]);
   });
 
-  test("a match whose provider data moved is read again only when its details are 5 minutes old", async () => {
+  test("a provider change alone (no score, status or period write) reads nothing, whatever the age of the stored details", async () => {
     const moved = new Date(NOW.getTime() - 30_000);
     const changeTimestamp = Math.floor(moved.getTime() / 1000);
-    const fixtures = () => [state(1, { homeScore: 1, awayScore: 0, minute: null })];
     const lists = {
       [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, LIVE, changeTimestamp, 1)] },
     };
-    const stored = (agoMs: number) => ({
-      followUps: [],
-      lastStored: { "1": new Date(NOW.getTime() - agoMs).toISOString() },
-    });
-    const fresh = fakeDb({ mappings: mappings([1]), fixtures: fixtures() }, [], stored(120_000));
-    const first = fakeFetch(lists);
-    await tick("sofascore", "fixtures", fresh, first.fetch);
-    expect(detailPaths(first.paths)).toEqual([]);
-    const old = fakeDb({ mappings: mappings([1]), fixtures: fixtures() }, [], stored(360_000));
-    const second = fakeFetch(lists);
-    await tick("sofascore", "fixtures", old, second.fetch);
-    expect(detailPaths(second.paths)).toEqual(["matches/get-incidents?matchId=1"]);
-  });
-
-  test("the change window follows the live poll interval", () => {
-    expect(detailsChangeWindowMs(undefined)).toBe(90_000);
-    expect(detailsChangeWindowMs(60)).toBe(90_000);
-    expect(detailsChangeWindowMs(120)).toBe(150_000);
-    expect(detailsChangeWindowMs(180)).toBe(210_000);
-    expect(detailsChangeWindowMs(300)).toBe(330_000);
+    for (const agoMs of [120_000, 3_600_000]) {
+      const db = fakeDb(
+        {
+          mappings: mappings([1]),
+          fixtures: [state(1, { homeScore: 1, awayScore: 0, minute: null })],
+        },
+        [],
+        {
+          followUps: [],
+          lastStored: { "1": new Date(NOW.getTime() - agoMs).toISOString() },
+        },
+      );
+      const run = fakeFetch(lists);
+      await tick("sofascore", "fixtures", db, run.fetch);
+      expect(detailPaths(run.paths)).toEqual([]);
+    }
   });
 
   test("an unmapped fixture is never fetched", async () => {
@@ -309,8 +291,8 @@ describe("sofascore details on the live tick", () => {
     expect(detailPaths(paths)).toEqual([]);
   });
 
-  test("finalized fixtures are read again only when the database says a follow-up is due, within the cap", async () => {
-    const recent = new Date(NOW.getTime() - 35 * 60 * 1000).toISOString();
+  test("finalized fixtures are read again once, at +90 minutes, when the database says a follow-up is due, within the cap", async () => {
+    const recent = new Date(NOW.getTime() - 95 * 60 * 1000).toISOString();
     const snapshotOf = () => ({
       mappings: mappings([1, 2, 3]),
       fixtures: [
@@ -336,6 +318,23 @@ describe("sofascore details on the live tick", () => {
       named(db, "ingest_football_match_details").map((c) => c.args.p_fixture_external_id),
     ).toEqual(["1"]);
     expect(detailPaths(paths)).toHaveLength(3);
+    // The +30 minute mark is listed by the database but not read.
+    const early = fakeDb(
+      {
+        mappings: mappings([1]),
+        fixtures: [
+          state(1, {
+            status: "finished",
+            finalizedAt: new Date(NOW.getTime() - 35 * 60 * 1000).toISOString(),
+          }),
+        ],
+      },
+      [],
+      { followUps: ["1"], lastStored: {} },
+    );
+    const earlyRun = fakeFetch(lists);
+    await tick("sofascore", "fixtures", early, earlyRun.fetch);
+    expect(detailPaths(earlyRun.paths)).toEqual([]);
   });
 
   test("unchanged final scores still refresh details without duplicate targets", async () => {
@@ -659,7 +658,7 @@ describe("the live minute on the live tick", () => {
 describe("lineups in play and statistics after the post-match window", () => {
   const liveEvent = (score: number) => event(1, LIVE, START + 100, score);
 
-  test("a match in play without a stored lineup reads it with the incidents on a written tick", async () => {
+  test("a match in play never reads its lineups, stored or not: the incidents alone", async () => {
     // Snapshot (migration 20261014120000) says no lineup is stored; the score moved.
     const db = fakeDb({
       mappings: mappings([1]),
@@ -667,10 +666,7 @@ describe("lineups in play and statistics after the post-match window", () => {
     });
     const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
     await tick("sofascore", "fixtures", db, run.fetch);
-    expect(detailPaths(run.paths)).toEqual([
-      "matches/get-incidents?matchId=1",
-      "matches/get-lineups?matchId=1",
-    ]);
+    expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
   });
 
   test("once a lineup is stored, or on a database without the flag, the incidents alone", async () => {
@@ -685,7 +681,7 @@ describe("lineups in play and statistics after the post-match window", () => {
     }
   });
 
-  test("a provider change alone (nothing written) does not re-read missing lineups", async () => {
+  test("a provider change alone (nothing written) reads nothing, missing lineups included", async () => {
     const db = fakeDb({
       mappings: mappings([1]),
       fixtures: [state(1, { homeScore: 1, hasLineups: false })],
@@ -694,7 +690,7 @@ describe("lineups in play and statistics after the post-match window", () => {
       [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, LIVE, START + 3540, 1)] },
     });
     await tick("sofascore", "fixtures", db, run.fetch);
-    expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+    expect(detailPaths(run.paths)).toEqual([]);
   });
 
   test("a staged statistics pull also stores the match details, with no request of its own", async () => {
