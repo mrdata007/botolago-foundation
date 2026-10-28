@@ -22,6 +22,13 @@ import {
   showsAround,
   showsWaiting,
 } from "@/components/fantasy-lists/rankings-view";
+import {
+  MovementPill,
+  STANDINGS_HEAD,
+  STANDINGS_HEAD_CELL,
+  STANDINGS_ME_ROW,
+  StandingsRank,
+} from "@/components/fantasy-lists/standings-flair";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
 import { fill, ltr } from "@/components/manager-card/interpolate";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
@@ -35,7 +42,6 @@ import {
   UiErrorState,
   UiHeader,
   UiLinkButton,
-  UiRankMovement,
   UiSkeleton,
   UiStatePanel,
   UiTable,
@@ -70,9 +76,11 @@ export const Route = createFileRoute("/fantasy/rankings")({
 type RankingsTab = RankingsSort | "leagues";
 
 /**
- * Rankings (A-Rankings, the approved minimal layout): the "your position"
- * line with its gradient edge, one standings table with a quiet ▲/▼ movement
- * column, and underline tabs — Général, Journée, Mes ligues. No podium: the
+ * Rankings (A-Rankings, brought to life on 2026-10-28): the "your position"
+ * card on the header gradient, one standings table with a brand-tinted head,
+ * gold / silver / bronze discs for the top three, the reader's row on the
+ * action gradient and ▲/▼ movement pills (`standings-flair.tsx`), and
+ * underline tabs — Général, Journée, Mes ligues. No podium: the
  * owner's final board dropped it, and with it the per-manager crest that was a
  * hash of the manager id — once colour means a club, a hashed crest paints a
  * manager in a club they never chose.
@@ -432,19 +440,29 @@ function StandingsTable({
   return (
     <UiCard padding="none" className="overflow-hidden">
       <UiTable caption={caption}>
-        <UiTHead className="bg-transparent">
+        <UiTHead className={STANDINGS_HEAD}>
           <UiTR>
-            <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL)}>#</UiTH>
-            <UiTH className={STANDINGS_NAME_CELL}>{t("fantasy.rankings.manager")}</UiTH>
+            <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}>#</UiTH>
+            <UiTH className={cn(STANDINGS_NAME_CELL, STANDINGS_HEAD_CELL)}>
+              {t("fantasy.rankings.manager")}
+            </UiTH>
             {/* Both figures are always shown; the tab changes the ORDER, not
                 which column is which. */}
-            <UiTH numeric className={STANDINGS_FIGURE_CELL} title={gwTitle}>
+            <UiTH
+              numeric
+              className={cn(STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}
+              title={gwTitle}
+            >
               {t("fantasy.leagues.gw")}
             </UiTH>
-            <UiTH numeric className={STANDINGS_FIGURE_CELL} title={totalTitle}>
+            <UiTH
+              numeric
+              className={cn(STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}
+              title={totalTitle}
+            >
               {t("fantasy.leagues.total")}
             </UiTH>
-            <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
+            <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}>
               <span aria-hidden>+/−</span>
               <span className="sr-only">{t("fantasy.leagues.movement")}</span>
             </UiTH>
@@ -495,10 +513,10 @@ function RankingRow({
 }) {
   const podium = row.rank <= 3;
   return (
-    <UiTR highlighted={isMe} className={cn(isLast && "border-b-0")}>
+    <UiTR highlighted={isMe} className={cn(isMe && STANDINGS_ME_ROW, isLast && "border-b-0")}>
       {/* A column of figures: the tabular stat ramp, never the display face.
-          The top three read in full strength, the rest muted, as the board
-          sets them. */}
+          The top three sit on gold / silver / bronze discs, the rest read
+          muted, as the board sets them. */}
       <UiTD
         className={cn(
           "ps-4",
@@ -507,7 +525,7 @@ function RankingRow({
           podium ? ui.tone.default : ui.tone.muted,
         )}
       >
-        <bdi>{nf.format(row.rank)}</bdi>
+        <StandingsRank rank={row.rank} nf={nf} />
       </UiTD>
       <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
         <div className="flex items-center gap-1">
@@ -557,8 +575,7 @@ function RankingRow({
         {nf.format(row.totalScore)}
       </UiTD>
       <UiTD numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
-        <UiRankMovement
-          variant="quiet"
+        <MovementPill
           rank={row.rank}
           previousRank={row.previousRank}
           labels={movementLabels}

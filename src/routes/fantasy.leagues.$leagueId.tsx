@@ -18,6 +18,15 @@ import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
 import { LeagueReadNotice } from "@/components/fantasy/LeagueReadNotice";
 import { LeagueUpdatedLine } from "@/components/fantasy/LeagueUpdatedLine";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
+import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
+import {
+  MovementPill,
+  RankHeroCard,
+  STANDINGS_HEAD,
+  STANDINGS_HEAD_CELL,
+  STANDINGS_ME_ROW,
+  StandingsRank,
+} from "@/components/fantasy-lists/standings-flair";
 import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
 import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
@@ -47,7 +56,6 @@ import {
   UiHeader,
   UiModal,
   UiPill,
-  UiRankMovement,
   UiSkeleton,
   UiTable,
   UiTabs,
@@ -61,6 +69,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { pointsUnit } from "@/lib/points-unit";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -221,6 +230,9 @@ function LeagueDetailBody() {
   // small stat step, and a move of a thousand places or more is compact.
   const rankStep = rankFigure(Math.max(1, ...rows.map((row) => row.rank)));
   const compactNf = compactMoveFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  // The reader's own row, when it is among the rows read: tinted in the
+  // table and shown large in the "your position" card above it.
+  const ownRow = rows.find((row) => isOwnStanding(row.managerId, ownTeamId));
 
   return (
     <>
@@ -289,6 +301,46 @@ function LeagueDetailBody() {
                 </Suspense>
               ) : null}
 
+              {ownRow ? (
+                <div className="mt-4">
+                  <RankHeroCard
+                    kicker={t("fantasy.rankings.my_rank")}
+                    rank={ownRow.rank}
+                    parts={rankOrdinal(ownRow.rank, lang, t, (value) => nf.format(value))}
+                    trailing={
+                      merged?.memberCount ? (
+                        <span className={cn(ui.text.bodyStrong, "whitespace-nowrap")}>
+                          {t("fantasy.leagues.of_members").replace(
+                            "{n}",
+                            nf.format(merged.memberCount),
+                          )}
+                        </span>
+                      ) : null
+                    }
+                  >
+                    <span
+                      dir="auto"
+                      className="min-w-0 truncate [font-weight:var(--ui-weight-strong)]"
+                    >
+                      {ownRow.teamName}
+                    </span>
+                    <span aria-hidden className={ui.tone.muted}>
+                      ·
+                    </span>
+                    <span className="whitespace-nowrap">
+                      <bdi className={ui.stat.md}>{nf.format(ownRow.totalScore)}</bdi>{" "}
+                      <span className={ui.tone.muted}>{pointsUnit(ownRow.totalScore, t)}</span>
+                    </span>
+                    <MovementPill
+                      rank={ownRow.rank}
+                      previousRank={ownRow.previousRank}
+                      labels={movementLabels}
+                      formatDelta={(places) => formatMove(places, nf, compactNf)}
+                    />
+                  </RankHeroCard>
+                </div>
+              ) : null}
+
               <div className="mt-4">
                 {standingsQ.isPending ? (
                   <div role="status" aria-label={t("state.loading")} className="space-y-2">
@@ -311,19 +363,30 @@ function LeagueDetailBody() {
                         table (see `standings.ts`), so a long team name wraps
                         in its own cell instead of pushing Total off-screen. */}
                     <UiTable caption={t("fantasy.leagues.standings")}>
-                      <UiTHead className="bg-transparent">
+                      <UiTHead className={STANDINGS_HEAD}>
                         <UiTR>
-                          <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL)}>{t("fpl.pos")}</UiTH>
-                          <UiTH className={STANDINGS_NAME_CELL}>{t("fpl.team")}</UiTH>
-                          <UiTH numeric className={STANDINGS_FIGURE_CELL} title={t("fpl.gameweek")}>
+                          <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}>
+                            {t("fpl.pos")}
+                          </UiTH>
+                          <UiTH className={cn(STANDINGS_NAME_CELL, STANDINGS_HEAD_CELL)}>
+                            {t("fpl.team")}
+                          </UiTH>
+                          <UiTH
+                            numeric
+                            className={cn(STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}
+                            title={t("fpl.gameweek")}
+                          >
                             {gw
                               ? `${t("fantasy.leagues.gw")}${nf.format(gw)}`
                               : t("fantasy.leagues.gw")}
                           </UiTH>
-                          <UiTH numeric className={STANDINGS_FIGURE_CELL}>
+                          <UiTH numeric className={cn(STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}>
                             {t("fpl.total")}
                           </UiTH>
-                          <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
+                          <UiTH
+                            numeric
+                            className={cn("pe-4", STANDINGS_FIGURE_CELL, STANDINGS_HEAD_CELL)}
+                          >
                             <span aria-hidden>+/−</span>
                             <span className="sr-only">{t("fantasy.leagues.movement")}</span>
                           </UiTH>
@@ -333,7 +396,11 @@ function LeagueDetailBody() {
                         {rows.map((row, index) => (
                           <UiTR
                             key={row.managerId}
-                            className={cn(index === rows.length - 1 && "border-b-0")}
+                            highlighted={row === ownRow}
+                            className={cn(
+                              row === ownRow && STANDINGS_ME_ROW,
+                              index === rows.length - 1 && "border-b-0",
+                            )}
                           >
                             <UiTD
                               className={cn(
@@ -343,7 +410,7 @@ function LeagueDetailBody() {
                                 row.rank <= 3 ? ui.tone.default : ui.tone.muted,
                               )}
                             >
-                              <bdi>{nf.format(row.rank)}</bdi>
+                              <StandingsRank rank={row.rank} nf={nf} />
                             </UiTD>
                             <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
                               <div className="flex items-center gap-1">
@@ -393,8 +460,7 @@ function LeagueDetailBody() {
                               {nf.format(row.totalScore)}
                             </UiTD>
                             <UiTD numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
-                              <UiRankMovement
-                                variant="quiet"
+                              <MovementPill
                                 rank={row.rank}
                                 previousRank={row.previousRank}
                                 labels={movementLabels}

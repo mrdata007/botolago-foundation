@@ -1,10 +1,10 @@
 import { Hourglass, Search, Target, UserPlus } from "lucide-react";
 import { lazy, Suspense, type ReactNode } from "react";
 
-import { AnimatedNumber, FlashOnChange } from "@/components/common/AnimatedNumber";
-import { RankOrdinal } from "@/components/fantasy-lists/RankOrdinal";
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
-import { ui, UiIconButton, UiLinkButton, UiRankMovement, UiSkeleton } from "@/components/ui-kit";
+import { MovementPill, RankHeroCard } from "@/components/fantasy-lists/standings-flair";
+import { ui, UiIconButton, UiLinkButton, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { LeagueStanding } from "@/types/fantasy";
@@ -23,11 +23,13 @@ const RankCardToken = lazy(() =>
 );
 
 /**
- * "Your position" — the line above the rankings table (A-Rankings).
+ * "Your position" — above the rankings table (A-Rankings).
  *
- * The approved board draws it as a line, not a card: a 4px action-gradient
- * bar on the inline start, the kicker, the rank as a display figure with its
- * ordinal ("12 483ᵉ"), then "team · points · movement". The four states are
+ * Ranked, it is a card (brief 2026-10-28 "more life"): the kicker and the
+ * rank, large, with its ordinal ("12 483ᵉ"), on the header gradient, then a
+ * strip with "team · points" and the movement as a coloured pill
+ * (`RankHeroCard`, `MovementPill`). The other three states keep the line with
+ * its action-gradient edge. The four states are
  * unchanged — `selectMyRankState` still decides which one shows, from team
  * ownership (`presence`) rather than from the missing standing — and each
  * keeps its `data-testid` wrapper and, for the pending shimmer, its busy
@@ -118,71 +120,52 @@ export function MyRankCard({
   }
 
   const ranked = state.standing;
+  const jump = onJump ? (
+    <UiIconButton variant="ink" aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
+      <Target aria-hidden />
+    </UiIconButton>
+  ) : null;
   return (
     <div data-testid="my-rank-card">
-      <PositionLine
+      <RankHeroCard
+        kicker={t("fantasy.rankings.my_rank")}
+        rank={ranked.rank}
+        parts={rankOrdinal(ranked.rank, lang, t, (value) => nf.format(value))}
         trailing={
           cardToken ? (
             <div className="flex items-center gap-1">
               {cardToken}
-              {onJump ? (
-                <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
-                  <Target aria-hidden />
-                </UiIconButton>
-              ) : null}
+              {jump}
             </div>
-          ) : onJump ? (
-            <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
-              <Target aria-hidden />
-            </UiIconButton>
-          ) : null
+          ) : (
+            jump
+          )
         }
       >
-        {kicker}
-        <p className={cn("mt-2", ui.tone.default)}>
-          <FlashOnChange value={ranked.rank} better="lower">
-            <RankOrdinal
-              size="hero"
-              parts={rankOrdinal(ranked.rank, lang, t, (value) => nf.format(value))}
-            />
-          </FlashOnChange>
-        </p>
-        <p
-          className={cn(
-            "mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1",
-            ui.text.secondary,
-            ui.tone.default,
-          )}
-        >
-          <span dir="auto" className="min-w-0 truncate [font-weight:var(--ui-weight-strong)]">
-            {ranked.teamName}
-          </span>
-          <span aria-hidden className={ui.tone.muted}>
-            ·
-          </span>
-          <span className="whitespace-nowrap">
-            <bdi className={cn(ui.text.tabular, "[font-weight:var(--ui-weight-strong)]")}>
-              <AnimatedNumber value={ranked.totalScore} format={nf.format} />
-            </bdi>{" "}
-            <span className={ui.tone.muted}>{pointsUnit(ranked.totalScore, t)}</span>
-          </span>
-          <span aria-hidden className={ui.tone.muted}>
-            ·
-          </span>
-          <UiRankMovement
-            variant="quiet"
-            rank={ranked.rank}
-            previousRank={ranked.previousRank}
-            formatDelta={(places) => nf.format(places)}
-            labels={{
-              up: t("fantasy.rank.up"),
-              down: t("fantasy.rank.down"),
-              same: t("fantasy.rank.same"),
-              unknown: t("fantasy.rank.unknown"),
-            }}
-          />
-        </p>
-      </PositionLine>
+        <span dir="auto" className="min-w-0 truncate [font-weight:var(--ui-weight-strong)]">
+          {ranked.teamName}
+        </span>
+        <span aria-hidden className={ui.tone.muted}>
+          ·
+        </span>
+        <span className="whitespace-nowrap">
+          <bdi className={cn(ui.stat.md, ui.tone.default)}>
+            <AnimatedNumber value={ranked.totalScore} format={nf.format} />
+          </bdi>{" "}
+          <span className={ui.tone.muted}>{pointsUnit(ranked.totalScore, t)}</span>
+        </span>
+        <MovementPill
+          rank={ranked.rank}
+          previousRank={ranked.previousRank}
+          formatDelta={(places) => nf.format(places)}
+          labels={{
+            up: t("fantasy.rank.up"),
+            down: t("fantasy.rank.down"),
+            same: t("fantasy.rank.same"),
+            unknown: t("fantasy.rank.unknown"),
+          }}
+        />
+      </RankHeroCard>
     </div>
   );
 }
