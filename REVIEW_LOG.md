@@ -436,3 +436,13 @@ Lead sent fixes:
 - The owner steps rewritten in a safe order, click by click.
 - Formatting fixed.
 
+**Builder round 2 – fixes pushed.**
+- **Cards:** an extra timeline read every 15 minutes per live match (an owner setting). The red at 33' now shows 3 minutes late (was 6); the yellow at 80' 7 minutes late (was 31); worst case about 15 minutes (was about 62).
+- **Late stats:** one follow-up read 90 minutes to 3 hours after a match, only if the stats are partial.
+- **Owner steps:** rewritten a–h in a safe order, click by click.
+- **Calls per day:** about 210 on a 4-match day and about 325 on an 8-match day. Well within 15,000 a month (roughly 4,300 a month).
+- **Tests:** 11,042 pass, 1 known failure.
+- **Database change:** edited in place before being applied anywhere, which is allowed for an unapplied migration (CLAUDE.md).
+
+Sent to the Tester for round 2.
+
