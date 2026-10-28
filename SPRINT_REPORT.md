@@ -2,7 +2,8 @@
 
 Sprint 1 (speed and stability) is finished, on the branch `sprint-1-performance`
 (pull request #573). Sprint 2 (installable app, Arabic first, accessibility) is
-finished, on the branch `sprint-2-installable`, which is built on top of Sprint 1.
+finished, on the branch `sprint-2-installable` (pull request #578), which is built on
+top of Sprint 1.
 **Nothing is live yet.** The live site is unchanged until you approve and publish.
 
 ## Results
@@ -193,7 +194,7 @@ Still needed:
    10 characters). The bundle ID is already known from the app settings:
    `botolago.com`. Please confirm that is the one registered with Apple.
 4. **Approval to publish** Sprint 1, then Sprint 2, after you have tried the previews
-   (checklist below). Sprint 2 also needs its own pull request; ask me when you want it.
+   (checklist below). Sprint 2's preview is on pull request #578, Sprint 1's on #573.
 
 The step-by-step for 1–3 is also in `docs/mobile/PHONE_APP.md`, section "Links to
 botolago.com open the app".
@@ -220,7 +221,7 @@ On the preview link, with your phone:
 
 If anything looks different from today, take a screenshot and send it to me.
 
-Sprint 2, once it has its own preview:
+Sprint 2, on the preview link of pull request #578 (it includes Sprint 1 too):
 
 10. Set your phone to Arabic (or choose Arabic once), close the browser, and open the
     preview again: the page should appear in Arabic straight away, with no French
