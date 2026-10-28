@@ -160,7 +160,14 @@ describe("the Curva screens' styling", () => {
 
 describe("the Curva screens' words", () => {
   it("add no dictionary key of their own: every key they read already exists", () => {
-    const fr = readFileSync(join(SRC, "i18n", "dictionary-fr.ts"), "utf8");
+    // The French dictionary is in parts: the core and the sections (`fr-sections.ts`).
+    const i18n = join(SRC, "i18n");
+    const fr = [
+      join(i18n, "dictionary-fr-core.ts"),
+      ...readdirSync(join(i18n, "fr-sections")).map((name) => join(i18n, "fr-sections", name)),
+    ]
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
     for (const { name, text } of sources) {
       for (const match of code(text).matchAll(/\bt\("([a-z0-9_.]+)"\)/g)) {
         expect(fr, `${name}: ${match[1]}`).toContain(`"${match[1]}"`);

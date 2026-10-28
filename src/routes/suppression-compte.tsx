@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { ui, UiCard } from "@/components/ui-kit";
 import { AppShell } from "@/components/shell/AppShell";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";

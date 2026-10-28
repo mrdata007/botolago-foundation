@@ -9,6 +9,8 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { CurvaLoading } from "@/components/curva/StateBlocks";
 import { CurvaLockScreen } from "@/components/curva/CurvaLockScreen";
 import { preloadCardRenderer } from "@/components/manager-card/use-card-renderer";
+import { loadFrSectionsForPath, provideFrSection } from "@/i18n/fr-sections";
+import { frPlus } from "@/i18n/fr-sections/plus";
 import { curvaAccess } from "@/services/curva-access";
 import { shouldRedirectFromCurva } from "@/services/manager-card-status";
 
@@ -28,6 +30,8 @@ export const Route = createFileRoute("/curva")({
       throw redirect({ to: "/fantasy", replace: true });
     }
   },
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     // The card's own face (the autograph's signature script), fetched with the page instead of
     // when the card's stylesheet (`shield.css`) declares it.
@@ -67,6 +71,8 @@ function startCardRendererOnCurva(): void {
 }
 
 function CurvaLayout() {
+  // Imported here so the layout's chunk carries it and the HTML preloads it (`fr-sections.ts`).
+  provideFrSection("plus", frPlus);
   const { status } = useAuth();
   useEffect(() => {
     preloadCardRenderer(); // idempotent; covers a layout whose module was evaluated on the server

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LeaguePage } from "@/components/predictions/leagues/LeaguePage";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 
 /** `/pronostics/ligues/$leagueId`: a league's Pronostics ranking. Members only, never indexed. */
 export const Route = createFileRoute("/pronostics/ligues/$leagueId")({

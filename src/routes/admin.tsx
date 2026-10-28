@@ -18,6 +18,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminAnalyticsDashboard } from "@/components/admin/AdminAnalyticsDashboard";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { ui, UiLinkButton } from "@/components/ui-kit";
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/admin")({
   // Every CMS/Admin page, children included: never indexed, never followed.
   // robots.txt disallows /admin as well; this covers a crawler that ignores it.
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  // The French copy of the admin screens (`src/i18n/fr-sections.ts`), loaded before they render.
+  beforeLoad: ({ location }) => loadFrSectionsForPath(location.pathname),
   loader: () => loadAdminRouteAccess(),
   pendingComponent: AdminLoadingShell,
   component: AdminRoute,

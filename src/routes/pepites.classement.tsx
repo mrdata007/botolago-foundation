@@ -12,7 +12,7 @@ import {
   validateRankingSearch,
 } from "@/components/pepites/pepites-route";
 import { rankingPagesOptions } from "@/components/pepites/use-pepites";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { isServerRender, prefetchFirstPageForSsr, ssrAvailability } from "@/lib/ssr-prefetch";

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { PepitesReveal } from "@/components/pepites/PepitesReveal";
 import { pepitesPageHeaders, validateRevealSearch } from "@/components/pepites/pepites-route";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 
 /**

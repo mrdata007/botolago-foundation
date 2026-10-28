@@ -1,5 +1,6 @@
 import { dehydrate, hydrate, type DehydratedState } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { PENDING_MIN_MS, PENDING_MS, PendingScreen } from "@/components/shell/PendingScreen";
 import { viewTransitionOption } from "@/lib/page-transition";
 import { armTabSlide } from "@/lib/tab-slide";
@@ -42,9 +43,21 @@ export const getRouter = () => {
         queryClientState: dehydrate(queryClient, SSR_DEHYDRATE_OPTIONS),
         lang: requestLanguage(),
       }) as never,
+    // Waited for before React hydrates: the words the server drew the page
+    // with have to be here for the first render to be the page the server
+    // sent. The French copy of the section the address belongs to
+    // (`src/i18n/fr-sections.ts`; a page outside the sections waits for
+    // nothing), and the Arabic words when the page is Arabic (FE-H1).
     hydrate: async (dehydrated: { queryClientState?: DehydratedState; lang?: Language }) => {
       if (dehydrated?.queryClientState) hydrate(queryClient, dehydrated.queryClientState);
-      if (dehydrated?.lang) await preloadLanguage(dehydrated.lang);
+      await Promise.all([
+        // Once more when the first request fails: a section that never arrives
+        // would hydrate the page in key names.
+        loadFrSectionsForPath(window.location.pathname).catch(() =>
+          loadFrSectionsForPath(window.location.pathname),
+        ),
+        dehydrated?.lang ? preloadLanguage(dehydrated.lang) : undefined,
+      ]);
     },
   });
 
