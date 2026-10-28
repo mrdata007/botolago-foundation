@@ -37,6 +37,11 @@ page.on("requestfinished", async (request) => {
 // language choice); MEASURE_SLOW=1 slows the network to a phone's 4G so late
 // fonts and images show their effect on layout.
 if (process.env.MEASURE_LANG) {
+  // The choice as a returning reader has it: stored on the phone, and in the
+  // cookie the server reads (FE-H1).
+  await context.addCookies([
+    { name: "botolago_lang", value: process.env.MEASURE_LANG, url: new URL(url).origin },
+  ]);
   await page.addInitScript((lang) => {
     try {
       localStorage.setItem("botolago.language", lang);
