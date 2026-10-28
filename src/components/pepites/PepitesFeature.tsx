@@ -19,6 +19,8 @@ import {
 import { teamKit } from "./pepites-design";
 import { MovementMark, PepitesIdentityDisc, RankPlate } from "./PepitesVisuals";
 import { PercentileLegend, PercentileWheel } from "./PepitesWheel";
+import { useRevealCount } from "./pepites-motion";
+import "./pepites-motion.css";
 import { SHARE_PALETTE, shareClubColours } from "./share-image";
 import type { PlayerStats } from "./TopTenList";
 import { useClubCatalogue } from "./use-club-catalogue";
@@ -81,6 +83,7 @@ export function PepitesFeature({
   width = "content",
   testId,
   scoreTestId,
+  lively = false,
 }: {
   player: PepitesPlayerCard;
   rank: number | null;
@@ -105,6 +108,13 @@ export function PepitesFeature({
   width?: keyof typeof PHOTO_SIZES;
   testId?: string;
   scoreTestId?: string;
+  /**
+   * The `/pepites` Top 10's motion (`pepites-motion.css`): a soft sheen
+   * crosses the band, the score counts up from just under itself once seen,
+   * and the wheel's slices open out as they are drawn. All of it starts
+   * visible and is off under reduced motion. Off by default.
+   */
+  lively?: boolean;
 }) {
   const { t, tr, lang } = useI18n();
   const viewer = usePepitesViewer();
@@ -124,6 +134,7 @@ export function PepitesFeature({
     ? shareClubColours(teamKit(player.team).primary, SHARE_PALETTE.ground).edge
     : null;
   const ranked = typeof score === "number" && Number.isFinite(score);
+  const [scoreRef, shownScore] = useRevealCount<HTMLSpanElement>(score, lively);
   const wheel = version !== null;
   const figures = facts ? bandFigures(stats, loaded, statsPending) : undefined;
   // Dashes only while a read that could still bring the figures is loading.
@@ -153,6 +164,9 @@ export function PepitesFeature({
         aria-hidden
         className="absolute inset-0 -z-10 bg-[color:color-mix(in_oklab,var(--ui-ink-deep)_80%,transparent)]"
       />
+      {/* Over the veil, under the text: the sheen's own layer (nothing
+          drawn under reduced motion). */}
+      {lively ? <span aria-hidden className="pp-sheen" /> : null}
       {edge ? (
         // A 2px navy keyline on its inner side: the edge is lifted to 3:1
         // against Tunnel Navy, but the veiled stadium photo is lighter in
@@ -205,6 +219,7 @@ export function PepitesFeature({
             </div>
             <span className="flex shrink-0 flex-col items-center gap-1">
               <span
+                ref={scoreRef}
                 data-testid={scoreTestId}
                 className={cn(
                   "inline-flex h-14 min-w-16 items-center justify-center px-2",
@@ -216,7 +231,7 @@ export function PepitesFeature({
                 {/* The "unranked" word is letters: the stat ramp, not the
                     digits-only score ramp (BG-0124). */}
                 <bdi className={ranked ? ui.score.md : ui.stat.md}>
-                  {scoreText(score, lang, t("pepites.unranked"))}
+                  {scoreText(shownScore, lang, t("pepites.unranked"))}
                 </bdi>
               </span>
               <span className={cn(ui.text.label, ui.tone.onInkMuted)}>
@@ -235,7 +250,11 @@ export function PepitesFeature({
           // `rem` wide, 264px at 200%, which pushed the legend past the screen
           // edge) the legend goes under the wheel instead of beside it.
           <div className="flex min-w-0 items-center gap-4 @max-[14rem]:flex-col @max-[14rem]:items-start @3xl:col-start-2 @3xl:row-start-1 @3xl:gap-6">
-            <PercentileWheel percentiles={percentiles} className="size-33 @sm:size-40 @3xl:size-44">
+            <PercentileWheel
+              percentiles={percentiles}
+              grow={lively}
+              className="size-33 @sm:size-40 @3xl:size-44"
+            >
               {disc}
             </PercentileWheel>
             <PercentileLegend

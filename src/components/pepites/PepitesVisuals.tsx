@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { printedRatingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
 import { formatNumber, type ListedClub, playerPhotoUrl, teamAsClub } from "./pepites-format";
+import { useRevealBelowFold } from "./pepites-motion";
 
 /**
  * The data glyphs the Pépites screens share, on the main kit (BG-0152): the
@@ -38,22 +39,34 @@ export function Seg10Bar({
   value,
   className,
   label,
+  grow = false,
 }: {
   value: number | null | undefined;
   className?: string;
   /** Names the bar (`role="img"`) when no figure beside it does. */
   label?: string;
+  /**
+   * The `/pepites` Top 10's reveal (`pepites-motion.css`): the bar is lit
+   * from the start; one below the fold when the page goes live grows from
+   * 30% of its length to its full length when first scrolled into view,
+   * instead of lighting its segments from empty. Off by default.
+   */
+  grow?: boolean;
 }) {
-  const [ref, reveal] = useRevealOnView<HTMLDivElement>();
-  // Empty while waiting to be seen, then lit one segment after another.
-  const lit = reveal === "armed" ? 0 : segments(value);
+  // Growing, a bar on screen when the page goes live is left as drawn; only
+  // one below the fold starts short (`useRevealBelowFold`).
+  const [ref, reveal] = useRevealBelowFold<HTMLDivElement>(grow);
+  // Empty while waiting to be seen, then lit one segment after another
+  // (unless it grows: then it is lit throughout).
+  const lit = reveal === "armed" && !grow ? 0 : segments(value);
   return (
     <div
       ref={ref}
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-      className={cn("flex h-1.5 w-full gap-0.5", className)}
+      data-reveal={grow ? reveal : undefined}
+      className={cn("flex h-1.5 w-full gap-0.5", grow && "pp-bar-grow", className)}
     >
       {SEGMENT_INDEXES.map((index) => (
         <span
@@ -64,7 +77,7 @@ export function Seg10Bar({
             "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
             index < lit ? "bg-[color:var(--ui-ink-fg)]" : "bg-[color:var(--ui-surface-sunken)]",
           )}
-          style={reveal === "played" ? { transitionDelay: `${index * 45}ms` } : undefined}
+          style={reveal === "played" && !grow ? { transitionDelay: `${index * 45}ms` } : undefined}
         />
       ))}
     </div>

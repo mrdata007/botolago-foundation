@@ -1,0 +1,99 @@
+/* The `/pepites` Top 10's motion (pepites-motion.ts). Calm rule
+   (docs/engineering/MOTION_CALM_SCREENS.md): every effect starts from a
+   visible state, moves transform or opacity only, plays once (the leader's
+   sheen is the page's one ambient touch), and nothing here exists under
+   `prefers-reduced-motion: reduce`, where everything is drawn at rest. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A score bar grows from 30% of its length to its full length from the
+     inline start edge, once, when it is first seen (`data-reveal` comes from
+     `useRevealOnView`: `static` on the server, `armed` until seen). */
+  .pp-bar-grow {
+    transform-origin: left center;
+  }
+  [dir="rtl"] .pp-bar-grow {
+    transform-origin: right center;
+  }
+  .pp-bar-grow[data-reveal="armed"] {
+    transform: scaleX(0.3);
+  }
+  .pp-bar-grow[data-reveal="played"] {
+    transition: transform 640ms var(--ease-emphasized, cubic-bezier(0.2, 0.9, 0.1, 1));
+  }
+
+  /* The leader's percentile slices open out from 60% of their reach as they
+     are drawn: the wheel never starts empty. */
+  .pp-slice-grow {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    animation: pp-slice-grow 680ms var(--ease-emphasized, cubic-bezier(0.2, 0.9, 0.1, 1)) both;
+  }
+  @keyframes pp-slice-grow {
+    from {
+      transform: scale(0.6);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* A soft band of light crosses the leader's photo band, under its text:
+     once shortly after the page opens, then every nine seconds. Mirrored in
+     Arabic so it travels in the reading direction. */
+  [dir="rtl"] .pp-sheen {
+    scale: -1 1;
+  }
+  .pp-sheen::before {
+    content: "";
+    position: absolute;
+    inset-block: -20%;
+    left: 0;
+    width: 45%;
+    background: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in oklab, var(--ui-on-ink-plain) 11%, transparent) 50%,
+      transparent
+    );
+    transform: translateX(-120%) skewX(-18deg);
+    animation: pp-sheen 9s cubic-bezier(0.4, 0, 0.2, 1) 700ms infinite;
+  }
+  @keyframes pp-sheen {
+    0% {
+      transform: translateX(-120%) skewX(-18deg);
+    }
+    16%,
+    100% {
+      transform: translateX(260%) skewX(-18deg);
+    }
+  }
+
+  /* A Top 10 row lifts a little higher under a pointer, its shadow with it
+     (the press itself is `press-tile`'s). */
+  @media (hover: hover) {
+    .pp-row.press-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--ui-shadow-lifted);
+    }
+  }
+}
+
+/* The sheen's layer is placed whatever the motion setting, so it never
+   takes room in the band; only its light (above) is motion-only. */
+.pp-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: -5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Colour, not motion: a Top 10 row carries a wash of its club from the
+   inline start edge, fading out before the name (the club tint is the
+   palette's text-safe wash, `club-palette.ts`). */
+.pp-row-wash {
+  background-image: linear-gradient(to right, var(--ui-club-tint), transparent 55%);
+}
+[dir="rtl"] .pp-row-wash {
+  background-image: linear-gradient(to left, var(--ui-club-tint), transparent 55%);
+}

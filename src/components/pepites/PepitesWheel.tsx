@@ -31,9 +31,15 @@ export function PercentileWheel({
   percentiles,
   children,
   className,
+  grow = false,
 }: {
   /** One per part, in `COMPONENTS` order; null when the part is unknown. */
   percentiles: readonly (number | null)[];
+  /**
+   * The `/pepites` leader's reveal (`pepites-motion.css`): each slice opens
+   * out from 60% of its reach as it is drawn. Off by default.
+   */
+  grow?: boolean;
   /** The disc at the centre. */
   children?: ReactNode;
   /** Sets the size (`size-33 md:size-40`). */
@@ -72,7 +78,14 @@ export function PercentileWheel({
                 d={sectorPath(WHEEL.c, WHEEL.c, WHEEL.inner, WHEEL.outer, from, to)}
                 fill="var(--ui-ink)"
               />
-              {value ? <path d={value} fill={`url(#${gradient})`} data-value="" /> : null}
+              {value ? (
+                <path
+                  d={value}
+                  fill={`url(#${gradient})`}
+                  data-value=""
+                  className={grow ? "pp-slice-grow" : undefined}
+                />
+              ) : null}
             </g>
           );
         })}

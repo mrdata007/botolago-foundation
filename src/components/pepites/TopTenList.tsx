@@ -22,6 +22,8 @@ import {
   Seg10Bar,
 } from "./PepitesVisuals";
 import { useClubCatalogue } from "./use-club-catalogue";
+import { useRevealCount } from "./pepites-motion";
+import "./pepites-motion.css";
 
 /** Holds an empty line's height. */
 const NBSP = "\u00a0";
@@ -35,9 +37,36 @@ export type PlayerStats = Pick<RankingRow, "minutes" | "goals" | "assists" | "ra
  * which is letters, not digits, so it takes the stat ramp the score ramp's
  * figure leading cannot cut (BG-0124).
  */
-function ScoreFigure({ score, ramp }: { score: number | null; ramp: string }) {
+function ScoreFigure({
+  score,
+  ramp,
+  lively = false,
+}: {
+  score: number | null;
+  ramp: string;
+  /**
+   * On the action gradient (its measured `--ui-ink-deep` foreground), and
+   * counting up from just under itself once seen (`pepites-motion.ts`).
+   */
+  lively?: boolean;
+}) {
   const { t, lang } = useI18n();
   const ranked = typeof score === "number" && Number.isFinite(score);
+  const [ref, shown] = useRevealCount<HTMLSpanElement>(score, lively);
+  if (lively && ranked) {
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          "inline-flex min-w-11 justify-center px-2 py-0.5",
+          ui.radius.full,
+          "bg-[image:var(--ui-grad-action)] text-[color:var(--ui-ink-deep)]",
+        )}
+      >
+        <bdi className={ramp}>{scoreText(shown, lang, t("pepites.unranked"))}</bdi>
+      </span>
+    );
+  }
   return (
     <bdi className={cn(ranked ? ramp : ui.stat.md, ui.tone.ink)}>
       {scoreText(score, lang, t("pepites.unranked"))}
@@ -57,6 +86,7 @@ export function LeaderboardRow({
   stats,
   figures = true,
   listed,
+  lively = false,
 }: {
   item: TopTenItem;
   stats: PlayerStats | undefined;
@@ -68,6 +98,13 @@ export function LeaderboardRow({
   figures?: boolean;
   /** The player's club in the app's club catalogue: its crest. */
   listed?: ListedClub;
+  /**
+   * The `/pepites` Top 10's colour and motion (`pepites-motion.css`): a club
+   * wash from the start edge, the score on the action gradient counting up
+   * once seen, the bar growing from 30%, a slightly higher hover lift. Off
+   * by default.
+   */
+  lively?: boolean;
 }) {
   const { t, tr, lang } = useI18n();
   const player = item.player;
@@ -88,6 +125,7 @@ export function LeaderboardRow({
         // rank plate, the photo and the score alone are 267px of a 204px row)
         // the row wraps, the name column taking a line of its own.
         "@container press-tile flex flex-col gap-2 py-3 pe-3 ps-3",
+        lively && "pp-row pp-row-wash",
         ui.focus,
       )}
     >
@@ -117,10 +155,10 @@ export function LeaderboardRow({
               {stats ? playerFiguresLine(stats, { t, lang }) : NBSP}
             </p>
           ) : null}
-          <Seg10Bar value={item.score} className="mt-1" />
+          <Seg10Bar value={item.score} grow={lively} className="mt-1" />
         </div>
         <span className="flex shrink-0 flex-col items-end gap-0.5">
-          <ScoreFigure score={item.score} ramp={ui.score.sm} />
+          <ScoreFigure score={item.score} ramp={ui.score.sm} lively={lively} />
           <span className={cn(ui.text.label, ui.tone.muted)}>{t("pepites.score_name")}</span>
         </span>
       </div>
@@ -135,12 +173,15 @@ export function TopTenList({
   stats,
   figures = true,
   testId,
+  lively = false,
 }: {
   items: readonly TopTenItem[];
   stats: ReadonlyMap<string, PlayerStats>;
   /** Rows with a figures line (`LeaderboardRow`); none on a past week. */
   figures?: boolean;
   testId?: string;
+  /** The `/pepites` rows' colour and motion (`LeaderboardRow`). Off by default. */
+  lively?: boolean;
 }) {
   const catalogue = useClubCatalogue();
   return (
@@ -151,6 +192,7 @@ export function TopTenList({
             item={item}
             stats={stats.get(item.player.id)}
             figures={figures}
+            lively={lively}
             listed={item.player.team ? catalogue.get(item.player.team.id) : undefined}
           />
         </li>

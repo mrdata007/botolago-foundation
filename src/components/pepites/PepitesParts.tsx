@@ -198,8 +198,9 @@ export function PepitesBeforeFirstEdition({
             stats={stats.get(leader.player.id)}
             statsPending={statsPending}
             version={pointer.version}
+            lively
           />
-          <TopTenList items={rest} stats={stats} testId="pepites-top10" />
+          <TopTenList items={rest} stats={stats} testId="pepites-top10" lively />
         </section>
       ) : null}
       {footer}

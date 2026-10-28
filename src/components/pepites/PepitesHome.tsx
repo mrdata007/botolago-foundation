@@ -232,8 +232,9 @@ export function PepitesHome() {
                 stats={stats.get(leader.player.id)}
                 statsPending={ranking.isPending}
                 version={version}
+                lively
               />
-              <TopTenList items={rest} stats={stats} testId="pepites-top10" />
+              <TopTenList items={rest} stats={stats} testId="pepites-top10" lively />
             </>
           ) : (
             <UiEmptyState testId="pepites-home-empty" title={t("pepites.home.no_match")} />
