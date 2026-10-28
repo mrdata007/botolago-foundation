@@ -50,13 +50,20 @@ news-date, goal-difference, palette-clash and rankings changes are not touched. 
    short name (French and Arabic) from the club table; `presentFootballClub` applies it
    so tickers, match cards, stories and Pronostics print "RCA", "FAR", "HUSA", "WAC",
    never "ASFAR" or "WCA" for the same club. Call sites in this lane's files (match card,
-   clubs, Prospects, Pronostics) read the one helper.
+   clubs, Prospects, Pronostics) read the one helper. **SEO does not move** (owner
+   review, 2026-10-28): the club keeps the short name the data gave it as
+   `dataShortName`, and the search titles, meta descriptions, structured-data names and
+   page addresses read that one (and the club's `pathSlug`), so they are byte-identical
+   to `main` ("Raja Casablanca", "RSB Berkane", "RCA Zemamra"); `src/lib/seo-identity.test.ts`
+   pins the strings.
 3. **Clubs page denser, colour stronger.** 16 clubs currently take about three phone
    screens of tall tiles with a thin bottom rule in the club colour. Becomes a compact
    grid (three columns on a phone, crest above a short name) whose tile is filled with the
    club colour (see the owner direction below), from the existing club palette helpers.
-4. **Prospects wording.** « RISING » (English) becomes « Score » in French; the
-   figures line « 0B 0PD » and the tile label « B+PD/90 » become words (« Buts … ·
+4. **Prospects wording.** The French « RISING » label is **kept as it is, pending owner
+   decision**: "Rising score" is the Prospects score's product name in the plans, so
+   renaming it is a brand decision that has not been made (the Arabic label is already
+   Arabic, « صعود »). The figures line « 0B 0PD » and the tile label « B+PD/90 » become words (« Buts … ·
    Passes déc. … », « Buts+passes / 90 min »); the ten dashed segments under each row
    get a one-line key ("barre = score sur 100, un segment par tranche de 10 points").
    « Semaine 6 » is the editorial week of the Top 10 (an edition is published each week;
@@ -96,7 +103,7 @@ of both screens. How it is applied, with existing tokens only:
   "WAC"/"Wydad", FAR is "FAR", never "WCA"/"ASFAR".
 - `/clubs` at 390px fits in about half the previous height; each tile shows the club's
   colour clearly; colours come from `clubStyle`/the palette, text contrast unchanged.
-- Prospects shows no English score label in French or Arabic; no "0B 0PD"; the Top 10
+- Prospects keeps the French « RISING » label (pending owner decision); no "0B 0PD"; the Top 10
   title has no dangling bullet at 320 and 390px in Arabic; the key line is present in
   both languages.
 - `bunx tsc --noEmit`, eslint and prettier on changed files, and the related tests pass.

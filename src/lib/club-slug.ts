@@ -43,6 +43,8 @@ interface NamedClub {
   readonly id: string;
   readonly name: { readonly fr: string };
   readonly shortName: { readonly fr: string };
+  /** The data's own short name, when `shortName` was replaced by a display name. */
+  readonly dataShortName?: { readonly fr: string };
   /**
    * The address the football presenter derived from the data's own names
    * (`presentFootballClub`). It is kept as it is: the club table's one short
@@ -56,8 +58,10 @@ interface NamedClub {
  * The club's plain slug, or undefined when its French names have no Latin
  * letters (an Arabic-language response puts Arabic in `.fr`).
  */
-export function clubSlug(club: Pick<NamedClub, "name" | "shortName">): string | undefined {
-  const short = club.shortName.fr.trim();
+export function clubSlug(
+  club: Pick<NamedClub, "name" | "shortName" | "dataShortName">,
+): string | undefined {
+  const short = (club.dataShortName ?? club.shortName).fr.trim();
   const name = short ? rowClubName(short, club.name.fr.trim()) : club.name.fr;
   return slugifyClubName(name) || slugifyClubName(club.name.fr) || undefined;
 }

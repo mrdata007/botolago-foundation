@@ -104,7 +104,13 @@ export function clubShortName(
 export function withClubIdentity<T extends Club>(club: T): T {
   const identity = findClubIdentity(club);
   if (!identity) return club;
-  return { ...club, shortName: { ...identity.short }, crestPlaceholder: identity.code };
+  return {
+    ...club,
+    // What the data called it stays reachable for search titles, which must not move.
+    dataShortName: club.dataShortName ?? club.shortName,
+    shortName: { ...identity.short },
+    crestPlaceholder: identity.code,
+  };
 }
 
 /**
