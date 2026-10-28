@@ -1,0 +1,162 @@
+/* Top players of the week (`/fantasy/top-players`): the gradients that give
+   the screen its colour (owner, 2026-10-28: "use gradients for the boxes").
+
+   Rules this file keeps:
+   - Colours are `--ui-*` tokens (and the club's `--ui-club*`, set per element
+     by `clubStyle`), so the dark theme follows without a second copy. The
+     medal metals are the only literals: silver and bronze are the same metal
+     in both themes.
+   - No `deg` angle. Vertical gradients run `to bottom`; the one horizontal
+     gradient (the comparison bar) takes its direction from `--tp-bar-dir`,
+     flipped under `[dir="rtl"]` so the bar grows from the inline start.
+   - No motion: everything is drawn at rest on the first frame
+     (docs/engineering/MOTION_CALM_SCREENS.md). */
+
+.tp-screen {
+  --tp-silver-a: oklch(0.97 0.004 250);
+  --tp-silver-b: oklch(0.78 0.012 250);
+  --tp-bronze-a: oklch(0.86 0.08 70);
+  --tp-bronze-b: oklch(0.64 0.11 52);
+  --tp-gold-a: oklch(0.94 0.12 95);
+  --tp-gold-b: oklch(0.8 0.15 80);
+  --tp-bar-dir: to right;
+  /* The ranked rows' wash: the two action-gradient stops over the card. */
+  --tp-row-a: color-mix(in oklab, var(--ui-accent-spring) 20%, var(--ui-surface));
+  --tp-row-b: color-mix(in oklab, var(--ui-accent-sky) 26%, var(--ui-surface));
+}
+
+.dark .tp-screen {
+  /* Lighter mixes over the dark card keep the muted line above 4.5:1
+     (measured 5.7:1 at the sky end). */
+  --tp-row-a: color-mix(in oklab, var(--ui-accent-spring) 14%, var(--ui-surface));
+  --tp-row-b: color-mix(in oklab, var(--ui-accent-sky) 18%, var(--ui-surface));
+}
+
+[dir="rtl"] .tp-screen {
+  --tp-bar-dir: to left;
+}
+
+/* ---- Player of the week ------------------------------------------- */
+
+/* The card under the club block: a quiet club wash fading into the card. */
+.tp-hero {
+  background-image: linear-gradient(to bottom, var(--ui-club-tint) 0%, var(--ui-surface) 55%);
+}
+
+/* The club block. The fill deepens toward `--ui-club-band` (the colour its
+   text is NOT: dark under white text, white under dark text), so the
+   contrast the club palette measured on the flat fill only grows down the
+   block. The diagonal stripes ride on top, as `club-stripes` draws them. */
+.tp-hero-club {
+  background-image:
+    repeating-linear-gradient(
+      var(--stripe-angle),
+      color-mix(in srgb, var(--ui-club-band) var(--stripe-alpha, 7%), transparent) 0 14px,
+      transparent 14px 28px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--ui-club) 0%,
+      var(--ui-club) 30%,
+      color-mix(in oklab, var(--ui-club) 62%, var(--ui-club-band)) 100%
+    );
+}
+
+/* The brand seam under the club block: spring, sky, spring. Symmetric, so
+   it reads the same in both directions. */
+.tp-seam {
+  height: 4px;
+  background-image: linear-gradient(
+    to right,
+    var(--ui-accent-spring) 0%,
+    var(--ui-accent-sky) 50%,
+    var(--ui-accent-spring) 100%
+  );
+}
+
+/* The points of the week: the figure on the action gradient. */
+.tp-points {
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+  box-shadow: var(--ui-shadow-lifted);
+}
+
+/* The crown badge: gold, the only metal rank 1 wears. */
+.tp-gold {
+  background-image: linear-gradient(to bottom, var(--tp-gold-a), var(--tp-gold-b));
+  color: var(--ui-ink-deep);
+}
+
+/* The four headline figures. Two directions of the action gradient,
+   alternating, so the row reads as four tiles rather than one band. */
+.tp-stat {
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+  box-shadow: var(--ui-shadow-card);
+}
+
+.tp-stat:nth-child(even) {
+  background-image: linear-gradient(
+    to bottom,
+    var(--ui-accent-sky) 0%,
+    var(--ui-accent-spring) 100%
+  );
+}
+
+/* Price, ownership, form: the club tint over the sunken grey. */
+.tp-meta {
+  background-image: linear-gradient(
+    to bottom,
+    var(--ui-club-tint) 0%,
+    var(--ui-surface-sunken) 100%
+  );
+}
+
+/* ---- #2 to #5 ------------------------------------------------------ */
+
+.tp-row {
+  background-image: linear-gradient(to bottom, var(--tp-row-a) 0%, var(--tp-row-b) 100%);
+}
+
+.tp-medal-silver {
+  background-image: linear-gradient(to bottom, var(--tp-silver-a), var(--tp-silver-b));
+  color: var(--ui-ink-deep);
+}
+
+.tp-medal-bronze {
+  background-image: linear-gradient(to bottom, var(--tp-bronze-a), var(--tp-bronze-b));
+  color: var(--ui-ink-deep);
+}
+
+/* Navy, for the rank disc past the medals and the points block. The ring is
+   `--ui-ink-edge`: transparent in light, a grey that keeps the navy a shape
+   on the dark card. */
+.tp-navy {
+  background-image: linear-gradient(to bottom, var(--ui-ink) 0%, var(--ui-ink-deep) 100%);
+  color: var(--ui-on-ink-plain);
+  box-shadow: inset 0 0 0 1px var(--ui-ink-edge);
+}
+
+.tp-navy-muted {
+  color: var(--ui-on-ink-muted);
+}
+
+/* ---- Points comparison --------------------------------------------- */
+
+.tp-compare {
+  background-image: linear-gradient(
+    to bottom,
+    var(--ui-surface) 0%,
+    color-mix(in oklab, var(--ui-accent-sky) 12%, var(--ui-surface)) 100%
+  );
+}
+
+/* The bar: light at its start, the club's edge colour (≥ 3:1 on the card)
+   at its end, so the length still reads on a white or yellow kit. */
+.tp-bar {
+  background-image: linear-gradient(
+    var(--tp-bar-dir),
+    color-mix(in oklab, var(--ui-club-edge) 45%, var(--ui-accent-spring)) 0%,
+    var(--ui-club-edge) 100%
+  );
+}

@@ -13,6 +13,7 @@ import { splitPlayerName } from "@/components/fantasy-lists/player-name";
 import { clubLabel, findClub } from "@/components/fantasy/club-identity";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import "@/components/fantasy-top-players/top-players.css";
 import {
   ui,
   UiButton,
@@ -137,7 +138,7 @@ function TopPlayersPage() {
   const isError = topQ.isError || playersQ.isError || clubsQ.isError;
 
   return (
-    <div className={cn("px-4 pb-10 pt-4", ui.surface.page)}>
+    <div className={cn("tp-screen px-4 pb-10 pt-4", ui.surface.page)}>
       <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("fantasy.top.subtitle")}</p>
 
       <div className="mt-3 flex items-center justify-between gap-3">
@@ -176,16 +177,10 @@ function TopPlayersPage() {
           {enriched.length > 1 ? (
             <section className="mt-6">
               <SectionHeader title={`#2 – #${nf.format(enriched.length)}`} />
-              <ul className={cn(ui.surface.card, "overflow-hidden")}>
-                {enriched.slice(1).map((e, index) => (
-                  <RankedPlayerRow
-                    key={e.player.id}
-                    entry={e}
-                    first={index === 0}
-                    tr={tr}
-                    t={t}
-                    nf={nf}
-                  />
+              {/* One box per player now, each on the action wash. */}
+              <ul className="grid gap-2">
+                {enriched.slice(1).map((e) => (
+                  <RankedPlayerRow key={e.player.id} entry={e} tr={tr} t={t} nf={nf} />
                 ))}
               </ul>
             </section>
@@ -252,17 +247,23 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   ].filter(Boolean);
 
   return (
-    <article className={cn("overflow-hidden", ui.surface.card, ui.radius.sheet, ui.shadow.lifted)}>
-      {/* The club block: its fill, its measured foreground, its stripes. */}
-      <div
-        data-club={colours["data-club"]}
-        style={colours.style}
-        className={cn(ui.club.fill, ui.club.stripes, "p-4")}
-      >
+    <article
+      data-club={colours["data-club"]}
+      style={colours.style}
+      className={cn("tp-hero overflow-hidden", ui.surface.card, ui.radius.sheet, ui.shadow.lifted)}
+    >
+      {/* The club block: its fill deepening down the block (top-players.css),
+          its measured foreground, its stripes. */}
+      <div className={cn(ui.club.fill, "tp-hero-club p-4")}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className={cn("flex items-center gap-1.5", ui.text.label)}>
-              <Crown className="h-4 w-4 shrink-0" aria-hidden />
+              <span
+                className={cn("tp-gold grid h-6 w-6 shrink-0 place-items-center", ui.radius.full)}
+                aria-hidden
+              >
+                <Crown className="h-3.5 w-3.5" />
+              </span>
               <span className="truncate">{t("fantasy.top.best_player")}</span>
             </p>
             {/* Same as the player page: first name light, family name heavy,
@@ -289,26 +290,27 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
           </div>
           {club ? <ClubCrest club={club} size="lg" tone="inverse" /> : null}
         </div>
-        <p className="mt-3 flex items-baseline gap-1.5">
+        <p
+          className={cn(
+            "tp-points mt-3 inline-flex items-baseline gap-1.5 px-3 py-1",
+            ui.radius.card,
+          )}
+        >
           <bdi className={ui.score.lg}>{nf.format(top.weeklyPoints)}</bdi>
           <span className={ui.text.label}>{t("fantasy.top.points")}</span>
         </p>
       </div>
+      <div className="tp-seam" aria-hidden />
 
       <div className="p-4">
-        <dl className="grid grid-cols-4">
+        <dl className="grid grid-cols-4 gap-2">
           <HeroStat label={t("fantasy.top.goals")} value={countOrNone(nf, top.goals, t)} />
-          <HeroStat
-            label={t("fantasy.top.assists")}
-            value={countOrNone(nf, top.assists, t)}
-            divided
-          />
+          <HeroStat label={t("fantasy.top.assists")} value={countOrNone(nf, top.assists, t)} />
           <HeroStat
             label={t("fantasy.top.clean_sheets")}
             value={countOrNone(nf, top.cleanSheets, t)}
-            divided
           />
-          <HeroStat label={t("fantasy.top.minutes")} value={nf.format(top.minutes)} divided />
+          <HeroStat label={t("fantasy.top.minutes")} value={nf.format(top.minutes)} />
         </dl>
 
         <dl className="mt-4 grid grid-cols-3 gap-2">
@@ -358,25 +360,21 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   );
 }
 
-/** One of the hero's four match figures: the number over its label, split by a logical rule. */
-function HeroStat({
-  label,
-  value,
-  divided = false,
-}: {
-  label: string;
-  value: string;
-  divided?: boolean;
-}) {
+/**
+ * One of the hero's four match figures: the number over its label, on its own
+ * action-gradient tile (top-players.css; ink-deep on the gradient is ≥ 10:1 in
+ * both themes).
+ */
+function HeroStat({ label, value }: { label: string; value: string }) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col-reverse items-center justify-end gap-0.5 px-1 text-center",
-        divided && ui.rule.inline,
+        "tp-stat flex min-w-0 flex-col-reverse items-center justify-end gap-0.5 px-1 py-2.5 text-center",
+        ui.radius.card,
       )}
     >
-      <dt className={cn("max-w-full text-balance", ui.text.label, ui.tone.muted)}>{label}</dt>
-      <dd className={cn(ui.stat.lg, ui.tone.default)}>
+      <dt className={cn("max-w-full text-balance", ui.text.label)}>{label}</dt>
+      <dd className={ui.stat.lg}>
         <bdi>{value}</bdi>
       </dd>
     </div>
@@ -396,6 +394,7 @@ function MetaChip({ label, value }: { label: string; value: string }) {
         "flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 px-3 py-2",
         ui.radius.card,
         ui.surface.sunken,
+        "tp-meta",
       )}
     >
       <dt className={cn("min-w-0", ui.text.label, ui.tone.muted)}>{label}</dt>
@@ -406,7 +405,7 @@ function MetaChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boolean }) {
+function RankedPlayerRow({ entry, tr, t, nf }: CardProps) {
   const navigate = useNavigate();
   const { player, club, top } = entry;
   const colours = coloursOf(club);
@@ -417,12 +416,14 @@ function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boole
     ) : top.rank === 3 ? (
       <Award className="h-4 w-4" aria-hidden />
     ) : null;
+  // Silver for #2, bronze for #3, navy for the rest.
+  const badge = top.rank === 2 ? "tp-medal-silver" : top.rank === 3 ? "tp-medal-bronze" : "tp-navy";
 
   return (
     <li
       data-club={colours["data-club"]}
       style={colours.style}
-      className={cn(!first && ui.rule.blockStart)}
+      className={cn("tp-row overflow-hidden", ui.radius.card, ui.shadow.card)}
     >
       {/* The whole row is the control; the edge bar is the club's. */}
       <button
@@ -441,7 +442,8 @@ function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boole
           className={cn(
             "grid h-9 w-9 shrink-0 place-items-center",
             ui.radius.full,
-            ui.surface.sunken,
+            ui.shadow.card,
+            badge,
             ui.stat.sm,
           )}
           aria-hidden
@@ -500,9 +502,14 @@ function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boole
           </span>
         </span>
 
-        <span className="flex shrink-0 flex-col items-end">
-          <bdi className={cn(ui.stat.lg, ui.tone.default)}>{nf.format(top.weeklyPoints)}</bdi>
-          <span className={cn(ui.text.micro, ui.tone.muted)}>{t("fantasy.top.points")}</span>
+        <span
+          className={cn(
+            "tp-navy flex min-w-12 shrink-0 flex-col items-center px-2 py-1.5",
+            ui.radius.card,
+          )}
+        >
+          <bdi className={ui.stat.lg}>{nf.format(top.weeklyPoints)}</bdi>
+          <span className={cn("tp-navy-muted", ui.text.micro)}>{t("fantasy.top.points")}</span>
         </span>
         <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
       </button>
@@ -522,7 +529,7 @@ function WeeklyTopPlayersComparison({
   nf: Intl.NumberFormat;
 }) {
   return (
-    <UiCard>
+    <UiCard className="tp-compare">
       <div className="grid gap-3">
         {entries.map((e) => {
           const pct = Math.max(6, Math.round((e.top.weeklyPoints / Math.max(1, maxPoints)) * 100));
@@ -544,12 +551,13 @@ function WeeklyTopPlayersComparison({
                 #{nf.format(e.top.rank)} {shortName}
               </div>
               <div
-                className={cn("relative h-2.5 overflow-hidden", ui.radius.full, ui.surface.sunken)}
+                className={cn("relative h-3 overflow-hidden", ui.radius.full, ui.surface.sunken)}
               >
-                {/* The club's edge colour: ≥ 3:1 on the card, so a white or
-                    yellow kit is still a visible bar. */}
+                {/* Spring at the start, the club's edge colour at the end
+                    (≥ 3:1 on the card), so a white or yellow kit is still a
+                    visible bar. The direction flips in Arabic. */}
                 <div
-                  className={cn("h-full", ui.radius.full, ui.club.edgeFill)}
+                  className={cn("tp-bar h-full", ui.radius.full, ui.club.edgeFill)}
                   style={{ width: `${pct}%` }}
                   role="progressbar"
                   aria-label={tr(e.player.name)}
