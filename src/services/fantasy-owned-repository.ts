@@ -19,11 +19,10 @@ import { FORMATIONS, type FantasyTeam, type FormationKey, type SquadPlayer } fro
 import type { PointsViewModel } from "@/services/points-service";
 import type { FantasyPersistedState } from "@/services/fantasy-state";
 import { fantasyStateStore, DEFAULT_STATE } from "@/services/fantasy-state";
-import { fantasyService } from "@/services/fantasy-mock";
+import { fantasyService, loadFantasySampleData } from "@/services/fantasy-mock";
 import { finalizeGameweek as localFinalize } from "@/services/lifecycle-service";
 import { applyConfirmedTransfers, type OwnedPlayerRecord } from "@/services/transfers-service";
 import type { ChipsState } from "@/lib/fantasy-engine";
-import { fantasyPlayers as mockPlayers } from "@/mocks/fantasy-data";
 
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
@@ -246,6 +245,7 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
 
   async loadSnapshot(): Promise<FantasySnapshot> {
     const team = await fantasyService.getTeam();
+    const { fantasyPlayers: mockPlayers } = await loadFantasySampleData();
     const state = fantasyStateStore.read();
     // Local prices: current book value per source id (mock adapter).
     const purchasePrices: Record<string, number> = {};
@@ -344,6 +344,7 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     // Delegate to the existing local lifecycle service which already handles
     // Free Hit restore + chip finalize.
     const team = await fantasyService.getTeam();
+    const { fantasyPlayers: mockPlayers } = await loadFantasySampleData();
     localFinalize({
       gameweek: input.gameweek,
       team,

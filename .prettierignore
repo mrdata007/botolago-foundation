@@ -9,3 +9,5 @@ routeTree.gen.ts
 # Vendored by `npx impeccable install`; refreshed by `npx impeccable update`.
 .claude/skills/impeccable
 .claude/agents/impeccable-*.md
+# Raw measurement reports (Lighthouse, Playwright) saved by the sprint audits.
+audit
