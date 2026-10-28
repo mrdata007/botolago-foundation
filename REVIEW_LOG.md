@@ -488,3 +488,11 @@ Pull request #572 opened so CI runs the database tests that could not run here. 
   - Journée 5 is not stuck: its last 3 matches are on 28–29 Oct. What is missing is the ratings for the 24–25 Oct matches.
   - Read-only checks scheduled for 10:00 UTC (first SportAPI calls) and 18:20 UTC (live, Raja v Hassania).
 
+- **10:00 UTC check: SportAPI works.**
+  - The 09:30 fixtures update made its first 2 SportAPI calls, both status 200. Provider quota: 14,998 of 15,000 left.
+  - 49 Botola matches read, 1 change written, no failures. The active host is `sportapi7`.
+  - Notes to follow up:
+    - 9 upcoming matches are listed as "unmapped" (fixture or round not in the catalog yet), probably later rounds.
+    - 3 Journée 4 matches show "ratings refresh due". The rating job will pick them up on its own schedule.
+  - Next check: 18:20 UTC (live).
+
