@@ -376,3 +376,13 @@ Asked the owner before combining the two on `main`.
 - Publishing will also put #566 (page speed) and #567 (SEO) live, because both are on `main`.
 - #567's database change (20261027150000) is written so the website behaves the same before and after it is applied (migration header, "Rollout"). Safe to publish without it.
 
+**#570 merged** (9d2f38e). Lovable took in every change up to it.
+
+**Published (28 Oct, 00:39 UTC).**
+- Checked on the live site: botolago.com reports version 9d2f38e, and the viewport no longer blocks zoom.
+- Home, Matches and Fantasy load normally.
+- On a 390px phone, a visitor who is not logged in sees "Classement général" at 332px from the top (screenshot `docs/review/batch1-2026-10-27/live-fantasy-fr-390.png`).
+- Also live with it: #566 (page speed, security headers) and #567 (SEO).
+
+Seen on the live Fantasy page: Gameweek 5 still shows "EN DIRECT", with a deadline of Saturday 24 Oct. This fits the Sofascore cut-off (ratings missing, gameweek cannot finish). Batch 0 (SportAPI) is the fix.
+
