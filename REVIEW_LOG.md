@@ -496,3 +496,23 @@ Pull request #572 opened so CI runs the database tests that could not run here. 
     - 3 Journée 4 matches show "ratings refresh due". The rating job will pick them up on its own schedule.
   - Next check: 18:20 UTC (live).
 
+### Production Watchdog trace (28 Oct, 12:30 UTC, read-only)
+
+Latest run #327 (09:39 UTC) failed on **one** check: `fantasy_fixture_coverage`.
+
+**Cause.** 2 Journée 5 matches have no complete SportAPI rating set:
+- Moghreb Tétouan v Widad Témara (17371457, final 24 Oct 21:59): 2 substitutes played 4 minutes each without a rating.
+- CR Khemis Zemamra v FUS Rabat (17371450, final 25 Oct 17:55): 1 substitute played 5 minutes without a rating.
+- 1–9 minutes unrated is settled automatically as "Not rated", but only after two reads at least 24 hours apart. Their 48-hour re-reads (26 Oct 21:59 and 27 Oct 17:55) fell in the Sofascore blackout and were refused (429). The reads that did succeed were only about 20 hours apart.
+
+**Clears by itself.** The next rating checks are the 4-day marks:
+- 28 Oct 21:59 to 29 Oct 03:59 (Tétouan v Témara)
+- 29 Oct 17:55 to 23:55 (Zemamra v FUS)
+
+They now go to SportAPI. Either SportAPI has the ratings, or the second empty read settles the 3 players as "Not rated". No owner action is needed for this check.
+
+**Second check about to fail: `provider_refresh`** (warn at 12:30).
+- The full-season fixtures update last ran 09:30. The check fails after 4 hours (13:30).
+- Cause: `season_match_hours = 6`, set on 26 Oct to save Sofascore calls. The check expects hourly.
+- Owner action: `select app_private.rapidapi_budget_configure(p_season_match_hours => 1);` (about +40 SportAPI calls on a match day).
+
