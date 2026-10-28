@@ -12,7 +12,9 @@ import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 // runs (`x-botolago-release` header, `botolago-release` meta tag, and every
 // operational error event). On 2026-09-24 the live login page was days behind
 // `main` and nothing showed it. A CI or host that sets VITE_RELEASE_SHA wins;
-// otherwise the checkout's own HEAD; without git the release reads "unknown".
+// otherwise the checkout's own HEAD; then the commit a hosting provider names
+// for its build (FE-M1: a host that builds without the .git folder); only
+// with none of them does the release read "unknown".
 if (!process.env.VITE_RELEASE_SHA) {
   try {
     process.env.VITE_RELEASE_SHA = execSync("git rev-parse HEAD", {
@@ -21,8 +23,17 @@ if (!process.env.VITE_RELEASE_SHA) {
       .toString()
       .trim();
   } catch {
-    // Not a git checkout: the release stays unknown.
+    // Not a git checkout: fall back to the host's commit variable below.
   }
+}
+if (!process.env.VITE_RELEASE_SHA) {
+  const hostCommit =
+    process.env.CF_PAGES_COMMIT_SHA ?? // Cloudflare Pages
+    process.env.WORKERS_CI_COMMIT_SHA ?? // Cloudflare Workers builds
+    process.env.VERCEL_GIT_COMMIT_SHA ?? // Vercel
+    process.env.COMMIT_REF ?? // Netlify
+    process.env.GITHUB_SHA; // GitHub Actions
+  if (hostCommit) process.env.VITE_RELEASE_SHA = hostCommit;
 }
 
 // FE-C2: the browser build puts the big libraries in a few stable files
