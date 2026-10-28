@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { InviteLandingPage } from "@/components/predictions/leagues/InviteLandingPage";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 
 /**
  * `/pronostics/ligues/rejoindre#code=…`: an invite link's landing page. Never

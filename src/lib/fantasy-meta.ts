@@ -1,5 +1,5 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { fr } from "@/i18n/dictionary-fr";
+import { frText } from "@/i18n/fr-sections";
 import { serializeJsonLd } from "@/lib/article-meta";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 import { breadcrumbJsonLd, personJsonLd } from "@/lib/structured-data";
@@ -39,7 +39,7 @@ import { clubPath, clubPathParam } from "@/lib/club-slug";
 type Translate = (key: TranslationKey) => string;
 
 /** `head()` has no reader language: it reads the French dictionary. */
-const french: Translate = (key) => fr[key];
+const french: Translate = (key) => frText(key) ?? key;
 
 export interface FantasyPageCopy {
   readonly title: string;

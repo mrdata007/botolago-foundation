@@ -9,6 +9,7 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { CurvaLoading } from "@/components/curva/StateBlocks";
 import { CurvaLockScreen } from "@/components/curva/CurvaLockScreen";
 import { preloadCardRenderer } from "@/components/manager-card/use-card-renderer";
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { curvaAccess } from "@/services/curva-access";
 import { shouldRedirectFromCurva } from "@/services/manager-card-status";
 
@@ -28,6 +29,8 @@ export const Route = createFileRoute("/curva")({
       throw redirect({ to: "/fantasy", replace: true });
     }
   },
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     // The card's own face (the autograph's signature script), fetched with the page instead of
     // when the card's stylesheet (`shield.css`) declares it.

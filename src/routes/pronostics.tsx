@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 
 /**
@@ -14,5 +15,7 @@ function redirectWhilePronosticsAreHidden(): void {
 
 export const Route = createFileRoute("/pronostics")({
   beforeLoad: redirectWhilePronosticsAreHidden,
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   component: () => <Outlet />,
 });

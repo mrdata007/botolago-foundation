@@ -10,6 +10,7 @@ import { renderToString } from "react-dom/server";
 
 import { AuthProvider } from "@/auth/AuthProvider";
 import { dictionaries } from "@/i18n/dictionaries";
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { I18nProvider } from "@/i18n/provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { Route as RulesRoute } from "./fantasy.rules";
@@ -21,6 +22,9 @@ import { Route as RulesRoute } from "./fantasy.rules";
  * `fantasy-runtime.rules.test.ts` holds to the migration). Rendered with
  * `react-dom/server` inside the app's providers, the query already answered.
  */
+
+// What the router does before a page renders: the French copy of its section.
+await loadFrSectionsForPath("/fantasy/rules");
 
 const fr = dictionaries.fr;
 const ar = dictionaries.ar;

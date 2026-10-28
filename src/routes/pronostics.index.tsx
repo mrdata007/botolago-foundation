@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { PredictionsPage, type PredictionsTab } from "@/components/predictions/PredictionsPage";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";

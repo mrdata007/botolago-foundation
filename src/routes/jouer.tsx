@@ -3,7 +3,8 @@ import { useEffect } from "react";
 
 import { LandingPage } from "@/components/landing/LandingPage";
 import { landingFaqItems } from "@/components/landing/landing-faq";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
+import { frText } from "@/i18n/fr-sections";
 import { useI18n } from "@/i18n/provider";
 import { serializeJsonLd } from "@/lib/article-meta";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/jouer")({
       {
         type: "application/ld+json",
         children: serializeJsonLd(
-          faqPageJsonLd(landingFaqItems((key) => fr[key], { prizes: PRIZES_ENABLED })),
+          faqPageJsonLd(landingFaqItems((key) => frText(key) ?? key, { prizes: PRIZES_ENABLED })),
         ),
       },
     ],

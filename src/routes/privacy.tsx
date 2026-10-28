@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalRoutePage } from "@/components/legal/LegalRoutePage";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 
 const CANONICAL = `${PUBLIC_SITE_ORIGIN}/privacy`;

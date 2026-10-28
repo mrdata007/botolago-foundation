@@ -5,7 +5,8 @@ import { LegalDocumentView } from "@/components/legal/LegalDocumentView";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiHeader } from "@/components/ui-kit";
 import { PRIZE_TERMS } from "@/content/legal/prize-terms";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
@@ -23,6 +24,8 @@ export const Route = createFileRoute("/prizes/terms")({
   beforeLoad: () => {
     if (!PRIZES_ENABLED) throw redirect({ to: "/fantasy", replace: true });
   },
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     meta: [
       { title: fr["prizes.terms.meta_title"] },

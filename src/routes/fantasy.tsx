@@ -1,12 +1,15 @@
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { loadFrSectionsForPath } from "@/i18n/fr-sections";
 import { useI18n } from "@/i18n/provider";
 import { FANTASY_PLAYER_ROUTE_ID, fantasyShownCopy, shownHeadTitle } from "@/lib/fantasy-meta";
 import { findClub } from "@/components/fantasy/club-identity";
 import { clubSearchName } from "@/lib/seo-titles";
 
 export const Route = createFileRoute("/fantasy")({
+  // The French copy of this section (`src/i18n/fr-sections.ts`), loaded before the page renders.
+  loader: ({ location }) => loadFrSectionsForPath(location.pathname),
   head: () => ({
     meta: [
       { title: "Fantasy — BotolaGO" },

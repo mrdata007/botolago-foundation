@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { useI18n } from "@/i18n/provider";
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { CHOOSER_ARABIC } from "@/i18n/language-chooser-copy";
 import { RetryLabel } from "@/i18n/language-load-notice";
 import type { Language } from "@/types/domain";

@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { ui } from "@/components/ui-kit/tokens";
 import { cn } from "@/lib/utils";
-import { fr } from "./dictionary-fr";
+import { frCore as fr } from "./dictionary-fr-core";
 import { CHOOSER_ARABIC } from "./language-chooser-copy";
 import { LANGUAGE_SWITCHER_SELECTOR, returnFocusFromNotice } from "./language-notice-focus";
 
