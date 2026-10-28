@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,6 +8,7 @@ import { showStepUpNotice } from "@/auth/step-up-notice";
 import { mapPredictionsError } from "@/backend/predictions/errors";
 import { ui, UiButton, UiCard, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import { predictionsService } from "@/services/predictions";
 import { isInviteCode, normalizeInviteCode } from "./invite-link";
 import { leagueErrorMessage } from "./leagues-copy";
@@ -41,8 +43,20 @@ export function JoinLeagueForm() {
   });
 
   return (
-    <UiCard padding="md" className="flex flex-col gap-3">
-      <h2 className={ui.text.bodyStrong}>{t("predictions.leagues.join")}</h2>
+    <UiCard padding="md" className={cn("flex flex-col gap-3", LEAGUE_FORM_WASH)}>
+      <h2 className={cn("flex items-center gap-2.5", ui.text.bodyStrong)}>
+        <span
+          aria-hidden
+          className={cn(
+            "inline-grid h-8 w-8 shrink-0 place-items-center rounded-full text-[color:var(--ui-ink-deep)]",
+            ui.shadow.card,
+          )}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
+        >
+          <KeyRound className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+        {t("predictions.leagues.join")}
+      </h2>
       <form
         className="flex flex-col gap-3"
         onSubmit={(event) => {
@@ -67,10 +81,19 @@ export function JoinLeagueForm() {
           reserveError
           data-testid="predictions-join-code"
         />
-        <UiButton type="submit" variant="ink" disabled={join.isPending || code.trim() === ""}>
+        <UiButton type="submit" disabled={join.isPending || code.trim() === ""}>
           {t("predictions.leagues.join_button")}
         </UiButton>
       </form>
     </UiCard>
   );
 }
+
+/**
+ * A sky wash from the top of the box, gone by 70% so the field and its label
+ * sit on the plain surface: 24% in light, 14% in dark (where sky over the
+ * dark card would lift the background toward the muted label). `to bottom`,
+ * so the same in Arabic.
+ */
+const LEAGUE_FORM_WASH =
+  "[--wash:24%] dark:[--wash:14%] bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-sky)_var(--wash),transparent)_0%,transparent_70%)]";

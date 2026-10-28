@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -59,8 +60,20 @@ export function CreateLeagueForm() {
   }
 
   return (
-    <UiCard padding="md" className="flex flex-col gap-3">
-      <h2 className={ui.text.bodyStrong}>{t("predictions.leagues.create")}</h2>
+    <UiCard padding="md" className={cn("flex flex-col gap-3", LEAGUE_FORM_WASH)}>
+      <h2 className={cn("flex items-center gap-2.5", ui.text.bodyStrong)}>
+        <span
+          aria-hidden
+          className={cn(
+            "inline-grid h-8 w-8 shrink-0 place-items-center rounded-full text-[color:var(--ui-ink-deep)]",
+            ui.shadow.card,
+          )}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+        {t("predictions.leagues.create")}
+      </h2>
       <form
         className="flex flex-col gap-3"
         onSubmit={(event) => {
@@ -84,10 +97,19 @@ export function CreateLeagueForm() {
           reserveError
           data-testid="predictions-create-name"
         />
-        <UiButton type="submit" variant="ink" disabled={create.isPending || name.trim() === ""}>
+        <UiButton type="submit" disabled={create.isPending || name.trim() === ""}>
           {t("predictions.leagues.create_button")}
         </UiButton>
       </form>
     </UiCard>
   );
 }
+
+/**
+ * A sky wash from the top of the box, gone by 70% so the field and its label
+ * sit on the plain surface: 24% in light, 14% in dark (where sky over the
+ * dark card would lift the background toward the muted label). `to bottom`,
+ * so the same in Arabic.
+ */
+const LEAGUE_FORM_WASH =
+  "[--wash:24%] dark:[--wash:14%] bg-[image:linear-gradient(to_bottom,color-mix(in_oklab,var(--ui-accent-sky)_var(--wash),transparent)_0%,transparent_70%)]";

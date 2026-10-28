@@ -1,11 +1,12 @@
 import { Check, Lock, Target, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import type { PredictionFixtureDto, ResultKind, ScorePair } from "@/backend/predictions/contracts";
 import { matchOutcome } from "@/backend/predictions/scoring";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBadge, UiButton, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { presentFootballClub } from "@/services/football";
@@ -55,6 +56,7 @@ export function FixturePredictionCard({
   retryingPersonal = false,
   stepsDisabled = false,
   className,
+  look = "plain",
   onStep,
 }: {
   fixture: PredictionFixtureDto;
@@ -90,11 +92,23 @@ export function FixturePredictionCard({
   stepsDisabled?: boolean;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
+  /**
+   * `vivid` (the /pronostics list): a wash of each club's colour from its own
+   * side, the kick-off time on a raised chip and the bright steppers. `plain`
+   * (default) is the quiet card the match page keeps.
+   */
+  look?: "plain" | "vivid";
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
 }) {
   const { t, lang } = useI18n();
   const home = presentFootballClub(fixture.home);
   const away = presentFootballClub(fixture.away);
+  const vivid = look === "vivid";
+  // Both sides with the clash rule applied (Wydad v Tétouan is not two reds).
+  const palettes = useMemo(
+    () => clubMatchPalettes(presentFootballClub(fixture.home), presentFootballClub(fixture.away)),
+    [fixture.home, fixture.away],
+  );
   const homeName = fixture.home.shortName || fixture.home.name;
   const awayName = fixture.away.shortName || fixture.away.name;
 
@@ -125,9 +139,11 @@ export function FixturePredictionCard({
               ? "border-s-[color:var(--ui-ink-fg)]"
               : "border-s-[color:var(--ui-rule)]",
           justScored && (scoredKind === "exact" ? "glow-exact" : "glow-hit"),
+          vivid && "relative isolate overflow-hidden",
           className,
         )}
       >
+        {vivid ? <ClubWash home={palettes.home} away={palettes.away} /> : null}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn("min-w-0 truncate", ui.text.bodyStrong)} dir="auto">
             {homeName}
@@ -178,9 +194,11 @@ export function FixturePredictionCard({
           pick &&
           "ring-2 ring-[color:color-mix(in_oklab,var(--ui-positive)_45%,transparent)]",
         justSaved && "settle",
+        vivid && "relative isolate overflow-hidden",
         className,
       )}
     >
+      {vivid ? <ClubWash home={palettes.home} away={palettes.away} edges /> : null}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <ClubCrest club={home} size="sm" />
@@ -188,7 +206,19 @@ export function FixturePredictionCard({
             {homeName}
           </span>
         </div>
-        <span className={cn("text-center", ui.text.meta, ui.tone.muted)}>
+        <span
+          className={cn(
+            "text-center",
+            ui.text.meta,
+            vivid
+              ? cn(
+                  "rounded-full bg-[color:var(--ui-surface)] px-2.5 py-1 [font-weight:var(--ui-weight-heavy)]",
+                  ui.shadow.card,
+                  ui.tone.ink,
+                )
+              : ui.tone.muted,
+          )}
+        >
           {fixture.live ? (
             <ScoreLine score={fixture.live} className={ui.score.row} />
           ) : fixture.kickoffConfirmed ? (
@@ -214,6 +244,7 @@ export function FixturePredictionCard({
               onStep={(delta) => onStep("home", delta)}
               disabled={stepsDisabled || !editable}
               testId={`prediction-${fixture.id}-home`}
+              tone={vivid ? "vivid" : "plain"}
             />
           </div>
           <span aria-hidden className={cn(ui.score.row, ui.tone.faint)}>
@@ -226,6 +257,7 @@ export function FixturePredictionCard({
               onStep={(delta) => onStep("away", delta)}
               disabled={stepsDisabled || !editable}
               testId={`prediction-${fixture.id}-away`}
+              tone={vivid ? "vivid" : "plain"}
             />
           </div>
         </div>
@@ -295,6 +327,61 @@ export function FixturePredictionCard({
 }
 
 type Translate = ReturnType<typeof useI18n>["t"];
+
+/**
+ * The two clubs' colours behind a vivid card: home washes in from the inline
+ * start, away from the inline end, both gone before the middle, so the time
+ * and the dash sit on the plain card. Each half carries its own `clubStyle`.
+ *
+ * The wash is 18% of the club fill at the very edge in light and 22% in dark
+ * (fading from there). Computed over every kit in the table (club fill
+ * mixed into the card surface at that weight), muted text on the strongest
+ * point stays at 4.73:1 or better in light (FAR Rabat) and about 5:1 in dark
+ * (Zemamra); text sits at least the card's padding in from it.
+ * Horizontal on purpose, so the direction is mirrored under `rtl:` rather
+ * than written as an angle.
+ */
+function ClubWash({
+  home,
+  away,
+  edges = false,
+}: {
+  home: ClubPalette;
+  away: ClubPalette;
+  /** A 4px club bar on each side, as the match lists draw it. */
+  edges?: boolean;
+}) {
+  const homeStyle = clubStyle(home);
+  const awayStyle = clubStyle(away);
+  const layer =
+    "pointer-events-none absolute inset-y-0 -z-10 w-[62%] [--wash:18%] dark:[--wash:22%]";
+  return (
+    <>
+      <span
+        aria-hidden
+        {...homeStyle}
+        className={cn(
+          layer,
+          "start-0",
+          edges && ui.edge.start,
+          "bg-[image:linear-gradient(to_right,color-mix(in_oklab,var(--ui-club)_var(--wash),transparent),transparent)]",
+          "rtl:bg-[image:linear-gradient(to_left,color-mix(in_oklab,var(--ui-club)_var(--wash),transparent),transparent)]",
+        )}
+      />
+      <span
+        aria-hidden
+        {...awayStyle}
+        className={cn(
+          layer,
+          "end-0",
+          edges && ui.edge.end,
+          "bg-[image:linear-gradient(to_left,color-mix(in_oklab,var(--ui-club)_var(--wash),transparent),transparent)]",
+          "rtl:bg-[image:linear-gradient(to_right,color-mix(in_oklab,var(--ui-club)_var(--wash),transparent),transparent)]",
+        )}
+      />
+    </>
+  );
+}
 
 function lockedStatus(fixture: PredictionFixtureDto, open: boolean, t: Translate): ReactNode {
   if (open) return null;

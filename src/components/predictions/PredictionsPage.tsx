@@ -1,9 +1,10 @@
-import { Info, Loader2 } from "lucide-react";
+import { Info, Loader2, Target } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { PredictionFixtureDto } from "@/backend/predictions/contracts";
 import { guestPickScore } from "@/backend/predictions/scoring";
 import { useAuth } from "@/auth/AuthProvider";
+import { pointsLabel } from "@/components/matches/standings-copy";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
@@ -33,6 +34,7 @@ import {
   claimUnsavedLabel,
   formatDayHeading,
   formatLockMoment,
+  formatNumber,
   matchDay,
   remainingLabel,
 } from "./predictions-copy";
@@ -163,6 +165,15 @@ export function PredictionsPage({
     return guestPickScore(picks.get(fixture.id) ?? null, fixture);
   };
 
+  // The reader's points on the journée so far: the scored matches only.
+  let roundPoints: number | null = null;
+  for (const fixture of fixtures) {
+    if (!fixture.final || !fixture.result) continue;
+    const score = scoreOf(fixture);
+    if (!score || score.kind === "void" || score.points === null) continue;
+    roundPoints = (roundPoints ?? 0) + score.points;
+  }
+
   const tally = shareTally(fixtures, picks, model.uid ? model.mine : null);
   const share = <PredictionsShareButton roundNumber={journee.number} tally={tally} />;
 
@@ -173,7 +184,15 @@ export function PredictionsPage({
         state={journee.state}
         rounds={round.rounds}
         onChange={onRoundChange}
-      />
+      >
+        {tab === "predict" && countable.length > 0 && (picksKnown || roundPoints !== null) ? (
+          <RoundProgress
+            done={picksKnown ? done : null}
+            total={countable.length}
+            points={roundPoints}
+          />
+        ) : null}
+      </RoundSwitcher>
 
       {tab === "leagues" ? (
         <LeaguesPanel />
@@ -257,6 +276,7 @@ export function PredictionsPage({
                   savedReady={!model.uid || model.mineQuery.isSuccess}
                   personal={model.personalFor(fixture.id)}
                   stepsDisabled={!model.picksOpen}
+                  look="vivid"
                   onStep={(side, delta) => {
                     const next = stepPick(
                       model.personalFor(fixture.id),
@@ -302,6 +322,70 @@ export function PredictionsPage({
       )}
     </>,
     share,
+  );
+}
+
+/**
+ * The hero band's second row: how many of the journée's matches the reader
+ * has predicted, as a bar and as "3/8 pronostics", and their points so far on
+ * an action-gradient pill once a match is scored.
+ */
+function RoundProgress({
+  done,
+  total,
+  points,
+}: {
+  /** Null while the reader's own picks are unread: no bar is guessed. */
+  done: number | null;
+  total: number;
+  points: number | null;
+}) {
+  const { t, lang } = useI18n();
+  const share = done === null ? 0 : Math.round((Math.min(done, total) / total) * 100);
+  return (
+    <div className="flex min-h-8 items-center gap-3 px-2">
+      {done !== null ? (
+        <>
+          <span
+            aria-hidden
+            className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-[color:color-mix(in_oklab,var(--ui-on-grad-header)_18%,transparent)]"
+          >
+            <span
+              className="block h-full rounded-full bg-[color:var(--ui-on-grad-header)]"
+              style={{ width: `${share}%` }}
+            />
+          </span>
+          <span
+            className={cn(
+              "shrink-0 whitespace-nowrap",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-heavy)]",
+            )}
+          >
+            {t("predictions.progress")
+              .replace("{done}", formatNumber(done, lang))
+              .replace("{total}", formatNumber(total, lang))}
+          </span>
+        </>
+      ) : (
+        <span className="flex-1" />
+      )}
+      {points !== null ? (
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-[color:var(--ui-ink-deep)]",
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-heavy)]",
+            ui.shadow.card,
+          )}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
+          data-testid="predictions-round-points"
+        >
+          <Target className="h-3.5 w-3.5" aria-hidden />
+          {pointsLabel(points, lang, t, (n) => formatNumber(n, lang))}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -480,7 +564,12 @@ function DayGroups({
           className="flex flex-col gap-2"
           aria-label={formatDayHeading(group.first, lang)}
         >
-          <h2 className={cn(ui.text.label, ui.tone.muted)}>
+          <h2 className={cn("flex items-center gap-2", ui.text.label, ui.tone.ink)}>
+            <span
+              aria-hidden
+              className="h-3.5 w-1 shrink-0 rounded-full"
+              style={{ backgroundImage: "var(--ui-grad-action)" }}
+            />
             {formatDayHeading(group.first, lang)}
           </h2>
           {group.fixtures.map((fixture, index) => (
