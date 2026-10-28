@@ -1,0 +1,3482 @@
+[
+ {
+  "name": "visitor-pepites-fr-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-fr-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-fr-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 489,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 573,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 656,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 742,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 845,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1204,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 405,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 489,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 572,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 658,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 761,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1036,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 463,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 547,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 630,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 716,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 819,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 463,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 547,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 630,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 716,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 819,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 450,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 533,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 617,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 703,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 805,
+     "w": 97.2,
+     "h": 44,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-fr-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 60.8,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-fr-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 60.8,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-fr-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 489,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 573,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 656,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 742,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 845,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1204,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-fr-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 405,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 489,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 572,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 658,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 761,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1036,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-fr-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 463,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 547,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 630,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 716,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 819,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-fr-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 463,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 547,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 630,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 716,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 819,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": "Fantasy",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-fr-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 450,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 533,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 617,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 703,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 805,
+     "w": 97.2,
+     "h": 44,
+     "label": "Prospects",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1152,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-light-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-light-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 853,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 759,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 679,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 604,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 537,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 937,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 843,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 763,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 688,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 621,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 879,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 785,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 705,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 630,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 563,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 879,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 785,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 705,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 630,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 563,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-light-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 891,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 797,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 716,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 642,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 551,
+     "w": 86.6,
+     "h": 44,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-dark-320",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 254,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 191,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 129,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 66,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 4,
+     "w": 62.4,
+     "h": 69.3,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 320,
+   "vw": 320,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-dark-390",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 307,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 232,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 158,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 83,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 8,
+     "w": 74.8,
+     "h": 69.3,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 390,
+   "vw": 390,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-pepites-ar-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 853,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 759,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 679,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 604,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 537,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "visitor-home-ar-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": "page",
+     "x": 937,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 843,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 763,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 688,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 621,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": null,
+   "path": "/"
+  }
+ },
+ {
+  "name": "member-curva-ar-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 489,
+     "w": 79.7,
+     "h": 44,
+     "label": "Accueil",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 573,
+     "w": 79.1,
+     "h": 44,
+     "label": "Matchs",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 656,
+     "w": 82.1,
+     "h": 44,
+     "label": "Fantasy",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 742,
+     "w": 98.6,
+     "h": 44,
+     "label": "Actualités",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": "page",
+     "x": 845,
+     "w": 69.9,
+     "h": 44,
+     "label": "Curva",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1204,
+   "vw": 1440,
+   "dir": "ltr",
+   "back": null,
+   "path": "/curva"
+  }
+ },
+ {
+  "name": "member-pepites-ar-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 879,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 785,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": "page",
+     "x": 705,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 630,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/curva",
+     "cur": null,
+     "x": 563,
+     "w": 63.5,
+     "h": 44,
+     "label": "كورفا",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": "فانتازي",
+   "path": "/pepites"
+  }
+ },
+ {
+  "name": "memberoff-pepites-ar-dark-1440",
+  "m": {
+   "links": [
+    {
+     "href": "/",
+     "cur": null,
+     "x": 891,
+     "w": 86,
+     "h": 44,
+     "label": "الرئيسية",
+     "trunc": false
+    },
+    {
+     "href": "/matches",
+     "cur": null,
+     "x": 797,
+     "w": 89.8,
+     "h": 44,
+     "label": "المباريات",
+     "trunc": false
+    },
+    {
+     "href": "/fantasy",
+     "cur": null,
+     "x": 716,
+     "w": 76.7,
+     "h": 44,
+     "label": "فانتازي",
+     "trunc": false
+    },
+    {
+     "href": "/news",
+     "cur": null,
+     "x": 642,
+     "w": 70.4,
+     "h": 44,
+     "label": "الأخبار",
+     "trunc": false
+    },
+    {
+     "href": "/pepites",
+     "cur": "page",
+     "x": 551,
+     "w": 86.6,
+     "h": 44,
+     "label": "المواهب",
+     "trunc": false
+    }
+   ],
+   "overflowX": false,
+   "navRight": 1240,
+   "vw": 1440,
+   "dir": "rtl",
+   "back": null,
+   "path": "/pepites"
+  }
+ }
+]
