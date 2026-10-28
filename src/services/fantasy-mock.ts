@@ -12,9 +12,21 @@ import type {
   FormationKey,
   TopPlayerOfWeek,
 } from "@/types/fantasy";
-import * as fdb from "@/mocks/fantasy-data";
-import { players as mockFootballPlayers } from "@/mocks/data";
 import { STORAGE_KEYS, readJSON, writeJSON } from "@/lib/storage";
+
+// The sample Fantasy data is fetched on the first call that needs it, not
+// with the app: this service is also reached in production (importing a team
+// built on the device before sign-up), and as a static import the sample
+// players and articles downloaded on every page (FE-C3). Same data, same
+// results; it simply arrives with the first read.
+let sampleData: Promise<typeof import("@/mocks/fantasy-data")> | null = null;
+export function loadFantasySampleData() {
+  sampleData ??= import("@/mocks/fantasy-data").catch((error: unknown) => {
+    sampleData = null;
+    throw error;
+  });
+  return sampleData;
+}
 
 const delay = <T>(v: T, ms = 100) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 
@@ -49,9 +61,11 @@ function mergeTeam(base: FantasyTeam, patch: FantasyTeamPatch): FantasyTeam {
 
 export const fantasyService = {
   async getPlayers(): Promise<FantasyPlayer[]> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.fantasyPlayers);
   },
   async getPlayer(id: string): Promise<FantasyPlayer | undefined> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.fantasyPlayers.find((p) => p.id === id));
   },
   /**
@@ -60,6 +74,10 @@ export const fantasyService = {
    * Fantasy pool by name.
    */
   async getFootballPlayerLinks(): Promise<Record<string, string>> {
+    const [fdb, { players: mockFootballPlayers }] = await Promise.all([
+      loadFantasySampleData(),
+      import("@/mocks/data"),
+    ]);
     const links: Record<string, string> = {};
     mockFootballPlayers.forEach((player, index) => {
       const fantasy = fdb.fantasyPlayers.find((p) => p.name.fr === player.name.fr);
@@ -69,6 +87,7 @@ export const fantasyService = {
     return delay(links);
   },
   async getTeam(): Promise<FantasyTeam> {
+    const fdb = await loadFantasySampleData();
     return delay(mergeTeam(fdb.fantasyTeam, loadPatch()));
   },
   saveTeam(patch: FantasyTeamPatch): void {
@@ -77,6 +96,7 @@ export const fantasyService = {
   },
   /** Compute team value (sum of squad prices) from the current merged team. */
   async getTeamValue(): Promise<number> {
+    const fdb = await loadFantasySampleData();
     const t = mergeTeam(fdb.fantasyTeam, loadPatch());
     const total = t.squad.reduce((s, sp) => {
       const p = fdb.fantasyPlayers.find((x) => x.id === sp.playerId);
@@ -85,30 +105,38 @@ export const fantasyService = {
     return delay(Math.round(total * 10) / 10);
   },
   async getLeagues(type?: League["type"]): Promise<League[]> {
+    const fdb = await loadFantasySampleData();
     const all = fdb.leagues;
     return delay(type ? all.filter((l) => l.type === type) : all);
   },
   async getLeague(id: string): Promise<League | undefined> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.leagues.find((l) => l.id === id));
   },
   async getLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.leagueStandings[leagueId] ?? []);
   },
   async getGameweekResult(gw: number): Promise<GameweekResult | undefined> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.gameweekResults.find((g) => g.gameweek === gw));
   },
   async getGameweekHistory(): Promise<GameweekResult[]> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.gameweekResults);
   },
   async getFixtureDifficulty(): Promise<FixtureDifficulty[]> {
+    const fdb = await loadFantasySampleData();
     return delay(fdb.fixtureDifficulties);
   },
   async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
+    const fdb = await loadFantasySampleData();
     const gws = Object.keys(fdb.topPlayersByGameweek).map(Number);
     const fallback = gws.length ? Math.max(...gws) : gameweek;
     return delay(fdb.topPlayersByGameweek[gameweek] ?? fdb.topPlayersByGameweek[fallback] ?? []);
   },
   async getAvailableTopGameweeks(): Promise<number[]> {
+    const fdb = await loadFantasySampleData();
     return delay(
       Object.keys(fdb.topPlayersByGameweek)
         .map(Number)
