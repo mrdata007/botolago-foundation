@@ -39,6 +39,7 @@ import { footballService } from "@/services/football";
 import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
 import { isGenericCategory } from "@/components/news/article-kicker";
+import { useNewsClubs } from "@/components/news/news-clubs";
 import { useNewsFixtures } from "@/components/news/news-fixtures";
 import {
   deriveCategoryOptions,
@@ -181,22 +182,9 @@ function NewsPage() {
     queryKey: ["news", "home-modules-v2", lang],
     queryFn: () => getNewsRepository().getHomeModules(lang, 6, publicNewsContext()),
   });
-  // Presented here rather than by `newsService.getTeamFilters`, whose
-  // presenter turns a missing club colour into a literal navy that the club
-  // palette would paint on every club (see `presentNewsTeam`).
-  const clubsQ = useQuery({
-    queryKey: ["news", "team-filters-v2", lang],
-    queryFn: async () =>
-      (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
-  });
-  // The clubs of the current season, as the Clubs page lists them (same query,
-  // so one read). The filter row offers these only: the team filter also holds
-  // clubs that have since left the league and a placeholder club, which every
-  // article about them still names (the cards below keep the whole list).
-  const directoryQ = useQuery({
-    queryKey: ["football", "club-directory", lang],
-    queryFn: ({ signal }) => footballService.getClubDirectory(lang, signal),
-  });
+  // The club directory in the reader's language (Arabic names), and the
+  // current season's clubs the filter row is limited to (see `useNewsClubs`).
+  const { clubsQ, directoryQ, clubs, chips: clubChips } = useNewsClubs(lang);
   // Keyed by the account, not by "signed in": see `followedTeamIdsQuery`.
   const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const followedIds = useMemo(() => new Set(followedQ.data ?? []), [followedQ.data]);
@@ -230,14 +218,6 @@ function NewsPage() {
     search.category && (!homeQ.data || categories.some((c) => c.slug === search.category))
       ? search.category
       : null;
-  // The row offers the current season's clubs (none when that list is not
-  // there: a wall of every club ever is not a fallback).
-  const clubChips = useMemo(() => {
-    const season = directoryQ.data;
-    if (!season?.season) return [];
-    const current = new Set(season.clubs.map((club) => club.id));
-    return (clubsQ.data ?? []).filter((club) => current.has(club.id));
-  }, [directoryQ.data, clubsQ.data]);
   const clubId =
     search.club && (!clubsQ.data || !directoryQ.data || clubChips.some((c) => c.id === search.club))
       ? search.club
@@ -270,7 +250,6 @@ function NewsPage() {
     ]);
   }, [categorySlug, clubId, lead, featured, carousel]);
 
-  const clubs = clubsQ.data ?? [];
   const fixtures = useNewsFixtures();
 
   return (

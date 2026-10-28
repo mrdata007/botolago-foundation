@@ -50,6 +50,7 @@ import {
   PULL_QUOTE_CSS,
 } from "@/components/news/article-reading";
 import { articleLeadPlacement } from "@/components/news/article-lead";
+import { useNewsClubs } from "@/components/news/news-clubs";
 import { articleKicker } from "@/components/news/article-kicker";
 import { linkArticleToFixture, useNewsFixtures } from "@/components/news/news-fixtures";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -181,11 +182,7 @@ function ArticlePage() {
   // here, not by `newsService.getTeamFilters`: its presenter turns a missing
   // club colour into a literal navy the club palette would paint on every
   // club (see `presentNewsTeam`).
-  const clubsQ = useQuery({
-    queryKey: ["news", "team-filters-v2", lang],
-    queryFn: async () =>
-      (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
-  });
+  const { clubs: directoryClubs } = useNewsClubs(lang);
   const article = articleQ.data;
   const related = relatedQ.data ?? [];
   const fixtures = useNewsFixtures();
@@ -226,7 +223,7 @@ function ArticlePage() {
 
   const contentLanguage = article.language ?? lang;
   const contentDir = contentLanguage === "ar" ? "rtl" : "ltr";
-  const clubs = clubsQ.data ?? [];
+  const clubs = directoryClubs;
   // The detail's teams are only {id, slug, name}; the directory adds the
   // crest code and the colour data. A team the directory does not know keeps
   // its chip, without a crest.

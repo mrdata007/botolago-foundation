@@ -43,7 +43,10 @@ const CREST: Record<ClubPlateSize, ClubCrestSize> = { thumb: "xs", card: "md", h
 
 /** The figure's box and type per size (`ui.score.*` are the kit's figure steps). */
 const FIGURE: Record<ClubPlateSize, string> = {
-  thumb: cn("px-1.5 py-0.5", ui.text.micro, "[font-weight:var(--ui-weight-heavy)]"),
+  thumb: cn(
+    ui.text.micro,
+    "px-1 py-0.5 leading-none whitespace-nowrap [font-weight:var(--ui-weight-heavy)]",
+  ),
   card: cn("px-3 py-0.5", ui.score.sm),
   hero: cn("px-4 py-1", ui.score.md),
 };
@@ -101,23 +104,31 @@ export function ArticleClubPlate({
       <div {...clubStyle(pair.home)} className={cn("min-w-0 flex-1", ui.club.fillOnly)} />
       <div {...clubStyle(pair.away)} className={cn("min-w-0 flex-1", ui.club.fillOnly)} />
       {size === "thumb" ? (
-        // 88x68: each crest in the bottom of its own half, the figure at the
-        // start corner, so the Save control at the end corner stays clear.
-        <>
-          <div className="absolute inset-0 flex items-end pb-2">
-            <div className="flex flex-1 justify-center">
-              <ClubCrest club={first} palette={pair.home} tone="inverse" size="xs" />
-            </div>
-            <div className="flex flex-1 justify-center">
-              <ClubCrest club={second} palette={pair.away} tone="inverse" size="xs" />
-            </div>
-          </div>
-          {showFigure && fixture && (
-            <div className="pointer-events-none absolute start-1.5 top-1.5">
-              <Figure fixture={fixture} size={size} />
-            </div>
-          )}
-        </>
+        // 88x68: the scoreboard strip along the bottom (crest, figure, crest,
+        // home first so Arabic puts it at the right), clear of the top band
+        // where the Save control sits at the end corner. The crests are 22px
+        // so a time ("18:00") fits between them; the ends are the thumbnail's
+        // own edge, not the seam.
+        <div
+          data-article-thumb-strip=""
+          className="pointer-events-none absolute inset-x-0.5 bottom-1.5 flex items-center justify-between"
+        >
+          <ClubCrest
+            club={first}
+            palette={pair.home}
+            tone="inverse"
+            size="xs"
+            className="h-[22px] w-[22px]"
+          />
+          {showFigure && fixture && <Figure fixture={fixture} size={size} />}
+          <ClubCrest
+            club={second}
+            palette={pair.away}
+            tone="inverse"
+            size="xs"
+            className="h-[22px] w-[22px]"
+          />
+        </div>
       ) : (
         // A scoreboard strip centred on the seam: home crest, figure, away
         // crest. Centred, not pushed to the outer edges, so the Save control
@@ -160,7 +171,7 @@ function Figure({ fixture, size }: { fixture: ArticleFixture; size: ClubPlateSiz
     typeof fixture.awayScore === "number"
   ) {
     return (
-      <span className={cn("flex items-center gap-1.5", box)}>
+      <span className={cn("flex items-center", size === "thumb" ? "gap-1" : "gap-1.5", box)}>
         <bdi>{fixture.homeScore}</bdi>
         <span aria-hidden>–</span>
         <bdi>{fixture.awayScore}</bdi>

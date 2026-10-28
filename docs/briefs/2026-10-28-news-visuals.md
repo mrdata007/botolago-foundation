@@ -54,6 +54,19 @@ file. Nothing is duplicated.
    copy written by the content generator. Source reported to the orchestrator
    (no data or function changed here).
 
+   **Thumbnail layout and mirroring.** On the 88x68 row thumbnail the Save
+   control keeps the top end corner; the crests and the figure sit in one
+   scoreboard strip along the bottom (home crest, figure, away crest), so the
+   two never overlap (measured as box intersections at 320 / 390 / 1440, FR and
+   AR, light and dark). Home is first in the DOM inside a container that
+   inherits the page direction, as in `MatchScoreHeader`: in Arabic home is on
+   the right with its score beside it, so an away win 0-1 reads "1 - 0" with the
+   away crest on the left (pinned by `ArticleClubPlate.rtl.test.tsx`, measured
+   in the browser).
+   **Arabic club names.** The news team filter has Latin names only, so chips
+   and tags take the translated names from the football club directory
+   (`useNewsClubs`), keeping the news row's crest and colours.
+
 5. **Alive, not pale (owner direction 2026-10-28, added after the first
    draft).** The page was white cards on near-white with colour in thin lines.
    Applied with the existing system only:

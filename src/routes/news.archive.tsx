@@ -22,6 +22,7 @@ import {
   presentNewsTeam,
   publicNewsContext,
 } from "@/components/news/news-data";
+import { useNewsClubs } from "@/components/news/news-clubs";
 import { useNewsFixtures } from "@/components/news/news-fixtures";
 import { useI18n } from "@/i18n/provider";
 import { UNAVAILABLE, unavailableHeaders } from "@/lib/page-availability";
@@ -104,12 +105,7 @@ function NewsArchivePage() {
     enabled: cursor !== undefined,
   });
   // The club colours on the cards; the cards are links without them.
-  const clubsQ = useQuery({
-    queryKey: ["news", "team-filters-v2", lang],
-    queryFn: async () =>
-      (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
-  });
-  const clubs = clubsQ.data ?? [];
+  const { clubs } = useNewsClubs(lang);
   const fixtures = useNewsFixtures();
   const items = pageQ.data?.items ?? [];
   const last = plan ? archivePageCount(plan) : null;
