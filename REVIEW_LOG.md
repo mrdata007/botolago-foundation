@@ -446,3 +446,13 @@ Lead sent fixes:
 
 Sent to the Tester for round 2.
 
+**Tester round 2 – PASS WITH CONDITIONS.**
+- Card fix confirmed: worst delay 16 minutes, average 6.6.
+- The late-stats read is correct.
+- Migration and apply script consistent: all 8 code fingerprints the script checks match.
+- Owner steps safe.
+- New N1 (Medium): if the match-schedule read fails, the app would make about 2.6 times as many timeline calls.
+- Low: small wording gaps in the owner steps.
+
+Round 3 (last allowed) sent: when that read fails, skip the extra reads (fail closed), plus the owner-step tweaks.
+
