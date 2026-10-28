@@ -1,6 +1,5 @@
-import { lazyRepository } from "@/backend/contracts/lazy-repository";
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { BackendError } from "@/backend/errors";
+import { BackendError, requireMock } from "@/backend/errors";
 import type {
   EditionResponse,
   FollowState,
@@ -16,6 +15,7 @@ import type {
   VersionResponse,
   WeeklyEmailDto,
 } from "@/backend/pepites/contracts";
+import { MockPepitesRepository } from "@/backend/pepites/mock-repository";
 import { SupabasePepitesRepository } from "@/backend/pepites/supabase-repository";
 import { authService } from "@/services/auth";
 
@@ -36,19 +36,8 @@ export function selectPepitesDataMode(
   return production ? "supabase" : "mock";
 }
 
-// The sample data is loaded only when the mock mode is used; a production
-// build drops the import (FE-C3, as in `src/services/football.ts`).
-const mockRepository = lazyRepository<PepitesRepository>(
-  () =>
-    import.meta.env.VITE_PEPITES_DATA_MODE === "supabase"
-      ? Promise.reject(
-          new BackendError("data_unavailable", "This build has no sample data.", { status: 503 }),
-        )
-      : import("@/backend/pepites/mock-repository").then(
-          ({ MockPepitesRepository }) => new MockPepitesRepository(),
-        ),
-  { eager: import.meta.env.VITE_PEPITES_DATA_MODE !== "supabase" },
-);
+const mockRepository =
+  import.meta.env.VITE_PEPITES_DATA_MODE === "supabase" ? undefined : new MockPepitesRepository();
 const supabaseRepository = new SupabasePepitesRepository();
 
 export function pepitesDataMode(): PepitesDataMode {
@@ -56,7 +45,9 @@ export function pepitesDataMode(): PepitesDataMode {
 }
 
 export function getPepitesRepository(): PepitesRepository {
-  return pepitesDataMode() === "supabase" ? supabaseRepository : mockRepository;
+  return pepitesDataMode() === "supabase"
+    ? supabaseRepository
+    : requireMock(mockRepository, "Pépites");
 }
 
 function context(signal?: AbortSignal): RepositoryContext {

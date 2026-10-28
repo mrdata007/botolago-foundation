@@ -179,3 +179,27 @@ export function toPublicBackendError(error: unknown, requestId?: string): Public
     ...(requestId ? { requestId } : {}),
   };
 }
+
+/**
+ * Mock repositories and the mock Auth service are built only when the data
+ * mode is not "supabase", and the check is written inline at each call site:
+ *
+ *   const mock = import.meta.env.VITE_X_DATA_MODE === "supabase" ? undefined : new Mock();
+ *
+ * The bundler replaces `import.meta.env.VITE_X_DATA_MODE` with the literal
+ * from `.env.production`, so in the production build the condition is constant,
+ * the `new Mock()` branch is dead, and the mock class and its fixtures leave
+ * the first-load JavaScript. In tests, dev and the demo build the variable is
+ * not "supabase" and nothing changes.
+ *
+ * The mode selectors (`selectXDataMode`) still decide which repository is
+ * used, and still refuse a production build that is not on Supabase; this only
+ * covers the case that cannot occur, a selector that says "mock" in a build
+ * that was compiled without the mock, and says so instead of falling back.
+ */
+export function requireMock<T>(mock: T | undefined, name: string): T {
+  if (mock === undefined) {
+    throw new Error(`The ${name} mock is not part of a Supabase build.`);
+  }
+  return mock;
+}

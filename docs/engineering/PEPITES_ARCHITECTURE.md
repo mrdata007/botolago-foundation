@@ -563,6 +563,17 @@ Every number below is a parameter stored in the methodology row.
   unknown, the value is unknown, not 0. An on-pitch version waits until
   goal events and substitution times are complete for every fixture.
 - **Saves.** From provider rows, goalkeepers only.
+- **SportAPI source (weekly runs, migration 20261028140000).** For a counted
+  match whose newest SportAPI capture
+  (`app_private.fantasy_api_rating_sources`, the feed Fantasy scores from)
+  is ready and was stored before the run's cutoff, minutes, start and rating
+  come from that capture, for every player with an active `sofascore`
+  player mapping. Goals, assists and saves come from the match's performance
+  row when it has one; otherwise goals and assists come from the match
+  events and saves are unknown. Every other match, and every season-final
+  run, reads the performance rows as above. Owner request of 2026-10-28,
+  after nine finished matches of rounds 4 and 5 had no performance rows and
+  the first 2026-27 edition could not be made.
 
 ### 4.2 Pool, eligibility and small samples
 

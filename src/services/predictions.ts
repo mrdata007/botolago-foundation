@@ -1,6 +1,5 @@
-import { lazyRepository } from "@/backend/contracts/lazy-repository";
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { BackendError } from "@/backend/errors";
+import { BackendError, requireMock } from "@/backend/errors";
 import type { FootballLanguage } from "@/backend/football/contracts";
 import type {
   ClaimGuestPredictionsDto,
@@ -22,6 +21,7 @@ import type {
   ResetInviteCodeDto,
   SavePredictionsDto,
 } from "@/backend/predictions/contracts";
+import { MockPredictionsRepository } from "@/backend/predictions/mock-repository";
 import { SupabasePredictionsRepository } from "@/backend/predictions/supabase-repository";
 import { authService } from "@/services/auth";
 
@@ -42,19 +42,10 @@ export function selectPredictionsDataMode(
   return "mock";
 }
 
-// The sample data is loaded only when the mock mode is used; a production
-// build drops the import (FE-C3, as in `src/services/football.ts`).
-const mockRepository = lazyRepository<PredictionsRepository>(
-  () =>
-    import.meta.env.VITE_PREDICTIONS_DATA_MODE === "supabase"
-      ? Promise.reject(
-          new BackendError("data_unavailable", "This build has no sample data.", { status: 503 }),
-        )
-      : import("@/backend/predictions/mock-repository").then(
-          ({ MockPredictionsRepository }) => new MockPredictionsRepository(),
-        ),
-  { eager: import.meta.env.VITE_PREDICTIONS_DATA_MODE !== "supabase" },
-);
+const mockRepository =
+  import.meta.env.VITE_PREDICTIONS_DATA_MODE === "supabase"
+    ? undefined
+    : new MockPredictionsRepository();
 const supabaseRepository = new SupabasePredictionsRepository();
 
 export function predictionsDataMode(): PredictionsDataMode {
@@ -65,7 +56,9 @@ export function predictionsDataMode(): PredictionsDataMode {
 }
 
 export function getPredictionsRepository(): PredictionsRepository {
-  return predictionsDataMode() === "supabase" ? supabaseRepository : mockRepository;
+  return predictionsDataMode() === "supabase"
+    ? supabaseRepository
+    : requireMock(mockRepository, "Predictions");
 }
 
 /**
