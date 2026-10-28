@@ -44,6 +44,11 @@ export const AUTH_MODE: Mode = detectMode();
 export const IS_MOCK_AUTH = AUTH_MODE === "mock";
 
 function createService(): AuthService {
+  // Written on the build-time variable itself: a production build replaces it
+  // with the literal "supabase", this returns first, and the mock service
+  // below (and its fixtures) leaves the bundle. The selection is the same as
+  // `detectMode()` makes for that value; the line only lets the bundler see it.
+  if (import.meta.env.VITE_AUTH_MODE === "supabase") return new SupabaseAuthService();
   return AUTH_MODE === "mock" ? new LocalMockAuthService() : new SupabaseAuthService();
 }
 
