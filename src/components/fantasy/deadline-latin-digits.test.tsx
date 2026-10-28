@@ -69,7 +69,10 @@ const { DeadlineCard } = await import("./DeadlineCard");
 const ARABIC_INDIC_DIGIT = /[٠-٩]/;
 const LANGUAGES: Language[] = ["fr", "ar"];
 const SINGLE_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const DEADLINE = "2026-10-09T17:30:00.000Z";
+// The deadline is read against the real clock (the card is about the next
+// deadline still ahead), so it is always three days from now; the figures the
+// tiles show come from the mocked countdown below.
+const DEADLINE = new Date(Date.now() + 3 * 86_400_000).toISOString();
 
 const GAMEWEEK: Gameweek = {
   number: 14,
@@ -152,11 +155,11 @@ describe("DeadlineCard writes Latin digits in both languages", () => {
   for (const lang of LANGUAGES) {
     it(`pads minutes 0-9 with a Latin zero in the minutes tile (${lang})`, async () => {
       for (const minutes of SINGLE_DIGITS) {
-        countdown = { hours: 37, minutes, seconds: 7, passed: false };
+        countdown = { hours: 20, minutes, seconds: 7, passed: false };
         try {
           const html = await render(lang, <DeadlineCard gameweek={GAMEWEEK} />);
           const tiles = bdis(html).slice(1);
-          expect(tiles).toEqual(["37", `0${minutes}`, "07"]);
+          expect(tiles).toEqual(["20", `0${minutes}`, "07"]);
           expect(html).not.toMatch(ARABIC_INDIC_DIGIT);
         } finally {
           countdown = null;
@@ -174,6 +177,20 @@ describe("DeadlineCard writes Latin digits in both languages", () => {
         } finally {
           countdown = null;
         }
+      }
+    });
+  }
+
+  for (const lang of LANGUAGES) {
+    it(`reads days, hours and minutes from a full day out, padded the same way (${lang})`, async () => {
+      countdown = { hours: 49, minutes: 4, seconds: 9, passed: false };
+      try {
+        const html = await render(lang, <DeadlineCard gameweek={GAMEWEEK} />);
+        expect(bdis(html).slice(1)).toEqual(["02", "01", "04"]);
+        expect(text(html)).toContain(dictionaries[lang]["fantasy.deadline_card.days"]);
+        expect(html).not.toMatch(ARABIC_INDIC_DIGIT);
+      } finally {
+        countdown = null;
       }
     });
   }

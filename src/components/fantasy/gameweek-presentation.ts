@@ -108,3 +108,108 @@ export function nextDeadlineAfter(
   if (!(Date.parse(next.deadline) > now)) return null;
   return { number: next.number, deadline: next.deadline };
 }
+
+/** Where a round stands once its own deadline is behind it. */
+export type RoundPhase = "in_progress" | "finished" | "cancelled";
+
+/**
+ * What the hub's deadline card leads with.
+ *
+ *   - `open`: the round's deadline is still ahead; the card is about it.
+ *   - `next_open`: that deadline has passed and the server names a later round
+ *     whose deadline is still ahead; the card leads with the later round and
+ *     the one that passed becomes a sub-line (`current`).
+ *   - `awaiting_next`: the deadline has passed and no later deadline is
+ *     published (`lead` is null). The card says so in words: no date, no
+ *     countdown.
+ *
+ * `live` is true only while a match of `current`'s round is in play.
+ */
+export type DeadlineHeadline =
+  | {
+      state: "open";
+      lead: { number: number; deadline: string };
+      current: null;
+      live: false;
+    }
+  | {
+      state: "next_open";
+      lead: { number: number; deadline: string };
+      current: { number: number; phase: RoundPhase };
+      live: boolean;
+    }
+  | {
+      state: "awaiting_next";
+      lead: null;
+      current: { number: number; phase: RoundPhase };
+      live: boolean;
+    };
+
+/** The statuses in which the server has closed the round's team changes. */
+const CLOSED_STATUSES: ReadonlySet<FantasyGameweekStatus> = new Set([
+  "locked",
+  "live",
+  "provisional",
+  "finalizing",
+  "finalized",
+  "corrected",
+  "cancelled",
+]);
+
+function phaseOf(status: FantasyGameweekStatus | undefined): RoundPhase {
+  if (status === "finalized" || status === "corrected") return "finished";
+  if (status === "cancelled") return "cancelled";
+  return "in_progress";
+}
+
+/**
+ * Which deadline the Fantasy hub's card leads with, from the server's
+ * gameweek and the clock. Both deadlines are the server's own, passed through
+ * untouched: nothing here computes, moves or invents one.
+ *
+ * A round counts as past its deadline when its date has passed OR the server
+ * has already moved it out of `scheduled`/`open` (locked, live, final,
+ * cancelled): the lifecycle's word is not overruled by a device clock that
+ * runs behind.
+ *
+ * `liveRounds` is the round number of every match the app's live list holds
+ * right now, or `null` while that list is unknown (loading or failed). A match
+ * without a round number (0) is counted for the round, since the live strip
+ * lists only Botola Pro matches in play. An unknown list is never a live dot.
+ */
+export function deadlineHeadline({
+  gameweek,
+  now,
+  liveRounds,
+}: {
+  gameweek: Pick<Gameweek, "number" | "deadline" | "status" | "enrolment">;
+  now: number;
+  liveRounds: readonly number[] | null;
+}): DeadlineHeadline {
+  const dated = Date.parse(gameweek.deadline) <= now;
+  const closed = dated || (gameweek.status !== undefined && CLOSED_STATUSES.has(gameweek.status));
+  if (!closed) {
+    return {
+      state: "open",
+      lead: { number: gameweek.number, deadline: gameweek.deadline },
+      current: null,
+      live: false,
+    };
+  }
+  const phase = phaseOf(gameweek.status);
+  const current = { number: gameweek.number, phase };
+  const live =
+    phase === "in_progress" &&
+    liveRounds !== null &&
+    liveRounds.some((round) => round === gameweek.number || round === 0);
+  const next = gameweek.enrolment;
+  if (next && next.number > gameweek.number && Date.parse(next.deadline) > now) {
+    return {
+      state: "next_open",
+      lead: { number: next.number, deadline: next.deadline },
+      current,
+      live,
+    };
+  }
+  return { state: "awaiting_next", lead: null, current, live };
+}

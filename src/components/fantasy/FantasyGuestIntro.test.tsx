@@ -344,7 +344,7 @@ describe("the Fantasy hub around the proposition", () => {
     // "Journée N · Date limite", one element, now drawn by the deadline card.
     const card = code("src/components/fantasy/DeadlineCard.tsx");
     expect(hub).toContain("<DeadlineCard");
-    expect(card).toContain('{`${t("fpl.gameweek")} ${gameweek.number}`}');
+    expect(card).toContain('{`${t("fpl.gameweek")} ${lead.number}`}');
     expect(card).toContain('{`· ${t("fpl.deadline")}`}');
   });
 });
