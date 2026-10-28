@@ -34,10 +34,11 @@ conflict in that block. Nothing in either PR solves the four items below.
 
 ## Improvements
 
-1. **Round summary under the day's rows (the main item).** A compact card
-   "Journée 5": the number of matches in the round, how many are played, live
-   and still to come, "dont N ce jour" (the rows shown), a progress bar, and the
-   next kick-off of the round (date and hour; the hour is left out while the
+1. **Round summary under the day's rows (the main item).** A compact navy
+   band (owner direction, below) "Journée 5": the number of matches in the
+   round, then big Changa counts: played, to come (and live, called off, only
+   when there are some) and "Ce jour" (the rows listed for the day), a progress
+   bar, and the next kick-off of the round (date and hour; the hour is left out while the
    provider's placeholder hour stands). When nothing is left it says the round
    is over. "Voir toute la journée" opens the whole round, grouped by day, as
    the same match rows (links to each match). Counts come from the round's
@@ -46,7 +47,8 @@ conflict in that block. Nothing in either PR solves the four items below.
    always agree. Postponed matches with no confirmed date are counted as still
    to come and listed under "Date à confirmer", never under a made-up day.
    Matches called off are counted on their own, only when there are some.
-2. **Day strip marks the days that have matches.** A small dot under the number
+2. **Day strip marks the days that have matches.** A small fresh-turf dot (with
+   a hairline deep-navy ring, so it holds on a light chip) under the number
    of every chip whose day has a match in the season fixture list, plus a hidden
    label for assistive tech ("jour de match"). Days without a dot have none. The
    dot row keeps its height while the list loads, so the chips do not jump.
@@ -72,6 +74,17 @@ conflict in that block. Nothing in either PR solves the four items below.
    out: it belongs to the Classement lane's component, and the round summary
    already answers "where are we".
 
+5. **Live rows lit.** Matches in play sit in a card of their own above the day's
+   other rows: a live-red ring and a tinted header with the breathing dot and
+   "En direct maintenant". Without a live match nothing changes.
+
+Owner direction 2026-10-28, "not too pale, more alive, on brand", applied: the
+round summary is a navy band (the date band's own navy) with Changa figures in
+the score ramp, the "Ce jour" and live figures in fresh turf, and the action
+gradient only on its progress bar (an allowed use); the day strip's marker is
+fresh turf; the live card is lit in the live colour. No new colour, font or
+image. The round list under the band stays on the club-colour rows.
+
 New strings, French and Arabic: `matches.round.*` and `matches.date.has_matches`
 (Arabic counted forms for one, two, 3-10 and 11+, like `standings-copy.ts`).
 
@@ -82,7 +95,7 @@ New strings, French and Arabic: `matches.round.*` and `matches.date.has_matches`
   `scrollWidth` alone); the summary and the dots read at AA; the 390px page is
   the old page plus the summary card.
 - On 28 October (Journée 5) the summary counts equal what the rows show: its
-  played and to-come figures add up to the round's total, and "dont N ce jour"
+  played and to-come figures add up to the round's total, and "Ce jour"
   equals the number of rows listed for the day.
 - A day with matches shows its dot, a day without none; the arrows and chips
   still move the day; the active chip is still centred, also under RTL.
