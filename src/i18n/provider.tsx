@@ -10,7 +10,7 @@ import {
 } from "react";
 import type { TranslationKey } from "./dictionaries";
 import { dictionaryInChunk } from "./dictionary-chunk";
-import { fr } from "./dictionary-fr";
+import { frText } from "./fr-sections";
 import { INITIAL_LANGUAGE_STATE, languageNotice, languageReducer } from "./language-state";
 import { LanguageLoadNotice } from "./language-load-notice";
 import { retryableImport } from "./retryable-import";
@@ -55,8 +55,14 @@ function isReady(lang: Language): boolean {
   return lang !== "ar" || arabicDictionary() !== null;
 }
 
-function dictionaryFor(lang: Language): Dictionary {
-  return (lang === "ar" && arabicDictionary()) || fr;
+/**
+ * The string for `key` in `lang`: Arabic once its dictionary is here, else
+ * French (the core dictionary, then the sections the page loaded:
+ * `fr-sections.ts`).
+ */
+function translate(lang: Language, key: string): string | undefined {
+  const arabicStrings = lang === "ar" ? arabicDictionary() : null;
+  return arabicStrings ? arabicStrings[key] : frText(key);
 }
 
 interface I18nContextValue {
@@ -185,7 +191,7 @@ function LanguageProvider({ children }: { children: ReactNode }) {
       failedLanguage: failed,
       setLanguage,
       retryLanguage,
-      t: (key) => dictionaryFor(lang)[key] ?? key,
+      t: (key) => translate(lang, key) ?? key,
       tr: (s) => s[lang] ?? s.fr,
     }),
     [lang, hasChosen, loading, failed, isHydrated, setLanguage, retryLanguage],

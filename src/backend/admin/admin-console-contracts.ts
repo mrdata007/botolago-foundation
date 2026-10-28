@@ -1,4 +1,4 @@
-import { fr } from "@/i18n/dictionary-fr";
+import { frCore as fr } from "@/i18n/dictionary-fr-core";
 import { PEPITES_ENABLED } from "@/lib/feature-flags";
 import type { AdminPermission } from "./contracts";
 
