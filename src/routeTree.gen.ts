@@ -28,6 +28,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SuppressionCompteRouteImport } from './routes/suppression-compte'
+import { Route as SwDotjsRouteImport } from './routes/sw[.]js'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -210,6 +211,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const SuppressionCompteRoute = SuppressionCompteRouteImport.update({
   id: '/suppression-compte',
   path: '/suppression-compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SwDotjsRoute = SwDotjsRouteImport.update({
+  id: '/sw.js',
+  path: '/sw.js',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -683,6 +689,7 @@ export interface FileRoutesByFullPath {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -787,6 +794,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -896,6 +904,7 @@ export interface FileRoutesById {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/sw.js': typeof SwDotjsRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -1007,6 +1016,7 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -1111,6 +1121,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -1219,6 +1230,7 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/sw.js'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -1329,6 +1341,7 @@ export interface RootRouteChildren {
   PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SuppressionCompteRoute: typeof SuppressionCompteRoute
+  SwDotjsRoute: typeof SwDotjsRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -1487,6 +1500,13 @@ declare module '@tanstack/react-router' {
       path: '/suppression-compte'
       fullPath: '/suppression-compte'
       preLoaderRoute: typeof SuppressionCompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sw.js': {
+      id: '/sw.js'
+      path: '/sw.js'
+      fullPath: '/sw.js'
+      preLoaderRoute: typeof SwDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -2387,6 +2407,7 @@ const rootRouteChildren: RootRouteChildren = {
   PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SuppressionCompteRoute: SuppressionCompteRoute,
+  SwDotjsRoute: SwDotjsRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,

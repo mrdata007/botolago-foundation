@@ -1,0 +1,23 @@
+{
+  "name": "BotolaGO",
+  "short_name": "BotolaGO",
+  "description": "Actualités, matchs et Fantasy du football marocain · أخبار ومباريات وفانتازي كرة القدم المغربية",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F2F5FA",
+  "theme_color": "#F2F5FA",
+  "lang": "fr",
+  "dir": "auto",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
