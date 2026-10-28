@@ -18,6 +18,11 @@ import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
 import {
+  RoundDays,
+  RoundSummaryCard,
+  RoundSummarySkeleton,
+} from "@/components/matches/RoundSummary";
+import {
   clampMatchDay,
   isSameMatchDayQuery,
   matchDayQuery,
@@ -39,7 +44,19 @@ import { matchBucket } from "@/lib/match-bucket";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
-import { latestResultDayBefore, matchRounds, nextMatchDayAfter } from "@/lib/match-days";
+import {
+  capitalizeFirst,
+  latestResultDayBefore,
+  matchRounds,
+  nextMatchDayAfter,
+} from "@/lib/match-days";
+import {
+  matchDaySet,
+  narrowRound,
+  overlayDay,
+  roundOfDay,
+  summariseRound,
+} from "@/lib/match-round";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { prefetchForSsr, prefetchOptionalForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -364,16 +381,45 @@ function MatchesPage() {
   // say they are wrong.
   const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
 
-  // From a day with nothing on it, the way on: the next fixtures (the Home
-  // page's own query, above) and the latest results. The results come from the
-  // season's fixture list, read only for a day that is empty.
-  const resultDaysQ = useQuery({
-    queryKey: ["football", "season-result-days", selectedSeason?.id ?? "none", lang],
-    queryFn: ({ signal }) => footballService.getSeasonResultDays(selectedSeason!, lang, signal),
-    enabled: !loading && !failed && totalDay === 0 && selectedSeason !== undefined,
+  // The season's whole fixture list, read once for the page: it says which days
+  // have a match (the day strip's dots), what round the day on show belongs to
+  // (the summary, the whole round, the Résultats / À venir fallback), and, for a
+  // day with nothing on it, the latest day with a result. The same fixtures the
+  // table reads; a failed read only leaves those extras out.
+  const seasonMatchesQ = useQuery({
+    queryKey: ["football", "season-matches", selectedSeason?.id ?? "none", lang],
+    queryFn: ({ signal }) => footballService.getSeasonMatches(selectedSeason!, lang, signal),
+    enabled: selectedSeason !== undefined,
     staleTime: 5 * 60_000,
+    // The same season in the other language while it loads, never another season's.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2] === (selectedSeason?.id ?? "none") ? previous : undefined,
   });
-  const resultsDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDay);
+  // The day's own rows laid over the season's list: they are the ones on screen
+  // (and carry the live strip's reading), so the round's figures and the rows
+  // never disagree.
+  const seasonMatches = useMemo(
+    () => (seasonMatchesQ.data ? overlayDay(seasonMatchesQ.data.matches, dayMatches) : undefined),
+    [seasonMatchesQ.data, dayMatches],
+  );
+  const matchDays = useMemo(
+    () => (seasonMatches ? matchDaySet(seasonMatches) : undefined),
+    [seasonMatches],
+  );
+  const resultsDay = useMemo(
+    () =>
+      latestResultDayBefore(
+        [
+          ...new Set(
+            (seasonMatches ?? [])
+              .filter((m) => m.status === "finished" && !Number.isNaN(Date.parse(m.kickoff)))
+              .map((m) => matchDayKey(new Date(m.kickoff))),
+          ),
+        ],
+        matchDay,
+      ),
+    [seasonMatches, matchDay],
+  );
 
   const dayLabel = (day: string) =>
     moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -427,8 +473,9 @@ function MatchesPage() {
 
   // Live first, then what is still to come: one card of rows, as the board
   // stacks a match day. The results follow under their own heading.
+  // The live matches are lit in a card of their own, above the rest.
+  const liveRows = filter === "all" || filter === "live" ? visibleByBucket.live : [];
   const fixtures = [
-    ...(filter === "all" || filter === "live" ? visibleByBucket.live : []),
     ...(filter === "all" || filter === "upcoming" ? visibleByBucket.upcoming : []),
     ...(filter === "all" ? visibleByBucket.calledOff : []),
   ];
@@ -450,10 +497,69 @@ function MatchesPage() {
       );
     });
   const upcomingClubById = (id: string) => upcomingQ.data?.clubs.find((club) => club.id === id);
+  // The round lists draw matches of other days: their clubs come from the day's
+  // read, else the season's.
+  const anyClubById = (id: string) =>
+    clubById(id) ?? seasonMatchesQ.data?.clubs.find((club) => club.id === id);
+
+  // The round the day on show belongs to, for the summary and its fallbacks.
+  // Only for a day that has matches: an empty day keeps its own empty state.
+  const dayRound = roundOfDay(dayMatches);
+  const roundSummary = useMemo(
+    () =>
+      seasonMatches && dayRound !== undefined
+        ? summariseRound(seasonMatches, dayRound, matchDay, Date.now())
+        : null,
+    [seasonMatches, dayRound, matchDay],
+  );
+  const roundRows = (list: readonly Match[]) => rows(list, anyClubById, roundSummary?.round);
+  const roundDayLabel = (day: string) =>
+    capitalizeFirst(
+      moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }).format(matchDayFromKey(day)),
+    );
+
+  // "Résultats" and "À venir" are the selected day's. When the day has none
+  // but the round does, the round's are listed under their days, with a note
+  // saying so, instead of an empty state that is false (the round may already
+  // have five results). While the season's list loads, rows stand in.
+  const fallbackKind: "finished" | "upcoming" | null =
+    totalDay === 0
+      ? null
+      : filter === "finished" && visibleByBucket.finished.length === 0
+        ? "finished"
+        : filter === "upcoming" && visibleByBucket.upcoming.length === 0
+          ? "upcoming"
+          : null;
+  const fallback = useMemo(
+    () =>
+      fallbackKind && roundSummary
+        ? narrowRound(
+            roundSummary,
+            (m) => {
+              const bucket = matchBucket(m);
+              return fallbackKind === "finished"
+                ? bucket === "finished"
+                : bucket === "upcoming" || bucket === "other";
+            },
+            fallbackKind === "finished" ? "desc" : "asc",
+          )
+        : null,
+    [fallbackKind, roundSummary],
+  );
+  const fallbackShown = fallback !== null && fallback.count > 0;
+  const fallbackPending =
+    fallbackKind !== null && !fallbackShown && seasonMatchesQ.isPending && dayRound !== undefined;
 
   return (
     <AppShell
       backgroundVariant="matches"
+      // The wide canvas, as the Classement tab: the header bands follow it, and
+      // from 1024px the day and its round sit side by side.
+      contentWidth="wide"
       pageHeader={
         <>
           <UiPageTitle
@@ -475,136 +581,215 @@ function MatchesPage() {
         </>
       }
     >
-      {/* Date navigation, flush under the chips on a phone. */}
-      <DateStrip
-        selected={selectedDate}
-        onSelect={handleDateChange}
-        today={todayDate}
-        minDate={seasonBounds?.minDate}
-        maxDate={seasonBounds?.maxDate}
-        gameweeks={dayGameweeks}
-        className="-mt-4 sm:mt-0"
-      />
-
-      {/* Loading / error / empty */}
-      {loading && (
-        <UiCard
-          padding="none"
-          className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-        >
-          <MatchCardSkeleton flat />
-          <MatchCardSkeleton flat />
-          <MatchCardSkeleton flat />
-        </UiCard>
-      )}
-      {failed && (
-        <div className="mt-4">
-          <ErrorState
-            message={t("state.error_matches")}
-            onRetry={() => {
-              void seasonsQ.refetch();
-              if (seasonsQ.isSuccess) void matchesQ.refetch();
-            }}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start lg:gap-x-6">
+        <div className="min-w-0">
+          {/* Date navigation, flush under the chips on a phone. */}
+          <DateStrip
+            selected={selectedDate}
+            onSelect={handleDateChange}
+            today={todayDate}
+            minDate={seasonBounds?.minDate}
+            maxDate={seasonBounds?.maxDate}
+            gameweeks={dayGameweeks}
+            matchDays={matchDays}
+            className="-mt-4 sm:mt-0"
           />
-        </div>
-      )}
-      {!loading && !failed && totalDay === 0 && (
-        <div className="mt-4">
-          {/* Nothing is scheduled that day: not a failure, so no retry. The
-              way on is to what does exist: the next fixtures and the latest
-              results, each only when there is one. */}
-          <EmptyState
-            compact
-            illustration={noMatchesArt}
-            action={
-              <>
-                {nextDay && nextDayLabel ? (
-                  <DayLink onClick={() => selectDay(nextDay)}>
-                    {t("matches.empty.next").replace("{date}", nextDayLabel)}
-                  </DayLink>
-                ) : null}
-                {resultsDay && resultsDayLabel ? (
-                  <DayLink onClick={() => selectDay(resultsDay)}>
-                    {t("matches.empty.results").replace("{date}", resultsDayLabel)}
-                  </DayLink>
-                ) : null}
-              </>
-            }
-          >
-            {t("matches.section.no_matches_today")}
-          </EmptyState>
-        </div>
-      )}
 
-      {/* The next match day's fixtures under an empty day. */}
-      {!loading &&
-        !failed &&
-        totalDay === 0 &&
-        nextDay &&
-        nextDayLabel &&
-        nextDayMatches.length > 0 && (
-          <Section>
-            <SectionHeader
-              as="h3"
-              title={t("matches.empty.next").replace("{date}", nextDayLabel)}
-            />
+          {/* Loading / error / empty */}
+          {loading && (
             <UiCard
               padding="none"
-              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+              className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
             >
-              {rows(
-                nextDayMatches,
-                upcomingClubById,
-                nextDayGameweeks.length === 1 ? nextDayGameweeks[0] : undefined,
-              )}
+              <MatchCardSkeleton flat />
+              <MatchCardSkeleton flat />
+              <MatchCardSkeleton flat />
             </UiCard>
-          </Section>
-        )}
+          )}
+          {failed && (
+            <div className="mt-4">
+              <ErrorState
+                message={t("state.error_matches")}
+                onRetry={() => {
+                  void seasonsQ.refetch();
+                  if (seasonsQ.isSuccess) void matchesQ.refetch();
+                }}
+              />
+            </div>
+          )}
+          {!loading && !failed && totalDay === 0 && (
+            <div className="mt-4">
+              {/* Nothing is scheduled that day: not a failure, so no retry. The
+              way on is to what does exist: the next fixtures and the latest
+              results, each only when there is one. */}
+              <EmptyState
+                compact
+                illustration={noMatchesArt}
+                action={
+                  <>
+                    {nextDay && nextDayLabel ? (
+                      <DayLink onClick={() => selectDay(nextDay)}>
+                        {t("matches.empty.next").replace("{date}", nextDayLabel)}
+                      </DayLink>
+                    ) : null}
+                    {resultsDay && resultsDayLabel ? (
+                      <DayLink onClick={() => selectDay(resultsDay)}>
+                        {t("matches.empty.results").replace("{date}", resultsDayLabel)}
+                      </DayLink>
+                    ) : null}
+                  </>
+                }
+              >
+                {t("matches.section.no_matches_today")}
+              </EmptyState>
+            </div>
+          )}
 
-      {/* The day's live and upcoming matches. The card clips the rows' club
+          {/* The next match day's fixtures under an empty day. */}
+          {!loading &&
+            !failed &&
+            totalDay === 0 &&
+            nextDay &&
+            nextDayLabel &&
+            nextDayMatches.length > 0 && (
+              <Section>
+                <SectionHeader
+                  as="h3"
+                  title={t("matches.empty.next").replace("{date}", nextDayLabel)}
+                />
+                <UiCard
+                  padding="none"
+                  className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                >
+                  {rows(
+                    nextDayMatches,
+                    upcomingClubById,
+                    nextDayGameweeks.length === 1 ? nextDayGameweeks[0] : undefined,
+                  )}
+                </UiCard>
+              </Section>
+            )}
+
+          {/* The day's live and upcoming matches. The card clips the rows' club
           edge bars to its corners. */}
-      {!loading && fixtures.length > 0 && (
-        <UiCard
-          padding="none"
-          className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-        >
-          {rows(fixtures)}
-        </UiCard>
-      )}
+          {!loading && liveRows.length > 0 && (
+            <UiCard
+              padding="none"
+              className="mt-4 overflow-hidden ring-2 ring-[color:var(--ui-live)]"
+            >
+              {/* A tinted header with the breathing dot: what is on now. */}
+              <div
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-2",
+                  "bg-[color:color-mix(in_oklab,var(--ui-live)_14%,var(--ui-surface))]",
+                  ui.text.label,
+                  ui.tone.live,
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "live-breathe h-2 w-2 shrink-0 bg-[color:var(--ui-live)]",
+                    ui.radius.full,
+                  )}
+                />
+                {t("matches.section.live")}
+              </div>
+              <div className="divide-y divide-[color:var(--ui-rule)]">{rows(liveRows)}</div>
+            </UiCard>
+          )}
+          {!loading && fixtures.length > 0 && (
+            <UiCard
+              padding="none"
+              className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+            >
+              {rows(fixtures)}
+            </UiCard>
+          )}
 
-      {/* The day's results. */}
-      {!loading && results.length > 0 && (
-        <Section>
-          <SectionHeader as="h3" title={t("matches.section.finished")} />
-          <UiCard padding="none" className="divide-y divide-[color:var(--ui-rule)] overflow-hidden">
-            {rows(results)}
-          </UiCard>
-        </Section>
-      )}
+          {/* The day's results. */}
+          {!loading && results.length > 0 && (
+            <Section>
+              <SectionHeader as="h3" title={t("matches.section.finished")} />
+              <UiCard
+                padding="none"
+                className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+              >
+                {rows(results)}
+              </UiCard>
+            </Section>
+          )}
 
-      {/* Per-filter empty states — only when the day itself has content in
-          other buckets, so the message is informative rather than redundant. */}
-      {!loading && filter === "live" && visibleByBucket.live.length === 0 && totalDay > 0 && (
-        <div className="mt-4">
-          <EmptyState compact>{t("matches.section.no_live")}</EmptyState>
+          {/* "Résultats" / "À venir" on a day that has none of them: the round's,
+          under their days, with the note that says whose they are. */}
+          {!loading && fallbackShown && fallback && roundSummary && (
+            <div className="mt-4 grid min-w-0 gap-3">
+              <p className={cn(ui.text.secondary, ui.tone.muted)}>
+                {(fallbackKind === "finished"
+                  ? t("matches.round.fallback_results")
+                  : t("matches.round.fallback_upcoming")
+                ).replace("{n}", String(roundSummary.round))}
+              </p>
+              <RoundDays
+                days={fallback.days}
+                undated={fallback.undated}
+                label={roundDayLabel}
+                renderRows={roundRows}
+              />
+            </div>
+          )}
+          {!loading && fallbackPending && (
+            <UiCard
+              padding="none"
+              className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+            >
+              <MatchCardSkeleton flat />
+              <MatchCardSkeleton flat />
+            </UiCard>
+          )}
+
+          {/* Per-filter empty states — only when the day itself has content in
+          other buckets, so the message is informative rather than redundant. A
+          Résultats / À venir empty state is shown only when the round has none
+          either (the fallback above did not find any): then it is true. */}
+          {!loading && filter === "live" && visibleByBucket.live.length === 0 && totalDay > 0 && (
+            <div className="mt-4">
+              <EmptyState compact>{t("matches.section.no_live")}</EmptyState>
+            </div>
+          )}
+          {!loading &&
+            filter === "upcoming" &&
+            visibleByBucket.upcoming.length === 0 &&
+            totalDay > 0 &&
+            !fallbackShown &&
+            !fallbackPending && (
+              <div className="mt-4">
+                <EmptyState compact>{t("matches.section.no_upcoming")}</EmptyState>
+              </div>
+            )}
+          {!loading &&
+            filter === "finished" &&
+            visibleByBucket.finished.length === 0 &&
+            totalDay > 0 &&
+            !fallbackShown &&
+            !fallbackPending && (
+              <div className="mt-4">
+                <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
+              </div>
+            )}
         </div>
-      )}
-      {!loading &&
-        filter === "upcoming" &&
-        visibleByBucket.upcoming.length === 0 &&
-        totalDay > 0 && (
-          <div className="mt-4">
-            <EmptyState compact>{t("matches.section.no_upcoming")}</EmptyState>
+
+        {/* The day's round: under the rows on a phone, beside them from 1024px. */}
+        {!loading && !failed && dayRound !== undefined && (
+          <div className="mt-5 min-w-0 sm:mt-8 lg:mt-0">
+            {roundSummary ? (
+              <RoundSummaryCard summary={roundSummary} today={today} renderRows={roundRows} />
+            ) : seasonMatchesQ.isPending ? (
+              <RoundSummarySkeleton />
+            ) : null}
           </div>
         )}
-      {!loading &&
-        filter === "finished" &&
-        visibleByBucket.finished.length === 0 &&
-        totalDay > 0 && (
-          <div className="mt-4">
-            <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
-          </div>
-        )}
+      </div>
 
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />

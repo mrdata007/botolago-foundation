@@ -287,6 +287,23 @@ export const ar = {
   "matches.section.no_live": "لا توجد مباريات مباشرة حالياً.",
   "matches.section.no_upcoming": "لا توجد مباريات قادمة.",
   "matches.section.no_finished": "لا توجد نتائج بعد.",
+  /* جولة اليوم: بطاقة الملخص، الجولة كاملة، وبديل المرشّحات. */
+  "matches.round.title": "الجولة {n}",
+  "matches.round.count_one": "مباراة واحدة",
+  "matches.round.count_two": "مباراتان",
+  "matches.round.count_few": "{n} مباريات",
+  "matches.round.count_other": "{n} مباراة",
+  "matches.round.on_day": "هذا اليوم",
+  "matches.round.played": "منتهية",
+  "matches.round.called_off": "ملغاة",
+  "matches.round.next": "المباراة القادمة:",
+  "matches.round.complete": "انتهت الجولة.",
+  "matches.round.show_all": "عرض كل مباريات الجولة",
+  "matches.round.hide_all": "إخفاء مباريات الجولة",
+  "matches.round.fallback_results": "لا توجد نتائج في هذا اليوم. نتائج الجولة {n}:",
+  "matches.round.fallback_upcoming":
+    "لا توجد مباريات قادمة في هذا اليوم. المباريات القادمة في الجولة {n}:",
+  "matches.date.has_matches": "يوم فيه مباريات",
 
   /* صفحات الأندية: القائمة (/clubs) والنادي (/clubs/$clubId). */
   "clubs.title": "الأندية",
