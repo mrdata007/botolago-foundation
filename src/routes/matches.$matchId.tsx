@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import {
   isMissingContent,
@@ -105,17 +106,19 @@ export const Route = createFileRoute("/matches/$matchId")({
    * `@/lib/page-availability`). Both used to render "Chargement…" with 200.
    */
   loader: async ({ params, context }) => {
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     if (!MATCH_ID.test(params.matchId)) throw notFound();
     try {
-      const queryKey = ["football", "match-detail", params.matchId, "fr"];
+      const queryKey = ["football", "match-detail", params.matchId, lang];
       const detail = await context.queryClient.ensureQueryData({
         queryKey,
-        queryFn: () => footballService.getMatchDetailPage(params.matchId, "fr"),
+        queryFn: () => footballService.getMatchDetailPage(params.matchId, lang),
       });
       // When this copy was fetched, so the page's query knows how old its
       // seed is: the router can hand back loader data it cached minutes ago.
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      return { detail, fetchedAt };
+      return { detail, fetchedAt, lang };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
@@ -210,7 +213,9 @@ function MatchDetailPage() {
   const scrolledPast = useScrolledPast(headerEl);
 
   const serverDetail =
-    lang === "fr" && loaderData?.detail.match.id === matchId ? loaderData.detail : undefined;
+    loaderData?.lang === lang && loaderData.detail.match.id === matchId
+      ? loaderData.detail
+      : undefined;
   const queryClient = useQueryClient();
   const detailQ = useQuery({
     queryKey: ["football", "match-detail", matchId, lang],

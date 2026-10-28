@@ -91,7 +91,7 @@ describe("club pages — design-system rules in source", () => {
 
   it("seeds the club query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/clubs.$clubId.tsx");
-    expect(route).toMatch(/return \{ club, fetchedAt, canonicalRef: slug \?\? id \};/);
+    expect(route).toMatch(/return \{ club, fetchedAt, canonicalRef: slug \?\? id, lang \};/);
     expect(route).toMatch(/initialData: serverClub/);
     expect(route).toMatch(/initialDataUpdatedAt: serverClub \? loaderData\?\.fetchedAt/);
   });

@@ -19,7 +19,8 @@ import appCss from "../styles.css?url";
 import manropeLatin from "../assets/fonts/manrope-latin-wght-normal.woff2?url";
 import changaLatin from "../assets/fonts/changa-latin-wght-normal.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { I18nProvider, useI18n } from "@/i18n/provider";
+import { I18nProvider, preloadLanguage, useI18n } from "@/i18n/provider";
+import { requestLanguage } from "@/i18n/request-language";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
@@ -223,6 +224,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   // any child route's guard needs it. Registered only when the build lets Curva exist, so with
   // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
   ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
+  // The Arabic words are a download of their own; a page the server draws in
+  // Arabic waits for them first, so its HTML is Arabic (FE-H1). In the browser
+  // they are already here by now (the router's hydrate step loads them).
+  loader: () => preloadLanguage(requestLanguage()),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -360,8 +365,11 @@ function RootShell({ children }: { children: ReactNode }) {
   // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`;
   // the splash and native-app scripts add their `data-*` attributes the same way.
   // Both are deliberate out-of-band writes to the document element, not drift.
+  // `lang` and `dir` are the language the server draws the page in (FE-H1):
+  // an Arabic reader's page arrives right to left, with no switch after load.
+  const lang = requestLanguage();
   return (
-    <html lang="fr" dir="ltr" suppressHydrationWarning>
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

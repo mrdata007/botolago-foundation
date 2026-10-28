@@ -58,8 +58,11 @@ const CODES = OPTIONS.map((option) => option.code);
  */
 
 export function FirstLaunchLanguage() {
-  const { isHydrated, hasChosen, dir, loadingLanguage, failedLanguage, setLanguage } = useI18n();
-  const [selected, setSelected] = useState<Language>("fr");
+  const { lang, isHydrated, hasChosen, dir, loadingLanguage, failedLanguage, setLanguage } =
+    useI18n();
+  // The language the page is already in: Arabic when the browser asks for it
+  // (FE-H1), so confirming keeps the page as it is.
+  const [selected, setSelected] = useState<Language>(lang);
 
   if (!isHydrated || hasChosen) return null;
 

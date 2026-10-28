@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import { unavailableHeaders } from "@/lib/page-availability";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
@@ -44,14 +45,16 @@ export const Route = createFileRoute("/matches/standings")({
   // the season the page opens on: the one asked for, else the current one.
   loaderDeps: ({ search }) => ({ season: search.season }),
   loader: async ({ context, deps }) => {
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     const { queryClient } = context;
     await prefetchForSsr(queryClient, [
       {
-        queryKey: ["football", "seasons", "fr"],
-        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+        queryKey: ["football", "seasons", lang],
+        queryFn: ({ signal }) => footballService.getSeasons(lang, signal),
       },
     ]);
-    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", lang]);
     const season =
       seasons?.find((candidate) => candidate.id === deps.season) ??
       seasons?.find((candidate) => candidate.isCurrent) ??
@@ -59,8 +62,8 @@ export const Route = createFileRoute("/matches/standings")({
     if (season) {
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "standings", season.id, "fr"],
-          queryFn: ({ signal }) => footballService.getStandings(season, "fr", signal),
+          queryKey: ["football", "standings", season.id, lang],
+          queryFn: ({ signal }) => footballService.getStandings(season, lang, signal),
         },
       ]);
     }

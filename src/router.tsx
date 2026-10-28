@@ -5,6 +5,9 @@ import { viewTransitionOption } from "@/lib/page-transition";
 import { armTabSlide } from "@/lib/tab-slide";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { createAppQueryClient } from "@/services/query-client";
+import { preloadLanguage } from "@/i18n/provider";
+import { requestLanguage } from "@/i18n/request-language";
+import type { Language } from "@/types/domain";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -30,12 +33,18 @@ export const getRouter = () => {
     // travels with the HTML and seeds the browser's cache before its first
     // render, so the first render is the page the server sent. Only queries
     // marked for it: the detail pages already carry theirs as loader data.
+    //
+    // The language the server drew the page in travels too (FE-H1): when it is
+    // Arabic, the browser loads the Arabic words before it takes the page
+    // over, so its first render is the server's Arabic page, not French.
     dehydrate: () =>
       ({
         queryClientState: dehydrate(queryClient, SSR_DEHYDRATE_OPTIONS),
+        lang: requestLanguage(),
       }) as never,
-    hydrate: (dehydrated: { queryClientState?: DehydratedState }) => {
+    hydrate: async (dehydrated: { queryClientState?: DehydratedState; lang?: Language }) => {
       if (dehydrated?.queryClientState) hydrate(queryClient, dehydrated.queryClientState);
+      if (dehydrated?.lang) await preloadLanguage(dehydrated.lang);
     },
   });
 

@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -23,10 +24,12 @@ export const Route = createFileRoute("/clubs/")({
   // Every club, with a link to its page, in the server's HTML (see
   // `@/lib/ssr-prefetch`): no other page linked to them in HTML before.
   loader: async ({ context }) => {
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     await prefetchForSsr(context.queryClient, [
       {
-        queryKey: ["football", "club-directory", "fr"],
-        queryFn: ({ signal }) => footballService.getClubDirectory("fr", signal),
+        queryKey: ["football", "club-directory", lang],
+        queryFn: ({ signal }) => footballService.getClubDirectory(lang, signal),
       },
     ]);
     return ssrAvailability(context.queryClient);

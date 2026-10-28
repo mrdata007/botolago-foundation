@@ -1,3 +1,4 @@
+import { requestLanguage } from "@/i18n/request-language";
 import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -153,36 +154,38 @@ export const Route = createFileRoute("/")({
   // load in the browser.
   loader: async ({ context }) => {
     const { queryClient } = context;
+    // In the reader's language, so an Arabic page arrives with its content too (FE-H1).
+    const lang = requestLanguage();
     const stories = warmHomeStories(queryClient);
     await prefetchForSsr(queryClient, [
       {
-        queryKey: ["football", "home-matches", "fr"],
-        queryFn: ({ signal }) => footballService.getHomeMatches("fr", signal),
+        queryKey: ["football", "home-matches", lang],
+        queryFn: ({ signal }) => footballService.getHomeMatches(lang, signal),
       },
       {
-        queryKey: ["football", "clubs", "fr"],
-        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+        queryKey: ["football", "clubs", lang],
+        queryFn: ({ signal }) => footballService.getClubs(lang, signal),
       },
       {
-        queryKey: ["football", "seasons", "fr"],
-        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+        queryKey: ["football", "seasons", lang],
+        queryFn: ({ signal }) => footballService.getSeasons(lang, signal),
       },
       ...(NEWS_ENABLED
         ? [
             {
-              queryKey: ["news", "edition", "fr", "auto"],
-              queryFn: () => newsService.getEdition("fr", "auto"),
+              queryKey: ["news", "edition", lang, "auto"],
+              queryFn: () => newsService.getEdition(lang, "auto"),
             },
           ]
         : []),
     ]);
-    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", lang]);
     const current = seasons?.find((season) => season.isCurrent) ?? seasons?.[0];
     if (current) {
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "standings", current.id, "fr"],
-          queryFn: ({ signal }) => footballService.getStandings(current, "fr", signal),
+          queryKey: ["football", "standings", current.id, lang],
+          queryFn: ({ signal }) => footballService.getStandings(current, lang, signal),
         },
       ]);
     }

@@ -41,9 +41,10 @@ export type LanguageEvent =
   | { type: "load_failed"; lang: Language };
 
 /**
- * What the server renders and the first client render repeats: French, and
- * no chooser (the chooser also waits for hydration). The stored choice is
- * read after mount.
+ * What the server renders and the first client render repeats for a French
+ * page: French, and no chooser (the chooser also waits for hydration). The
+ * stored choice is read after mount. An Arabic page starts from
+ * `initialLanguageState("ar")`.
  */
 export const INITIAL_LANGUAGE_STATE: LanguageState = {
   lang: "fr",
@@ -57,13 +58,27 @@ function settled(lang: Language): LanguageState {
 }
 
 /**
+ * The state the server renders and the first client render repeats, for the
+ * language the server drew the page in (FE-H1: the language cookie, else the
+ * browser's preference). `ready` is whether that language's words are here;
+ * when the Arabic ones did not arrive in time the page starts in French and
+ * reports it, as a failed download always has.
+ */
+export function initialLanguageState(lang: Language, ready = true): LanguageState {
+  if (lang === "fr") return INITIAL_LANGUAGE_STATE;
+  return ready ? settled(lang) : { ...INITIAL_LANGUAGE_STATE, failed: lang };
+}
+
+/**
  * `ready` says whether the language's dictionary is already here (French
  * always is), which the reducer cannot know on its own.
  */
 export function languageReducer(state: LanguageState, event: LanguageEvent): LanguageState {
   switch (event.type) {
     case "restored":
-      if (event.stored === null) return { ...settled("fr"), hasChosen: false };
+      // A first visit keeps the language the server drew the page in (the
+      // browser's preference, FE-H1); the chooser opens over it all the same.
+      if (event.stored === null) return { ...settled(state.lang), hasChosen: false };
       if (event.ready) return settled(event.stored);
       // A returning Arabic reader: the choice was made on an earlier visit, so
       // nothing waits for it, and the page stays French until the words come.
