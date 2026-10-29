@@ -1,0 +1,42 @@
+[
+  {
+    "lang": "fr",
+    "state": "image",
+    "passed": true
+  },
+  {
+    "lang": "fr",
+    "state": "fallback",
+    "passed": true
+  },
+  {
+    "lang": "fr",
+    "state": "empty",
+    "passed": true
+  },
+  {
+    "lang": "fr",
+    "state": "error",
+    "passed": true
+  },
+  {
+    "lang": "ar",
+    "state": "image",
+    "passed": true
+  },
+  {
+    "lang": "ar",
+    "state": "fallback",
+    "passed": true
+  },
+  {
+    "lang": "ar",
+    "state": "empty",
+    "passed": true
+  },
+  {
+    "lang": "ar",
+    "state": "error",
+    "passed": true
+  }
+]
