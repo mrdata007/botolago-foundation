@@ -554,3 +554,8 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - Maghreb Fès v RSB Berkane was booked for 20:00 but kicked off at 17:00.
   - Since then, every close attempt has failed with `fantasy_selection_matches_unfinished` (worker runs #893–896).
   - Proposed: a guarded one-off fix, which needs the owner's yes.
+
+**20:20 UTC check (read-only).**
+- Raja v Hassania: all 32 players rated at the 24-hour read (20:05).
+- Journée 6 is still not open. The worker keeps failing on the Fès v Berkane kick-off time, and the `fantasy_worker` check now fails too.
+- Still waiting for the owner's yes on the fix.
