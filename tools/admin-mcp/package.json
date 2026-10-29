@@ -1,0 +1,25 @@
+{
+  "name": "@botolago/admin-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/main.mjs",
+    "test": "node --test test/*.check.mjs",
+    "catalog": "node scripts/generate-catalog.mjs",
+    "catalog:check": "node scripts/generate-catalog.mjs --check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@supabase/supabase-js": "2.110.7",
+    "ajv": "8.20.0",
+    "express": "5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "prettier": "3.7.3"
+  }
+}

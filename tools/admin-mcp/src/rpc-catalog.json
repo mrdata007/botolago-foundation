@@ -1,0 +1,2148 @@
+[
+  {
+    "name": "admin_add_fantasy_prize_winner_note",
+    "description": "add fantasy prize winner note. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_note": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_winner_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_note", "p_winner_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_add_fantasy_prize_winner_note"
+  },
+  {
+    "name": "admin_approve_request",
+    "description": "approve request. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_payload_fingerprint": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_approval_id", "p_idempotency_key", "p_payload_fingerprint", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_approve_request"
+  },
+  {
+    "name": "admin_assign_role",
+    "description": "assign role. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_expires_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reference": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_role_name": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_auth_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_expires_at",
+        "p_idempotency_key",
+        "p_reason",
+        "p_reference",
+        "p_role_name",
+        "p_target_auth_user_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_assign_role"
+  },
+  {
+    "name": "admin_ban_user",
+    "description": "ban user. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_duration_hours": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_duration_hours", "p_idempotency_key", "p_reason", "p_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_ban_user"
+  },
+  {
+    "name": "admin_cancel_request",
+    "description": "cancel request. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_approval_id", "p_idempotency_key", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_cancel_request"
+  },
+  {
+    "name": "admin_create_staff_principal",
+    "description": "create staff principal. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_auth_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_reason", "p_target_auth_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_create_staff_principal"
+  },
+  {
+    "name": "admin_data_desk_close",
+    "description": "data desk close. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_issue_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_note": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_issue_id", "p_note", "p_status"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_data_desk_close"
+  },
+  {
+    "name": "admin_data_desk_list",
+    "description": "data desk list. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_filters": { "anyOf": [{}, { "type": "null" }] } },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_data_desk_list"
+  },
+  {
+    "name": "admin_emergency_revoke_staff",
+    "description": "emergency revoke staff. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_reason", "p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_emergency_revoke_staff"
+  },
+  {
+    "name": "admin_execute_approved_platform_admin",
+    "description": "execute approved platform admin. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_payload_fingerprint": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_approval_id", "p_idempotency_key", "p_payload_fingerprint", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_execute_approved_platform_admin"
+  },
+  {
+    "name": "admin_football_mapping_add_position_note",
+    "description": "football mapping add position note. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_note": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_note", "p_proposal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_add_position_note"
+  },
+  {
+    "name": "admin_football_mapping_app_player_options",
+    "description": "football mapping app player options. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_app_team_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_candidate_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": ["p_candidate_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_app_player_options"
+  },
+  {
+    "name": "admin_football_mapping_cancel",
+    "description": "football mapping cancel. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_proposal_id", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_cancel"
+  },
+  {
+    "name": "admin_football_mapping_decide",
+    "description": "football mapping decide. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_decision": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_decision_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_fingerprint": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_position_acknowledged": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_decision",
+        "p_decision_reason",
+        "p_fingerprint",
+        "p_idempotency_key",
+        "p_position_acknowledged",
+        "p_proposal_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_decide"
+  },
+  {
+    "name": "admin_football_mapping_execute",
+    "description": "football mapping execute. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_proposal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_execute"
+  },
+  {
+    "name": "admin_football_mapping_get_candidate",
+    "description": "football mapping get candidate. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_candidate_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_candidate_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_get_candidate"
+  },
+  {
+    "name": "admin_football_mapping_get_proposal",
+    "description": "football mapping get proposal. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_proposal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_get_proposal"
+  },
+  {
+    "name": "admin_football_mapping_get_provider_mapping",
+    "description": "football mapping get provider mapping. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_external_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_provider": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_external_id", "p_provider"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_get_provider_mapping"
+  },
+  {
+    "name": "admin_football_mapping_list_candidates",
+    "description": "football mapping list candidates. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_after": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_provider": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_list_candidates"
+  },
+  {
+    "name": "admin_football_mapping_list_proposals",
+    "description": "football mapping list proposals. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_after": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_list_proposals"
+  },
+  {
+    "name": "admin_football_mapping_propose",
+    "description": "football mapping propose. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_items": { "anyOf": [{}, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_items", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_propose"
+  },
+  {
+    "name": "admin_football_mapping_refresh_evidence",
+    "description": "football mapping refresh evidence. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_proposal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_proposal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_refresh_evidence"
+  },
+  {
+    "name": "admin_football_mapping_reviewer_availability",
+    "description": "football mapping reviewer availability. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_football_mapping_reviewer_availability"
+  },
+  {
+    "name": "admin_get_analytics_overview",
+    "description": "get analytics overview. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_analytics_overview"
+  },
+  {
+    "name": "admin_get_approval",
+    "description": "get approval. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_approval_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_approval"
+  },
+  {
+    "name": "admin_get_fantasy_prize_settings",
+    "description": "get fantasy prize settings. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_season_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_fantasy_prize_settings"
+  },
+  {
+    "name": "admin_get_premium_member",
+    "description": "get premium member. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_request_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_reason", "p_request_id", "p_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_premium_member"
+  },
+  {
+    "name": "admin_get_revocation_worker_health",
+    "description": "get revocation worker health. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_revocation_worker_health"
+  },
+  {
+    "name": "admin_get_session_revocation_status",
+    "description": "get session revocation status. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_session_revocation_status"
+  },
+  {
+    "name": "admin_get_staff_principal",
+    "description": "get staff principal. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_staff_principal"
+  },
+  {
+    "name": "admin_get_user",
+    "description": "get user. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_get_user"
+  },
+  {
+    "name": "admin_grant_premium",
+    "description": "grant premium. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_ends_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_ends_at", "p_idempotency_key", "p_reason", "p_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_grant_premium"
+  },
+  {
+    "name": "admin_home_stories",
+    "description": "home stories. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_home_stories"
+  },
+  {
+    "name": "admin_list_active_assignments",
+    "description": "list active assignments. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_active_assignments"
+  },
+  {
+    "name": "admin_list_approval_queue",
+    "description": "list approval queue. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_before_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_before_requested_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_execution_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_scope": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_domain": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_approval_queue"
+  },
+  {
+    "name": "admin_list_assignment_history",
+    "description": "list assignment history. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_before_created_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_before_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_assignment_history"
+  },
+  {
+    "name": "admin_list_audit_events",
+    "description": "list audit events. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_before_id": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_before_occurred_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_audit_events"
+  },
+  {
+    "name": "admin_list_audit_events_v2",
+    "description": "list audit events v2. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_action": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_actor_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_before_id": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_before_occurred_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_correlation_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_from": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_outcome": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_synthetic_test": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_target_domain": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_entity_type": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_to": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_audit_events_v2"
+  },
+  {
+    "name": "admin_list_fantasy_prize_flags",
+    "description": "list fantasy prize flags. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_fantasy_prize_flags"
+  },
+  {
+    "name": "admin_list_fantasy_prize_winners",
+    "description": "list fantasy prize winners. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_after_created_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_after_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_fantasy_prize_winners"
+  },
+  {
+    "name": "admin_list_fantasy_prizes",
+    "description": "list fantasy prizes. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_fantasy_prizes"
+  },
+  {
+    "name": "admin_list_public_ranking_exclusions",
+    "description": "list public ranking exclusions. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_public_ranking_exclusions"
+  },
+  {
+    "name": "admin_list_role_catalog",
+    "description": "list role catalog. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_role_catalog"
+  },
+  {
+    "name": "admin_list_staff_assignments",
+    "description": "list staff assignments. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_assignment_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_before_created_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_before_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_principal_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_role_name": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_staff_assignments"
+  },
+  {
+    "name": "admin_list_users",
+    "description": "list users. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_after_created_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_after_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_query": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_list_users"
+  },
+  {
+    "name": "admin_override_fantasy_prize_winner",
+    "description": "override fantasy prize winner. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_fantasy_team_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_username": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_winner_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_fantasy_team_id",
+        "p_idempotency_key",
+        "p_reason",
+        "p_username",
+        "p_winner_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_override_fantasy_prize_winner"
+  },
+  {
+    "name": "admin_pepites_edition_correct",
+    "description": "pepites edition correct. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_correct"
+  },
+  {
+    "name": "admin_pepites_edition_get",
+    "description": "pepites edition get. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_get"
+  },
+  {
+    "name": "admin_pepites_edition_publish_now",
+    "description": "pepites edition publish now. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_publish_now"
+  },
+  {
+    "name": "admin_pepites_edition_schedule",
+    "description": "pepites edition schedule. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_at", "p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_schedule"
+  },
+  {
+    "name": "admin_pepites_edition_unschedule",
+    "description": "pepites edition unschedule. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_unschedule"
+  },
+  {
+    "name": "admin_pepites_edition_update",
+    "description": "pepites edition update. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_entries": { "anyOf": [{}, { "type": "null" }] }
+      },
+      "required": ["p_edition_id", "p_entries"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_update"
+  },
+  {
+    "name": "admin_pepites_edition_withdraw",
+    "description": "pepites edition withdraw. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_edition_id", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_edition_withdraw"
+  },
+  {
+    "name": "admin_pepites_email_report",
+    "description": "pepites email report. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_email_report"
+  },
+  {
+    "name": "admin_pepites_overview",
+    "description": "pepites overview. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_overview"
+  },
+  {
+    "name": "admin_pepites_player_search",
+    "description": "pepites player search. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_query": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_query"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_pepites_player_search"
+  },
+  {
+    "name": "admin_player_attribute_correct",
+    "description": "player attribute correct. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_attribute": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_source_note": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_value": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_attribute", "p_player_id", "p_source_note", "p_value"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_attribute_correct"
+  },
+  {
+    "name": "admin_player_photo_approve",
+    "description": "player photo approve. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_release_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_release_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_approve"
+  },
+  {
+    "name": "admin_player_photo_reject",
+    "description": "player photo reject. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_release_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_reason", "p_release_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_reject"
+  },
+  {
+    "name": "admin_player_photo_releases",
+    "description": "player photo releases. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_releases"
+  },
+  {
+    "name": "admin_player_photo_revoke",
+    "description": "player photo revoke. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_release_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_reason", "p_release_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_revoke"
+  },
+  {
+    "name": "admin_player_photo_submit",
+    "description": "player photo submit. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_intake_path": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_release": { "anyOf": [{}, { "type": "null" }] }
+      },
+      "required": ["p_intake_path", "p_player_id", "p_release"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_submit"
+  },
+  {
+    "name": "admin_player_photo_upload_paths",
+    "description": "player photo upload paths. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_document_extension": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_photo_extension": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_document_extension", "p_photo_extension", "p_player_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_player_photo_upload_paths"
+  },
+  {
+    "name": "admin_premium_overview",
+    "description": "premium overview. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_premium_overview"
+  },
+  {
+    "name": "admin_publish_home_story",
+    "description": "publish home story. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_published": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_version": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": ["p_id", "p_published", "p_version"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_publish_home_story"
+  },
+  {
+    "name": "admin_rapidapi_calls_this_month",
+    "description": "rapidapi calls this month. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_rapidapi_calls_this_month"
+  },
+  {
+    "name": "admin_reject_request",
+    "description": "reject request. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_approval_id", "p_idempotency_key", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_reject_request"
+  },
+  {
+    "name": "admin_renew_role",
+    "description": "renew role. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_approval_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_assignment_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_expires_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reference": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_assignment_id",
+        "p_expires_at",
+        "p_idempotency_key",
+        "p_reason",
+        "p_reference"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_renew_role"
+  },
+  {
+    "name": "admin_request_approval",
+    "description": "request approval. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_expires_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_operation_type": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_required_permission": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_safe_payload_reference": { "anyOf": [{}, { "type": "null" }] },
+        "p_target_domain": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_entity_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_expires_at",
+        "p_idempotency_key",
+        "p_operation_type",
+        "p_reason",
+        "p_required_permission",
+        "p_safe_payload_reference",
+        "p_target_domain",
+        "p_target_entity_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_request_approval"
+  },
+  {
+    "name": "admin_resolve_sofascore_player_match",
+    "description": "resolve sofascore player match. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_sofascore_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_player_id", "p_sofascore_player_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_resolve_sofascore_player_match"
+  },
+  {
+    "name": "admin_resolve_staff_user_exact",
+    "description": "resolve staff user exact. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_email": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_email"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_resolve_staff_user_exact"
+  },
+  {
+    "name": "admin_restore_staff",
+    "description": "restore staff. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_reason", "p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_restore_staff"
+  },
+  {
+    "name": "admin_revoke_premium",
+    "description": "revoke premium. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_grant_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_grant_id", "p_idempotency_key", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_revoke_premium"
+  },
+  {
+    "name": "admin_revoke_role",
+    "description": "revoke role. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_assignment_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_assignment_id", "p_idempotency_key", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_revoke_role"
+  },
+  {
+    "name": "admin_save_fantasy_prize",
+    "description": "save fantasy prize. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_active": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_description_ar": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_description_fr": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_estimated_value_mad": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_image_url": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_name_ar": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_name_fr": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_prize_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_sponsor_logo_url": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_sponsor_name": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_tier": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_active",
+        "p_description_ar",
+        "p_description_fr",
+        "p_estimated_value_mad",
+        "p_idempotency_key",
+        "p_image_url",
+        "p_name_ar",
+        "p_name_fr",
+        "p_prize_id",
+        "p_reason",
+        "p_sponsor_logo_url",
+        "p_sponsor_name",
+        "p_tier"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_save_fantasy_prize"
+  },
+  {
+    "name": "admin_save_fantasy_prize_settings",
+    "description": "save fantasy prize settings. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_gameweek_count": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_mini_league_min_members": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_season_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_gameweek_count",
+        "p_idempotency_key",
+        "p_mini_league_min_members",
+        "p_reason",
+        "p_season_id"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_save_fantasy_prize_settings"
+  },
+  {
+    "name": "admin_save_home_story",
+    "description": "save home story. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_alt_ar": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_alt_fr": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_credit": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_destination": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_media_asset_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_position": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_title_ar": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_title_fr": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_version": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": [
+        "p_alt_ar",
+        "p_alt_fr",
+        "p_credit",
+        "p_destination",
+        "p_id",
+        "p_media_asset_id",
+        "p_position",
+        "p_title_ar",
+        "p_title_fr",
+        "p_version"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_save_home_story"
+  },
+  {
+    "name": "admin_set_fantasy_prize_flag",
+    "description": "set fantasy prize flag. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_flagged": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_username": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_flagged", "p_idempotency_key", "p_reason", "p_user_id", "p_username"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_set_fantasy_prize_flag"
+  },
+  {
+    "name": "admin_set_fantasy_prize_winner_status",
+    "description": "set fantasy prize winner status. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_note": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_winner_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_note", "p_status", "p_winner_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_set_fantasy_prize_winner_status"
+  },
+  {
+    "name": "admin_set_public_ranking_exclusion",
+    "description": "set public ranking exclusion. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_hidden": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_username": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_hidden", "p_idempotency_key", "p_reason", "p_user_id", "p_username"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_set_public_ranking_exclusion"
+  },
+  {
+    "name": "admin_shorten_role_expiry",
+    "description": "shorten role expiry. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_assignment_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_expires_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_assignment_id", "p_expires_at", "p_idempotency_key", "p_reason"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_shorten_role_expiry"
+  },
+  {
+    "name": "admin_sofascore_create_player",
+    "description": "sofascore create player. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_name": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_position": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_shirt_number": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_sofascore_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_sofascore_player_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_sofascore_create_player"
+  },
+  {
+    "name": "admin_sofascore_final_limited",
+    "description": "sofascore final limited. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_sofascore_final_limited"
+  },
+  {
+    "name": "admin_sofascore_link_alias",
+    "description": "sofascore link alias. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_sofascore_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_player_id", "p_sofascore_player_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_sofascore_link_alias"
+  },
+  {
+    "name": "admin_sofascore_player_link_options",
+    "description": "sofascore player link options. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_query": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_sofascore_player_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_sofascore_player_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_sofascore_player_link_options"
+  },
+  {
+    "name": "admin_sofascore_player_match_queue",
+    "description": "sofascore player match queue. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_sofascore_player_match_queue"
+  },
+  {
+    "name": "admin_suspend_staff",
+    "description": "suspend staff. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_staff_principal_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_reason", "p_staff_principal_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_suspend_staff"
+  },
+  {
+    "name": "admin_unban_user",
+    "description": "unban user. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_idempotency_key": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_user_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_idempotency_key", "p_reason", "p_user_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "admin_unban_user"
+  },
+  {
+    "name": "editorial_convert_imported_story",
+    "description": "convert imported story. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_reason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_story_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_reason", "p_story_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_convert_imported_story"
+  },
+  {
+    "name": "editorial_get_article",
+    "description": "get article. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_article_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_article_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_get_article"
+  },
+  {
+    "name": "editorial_list_revisions",
+    "description": "list revisions. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_article_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": ["p_article_edition_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_list_revisions"
+  },
+  {
+    "name": "editorial_list_stories",
+    "description": "list stories. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_after_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_after_updated_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_language": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_limit": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_query": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_scope": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_status": {
+          "anyOf": [
+            {
+              "anyOf": [
+                { "enum": ["draft"] },
+                { "enum": ["in_review"] },
+                { "enum": ["scheduled"] },
+                { "enum": ["published"] },
+                { "enum": ["unpublished"] },
+                { "enum": ["archived"] },
+                { "enum": ["rejected"] }
+              ]
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_list_stories"
+  },
+  {
+    "name": "editorial_register_media",
+    "description": "register media. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_alt_text": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_attribution_url": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_caption": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_copyright_owner": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_credit": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_height": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_kind": {
+          "anyOf": [
+            {
+              "anyOf": [
+                { "enum": ["competition_logo"] },
+                { "enum": ["team_crest"] },
+                { "enum": ["player_photo"] },
+                { "enum": ["venue_image"] },
+                { "enum": ["article_hero"] },
+                { "enum": ["article_inline"] },
+                { "enum": ["author_avatar"] },
+                { "enum": ["publisher_logo"] },
+                { "enum": ["video_thumbnail"] }
+              ]
+            },
+            { "type": "null" }
+          ]
+        },
+        "p_license_url": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_mime_type": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_storage_path": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_width": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
+      },
+      "required": ["p_alt_text", "p_height", "p_mime_type", "p_storage_path", "p_width"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_register_media"
+  },
+  {
+    "name": "editorial_schedule_health",
+    "description": "schedule health. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_schedule_health"
+  },
+  {
+    "name": "editorial_set_placement",
+    "description": "set placement. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_article_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_ends_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_placement_type": {
+          "anyOf": [
+            {
+              "anyOf": [
+                { "enum": ["home_lead"] },
+                { "enum": ["news_lead"] },
+                { "enum": ["editors_pick"] },
+                { "enum": ["featured"] },
+                { "enum": ["breaking"] },
+                { "enum": ["trending"] }
+              ]
+            },
+            { "type": "null" }
+          ]
+        },
+        "p_priority": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+        "p_scope_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_scope_type": {
+          "anyOf": [
+            {
+              "anyOf": [
+                { "enum": ["global"] },
+                { "enum": ["competition"] },
+                { "enum": ["team"] },
+                { "enum": ["country"] }
+              ]
+            },
+            { "type": "null" }
+          ]
+        },
+        "p_starts_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+      },
+      "required": ["p_article_edition_id", "p_placement_type"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_set_placement"
+  },
+  {
+    "name": "editorial_soft_delete_story",
+    "description": "soft delete story. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "p_story_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] } },
+      "required": ["p_story_id"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_soft_delete_story"
+  },
+  {
+    "name": "editorial_transition_article",
+    "description": "transition article. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "p_article_edition_id": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_scheduled_at": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+        "p_target_status": {
+          "anyOf": [
+            {
+              "anyOf": [
+                { "enum": ["draft"] },
+                { "enum": ["in_review"] },
+                { "enum": ["scheduled"] },
+                { "enum": ["published"] },
+                { "enum": ["unpublished"] },
+                { "enum": ["archived"] },
+                { "enum": ["rejected"] }
+              ]
+            },
+            { "type": "null" }
+          ]
+        },
+        "p_visibility": {
+          "anyOf": [
+            {
+              "anyOf": [{ "enum": ["public"] }, { "enum": ["unlisted"] }, { "enum": ["private"] }]
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "required": ["p_article_edition_id", "p_target_status"],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "editorial_transition_article"
+  },
+  {
+    "name": "get_my_staff_context",
+    "description": "get my staff context. Uses your existing BotolaGO staff permissions, MFA, recent-authentication, approval and audit rules. Preserve supplied version/fingerprint/idempotency fields; do not retry a write with a new idempotency key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false
+    },
+    "rpc": "get_my_staff_context"
+  }
+]

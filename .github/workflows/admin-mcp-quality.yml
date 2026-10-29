@@ -1,0 +1,31 @@
+name: Admin MCP quality
+
+on:
+  pull_request:
+    paths:
+      - "tools/admin-mcp/**"
+      - "src/backend/generated/database.types.ts"
+      - ".github/workflows/admin-mcp-quality.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  admin-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tools/admin-mcp/package-lock.json
+      - run: npm ci --ignore-scripts
+        working-directory: tools/admin-mcp
+      - run: npm test
+        working-directory: tools/admin-mcp
+      - run: npm run catalog:check
+        working-directory: tools/admin-mcp
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: tools/admin-mcp
