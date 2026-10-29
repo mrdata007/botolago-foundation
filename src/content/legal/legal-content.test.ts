@@ -276,9 +276,10 @@ describe("the privacy policy matches the analytics switch", () => {
   it("carries a version no older than the one that added it", () => {
     if (!ANALYTICS_ENABLED) return;
     // 1.2 (25 September 2026) added analytics; 1.3 (6 October 2026) put the
-    // automatic account deletion's timeline in the retention table.
-    expect(fr()).toContain("Version 1.3 — en vigueur au 6 octobre 2026.");
-    expect(ar()).toContain("الإصدار 1.3 — ساري المفعول ابتداءً من 6 أكتوبر 2026.");
+    // automatic account deletion's timeline in the retention table; 1.4 (19
+    // October 2026) added the phone app's push alerts.
+    expect(fr()).toContain("Version 1.4 — en vigueur au 19 octobre 2026.");
+    expect(ar()).toContain("الإصدار 1.4 — ساري المفعول ابتداءً من 19 أكتوبر 2026.");
   });
 
   it("states the automatic deletion's timeline, not the old 12 months", () => {
@@ -304,5 +305,54 @@ describe("the privacy policy matches the analytics switch", () => {
       expect(source).toContain(text);
     }
     expect(source.match(/ANALYTICS_ENABLED\s*\?/g)?.length).toBe(6);
+  });
+});
+
+// Version 1.4: the phone app's push alerts. The store forms (App Store
+// Connect's App Privacy, Google Play's Data safety) are filled from the
+// policy, so the policy names the data, the purpose and how long the token is
+// kept, in both languages. The retention row says what the code does: turning
+// alerts off only stops the sending (api.disable_my_notification_device keeps
+// the token); sign-out on the phone, another account on the same phone and a
+// deletion request erase it.
+describe("the privacy policy covers push alerts", () => {
+  const rows = (doc: LegalDocument) =>
+    doc.blocks
+      .filter((b): b is Extract<LegalBlock, { type: "table" }> => b.type === "table")
+      .flatMap((b) => b.rows.map((r) => r.join(" | ")));
+  const fr = () => rows(LEGAL_DOCUMENTS.privacy.fr);
+  const ar = () => rows(LEGAL_DOCUMENTS.privacy.ar);
+
+  it("lists the push data, the purpose and its consent, in both languages", () => {
+    expect(fr().some((r) => r.startsWith("Notifications push | identifiant push"))).toBe(true);
+    expect(ar().some((r) => r.startsWith("الإشعارات الفورية | معرّف الإشعارات الفورية"))).toBe(
+      true,
+    );
+    expect(
+      fr().some((r) => r.startsWith("Envoyer des alertes push") && r.includes("consentement")),
+    ).toBe(true);
+    expect(ar().some((r) => r.startsWith("إرسال تنبيهات فورية") && r.includes("الموافقة"))).toBe(
+      true,
+    );
+  });
+
+  it("says what Apple's and Google's push services receive", () => {
+    expect(
+      fr().some((r) => r.startsWith("Apple / Google") && r.includes("Firebase Cloud Messaging")),
+    ).toBe(true);
+    expect(ar().some((r) => r.startsWith("Apple / Google") && r.includes("وبنص كل تنبيه"))).toBe(
+      true,
+    );
+  });
+
+  it("keeps the token only while the phone is registered, and says what erases it", () => {
+    const frRow = fr().find((r) => r.startsWith("Identifiant push du téléphone |"));
+    const arRow = ar().find((r) => r.startsWith("معرّف الإشعارات الفورية للهاتف |"));
+    expect(frRow).toContain("Désactiver les alertes arrête les envois");
+    expect(frRow).toContain("vous vous déconnectez de l'Application sur ce téléphone");
+    expect(frRow).toContain("immédiatement lorsque vous demandez la suppression de votre compte");
+    expect(arRow).toContain("يؤدي تعطيل التنبيهات إلى إيقاف الإرسال");
+    expect(arRow).toContain("تسجيل خروجك من التطبيق على هذا الهاتف");
+    expect(arRow).toContain("فوراً عند طلبك حذف حسابك");
   });
 });
