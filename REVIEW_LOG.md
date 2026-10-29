@@ -544,3 +544,13 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - The last GitHub watchdog run (#338, 16:52) failed on this same check and commented on #550.
 - Cause: the rule fails a match 12 hours after full time without complete player data. Sofascore rates Botola matches 12–48 hours after the match, and short cameos take 24 hours or more to settle. SportAPI does return ratings (FAR's came at 12 hours), so the switch is not the cause.
 - No owner action is needed now. Proposed for Batch 2 (F4), owner's decision: match the 12-hour rule to how fast Sofascore actually rates, or count minutes, goals and cards as enough for the core stage.
+
+**Plan: publish each journée's points at once (29 Oct, 19:50 UTC).**
+- Worker (Sonnet) mapped how points reach fans, read-only. Lead verdict: APPROVED. It matches production:
+  - the per-match switch (`fantasy_live_scoring_policy`) is on;
+  - ratings scoring applies from Journée 4.
+- Plan written: `docs/review/batch2-2026-10-29/PUBLISH_ALL_AT_ONCE_PLAN.md`. It waits for the owner's approval.
+- Urgent finding: Journée 6 has not opened, and its deadline is 30 Oct at 18:30 UTC.
+  - Maghreb Fès v RSB Berkane was booked for 20:00 but kicked off at 17:00.
+  - Since then, every close attempt has failed with `fantasy_selection_matches_unfinished` (worker runs #893–896).
+  - Proposed: a guarded one-off fix, which needs the owner's yes.
