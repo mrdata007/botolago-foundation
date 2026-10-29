@@ -532,3 +532,15 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - FAR Rabat v Ittihad Tanger kicks off at 20:00 UTC.
 - Rollback is unchanged: delete the `RAPIDAPI_HOST` secret.
 - Verdict: the switch to SportAPI works for live matches.
+
+**Watchdog check (29 Oct, 19:00 UTC, read-only).**
+- Both old Journée 5 matches have now cleared:
+  - Tétouan v Témara: ratings complete at the 4-day read, 28 Oct 22:00.
+  - Zemamra v FUS: ratings complete at the 4-day read, 29 Oct 18:00.
+- The watchdog is still red, now because of the next matches, all fetched through SportAPI:
+  - **Raja v Hassania** (finished 28 Oct 20:02): no player has a rating yet. The 12-hour read at 08:05 came back "ratings pending". The next read is the 24-hour mark, 29 Oct 20:02.
+  - **FAR v Ittihad Tanger** (finished 22:02): 30 of 32 players were rated at the 12-hour read (10:05). The 2 left played about 7 minutes. Cameos like that are settled after two reads at least 24 hours apart, so the earliest settling read is the 48-hour mark, 30 Oct 22:02.
+  - **Maghreb Fès v RSB Berkane** finished at 18:53. It would count from 30 Oct 06:53 if it still has no ratings by then.
+- The last GitHub watchdog run (#338, 16:52) failed on this same check and commented on #550.
+- Cause: the rule fails a match 12 hours after full time without complete player data. Sofascore rates Botola matches 12–48 hours after the match, and short cameos take 24 hours or more to settle. SportAPI does return ratings (FAR's came at 12 hours), so the switch is not the cause.
+- No owner action is needed now. Proposed for Batch 2 (F4), owner's decision: match the 12-hour rule to how fast Sofascore actually rates, or count minutes, goals and cards as enough for the core stage.
