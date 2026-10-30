@@ -604,3 +604,17 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - The database's Morocco zone is UTC+1, while the app's helper is UTC+0; the batch correctly uses the helper.
 - CI: `database-quality` green. `application-quality` red on one news-image browser test this PR does not touch; re-run once and commented on #592.
 - Verdict: **REVISE**, round 2 of 3. Fixes 1–5 sent to the Builder, including bringing in the Tester's adversarial tests.
+
+**Batch 2a: Builder round 2 (head bac28d6).**
+- The Builder reports fixes 1–5 done:
+  - the two new watchdog alarms;
+  - standings, hub, leagues, rivals, briefing and recap league figures hide a held journée;
+  - the release step checks pending ratings first and is safe to run twice;
+  - the worker is deployed first;
+  - the wording fixes;
+  - release decided at the 14:00 slot itself.
+  - The Tester's adversarial tests are in, with no TODOs left.
+- Lead checks:
+  - All 23 safety fingerprints in the apply script match production (read-only).
+  - Lead's own reading of the release rule (`fantasy_publication_evaluate_at`, `fantasy_publication_ready_at`): correct. It publishes only at a 14:00 slot where every rating was already in, a late check cannot publish early or skip a day, and Journées 1–5 are not gated.
+- Tester round 2 launched. CI is running on bac28d6.
