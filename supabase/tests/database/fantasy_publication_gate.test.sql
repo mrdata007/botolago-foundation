@@ -447,7 +447,9 @@ select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-
 select extensions.is(app_private.fantasy_publication_slot('f6400000-0000-4000-8000-000000000002'),app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day','and the journée waits for the next slot');
 select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day'-interval '1 minute')->>'outcome','before_publish_time','a minute before it still waits');
 select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day'+interval '1 minute')->>'outcome','released','at the next slot, ratings in since before it, the journée is released');
-select extensions.is(app_private.fantasy_publication_alarm_at('f6400000-0000-4000-8000-000000000002',now()),null,'and the alarm is gone');
+-- Judged at the test's own clock (just after that release), not the real clock: after release the
+-- journée has no ranking here, so 30 minutes later released_not_published would rightly fire.
+select extensions.is(app_private.fantasy_publication_alarm_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day'+interval '2 minutes'),null,'and the alarm is gone');
 
 -- ===========================================================================
 -- 7. Item B (F7): a moved match
