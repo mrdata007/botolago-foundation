@@ -573,3 +573,20 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - Restored: `fantasy_automation_configure(true)` at 06:36:33. The tick and worker were on before.
 - Batch 2a Builder launched (Sonnet, own branch `claude/batch2-publish-journee-at-once`): the publication gate, F7, the 24 h 30 min rating read, and the watchdog changes.
 - Verified at 06:42: the worker pass at 06:40 ran OK ("closed"). Journée 5 closed at 06:40:03. **Journée 6 is open**, with its deadline at 18:30 UTC today.
+
+**Batch 2a: Builder round 1 done (30 Oct).**
+- Branch `claude/batch2-publish-journee-at-once`, last commit d022b33. Draft PR #592, opened by the Lead to get the official database tests (CI).
+- Builder report:
+  - 4 migrations and the worker gate;
+  - F7 accepts a moved match finished within 48 h;
+  - the 24 h 30 min rating read;
+  - watchdog changes;
+  - the FR/AR notice, plus a guarded apply script and owner steps.
+  - Local Postgres: the 3 new test files pass (87, 9 and 10 checks). There was no Docker, so CI is the authority.
+- Lead notes:
+  - The Builder could not see the fix script because the Lead pushed it after the Builder started. It is now on the log branch.
+  - Rivals, Manager Card and trophies read final results only, so leaving them outside the gate is acceptable unless the Tester finds a leak.
+  - The 7-day case stays an alarm only for now.
+  - The watchdog paging 30 minutes after a missed slot even when ratings are pending (a dead worker) is accepted.
+- Timing risk: Journée 6 matches start 30 Oct at 20:00. The first ratings arrive about 12 hours after each match, so from about 31 Oct 08:00. If the batch is not live by then, Journée 6 points start appearing match by match. The gate's hidden-until-release views would hide those rows once the batch is applied.
+- Tester launched (Sonnet, independent).
