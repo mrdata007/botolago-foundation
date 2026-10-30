@@ -681,3 +681,17 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - Journée 6 open, 0 results;
   - production also has 20261030120000 (another session's club-news email enum value): no conflict.
 - Step 3 blocked for the Lead: the guarded apply script is about 100 KB and must run as one piece, which is too large to send in one call. Asked the owner to run it in the Supabase SQL editor (the documented owner step), or to choose an alternative.
+- Step 3 (owner: "run it by yourself"), production write on `tkewgajrljbwgwedqsxn`, 30 Oct 2026:
+  - Before the write:
+    - no other session running;
+    - no Fantasy worker lease held;
+    - no pg_cron job mid-run.
+  - The 100 KB script could not go in one call, so the Lead loaded it in 8 pieces into a temporary table, `app_private.lead_apply_2a_staging`.
+    - Each piece's md5 matched the reviewed file.
+    - The whole script's md5 matched too (ca4859b7…).
+    - The script also checks each migration's sha256 itself.
+  - It was run in one `DO` block. The only changes from the file as written: the outer `begin;` and `rollback;`/`commit;` lines were removed, and the "pass flag" was checked by unlocking the session advisory lock.
+  - Rehearsal at 20:4x UTC: every check ran to the end, then it was rolled back on purpose. A re-read confirmed nothing was left: 0 history rows, no gate table, poll function md5 unchanged, no lock held.
+  - Real run: the 4 migrations are recorded (20261030100000, 100100, 100200, 100300), and the gate's function and table exist.
+  - Cleanup still to do: dropping the temporary table timed out waiting for the owner's confirmation. The table only holds the script text and is not reachable from the API.
+- Step 4: Lovable was already synced to 386e1f1. Published with deploy 286250ad. (The preview answers 401 because it needs a login; the live site answered 200 beforehand.)
