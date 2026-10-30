@@ -211,18 +211,10 @@ function PrizeCard({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) 
     <UiCard padding="none" className="flex h-full flex-col overflow-hidden" testId="prize-card">
       <PrizeArt prize={prize} photo={photo} />
       <div className="flex flex-1 flex-col gap-2 p-4">
+        {/* The tier's icon in the brand foreground, no gradient disc (the
+            action gradient is for actions, not labels). */}
         <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "grid h-9 w-9 shrink-0 place-items-center",
-              ui.radius.full,
-              "text-[color:var(--ui-ink-deep)]",
-            )}
-            style={{ backgroundImage: "var(--ui-grad-action)" }}
-            aria-hidden
-          >
-            <Icon className="h-[18px] w-[18px]" />
-          </span>
+          <Icon className={cn("h-[18px] w-[18px] shrink-0", ui.tone.ink)} aria-hidden />
           <h2 className={cn(ui.text.label, ui.tone.muted)}>{tierLabel(t, prize.tier)}</h2>
         </div>
         <p className={cn("text-balance", ui.display.section, ui.tone.default)}>{tr(prize.name)}</p>

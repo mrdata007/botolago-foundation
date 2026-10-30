@@ -303,18 +303,11 @@ function RuleCard({
 }) {
   return (
     <UiCard as="section">
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center",
-            ui.radius.full,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-          aria-hidden
-        >
-          <Icon className="h-5 w-5" />
-        </span>
+      {/* The rule's icon in the brand foreground beside its title: no
+          gradient disc. The action gradient is for actions and progress
+          (DESIGN.md, The Earned Gradient Rule), not for decorating headings. */}
+      <div className="flex items-center gap-2.5">
+        <Icon className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
         <h3 className={cn(ui.display.teamSm, ui.tone.default)}>{title}</h3>
       </div>
       {children}
