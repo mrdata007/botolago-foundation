@@ -640,3 +640,8 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
     - while held: stored shown standings, ties broken the writer's way;
     - the "FAILED — nothing saved" closing line.
   - Timing numbers not yet measured, because the Builder's final runs were lost. Tester round 3 launched to measure them and check correctness.
+- 09:55 UTC: CI `database-quality` is **red** on 25c6e40, caused by round 3's generated reader wrappers:
+  - (1) Rivals is broken: the wrapper passes the wrong arguments to `rivals_pair_ungated`.
+  - (2) The sign-in step-up check is no longer in the outer functions, only in their copies (the test counts 94 of 99).
+  - (3) The Manager Card isolation test does not know the new copies.
+  - Commented on #592. The 3 build rounds are used up, so this is escalated to the owner with a recommendation for one short, limited round 4.
