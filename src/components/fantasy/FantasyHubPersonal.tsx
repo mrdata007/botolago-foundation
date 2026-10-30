@@ -32,7 +32,7 @@ import type { FantasySummary, Gameweek } from "@/types/domain";
 import type { FantasyTeam } from "@/types/fantasy";
 import { CreateLeagueInvite } from "./CreateLeagueInvite";
 import { FantasyGuestIntro, FantasyResumeDraft } from "./FantasyGuestIntro";
-import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
+import { laterJoin, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
 import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
 
@@ -140,9 +140,7 @@ export function FantasyHubTeamArea({
         ) : null}
         <FantasyGuestIntro
           audience={audience}
-          // The deadline card above already shows this gameweek's deadline;
-          // the intro names one only when a team made now joins a later one.
-          joinBy={gameweek?.enrolment ? joinTarget(gameweek) : null}
+          joinBy={laterJoin(gameweek)}
           registrationClosed={gameweek?.enrolment === null}
           prizes={prizes}
           hasDraft={resume !== null}
