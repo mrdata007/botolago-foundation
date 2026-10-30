@@ -631,3 +631,4 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - F-R2-2: ties while a journée is held are ordered using the hidden points.
   - F-R2-3: in psql, the apply script's closing line can say "Rehearsal passed" after a failure.
 - Verdict: **REVISE**, round 3 of 3, the last one. The Builder must keep the normal path on the old fast queries, compute held standings once per request, and supply a timing script at 5,000 and 50,000 teams.
+- 09:05 UTC: a container restart stopped the round-3 Builder. Its unsaved work was saved as WIP commit 39183686 on `claude/batch2-round3-wip`. A new Builder (Sonnet) continues round 3 from that commit, with the same brief.
