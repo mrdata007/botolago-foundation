@@ -139,7 +139,9 @@ export function FantasyHubTeamArea({
         ) : null}
         <FantasyGuestIntro
           audience={audience}
-          joinBy={joinTarget(gameweek)}
+          // The deadline card above already shows this gameweek's deadline;
+          // the intro names one only when a team made now joins a later one.
+          joinBy={gameweek?.enrolment ? joinTarget(gameweek) : null}
           registrationClosed={gameweek?.enrolment === null}
           prizes={prizes}
           hasDraft={resume !== null}

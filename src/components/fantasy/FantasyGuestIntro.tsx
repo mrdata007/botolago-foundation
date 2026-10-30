@@ -1,15 +1,5 @@
-import {
-  BookOpen,
-  CalendarClock,
-  Coins,
-  Plus,
-  Shirt,
-  Star,
-  Timer,
-  Trophy,
-  Users,
-} from "lucide-react";
-import { lazy, Suspense, useId, type ComponentType } from "react";
+import { CalendarClock, Plus, Shirt, Timer, Trophy } from "lucide-react";
+import { lazy, Suspense, useId } from "react";
 
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { ui, UiLinkButton } from "@/components/ui-kit";
@@ -36,7 +26,7 @@ export const GUEST_CREATE_NEXT = "/fantasy/create";
  * The Fantasy hub's first-time proposition (audit 2026-09-25, A16), in the
  * team card's place for a visitor without a team: what the game is, how it
  * works in four points, when the next team must be in, and one call to
- * action. The rules are the one secondary link.
+ * action.
  *
  * The call to action is "Créer mon équipe" for both audiences. A signed-out
  * visitor is sent through sign-in first with the builder as `next`, and the
@@ -187,38 +177,28 @@ function OpenIntro({
   );
 }
 
-/** The four points and the rules link: how the game works, for anyone who wants it. */
+/**
+ * The four points: how the game works, for anyone who wants it. A plain list,
+ * each point a bold line and its explanation, with no icon discs; the rules
+ * themselves are one link in the hub's "En savoir plus", not a second one here.
+ */
 function HowItWorks({ cardPoint = false }: { cardPoint?: boolean }) {
   const { t, lang } = useI18n();
   const howId = useId();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
   // Literal keys, one call each: the i18n gate reads them statically.
-  const points: Array<{
-    icon: ComponentType<{ className?: string }>;
-    title: string;
-    body: string;
-  }> = [
+  const points: Array<{ title: string; body: string }> = [
     {
-      icon: Users,
       title: t("fantasy.intro.squad_title").replace("{size}", nf.format(SQUAD_RULES.totalSize)),
       body: t("fantasy.intro.squad_body"),
     },
     {
-      icon: Coins,
       title: t("fantasy.intro.budget_title").replace("{budget}", nf.format(SQUAD_RULES.budget)),
       body: t("fantasy.intro.budget_body").replace("{max}", nf.format(SQUAD_RULES.maxPerClub)),
     },
-    {
-      icon: Star,
-      title: t("fantasy.intro.captain_title"),
-      body: t("fantasy.intro.captain_body"),
-    },
-    {
-      icon: Timer,
-      title: t("fantasy.intro.deadline_title"),
-      body: t("fantasy.intro.deadline_body"),
-    },
+    { title: t("fantasy.intro.captain_title"), body: t("fantasy.intro.captain_body") },
+    { title: t("fantasy.intro.deadline_title"), body: t("fantasy.intro.deadline_body") },
   ];
 
   return (
@@ -226,26 +206,11 @@ function HowItWorks({ cardPoint = false }: { cardPoint?: boolean }) {
       <h3 id={howId} className={cn("mt-5", ui.text.label, ui.tone.muted)}>
         {t("fantasy.intro.how_title")}
       </h3>
-      <ul aria-labelledby={howId} className="mt-2 grid gap-3">
+      <ul aria-labelledby={howId} className="mt-2 grid gap-2.5">
         {points.map((point) => (
-          <li key={point.title} className="flex items-start gap-3">
-            {/* The rules page's gradient disc, with the rules page's icon
-                  for the same rule. */}
-            <span
-              className={cn(
-                "grid h-9 w-9 shrink-0 place-items-center",
-                ui.radius.full,
-                "text-[color:var(--ui-ink-deep)]",
-              )}
-              style={{ backgroundImage: "var(--ui-grad-action)" }}
-              aria-hidden
-            >
-              <point.icon className="h-[18px] w-[18px]" />
-            </span>
-            <span className="flex min-w-0 flex-col">
-              <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{point.title}</span>
-              <span className={cn(ui.text.secondary, ui.tone.muted)}>{point.body}</span>
-            </span>
+          <li key={point.title} className="flex min-w-0 flex-col">
+            <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{point.title}</span>
+            <span className={cn(ui.text.secondary, ui.tone.muted)}>{point.body}</span>
           </li>
         ))}
         {/* The card is a result, not a step: after the deadline point, while the section is live.
@@ -256,13 +221,6 @@ function HowItWorks({ cardPoint = false }: { cardPoint?: boolean }) {
           </Suspense>
         ) : null}
       </ul>
-
-      <div className="mt-3 flex justify-center">
-        <UiLinkButton to="/fantasy/rules" variant="ghost" size="sm">
-          <BookOpen className="h-4 w-4" aria-hidden />
-          {t("fpl.rules")}
-        </UiLinkButton>
-      </div>
     </>
   );
 }

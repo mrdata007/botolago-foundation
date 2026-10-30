@@ -4,21 +4,31 @@ import { join } from "node:path";
 
 /**
  * U18 — a visitor with no team reaches the leaderboard and the leagues from the
- * Fantasy hub, high on the page (under the deadline card, not after the guest
- * proposition); the owner's hub keeps its own rows. Source pins, because the hub
- * needs the whole auth and Fantasy provider stack to render; the position was
- * measured in the browser (docs/review/batch1-2026-10-27).
+ * Fantasy hub; the owner's hub keeps its own rows. Since 2026-10-30 they lead
+ * the hub's one plain shortcut list instead of a grid of tiles above the
+ * proposition: the deadline and "Créer mon équipe" are the first screen. Source
+ * pins, because the hub needs the whole auth and Fantasy provider stack to
+ * render.
  */
 const hub = readFileSync(join(import.meta.dir, "fantasy.index.tsx"), "utf8");
 
-describe("Fantasy hub tiles for a visitor", () => {
-  test("a visitor with no team gets the board tiles right after the deadline card", () => {
-    expect(hub).toContain("{!hasTeam ? <VisitorBoardTiles /> : null}");
-    expect(hub.indexOf("<VisitorBoardTiles />")).toBeLessThan(hub.indexOf("<FantasyHubTeamArea"));
+describe("Fantasy hub links for a visitor", () => {
+  test("one shortcut list, told whether the reader is a visitor", () => {
+    expect(hub).toContain("<ShortcutList visitor={!hasTeam} />");
+    expect(hub.split("<ShortcutList ")).toHaveLength(2);
+    expect(hub).not.toContain("TileGrid");
   });
 
-  test("they are the ranking and the leagues, the latter labelled with what it does", () => {
-    expect(hub).toContain('to: "/fantasy/rankings"');
-    expect(hub).toContain('t("fantasy.hub.visitor_leagues")');
+  test("a visitor's list starts with the ranking and the leagues, labelled with what it does", () => {
+    const list = hub.slice(hub.indexOf("function ShortcutList"));
+    expect(list).toContain('to: "/fantasy/rankings"');
+    expect(list).toContain('t("fantasy.hub.visitor_leagues")');
+    expect(list.indexOf('"/fantasy/rankings"')).toBeLessThan(list.indexOf('to: "/matches"'));
+  });
+
+  test("one rules link and one help link on the hub", () => {
+    expect(hub.split('to: "/fantasy/rules"')).toHaveLength(2);
+    expect(hub.split('to: "/fantasy/help"')).toHaveLength(2);
+    expect(hub).not.toContain("fpl.help_rules");
   });
 });

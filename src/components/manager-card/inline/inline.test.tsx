@@ -180,16 +180,16 @@ describe("GuestIntroCardPoint", () => {
       ),
     ).not.toContain("fantasy-intro-card-point");
   });
-  it("sits in the same gradient disc as the four steps, hidden from assistive technology, with no request", async () => {
+  it("is a plain point like the four steps: no disc, no glyph, no request", async () => {
     const html = await render(
       <ul>
         <GuestIntroCardPoint />
       </ul>,
     );
-    expect(html).toContain("--ui-grad-action");
-    expect(html).toMatch(/<span aria-hidden="true"[^>]*h-9 w-9/);
-    // A drawn card, not an icon: no SVG glyph of the lucide set.
-    expect(html).not.toContain("lucide");
+    expect(html).toContain('data-testid="fantasy-intro-card-point"');
+    expect(html).not.toContain("--ui-grad-action");
+    expect(html).not.toContain("<svg");
+    expect(html).not.toContain("<a ");
   });
 });
 
