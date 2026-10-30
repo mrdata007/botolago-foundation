@@ -208,11 +208,11 @@ describe("what it says", () => {
     }
   });
 
-  it("the name is in Changa 800, the number and its unit and tier follow", async () => {
+  it("the name is in the display face (Readex Pro) at 800, the number and its unit and tier follow", async () => {
     const { ops, model } = await draw("rated", "fr");
     const name = find(ops, "Ali")!;
     expect(name.font).toContain("800");
-    expect(name.font).toContain('"Changa"');
+    expect(name.font).toContain('px "Readex Pro"');
     expect(model.rating).toEqual({ number: "84", unit: "OVR", tier: "PRO" });
     const number = find(ops, "84")!;
     expect(number.font).toContain('"Changa"');
@@ -393,12 +393,12 @@ describe("Arabic is the French picture mirrored", () => {
     expect(season.direction).toBe("ltr");
   });
 
-  it("the Arabic picture uses the Arabic body face and Changa for the name, French the Latin one", async () => {
+  it("the Arabic picture uses the Arabic body face and the display face for the name, French the Latin one", async () => {
     const ar = await draw("rated", "ar");
     const fr = await draw("rated", "fr");
     expect(find(ar.ops, "2026/27")!.font).toContain("Noto Sans Arabic");
     expect(find(fr.ops, "2026/27")!.font).toContain('"Manrope"');
-    expect(find(ar.ops, "Ali")!.font).toContain('"Changa"');
+    expect(find(ar.ops, "Ali")!.font).toContain('px "Readex Pro"');
   });
 
   it("an Arabic name is drawn right to left and aligned at the right", async () => {
@@ -415,14 +415,14 @@ function fontOf(op: Op): number {
 
 describe("LASTREET, the lowest tier's word", () => {
   for (const lang of ["fr", "ar"] as const) {
-    it(`${lang}: the rating line and the card's plaque draw it left to right in Changa, tracked on the card`, async () => {
+    it(`${lang}: the rating line (Readex Pro) and the card's plaque (Changa) draw it left to right, tracked on the card`, async () => {
       const { ops, model } = await draw("homa", lang);
       expect(model.rating.tier).toBe("LASTREET");
       const line = texts(ops).find(
         (op) => op.text === "LASTREET" && op.baseline === L.rating.baseline,
       )!;
       expect(line.direction).toBe("ltr");
-      expect(line.font).toContain('"Changa"');
+      expect(line.font).toContain('px "Readex Pro"');
       // the word on the card's plaque is a run of the art, in the display face, spaced
       const plaque = model.art.texts.find((run) => run.text === "LASTREET")!;
       expect(plaque.dir).toBe("ltr");

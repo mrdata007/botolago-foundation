@@ -1146,8 +1146,8 @@ describe("ui-kit: Option A — the display face, club colour and shape", () => {
   });
 
   it("never claims tabular figures, or a 900 weight, for the display face", () => {
-    // 900 does not exist in Changa (it stops at 800) and would be synthesised;
-    // `tabular-nums` on Changa is a no-op that reads like a promise.
+    // The display ramp tops out at heavy; `tabular-nums` on Readex Pro (no
+    // `tnum`) is a no-op that reads like a promise.
     for (const [step, classes] of [...Object.entries(ui.display), ...Object.entries(ui.score)]) {
       expect({ step, hero: classes.includes("--ui-weight-hero") }).toEqual({ step, hero: false });
       expect({ step, tabular: /fpl-tabular|tabular-nums/.test(classes) }).toEqual({
@@ -1168,12 +1168,12 @@ describe("ui-kit: Option A — the display face, club colour and shape", () => {
     ]) {
       expect({ token, arabic: block.includes(`${token}:`) }).toEqual({ token, arabic: true });
     }
-    // Changa carries Arabic, and the Noto stack is its fallback there.
-    expect(block).toMatch(/--ui-font-display:\s*"Changa",\s*"Noto Sans Arabic"/);
+    // Readex Pro carries Arabic, and the Noto stack is its fallback there.
+    expect(block).toMatch(/--ui-font-display:\s*"Readex Pro",\s*"Noto Sans Arabic"/);
   });
 
   it("keeps --ui-font-body the same stack the body uses", () => {
-    // `ui.font.body` exists to put the minute prime (which Changa lacks) back
+    // `ui.font.body` exists to put the minute prime (which Readex Pro lacks) back
     // into the body face inside display text. Two copies of one stack drift
     // unless something holds them together.
     const theme = css.slice(css.indexOf("@theme inline"));
@@ -1185,15 +1185,23 @@ describe("ui-kit: Option A — the display face, club colour and shape", () => {
     expect(block.match(/--ui-font-body:\s*([^;]+);/)?.[1]).toBe(arabicStack);
   });
 
-  it("never makes the display face the body face", () => {
-    // The e2e suite asserts the body family per language (Manrope / Noto Sans
-    // Arabic). Changa is reachable only through `--ui-font-display`.
+  it("keeps the equal-width figures on the body stacks and off the display face", () => {
+    // Readex Pro has no tabular figures; "BotolaGO Figures" (its digits at one
+    // width) leads every body stack so columns line up, and never the display
+    // face, whose standalone figures keep their own proportional digits.
     const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
-    const declaring = [...code.matchAll(/([\w-]+)\s*:[^;{}]*Changa[^;{}]*;/g)].map((m) => m[1]);
-    expect(declaring.length).toBeGreaterThan(0);
-    expect([...new Set(declaring)]).toEqual(["--ui-font-display"]);
-    const theme = css.slice(css.indexOf("@theme inline"));
-    expect(theme.match(/--font-sans:\s*([^;]+);/)?.[1]).not.toContain("Changa");
+    const theme = code.slice(code.indexOf("@theme inline"));
+    for (const token of ["--font-sans", "--font-arabic"]) {
+      expect(theme.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1].trim()).toStartWith(
+        '"BotolaGO Figures", "Readex Pro"',
+      );
+    }
+    const display = [...code.matchAll(/--ui-font-display:\s*([^;]+);/g)].map((m) => m[1]);
+    expect(display.length).toBeGreaterThan(1);
+    for (const stack of display) {
+      expect(stack.trim()).toStartWith('"Readex Pro"');
+      expect(stack).not.toContain("BotolaGO Figures");
+    }
   });
 
   it("draws UiCard and ui.surface.card on the card radius", () => {

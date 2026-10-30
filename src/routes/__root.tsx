@@ -14,8 +14,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 // Vite fingerprints these (`/assets/<name>-<hash>.woff2`, served immutable for a year), and
 // `src/fonts.css` references the same files, so the preload and the @font-face share one URL.
-import manropeLatin from "../assets/fonts/manrope-latin-wght-normal.woff2?url";
-import changaLatin from "../assets/fonts/changa-latin-wght-normal.woff2?url";
+import readexLatin from "../assets/fonts/readex-pro-latin-wght-normal.woff2?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
@@ -258,23 +257,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      // The two faces every page draws its first paint in (Manrope for body
-      // text and figures, Changa for headings), Latin subset only. The Latin
-      // extension, Arabic and signature faces are not preloaded: the browser
+      // The face every page draws its first paint in (Readex Pro, for titles
+      // and text alike), Latin subset only. The Latin extension, Arabic, the
+      // 1.5KB figures files and signature faces are not preloaded: the browser
       // fetches them only when text in their ranges is drawn. Fonts need
       // `crossorigin` on a preload even from the same origin.
       {
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: manropeLatin,
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "preload",
-        as: "font",
-        type: "font/woff2",
-        href: changaLatin,
+        href: readexLatin,
         crossOrigin: "anonymous",
       },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of

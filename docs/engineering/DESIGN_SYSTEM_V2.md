@@ -100,19 +100,34 @@ which is why `ui.score.*` carries digits only, see §2.2).
 
 ### 2.1a Display face and display ramp — `ui.display.*`, `ui.font.*`
 
-`--ui-font-display` is **Changa** (Google Fonts, 600/700/800, with an Arabic
-subset): `"Changa", "Manrope", …` in French and `"Changa", "Noto Sans
-Arabic", …` in Arabic. It is for words that announce — hub and screen titles,
-section headings, tab labels, team names in headers — and for standalone
-figures (`ui.score.*`). The body stays Manrope / Noto Sans Arabic; Changa is
-never the body face (the e2e suite and the contract test both check).
+**Since 2026-10-30 the whole app is set in Readex Pro** (OFL, variable
+160–700, Latin and Arabic in one family), chosen by the owner as the free
+stand-in for Premier League Sans. It replaced Changa (display), Manrope (French
+body) and Noto Sans Arabic (Arabic body). The Manager Card keeps its own
+measured faces (Changa, Manrope, Noto Sans Arabic, Instrument Serif) and they
+stay declared in `src/fonts.css` for it; Manrope and Noto Sans Arabic also
+remain as fallbacks in the stacks for the few glyphs Readex Pro lacks.
 
-Three facts about Changa, read from its tables, decide how it is used:
+`--ui-font-display` is `"Readex Pro", "Readex Pro Fallback", "Manrope", …` in
+French and `"Readex Pro", "Noto Sans Arabic", …` in Arabic. It is for words
+that announce — hub and screen titles, section headings, tab labels, team names
+in headers — and for standalone figures (`ui.score.*`). The body stacks
+(`--font-sans`, `--font-arabic`, `--ui-font-body`) are the same family led by
+**"BotolaGO Figures"**: Readex Pro's digits 0–9 re-spaced to one width, one
+1.5KB static file per weight, built by `scripts/brand/make-figures-font.py`.
+That is what makes columns of figures line up; the display face never carries
+it, so a figure standing alone keeps Readex Pro's proportional digits (the
+contract test checks both).
 
-- **No `tnum`**, proportional digits → never for a column of figures.
-- **No U+2032 prime** → a minute in display type puts the prime in the body
+Three facts about Readex Pro, read from its tables, decide how it is used:
+
+- **No `tnum`**, proportional digits → a column of figures stays on
+  `ui.stat.*` (body stack, equal-width figures).
+- **No U+2032 prime** (and no U+202F) → those fall to Manrope, the next face
+  in every stack; a minute in display type still puts the prime in the body
   face: `<bdi>63<span className={ui.font.body}>′</span></bdi>`.
-- **800 is its heaviest weight** → no display step uses `--ui-weight-hero`.
+- **700 is its heaviest weight** → 800 and 900 are drawn at 700, never
+  synthesised; no display step uses `--ui-weight-hero`.
 
 | Class token           | Size                        | Weight | Used for                                  |
 | --------------------- | --------------------------- | ------ | ----------------------------------------- |

@@ -349,8 +349,11 @@
   --ease-emphasized: var(--ease-emphasized);
   --ease-decelerate: var(--ease-decelerate);
 
-  --font-sans: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-arabic: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+  --font-sans:
+    "BotolaGO Figures", "Readex Pro", "Readex Pro Fallback", "Manrope", ui-sans-serif, system-ui,
+    sans-serif;
+  --font-arabic:
+    "BotolaGO Figures", "Readex Pro", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 }
 
 /* ================================================================== */
@@ -1756,35 +1759,38 @@ html[dir="rtl"]
   --ui-text-micro: 12px; /* nav labels, micro captions (was 11px: M5, 2026-10-27) */
 
   /* ---- Display face (Option A) -----------------------------------
-     Changa, a Kufi-flavoured display sans with an Arabic subset,
-     for the loud words: hub and screen titles, section headings, tab
+     Readex Pro (since 2026-10-30; Changa before), the same family as the
+     body, for the loud words: hub and screen titles, section headings, tab
      labels, team names in headers, and a STANDALONE figure (a score box,
-     the Fantasy points number). Manrope stays the body face — the e2e
-     suite asserts the body family per language — so this token is only
-     ever reached for through `ui.font.display`, `ui.display.*` and
-     `ui.score.*`, never by `body`.
+     the Fantasy points number). It differs from the body stack in one way:
+     it does not lead with "BotolaGO Figures", so a standalone figure keeps
+     Readex Pro's own proportional digits. This token is only ever reached
+     for through `ui.font.display`, `ui.display.*` and `ui.score.*`, never
+     by `body`.
 
      Three facts about the font decide how it may be used, all read from
      its tables rather than assumed:
-       - NO `tnum` feature, and proportional digits (500-675 units). So
+       - NO `tnum` feature, and proportional digits (500-620 units). So
          `tabular-nums` does nothing on it, and a column of figures that
-         must line up stays on `ui.stat.*` (Manrope). Changa digits are
-         for a figure that stands alone.
+         must line up stays on `ui.stat.*`, whose body stack leads with the
+         equal-width "BotolaGO Figures" (`src/fonts.css`).
        - NO U+2032 prime. A minute (63′) set in it falls back mid-token;
          render the prime in the body face (`ui.font.body`).
-       - 800 is its heaviest weight. `--ui-weight-hero` (900) would be
-         synthesised or snapped; the display ramp tops out at heavy.
+       - 700 is its heaviest weight. 800 and 900 are drawn at 700, never
+         synthesised; the display ramp tops out at heavy.
      Spelled out rather than chained through `--font-sans`: that one is an
      `@theme inline` value, which Tailwind inlines into utilities and does
      not promise to emit as a custom property. */
   --ui-font-display:
-    "Changa", "Changa Fallback", "Manrope", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
+    "Readex Pro", "Readex Pro Fallback", "Manrope", ui-sans-serif, system-ui, sans-serif;
   /* The body face, as a token: the same stack `body` uses (`--font-sans`,
      and `--font-arabic` in the Arabic block below). Only for putting a
-     glyph Changa lacks — the minute prime — back into the body face INSIDE
+     glyph Readex Pro lacks — the minute prime — back into the body face INSIDE
      display text (`ui.font.body`); `body` itself keeps `--font-sans`. The
      contract test holds the two stacks equal. */
-  --ui-font-body: "Manrope", "Manrope Fallback", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ui-font-body:
+    "BotolaGO Figures", "Readex Pro", "Readex Pro Fallback", "Manrope", ui-sans-serif, system-ui,
+    sans-serif;
 
   /* ---- Display ramp: the Changa sizes the text ramp does not have ----
      The hub title (34), the screen header (19), the section band (17) and
@@ -2276,10 +2282,11 @@ html[dir="rtl"]
      display ramp, never inside `ui.score.*`. */
   --ui-leading-display: 1.95;
   --ui-leading-figure: 1.1;
-  /* Changa carries Arabic, so Arabic titles keep the same display voice as
-     French ones; the Noto stack is the fallback while it loads. */
-  --ui-font-display: "Changa", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
-  --ui-font-body: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+  /* Readex Pro carries Arabic, so Arabic titles and text keep the same voice
+     as French ones; the Noto stack is the fallback while it loads. */
+  --ui-font-display: "Readex Pro", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+  --ui-font-body:
+    "BotolaGO Figures", "Readex Pro", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 
   /* The small steps are one pixel larger in Arabic (M5, 2026-10-27). Measured
      with the product's own faces: Noto Sans Arabic letters stand 22% lower

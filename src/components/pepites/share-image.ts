@@ -219,27 +219,28 @@ export function storyModel(
 /* ---------------------------------------------------------------- drawing */
 
 /**
- * The faces, as the app sets them: Changa for display (it carries Arabic
- * too), Manrope for French body text, Noto Sans Arabic for Arabic body text.
+ * The faces, as the app sets them: Readex Pro for everything, in both
+ * languages (it carries Arabic). Body text leads with the app's equal-width
+ * digits ("BotolaGO Figures"); display keeps Readex Pro's own figures.
  */
 export const SHARE_FONTS = {
-  display: `"Changa", "Manrope", "Noto Sans Arabic", sans-serif`,
-  body: `"Manrope", "Noto Sans Arabic", sans-serif`,
-  arabic: `"Noto Sans Arabic", "Manrope", sans-serif`,
+  display: `"Readex Pro", "Manrope", "Noto Sans Arabic", sans-serif`,
+  body: `"BotolaGO Figures", "Readex Pro", "Manrope", sans-serif`,
+  arabic: `"BotolaGO Figures", "Readex Pro", "Noto Sans Arabic", sans-serif`,
 } as const;
 
-/** Changa's heaviest weight (The 800 Ceiling Rule). */
+/** The display ceiling (The 800 Ceiling Rule). Readex Pro stops at 700 and draws 800 at 700. */
 const DISPLAY_MAX_WEIGHT = 800;
 
 /** The label step's letter-spacing, 0.025em, set in French only (The No Arabic Tracking Rule). */
 const LABEL_TRACKING = 0.025;
 
 /** The ascent a "line-height: normal" box puts above the baseline. */
-const ASCENT = { display: 1.227, body: 1.066, arabic: 1.25 } as const;
+const ASCENT = { display: 1, body: 1, arabic: 1 } as const;
 
 type Face = keyof typeof SHARE_FONTS;
 
-/** The body face for a language: Manrope in French, Noto Sans Arabic in Arabic. */
+/** The body face for a language: the French stack, or the Arabic one. */
 export const bodyFace = (lang: Language): Face => (lang === "ar" ? "arabic" : "body");
 
 export function shareFont(face: Face, weight: number, size: number) {

@@ -8,6 +8,7 @@ import { contrastRatio, parseHex } from "@/lib/colour";
 import {
   renderShareImage,
   renderStoryImage,
+  SHARE_FONTS,
   SHARE_PALETTE,
   shareClubColours,
   shareImageModel,
@@ -78,7 +79,7 @@ const measure = (value: string, font: string) => [...value].length * fontSize(fo
 function ink(value: string, font: string) {
   const size = fontSize(font);
   const arabic = /[\u0600-\u06ff]/.test(value);
-  const changa = font.includes('"Changa"');
+  const changa = font.includes('px "Readex Pro"');
   const [ascent, descent] = arabic
     ? changa
       ? [0.86, 0.3]
@@ -625,23 +626,21 @@ describe("the share pictures' palette", () => {
 describe("the share pictures' faces", () => {
   for (const picture of PICTURES) {
     for (const lang of ["fr", "ar"] as const) {
-      it(`${picture} (${lang}): Changa at most 800, no mono, Noto Sans Arabic for Arabic body text`, async () => {
+      it(`${picture} (${lang}): Readex Pro at most 800, no mono, the Arabic stack for Arabic body text`, async () => {
         const { ops } = await draw(picture, lang);
         const fonts = ops.filter((op) => op.kind === "text").map((op) => op.font!);
         expect(fonts.length).toBeGreaterThan(3);
         for (const font of fonts) {
           expect(font).not.toMatch(/plex|mono/i);
-          const [, weight, family] = /^(\d+) [\d.]+px "([^"]+)"/.exec(font) ?? [];
-          expect(["Changa", "Manrope", "Noto Sans Arabic"]).toContain(family);
-          if (family === "Changa") expect(Number(weight)).toBeLessThanOrEqual(800);
+          const [, weight, stack] = /^(\d+) [\d.]+px (.+)$/.exec(font) ?? [];
+          expect(Object.values(SHARE_FONTS)).toContain(stack);
+          if (stack === SHARE_FONTS.display) expect(Number(weight)).toBeLessThanOrEqual(800);
         }
-        const bodyFamilies = new Set(
-          fonts
-            .filter((font) => !font.includes('px "Changa"'))
-            .map((font) => /"([^"]+)"/.exec(font)![1]),
+        const bodyStacks = new Set(
+          fonts.map((font) => /px (.+)$/.exec(font)![1]).filter((s) => s !== SHARE_FONTS.display),
         );
-        if (lang === "ar") expect(bodyFamilies.has("Noto Sans Arabic")).toBe(true);
-        else expect(bodyFamilies).toEqual(new Set(["Manrope"]));
+        if (lang === "ar") expect(bodyStacks.has(SHARE_FONTS.arabic)).toBe(true);
+        else expect(bodyStacks).toEqual(new Set([SHARE_FONTS.body]));
       });
 
       it(`${picture} (${lang}): letter-spacing in French only`, async () => {

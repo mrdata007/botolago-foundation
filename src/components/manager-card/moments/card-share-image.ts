@@ -190,13 +190,25 @@ const ART_SERIF = `"Instrument Serif", "Times New Roman", serif`;
 /** The shield's autograph faces: a signature script for a Latin run, Ruq'ah for an Arabic one. */
 const ART_SIGNATURE = `"Mr Dafoe", "Segoe Script", cursive`;
 const ART_RUQAA = `"Aref Ruqaa", "Noto Sans Arabic", serif`;
+/**
+ * The card keeps its own measured faces (Changa, Manrope, Noto Sans Arabic) when the app moved to
+ * Readex Pro, so its runs are drawn in them here too, and the art matches the card on screen. The
+ * picture's own text around the card uses the share palette's faces.
+ */
+const ART_FONTS = {
+  display: `"Changa", "Manrope", "Noto Sans Arabic", sans-serif`,
+  body: `"Manrope", "Noto Sans Arabic", sans-serif`,
+  arabic: `"Noto Sans Arabic", "Manrope", sans-serif`,
+} as const;
+const artFace = (face: keyof typeof ART_FONTS, weight: number, size: number) =>
+  `${face === "display" ? Math.min(weight, 800) : weight} ${size}px ${ART_FONTS[face]}`;
 function artFont(run: TextRun, size: number): string {
   if (run.face === "serif") return `400 ${size}px ${ART_SERIF}`;
-  if (run.face === "displayLight") return shareFont("display", 300, size);
+  if (run.face === "displayLight") return artFace("display", 300, size);
   if (run.face === "signature") {
     return ARABIC.test(run.text) ? `700 ${size}px ${ART_RUQAA}` : `400 ${size}px ${ART_SIGNATURE}`;
   }
-  return shareFont(run.face, run.weight, size);
+  return artFace(run.face, run.weight, size);
 }
 
 /**
@@ -212,11 +224,12 @@ async function loadArtFonts(sample: string) {
       `400 40px ${ART_SERIF}`,
       `400 40px ${ART_SIGNATURE}`,
       `700 40px ${ART_RUQAA}`,
-      shareFont("display", 300, 40),
-      shareFont("body", 800, 40),
-      shareFont("body", 600, 30),
-      shareFont("arabic", 700, 30),
-      shareFont("arabic", 800, 30),
+      artFace("display", 300, 40),
+      artFace("display", 800, 40),
+      artFace("body", 800, 40),
+      artFace("body", 600, 30),
+      artFace("arabic", 700, 30),
+      artFace("arabic", 800, 30),
     ].map((spec) => document.fonts.load(spec, sample).catch(() => [])),
   );
 }

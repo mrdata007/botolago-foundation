@@ -8,6 +8,7 @@ HTML and CSS cached before the change keep resolving, and for tools that want a 
 
 Self-hosted variable WOFF2 assets from Fontsource:
 
+- readex-pro 5.3.0 (the app face since 2026-10-30: titles, text, French and Arabic)
 - manrope 5.3.0
 - changa 5.3.0
 - noto-sans-arabic 5.3.0
@@ -26,7 +27,13 @@ IBM Plex Mono was removed in BG-0153: no screen had used it since BG-0152, and
 the share images (`src/components/pepites/share-image.ts`, the Fantasy recap)
 now draw with Changa, Manrope and Noto Sans Arabic like the rest of the app.
 
+"BotolaGO Figures" (`src/assets/fonts/botolago-figures-*.woff2`, app copy only) is Readex Pro's digits
+0-9 at 400/500/600/700, each set to one width so figure columns line up (Readex Pro has no tabular
+figures). Rebuild with `python3 scripts/brand/make-figures-font.py <readex-pro-latin-wght-normal.woff2> src/assets/fonts`
+(needs `fonttools` and `brotli`). It is a modified version of Readex Pro under the same OFL.
+
 Original SIL Open Font Licenses are included alongside each family.
 Latin, Latin Extended and Arabic subsets preserve French and Arabic coverage.
 Unicode ranges make browsers download only subsets used on the page.
-No typeface or product typography tokens were changed.
+On 2026-10-30 the product typography tokens moved to Readex Pro; Changa, Manrope and Noto Sans
+Arabic stay for the Manager Card and as fallbacks.

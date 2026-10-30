@@ -150,7 +150,7 @@ describe("tierNode and TierWord", () => {
     );
   });
 
-  it("gives it the display face in Arabic, whose Latin glyphs are Changa's, and no tracking", () => {
+  it("gives it the display face in Arabic, whose Latin glyphs are Readex Pro's, and no tracking", () => {
     const html = markup(tierNode("homa", "LASTREET", "ar"));
     expect(html).toMatch(ISOLATED);
     expect(html).toContain("--ui-font-display");
