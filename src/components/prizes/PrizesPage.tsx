@@ -25,6 +25,7 @@ import {
   formatMad,
   howToWin,
   periodLabel,
+  repeatsHowToWin,
   tierLabel,
 } from "./prize-presentation";
 
@@ -116,8 +117,10 @@ export function PrizesPage() {
 
 /**
  * The page header: the floodlit stadium (the hub's gameweek band uses the same
- * `to bottom` scrim, so it reads the same way in Arabic), the cup, and the one
- * line that sells the page -- play free, win prizes.
+ * `to bottom` scrim, so it reads the same way in Arabic), the headline and the
+ * one line that sells the page: free, with no purchase and no bet, and a prize
+ * for every gameweek, block and season. That line says "free"; no pill above
+ * the headline repeats it.
  */
 function PrizesHero() {
   const { t } = useI18n();
@@ -146,19 +149,6 @@ function PrizesHero() {
         }}
       />
       <div className={cn("flex flex-col items-center gap-2 px-4 pb-5 pt-5", ui.tone.onInkPlain)}>
-        <span
-          className={cn(
-            "mt-1 inline-flex px-3 py-1",
-            ui.radius.full,
-            ui.text.micro,
-            "[font-weight:var(--ui-weight-heavy)]",
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-          data-testid="prizes-free-to-play"
-        >
-          {t("prizes.free_to_play")}
-        </span>
         <h2 className={cn("text-balance", ui.display.section)}>{t("prizes.welcome.title")}</h2>
         <p className={cn("text-balance", ui.text.secondary, ui.tone.onInkMuted)}>
           {t("prizes.intro")}
@@ -214,6 +204,9 @@ function PrizeCard({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) 
   // The value is the card's figure when there is no photo; the line under the
   // name would only say it a second time.
   const valueIsFigure = !(photo && prize.imageUrl) && prize.estimatedValueMad !== null;
+  const rule = howToWin(t, prize.tier);
+  // The admin's description, unless it only says what "Comment gagner" says.
+  const description = repeatsHowToWin(tr(prize.description), rule) ? "" : tr(prize.description);
   return (
     <UiCard padding="none" className="flex h-full flex-col overflow-hidden" testId="prize-card">
       <PrizeArt prize={prize} photo={photo} />
@@ -233,8 +226,10 @@ function PrizeCard({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) 
           <h2 className={cn(ui.text.label, ui.tone.muted)}>{tierLabel(t, prize.tier)}</h2>
         </div>
         <p className={cn("text-balance", ui.display.section, ui.tone.default)}>{tr(prize.name)}</p>
-        {tr(prize.description) ? (
-          <p className={cn(ui.text.secondary, ui.tone.muted)}>{tr(prize.description)}</p>
+        {description ? (
+          <p className={cn(ui.text.secondary, ui.tone.muted)} data-testid="prize-description">
+            {description}
+          </p>
         ) : null}
         {valueIsFigure ? null : (
           <p
@@ -248,9 +243,7 @@ function PrizeCard({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) 
         )}
         <div className={cn("mt-auto pt-3", ui.rule.blockStart)}>
           <p className={cn(ui.text.label, ui.tone.muted)}>{t("prizes.how_to_win")}</p>
-          <p className={cn("mt-1", ui.text.secondary, ui.tone.default)}>
-            {howToWin(t, prize.tier)}
-          </p>
+          <p className={cn("mt-1", ui.text.secondary, ui.tone.default)}>{rule}</p>
         </div>
         {prize.sponsorName ? (
           <div className="flex items-center gap-2 pt-1">

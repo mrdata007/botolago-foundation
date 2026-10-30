@@ -52,6 +52,27 @@ export function howToWin(t: Translate, tier: PrizeTier): string {
   }
 }
 
+/** The words of a sentence that carry its meaning: letters only, folded, longer than three. */
+function contentWords(sentence: string): Set<string> {
+  const folded = sentence.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  return new Set((folded.match(/\p{L}+/gu) ?? []).filter((word) => word.length > 3));
+}
+
+/**
+ * Whether a prize's description says what "Comment gagner" already says: most
+ * of the rule's words are in it ("Le meilleur score de la journée remporte…"
+ * under "Le meilleur score de la journée."). The card then keeps the rule, the
+ * more exact of the two, and drops the description. An empty description
+ * repeats nothing.
+ */
+export function repeatsHowToWin(description: string, rule: string): boolean {
+  const ruleWords = contentWords(rule);
+  if (!description.trim() || ruleWords.size === 0) return false;
+  const described = contentWords(description);
+  const shared = [...ruleWords].filter((word) => described.has(word)).length;
+  return shared / ruleWords.size >= 0.6;
+}
+
 /**
  * Whether the prize at `index` is the first in the list to carry its photo.
  * A photo shown once is the prize; the same photo again on the next card reads

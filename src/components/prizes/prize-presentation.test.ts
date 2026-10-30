@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import {
   firstUseOfImage,
+  repeatsHowToWin,
   fill,
   formatMad,
   periodLabel,
@@ -66,5 +67,44 @@ describe("firstUseOfImage", () => {
       false,
       true,
     ]);
+  });
+});
+
+describe("repeatsHowToWin", () => {
+  it("drops a description that says what the rule says, in both languages", () => {
+    expect(
+      repeatsHowToWin(
+        "Le meilleur score de la journée remporte une recharge mobile et un maillot officiel.",
+        fr("prizes.how.gameweek"),
+      ),
+    ).toBe(true);
+    expect(
+      repeatsHowToWin(
+        "Le meilleur total sur un bloc de 4 journées remporte un smartphone.",
+        fr("prizes.how.monthly"),
+      ),
+    ).toBe(true);
+    expect(
+      repeatsHowToWin(
+        "صاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي.",
+        ar("prizes.how.gameweek"),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps a description that adds something the rule does not say", () => {
+    expect(
+      repeatsHowToWin(
+        "Le champion de la saison remporte un voyage pour assister au derby.",
+        fr("prizes.how.season"),
+      ),
+    ).toBe(false);
+    expect(
+      repeatsHowToWin(
+        "Le leader de chaque ligue privée d'au moins 10 membres reçoit un pack supporter.",
+        fr("prizes.how.mini_league"),
+      ),
+    ).toBe(false);
+    expect(repeatsHowToWin("", fr("prizes.how.season"))).toBe(false);
   });
 });
