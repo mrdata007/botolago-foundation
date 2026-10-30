@@ -632,3 +632,11 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - F-R2-3: in psql, the apply script's closing line can say "Rehearsal passed" after a failure.
 - Verdict: **REVISE**, round 3 of 3, the last one. The Builder must keep the normal path on the old fast queries, compute held standings once per request, and supply a timing script at 5,000 and 50,000 teams.
 - 09:05 UTC: a container restart stopped the round-3 Builder. Its unsaved work was saved as WIP commit 39183686 on `claude/batch2-round3-wip`. A new Builder (Sonnet) continues round 3 from that commit, with the same brief.
+- 09:48 UTC: a second container restart stopped the new Builder. Its finished round-3 commit 25c6e403 had been saved locally but not pushed.
+  - Lead checks before pushing: migrations check (272 OK), the apply-script test (10 pass), typecheck clean.
+  - Pushed to #592.
+  - Round-3 changes:
+    - normal path: the original fast queries when nothing is held;
+    - while held: stored shown standings, ties broken the writer's way;
+    - the "FAILED — nothing saved" closing line.
+  - Timing numbers not yet measured, because the Builder's final runs were lost. Tester round 3 launched to measure them and check correctness.
