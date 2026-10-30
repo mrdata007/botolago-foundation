@@ -618,3 +618,16 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - All 23 safety fingerprints in the apply script match production (read-only).
   - Lead's own reading of the release rule (`fantasy_publication_evaluate_at`, `fantasy_publication_ready_at`): correct. It publishes only at a 14:00 slot where every rating was already in, a late check cannot publish early or skip a day, and Journées 1–5 are not gated.
 - Tester round 2 launched. CI is running on bac28d6.
+
+**Batch 2a: Tester round 2 (30 Oct ~09:10 UTC).**
+- The round-2 fixes work:
+  - the release-at-slot cases;
+  - the watchdog alarms, with no false alarms;
+  - points already written stay hidden and the totals are right;
+  - Journées 1–5 are byte-identical.
+  - CI green on bac28d6.
+- **Blocker F-R2-1:** the new hiding view makes the standings pages extremely slow at 5,000 teams, even when nothing is held. Overall standings went from 12 ms to 18 s. Production has only 8 teams today, so no fan would notice yet, but this must be fixed before the batch goes live.
+- Also:
+  - F-R2-2: ties while a journée is held are ordered using the hidden points.
+  - F-R2-3: in psql, the apply script's closing line can say "Rehearsal passed" after a failure.
+- Verdict: **REVISE**, round 3 of 3, the last one. The Builder must keep the normal path on the old fast queries, compute held standings once per request, and supply a timing script at 5,000 and 50,000 teams.
