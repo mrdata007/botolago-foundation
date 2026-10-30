@@ -55,12 +55,29 @@ describe("the sentence", () => {
   const render = () =>
     renderToStaticMarkup(
       <I18nProvider>
-        <PublicationNoticeLine notice={{ gameweek: 6, publishAt: SATURDAY_14H }} />
+        <PublicationNoticeLine
+          notice={{ gameweek: 6, publishAt: SATURDAY_14H }}
+          now={Date.parse("2026-10-30T12:00:00Z")}
+        />
       </I18nProvider>,
     ).replace(/<!-- -->/g, "");
 
   test("French reads «Points de la Journée 6 : samedi 31 oct. à 14h»", () => {
     expect(render()).toContain("Points de la Journée 6 : samedi 31 oct. à 14h");
+  });
+
+  test("once the moment has passed and the points are not out: «publication en cours», not a time in the past", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider>
+        <PublicationNoticeLine
+          notice={{ gameweek: 6, publishAt: SATURDAY_14H }}
+          now={Date.parse("2026-10-31T14:05:00Z")}
+        />
+      </I18nProvider>,
+    ).replace(/<!-- -->/g, "");
+    expect(html).toContain("Points de la Journée 6 : publication en cours");
+    expect(html).not.toContain("14h");
+    expect(dictionaries.ar["fantasy.points.publish_now"]).toBe("نقاط الجولة {n}: النشر جارٍ");
   });
 
   test("it is a status line in the muted note style, with no new styling", () => {

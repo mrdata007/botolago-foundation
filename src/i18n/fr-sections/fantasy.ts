@@ -189,6 +189,7 @@ export const frFantasy = {
     "Certaines notes manquent encore. Les points affichés correspondent aux notes disponibles.",
   "fantasy.points.ratings_updated": "Notes mises à jour : {time}",
   "fantasy.points.publish_at": "Points de la Journée {n} : {day} à {time}",
+  "fantasy.points.publish_now": "Points de la Journée {n} : publication en cours",
   "fantasy.points.status.live": "En direct",
   "fantasy.points.status.final": "Définitif",
   "fantasy.points.auto_subs": "Remplacements automatiques",

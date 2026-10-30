@@ -15,11 +15,22 @@ import { formatPublicationMoment } from "./publication-notice";
 export function PublicationNoticeLine({
   notice,
   className,
+  now = Date.now(),
 }: {
   notice: PublicationNotice;
   className?: string;
+  /** The clock, for tests. */
+  now?: number;
 }) {
   const { t, lang } = useI18n();
+  // Once the moment has passed and the points are not out yet, a time in the
+  // past would be wrong: say that publication is under way.
+  if (Date.parse(notice.publishAt) <= now)
+    return (
+      <p role="status" className={cn(ui.text.meta, ui.tone.muted, className)}>
+        {fill(t("fantasy.points.publish_now"), { n: notice.gameweek })}
+      </p>
+    );
   const { day, time } = formatPublicationMoment(lang, notice.publishAt);
   return (
     <p role="status" className={cn(ui.text.meta, ui.tone.muted, className)}>

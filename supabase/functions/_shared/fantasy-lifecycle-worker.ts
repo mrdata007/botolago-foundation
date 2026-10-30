@@ -71,7 +71,6 @@ const lifecycleSchema = z.object({
 const publicationDecisionSchema = z.object({
   gated: z.boolean(),
   released: z.boolean(),
-  held: z.boolean().optional(),
   publishAt: z.string().nullable().optional(),
   outcome: z.string().optional(),
 });

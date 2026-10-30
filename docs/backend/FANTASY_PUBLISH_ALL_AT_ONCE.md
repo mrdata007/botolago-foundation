@@ -73,13 +73,24 @@ matches, none for a match whose ratings were all in).
 
 ## Applying it
 
-`scripts/backend/apply-20261030100000-publish-journee-at-once.sql` (rehearsal,
-then commit; it holds every scheduled job and the Fantasy worker lease while it
-runs). Then deploy `fantasy-lifecycle-worker` and publish the website:
-`docs/review/batch2-2026-10-30/OWNER_STEPS.md`. Until the new worker is
-deployed, the old one keeps working: nothing is gated before Journée 6. For
-Journée 6 it must be deployed first, because the old worker would try to write
-points and be refused by the database (it fails safe: no points are published).
+Deploy `fantasy-lifecycle-worker` first (safe: against the old database it behaves
+as before), then apply
+`scripts/backend/apply-20261030100000-publish-journee-at-once.sql` (rehearsal, then
+commit; it holds every scheduled job and the Fantasy worker lease while it runs),
+then publish the website: `docs/review/batch2-2026-10-30/OWNER_STEPS.md`. If the
+database is applied first, deploy the worker within minutes: the old worker is
+refused for a gated journée (nothing publishes early, nothing publishes at all).
+
+## Release at the slot
+
+The decision belongs to the slot: a journée is released only if every rating was
+ready at or before a slot that has come (a rating source captured, or a Not-rated
+settlement recorded, after the slot does not count) and none is pending now;
+slots already past are walked in order. Rows written before the gate was switched
+on stay hidden (the standings, hub, leagues, rivals and recap read
+`app_private.fantasy_visible_rankings` and `fantasy_visible_team_results`, which
+take the held journée off every total) and are published at the slot; the worker's
+persist and rank then replay over them without duplicates.
 
 ## Tests
 

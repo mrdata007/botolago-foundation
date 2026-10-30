@@ -107,7 +107,6 @@ describe("apply-20261030100000-publish-journee-at-once.sql", () => {
     for (const check of [
       "a journée before 6 is gated",
       "the fan view of team results changed",
-      "a journée that already has results would be hidden",
       "the lifecycle state of the latest journée before 6 changed",
       "the gameweek list changed beyond its two new keys",
       "the health checks changed",

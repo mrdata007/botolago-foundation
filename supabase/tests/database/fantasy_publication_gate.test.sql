@@ -429,7 +429,7 @@ select extensions.ok(not exists(select 1 from jsonb_array_elements(app_private.o
 insert into app_private.football_provider_mappings(provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at)
 select 'sofascore', 'fixture', (9200 + i)::text, ('fb000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid, 'test', now() from generate_series(1, 8) i;
 select api.service_record_fantasy_api_ratings(('fb000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,(9200+i)::text,
-  pg_temp.native_players(i,false),statement_timestamp())from generate_series(1,8)i;
+  pg_temp.native_players(i,false),app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '3 hours')from generate_series(1,8)i;
 select extensions.ok(not app_private.fantasy_selection_ratings_pending('f6400000-0000-4000-8000-000000000002'),'journée 2 ratings are all in');
 select extensions.is(app_private.fantasy_publication_alarm_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '29 minutes'),
   null,'no alarm 29 minutes after the slot, all ratings in');
@@ -441,7 +441,12 @@ select extensions.is((select array_agg(c->>'name' order by c->>'name') from json
 select extensions.ok((select c->>'detail' from jsonb_array_elements(app_private.ops_health_checks()->'checks')c where c->>'name'='fantasy_fixture_coverage')
   like '%Journée 2 is still unpublished more than 30 minutes after its publication time%','and name the journée');
 -- The worker's decision clears it.
-select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',now())->>'outcome','released','the worker releases the ready journée');
+-- The ratings arrived three hours AFTER the slot: a worker that looks only now, or four hours after the
+-- slot, must not release at that moment, it waits for the next slot (the decision belongs to the slot).
+select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '4 hours')->>'outcome','ratings_pending','ratings that arrived after the slot do not release at the late look');
+select extensions.is(app_private.fantasy_publication_slot('f6400000-0000-4000-8000-000000000002'),app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day','and the journée waits for the next slot');
+select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day'-interval '1 minute')->>'outcome','before_publish_time','a minute before it still waits');
+select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '1 day'+interval '1 minute')->>'outcome','released','at the next slot, ratings in since before it, the journée is released');
 select extensions.is(app_private.fantasy_publication_alarm_at('f6400000-0000-4000-8000-000000000002',now()),null,'and the alarm is gone');
 
 -- ===========================================================================

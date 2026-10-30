@@ -198,6 +198,11 @@ journée that is not published yet:
     after its publication time while **all its ratings are in**. The worker did
     not release it: look at the worker's last answer (`fantasy_publication_held`
     is the normal answer before the time) and at `fantasy_worker`.
+  - `released_not_published`: it was released and **30 minutes** later its points
+    are still not written (the worker stopped after the release).
+  - `publication_time_unknown`: its publication time is still unknown **48 hours**
+    after its window ended, because a counted match is not finished. The ordinary
+    "match not completed" warnings are not muted for it.
   - `ratings_missing_7_days`: it is still unpublished **7 days** after its first
     publication time because ratings are missing. **The owner decides** what to
     do with the missing ratings (wait, or settle them under the Not-rated

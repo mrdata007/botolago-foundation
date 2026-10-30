@@ -21,7 +21,13 @@
 --        ratings_missing_7_days    it is still unpublished 7 days after its
 --                                  first slot because ratings are missing: the
 --                                  owner must decide.
---      Both name the journée in the detail text of all three checks.
+--        released_not_published    it was released and 30 minutes later its
+--                                  points are still not written, or
+--        publication_time_unknown  its publication time is still unknown 48
+--                                  hours after its window ended (a counted
+--                                  match is not finished): the ordinary
+--                                  "match not completed" warnings are not muted.
+--      All name the journée in the detail text of all three checks.
 --   3. Journées before the first gated one, and every other check, are
 --      untouched.
 --
@@ -41,14 +47,28 @@ create function app_private.fantasy_publication_alarm_at(p_gameweek_id uuid, p_n
 returns text language plpgsql stable security definer set search_path = '' as $$
 declare
   st app_private.fantasy_publication_state%rowtype;
+  gw app.fantasy_gameweeks%rowtype;
   pnb timestamptz;
   slot timestamptz;
 begin
   if not app_private.fantasy_publication_gated(p_gameweek_id) then return null; end if;
   select * into st from app_private.fantasy_publication_state where gameweek_id = p_gameweek_id;
-  if st.released_at is not null then return null; end if;
+  select * into gw from app.fantasy_gameweeks where id = p_gameweek_id;
+  if st.released_at is not null then
+    -- Released, but the points were never written (or never ranked).
+    if exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = p_gameweek_id)
+      and p_now > st.released_at + interval '30 minutes' then
+      return 'released_not_published';
+    end if;
+    return null;
+  end if;
   pnb := app_private.fantasy_publish_not_before(p_gameweek_id);
-  if pnb is null then return null; end if;
+  if pnb is null then
+    -- A counted match is not finished (or has no final time) long after the
+    -- journée's window: the publication time cannot be known. Not quiet.
+    if p_now > gw.ends_at + interval '48 hours' then return 'publication_time_unknown'; end if;
+    return null;
+  end if;
   slot := greatest(pnb, coalesce(st.deferred_until, pnb));
   if p_now > slot + interval '30 minutes' and not app_private.fantasy_selection_ratings_pending(p_gameweek_id) then
     return 'unpublished_after_slot';
@@ -141,6 +161,10 @@ begin
         'detail', case alarm
           when 'unpublished_after_slot' then 'Journée ' || item.sequence_number
             || ' is still unpublished more than 30 minutes after its publication time (all ratings are in): the worker did not release it'
+          when 'released_not_published' then 'Journée ' || item.sequence_number
+            || ' was released more than 30 minutes ago but its points are not written: the worker did not finish'
+          when 'publication_time_unknown' then 'Journée ' || item.sequence_number
+            || ' has no publication time 48 hours after its window ended: a counted match is not finished'
           else 'Journée ' || item.sequence_number
             || ' is still unpublished 7 days after its first publication time because ratings are missing: the owner must decide' end));
     end if;

@@ -58,7 +58,7 @@ create table app_private.fantasy_publication_state (
   last_evaluated_at timestamptz,
   last_outcome text check (last_outcome in (
     'matches_unfinished', 'before_publish_time', 'gameweek_not_provisional',
-    'ratings_pending', 'released', 'already_published'))
+    'ratings_pending', 'released'))
 );
 comment on table app_private.fantasy_publication_state is
   'One row per gated gameweek once the worker looked at it: the first publish-not-before time seen, the next slot after a pending-rating decision (deferred_until), and when it was released.';
@@ -141,15 +141,41 @@ where g.status not in ('finalized', 'corrected', 'cancelled')
         where k.gameweek_id = g.id and k.league_id is null));
 revoke all on app_private.fantasy_unpublished_gameweeks from public, anon, authenticated, service_role;
 
+-- Were all ratings in at the given moment? Every counted match has a rating
+-- source captured at or before it that is ready, and was not made ready only by
+-- a Not-rated settlement recorded after it. (A source that is ready now but was
+-- captured, or settled, after the moment does not count.)
+create function app_private.fantasy_publication_ready_at(p_gameweek_id uuid, p_at timestamptz)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select not exists (
+    select 1
+    from app.fantasy_fixture_assignments a
+    where a.gameweek_id = p_gameweek_id and a.superseded_at is null and a.counts_points
+      and not coalesce((
+        select src.ready and not exists (
+          select 1 from app_private.fantasy_not_rated_settlements n
+          where n.source_id = src.id and n.settled_at > p_at)
+        from app_private.fantasy_api_rating_sources src
+        where src.fixture_id = a.fixture_id and src.captured_at <= p_at
+        order by src.id desc limit 1), false));
+$$;
+
 -- Decide, and record the decision. p_now is a parameter so the rule can be
 -- tested at any moment; the service function passes statement_timestamp().
+-- The decision is made at the SLOT, not at the moment the worker happens to
+-- look: a journée is released only if every rating was ready at or before a
+-- slot that has come (and none is pending now). If the last rating arrived
+-- after the slot, the journée waits for the next one; slots already past are
+-- walked in order, so a late look cannot release early or skip a day.
 create function app_private.fantasy_publication_evaluate_at(p_gameweek_id uuid, p_now timestamptz)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   g app.fantasy_gameweeks%rowtype;
   st app_private.fantasy_publication_state%rowtype;
   pnb timestamptz;
+  slot timestamptz;
   outcome text;
+  guard integer := 0;
 begin
   select * into g from app.fantasy_gameweeks where id = p_gameweek_id for update;
   if not found then
@@ -172,34 +198,42 @@ begin
 
   if pnb is null then
     outcome := 'matches_unfinished';
-  elsif p_now < greatest(pnb, coalesce(st.deferred_until, pnb)) then
-    outcome := 'before_publish_time';
-  elsif exists (select 1 from app.fantasy_team_gameweek_results r where r.gameweek_id = g.id) then
-    -- Results are already out (written before this rule existed): hiding them
-    -- now would only make things worse.
-    update app_private.fantasy_publication_state
-    set released_at = p_now, last_evaluated_at = p_now, last_outcome = 'already_published'
-    where gameweek_id = g.id;
-    return jsonb_build_object('gated', true, 'released', true, 'held', false,
-      'publishAt', p_now, 'outcome', 'already_published');
-  elsif g.status not in ('provisional', 'finalizing') then
-    outcome := 'gameweek_not_provisional';
-  elsif app_private.fantasy_selection_ratings_pending(g.id) then
-    -- Not ready at this slot: the whole journée waits for the next slot, even if
-    -- the last rating arrives a minute later.
-    update app_private.fantasy_publication_state
-    set deferred_until = app_private.fantasy_publication_next_slot(p_now),
-        last_evaluated_at = p_now, last_outcome = 'ratings_pending'
-    where gameweek_id = g.id
-    returning * into st;
-    return jsonb_build_object('gated', true, 'released', false, 'held', true,
-      'publishNotBefore', pnb, 'publishAt', st.deferred_until, 'outcome', 'ratings_pending');
   else
-    update app_private.fantasy_publication_state
-    set released_at = p_now, last_evaluated_at = p_now, last_outcome = 'released'
-    where gameweek_id = g.id;
-    return jsonb_build_object('gated', true, 'released', true, 'held', false,
-      'publishNotBefore', pnb, 'publishAt', p_now, 'outcome', 'released');
+    slot := greatest(pnb, coalesce(st.deferred_until, pnb));
+    if p_now < slot then
+      outcome := 'before_publish_time';
+    elsif g.status not in ('provisional', 'finalizing') then
+      outcome := 'gameweek_not_provisional';
+    elsif app_private.fantasy_selection_ratings_pending(g.id) then
+      -- Not ready now: the whole journée waits for the next slot, even if the
+      -- last rating arrives a minute later. This is checked before anything
+      -- that was already written can release it.
+      slot := app_private.fantasy_publication_next_slot(p_now);
+      update app_private.fantasy_publication_state
+      set deferred_until = slot, last_evaluated_at = p_now, last_outcome = 'ratings_pending'
+      where gameweek_id = g.id;
+      return jsonb_build_object('gated', true, 'released', false, 'held', true,
+        'publishNotBefore', pnb, 'publishAt', slot, 'outcome', 'ratings_pending');
+    else
+      -- Ready now. Was it ready at the slot that has come? Walk the slots that
+      -- are past until one found everything ready.
+      while slot <= p_now and not app_private.fantasy_publication_ready_at(g.id, slot) and guard < 400 loop
+        slot := app_private.fantasy_publication_next_slot(slot);
+        guard := guard + 1;
+      end loop;
+      if slot > p_now then
+        update app_private.fantasy_publication_state
+        set deferred_until = slot, last_evaluated_at = p_now, last_outcome = 'ratings_pending'
+        where gameweek_id = g.id;
+        return jsonb_build_object('gated', true, 'released', false, 'held', true,
+          'publishNotBefore', pnb, 'publishAt', slot, 'outcome', 'ratings_pending');
+      end if;
+      update app_private.fantasy_publication_state
+      set released_at = p_now, last_evaluated_at = p_now, last_outcome = 'released'
+      where gameweek_id = g.id;
+      return jsonb_build_object('gated', true, 'released', true, 'held', false,
+        'publishNotBefore', pnb, 'publishAt', p_now, 'outcome', 'released');
+    end if;
   end if;
 
   update app_private.fantasy_publication_state
@@ -240,7 +274,7 @@ end $$;
 revoke all on function app_private.fantasy_publication_first_gameweek(uuid),
   app_private.fantasy_publication_gated(uuid), app_private.fantasy_publication_next_slot(timestamptz),
   app_private.fantasy_publish_not_before(uuid), app_private.fantasy_publication_slot(uuid),
-  app_private.fantasy_publication_evaluate_at(uuid, timestamptz),
+  app_private.fantasy_publication_evaluate_at(uuid, timestamptz), app_private.fantasy_publication_ready_at(uuid, timestamptz),
   app_private.fantasy_publication_state_json(uuid), app_private.fantasy_assert_publication_released(uuid)
   from public, anon, authenticated, service_role;
 
@@ -416,6 +450,72 @@ select (jsonb_populate_record(null::app.fantasy_auto_substitutions, jsonb_build_
 from app_private.fantasy_current_rating_publications p
 cross join lateral jsonb_array_elements(p.results->'teamResults') t
 cross join lateral jsonb_array_elements(t->'substitutions') with ordinality x(s, ord);
+
+-- Standings. A gated journée that is not published has no row of its own, and
+-- the season and league totals that were written with it (points can be written
+-- before the gate is switched on, or while a release is under way) are shown
+-- without it: its score is taken off every total, the ranks are worked out
+-- again on what is shown, and the journée's own points column is empty.
+create view app_private.fantasy_held_result_seasons with (security_invoker = true) as
+select distinct g.fantasy_season_id as season_id
+from app_private.fantasy_unpublished_gameweeks h
+join app.fantasy_gameweeks g on g.id = h.gameweek_id
+where exists (select 1 from app.fantasy_team_gameweek_results r where r.gameweek_id = h.gameweek_id);
+revoke all on app_private.fantasy_held_result_seasons from public, anon, authenticated, service_role;
+
+create view app_private.fantasy_visible_rankings with (security_invoker = true) as
+select r.* from app.fantasy_rankings r
+where (r.gameweek_id is not null
+    and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id))
+  or (r.gameweek_id is null
+    and r.fantasy_season_id not in (select season_id from app_private.fantasy_held_result_seasons))
+union all
+select (jsonb_populate_record(null::app.fantasy_rankings, to_jsonb(x) || jsonb_build_object(
+  'total_points', x.shown_total, 'gameweek_points', null,
+  'rank', rank() over (partition by x.fantasy_season_id, x.league_id order by x.shown_total desc, x.rank, x.fantasy_team_id)
+))).*
+from (
+  select r.*, r.total_points - coalesce((
+    select sum(coalesce(t.final_score, t.provisional_score))
+    from app.fantasy_team_gameweek_results t
+    where t.fantasy_team_id = r.fantasy_team_id
+      and t.gameweek_id in (select h.gameweek_id from app_private.fantasy_unpublished_gameweeks h)), 0) as shown_total
+  from app.fantasy_rankings r
+  where r.gameweek_id is null
+    and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons)
+) x;
+revoke all on app_private.fantasy_visible_rankings from public, anon, authenticated, service_role;
+
+-- The readers that took standings and journée points straight from the tables
+-- read the visible views instead. Patched from pg_get_functiondef; each must
+-- change, so nothing is silently left as it was.
+do $readers$
+declare
+  sig text;
+  source text;
+  changed text;
+begin
+  foreach sig in array array[
+    'api.fantasy_hub(text)',
+    'api.fantasy_leagues(uuid,text,integer)',
+    'api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)',
+    'api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)',
+    'api.get_my_rivals(text)',
+    'api.get_my_deadline_briefing(uuid)',
+    'app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)',
+    'app_private.rivals_pair(uuid,uuid,uuid)',
+    'app_private.round_recap_league(uuid,uuid,uuid,uuid,integer,integer)'
+  ] loop
+    source := pg_get_functiondef(sig::regprocedure);
+    changed := regexp_replace(source, '\mapp\.fantasy_rankings\M', 'app_private.fantasy_visible_rankings', 'g');
+    changed := regexp_replace(changed, '\mapp\.fantasy_team_gameweek_results\M', 'app_private.fantasy_visible_team_results', 'g');
+    if changed = source then
+      raise exception 'publication_gate_reader_unchanged: %', sig;
+    end if;
+    execute changed;
+  end loop;
+end
+$readers$;
 
 -- The owner's points read: say the journée is waiting, and show no rating
 -- progress for it (the pending flags come from the live rating document).
