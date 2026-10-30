@@ -2,7 +2,7 @@
 //
 // Turns one claimed delivery (the contract is notification-email-types.ts)
 // into the subject, preheader, HTML body and plain-text body the dispatcher
-// hands the provider. Eight types x two languages (French, Arabic RTL).
+// hands the provider. Nine types x two languages (French, Arabic RTL).
 //
 // Pure and dependency-free on purpose: it runs under Bun (its tests and
 // scripts/backend/notification-email-previews.ts) and under Deno (the Edge
@@ -21,8 +21,11 @@
 
 import type {
   ClaimedEmailDelivery,
+  ClubNewsDigestPayload,
+  ClubNewsEdition,
   DeadlinePayload,
   EmailFixture,
+  EmailImage,
   EmailLanguage,
   EmailLinkContext,
   EmailTeam,
@@ -114,9 +117,56 @@ export function unsubscribeUrl(delivery: ClaimedEmailDelivery, links: EmailLinkC
   return `${appOrigin(links)}/unsubscribe?token=${encodeURIComponent(delivery.unsubscribeToken)}${topic}`;
 }
 
+const STORAGE_BUCKETS: Readonly<Record<string, string>> = {
+  football: "football-media",
+  news: "news-media",
+};
+
+/**
+ * The public address of an image, or null when it cannot be shown. A Storage
+ * path is resolved as src/lib/media.ts does (namespace → bucket); a source URL
+ * must be https without credentials. Nothing else becomes an <img src>.
+ */
+export function emailImageUrl(
+  image: EmailImage | null | undefined,
+  links: EmailLinkContext,
+): string | null {
+  if (!image || typeof image !== "object") return null;
+  const path = typeof image.storagePath === "string" ? image.storagePath : "";
+  if (path) {
+    let origin: string | null = null;
+    try {
+      const url = new URL(String(links?.storageUrl ?? ""));
+      if (url.protocol === "https:" && !url.username && !url.password) origin = url.origin;
+    } catch {
+      origin = null;
+    }
+    const segments = path.split("/");
+    const bucket = STORAGE_BUCKETS[segments[0]];
+    const safe =
+      path === path.trim() &&
+      !path.includes("\\") &&
+      segments.length >= 2 &&
+      segments.every((segment) => segment && segment !== "." && segment !== "..");
+    return origin && bucket && safe
+      ? `${origin}/storage/v1/object/public/${bucket}/${segments.map(encodeURIComponent).join("/")}`
+      : null;
+  }
+  const source = typeof image.sourceUrl === "string" ? image.sourceUrl.trim() : "";
+  if (!source) return null;
+  try {
+    const url = new URL(source);
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Every route an e-mail may link to. Nothing else is ever built. */
 function linksFor(app: string) {
   return {
+    article: (editionId: string) => `${app}/news/${encodeURIComponent(editionId)}`,
+    club: (teamId: string) => `${app}/clubs/${encodeURIComponent(teamId)}`,
     matches: `${app}/matches`,
     match: (fixtureId: string) => `${app}/matches/${encodeURIComponent(fixtureId)}`,
     fantasyTransfers: `${app}/fantasy/transfers`,
@@ -507,7 +557,22 @@ type Block =
     }
   | { readonly kind: "stat"; readonly value: string; readonly label: string }
   | { readonly kind: "callout"; readonly label: string; readonly runs: readonly Run[] }
-  | { readonly kind: "ranking"; readonly rows: readonly RankingRow[] };
+  | { readonly kind: "ranking"; readonly rows: readonly RankingRow[] }
+  | { readonly kind: "articles"; readonly cards: readonly ArticleCard[] };
+
+/** One article of the club news email. The first card is shown large. */
+interface ArticleCard {
+  readonly url: string;
+  readonly title: string;
+  readonly summary: string;
+  /** "18:42 · 3 min de lecture"; the time keeps its own direction in Arabic. */
+  readonly meta: readonly Run[];
+  readonly image: string | null;
+  /** The edition's own language, which can differ from the email's. */
+  readonly lang: EmailLanguage;
+  /** Shown when the edition is not in the email's language. */
+  readonly languageTag: string | null;
+}
 
 /** One line of a Top 10: rank, player, club, score out of 100. */
 interface RankingRow {
@@ -526,6 +591,8 @@ interface EmailContent {
   readonly dateline: string | null;
   readonly blocks: readonly Block[];
   readonly cta: { readonly label: string; readonly url: string };
+  /** A small image beside the kicker: the club's crest. */
+  readonly kickerIcon?: { readonly src: string; readonly alt: string } | null;
 }
 
 type Links = ReturnType<typeof linksFor>;
@@ -1012,10 +1079,146 @@ function pepitesWeekly(
   };
 }
 
+function countArticles(ctx: RenderContext, count: number): string {
+  if (ctx.lang === "ar") {
+    return arabicCount(count, { one: "مقال واحد", two: "مقالان", few: "مقالات", many: "مقالًا" });
+  }
+  return `${formatNumber(count, "fr")} ${Math.abs(count) < 2 ? "article" : "articles"}`;
+}
+
+/** "2 articles de plus" / "مقالان آخران": the articles beyond those listed. */
+function moreArticles(ctx: RenderContext, count: number): string {
+  if (ctx.lang === "ar") {
+    return arabicCount(count, {
+      one: "مقال آخر",
+      two: "مقالان آخران",
+      few: "مقالات أخرى",
+      many: "مقالًا آخر",
+    });
+  }
+  return `${countArticles(ctx, count)} de plus`;
+}
+
+function readingTime(ctx: RenderContext, minutes: number): string {
+  const value = formatNumber(Math.max(1, Math.round(minutes)), ctx.lang);
+  return t(ctx, `${value} min de lecture`, `قراءة ${value} د`);
+}
+
+function clubNewsDigest(
+  payload: ClubNewsDigestPayload,
+  ctx: RenderContext,
+  links: Links,
+  media: EmailLinkContext,
+): EmailContent {
+  const team = payload?.team;
+  if (!team || typeof team.id !== "string" || !team.id) {
+    throw new Error("notification email: club_news_digest has no club");
+  }
+  const other: EmailLanguage = ctx.lang === "ar" ? "fr" : "ar";
+  const cards: ArticleCard[] = [];
+  for (const article of Array.isArray(payload.articles) ? payload.articles : []) {
+    const own = article?.editions?.[ctx.lang];
+    const edition: ClubNewsEdition | undefined = own ?? article?.editions?.[other];
+    const lang: EmailLanguage = own ? ctx.lang : other;
+    const title = cleanText(edition?.title, 220);
+    if (!edition || typeof edition.id !== "string" || !edition.id || !title) continue;
+    const published = parseInstant(article.publishedAt);
+    const sameDay = published && dayKey(published, ctx.timeZone) === payload.date;
+    const meta: Run[] = [];
+    if (published) {
+      if (!sameDay) meta.push(plain(`${t(ctx, "Hier", "أمس")} `));
+      meta.push(iso(formatTime(published, ctx.lang, ctx.timeZone)));
+    }
+    if (isCount(edition.readingMinutes) && edition.readingMinutes > 0) {
+      if (meta.length > 0) meta.push(plain(" · "));
+      meta.push(plain(readingTime(ctx, edition.readingMinutes)));
+    }
+    cards.push({
+      url: links.article(edition.id),
+      title,
+      summary: cleanText(edition.summary, 220),
+      meta,
+      image: emailImageUrl(edition.image, media),
+      lang,
+      languageTag: own ? null : t(ctx, "En arabe", "بالفرنسية"),
+    });
+  }
+  if (cards.length === 0) throw new Error("notification email: club_news_digest has no articles");
+
+  const club = teamName(team, ctx);
+  const fullName = cleanText(team.name?.[ctx.lang], 80) || club;
+  const total =
+    isCount(payload.total) && payload.total >= cards.length ? payload.total : cards.length;
+  const lead = cards[0];
+  const date = formatCalendarDate(payload.date, ctx.lang);
+  const crest = emailImageUrl(team.crest, media);
+
+  const blocks: Block[] = [
+    {
+      kind: "paragraph",
+      runs: [
+        plain(
+          total === 1
+            ? t(
+                ctx,
+                `Un nouvel article sur ${fullName} depuis hier soir.`,
+                `مقال جديد عن ${fullName} منذ مساء أمس.`,
+              )
+            : t(
+                ctx,
+                `${countArticles(ctx, total)} sur ${fullName} depuis hier soir. L’essentiel, en un coup d’œil.`,
+                `${countArticles(ctx, total)} عن ${fullName} منذ مساء أمس. أهم ما يجب معرفته في لمحة.`,
+              ),
+        ),
+      ],
+    },
+    { kind: "articles", cards },
+  ];
+  if (total > cards.length) {
+    const more = total - cards.length;
+    blocks.push({
+      kind: "paragraph",
+      runs: [
+        plain(
+          t(
+            ctx,
+            `Et ${moreArticles(ctx, more)} sur la page du club.`,
+            `و${moreArticles(ctx, more)} في صفحة الفريق.`,
+          ),
+        ),
+      ],
+    });
+  }
+
+  return {
+    subject: `${club} · ${lead.title}`,
+    preheader:
+      total > 1
+        ? t(
+            ctx,
+            `Et ${moreArticles(ctx, total - 1)} sur votre club aujourd’hui.`,
+            `و${moreArticles(ctx, total - 1)} عن فريقك اليوم.`,
+          )
+        : lead.summary || t(ctx, "Le dernier article sur votre club.", "آخر مقال عن فريقك."),
+    kicker: fullName,
+    kickerIcon: crest ? { src: crest, alt: "" } : null,
+    title: t(ctx, "Les actus de votre club", "أخبار فريقك"),
+    dateline: [date ? capitalize(date, ctx.lang) : null, countArticles(ctx, total)]
+      .filter(Boolean)
+      .join(" · "),
+    blocks,
+    cta: {
+      label: t(ctx, `Tout sur ${club}`, `كل شيء عن ${club}`),
+      url: links.club(team.id),
+    },
+  };
+}
+
 function buildContent(
   delivery: ClaimedEmailDelivery,
   ctx: RenderContext,
   links: Links,
+  media: EmailLinkContext,
 ): EmailContent {
   switch (delivery.type) {
     case "matchday_preview":
@@ -1058,6 +1261,8 @@ function buildContent(
       };
     case "pepites_weekly":
       return pepitesWeekly(delivery.payload, ctx, links);
+    case "club_news_digest":
+      return clubNewsDigest(delivery.payload, ctx, links, media);
     default: {
       const unknown: never = delivery;
       throw new Error(
@@ -1123,6 +1328,14 @@ function renderText(content: EmailContent, chrome: Chrome, ctx: RenderContext): 
           );
         }
         out.push("");
+        break;
+      case "articles":
+        for (const card of block.cards) {
+          out.push(card.languageTag ? `${card.title} (${card.languageTag})` : card.title);
+          if (card.meta.length > 0) out.push(runsText(card.meta));
+          if (card.summary) out.push(card.summary);
+          out.push(card.url, "");
+        }
         break;
     }
   }
@@ -1265,7 +1478,72 @@ function blockHtml(block: Block, ctx: RenderContext): string {
         ),
         "</table>",
       ].join("");
+    case "articles":
+      return articlesHtml(block.cards, ctx);
   }
+}
+
+/** Title, summary and meta keep the edition's own direction and face. */
+function cardText(card: ArticleCard, ctx: RenderContext) {
+  const rtl = card.lang === "ar";
+  return {
+    dir: rtl ? "rtl" : "ltr",
+    align: rtl ? "right" : "left",
+    font: rtl ? FONT_ARABIC : FONT_LATIN,
+    lineHeight: rtl ? "1.6" : "1.3",
+    tag: card.languageTag
+      ? `<span style="display:inline-block;margin-${ctx.end}:6px;padding:1px 8px;border-radius:999px;border:1px solid ${C.rule};font-family:${ctx.font};font-size:11px;line-height:16px;font-weight:700;color:${C.muted};">${escapeHtml(card.languageTag)}</span>`
+      : "",
+  };
+}
+
+function articlesHtml(cards: readonly ArticleCard[], ctx: RenderContext): string {
+  const [lead, ...rest] = cards;
+  const arrow = ctx.dir === "rtl" ? "←" : "→";
+  const readMore = t(ctx, "Lire l’article", "قراءة المقال");
+  const leadText = cardText(lead, ctx);
+  // 536 = the 600px card less its 32px padding each side. Width only, so
+  // every client (Outlook included) keeps the photo's own proportions.
+  const leadImage = lead.image
+    ? `<tr><td style="padding:0;"><a href="${escapeHtml(lead.url)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;"><img src="${escapeHtml(lead.image)}" width="536" alt="${escapeHtml(lead.title)}" style="display:block;width:100%;max-width:536px;height:auto;border:0;border-radius:12px 12px 0 0;background-color:${C.page};color:${C.muted};font-family:${ctx.font};font-size:13px;"></a></td></tr>`
+    : `<tr><td height="6" bgcolor="${C.ink}" style="height:6px;line-height:6px;font-size:0;background-color:${C.ink};border-radius:12px 12px 0 0;">&nbsp;</td></tr>`;
+  const leadHtml = [
+    tableOpen(
+      ctx,
+      `margin:22px 0 0;border-collapse:separate;border-spacing:0;background-color:${C.surface};border:1px solid ${C.rule};border-radius:12px;`,
+    ),
+    leadImage,
+    `<tr><td dir="${leadText.dir}" align="${leadText.align}" style="padding:18px 20px 20px;text-align:${leadText.align};">`,
+    `<p style="margin:0;font-family:${ctx.font};font-size:12px;line-height:1.6;font-weight:700;color:${C.muted};">${leadText.tag}<span style="color:${C.ink};">${escapeHtml(t(ctx, "À la une", "الأبرز"))}</span>${lead.meta.length > 0 ? ` · ${runsHtml(lead.meta, ctx)}` : ""}</p>`,
+    `<h2 style="margin:8px 0 0;font-family:${leadText.font};font-size:21px;line-height:${leadText.lineHeight};font-weight:800;color:${C.text};overflow-wrap:break-word;"><a href="${escapeHtml(lead.url)}" target="_blank" rel="noopener" style="color:${C.text};text-decoration:none;">${escapeHtml(lead.title)}</a></h2>`,
+    lead.summary
+      ? `<p style="margin:10px 0 0;font-family:${leadText.font};font-size:15px;line-height:${lead.lang === "ar" ? "1.9" : "1.6"};color:${C.muted};">${escapeHtml(lead.summary)}</p>`
+      : "",
+    `<p style="margin:14px 0 0;font-family:${ctx.font};font-size:15px;line-height:1.4;font-weight:700;"><a href="${escapeHtml(lead.url)}" target="_blank" rel="noopener" style="color:${C.ink};text-decoration:underline;">${escapeHtml(readMore)} ${arrow}</a></p>`,
+    "</td></tr></table>",
+  ].join("");
+  if (rest.length === 0) return leadHtml;
+
+  const rows = rest.map((card, index) => {
+    const text = cardText(card, ctx);
+    const rule = index > 0 ? `border-top:1px solid ${C.rule};` : "";
+    // The row table carries the email's direction, so the photo sits on the
+    // reading-start side in both languages (right in Arabic).
+    const thumb = card.image
+      ? `<td width="112" valign="top" style="width:112px;padding:16px 0;padding-${ctx.end}:14px;${rule}"><a href="${escapeHtml(card.url)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;"><img src="${escapeHtml(card.image)}" width="112" alt="" style="display:block;width:112px;max-width:112px;height:auto;border:0;border-radius:8px;background-color:${C.page};"></a></td>`
+      : "";
+    // A row without a photo spans both columns rather than squeezing into
+    // the photo column.
+    const span = thumb ? "" : ' colspan="2"';
+    return `<tr>${thumb}<td${span} dir="${text.dir}" valign="top" align="${text.align}" style="padding:16px 0;${rule}text-align:${text.align};"><a href="${escapeHtml(card.url)}" target="_blank" rel="noopener" style="font-family:${text.font};font-size:16px;line-height:${text.lineHeight};font-weight:700;color:${C.text};text-decoration:none;overflow-wrap:break-word;">${escapeHtml(card.title)}</a><div style="margin-top:6px;font-family:${ctx.font};font-size:12px;line-height:1.6;color:${C.muted};">${text.tag}${runsHtml(card.meta, ctx)}</div></td></tr>`;
+  });
+  return [
+    leadHtml,
+    `<h2 style="margin:28px 0 0;${cellFont(ctx)}font-size:13px;line-height:1.4;font-weight:800;letter-spacing:${ctx.dir === "rtl" ? "0" : "0.06em"};text-transform:uppercase;color:${C.ink};">${escapeHtml(t(ctx, "Aussi aujourd’hui", "أيضًا اليوم"))}</h2>`,
+    tableOpen(ctx, "margin:4px 0 0;border-collapse:collapse;"),
+    ...rows,
+    "</table>",
+  ].join("");
 }
 
 function rankingRowHtml(row: RankingRow, ctx: RenderContext): string {
@@ -1301,6 +1579,7 @@ function renderHtml(
     subject,
     preheader,
     kicker: content.kicker,
+    kickerIcon: content.kickerIcon ?? null,
     title: content.title,
     dateline: content.dateline,
     bodyHtml: `<p style="margin:18px 0 0;">${escapeHtml(chrome.greeting)}</p>${content.blocks.map((block) => blockHtml(block, ctx)).join("")}`,
@@ -1344,23 +1623,30 @@ export function renderNotificationEmail(
   };
   const app = appOrigin(links);
   const routes = linksFor(app);
-  const content = buildContent(delivery, ctx, routes);
+  const content = buildContent(delivery, ctx, routes, links);
 
   const name = cleanText(delivery.recipient?.displayName, 60);
   const pepites = delivery.type === "pepites_weekly";
+  const clubNews = delivery.type === "club_news_digest";
   const chrome: Chrome = {
     greeting: name ? t(ctx, `Bonjour ${name},`, `مرحبًا ${name}،`) : t(ctx, "Bonjour,", "مرحبًا،"),
-    why: pepites
+    why: clubNews
       ? t(
           ctx,
-          "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro.",
-          "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع.",
+          `Vous recevez cet e-mail car ${content.kicker} est votre club favori et « Actualités importantes » est activé sur votre compte BotolaGO. Désactivez-le dans vos notifications pour ne plus le recevoir.`,
+          `تتلقى هذه الرسالة لأن ${content.kicker} هو فريقك المفضل وخيار «أخبار هامة» مفعّل في حسابك على BotolaGO. يمكنك إيقافه من إعدادات الإشعارات.`,
         )
-      : t(
-          ctx,
-          "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO.",
-          "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
-        ),
+      : pepites
+        ? t(
+            ctx,
+            "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro.",
+            "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع.",
+          )
+        : t(
+            ctx,
+            "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO.",
+            "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
+          ),
     scope: pepites
       ? t(
           ctx,

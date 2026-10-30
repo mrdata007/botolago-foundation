@@ -74,6 +74,8 @@ export interface EmailDispatchConfiguration {
    * the unsubscribe page and carries no List-Unsubscribe-Post.
    */
   readonly oneClickUnsubscribeEndpoint: string | null;
+  /** SUPABASE_URL's https origin, for images kept in Storage; null without one. */
+  readonly storageUrl?: string | null;
   readonly batchSize: number;
   readonly budgetMs: number;
   readonly sendIntervalMs: number;
@@ -210,6 +212,7 @@ export function emailDispatchConfiguration(
     oneClickUnsubscribeEndpoint: functionsOrigin
       ? `${functionsOrigin}/functions/v1/notification-email-unsubscribe`
       : null,
+    storageUrl: functionsOrigin,
     batchSize: integerSetting(environment, "EMAIL_DISPATCH_BATCH_SIZE", 20, 1, 100),
     budgetMs: integerSetting(environment, "EMAIL_DISPATCH_BUDGET_MS", 40_000, 1_000, 120_000),
     // Resend allows 10 requests per second per account; stay well below.
@@ -588,7 +591,7 @@ export async function runEmailDispatch(
     dependencies.sleep ??
     ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const fetchImpl = dependencies.fetch ?? fetch;
-  const links: EmailLinkContext = { appUrl: config.appUrl };
+  const links: EmailLinkContext = { appUrl: config.appUrl, storageUrl: config.storageUrl ?? null };
   const deadline = now() + config.budgetMs;
   const counts = { claimed: 0, sent: 0, retrying: 0, failed: 0 };
   let paused: SendOutcome["pause"] = null;

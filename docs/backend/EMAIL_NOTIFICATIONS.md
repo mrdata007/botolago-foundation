@@ -6,15 +6,16 @@ is how it gets switched on, watched and paused.
 
 ## What users get
 
-| Email               | When (Morocco time)                                                                                          | Who                                                                    | Switch that stops it |
-| ------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | -------------------- |
-| Match-day preview   | 10:00 on each match day (or 2 h before the first kick-off if earlier, not before 07:00)                      | everyone with Match alerts on                                          | Match alerts         |
-| Match-day results   | once every match of the day has a result; if that is after midnight, at 08:00; never after noon the next day | everyone with Match alerts on                                          | Match alerts         |
-| Round preview       | 10:00, three days before a round's first match                                                               | everyone with Match alerts on                                          | Match alerts         |
-| Kick-off alert      | one hour before kick-off                                                                                     | fans of a club playing (favourite club, followed team or subscription) | Match alerts         |
-| Fantasy deadline    | 24 h before each gameweek deadline, only if that deadline is confirmed                                       | everyone with Fantasy reminders on                                     | Fantasy reminders    |
-| Fantasy round recap | when the gameweek's points are final                                                                         | every Fantasy manager with Fantasy reminders on                        | Fantasy reminders    |
-| Prospects weekly    | when a weekly Top 10 is published while Prospects is public (Monday 20:00 by default); stale after 36 h      | only readers who opted in (off for everyone by default)                | Prospects weekly     |
+| Email               | When (Morocco time)                                                                                                              | Who                                                                    | Switch that stops it   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------- |
+| Match-day preview   | 10:00 on each match day (or 2 h before the first kick-off if earlier, not before 07:00)                                          | everyone with Match alerts on                                          | Match alerts           |
+| Match-day results   | once every match of the day has a result; if that is after midnight, at 08:00; never after noon the next day                     | everyone with Match alerts on                                          | Match alerts           |
+| Round preview       | 10:00, three days before a round's first match                                                                                   | everyone with Match alerts on                                          | Match alerts           |
+| Kick-off alert      | one hour before kick-off                                                                                                         | fans of a club playing (favourite club, followed team or subscription) | Match alerts           |
+| Fantasy deadline    | 24 h before each gameweek deadline, only if that deadline is confirmed                                                           | everyone with Fantasy reminders on                                     | Fantasy reminders      |
+| Fantasy round recap | when the gameweek's points are final                                                                                             | every Fantasy manager with Fantasy reminders on                        | Fantasy reminders      |
+| Prospects weekly    | when a weekly Top 10 is published while Prospects is public (Monday 20:00 by default); stale after 36 h                          | only readers who opted in (off for everyone by default)                | Prospects weekly       |
+| Club news           | 19:00 each day, only if the favourite club was in the news since 19:00 the day before ([CLUB_NEWS_EMAIL.md](CLUB_NEWS_EMAIL.md)) | readers with a favourite club and News on (ships off)                  | Actualités importantes |
 
 **Prospects weekly** (migrations `20260926110000`–`20260926110100`,
 [PEPITES_ARCHITECTURE.md §5.4](../engineering/PEPITES_ARCHITECTURE.md)) is an
@@ -394,5 +395,5 @@ paused is cancelled when sending resumes.
   cancelled, claiming, unsubscribe, grants.
 - `supabase/functions/_shared/notification-email-dispatch.test.ts`,
   `football-live-refresh.test.ts`, `notification-email-render.test.ts`.
-- Previews of all 12 emails (6 types × French/Arabic):
+- Previews of every email type in French and Arabic:
   `bun scripts/backend/notification-email-previews.ts <output-dir>`.

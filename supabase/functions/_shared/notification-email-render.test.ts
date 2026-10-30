@@ -91,8 +91,55 @@ function defaultPayload<K extends EmailNotificationType>(type: K): EmailPayloadB
     },
     gameweek_finalized: { gameweek: 5, points: 64, overallRank: 12, totalPoints: 312 },
     pepites_weekly: pepitesPayload(),
+    club_news_digest: clubNewsPayload(),
   };
   return payloads[type];
+}
+
+function clubNewsPayload(
+  extra: Partial<EmailPayloadByType["club_news_digest"]> = {},
+): EmailPayloadByType["club_news_digest"] {
+  const edition = (id: string, title: string, image: string | null = null) => ({
+    id,
+    title,
+    summary: `${title} : le résumé de l'article, en deux phrases au plus.`,
+    readingMinutes: 3,
+    image: image ? { storagePath: image, sourceUrl: null } : null,
+  });
+  return {
+    date: "2026-10-30",
+    team: { ...RAJA, crest: { storagePath: "football/crests/raja.png", sourceUrl: null } },
+    total: 3,
+    articles: [
+      {
+        storyId: "story-1",
+        publishedAt: "2026-10-30T16:10:00Z",
+        editions: {
+          fr: edition("ed-1-fr", "Le Raja renverse le Wydad dans le derby", "news/2026/derby.webp"),
+          ar: edition(
+            "ed-1-ar",
+            "الرجاء يقلب الطاولة على الوداد في الديربي",
+            "news/2026/derby.webp",
+          ),
+        },
+      },
+      {
+        storyId: "story-2",
+        publishedAt: "2026-10-29T21:05:00Z",
+        editions: {
+          fr: edition("ed-2-fr", "Blessure : trois semaines d'absence pour le capitaine"),
+        },
+      },
+      {
+        storyId: "story-3",
+        publishedAt: "2026-10-30T09:30:00Z",
+        editions: {
+          ar: edition("ed-3-ar", "المدرب يعلن قائمة المباراة المقبلة", "news/2026/coach.jpg"),
+        },
+      },
+    ],
+    ...extra,
+  };
 }
 
 const PEPITES_CLUBS = [RAJA, WYDAD, FAR, BERKANE, FUS, MAS, HUSA, IRT];
@@ -197,13 +244,18 @@ describe("renderNotificationEmail: every type in both languages", () => {
         // The footer, in both bodies. Pépites is its own opt-in topic: its
         // footer says so, and its link turns off Pépites only.
         const pepites = type === "pepites_weekly";
-        const why = pepites
-          ? language === "fr"
-            ? "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro."
-            : "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع."
-          : language === "fr"
-            ? "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO."
-            : "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.";
+        const why =
+          type === "club_news_digest"
+            ? language === "fr"
+              ? "Vous recevez cet e-mail car Raja Casablanca est votre club favori et « Actualités importantes » est activé sur votre compte BotolaGO."
+              : "تتلقى هذه الرسالة لأن الرجاء الرياضي هو فريقك المفضل وخيار «أخبار هامة» مفعّل في حسابك على BotolaGO."
+            : pepites
+              ? language === "fr"
+                ? "Vous recevez cet e-mail car vous vous êtes abonné à Prospects, le Top 10 hebdomadaire des jeunes de Botola Pro."
+                : "تتلقى هذه الرسالة لأنك اشتركت في رسالة المواهب، قائمة توب 10 لاعبين شباب في البطولة الاحترافية كل أسبوع."
+              : language === "fr"
+                ? "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO."
+                : "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.";
         const manage = pepites
           ? language === "fr"
             ? "Tous mes réglages de notifications"
@@ -672,6 +724,8 @@ describe("links", () => {
     /^https:\/\/botolago\.com\/unsubscribe\?token=[A-Za-z0-9%._~-]+(&|&amp;)topic=pepites_weekly$/,
     /^https:\/\/botolago\.com\/pepites$/,
     /^https:\/\/botolago\.com\/pepites\/semaine\/[0-9]+$/,
+    /^https:\/\/botolago\.com\/news\/[A-Za-z0-9%._~-]+$/,
+    /^https:\/\/botolago\.com\/clubs\/[A-Za-z0-9%._~-]+$/,
   ];
   const expectedCta: Record<EmailNotificationType, string> = {
     matchday_preview: `${APP}/matches`,
@@ -682,6 +736,7 @@ describe("links", () => {
     gameweek_opened: `${APP}/fantasy/team`,
     gameweek_finalized: `${APP}/fantasy/points`,
     pepites_weekly: `${APP}/pepites/semaine/16`,
+    club_news_digest: `${APP}/clubs/raja`,
   };
 
   for (const type of EMAIL_NOTIFICATION_TYPES) {
@@ -690,8 +745,11 @@ describe("links", () => {
         const email = render(delivery(type, { language, favoriteTeamId: "raja" }));
         const hrefs = [...email.html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]!);
         const textUrls = email.text.match(/https?:\/\/\S+/g) ?? [];
-        // The wordmark, button, manage, unsubscribe; Pépites adds its home page.
-        expect(hrefs.length).toBe(type === "pepites_weekly" ? 5 : 4);
+        // The wordmark, button, manage, unsubscribe; Pépites adds its home
+        // page; club news adds its articles (here without photos, which need
+        // a Storage origin: the lead's title and "read" link, one per row).
+        const extra = { pepites_weekly: 1, club_news_digest: 2 + 1 + 1 } as const;
+        expect(hrefs.length).toBe(4 + (extra[type as keyof typeof extra] ?? 0));
         for (const url of [...hrefs, ...textUrls]) {
           expect(allowed.some((pattern) => pattern.test(url))).toBe(true);
         }
@@ -769,6 +827,105 @@ describe("pepites_weekly", () => {
     );
     expect(unsubscribeUrl(delivery("round_preview"), LINKS)).toBe(
       `${APP}/unsubscribe?token=tok-123`,
+    );
+  });
+});
+
+describe("club_news_digest", () => {
+  const MEDIA = { appUrl: APP, storageUrl: "https://project.supabase.co" } as const;
+  const STORAGE = "https://project.supabase.co/storage/v1/object/public";
+  const club = (
+    language: EmailLanguage,
+    payload: EmailPayloadByType["club_news_digest"] = clubNewsPayload(),
+  ) => renderNotificationEmail(delivery("club_news_digest", { language, payload }), MEDIA);
+
+  it("leads with the newest article and names the club in the subject", () => {
+    const email = club("fr");
+    expect(email.subject).toBe("Raja Casablanca · Le Raja renverse le Wydad dans le derby");
+    expect(email.preheader).toBe("Et 2 articles de plus sur votre club aujourd’hui.");
+    expect(email.html).toContain("Les actus de votre club");
+    expect(email.html).toContain("Vendredi 30 octobre · 3 articles");
+    expect(email.html).toContain("À la une");
+    expect(email.html).toContain("Aussi aujourd’hui");
+    expect(email.text).toContain(`${APP}/news/ed-1-fr`);
+    // Morocco is on UTC+0 since 2026-09-20; yesterday's article says so.
+    expect(email.text).toContain("16:10 · 3 min de lecture");
+    expect(email.text).toContain("Hier 21:05 · 3 min de lecture");
+  });
+
+  it("shows the crest and the photos from Storage, and nothing without a Storage origin", () => {
+    const email = club("fr");
+    const images = [...email.html.matchAll(/<img\b[^>]*src="([^"]+)"/g)].map((m) => m[1]);
+    expect(images).toEqual([
+      `${APP}/email/botolago-wordmark-light.png`,
+      `${STORAGE}/football-media/football/crests/raja.png`,
+      `${STORAGE}/news-media/news/2026/derby.webp`,
+      `${STORAGE}/news-media/news/2026/coach.jpg`,
+    ]);
+    expect(email.html).toContain('width="536" alt="Le Raja renverse le Wydad dans le derby"');
+    const bare = render(delivery("club_news_digest", { language: "fr" }));
+    expect([...bare.html.matchAll(/<img\b/g)]).toHaveLength(1);
+  });
+
+  it("accepts only https source URLs and safe Storage paths", () => {
+    const base = clubNewsPayload();
+    const lead = base.articles[0]!;
+    const withImage = (image: { storagePath: string | null; sourceUrl: string | null }) =>
+      club("fr", {
+        ...base,
+        team: { ...base.team, crest: null },
+        articles: [{ ...lead, editions: { fr: { ...lead.editions.fr!, image } } }],
+        total: 1,
+      }).html;
+    expect(withImage({ storagePath: null, sourceUrl: "https://cdn.example.com/a.jpg" })).toContain(
+      'src="https://cdn.example.com/a.jpg"',
+    );
+    for (const image of [
+      { storagePath: null, sourceUrl: "http://cdn.example.com/a.jpg" },
+      { storagePath: null, sourceUrl: "javascript:alert(1)" },
+      { storagePath: "news/../secret.png", sourceUrl: null },
+      { storagePath: "private/a.png", sourceUrl: null },
+    ]) {
+      expect([...withImage(image).matchAll(/<img\b/g)]).toHaveLength(1);
+    }
+  });
+
+  it("reads right to left in Arabic and marks an article only written in French", () => {
+    const email = club("ar");
+    expect(email.subject).toBe("الرجاء الرياضي · الرجاء يقلب الطاولة على الوداد في الديربي");
+    expect(email.html).toContain('<html lang="ar" dir="rtl">');
+    expect(email.html).toContain("أخبار فريقك");
+    expect(email.html).toContain("بالفرنسية");
+    // The French title keeps its own direction inside the Arabic email.
+    expect(email.html).toMatch(/<td colspan="2" dir="ltr"[^>]*>.*Blessure/);
+    expect(email.html).toContain(`${APP}/news/ed-2-fr`);
+    expect(email.html).toContain("←");
+  });
+
+  it("says how many more articles wait on the club page", () => {
+    const email = club("fr", { ...clubNewsPayload(), total: 5 });
+    expect(email.text).toContain("Et 2 articles de plus sur la page du club.");
+    expect(email.html).toContain("5 articles");
+  });
+
+  it("escapes article text", () => {
+    const base = clubNewsPayload();
+    const lead = base.articles[0]!;
+    const email = club("fr", {
+      ...base,
+      articles: [
+        { ...lead, editions: { fr: { ...lead.editions.fr!, title: `<script>x</script> "Raja"` } } },
+      ],
+      total: 1,
+    });
+    expect(email.html).not.toContain("<script>");
+    expect(email.html).toContain("&lt;script&gt;x&lt;/script&gt; &quot;Raja&quot;");
+    expect(email.preheader).not.toContain("<");
+  });
+
+  it("refuses an email with no article to show", () => {
+    expect(() => club("fr", { ...clubNewsPayload(), articles: [], total: 0 })).toThrow(
+      "club_news_digest has no articles",
     );
   });
 });

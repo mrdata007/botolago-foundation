@@ -19,6 +19,7 @@ export const EMAIL_NOTIFICATION_TYPES = [
   "gameweek_finalized",
   "gameweek_opened",
   "pepites_weekly",
+  "club_news_digest",
 ] as const;
 
 export type EmailNotificationType = (typeof EMAIL_NOTIFICATION_TYPES)[number];
@@ -118,6 +119,44 @@ export interface PepitesWeeklyPayload {
   readonly entries: readonly PepitesWeeklyEntry[];
 }
 
+/** Where an image lives: a path in Supabase Storage or an https URL. */
+export interface EmailImage {
+  readonly storagePath: string | null;
+  readonly sourceUrl: string | null;
+}
+
+/** One language edition of an article (app.article_editions). */
+export interface ClubNewsEdition {
+  /** Edition id: the article page is /news/{id}. */
+  readonly id: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly readingMinutes: number;
+  readonly image: EmailImage | null;
+}
+
+export interface ClubNewsArticle {
+  readonly storyId: string;
+  /** When its first public edition went out (ISO, UTC). */
+  readonly publishedAt: string;
+  /** The public French and/or Arabic edition. At least one is present. */
+  readonly editions: { readonly fr?: ClubNewsEdition; readonly ar?: ClubNewsEdition };
+}
+
+/**
+ * The daily club news email (app_private.notification_email_plan_club_news):
+ * the favourite club's articles from yesterday 19:00 to today 19:00, Morocco
+ * time, newest first, at most 8 of them.
+ */
+export interface ClubNewsDigestPayload {
+  /** Morocco-local calendar date, YYYY-MM-DD. */
+  readonly date: string;
+  readonly team: EmailTeam & { readonly crest: EmailImage | null };
+  readonly articles: readonly ClubNewsArticle[];
+  /** How many articles the day had; more than `articles.length` when capped. */
+  readonly total: number;
+}
+
 export type EmailPayloadByType = {
   readonly matchday_preview: MatchdayPreviewPayload;
   readonly matchday_results: MatchdayResultsPayload;
@@ -127,6 +166,7 @@ export type EmailPayloadByType = {
   readonly gameweek_finalized: GameweekFinalizedPayload;
   readonly gameweek_opened: DeadlinePayload;
   readonly pepites_weekly: PepitesWeeklyPayload;
+  readonly club_news_digest: ClubNewsDigestPayload;
 };
 
 /** What an unsubscribe token turns off: all product email, or one topic. */
@@ -176,4 +216,9 @@ export interface RenderedEmail {
 export interface EmailLinkContext {
   /** Public site origin without a trailing slash, e.g. https://botolago.com */
   readonly appUrl: string;
+  /**
+   * Supabase project origin (SUPABASE_URL), for images kept in Storage.
+   * Without it, Storage images are left out and the email still reads whole.
+   */
+  readonly storageUrl?: string | null;
 }

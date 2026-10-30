@@ -8,6 +8,8 @@ interface ClubEmailContent {
   subject: string;
   preheader: string;
   kicker: string;
+  /** A small image before the kicker (a club crest); decorative. */
+  kickerIcon?: { src: string; alt: string } | null;
   title: string;
   dateline?: string;
   /** Escaped fragments produced by the pure content renderers. */
@@ -40,7 +42,7 @@ ${table(
 ${table(
   `<tr><td bgcolor="${C.ink}" style="background-color:${C.ink};border-radius:14px 14px 0 0;">${table(`<tr><td align="${start}" style="padding:24px;text-align:${start};"><a href="${e(content.appUrl)}" style="text-decoration:none;color:#ffffff;"><img src="${e(content.appUrl)}/email/botolago-wordmark-light.png" width="168" height="30" alt="BotolaGO" style="display:inline-block;border:0;width:168px;max-width:100%;height:auto;vertical-align:middle;"></a></td></tr>`)}</td></tr>
 <tr><td class="bg-card" dir="${dir}" align="${start}" bgcolor="${C.surface}" style="background-color:${C.surface};padding:32px;border-radius:0 0 14px 14px;font-family:${font};font-size:16px;line-height:${ar ? "1.95" : "1.7"};color:${C.text};text-align:${start};">
-<p style="margin:0 0 12px;font-size:12px;line-height:1.7;font-weight:700;color:${C.ink};">${e(content.kicker)}</p>
+<p style="margin:0 0 12px;font-size:12px;line-height:1.7;font-weight:700;color:${C.ink};">${content.kickerIcon ? `<img src="${e(content.kickerIcon.src)}" width="28" height="28" alt="${e(content.kickerIcon.alt)}" style="display:inline-block;width:28px;height:28px;border:0;vertical-align:middle;margin-${ar ? "left" : "right"}:8px;">` : ""}<span style="vertical-align:middle;">${e(content.kicker)}</span></p>
 <h1 class="email-title" style="margin:0;font-family:${font};font-size:30px;line-height:${ar ? "1.55" : "1.25"};font-weight:800;color:${C.text};overflow-wrap:break-word;">${e(title)}</h1>
 ${content.dateline ? `<p style="margin:12px 0 0;font-size:14px;line-height:1.8;color:${C.muted};">${e(content.dateline)}</p>` : ""}
 ${content.bodyHtml}${action}${content.closingHtml ?? ""}

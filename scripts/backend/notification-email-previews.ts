@@ -1,4 +1,4 @@
-// Renders every notification e-mail variant (6 types x French/Arabic) from
+// Renders every notification e-mail variant (9 types x French/Arabic) from
 // realistic sample data, for review in a browser.
 //
 //   bun scripts/backend/notification-email-previews.ts <output-dir>
@@ -24,7 +24,11 @@ import {
   type EmailTeam,
 } from "../../supabase/functions/_shared/notification-email-types";
 
-const LINKS: EmailLinkContext = { appUrl: "https://botolago.com" };
+// The production Storage origin, so the club news preview shows a real crest.
+const LINKS: EmailLinkContext = {
+  appUrl: "https://botolago.com",
+  storageUrl: "https://tkewgajrljbwgwedqsxn.supabase.co",
+};
 const LANGUAGES: readonly EmailLanguage[] = ["fr", "ar"];
 
 // Arabic names as in scripts/backend/football-team-arabic-names-seed.sql.
@@ -138,6 +142,75 @@ const PAYLOADS: { readonly [K in EmailNotificationType]: EmailPayloadByType[K] }
         score: 86 - index * 3,
       }),
     ),
+  },
+  // Sample headlines, not real articles. The photo is the site's own share image.
+  club_news_digest: {
+    date: "2026-10-30",
+    team: {
+      ...T.raja,
+      crest: {
+        storagePath: "football/sofascore/teams/41757/crest-e49c13db652c.png",
+        sourceUrl: null,
+      },
+    },
+    total: 4,
+    articles: [
+      {
+        storyId: "sample-story-1",
+        publishedAt: "2026-10-30T17:40:00Z",
+        editions: {
+          fr: {
+            id: "sample-edition-1-fr",
+            title: "Le Raja s’impose dans le derby et reprend la tête de la Botola",
+            summary:
+              "Un but en fin de match offre trois points précieux aux Verts, qui repassent devant au classement après la sixième journée.",
+            readingMinutes: 4,
+            image: { storagePath: null, sourceUrl: "https://botolago.com/og-image.jpg" },
+          },
+          ar: {
+            id: "sample-edition-1-ar",
+            title: "الرجاء يفوز في الديربي ويستعيد صدارة البطولة",
+            summary:
+              "هدف في الدقائق الأخيرة يمنح الخضر ثلاث نقاط ثمينة ويعيدهم إلى صدارة الترتيب بعد الجولة السادسة.",
+            readingMinutes: 4,
+            image: { storagePath: null, sourceUrl: "https://botolago.com/og-image.jpg" },
+          },
+        },
+      },
+      {
+        storyId: "sample-story-2",
+        publishedAt: "2026-10-30T11:15:00Z",
+        editions: {
+          fr: {
+            id: "sample-edition-2-fr",
+            title: "Le groupe convoqué pour le déplacement à Berkane",
+            summary: "Le staff technique a dévoilé une liste de 22 joueurs.",
+            readingMinutes: 2,
+            image: { storagePath: null, sourceUrl: "https://botolago.com/og-image.jpg" },
+          },
+          ar: {
+            id: "sample-edition-2-ar",
+            title: "لائحة اللاعبين المستدعين لمواجهة بركان",
+            summary: "كشف الطاقم التقني عن لائحة من 22 لاعبًا.",
+            readingMinutes: 2,
+            image: { storagePath: null, sourceUrl: "https://botolago.com/og-image.jpg" },
+          },
+        },
+      },
+      {
+        storyId: "sample-story-3",
+        publishedAt: "2026-10-29T20:30:00Z",
+        editions: {
+          fr: {
+            id: "sample-edition-3-fr",
+            title: "Blessure : trois semaines d’absence pour le capitaine",
+            summary: "Touché à la cuisse à l’entraînement, il manquera les deux prochains matchs.",
+            readingMinutes: 3,
+            image: null,
+          },
+        },
+      },
+    ],
   },
 };
 
