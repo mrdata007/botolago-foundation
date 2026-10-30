@@ -1,4 +1,3 @@
-import helpArt from "@/assets/illustrations/help-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
@@ -65,13 +64,6 @@ function HelpPage() {
     <FantasyFrame bottomNav>
       <UiHeader kicker={t("nav.fantasy")} title={t("fpl.help_title")} backTo="/fantasy" />
       <div className={cn("pb-8", ui.space.gutter, ui.surface.page)}>
-        <img
-          src={helpArt}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="mx-auto mt-4 h-auto max-h-36 w-auto max-w-full object-contain"
-        />
         <p className={cn("pt-4", ui.display.section, ui.tone.default)}>
           {t("fpl.how_can_we_help")}
         </p>

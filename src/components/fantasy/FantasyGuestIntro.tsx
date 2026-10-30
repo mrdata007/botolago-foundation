@@ -1,4 +1,3 @@
-import createTeamArt from "@/assets/illustrations/create-team.webp";
 import {
   BookOpen,
   CalendarClock,
@@ -107,39 +106,18 @@ function OpenIntro({
       className={cn("p-4", ui.surface.card)}
       data-testid="fantasy-guest-intro"
     >
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 id={titleId} className={cn("text-balance", ui.display.section, ui.tone.default)}>
-            {t("fantasy.intro.title")}
-          </h2>
-          {audience === "no_team" ? (
-            // Where this account stands: signed in, no team saved yet. Under
-            // the heading, so heading navigation does not skip it.
-            <p
-              className={cn(
-                "mt-1",
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-strong)]",
-                ui.tone.ink,
-              )}
-            >
-              {t("fpl.no_team_yet")}
-            </p>
-          ) : null}
-        </div>
-        <img
-          src={createTeamArt}
-          alt=""
-          aria-hidden
-          width={640}
-          height={467}
-          loading="lazy"
-          decoding="async"
-          className="h-16 w-auto shrink-0 object-contain"
-        />
-      </div>
-      {/* Full width, not the column beside the art: at 360px that column is
-          under 200px wide, which is eight lines for this lede. */}
+      <h2 id={titleId} className={cn("text-balance", ui.display.section, ui.tone.default)}>
+        {t("fantasy.intro.title")}
+      </h2>
+      {audience === "no_team" ? (
+        // Where this account stands: signed in, no team saved yet. Under
+        // the heading, so heading navigation does not skip it.
+        <p
+          className={cn("mt-1", ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.ink)}
+        >
+          {t("fpl.no_team_yet")}
+        </p>
+      ) : null}
       <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fantasy.intro.lede")}</p>
 
       <>

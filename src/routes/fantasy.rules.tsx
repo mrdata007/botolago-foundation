@@ -1,4 +1,3 @@
-import rulesArt from "@/assets/illustrations/rules-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -199,13 +198,6 @@ function RulesPage() {
 
   return (
     <div>
-      <img
-        src={rulesArt}
-        alt=""
-        aria-hidden
-        decoding="async"
-        className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
-      />
       {/* An h2: the header above already renders the page's h1. */}
       <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>

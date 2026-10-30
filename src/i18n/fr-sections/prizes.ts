@@ -12,6 +12,8 @@ export const frPrizes = {
   "prizes.how.mini_league": "Terminer la saison en tête de sa ligue.",
   "prizes.how_to_win": "Comment gagner",
   "prizes.value": "Valeur estimée : {value} MAD",
+  "prizes.value_label": "Valeur estimée",
+  "prizes.currency": "MAD",
   "prizes.merch_only": "Lot en produits officiels",
   "prizes.sponsored_by": "Offert par {sponsor}",
   "prizes.sponsor_logo_alt": "Logo de {sponsor}",

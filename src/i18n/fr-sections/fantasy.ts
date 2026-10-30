@@ -777,6 +777,7 @@ export const frFantasy = {
   "fpl.no_data_yet": "Pas encore de données.",
   "fpl.rankings": "Classement général",
   "fpl.points_not_available": "Les points de cette journée seront disponibles après les matchs.",
+  "fpl.points_pending_title": "Points pas encore calculés",
   // BG-0075 — the scoring lines behind a player's total on /fantasy/points.
   // One entry per `category` written into app.fantasy_player_point_events by
   // src/backend/fantasy/scoring.ts, plus the categories app.fantasy_scoring_

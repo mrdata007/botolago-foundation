@@ -6,7 +6,6 @@ import { useI18n } from "@/i18n/provider";
 import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { prizesService } from "@/services/prizes";
-import { PRIZE_HERO_ART } from "./prize-art";
 import { tierLabel } from "./prize-presentation";
 
 /**
@@ -98,14 +97,6 @@ export function PrizeWelcome() {
       }
     >
       <div className="flex flex-col items-center gap-3">
-        <img
-          src={PRIZE_HERO_ART}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="h-28 w-auto object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.2)]"
-          data-testid="prize-welcome-art"
-        />
         <ul className="grid w-full gap-1.5" data-testid="prize-welcome-list">
           {(prizes.data ?? []).slice(0, 3).map((prize) => (
             <li key={prize.id} className={cn("px-3 py-2", ui.radius.control, ui.surface.sunken)}>

@@ -52,6 +52,20 @@ export function howToWin(t: Translate, tier: PrizeTier): string {
   }
 }
 
+/**
+ * Whether the prize at `index` is the first in the list to carry its photo.
+ * A photo shown once is the prize; the same photo again on the next card reads
+ * as a stock picture, so a repeat falls back to the value.
+ */
+export function firstUseOfImage(
+  prizes: ReadonlyArray<{ imageUrl: string | null }>,
+  index: number,
+): boolean {
+  const url = prizes[index]?.imageUrl;
+  if (!url) return false;
+  return prizes.findIndex((prize) => prize.imageUrl === url) === index;
+}
+
 export function statusLabel(t: Translate, status: PrizeWinnerStatus): string {
   switch (status) {
     case "pending":

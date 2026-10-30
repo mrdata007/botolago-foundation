@@ -176,7 +176,7 @@ describe("Classement (A-Standings)", () => {
 
   it("offers last season's table while this one has no result yet", () => {
     expect(standings).toContain("data.overall.length === 0");
-    expect(standings).toContain("<EmptyState illustration={standingsSoonArt}>");
+    expect(standings).toContain('<EmptyState title={t("matches.table.empty_title")}>');
     expect(standings).toContain("setSeasonId(previous.id)");
   });
 

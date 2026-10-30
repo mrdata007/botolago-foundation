@@ -1,4 +1,3 @@
-import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowDownUp,
@@ -577,18 +576,10 @@ function LeaguesSection({
   );
 }
 
-/** "No private leagues yet", with the same spot art as the leagues page. */
+/** "No private leagues yet": one plain line; the buttons under it are the way on. */
 function NoLeaguesNote({ text }: { text: string }) {
   return (
-    <div className={cn("flex items-center gap-3 px-3 py-2.5", ui.surface.card)}>
-      <img
-        src={emptyLeaguesArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="h-12 w-auto shrink-0 object-contain"
-      />
+    <div className={cn("px-3 py-2.5", ui.surface.card)}>
       <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
     </div>
   );

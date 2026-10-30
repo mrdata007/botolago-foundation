@@ -27,8 +27,8 @@ import { ui, UiButton, UiSkeleton } from "@/components/ui-kit";
  *                      glyph, no retry: asking again will not produce it.
  *   `ErrorState`       the request FAILED. The only one with a retry.
  *
- * The public props of the existing exports are unchanged; `action` and
- * `message` are additions.
+ * `action`, `message` and `title` are additions; the spot illustration is
+ * gone (the generated object pictures read as filler, 2026-10-30).
  */
 
 export function LoadingState({ label }: { label?: string }) {
@@ -45,21 +45,27 @@ export function LoadingState({ label }: { label?: string }) {
   );
 }
 
-/** The sunken panel the empty and unavailable states share. */
+/**
+ * The sunken panel the empty and unavailable states share.
+ *
+ * With a `title` it is type-led: a short Changa headline saying what is
+ * happening, the line under it and the way on. No picture and no glyph: the
+ * words carry it. Without one it keeps the glyph disc over the line.
+ */
 function StatePanel({
   glyph,
+  title,
   children,
   action,
   className,
   compact,
-  illustration,
 }: {
   glyph: ReactNode;
+  title?: ReactNode;
   children: ReactNode;
   action?: ReactNode;
   className?: string;
   compact?: boolean;
-  illustration?: string;
 }) {
   return (
     <div
@@ -73,15 +79,10 @@ function StatePanel({
         className,
       )}
     >
-      {illustration ? (
-        <img
-          src={illustration}
-          alt=""
-          aria-hidden
-          loading="lazy"
-          decoding="async"
-          className={cn("drift-in w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
-        />
+      {title ? (
+        <p className={cn("max-w-[24ch] text-balance", ui.display.section, ui.tone.default)}>
+          {title}
+        </p>
       ) : (
         // The surface disc on the sunken panel: the same round icon plate the
         // boards put on shortcut tiles, one step lighter than its ground.
@@ -98,25 +99,25 @@ function StatePanel({
           {glyph}
         </div>
       )}
-      <span className="max-w-[28ch]">{children}</span>
+      <span className="max-w-[32ch]">{children}</span>
       {action ? <div className="flex flex-col items-center gap-1">{action}</div> : null}
     </div>
   );
 }
 
 export function EmptyState({
+  title,
   children,
   className,
   compact,
-  illustration,
   action,
 }: {
+  /** A short headline that says what is happening; the panel is then type-led, with no glyph. */
+  title?: ReactNode;
   children?: ReactNode;
   className?: string;
   /** Reduces vertical padding for use inside compact rails. */
   compact?: boolean;
-  /** An optional spot illustration (image URL) in place of the inbox glyph. */
-  illustration?: string;
   /**
    * Where to go from here: buttons or links to what does exist (the next match
    * day, the latest results). Under the message, one per line.
@@ -127,10 +128,10 @@ export function EmptyState({
   return (
     <StatePanel
       glyph={<Inbox className="h-5 w-5" aria-hidden />}
+      title={title}
       action={action}
       className={className}
       compact={compact}
-      illustration={illustration}
     >
       {children ?? t("state.empty")}
     </StatePanel>

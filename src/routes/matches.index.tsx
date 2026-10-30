@@ -1,4 +1,3 @@
-import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -515,7 +514,7 @@ function MatchesPage() {
               results, each only when there is one. */}
           <EmptyState
             compact
-            illustration={noMatchesArt}
+            title={t("matches.section.no_matches_title")}
             action={
               <>
                 {nextDay && nextDayLabel ? (

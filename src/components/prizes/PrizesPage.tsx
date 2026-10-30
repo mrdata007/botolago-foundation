@@ -18,8 +18,15 @@ import { pointsLabel } from "@/components/matches/standings-copy";
 import { cn } from "@/lib/utils";
 import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { prizesService } from "@/services/prizes";
-import { PRIZE_HERO_ART, PRIZE_HERO_PHOTO, PRIZE_TIER_ART } from "./prize-art";
-import { fill, formatMad, howToWin, periodLabel, tierLabel } from "./prize-presentation";
+import { PRIZE_HERO_PHOTO } from "./prize-art";
+import {
+  fill,
+  firstUseOfImage,
+  formatMad,
+  howToWin,
+  periodLabel,
+  tierLabel,
+} from "./prize-presentation";
 
 const TIER_ICONS: Record<PrizeTier, ComponentType<{ className?: string }>> = {
   gameweek: Medal,
@@ -66,9 +73,9 @@ export function PrizesPage() {
       ) : (
         <section aria-label={t("prizes.title")} className="flex min-w-0 flex-col gap-3">
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2">
-            {prizes.data.map((prize) => (
+            {prizes.data.map((prize, index) => (
               <li key={prize.id} className="min-w-0">
-                <PrizeCard prize={prize} />
+                <PrizeCard prize={prize} photo={firstUseOfImage(prizes.data, index)} />
               </li>
             ))}
           </ul>
@@ -139,13 +146,6 @@ function PrizesHero() {
         }}
       />
       <div className={cn("flex flex-col items-center gap-2 px-4 pb-5 pt-5", ui.tone.onInkPlain)}>
-        <img
-          src={PRIZE_HERO_ART}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="h-32 w-auto object-contain drop-shadow-[0_10px_18px_rgba(0,0,0,0.5)]"
-        />
         <span
           className={cn(
             "mt-1 inline-flex px-3 py-1",
@@ -169,12 +169,15 @@ function PrizesHero() {
 }
 
 /**
- * The prize's own photo when an admin set one; otherwise, or if that link does
- * not load, the tier's picture on a quiet studio-grey ground.
+ * The prize's own photo when an admin set one (and no card above already
+ * shows it); otherwise its estimated value, large, in the score face. A
+ * merchandise prize with no photo and no value gets neither: its name says
+ * what it is.
  */
-function PrizeArt({ prize }: { prize: PublicPrizeDto }) {
+function PrizeArt({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) {
+  const { t, lang } = useI18n();
   const [failed, setFailed] = useState(false);
-  if (prize.imageUrl && !failed) {
+  if (photo && prize.imageUrl && !failed) {
     return (
       <FailureAwareImage
         src={prize.imageUrl}
@@ -184,31 +187,36 @@ function PrizeArt({ prize }: { prize: PublicPrizeDto }) {
       />
     );
   }
+  if (prize.estimatedValueMad === null) return null;
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+    maximumFractionDigits: 0,
+  });
   return (
     <div
-      className={cn(
-        "flex aspect-[16/9] items-center justify-center px-6 pb-2 pt-4",
-        ui.surface.sunken,
-      )}
-      aria-hidden
+      className={cn("flex flex-col items-center gap-1 px-4 py-6", ui.surface.sunken)}
+      data-testid="prize-value-figure"
     >
-      <img
-        src={PRIZE_TIER_ART[prize.tier]}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        className="h-full w-auto max-w-full object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.18)]"
-      />
+      <span className={cn(ui.text.label, ui.tone.muted)}>{t("prizes.value_label")}</span>
+      {/* Figure and unit as two pieces, ordered by the page: "2 500 MAD" in
+          French, "2.500 درهم" (the figure on the right) in Arabic, as the
+          value line reads. */}
+      <span className={cn("flex items-baseline gap-2", ui.tone.default)}>
+        <bdi className={ui.score.hero}>{nf.format(prize.estimatedValueMad)}</bdi>
+        <span className={ui.score.sm}>{t("prizes.currency")}</span>
+      </span>
     </div>
   );
 }
 
-function PrizeCard({ prize }: { prize: PublicPrizeDto }) {
+function PrizeCard({ prize, photo }: { prize: PublicPrizeDto; photo: boolean }) {
   const { t, lang, tr } = useI18n();
   const Icon = TIER_ICONS[prize.tier];
+  // The value is the card's figure when there is no photo; the line under the
+  // name would only say it a second time.
+  const valueIsFigure = !(photo && prize.imageUrl) && prize.estimatedValueMad !== null;
   return (
     <UiCard padding="none" className="flex h-full flex-col overflow-hidden" testId="prize-card">
-      <PrizeArt prize={prize} />
+      <PrizeArt prize={prize} photo={photo} />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center gap-2">
           <span
@@ -228,14 +236,16 @@ function PrizeCard({ prize }: { prize: PublicPrizeDto }) {
         {tr(prize.description) ? (
           <p className={cn(ui.text.secondary, ui.tone.muted)}>{tr(prize.description)}</p>
         ) : null}
-        <p
-          className={cn(ui.text.bodyStrong, ui.tone.default)}
-          data-testid={prize.estimatedValueMad === null ? "prize-merch" : "prize-value"}
-        >
-          {prize.estimatedValueMad === null
-            ? t("prizes.merch_only")
-            : formatMad(t, prize.estimatedValueMad, lang)}
-        </p>
+        {valueIsFigure ? null : (
+          <p
+            className={cn(ui.text.bodyStrong, ui.tone.default)}
+            data-testid={prize.estimatedValueMad === null ? "prize-merch" : "prize-value"}
+          >
+            {prize.estimatedValueMad === null
+              ? t("prizes.merch_only")
+              : formatMad(t, prize.estimatedValueMad, lang)}
+          </p>
+        )}
         <div className={cn("mt-auto pt-3", ui.rule.blockStart)}>
           <p className={cn(ui.text.label, ui.tone.muted)}>{t("prizes.how_to_win")}</p>
           <p className={cn("mt-1", ui.text.secondary, ui.tone.default)}>

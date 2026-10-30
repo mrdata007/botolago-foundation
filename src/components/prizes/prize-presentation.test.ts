@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import {
+  firstUseOfImage,
   fill,
   formatMad,
   periodLabel,
@@ -48,5 +49,22 @@ describe("prize labels", () => {
     expect(prizeAdminErrorMessage(fr, "staff_access_denied")).toBe(
       "Action refusée : staff_access_denied",
     );
+  });
+});
+
+describe("firstUseOfImage", () => {
+  it("shows a photo once, and never the same photo on a later card", () => {
+    const prizes = [
+      { imageUrl: "a.jpg" },
+      { imageUrl: null },
+      { imageUrl: "a.jpg" },
+      { imageUrl: "b.jpg" },
+    ];
+    expect(prizes.map((_, index) => firstUseOfImage(prizes, index))).toEqual([
+      true,
+      false,
+      false,
+      true,
+    ]);
   });
 });

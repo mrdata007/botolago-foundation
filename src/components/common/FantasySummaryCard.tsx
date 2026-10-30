@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import createTeamArt from "@/assets/illustrations/create-team.webp";
 import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import type { FantasySummary } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
@@ -139,14 +138,6 @@ export function FantasyCreateCard({
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </span>
       </span>
-      <img
-        src={createTeamArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="-my-3 h-20 w-auto shrink-0 object-contain"
-      />
     </Link>
   );
 }
