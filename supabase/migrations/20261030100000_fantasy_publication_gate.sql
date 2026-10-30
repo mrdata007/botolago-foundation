@@ -298,25 +298,26 @@ end $$;
 revoke all on function api.service_prepare_fantasy_live_scoring(uuid) from public, anon, authenticated;
 grant execute on function api.service_prepare_fantasy_live_scoring(uuid) to service_role;
 
-alter function api.service_persist_fantasy_scoring_results(uuid, bigint, text, jsonb, jsonb)
-  rename to service_persist_fantasy_scoring_results_before_publication;
-revoke all on function api.service_persist_fantasy_scoring_results_before_publication(uuid, bigint, text, jsonb, jsonb)
-  from public, anon, authenticated, service_role;
-create function api.service_persist_fantasy_scoring_results(
-  p_gameweek_id uuid, p_calculation_version bigint, p_input_digest text,
-  p_player_results jsonb, p_team_results jsonb
-) returns jsonb language plpgsql security definer set search_path = '' as $$
+-- The result writer is patched in place (like 20261019172832), so its reviewed
+-- body, and the tests that read it, stay where they are: one line is added.
+do $persist$
+declare
+  source text;
+  anchor constant text := 'if gw.status<>''provisional'' and not (gw.status=''live'' and (app_private.fantasy_adaptive_enabled(gw.id) or app_private.fantasy_live_scoring_enabled(gw.id))) then raise exception using errcode=''PT409'',message=''gameweek_not_scorable''; end if;';
 begin
-  if not app_private.is_service_request() then
-    raise exception using errcode = 'PT403', message = 'forbidden';
+  if md5((select prosrc from pg_proc
+    where oid = 'api.service_persist_fantasy_scoring_results(uuid,bigint,text,jsonb,jsonb)'::regprocedure))
+    is distinct from 'ac72c2f5bc7b1d69ac68d4aea79bfe32' then
+    raise exception 'publication_gate_unexpected_persist_body';
   end if;
-  perform app_private.fantasy_assert_publication_released(p_gameweek_id);
-  return api.service_persist_fantasy_scoring_results_before_publication(
-    p_gameweek_id, p_calculation_version, p_input_digest, p_player_results, p_team_results);
-end $$;
-revoke all on function api.service_persist_fantasy_scoring_results(uuid, bigint, text, jsonb, jsonb)
-  from public, anon, authenticated;
-grant execute on function api.service_persist_fantasy_scoring_results(uuid, bigint, text, jsonb, jsonb) to service_role;
+  source := pg_get_functiondef('api.service_persist_fantasy_scoring_results(uuid,bigint,text,jsonb,jsonb)'::regprocedure);
+  if (length(source) - length(replace(source, anchor, ''))) <> length(anchor) then
+    raise exception 'publication_gate_persist_anchor_not_unique';
+  end if;
+  execute replace(source, anchor,
+    'perform app_private.fantasy_assert_publication_released(gw.id);' || E'\n  ' || anchor);
+end
+$persist$;
 
 alter function api.service_begin_fantasy_finalization(uuid, bigint, text)
   rename to service_begin_fantasy_finalization_before_publication;
