@@ -695,3 +695,9 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - Real run: the 4 migrations are recorded (20261030100000, 100100, 100200, 100300), and the gate's function and table exist.
   - Cleanup still to do: dropping the temporary table timed out waiting for the owner's confirmation. The table only holds the script text and is not reachable from the API.
 - Step 4: Lovable was already synced to 386e1f1. Published with deploy 286250ad. (The preview answers 401 because it needs a login; the live site answered 200 beforehand.)
+- Step 5 checks (30 Oct ~20:50 UTC):
+  - Live pages answer 200 (home, Fantasy, rankings, matches).
+  - Season board, read as a fan would: ak47 153, Imane 123, Les Lions 89, Abdelali 41. Correct, and Journée 6 is left out.
+  - A suspected display fault was the Lead reading the "Journée" tab (the Journée 5 board, ordered by Journée 5 points), which is correct.
+  - Pre-existing oddity, not from this batch: the Journée 5 board's stored `total_points` (240/198/179, written 29 Oct 18:50) does not match the season sums (153/123/89). Queued for review.
+  - Dropping the temporary table timed out twice waiting for the owner's approval. Still pending.
