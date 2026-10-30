@@ -16,6 +16,16 @@ of every session, so its rules apply without anyone having to open the file:
 
 What follows here is the Claude-specific remainder.
 
+## Working method
+
+How every task runs (define "done" first, keep a progress file, show proof,
+stop after a repeated failure, ask before anything that cannot be undone)
+lives in [`.claude/WORKING_METHOD.md`](.claude/WORKING_METHOD.md). The import
+line below loads it every session. It never overrides the rules in this file
+or in `AGENTS.md`.
+
+@.claude/WORKING_METHOD.md
+
 ## One writer at a time, per database
 
 **This rule lives in [`AGENTS.md`](AGENTS.md#one-writer-at-a-time-per-database).**
