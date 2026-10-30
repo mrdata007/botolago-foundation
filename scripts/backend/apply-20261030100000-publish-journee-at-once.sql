@@ -877,6 +877,56 @@ revoke all on function app_private.fantasy_clear_shown_rankings_trigger() from p
 create trigger fantasy_rankings_refresh_shown_trunc after truncate on app.fantasy_rankings
   for each statement execute function app_private.fantasy_clear_shown_rankings_trigger();
 
+-- A journée becomes "held with results" at the moment its first result row is
+-- written, or when the rule is switched on over results that already exist, or
+-- when a gameweek opens, closes or moves. None of those writes touches
+-- app.fantasy_rankings, so the triggers above do not run, and until the
+-- overall ranking is written the readers would have been given an empty shown
+-- table (the Journée 5 board ordered by Journée 5 points, no league items).
+-- These statement triggers close that window: in the same transaction as the
+-- write that makes a season held, its shown figures are built.
+--
+-- A held season is "missing" when it has a season board but no shown row.
+-- Building happens once, at that moment; later result batches find the rows
+-- and do nothing (a statement trigger on the results table must stay cheap,
+-- the worker writes it in batches). Clearing happens when nothing is held.
+create function app_private.fantasy_shown_missing()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from app_private.fantasy_held_result_seasons h
+    where exists (select 1 from app.fantasy_rankings r
+        where r.fantasy_season_id = h.season_id and r.gameweek_id is null and r.league_id is null)
+      and not exists (select 1 from app_private.fantasy_shown_rankings s
+        where s.fantasy_season_id = h.season_id));
+$$;
+revoke all on function app_private.fantasy_shown_missing() from public, anon, authenticated, service_role;
+
+create function app_private.fantasy_ensure_shown_rankings_trigger()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if not app_private.fantasy_any_held() then
+    delete from app_private.fantasy_shown_rankings;
+  elsif app_private.fantasy_shown_missing() then
+    perform app_private.fantasy_refresh_shown_rankings();
+  end if;
+  return null;
+end $$;
+revoke all on function app_private.fantasy_ensure_shown_rankings_trigger() from public, anon, authenticated, service_role;
+create trigger fantasy_results_ensure_shown_ins after insert on app.fantasy_team_gameweek_results
+  for each statement execute function app_private.fantasy_ensure_shown_rankings_trigger();
+create trigger fantasy_results_ensure_shown_del after delete on app.fantasy_team_gameweek_results
+  for each statement execute function app_private.fantasy_ensure_shown_rankings_trigger();
+create trigger fantasy_gameweeks_ensure_shown_ins after insert on app.fantasy_gameweeks
+  for each statement execute function app_private.fantasy_ensure_shown_rankings_trigger();
+create trigger fantasy_gameweeks_ensure_shown_upd after update on app.fantasy_gameweeks
+  for each statement execute function app_private.fantasy_ensure_shown_rankings_trigger();
+create trigger fantasy_gameweeks_ensure_shown_del after delete on app.fantasy_gameweeks
+  for each statement execute function app_private.fantasy_ensure_shown_rankings_trigger();
+-- Switching the rule on (or moving its first gameweek) over results that exist
+-- changes what every total shows: a full rebuild, like a change of setting.
+create trigger fantasy_rating_seasons_refresh_shown after insert or update or delete on app_private.fantasy_api_rating_seasons
+  for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
+
 -- What a fan may see of the rankings: boards of journées that are out, and the
 -- season and league boards worked out without the held journée. Correct in
 -- every state; the readers reach it only while a journée is held.
@@ -951,6 +1001,7 @@ declare
   fn_name text;
   identity text;
   call_args text;
+  step_up text;
 begin
   foreach sig in array array[
     'api.fantasy_hub(text)',
@@ -990,11 +1041,33 @@ begin
         schema_name, fn_name || '_held', identity);
     end if;
 
-    -- The wrapper takes the old name and the old arguments.
-    select string_agg(format('%I', n), ', ' order by o) into call_args
-      from unnest(proc.proargnames) with ordinality a(n, o);
+    -- The wrapper takes the old name and the old arguments. A reader that
+    -- applied the step-up (the signed-in account's second factor) still
+    -- applies it first, in the function the app calls, before it dispatches:
+    -- the copies keep their own call, which costs nothing, but the guard must
+    -- not live only in a function a browser cannot reach.
+    step_up := case when proc.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
+      then 'perform app_private.assert_mfa_step_up(); ' else '' end;
+    -- The call passes the input arguments only: a function that returns a
+    -- table (rivals_pair) lists its result columns in proargnames too, and a
+    -- copy takes none of them. A VARIADIC argument is passed as VARIADIC, and
+    -- an argument with no name is passed by position.
+    select string_agg(
+        case when m = 'v' then 'variadic ' else '' end
+        || case when n is null or n = '' then '$' || i::text else format('%I', n) end,
+        ', ' order by o)
+      into call_args
+      from (
+        select a.o,
+          row_number() over (order by a.o) as i,
+          a.n,
+          coalesce(proc.proargmodes[a.o::integer], 'i') as m
+        from unnest(coalesce(proc.proargnames, array_fill(null::text, array[coalesce(array_length(proc.proallargtypes, 1), proc.pronargs)]))) with ordinality a(n, o)
+      ) args
+      where m in ('i', 'b', 'v');
     execute format(
       'create or replace function %s.%I(%s) returns %s language plpgsql stable %s set search_path = '''' as $w$ begin '
+      || step_up
       || case when proc.proretset
            then 'if app_private.fantasy_any_held() then return query select * from %s.%I(%s); '
              || 'else return query select * from %s.%I(%s); end if; end $w$'
@@ -1429,7 +1502,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261030100000, 'UTF8')), 'hex')
-    is distinct from '8c5cd7b1590bfaf052fc2a47dcb6779cfc4448fd29e6797fbb9b78daae569ad6' then
+    is distinct from '658a1daa8a05b7cdc4e469c153698f3beae89b36fb19eab62ce50dc7857a769f' then
     raise exception 'stop: 20261030100000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
