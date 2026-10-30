@@ -110,8 +110,10 @@ export function FantasyHubTeamArea({
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
+        {/* The team card, the transfers row and the card block. No button
+            placeholder: with a gameweek the team button is the deadline
+            card's, and that is the common case. */}
         <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
-        <UiSkeleton className={cn("h-12", ui.radius.full)} />
         <UiSkeleton className={cn("h-[63px]", ui.radius.card)} />
         <UiSkeleton className={cn("h-28", ui.radius.card)} />
       </div>
@@ -202,6 +204,11 @@ function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {
     now: Date.now(),
   });
   if (!("to" in action)) return null;
+  // With a gameweek the deadline card above carries « Mon équipe » beside the
+  // checklist; a second button to the same page under the team card is the
+  // same action twice. The points actions (a round under way or done) and the
+  // team action with no gameweek stay.
+  if (action.to === "/fantasy/team" && gameweek) return null;
   const Icon = action.to === "/fantasy/points" ? Trophy : Shirt;
   return (
     <UiLinkButton to={action.to} variant="gradient" className="mt-3.5">
