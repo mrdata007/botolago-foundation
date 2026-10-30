@@ -116,4 +116,23 @@ describe("apply-20261030100000-publish-journee-at-once.sql", () => {
     ])
       expect(script).toContain(check);
   });
+
+  test("the closing row says it passed only after the last check ran to the end", () => {
+    // A flag written inside the transaction would be rolled back with it; a session-level advisory
+    // lock survives the rollback. Only the last statement of the postflight takes it.
+    const lock = "perform pg_advisory_lock(20261030100000);";
+    expect(occurrences(script, lock)).toBe(1);
+    expect(script.indexOf(lock)).toBeGreaterThan(
+      script.indexOf("raise notice 'publication: no journée before 6 gated"),
+    );
+    expect(script.indexOf(lock)).toBeLessThan(script.indexOf("$postflight$;"));
+    const closing = script.slice(script.lastIndexOf("\nrollback;\n"));
+    expect(closing).toContain("FAILED — nothing saved");
+    expect(closing).toContain("f.passed and pg_advisory_unlock(20261030100000)");
+    expect(closing.indexOf("FAILED")).toBeLessThan(closing.indexOf("Rehearsal passed"));
+    // A lock left by an earlier run in the same session is cleared before the transaction begins.
+    expect(script.indexOf("perform pg_advisory_unlock(20261030100000);")).toBeLessThan(
+      script.indexOf("\nbegin;\n"),
+    );
+  });
 });

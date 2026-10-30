@@ -14,7 +14,7 @@
 begin;
 set local session_replication_role = replica;
 set local search_path = public, extensions;
-select set_config('request.jwt.claims', '{"role":"anon"}', true);
+select set_config('request.jwt.claims', '{"role":"authenticated","sub":"d8000010-0000-4000-8000-000000000001","aal":"aal2"}', true);
 
 insert into app.countries (id, iso_alpha2, iso_alpha3) values ('d0000000-0000-4000-8000-000000000001', 'MA', 'MAR');
 insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
@@ -90,6 +90,14 @@ end
 $mode$;
 analyze app.fantasy_rankings;
 analyze app.fantasy_team_gameweek_results;
+analyze app.fantasy_teams;
+analyze app.fantasy_leagues;
+analyze app.fantasy_league_memberships;
+select to_regclass('app_private.fantasy_shown_rankings') is not null as shown_table \gset
+\if :shown_table
+analyze app_private.fantasy_shown_rankings;
+\endif
+analyze app_private.public_ranking_exclusions;
 
 create function pg_temp.ms(call text) returns numeric language plpgsql as $$
 declare t0 timestamptz; best numeric := 1e12; t numeric;

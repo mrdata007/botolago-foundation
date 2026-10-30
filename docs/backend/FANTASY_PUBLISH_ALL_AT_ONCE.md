@@ -92,6 +92,23 @@ on stay hidden (the standings, hub, leagues, rivals and recap read
 take the held journée off every total) and are published at the slot; the worker's
 persist and rank then replay over them without duplicates.
 
+### Cost of the standings readers
+
+With no held journée that already has results (every day but the rare one) the
+readers run their original bodies on the raw tables: each name the app calls
+(`fantasy_hub`, `fantasy_leagues`, `fantasy_league_standings`,
+`fantasy_overall_standings`, `get_my_rivals`, `get_my_deadline_briefing`,
+`fantasy_hidden_ahead`, `rivals_pair`, `round_recap_league`) is a wrapper that
+asks `app_private.fantasy_any_held()` once and calls `<name>_ungated` (the
+original, untouched) or `<name>_held` (patched to read the visible views).
+While a journée is held, the shown totals and ranks are not computed per row:
+`app_private.fantasy_shown_rankings` stores them (the team's published results
+added up, ranked with the ranking writer's own tie-break), and a statement
+trigger on `app.fantasy_rankings` refreshes only the boards a statement touched.
+A full rebuild is `select app_private.fantasy_refresh_shown_rankings();`.
+Timings: `scripts/backend/perf/fantasy-standings-held-timing.sql` (scratch
+database only).
+
 ## Tests
 
 `supabase/tests/database/fantasy_publication_gate.test.sql`,

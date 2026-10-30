@@ -456,16 +456,21 @@ cross join lateral jsonb_array_elements(t->'substitutions') with ordinality x(s,
 -- the season and league totals that were written with it (points can be written
 -- before the gate is switched on, or while a release is under way) are shown
 -- without it: its score is taken off every total, and the ranks are worked out
--- again on what is shown, with the ranking writer's own tie-break.
+-- again on what is shown, with the ranking writer's own tie-break (transfer
+-- hits, confirmed transfers, latest finalized score, team creation date, id).
 --
--- Cost. With no held journée that already has results (every day but the rare
--- one), the view is the raw table behind a one-time filter: the readers take
--- exactly the old path. While one is held, the shown totals and ranks are NOT
--- worked out per row or per request: app_private.fantasy_shown_rankings holds
--- them, refreshed once per change (the ranking writer's statements, a change of
--- setting, every worker decision, and at the end of this migration). A row whose
--- stored figures do not belong to its current calculation is left out, never
--- shown with the held journée's points.
+-- Cost. Two rules keep the readers fast at 50,000 teams.
+--   1. With no held journée that already has results (every day but the rare
+--      one), each patched reader runs its original, untouched body on the raw
+--      tables: a one-line wrapper asks app_private.fantasy_any_held() once per
+--      request and calls it. Nothing is computed, nothing is joined.
+--   2. While one is held, the shown totals and ranks are not worked out per
+--      row or per request: app_private.fantasy_shown_rankings holds them, and
+--      is refreshed once per change (each statement of the ranking writer for
+--      the season or league it wrote, a change of setting, every worker
+--      decision, and at the end of this migration). A row whose stored figures
+--      do not belong to its current calculation is left out, never shown with
+--      the held journée's points.
 create view app_private.fantasy_held_result_seasons with (security_invoker = true) as
 select distinct g.fantasy_season_id as season_id
 from app.fantasy_gameweeks g
@@ -474,79 +479,214 @@ where g.status not in ('finalized', 'corrected', 'cancelled')
   and exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = g.id);
 revoke all on app_private.fantasy_held_result_seasons from public, anon, authenticated, service_role;
 
+create function app_private.fantasy_any_held()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from app_private.fantasy_held_result_seasons);
+$$;
+revoke all on function app_private.fantasy_any_held() from public, anon, authenticated, service_role;
+
 create table app_private.fantasy_shown_rankings (
   ranking_id uuid primary key,
-  source_calculated_at timestamptz not null,
-  shown_total integer not null,
-  shown_rank bigint not null
+  fantasy_season_id uuid not null,
+  league_id uuid,
+  fantasy_team_id uuid not null,
+  rank bigint not null,
+  previous_rank bigint,
+  total_points integer not null,
+  transfer_hits integer not null,
+  confirmed_transfers integer not null,
+  latest_finalized_gameweek_score integer,
+  team_created_at timestamptz,
+  calculation_version bigint not null,
+  calculated_at timestamptz not null,
+  created_at timestamptz not null,
+  updated_at timestamptz not null
 );
+create index fantasy_shown_rankings_board_idx on app_private.fantasy_shown_rankings (fantasy_season_id, league_id, rank, fantasy_team_id);
+create index fantasy_shown_rankings_league_idx on app_private.fantasy_shown_rankings (league_id, rank, fantasy_team_id) where league_id is not null;
+create index fantasy_shown_rankings_team_idx on app_private.fantasy_shown_rankings (fantasy_team_id);
 alter table app_private.fantasy_shown_rankings enable row level security;
 alter table app_private.fantasy_shown_rankings force row level security;
 revoke all on app_private.fantasy_shown_rankings from public, anon, authenticated, service_role;
 
-create function app_private.fantasy_refresh_shown_rankings()
+-- Works the shown figures out again for the held seasons. With seasons and
+-- leagues (a null league is the sentinel zero uuid: the season board) it
+-- touches only those boards; with no arguments it rebuilds everything.
+--
+-- A shown total is the team's published results added up: the same sum the
+-- ranking writer makes (it too leaves out a journée that is held), so a board
+-- written before the hold, or after it, shows the same figure. It does not
+-- start from the stored total and take the held journée off, which would take
+-- it off twice for a board written while the journée was held.
+create function app_private.fantasy_refresh_shown_rankings(p_only_boards boolean default false, p_seasons uuid[] default null, p_leagues uuid[] default null)
 returns void language plpgsql security definer set search_path = '' as $$
 begin
-  delete from app_private.fantasy_shown_rankings;
-  if not exists (select 1 from app_private.fantasy_held_result_seasons) then return; end if;
-  insert into app_private.fantasy_shown_rankings(ranking_id, source_calculated_at, shown_total, shown_rank)
-  select x.id, x.calculated_at, x.shown_total,
-    row_number() over (partition by x.fantasy_season_id, x.league_id order by x.shown_total desc,
-      x.transfer_hits asc, x.confirmed_transfers asc, x.latest_finalized_gameweek_score desc nulls last,
-      x.team_created_at asc, x.fantasy_team_id asc)
-  from (
-    select r.*, r.total_points - coalesce((
-      select sum(coalesce(t.final_score, t.provisional_score))
-      from app.fantasy_team_gameweek_results t
-      where t.fantasy_team_id = r.fantasy_team_id
-        and t.gameweek_id in (select h.gameweek_id from app_private.fantasy_unpublished_gameweeks h)), 0) as shown_total
+  if not exists (select 1 from app_private.fantasy_held_result_seasons) then
+    delete from app_private.fantasy_shown_rankings;
+    return;
+  end if;
+  if not p_only_boards then
+    delete from app_private.fantasy_shown_rankings;
+  end if;
+  insert into app_private.fantasy_shown_rankings(ranking_id, fantasy_season_id, league_id, fantasy_team_id, rank,
+    previous_rank, total_points, transfer_hits, confirmed_transfers, latest_finalized_gameweek_score,
+    team_created_at, calculation_version, calculated_at, created_at, updated_at)
+  with board as materialized (
+    select r.*
     from app.fantasy_rankings r
     where r.gameweek_id is null
       and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons)
-  ) x;
+      and (not p_only_boards or (r.fantasy_season_id = any (p_seasons)
+        and coalesce(r.league_id, '00000000-0000-0000-0000-000000000000'::uuid) = any (p_leagues)))
+  ), published as (
+    select t.fantasy_team_id, sum(coalesce(t.final_score, t.provisional_score))::integer as points
+    from app.fantasy_team_gameweek_results t
+    where t.fantasy_team_id in (select b.fantasy_team_id from board b)
+      and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = t.gameweek_id)
+    group by t.fantasy_team_id
+  )
+  select x.id, x.fantasy_season_id, x.league_id, x.fantasy_team_id,
+    row_number() over (partition by x.fantasy_season_id, x.league_id order by x.shown_total desc,
+      x.transfer_hits asc, x.confirmed_transfers asc, x.latest_finalized_gameweek_score desc nulls last,
+      x.team_created_at asc, x.fantasy_team_id asc),
+    x.previous_rank, x.shown_total, x.transfer_hits, x.confirmed_transfers, x.latest_finalized_gameweek_score,
+    x.team_created_at, x.calculation_version, x.calculated_at, x.created_at, x.updated_at
+  from (
+    select b.*, coalesce(p.points, 0) as shown_total
+    from board b
+    left join published p on p.fantasy_team_id = b.fantasy_team_id
+  ) x
+  on conflict (ranking_id) do update set rank = excluded.rank, previous_rank = excluded.previous_rank,
+    total_points = excluded.total_points, transfer_hits = excluded.transfer_hits,
+    confirmed_transfers = excluded.confirmed_transfers,
+    latest_finalized_gameweek_score = excluded.latest_finalized_gameweek_score,
+    team_created_at = excluded.team_created_at, calculation_version = excluded.calculation_version,
+    calculated_at = excluded.calculated_at, updated_at = excluded.updated_at;
 end $$;
-revoke all on function app_private.fantasy_refresh_shown_rankings() from public, anon, authenticated, service_role;
+revoke all on function app_private.fantasy_refresh_shown_rankings(boolean, uuid[], uuid[]) from public, anon, authenticated, service_role;
 
+-- Statement triggers: whatever the ranking writer or anyone else writes to
+-- app.fantasy_rankings, the boards it touched are worked out again, once per
+-- statement (the writer makes one statement per board).
 create function app_private.fantasy_refresh_shown_rankings_trigger()
 returns trigger language plpgsql security definer set search_path = '' as $$
+declare seasons uuid[]; leagues uuid[];
 begin
-  perform app_private.fantasy_refresh_shown_rankings();
+  if not app_private.fantasy_any_held() then
+    delete from app_private.fantasy_shown_rankings;
+    return null;
+  end if;
+  if tg_table_name <> 'fantasy_rankings' then
+    perform app_private.fantasy_refresh_shown_rankings();
+    return null;
+  end if;
+  if tg_op = 'DELETE' then
+    delete from app_private.fantasy_shown_rankings where ranking_id in (select id from old_rows);
+    select array_agg(distinct fantasy_season_id), array_agg(distinct coalesce(league_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      into seasons, leagues from old_rows where gameweek_id is null;
+  else
+    select array_agg(distinct fantasy_season_id), array_agg(distinct coalesce(league_id, '00000000-0000-0000-0000-000000000000'::uuid))
+      into seasons, leagues from new_rows where gameweek_id is null;
+  end if;
+  if seasons is not null then
+    perform app_private.fantasy_refresh_shown_rankings(true, seasons, leagues);
+  end if;
   return null;
 end $$;
 revoke all on function app_private.fantasy_refresh_shown_rankings_trigger() from public, anon, authenticated, service_role;
-create trigger fantasy_rankings_refresh_shown after insert or update or delete on app.fantasy_rankings
-  for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
+create trigger fantasy_rankings_refresh_shown_ins after insert on app.fantasy_rankings
+  referencing new table as new_rows for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
+create trigger fantasy_rankings_refresh_shown_upd after update on app.fantasy_rankings
+  referencing new table as new_rows for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
+create trigger fantasy_rankings_refresh_shown_del after delete on app.fantasy_rankings
+  referencing old table as old_rows for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
 create trigger fantasy_publication_settings_refresh_shown after insert or update or delete on app_private.fantasy_publication_settings
   for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
 
+create function app_private.fantasy_clear_shown_rankings_trigger()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  delete from app_private.fantasy_shown_rankings;
+  return null;
+end $$;
+revoke all on function app_private.fantasy_clear_shown_rankings_trigger() from public, anon, authenticated, service_role;
+create trigger fantasy_rankings_refresh_shown_trunc after truncate on app.fantasy_rankings
+  for each statement execute function app_private.fantasy_clear_shown_rankings_trigger();
+
+-- What a fan may see of the rankings: boards of journées that are out, and the
+-- season and league boards worked out without the held journée. Correct in
+-- every state; the readers reach it only while a journée is held.
 create view app_private.fantasy_visible_rankings with (security_invoker = true) as
 select r.* from app.fantasy_rankings r
-where not exists (select 1 from app_private.fantasy_held_result_seasons)
+where r.gameweek_id is not null
+  and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id)
 union all
+-- Joined to the season so that, for a held season, the planner stops here
+-- without reading the season's rows at all.
 select r.* from app.fantasy_rankings r
-where exists (select 1 from app_private.fantasy_held_result_seasons)
-  and ((r.gameweek_id is not null
-      and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id))
-    or (r.gameweek_id is null
-      and r.fantasy_season_id not in (select season_id from app_private.fantasy_held_result_seasons)))
+join app.fantasy_seasons season on season.id = r.fantasy_season_id
+where r.gameweek_id is null
+  and not exists (select 1 from app_private.fantasy_held_result_seasons held where held.season_id = season.id)
 union all
-select (jsonb_populate_record(null::app.fantasy_rankings, to_jsonb(r) || jsonb_build_object(
-  'total_points', s.shown_total, 'gameweek_points', null, 'rank', s.shown_rank))).*
-from app.fantasy_rankings r
-join app_private.fantasy_shown_rankings s on s.ranking_id = r.id and s.source_calculated_at = r.calculated_at
-where exists (select 1 from app_private.fantasy_held_result_seasons)
-  and r.gameweek_id is null
-  and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons);
+select s.ranking_id, s.fantasy_season_id, null::uuid, s.league_id, s.fantasy_team_id,
+  s.rank, s.previous_rank, s.total_points, null::integer,
+  s.transfer_hits, s.calculation_version, s.calculated_at, s.created_at, s.updated_at,
+  s.confirmed_transfers, s.latest_finalized_gameweek_score, s.team_created_at
+from app_private.fantasy_shown_rankings s
+where s.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons);
 revoke all on app_private.fantasy_visible_rankings from public, anon, authenticated, service_role;
 
--- The readers that took standings and journée points straight from the tables
--- read the visible views instead. Patched from pg_get_functiondef; each must
--- change, so nothing is silently left as it was.
+-- The count the original made, for the held case: how many hidden accounts sit
+-- above a rank. It looks each hidden account up by team (a join through the
+-- view cannot use the team index).
+create function app_private.fantasy_hidden_ahead_held(p_season_id uuid, p_gameweek_id uuid, p_league_id uuid, p_rank bigint, p_previous boolean default false)
+returns bigint language sql stable set search_path = '' as $$
+  select count(*)
+  from app_private.public_ranking_exclusions exclusion
+  join app.fantasy_teams team on team.user_id = exclusion.user_id
+  cross join lateral (
+    select case when p_previous then r.previous_rank else r.rank end as position
+    from app.fantasy_rankings r
+    where p_gameweek_id is not null and r.fantasy_team_id = team.id
+      and r.fantasy_season_id = p_season_id and r.gameweek_id = p_gameweek_id
+      and r.league_id is not distinct from p_league_id
+      and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id)
+    union all
+    select case when p_previous then s.previous_rank else s.rank end
+    from app_private.fantasy_shown_rankings s
+    where p_gameweek_id is null and s.fantasy_team_id = team.id and s.fantasy_season_id = p_season_id
+      and s.league_id is not distinct from p_league_id
+      and p_season_id in (select season_id from app_private.fantasy_held_result_seasons)
+    union all
+    select case when p_previous then r.previous_rank else r.rank end
+    from app.fantasy_rankings r
+    where p_gameweek_id is null and r.fantasy_team_id = team.id
+      and r.fantasy_season_id = p_season_id and r.gameweek_id is null
+      and r.league_id is not distinct from p_league_id
+      and p_season_id not in (select season_id from app_private.fantasy_held_result_seasons)
+  ) x
+  where x.position < p_rank;
+$$;
+revoke all on function app_private.fantasy_hidden_ahead_held(uuid, uuid, uuid, bigint, boolean) from public, anon, authenticated, service_role;
+
+-- The readers that took standings and journée points straight from the tables.
+-- Each gets two copies made from its current definition (pg_get_functiondef):
+-- <name>_ungated, the original body untouched, and <name>_held, patched to read
+-- the visible views. The name the app calls becomes a wrapper (create or
+-- replace, so grants and dependants stay) that picks one of the two once per
+-- request. The copies call each other's copies, never a wrapper, so a request
+-- pays for the check once and not once per row. Each held copy must change,
+-- so nothing is silently left as it was.
 do $readers$
 declare
   sig text;
+  proc pg_proc%rowtype;
   source text;
-  changed text;
+  copy_src text;
+  schema_name text;
+  fn_name text;
+  identity text;
+  call_args text;
 begin
   foreach sig in array array[
     'api.fantasy_hub(text)',
@@ -559,13 +699,47 @@ begin
     'app_private.rivals_pair(uuid,uuid,uuid)',
     'app_private.round_recap_league(uuid,uuid,uuid,uuid,integer,integer)'
   ] loop
-    source := pg_get_functiondef(sig::regprocedure);
-    changed := regexp_replace(source, '\mapp\.fantasy_rankings\M', 'app_private.fantasy_visible_rankings', 'g');
-    changed := regexp_replace(changed, '\mapp\.fantasy_team_gameweek_results\M', 'app_private.fantasy_visible_team_results', 'g');
-    if changed = source then
-      raise exception 'publication_gate_reader_unchanged: %', sig;
+    select * into proc from pg_proc where oid = sig::regprocedure;
+    schema_name := (select nspname from pg_namespace where oid = proc.pronamespace);
+    fn_name := proc.proname;
+    identity := pg_get_function_identity_arguments(proc.oid);
+    source := pg_get_functiondef(proc.oid);
+
+    -- The untouched copy.
+    copy_src := replace(source, schema_name || '.' || fn_name || '(', schema_name || '.' || fn_name || '_ungated(');
+    copy_src := replace(copy_src, 'app_private.fantasy_hidden_ahead(', 'app_private.fantasy_hidden_ahead_ungated(');
+    execute copy_src;
+    execute format('revoke all on function %s.%I(%s) from public, anon, authenticated, service_role',
+      schema_name, fn_name || '_ungated', identity);
+
+    -- The held copy (the hidden-ahead one is written out above, not patched).
+    if fn_name <> 'fantasy_hidden_ahead' then
+      copy_src := regexp_replace(source, '\mapp\.fantasy_rankings\M', 'app_private.fantasy_visible_rankings', 'g');
+      copy_src := regexp_replace(copy_src, '\mapp\.fantasy_team_gameweek_results\M', 'app_private.fantasy_visible_team_results', 'g');
+      if copy_src = source then
+        raise exception 'publication_gate_reader_unchanged: %', sig;
+      end if;
+      copy_src := replace(copy_src, schema_name || '.' || fn_name || '(', schema_name || '.' || fn_name || '_held(');
+      copy_src := replace(copy_src, 'app_private.fantasy_hidden_ahead(', 'app_private.fantasy_hidden_ahead_held(');
+      execute copy_src;
+      execute format('revoke all on function %s.%I(%s) from public, anon, authenticated, service_role',
+        schema_name, fn_name || '_held', identity);
     end if;
-    execute changed;
+
+    -- The wrapper takes the old name and the old arguments.
+    select string_agg(format('%I', n), ', ' order by o) into call_args
+      from unnest(proc.proargnames) with ordinality a(n, o);
+    execute format(
+      'create or replace function %s.%I(%s) returns %s language plpgsql stable %s set search_path = '''' as $w$ begin '
+      || case when proc.proretset
+           then 'if app_private.fantasy_any_held() then return query select * from %s.%I(%s); '
+             || 'else return query select * from %s.%I(%s); end if; end $w$'
+           else 'if app_private.fantasy_any_held() then return %s.%I(%s); '
+             || 'else return %s.%I(%s); end if; end $w$' end,
+      schema_name, fn_name, pg_get_function_arguments(proc.oid), pg_get_function_result(proc.oid),
+      case when proc.prosecdef then 'security definer' else 'security invoker' end,
+      schema_name, fn_name || '_held', call_args,
+      schema_name, fn_name || '_ungated', call_args);
   end loop;
 end
 $readers$;

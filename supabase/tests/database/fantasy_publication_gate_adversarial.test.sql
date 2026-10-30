@@ -233,6 +233,12 @@ select extensions.is(api.fantasy_gameweek_summary('f6400000-0000-4000-8000-00000
 select extensions.is(jsonb_array_length(api.fantasy_overall_standings('f6300000-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001',null,null,10)->'items'),0,'D: the held journée has no standings rows at all');
 select extensions.is(api.fantasy_overall_standings('f6300000-0000-4000-8000-000000000001',null,null,null,10)->'items'->0->'totalPoints','0'::jsonb,'D: the season total does not include the held journée');
 select extensions.is(api.fantasy_overall_standings('f6300000-0000-4000-8000-000000000001',null,null,null,10)->'items'->0->'gameweekPoints','null'::jsonb,'D: and its points column is empty');
+-- The ranking writer runs again while the journée is held: it counts only published results, so
+-- its new totals already leave the held journée out, and the shown total is still 0 (not negative).
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select api.service_recalculate_fantasy_rankings('f6300000-0000-4000-8000-000000000001',null,null,current_setting('test.v')::bigint);
+select set_config('request.jwt.claims','{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2"}',true);
+select extensions.is(api.fantasy_overall_standings('f6300000-0000-4000-8000-000000000001',null,null,null,10)->'items'->0->'totalPoints','0'::jsonb,'D: after the writer runs again while held, the total is still 0');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 -- Tied teams while held: ranks follow the ranking writer's own tie-break (hits, confirmed transfers,
 -- latest finalized score, creation date, id), never the old rank that includes the hidden journée.
@@ -254,6 +260,26 @@ select extensions.is((select array_agg(fantasy_team_id::text order by rank) from
 select extensions.is((select array_agg(rank order by rank) from app_private.fantasy_visible_rankings where gameweek_id is null and league_id is null),array[1::bigint,2,3],'and the ranks are 1, 2, 3');
 delete from app.fantasy_rankings where fantasy_team_id in ('fa000000-0000-4000-8000-0000000000b1','fa000000-0000-4000-8000-0000000000c1');
 delete from app.fantasy_teams where id in ('fa000000-0000-4000-8000-0000000000b1','fa000000-0000-4000-8000-0000000000c1');
+-- The rest of the writer's tie-break, level on hits and confirmed transfers: the latest finalized
+-- score (higher first, none last), then the older team, then the lower id.
+insert into auth.users(id,instance_id,aud,role,email,email_confirmed_at,encrypted_password,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
+select ('f8000000-0000-4000-8000-0000000000d' || i)::uuid,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','tie-d' || i || '@example.test',statement_timestamp(),'hash','{}',('{"username":"tie_d' || i || '"}')::jsonb,statement_timestamp(),statement_timestamp()
+from generate_series(1,4) i;
+insert into app.fantasy_teams(id,user_id,fantasy_season_id,current_gameweek_id,name,bank,team_value,free_transfers)
+select ('fa000000-0000-4000-8000-0000000000d' || i)::uuid,('f8000000-0000-4000-8000-0000000000d' || i)::uuid,'f6300000-0000-4000-8000-000000000001','f6400000-0000-4000-8000-000000000001','Tie D' || i,10,90,1
+from generate_series(1,4) i;
+-- d1: latest 9, created Jan 5. d2: latest 9, created Jan 3, id ...d2. d3: latest 9, created Jan 3, id ...d3. d4: no latest score.
+insert into app.fantasy_rankings(fantasy_season_id,fantasy_team_id,rank,total_points,transfer_hits,confirmed_transfers,latest_finalized_gameweek_score,calculation_version,calculated_at,team_created_at)
+select 'f6300000-0000-4000-8000-000000000001'::uuid,('fa000000-0000-4000-8000-0000000000d' || i)::uuid,10 - i,0,0,0,
+  case when i = 4 then null else 9 end,1,statement_timestamp(),
+  case i when 1 then '2026-01-05'::timestamptz when 4 then '2026-01-01'::timestamptz else '2026-01-03'::timestamptz end
+from generate_series(1,4) i;
+select extensions.is((select array_agg(fantasy_team_id::text order by rank) from app_private.fantasy_visible_rankings
+   where gameweek_id is null and league_id is null and fantasy_team_id::text like 'fa000000-0000-4000-8000-0000000000d%'),
+ array['fa000000-0000-4000-8000-0000000000d2','fa000000-0000-4000-8000-0000000000d3','fa000000-0000-4000-8000-0000000000d1','fa000000-0000-4000-8000-0000000000d4'],
+ 'level on hits and transfers: higher latest score first, then the older team, then the lower id, none last');
+delete from app.fantasy_rankings where fantasy_team_id::text like 'fa000000-0000-4000-8000-0000000000d%';
+delete from app.fantasy_teams where id::text like 'fa000000-0000-4000-8000-0000000000d%';
 -- Results already written, but a rating is pending at the slot: never released.
 select api.service_record_fantasy_api_ratings(pg_temp.fx(1),'9101',pg_temp.native_players(1,true),statement_timestamp());
 select extensions.is(app_private.fantasy_publication_evaluate_at('f6400000-0000-4000-8000-000000000001',current_setting('test.slot')::timestamptz+interval '1 minute')->>'outcome','ratings_pending','D: written rows do not release a journée with a rating pending');
