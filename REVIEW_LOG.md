@@ -657,3 +657,15 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - fix the 3 CI failures (rivals arguments, the sign-in step-up guard in the outer functions, the Manager Card isolation test);
   - close F-R3-1 (no moment with wrong or empty standings);
   - push after each item, because of the frequent container restarts.
+
+**Batch 2a: round 4 done (30 Oct ~12:30 UTC).**
+- Builder (Sonnet) fixed the 4 items, commits b321099, f766804 and cc6fce1:
+  - Rivals calls pass only the inputs;
+  - the sign-in step-up guard is back in the outer functions (the test is unchanged: 99 of 99);
+  - the Manager Card allow-list names the 2 exact copies;
+  - the standings stay filled from the first results write (new test `fantasy_publication_window`, 29 checks; 17 fail without the fix).
+- Lead review of the new trigger code: correct. The stored standings are built in the same transaction as the write that starts the hold.
+- CI on cc6fce1: `database-quality` and `application-quality` both **green**.
+- Lead merged main (#591, screen-only) into the branch as merge commit 84fdbf5. Typecheck and 639 related tests pass locally.
+- Lead verdict: **APPROVED**, subject to CI on 84fdbf5. Waiting for the owner's yes to go live.
+- Not measured: the one-time standings rebuild at 50,000 teams (production has 8 teams).
