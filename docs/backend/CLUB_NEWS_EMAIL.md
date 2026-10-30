@@ -85,17 +85,24 @@ These steps are production writes. They follow `CLAUDE.md` (owner
 authorisation for that operation) and `AGENTS.md` (nothing else writing at the
 same time).
 
-1. Apply the two migrations, in order.
-2. Deploy `notification-email-dispatch` so it renders the new type.
-3. Add the type to the enabled list:
+1. **Done 2026-10-30 08:3x UTC:** migration `20261030120000` (the new type)
+   was applied to production and recorded under its own version. Its source
+   SHA-256 matches the file (`f8fdce78…`).
+2. **Database:** paste `scripts/backend/apply-20261030120100-club-news-email.sql`
+   into the Supabase SQL editor and run it once. The last query must show
+   `true` everywhere and the SHA-256 written at the top of the script.
+3. **Email function:** merge this branch to `main`, then in GitHub → Actions →
+   "Fantasy email automation deploy" → Run workflow, give the merged `main`
+   commit and type `DEPLOY_FANTASY_EMAIL_AUTOMATION`. It deploys only
+   `notification-email-dispatch`, from that commit, after its tests pass.
+4. **Switch on.** Production email is in `live` mode with no test accounts,
+   so this sends to every eligible reader from the next 19:00:
    ```sql
    update app_private.notification_email_settings
    set enabled_types = array_append(enabled_types, 'club_news_digest')
    where id and not ('club_news_digest' = any(enabled_types));
    ```
-   In `test` mode only the test accounts receive it, which is the way to try
-   it first.
-4. To switch it off again:
+5. To switch it off again:
    ```sql
    update app_private.notification_email_settings
    set enabled_types = array_remove(enabled_types, 'club_news_digest') where id;
