@@ -83,7 +83,8 @@ function NotFoundComponent() {
 const stateActionClass = cn(
   "inline-flex items-center justify-center gap-2 px-4",
   ui.space.tap,
-  ui.radius.control,
+  // Fully round, like every other button (DESIGN.md: the control shape).
+  ui.radius.full,
   ui.text.bodyStrong,
   ui.focus,
   "transition-colors",
