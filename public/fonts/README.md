@@ -8,6 +8,13 @@ HTML and CSS cached before the change keep resolving, and for tools that want a 
 
 Self-hosted variable WOFF2 assets from Fontsource:
 
+- readex-pro 5.3.0 (weights 160 to 700; Arabic, Latin and Latin Extended): the app's one face since
+  2026-10-30, display and body, French and Arabic (`src/fonts.css`).
+
+The faces below were the app's until then. Changa, Manrope and Noto Sans Arabic are now the Manager
+Card's own, declared in `src/components/manager-card/card-faces.css` and requested only when a card
+is drawn:
+
 - manrope 5.3.0
 - changa 5.3.0
 - noto-sans-arabic 5.3.0

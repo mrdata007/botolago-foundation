@@ -50,115 +50,115 @@ colors:
   card-prism-gold: "#FFE3A8"
 typography:
   display:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "46px"
     fontWeight: 800
     lineHeight: 1.25
   headline:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "34px"
     fontWeight: 800
     lineHeight: 1.25
   title:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "22px"
     fontWeight: 800
     lineHeight: 1.25
   screen-title:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "19px"
     fontWeight: 800
     lineHeight: 1.25
   tab:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 600
     lineHeight: 1.25
   tab-active:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 800
     lineHeight: 1.25
   score-hero:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "52px"
     fontWeight: 800
     lineHeight: 1.1
   score-row:
-    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, ui-sans-serif, system-ui, sans-serif"
     fontSize: "20px"
     fontWeight: 700
     lineHeight: 1.1
   body:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 600
     lineHeight: 1.55
   body-strong:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 800
     lineHeight: 1.55
   prose:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "15px"
     fontWeight: 400
     lineHeight: 1.7
   secondary:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
     lineHeight: 1.55
   secondary-strong:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 700
     lineHeight: 1.55
   meta:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 600
     lineHeight: 1.55
   label:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 800
     lineHeight: 1.4
     letterSpacing: "0.025em"
   meta-strong:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 700
     lineHeight: 1.55
   meta-heavy:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 800
     lineHeight: 1.55
   micro:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 600
     lineHeight: 1.4
   micro-strong:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 700
     lineHeight: 1.4
   micro-heavy:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 800
     lineHeight: 1.4
     letterSpacing: "0.025em"
   stat-hero:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "30px"
     fontWeight: 900
     lineHeight: 1.4
     letterSpacing: "-0.01em"
     fontFeature: '"tnum"'
   stat-sm:
-    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Readex Pro, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 700
     lineHeight: 1.4
@@ -341,7 +341,7 @@ components:
 
 **Creative North Star: "Club colours under floodlights"**
 
-BotolaGO looks like a Moroccan match night seen from the phone in your hand. A deep floodlight navy sets the brand. White surfaces read like the scoreboard and the team sheet. Each club's own colours arrive on the screen as data: in the edge of a match row, the disc of a crest, the two halves of a match header. Heavy Changa display type gives titles, team names and scores the voice of a stadium board. The interface around them stays quiet: one flat page, white cards, hairlines and a single soft lift. The mood is bold, calm and local: bold in the type and the club colour, calm in the surfaces and the motion, local because French and Arabic are equal first languages and the clubs are Botola Pro clubs.
+BotolaGO looks like a Moroccan match night seen from the phone in your hand. A deep floodlight navy sets the brand. White surfaces read like the scoreboard and the team sheet. Each club's own colours arrive on the screen as data: in the edge of a match row, the disc of a crest, the two halves of a match header. Heavy Readex Pro display type gives titles, team names and scores the voice of a stadium board. The interface around them stays quiet: one flat page, white cards, hairlines and a single soft lift. The mood is bold, calm and local: bold in the type and the club colour, calm in the surfaces and the motion, local because French and Arabic are equal first languages and the clubs are Botola Pro clubs.
 
 This is an operating app first. Supporters check a score, a table, a deadline or a team in a few seconds, on a 390px-wide phone, often outdoors. Density is high where the data is dense (standings, live scores, Fantasy lists), but nothing is smaller than a 44px tap target and nothing relies on colour alone. Arabic is not a translation layer: it has its own body face, taller line boxes, a fully mirrored layout and no letter-spacing. The one stylistic rejection the owner has confirmed is laying out standings as a grid of cards. Standings are real tables.
 
@@ -353,7 +353,7 @@ This file describes the system in the code on `main`: Design System V2, look "Op
 
 - Floodlight navy brand, white surfaces on a light grey page (deep slate surfaces in dark), and club colours supplied by data.
 - One spring-to-sky action gradient that marks the primary action and "you are here".
-- Changa display type at 800 for titles, team names and scores; Manrope (French) and Noto Sans Arabic (Arabic) for everything else.
+- Readex Pro for everything, in French and Arabic: heavy (700, its top weight) for titles, team names and scores, lighter for the rest. The Manager Card keeps Changa, Manrope and Noto Sans Arabic (see Typography).
 - Mostly flat: hairline-weight card shadows and one lifted step for the score plate, hero cards, the primary call to action and toasts.
 - Every pressed control is fully round; cards are 14px; sheets and feature cards 16px.
 - A 44px tap floor, 48px rows, and a 16px gutter at every width.
@@ -478,33 +478,34 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ## Typography
 
-**Display Font:** Changa (self-hosted variable font, weights 200 to 800, Latin and Arabic), with Manrope as the French fallback and Noto Sans Arabic as the Arabic fallback.
-**Body Font:** Manrope (French; Latin only) with Inter and the system sans as fallbacks; Noto Sans Arabic (Arabic) with Segoe UI Arabic and Tahoma.
+**Display Font:** Readex Pro (self-hosted variable font, OFL, weights 160 to 700, Latin and Arabic). It replaced Changa on 2026-10-30. A declared 800 or 900 renders at 700, its heaviest weight.
+**Body Font:** Readex Pro too (it replaced Manrope and Noto Sans Arabic on 2026-10-30), with Inter and the system sans as fallbacks in French and Segoe UI Arabic and Tahoma in Arabic. Readex Pro has no tabular figures, so a column of numbers lines up by its alignment rather than digit by digit, and it has no minute prime (63′), which comes from the next face in the stack.
+**Manager Card:** the collectible card keeps Changa, Manrope and Noto Sans Arabic, declared in `src/components/manager-card/card-faces.css` and loaded only when a card is drawn, because its layout is fitted to their committed measurements (`eclat/metrics.ts`). Its share picture keeps them too (`CARD_SHARE_FONTS`).
 **Label/Mono Font:** No mono type step, and no screen uses IBM Plex Mono. The system monospace (`font-mono`) is used only for codes and secrets: the league invite code and its entry field, the two-step secret, and admin fields. IBM Plex Mono is no longer self-hosted: its last user, the share images, now draw with Changa, Manrope and Noto Sans Arabic (BG-0153).
 
-**Character:** Changa's squared, heavy letters are the stadium board: titles, team names, tab labels and scores. Manrope at a firm 600 body weight keeps dense data legible at small sizes. In Arabic, Changa still carries the display roles and Noto Sans Arabic takes the body. Every font is self-hosted and loads with `swap`.
+**Character:** Readex Pro's open, even letters carry both the stadium board (titles, team names, tab labels and scores, at its heavy weights) and dense data at small sizes. One face for French and Arabic keeps both languages in the same voice. Every font is self-hosted and loads with `swap`.
 
 ### Hierarchy
 
 The kit's sizes are fixed pixel steps at every width. Two places scale with the viewport: the landing headline grows 1.4× from 1024px, and the Prospects player-page name grows from 22px to 34px at 768px and 46px at 1024px.
 
-- **Display** (Changa 800): the hero headline, such as "JOURNÉE 2" over the stadium band, or a player's surname. A 112px "mega" step exists for the goal takeover's "BUT !" only.
-- **Headline** (Changa 800): the hub page title under the top bar (Matches, Actualités, Fantasy, Clubs, Pronostics).
-- **Title** (Changa 800): section headings such as "À venir".
-- **Team and story steps** (Changa 700): 22, 19 and 17px, for photo story headlines, team names on the hero match card (19px) and on the match header (17px).
-- **Screen title** (Changa 800): the centred title in a detail screen's header. It drops to 16px when controls sit on both sides of it.
-- **Tab** (Changa 600, 800 when active): tab labels on the match page, the club page and similar.
-- **Score** (Changa, never tabular): standalone figures.
+- **Display** (Readex Pro 800): the hero headline, such as "JOURNÉE 2" over the stadium band, or a player's surname. A 112px "mega" step exists for the goal takeover's "BUT !" only.
+- **Headline** (Readex Pro 800): the hub page title under the top bar (Matches, Actualités, Fantasy, Clubs, Pronostics).
+- **Title** (Readex Pro 800): section headings such as "À venir".
+- **Team and story steps** (Readex Pro 700): 22, 19 and 17px, for photo story headlines, team names on the hero match card (19px) and on the match header (17px).
+- **Screen title** (Readex Pro 800): the centred title in a detail screen's header. It drops to 16px when controls sit on both sides of it.
+- **Tab** (Readex Pro 600, 800 when active): tab labels on the match page, the club page and similar.
+- **Score** (Readex Pro, never tabular): standalone figures.
   - The steps are hero 52px, 40, 30 and 24, all at 800, and a 20px row step at 700.
   - Line height is 1.1 in both languages.
   - Digits only. Arabic uses Latin digits.
-- **Body** (Manrope 600): rows, buttons and supporting copy.
+- **Body** (Readex Pro 600): rows, buttons and supporting copy.
   - Body strong (800) is for button labels and row titles.
   - Secondary is a 14px step and meta a 13px step. Meta is set at 700 on chips and at 800 on small buttons and desktop nav links.
-- **Prose** (Manrope 400): long-form reading such as the rules, help answers, legal pages and article bodies. It is the only step at 400.
-- **Label** (Manrope 800, uppercase): kickers, eyebrows, column heads and badges. It is letter-spaced in French only.
-- **Micro** (Manrope 600): captions. Bottom-nav labels use it at 700 (800 when active), and the small live pill at 800 in uppercase.
-- **Stat** (Manrope, tabular figures, -0.01em in French only): figures that are read down a column, such as table cells, totals and summary tiles. The steps are 30 and 22 (900), 17 (800) and 13 (700).
+- **Prose** (Readex Pro 400): long-form reading such as the rules, help answers, legal pages and article bodies. It is the only step at 400.
+- **Label** (Readex Pro 800, uppercase): kickers, eyebrows, column heads and badges. It is letter-spaced in French only.
+- **Micro** (Readex Pro 600): captions. Bottom-nav labels use it at 700 (800 when active), and the small live pill at 800 in uppercase.
+- **Stat** (Readex Pro, tabular figures, -0.01em in French only): figures that are read down a column, such as table cells, totals and summary tiles. The steps are 30 and 22 (900), 17 (800) and 13 (700).
 
 **Arabic line heights.** These are the Arabic values for the steps above. French values are in the frontmatter.
 

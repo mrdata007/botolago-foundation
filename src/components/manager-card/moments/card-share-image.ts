@@ -1,6 +1,7 @@
 import wordmark from "@/assets/brand/botolago-wordmark-light.svg";
 import {
   bodyFace,
+  CARD_SHARE_FONTS,
   canvasOf,
   inkCentredBaseline,
   loadImage,
@@ -8,9 +9,13 @@ import {
   roundRect,
   SHARE_PALETTE,
   shareClubColours,
-  shareFont,
+  shareFont as appShareFont,
   toPng,
 } from "@/components/pepites/share-image";
+
+/** The share palette's font helper, set in the card's own faces (Changa, Manrope, Noto Sans Arabic). */
+const shareFont = (face: Parameters<typeof appShareFont>[0], weight: number, size: number) =>
+  appShareFont(face, weight, size, CARD_SHARE_FONTS);
 
 import { activeRenderer } from "../active-renderer";
 import { cardStrings, type Translate } from "../copy";
@@ -128,7 +133,7 @@ function textDir(value: string): "ltr" | "rtl" {
 function fit(
   ctx: CanvasRenderingContext2D,
   value: string,
-  face: Parameters<typeof shareFont>[0],
+  face: Parameters<typeof appShareFont>[0],
   weight: number,
   size: number,
   min: number,
@@ -531,7 +536,7 @@ async function loadArt(svg: string): Promise<HTMLImageElement | null> {
  * wordmark that fails to load gives way to nothing.
  */
 export async function renderCardShareImage(model: CardShareImageModel): Promise<Blob> {
-  await loadShareFonts(model.lang, sampleOf(model));
+  await loadShareFonts(model.lang, sampleOf(model), CARD_SHARE_FONTS);
   await loadArtFonts(sampleOf(model));
   const [logo, art, crest] = await Promise.all([
     loadImage(wordmark),

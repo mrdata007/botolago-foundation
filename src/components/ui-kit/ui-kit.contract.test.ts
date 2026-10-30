@@ -1168,8 +1168,8 @@ describe("ui-kit: Option A — the display face, club colour and shape", () => {
     ]) {
       expect({ token, arabic: block.includes(`${token}:`) }).toEqual({ token, arabic: true });
     }
-    // Changa carries Arabic, and the Noto stack is its fallback there.
-    expect(block).toMatch(/--ui-font-display:\s*"Changa",\s*"Noto Sans Arabic"/);
+    // Readex Pro carries Arabic, so Arabic display text keeps the same face.
+    expect(block).toMatch(/--ui-font-display:\s*"Readex Pro",/);
   });
 
   it("keeps --ui-font-body the same stack the body uses", () => {
@@ -1185,15 +1185,15 @@ describe("ui-kit: Option A — the display face, club colour and shape", () => {
     expect(block.match(/--ui-font-body:\s*([^;]+);/)?.[1]).toBe(arabicStack);
   });
 
-  it("never makes the display face the body face", () => {
-    // The e2e suite asserts the body family per language (Manrope / Noto Sans
-    // Arabic). Changa is reachable only through `--ui-font-display`.
+  it("sets the whole app in Readex Pro, display and body, in both languages", () => {
+    // The app moved to one face on 2026-10-30. Changa, Manrope and Noto Sans
+    // Arabic are left to the Manager Card (manager-card/card-faces.css).
     const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
-    const declaring = [...code.matchAll(/([\w-]+)\s*:[^;{}]*Changa[^;{}]*;/g)].map((m) => m[1]);
-    expect(declaring.length).toBeGreaterThan(0);
-    expect([...new Set(declaring)]).toEqual(["--ui-font-display"]);
+    expect(code).not.toMatch(/Changa|Manrope|Noto Sans Arabic/);
     const theme = css.slice(css.indexOf("@theme inline"));
-    expect(theme.match(/--font-sans:\s*([^;]+);/)?.[1]).not.toContain("Changa");
+    expect(theme.match(/--font-sans:\s*([^;]+);/)?.[1]).toStartWith('"Readex Pro"');
+    expect(theme.match(/--font-arabic:\s*([^;]+);/)?.[1]).toStartWith('"Readex Pro"');
+    expect(rootDeclarations.get("--ui-font-display")).toStartWith('"Readex Pro"');
   });
 
   it("draws UiCard and ui.surface.card on the card radius", () => {

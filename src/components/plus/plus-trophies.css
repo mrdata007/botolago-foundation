@@ -37,7 +37,7 @@
 }
 .plus-trophies .tr-fig,
 .plus-trophies .tr-h1 {
-  font-family: var(--font-display, "Changa", sans-serif);
+  font-family: var(--ui-font-display, "Readex Pro", sans-serif);
   font-weight: 800;
 }
 

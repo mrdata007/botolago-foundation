@@ -219,45 +219,72 @@ export function storyModel(
 /* ---------------------------------------------------------------- drawing */
 
 /**
- * The faces, as the app sets them: Changa for display (it carries Arabic
- * too), Manrope for French body text, Noto Sans Arabic for Arabic body text.
+ * The faces, as the app sets them: Readex Pro for display and body, in
+ * French and Arabic alike (it carries both scripts). The three roles stay
+ * separate so they can diverge again without touching a caller.
  */
 export const SHARE_FONTS = {
+  display: `"Readex Pro", sans-serif`,
+  body: `"Readex Pro", sans-serif`,
+  arabic: `"Readex Pro", sans-serif`,
+} as const;
+
+/** Readex Pro's heaviest weight: its weight axis stops at 700. */
+const DISPLAY_MAX_WEIGHT = 700;
+
+/**
+ * The Manager Card's faces, which it keeps after the app moved to Readex Pro (its layout is fitted
+ * to their measurements: `manager-card/card-faces.css`). Changa for display, Manrope for French
+ * body text, Noto Sans Arabic for Arabic body text. Pass to `shareFont` and `loadShareFonts`.
+ */
+export const CARD_SHARE_FONTS = {
   display: `"Changa", "Manrope", "Noto Sans Arabic", sans-serif`,
   body: `"Manrope", "Noto Sans Arabic", sans-serif`,
   arabic: `"Noto Sans Arabic", "Manrope", sans-serif`,
 } as const;
 
 /** Changa's heaviest weight (The 800 Ceiling Rule). */
-const DISPLAY_MAX_WEIGHT = 800;
+const CARD_DISPLAY_MAX_WEIGHT = 800;
+
+type ShareFonts = { readonly [K in keyof typeof SHARE_FONTS]: string };
 
 /** The label step's letter-spacing, 0.025em, set in French only (The No Arabic Tracking Rule). */
 const LABEL_TRACKING = 0.025;
 
 /** The ascent a "line-height: normal" box puts above the baseline. */
-const ASCENT = { display: 1.227, body: 1.066, arabic: 1.25 } as const;
+const ASCENT = { display: 1, body: 1, arabic: 1 } as const;
 
 type Face = keyof typeof SHARE_FONTS;
 
-/** The body face for a language: Manrope in French, Noto Sans Arabic in Arabic. */
+/** The body face for a language (both are Readex Pro today). */
 export const bodyFace = (lang: Language): Face => (lang === "ar" ? "arabic" : "body");
 
-export function shareFont(face: Face, weight: number, size: number) {
-  const capped = face === "display" ? Math.min(weight, DISPLAY_MAX_WEIGHT) : weight;
-  return `${capped} ${size}px ${SHARE_FONTS[face]}`;
+export function shareFont(
+  face: Face,
+  weight: number,
+  size: number,
+  fonts: ShareFonts = SHARE_FONTS,
+) {
+  const max = fonts === CARD_SHARE_FONTS ? CARD_DISPLAY_MAX_WEIGHT : DISPLAY_MAX_WEIGHT;
+  const capped = face === "display" ? Math.min(weight, max) : weight;
+  return `${capped} ${size}px ${fonts[face]}`;
 }
 
 /** Loads the faces a picture uses; a canvas does not wait for them by itself. */
-export async function loadShareFonts(lang: Language, sample: string) {
+export async function loadShareFonts(
+  lang: Language,
+  sample: string,
+  fonts: ShareFonts = SHARE_FONTS,
+) {
   if (typeof document === "undefined" || !document.fonts?.load) return;
   const body = bodyFace(lang);
   await Promise.all(
     [
-      shareFont("display", 800, 40),
-      shareFont("display", 600, 40),
-      shareFont(body, 800, 28),
-      shareFont(body, 700, 18),
-      shareFont(body, 600, 18),
+      shareFont("display", 800, 40, fonts),
+      shareFont("display", 600, 40, fonts),
+      shareFont(body, 800, 28, fonts),
+      shareFont(body, 700, 18, fonts),
+      shareFont(body, 600, 18, fonts),
     ].map((spec) => document.fonts.load(spec, sample).catch(() => [])),
   );
 }
