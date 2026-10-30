@@ -9,7 +9,7 @@
 -- rating is in.
 --
 -- The rule.
---   * publish-not-before: the local date (Africa/Casablanca) of the latest
+--   * publish-not-before: the Moroccan local date of the latest
 --     finalized_at among the journée's counted matches, plus two days, at 14:00
 --     local time. It is null until every counted match is finished.
 --   * the worker (and every database write that publishes) refuses to write
@@ -94,13 +94,15 @@ returns boolean language sql stable security definer set search_path = '' as $$
       and g.sequence_number >= app_private.fantasy_publication_first_gameweek(g.fantasy_season_id));
 $$;
 
--- The next 14:00 in Morocco strictly after the given moment.
+-- The next 14:00 in Morocco strictly after the given moment. Morocco's clock is
+-- read through the helpers of 20261016090000 (the application's rule, whatever
+-- time-zone data the database carries), never through the zone name.
 create function app_private.fantasy_publication_next_slot(p_after timestamptz)
-returns timestamptz language sql immutable set search_path = '' as $$
-  select case when (p_after at time zone 'Africa/Casablanca')::time < time '14:00'
-    then ((p_after at time zone 'Africa/Casablanca')::date + time '14:00') at time zone 'Africa/Casablanca'
-    else ((p_after at time zone 'Africa/Casablanca')::date + 1 + time '14:00') at time zone 'Africa/Casablanca'
-  end;
+returns timestamptz language sql stable set search_path = '' as $$
+  select app_private.morocco_instant(
+    case when app_private.morocco_local(p_after)::time < time '14:00'
+      then app_private.morocco_local_date(p_after) + time '14:00'
+      else app_private.morocco_local_date(p_after) + 1 + time '14:00' end);
 $$;
 
 -- Publish not before: two Moroccan days after the latest counted match ended,
@@ -109,8 +111,7 @@ create function app_private.fantasy_publish_not_before(p_gameweek_id uuid)
 returns timestamptz language sql stable security definer set search_path = '' as $$
   select case
     when count(*) = 0 or count(*) filter (where f.status <> 'finished' or f.finalized_at is null) > 0 then null
-    else (((max(f.finalized_at) at time zone 'Africa/Casablanca')::date + 2) + time '14:00')
-      at time zone 'Africa/Casablanca'
+    else app_private.morocco_instant(app_private.morocco_local_date(max(f.finalized_at)) + 2 + time '14:00')
   end
   from app.fantasy_fixture_assignments a
   join app.fixtures f on f.id = a.fixture_id

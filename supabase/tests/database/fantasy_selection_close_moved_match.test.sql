@@ -6,12 +6,12 @@ begin;
 select extensions.no_plan();
 select set_config('test.next_kickoff',(statement_timestamp()+interval '20 hours')::text,true);
 -- D0 at 20:00 Moroccan time (kickoff) and 22:00 (final whistle).
-select set_config('test.kickoff',((date_trunc('day',now() at time zone 'Africa/Casablanca')-interval '1 day'+interval '20 hours')
-  at time zone 'Africa/Casablanca')::text,true);
-select set_config('test.final',((date_trunc('day',now() at time zone 'Africa/Casablanca')-interval '1 day'+interval '22 hours')
-  at time zone 'Africa/Casablanca')::text,true);
-select set_config('test.slot',((date_trunc('day',now() at time zone 'Africa/Casablanca')+interval '1 day'+interval '14 hours')
-  at time zone 'Africa/Casablanca')::text,true);
+select set_config('test.kickoff',app_private.morocco_instant(
+  date_trunc('day',app_private.morocco_local(now()))-interval '1 day'+interval '20 hours')::text,true);
+select set_config('test.final',app_private.morocco_instant(
+  date_trunc('day',app_private.morocco_local(now()))-interval '1 day'+interval '22 hours')::text,true);
+select set_config('test.slot',app_private.morocco_instant(
+  date_trunc('day',app_private.morocco_local(now()))+interval '1 day'+interval '14 hours')::text,true);
 
 insert into app.countries (id, iso_alpha2, iso_alpha3) values
   ('f0000000-0000-4000-8000-000000000001', 'XZ', 'XZZ');
@@ -99,7 +99,7 @@ create function pg_temp.fplayer(i integer) returns uuid language sql immutable a
   select ('f5' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid $$;
 
 create function pg_temp.ma(local_time text) returns timestamptz language sql immutable as $$
-  select local_time::timestamp at time zone 'Africa/Casablanca' $$;
+  select app_private.morocco_instant(local_time::timestamp) $$;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 -- The lineups locked two days before the kickoff.
 update app.fantasy_lineups set locked_at = current_setting('test.kickoff')::timestamptz - interval '2 days'
