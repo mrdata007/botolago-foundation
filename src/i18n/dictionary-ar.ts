@@ -678,6 +678,7 @@ export const ar = {
   "fantasy.points.revision_pending":
     "بعض التقييمات لا تزال غير متوفرة. النقاط الظاهرة محسوبة من التقييمات المتوفرة.",
   "fantasy.points.ratings_updated": "آخر تحديث للتقييمات: {time}",
+  "fantasy.points.publish_at": "نقاط الجولة {n}: {day} على الساعة {time}",
   "fantasy.points.status.live": "مباشرة",
   "fantasy.points.status.final": "نهائية",
   "fantasy.points.auto_subs": "استبدالات تلقائية",

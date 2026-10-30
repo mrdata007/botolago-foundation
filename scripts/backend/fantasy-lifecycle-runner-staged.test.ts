@@ -538,17 +538,17 @@ describe("publication gate: a gated journée writes nothing until the database r
 
   it("already released: the pass resumes without asking again", async () => {
     const { gateway, calls } = gatedHarness({ releasedAtStart: true });
-    expect((await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome).toBe(
-      "finalized",
-    );
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome,
+    ).toBe("finalized");
     expect(names(calls)).not.toContain("service_evaluate_fantasy_publication");
   });
 
   it("a journée that is not gated (Journée 5 and earlier) never asks", async () => {
     const { gateway, calls } = gatedHarness({ gated: false });
-    expect((await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome).toBe(
-      "finalized",
-    );
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome,
+    ).toBe("finalized");
     expect(names(calls)).not.toContain("service_evaluate_fantasy_publication");
   });
 });

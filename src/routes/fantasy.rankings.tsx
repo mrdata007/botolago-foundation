@@ -23,6 +23,7 @@ import {
   showsWaiting,
 } from "@/components/fantasy-lists/rankings-view";
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
+import { PublicationNoticeLine } from "@/components/fantasy/PublicationNoticeLine";
 import { fill, ltr } from "@/components/manager-card/interpolate";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -57,6 +58,7 @@ import { scrollBehavior } from "@/lib/motion";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { usePublicationNotice } from "@/services/use-publication-notice";
 import { useOwnedTeam } from "@/services/use-owned-team";
 import type { LeagueStanding } from "@/types/fantasy";
 
@@ -179,6 +181,8 @@ function RankingsPage() {
     queryFn: () => fantasyService.getCurrentGameweek(),
   });
   const waiting = gameweekPointsWaiting(gwQ.data);
+  // The oldest journée whose points are not published yet, and when they will be.
+  const publicationQ = usePublicationNotice(null, source !== "guest");
 
   // Keep the page in range whenever the filter or sort shrinks the board.
   useEffect(() => {
@@ -295,6 +299,9 @@ function RankingsPage() {
           <UiStatePanel kind="loading" />
         ) : (
           <>
+            {onBoard && publicationQ.data ? (
+              <PublicationNoticeLine notice={publicationQ.data} />
+            ) : null}
             <MyRankCard
               standing={data.myRank}
               presence={presence}
