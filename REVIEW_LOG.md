@@ -675,3 +675,9 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - `database-quality` was red once on cd553c9: a test checked the "stuck" alarm with the real clock, so it failed after 14:31 UTC. Test fix 165bbe1, then CI green.
 - Step 1: merged PR #592 at 15:06 UTC, merge commit 386e1f1.
 - Step 2: dispatched `fantasy-scoring-worker-deploy.yml` for 386e1f1.
+- Step 2 done: `fantasy-scoring-worker-deploy` run 41077685732 succeeded (15:06–15:07 UTC) on 386e1f1. The new worker with the old database behaves exactly as before.
+- Before step 3 (read-only):
+  - no worker lease held, no pg_cron job mid-run, no other session running;
+  - Journée 6 open, 0 results;
+  - production also has 20261030120000 (another session's club-news email enum value): no conflict.
+- Step 3 blocked for the Lead: the guarded apply script is about 100 KB and must run as one piece, which is too large to send in one call. Asked the owner to run it in the Supabase SQL editor (the documented owner step), or to choose an alternative.
