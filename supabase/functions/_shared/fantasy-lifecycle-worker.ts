@@ -54,12 +54,26 @@ const lifecycleSchema = z.object({
   closedAt: z.string().nullable().optional(),
   closedCalculationVersion: integer.nullable().optional(),
   closeCompleted: z.boolean().optional(),
+  // Publish a journée's points all at once (migration 20261030100000). Absent for a
+  // journée that is not gated, and on an older database.
+  publicationGated: z.boolean().optional(),
+  publicationReleased: z.boolean().optional(),
+  publicationHeld: z.boolean().optional(),
+  publishNotBefore: z.string().nullable().optional(),
+  publishAt: z.string().nullable().optional(),
   stagedLockBlocker: z.string().nullable().optional(),
   stagedRescoreNeeded: z.boolean().optional(),
   postworkCompleted: z.boolean().optional(),
   hasMore: z.boolean().optional(),
   changed: z.boolean().optional(),
   waitingReason: z.string().nullable().optional(),
+});
+const publicationDecisionSchema = z.object({
+  gated: z.boolean(),
+  released: z.boolean(),
+  held: z.boolean().optional(),
+  publishAt: z.string().nullable().optional(),
+  outcome: z.string().optional(),
 });
 const statsSchema = z.object({
   minutes: integer.min(0).max(120),
@@ -841,6 +855,20 @@ export async function runFantasyLifecycle(
     const progression = await finishPublishedWork();
     return { outcome: "already_finalized", gameweekId, ...progression, calls };
   }
+  // The publication gate. A gated journée writes no points and publishes no ranking
+  // until the database releases it: its slot has come (two Moroccan days after its
+  // last match, 14:00) AND no rating is pending. The decision is made, and recorded,
+  // on every pass, even while ratings are pending: a pending rating at the slot moves
+  // the journée to the next slot, whatever arrives afterwards. It never blocks the
+  // selection close or the next journée's opening below. The database refuses the
+  // writes too, so a stale read here cannot publish early.
+  let publication: { released: boolean; publishAt: string | null } | null = null;
+  if (state.publicationGated === true && state.publicationReleased !== true) {
+    const decision = publicationDecisionSchema.parse(
+      await call("service_evaluate_fantasy_publication", { p_gameweek_id: gameweekId }),
+    );
+    publication = { released: decision.released, publishAt: decision.publishAt ?? null };
+  }
   if (state.adaptiveScoringEnabled) {
     await call("service_select_fantasy_scoring_modes", { p_gameweek_id: gameweekId });
     const fresh = lifecycleSchema.parse(
@@ -960,6 +988,14 @@ export async function runFantasyLifecycle(
     if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId || !state.closedAt)
       throw new Error("fantasy_worker_scope_mismatch");
   }
+  if (publication && !publication.released)
+    return {
+      outcome: "waiting",
+      gameweekId,
+      reason: "fantasy_publication_held",
+      publishAt: publication.publishAt,
+      calls,
+    };
   if (incrementalEnabled && state.status !== "finalizing") {
     const prepared = z
       .object({ calculationVersion: positive })

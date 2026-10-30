@@ -408,6 +408,151 @@ describe("native selection close independent of rating settlement", () => {
   });
 });
 
+// Publish a journée's points all at once (migration 20261030100000).
+describe("publication gate: a gated journée writes nothing until the database releases it", () => {
+  const publishAt = "2026-10-31T13:00:00Z";
+  const writes = [
+    "service_prepare_fantasy_live_scoring",
+    "service_get_fantasy_scoring_snapshot",
+    "service_persist_fantasy_scoring_results",
+    "service_recalculate_fantasy_rankings",
+    "service_begin_fantasy_finalization",
+    "service_finalize_fantasy_team_results",
+    "service_complete_fantasy_gameweek",
+    "service_enqueue_gameweek_finalized_notifications",
+    "service_evaluate_fantasy_prizes",
+  ];
+  function gatedHarness(opts: {
+    over?: Partial<StagedState>;
+    pending?: boolean;
+    gated?: boolean;
+    releasedAtStart?: boolean;
+    decision?: { released: boolean; publishAt: string | null };
+  }) {
+    const base = nativeHarness(opts.over ?? {}, opts.pending ?? false);
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        if (name === "service_fantasy_lifecycle_state") {
+          const value = (await base.gateway.rpc(name, args)) as Record<string, unknown>;
+          return opts.gated === false
+            ? value
+            : {
+                ...value,
+                publicationGated: true,
+                publicationReleased: opts.releasedAtStart === true,
+                publicationHeld: opts.releasedAtStart !== true,
+                publishAt,
+              };
+        }
+        if (name === "service_evaluate_fantasy_publication") {
+          base.calls.push({ name, args });
+          const decision = opts.decision ?? { released: false, publishAt };
+          return { gated: true, held: !decision.released, outcome: "test", ...decision };
+        }
+        if (name === "service_advance_fantasy_lifecycle") {
+          base.calls.push({ name, args });
+          return {
+            gameweekId,
+            seasonId,
+            status: "live",
+            lockVersion: 4,
+            sequenceNumber: 1,
+            scoringInputVersion: 3,
+            changed: false,
+            hasMore: false,
+          };
+        }
+        return base.gateway.rpc(name, args);
+      },
+    };
+    return { gateway, calls: base.calls };
+  }
+
+  it("before the slot with every rating in: the selection close and the next journée's opening still run, nothing is published", async () => {
+    const { gateway, calls } = gatedHarness({});
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 });
+    expect(result).toMatchObject({
+      outcome: "waiting",
+      reason: "fantasy_publication_held",
+      publishAt,
+    });
+    // Carry-over, Free Hit restore, free-transfer rollover, prices and the opening are not held.
+    for (const name of [
+      "service_begin_fantasy_selection_close",
+      "service_restore_free_hit",
+      "service_roll_fantasy_free_transfers",
+      "service_run_fantasy_close_price_batch",
+      "service_complete_fantasy_close",
+      "service_prepare_next_fantasy_gameweek",
+    ])
+      expect(names(calls)).toContain(name);
+    for (const name of writes) expect(names(calls)).not.toContain(name);
+    expect(names(calls)).not.toContain("service_adopt_fantasy_close_prices");
+  });
+
+  it("the decision is recorded before the pending-ratings return, so a pending rating at the slot holds the journée a day", async () => {
+    const { gateway, calls } = gatedHarness({
+      over: {
+        closedAt: "2026-10-20T10:00:00Z",
+        closedCalculationVersion: closeVersion,
+        closeCompleted: true,
+        advancedToGameweekId: nextId,
+      },
+      pending: true,
+    });
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).toMatchObject(
+      { outcome: "waiting", reason: "fantasy_ratings_pending" },
+    );
+    expect(names(calls)).toEqual([
+      "service_fantasy_lifecycle_state",
+      "service_evaluate_fantasy_publication",
+    ]);
+  });
+
+  it("a held live journée (incremental points on) writes no partial points", async () => {
+    const { gateway, calls } = gatedHarness({ over: { status: "live" } });
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 });
+    expect(result).toMatchObject({ outcome: "waiting", reason: "fantasy_publication_held" });
+    for (const name of writes) expect(names(calls)).not.toContain(name);
+  });
+
+  it("released at the slot with every rating in: one pass persists, ranks and finalizes, as without the gate", async () => {
+    const { gateway, calls } = gatedHarness({ decision: { released: true, publishAt } });
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 });
+    expect(result.outcome).toBe("finalized");
+    expect(index(calls, "service_evaluate_fantasy_publication")).toBeLessThan(
+      index(calls, "service_prepare_fantasy_live_scoring"),
+    );
+    for (const name of [
+      "service_persist_fantasy_scoring_results",
+      "service_recalculate_fantasy_rankings",
+      "service_begin_fantasy_finalization",
+      "service_complete_fantasy_gameweek",
+      "service_enqueue_gameweek_finalized_notifications",
+    ])
+      expect(names(calls)).toContain(name);
+    expect(calls.find((c) => c.name === "service_evaluate_fantasy_publication")?.args).toEqual({
+      p_gameweek_id: gameweekId,
+    });
+  });
+
+  it("already released: the pass resumes without asking again", async () => {
+    const { gateway, calls } = gatedHarness({ releasedAtStart: true });
+    expect((await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome).toBe(
+      "finalized",
+    );
+    expect(names(calls)).not.toContain("service_evaluate_fantasy_publication");
+  });
+
+  it("a journée that is not gated (Journée 5 and earlier) never asks", async () => {
+    const { gateway, calls } = gatedHarness({ gated: false });
+    expect((await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 3 })).outcome).toBe(
+      "finalized",
+    );
+    expect(names(calls)).not.toContain("service_evaluate_fantasy_publication");
+  });
+});
+
 describe("staged statistics: closing a gameweek on provisional points", () => {
   it("every match has core data: scores, closes, carries over, opens the next gameweek, does not lock", async () => {
     const { gateway, calls } = stagedHarness();
