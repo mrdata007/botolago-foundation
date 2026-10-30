@@ -590,3 +590,17 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - The watchdog paging 30 minutes after a missed slot even when ratings are pending (a dead worker) is accepted.
 - Timing risk: Journée 6 matches start 30 Oct at 20:00. The first ratings arrive about 12 hours after each match, so from about 31 Oct 08:00. If the batch is not live by then, Journée 6 points start appearing match by match. The gate's hidden-until-release views would hide those rows once the batch is applied.
 - Tester launched (Sonnet, independent).
+
+**Batch 2a: Tester round 1 and Lead verdict (30 Oct ~09:00 UTC).**
+- Tester (independent Sonnet): no blocker, and no way for fans to see an unreleased journée's points through the normal screens. The new tests, the apply script and F7 all work.
+- Weak spots found:
+  - F1: a stuck journée could be invisible to the watchdog.
+  - F2: league and overall standings would show points if the journée already had rows when the batch is applied, and the release step could ignore a still-pending rating in that case.
+  - F3: the owner steps gave the wrong deadline for deploying the worker.
+  - F5: small wording and documentation items.
+- Lead checks (read-only, production):
+  - The 10-minute Fantasy worker tick is on, so the Tester's "worker only runs hourly" concern (F4) does not apply.
+  - All 14 safety fingerprints in the apply script match production.
+  - The database's Morocco zone is UTC+1, while the app's helper is UTC+0; the batch correctly uses the helper.
+- CI: `database-quality` green. `application-quality` red on one news-image browser test this PR does not touch; re-run once and commented on #592.
+- Verdict: **REVISE**, round 2 of 3. Fixes 1–5 sent to the Builder, including bringing in the Tester's adversarial tests.
