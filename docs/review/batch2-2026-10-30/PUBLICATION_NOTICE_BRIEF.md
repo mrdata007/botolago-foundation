@@ -43,6 +43,7 @@ first interface edit. Plan: `docs/review/batch2-2026-10-29/PUBLISH_ALL_AT_ONCE_P
 ## Acceptance criteria
 
 Functional
+
 - A journée that is waiting shows the sentence with the day and the hour in
   Morocco time (Africa/Casablanca), whatever the viewer's own time zone.
 - If the ratings were not ready at the first slot, the sentence shows the next
@@ -52,6 +53,7 @@ Functional
 - The sentence disappears without a reload after publication.
 
 Visual
+
 - At 320 px wide and on desktop, in French and in Arabic (dir="rtl"): the
   sentence wraps inside the gutter, no horizontal scroll, no overlap with the
   stepper or the strip; contrast of the muted tone is unchanged.
@@ -59,6 +61,7 @@ Visual
   screens.
 
 Tests
+
 - Unit tests for the French and Arabic wording and the Morocco-time formatting.
 - Contract test: `publishAt` and `publicationHeld` parse, and a database that
   lacks them still parses.
