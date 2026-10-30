@@ -2354,7 +2354,6 @@ export const ar = {
 
   /* Pronostics (BG-0146): entry points and sharing */
   "matches.tab.predictions": "التوقعات",
-  "home.discover.predictions": "التوقعات",
   "predictions.home.guest_line": "توقّع نتائج مباريات الجولة",
   "predictions.home.cta": "توقّع الآن",
   "predictions.match.title": "توقعك",

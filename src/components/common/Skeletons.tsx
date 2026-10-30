@@ -99,20 +99,14 @@ export function PlayerRowSkeleton() {
 
 export function AlertRowSkeleton() {
   return (
-    <div
-      className={cn(
-        "flex min-w-0 items-start gap-3 px-3 py-2.5",
-        ui.radius.control,
-        ui.rule.all,
-        ui.surface.sunken,
-      )}
-      aria-hidden
-    >
-      <Shimmer className="h-4 w-4 rounded-full" />
+    // The shape of a Fantasy alert row: club disc, name over the alert, status pill.
+    <div className={cn(ui.surface.card, "flex min-w-0 items-center gap-3 px-3 py-2.5")} aria-hidden>
+      <Shimmer className="h-8 w-8 rounded-full" />
       <div className="min-w-0 flex-1 space-y-1.5">
         <Shimmer className="h-3 w-24" />
         <Shimmer className="h-3 w-3/5" />
       </div>
+      <Shimmer className="h-5 w-14 rounded-full" />
     </div>
   );
 }

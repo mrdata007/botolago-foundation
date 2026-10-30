@@ -1204,7 +1204,6 @@ export const frCore = {
 
   /* Pronostics (BG-0146): entry points and sharing */
   "matches.tab.predictions": "Pronostics",
-  "home.discover.predictions": "Pronostics",
   "predictions.home.guest_line": "Pronostiquez les scores de la journée",
   "predictions.home.cta": "Pronostiquer",
   "predictions.match.title": "Votre pronostic",
