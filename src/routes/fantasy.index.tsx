@@ -117,8 +117,8 @@ function PrizeWelcome() {
 }
 
 const DEADLINE_SKELETON_HEIGHT = {
-  guest: { fr: "h-[199px]", ar: "h-[233px]" },
-  owner: { fr: "h-[317px]", ar: "h-[361px]" },
+  guest: { fr: "h-[187px]", ar: "h-[218px]" },
+  owner: { fr: "h-[305px]", ar: "h-[349px]" },
 } as const;
 
 function FantasyHub() {
@@ -198,8 +198,8 @@ function FantasyHub() {
         // Hold the height of the card that is coming, so nothing below moves
         // when it arrives. A visitor with no account gets the countdown alone;
         // anyone signed in is held at the manager's card (countdown, checklist
-        // and two buttons), the common case. Measured at 390px: French 199 and
-        // 317, Arabic 233 and 361. A signed-in reader with no team, or a
+        // and two buttons), the common case. Measured at 390px with the
+        // one-line countdown (2026-10-30): French 187 and 305, Arabic 218 and 349. A signed-in reader with no team, or a
         // gameweek past its deadline, gets a shorter card than the placeholder.
         <UiSkeleton
           className={cn(
