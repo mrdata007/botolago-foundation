@@ -4,7 +4,7 @@ import { deadlineCountdown } from "@/components/fpl/deadline";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import type { AuthStatus } from "@/services/auth-types";
 import type { FantasyDataSource } from "@/services/fantasy-data-source";
-import { fantasyHubLayout, joinDeadlineToShow, joinTarget } from "./fantasy-hub-layout";
+import { fantasyHubLayout, joinDeadlineToShow, joinTarget, laterJoin } from "./fantasy-hub-layout";
 
 /**
  * Audit 2026-09-25 (A16): a visitor without a team gets the first-time
@@ -207,6 +207,29 @@ describe("joinTarget", () => {
 
   test("no gameweek, no deadline", () => {
     expect(joinTarget(null)).toBeNull();
+  });
+});
+
+describe("laterJoin", () => {
+  const deadline = "2026-10-30T17:30:00.000Z";
+  const later = "2026-11-06T17:30:00.000Z";
+
+  test("live data names the current gameweek as the enrolment: nothing to add under the deadline card", () => {
+    expect(
+      laterJoin({ number: 6, deadline, enrolment: { id: "gw6", number: 6, deadline } }),
+    ).toBeNull();
+  });
+
+  test("a later gameweek to join is named", () => {
+    expect(
+      laterJoin({ number: 6, deadline, enrolment: { id: "gw7", number: 7, deadline: later } }),
+    ).toEqual({ number: 7, deadline: later });
+  });
+
+  test("mock mode (no enrolment), registration closed and no gameweek: nothing", () => {
+    expect(laterJoin({ number: 6, deadline })).toBeNull();
+    expect(laterJoin({ number: 6, deadline, enrolment: null })).toBeNull();
+    expect(laterJoin(null)).toBeNull();
   });
 });
 

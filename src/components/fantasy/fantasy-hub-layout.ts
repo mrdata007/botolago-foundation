@@ -136,6 +136,20 @@ export function joinTarget(
 }
 
 /**
+ * The gameweek a team made now joins, only when it is a later one than the
+ * deadline card above shows: the card already names this gameweek's deadline,
+ * and the intro repeating it was the same date twice on one screen. The live
+ * backend always sends the enrolment, the current gameweek included, so the
+ * numbers are compared rather than the enrolment's presence.
+ */
+export function laterJoin(
+  gameweek: Pick<Gameweek, "number" | "deadline" | "enrolment"> | null,
+): { number: number; deadline: string } | null {
+  const target = joinTarget(gameweek);
+  return target && gameweek && target.number !== gameweek.number ? target : null;
+}
+
+/**
  * The join deadline to print, or `null` once the clock has passed it.
  * `countdown` is `useDeadlineCountdown`'s answer: `null` on the server and in
  * the hydrating frame, when the line shows — the backend named this gameweek
