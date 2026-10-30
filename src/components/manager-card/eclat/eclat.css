@@ -10,8 +10,10 @@
 
 /* ============================== BASE ============================== */
 
+@import "../card-faces.css";
+
 /* The second name line's face. It is the card's own: declared here, never in src/fonts.css, so it
-   is requested only when a card is drawn. Changa and Manrope are the app's (src/fonts.css). */
+   is requested only when a card is drawn. Changa, Manrope and Noto Sans Arabic are in ../card-faces.css. */
 /* instrument-serif-latin-ext-400-normal */
 @font-face {
   font-family: "Instrument Serif";
@@ -41,11 +43,11 @@
    for figures and Latin labels, Noto Sans Arabic for the Arabic labels */
 .mc-eclat .mc-f-d,
 .mc-tok .mc-f-d {
-  font-family: var(--ui-font-display, "Changa", ui-sans-serif, system-ui, sans-serif);
+  font-family: "Changa", "Changa Fallback", ui-sans-serif, system-ui, sans-serif;
   font-weight: 800;
 }
 .mc-eclat .mc-f-dl {
-  font-family: var(--ui-font-display, "Changa", ui-sans-serif, system-ui, sans-serif);
+  font-family: "Changa", "Changa Fallback", ui-sans-serif, system-ui, sans-serif;
   font-weight: 300;
 }
 .mc-eclat .mc-f-s {

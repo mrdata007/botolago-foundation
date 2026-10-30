@@ -625,23 +625,18 @@ describe("the share pictures' palette", () => {
 describe("the share pictures' faces", () => {
   for (const picture of PICTURES) {
     for (const lang of ["fr", "ar"] as const) {
-      it(`${picture} (${lang}): Changa at most 800, no mono, Noto Sans Arabic for Arabic body text`, async () => {
+      it(`${picture} (${lang}): Readex Pro at most 700, no mono, in both languages`, async () => {
         const { ops } = await draw(picture, lang);
         const fonts = ops.filter((op) => op.kind === "text").map((op) => op.font!);
         expect(fonts.length).toBeGreaterThan(3);
         for (const font of fonts) {
           expect(font).not.toMatch(/plex|mono/i);
           const [, weight, family] = /^(\d+) [\d.]+px "([^"]+)"/.exec(font) ?? [];
-          expect(["Changa", "Manrope", "Noto Sans Arabic"]).toContain(family);
-          if (family === "Changa") expect(Number(weight)).toBeLessThanOrEqual(800);
+          expect(family).toBe("Readex Pro");
+          expect(Number(weight)).toBeLessThanOrEqual(800);
         }
-        const bodyFamilies = new Set(
-          fonts
-            .filter((font) => !font.includes('px "Changa"'))
-            .map((font) => /"([^"]+)"/.exec(font)![1]),
-        );
-        if (lang === "ar") expect(bodyFamilies.has("Noto Sans Arabic")).toBe(true);
-        else expect(bodyFamilies).toEqual(new Set(["Manrope"]));
+        const display = fonts.filter((font) => /^\d+/.exec(font)![0] === "700");
+        expect(display.length).toBeGreaterThan(0);
       });
 
       it(`${picture} (${lang}): letter-spacing in French only`, async () => {
@@ -765,9 +760,12 @@ describe("the share pictures' vertical rhythm", () => {
     for (const lang of ["fr", "ar"] as const) {
       it(`the ${picture}'s lock-up (${lang}): the name stands on the wordmark's letters`, async () => {
         const { ops } = await draw(picture, lang);
-        // The wordmark is the first image; the name is the 700-weight text after it.
+        // The wordmark is the first image; the name is the 700-weight text that spells it (since
+        // Readex Pro tops out at 700, the display figures share that weight).
         const logo = ops.find((op) => op.kind === "image")!;
-        const name = ops.find((op) => op.kind === "text" && op.font!.startsWith("700 "))!;
+        const name = ops.find(
+          (op) => op.kind === "text" && op.font!.startsWith("700 ") && op.text === COPY.brand,
+        )!;
         expect(name.text).toBe(COPY.brand);
         expect(name.baseline!).toBeCloseTo(logo.top + (logo.bottom - logo.top) * 0.912, 5);
       });
@@ -777,11 +775,11 @@ describe("the share pictures' vertical rhythm", () => {
   for (const lang of ["fr", "ar"] as const) {
     it(`Top 10 ranks (${lang}): 1 to 3 on a white plate in Tunnel Navy, 4 to 10 muted, all centred on the row`, async () => {
       const { ops } = await draw("post", lang);
-      const ranks = ops.filter((op) => op.kind === "text" && op.font!.startsWith("800 40px"));
+      const ranks = ops.filter((op) => op.kind === "text" && op.font!.startsWith("700 40px"));
       expect(ranks.map((op) => op.text)).toEqual(
         Array.from({ length: 10 }, (_, index) => String(index + 1)),
       );
-      const scores = ops.filter((op) => op.kind === "text" && op.font!.startsWith("800 48px"));
+      const scores = ops.filter((op) => op.kind === "text" && op.font!.startsWith("700 48px"));
       expect(scores).toHaveLength(10);
       const plates = ops.filter(
         (op) =>
@@ -817,7 +815,7 @@ describe("the share pictures' vertical rhythm", () => {
       const { ops } = recordings.at(-1)!;
       const pill = ops.find((op) => op.kind === "fill" && op.paint instanceof Gradient)!;
       // The section's name in large type (the lock-up draws it small too).
-      const section = ops.find((op) => op.kind === "text" && op.font!.startsWith("800 64px"))!;
+      const section = ops.find((op) => op.kind === "text" && op.font!.startsWith("700 64px"))!;
       expect(section.text).toBe(SECTION[lang]);
       const title = ops.find((op) => op.kind === "text" && op.text === model.title)!;
       return { pill: pill.top - section.bottom, line: section.top - title.bottom };

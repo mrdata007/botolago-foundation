@@ -40,7 +40,7 @@ export const FRAME_COLOURS: Record<string, readonly [string, string]> = {
   thirty_gameweeks: ["#45e58f", "#5ccbff"],
 };
 
-const FONT = '"Changa", "Manrope", "Cairo", system-ui, sans-serif';
+const FONT = '"Readex Pro", system-ui, sans-serif';
 
 function drawCup(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
   ctx.save();

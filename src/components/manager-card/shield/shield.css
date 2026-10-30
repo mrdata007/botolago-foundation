@@ -10,6 +10,9 @@
    not in src/fonts.css: they are requested only when a card is drawn, never with the section off.
    --------------------------------------------------------------------------------------------- */
 
+/* The card's text faces (Changa, Manrope, Noto Sans Arabic): see ../card-faces.css. */
+@import "../card-faces.css";
+
 @font-face {
   font-family: "Mr Dafoe";
   font-style: normal;
