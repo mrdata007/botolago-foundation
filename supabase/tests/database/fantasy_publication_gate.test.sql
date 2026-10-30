@@ -429,7 +429,10 @@ select extensions.ok(not exists(select 1 from jsonb_array_elements(app_private.o
 insert into app_private.football_provider_mappings(provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at)
 select 'sofascore', 'fixture', (9200 + i)::text, ('fb000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid, 'test', now() from generate_series(1, 8) i;
 select api.service_record_fantasy_api_ratings(('fb000000-0000-4000-8000-' || lpad(i::text, 12, '0'))::uuid,(9200+i)::text,
-  pg_temp.native_players(i,false),app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '3 hours')from generate_series(1,8)i;
+  pg_temp.native_players(i,false),
+  -- After the slot, and inside the recorder's 24 hour window whatever the time of day
+  -- (the slot is yesterday 14:00, so slot + 3 h is older than 24 h after 17:00 UTC).
+  greatest(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '3 hours',now()-interval '23 hours'))from generate_series(1,8)i;
 select extensions.ok(not app_private.fantasy_selection_ratings_pending('f6400000-0000-4000-8000-000000000002'),'journée 2 ratings are all in');
 select extensions.is(app_private.fantasy_publication_alarm_at('f6400000-0000-4000-8000-000000000002',app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000002')+interval '29 minutes'),
   null,'no alarm 29 minutes after the slot, all ratings in');
