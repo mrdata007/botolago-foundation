@@ -110,11 +110,10 @@ export function FantasyHubTeamArea({
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
-        {/* The team card, the transfers row and the card block. No button
-            placeholder: with a gameweek the team button is the deadline
-            card's, and that is the common case. */}
+        {/* The team card and the card block. No button or transfers-row
+            placeholder: with a gameweek both are the deadline card's, and
+            that is the common case. */}
         <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
-        <UiSkeleton className={cn("h-[63px]", ui.radius.card)} />
         <UiSkeleton className={cn("h-28", ui.radius.card)} />
       </div>
     );
@@ -169,7 +168,10 @@ export function FantasyHubTeamArea({
         pending={summaryPending}
       />
       <OwnerNextAction gameweek={gameweek} />
-      <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      {/* With a gameweek the deadline card carries « Transferts · n gratuits »
+          beside « Mon équipe »; the row would be the same link again. Without
+          one there is no card, and the row is the way to the transfers. */}
+      {gameweek ? null : <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />}
       {cardLive ? (
         // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
         // the team card keeps its action beside it. The fallback holds the block's height while

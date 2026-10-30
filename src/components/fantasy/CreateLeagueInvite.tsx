@@ -75,7 +75,9 @@ export function CreateLeagueInvite() {
 
   if (!open) {
     return (
-      <UiButton variant="gradient" size="sm" className="mt-3" onClick={() => setOpen(true)}>
+      // Soft, like « Rejoindre des ligues » and « Gérer les ligues » beside it: the
+      // action gradient on this screen belongs to the deadline and the team.
+      <UiButton variant="soft" size="sm" className="mt-3" onClick={() => setOpen(true)}>
         <Plus className="h-4 w-4" aria-hidden />
         {t("fantasy.hub.create_invite")}
       </UiButton>

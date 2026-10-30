@@ -14,7 +14,7 @@ const hub = readFileSync(join(import.meta.dir, "fantasy.index.tsx"), "utf8");
 
 describe("Fantasy hub links for a visitor", () => {
   test("one shortcut list, told whether the reader is a visitor", () => {
-    expect(hub).toContain("<ShortcutList visitor={!hasTeam} />");
+    expect(hub).toContain("<ShortcutList visitor={!hasTeam} roundShown={roundShown} />");
     expect(hub.split("<ShortcutList ")).toHaveLength(2);
     expect(hub).not.toContain("TileGrid");
   });
@@ -24,6 +24,12 @@ describe("Fantasy hub links for a visitor", () => {
     expect(list).toContain('to: "/fantasy/rankings"');
     expect(list).toContain('t("fantasy.hub.visitor_leagues")');
     expect(list.indexOf('"/fantasy/rankings"')).toBeLessThan(list.indexOf('to: "/matches"'));
+  });
+
+  test("« Difficulté des matchs » once: the list leaves it to the owner's round block", () => {
+    const list = hub.slice(hub.indexOf("function ShortcutList"));
+    expect(list).toContain('...(roundShown ? [] : [{ to: "/fantasy/fixtures"');
+    expect(hub).toContain("{roundShown && team && gameweek ? (\n        <FantasyHubRound");
   });
 
   test("one rules link and one help link on the hub", () => {

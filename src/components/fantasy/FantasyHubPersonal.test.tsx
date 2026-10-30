@@ -164,7 +164,7 @@ const placeholders = (html: string) =>
   [...html.matchAll(/data-testid="(fantasy-hub-[a-z]+-placeholder)"/g)].map((m) => m[1]);
 
 describe("the hub's personal parts, for each visitor", () => {
-  it("an owner with no gameweek (no deadline card) keeps the team button under the card", async () => {
+  it("an owner with no gameweek (no deadline card) keeps the team button and the transfers row", async () => {
     const html = await hub({
       authStatus: "authenticated",
       source: "cloud",
@@ -173,9 +173,10 @@ describe("the hub's personal parts, for each visitor", () => {
       noGameweek: true,
     });
     expect(anchors(html).map(hrefOf)).toContain("/fantasy/team");
+    expect(anchors(html).map(hrefOf)).toContain("/fantasy/transfers");
   });
 
-  it("an owner gets the dashboard as before: team card, pick team, transfers, leagues, cup, switches", async () => {
+  it("an owner gets the dashboard: team card, leagues, cup, switches (team and transfers are on the deadline card)", async () => {
     const html = await hub({
       authStatus: "authenticated",
       source: "cloud",
@@ -185,9 +186,9 @@ describe("the hub's personal parts, for each visitor", () => {
     const links = anchors(html).map(hrefOf);
     expect(text(html)).toContain(TEAM.teamName);
     expect(links).toContain("/fantasy/profile");
-    expect(links).toContain("/fantasy/transfers");
-    // Before the deadline the next action is preparing the team, and the
-    // deadline card above carries it (« Mon équipe »): no second button here.
+    // With a gameweek the deadline card above carries « Mon équipe » and
+    // « Transferts »: no second team button and no transfers row here.
+    expect(links).not.toContain("/fantasy/transfers");
     expect(text(html)).not.toContain(escapeHtml(fr["fantasy.next.prepare"]));
     expect(links).not.toContain("/fantasy/team");
     expect(headings(html)).toEqual([
@@ -514,7 +515,7 @@ describe("the hub places them", () => {
   it("once each, in its order: team area, shortcuts, leagues, News, reminders, more about", () => {
     const order = [
       "<FantasyHubTeamArea",
-      "<ShortcutList visitor={!hasTeam} />",
+      "<ShortcutList visitor={!hasTeam} roundShown={roundShown} />",
       "<FantasyHubLeagues",
       "{NEWS_ENABLED && (",
       "<FantasyHubReminders layout={layout} />",

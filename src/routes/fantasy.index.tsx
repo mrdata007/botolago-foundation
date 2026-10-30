@@ -170,6 +170,8 @@ function FantasyHub() {
     enabled: hasTeam && !!gameweek,
     staleTime: 60_000,
   });
+  // The owner's round block (it links « Difficulté des matchs » itself).
+  const roundShown = hasTeam && !!team && !!gameweek && screen.phase === "ready";
   const checklist =
     hasTeam && team && gameweek
       ? deadlineChecklist(team, screen.players, fixtures.data ?? [], gameweek.number)
@@ -233,7 +235,7 @@ function FantasyHub() {
         />
       </div>
 
-      {hasTeam && team && gameweek && screen.phase === "ready" ? (
+      {roundShown && team && gameweek ? (
         <FantasyHubRound
           team={team}
           players={screen.players}
@@ -246,7 +248,7 @@ function FantasyHub() {
         />
       ) : null}
 
-      <ShortcutList visitor={!hasTeam} />
+      <ShortcutList visitor={!hasTeam} roundShown={roundShown} />
 
       {closedGuest ? (
         <div className={cn("mt-4", ui.space.gutter)}>
@@ -382,7 +384,14 @@ function LinkList({ rows }: { rows: Row[] }) {
  * the deadline and "Créer mon équipe"; now the deadline and that one button are
  * the first screen, and the list follows.
  */
-function ShortcutList({ visitor }: { visitor: boolean }) {
+function ShortcutList({
+  visitor,
+  roundShown,
+}: {
+  visitor: boolean;
+  /** The round block above already links « Difficulté des matchs ». */
+  roundShown: boolean;
+}) {
   const { t } = useI18n();
   const live = useManagerCardLive();
   const rows: Row[] = [
@@ -393,7 +402,7 @@ function ShortcutList({ visitor }: { visitor: boolean }) {
         ]
       : []),
     { to: "/matches", label: t("fpl.fixtures") },
-    { to: "/fantasy/fixtures", label: t("fpl.fdr") },
+    ...(roundShown ? [] : [{ to: "/fantasy/fixtures", label: t("fpl.fdr") }]),
     { to: "/fantasy/players", label: t("fpl.player_stats") },
     { to: "/fantasy/top-players", label: t("fpl.top_players") },
   ];
