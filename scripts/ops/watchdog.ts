@@ -418,6 +418,12 @@ export const POINTS_ESCALATE_HOURS = 6;
  * `fantasy_fixture_coverage`, `fantasy_scoring` and `fantasy_progression`.
  */
 export const PROVISIONAL_POINTS_ESCALATE_HOURS = 21 * 24;
+/**
+ * A journée held for its publication moment is late only this long after it.
+ * Mirrors PUBLICATION_GRACE_MINUTES in scripts/backend/fantasy-season-orchestrator.ts and
+ * app_private.fantasy_publication_alarm_at (migration 20261030100300).
+ */
+export const PUBLICATION_GRACE_MINUTES = 30;
 const POINTS_PENDING = ["open", "locked", "live", "provisional", "finalizing"];
 
 /**
@@ -491,8 +497,31 @@ export async function fantasyPoints(
   } catch {
     return unreadable("the gameweek windows", windows.status);
   }
+  // A journée held for its publication moment (migration 20261030100000) is
+  // not late before it: its points go out all at once at `publishAt`. It fails
+  // only when still unpublished PUBLICATION_GRACE_MINUTES after it (the database
+  // moves the moment to the next slot when a rating was pending at it). Without
+  // a known moment the ordinary window rule below applies.
+  const heldSince = (gw: Record<string, unknown>): number | null => {
+    if (gw.publicationHeld !== true) return null;
+    const at = Date.parse(String(gw.publishAt));
+    return Number.isNaN(at) ? null : at;
+  };
+  const held = items
+    .filter((gw) => POINTS_PENDING.includes(String(gw.status)) && heldSince(gw) !== null)
+    .map((gw) => ({
+      sequence: Number(gw.sequence),
+      minutes: Math.round((now.getTime() - (heldSince(gw) as number)) / 60_000),
+    }))
+    .sort((a, b) => a.sequence - b.sequence);
+  const heldLate = held.filter((gw) => gw.minutes >= PUBLICATION_GRACE_MINUTES);
+  const heldNote = held.length
+    ? `; ${held.map((gw) => `GW${Number.isSafeInteger(gw.sequence) ? gw.sequence : "?"}`).join(", ")} waiting for ${
+        held.length === 1 ? "its" : "their"
+      } publication time`
+    : "";
   const ended = items
-    .filter((gw) => POINTS_PENDING.includes(String(gw.status)))
+    .filter((gw) => POINTS_PENDING.includes(String(gw.status)) && heldSince(gw) === null)
     .map((gw) => {
       const end = Date.parse(String(gw.endsAt));
       return {
@@ -503,11 +532,25 @@ export async function fantasyPoints(
     })
     .filter((gw) => gw.hours === null || gw.hours >= 0)
     .sort((a, b) => a.sequence - b.sequence);
+  if (heldLate.length)
+    return {
+      name: "fantasy_points",
+      status: "fail",
+      detail: `${heldLate
+        .slice(0, 5)
+        .map((gw) => `GW${Number.isSafeInteger(gw.sequence) ? gw.sequence : "?"} ${gw.minutes} min`)
+        .join(
+          "; ",
+        )} past its publication time and still unpublished (docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md)`.slice(
+        0,
+        200,
+      ),
+    };
   if (ended.length === 0)
     return {
       name: "fantasy_points",
       status: "ok",
-      detail: "every gameweek whose window has ended has final points",
+      detail: `every gameweek whose window has ended has final points${heldNote}`.slice(0, 200),
     };
   const allowance = (gw: { status: string }) =>
     gw.status === "provisional" ? PROVISIONAL_POINTS_ESCALATE_HOURS : escalateHours;
@@ -530,7 +573,7 @@ export async function fantasyPoints(
         : ended.every((gw) => gw.status === "provisional")
           ? `provisional points count, escalates at ${PROVISIONAL_POINTS_ESCALATE_HOURS} h`
           : `points pending, escalates at ${escalateHours} h`
-    }`.slice(0, 200),
+    }${heldNote}`.slice(0, 200),
   };
 }
 
