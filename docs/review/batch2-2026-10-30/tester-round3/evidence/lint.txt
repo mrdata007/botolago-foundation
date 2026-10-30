@@ -1,0 +1,97 @@
+$ eslint .
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/demo/src/components/Sponsor.tsx
+  20:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  32:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/demo/src/state.tsx
+   24:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   35:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   51:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  112:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  127:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  145:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  198:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  301:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  311:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/demo/src/ui-state.tsx
+  36:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/auth/AuthProvider.tsx
+  224:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  235:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/common/ArticleHeroFallback.tsx
+  164:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/curva/CurvaLockScreen.tsx
+  25:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/fantasy/ConfettiBurst.tsx
+  22:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/fpl/FplPositionProgress.tsx
+  17:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/matches/LineupsView.tsx
+  18:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/matches/MatchTabs.tsx
+  15:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/matches/StandingsTable.tsx
+  30:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/news/FeaturedGrid.tsx
+  70:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/plus/PlusRecapSection.tsx
+  170:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/plus/PlusStylePicker.tsx
+  33:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/plus/TrophyDetail.tsx
+  22:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/plus/plus-season-context.tsx
+  42:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  51:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  72:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  77:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/shell/NotificationBell.tsx
+  14:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/shell/PageBackground.tsx
+  49:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/ui/badge.tsx
+  32:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/ui/button.tsx
+  87:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/ui/form.tsx
+  163:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/components/ui/toggle.tsx
+  42:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/i18n/provider.tsx
+  216:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/routes/__root.tsx
+  154:9  warning  The 'error' conditional could make the dependencies of useEffect Hook (at line 161) change on every render. To fix this, wrap the initialization of 'error' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/services/fantasy-owned-provider.tsx
+  245:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  256:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/src/theme/provider.tsx
+  133:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 40 problems (0 errors, 40 warnings)
+
+exit=0

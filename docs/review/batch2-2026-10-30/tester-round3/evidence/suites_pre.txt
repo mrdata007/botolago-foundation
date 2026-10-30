@@ -1,0 +1,20 @@
+fantasy_api_rating_recovery ok=104 notok=1 err=0
+    not ok 97 - and it asks for the rating_polls job, which reads no live feed
+fantasy_worker_schedule ok=96 notok=1 err=0
+    not ok 18 - 2.12 for the lifecycle job
+ops_health_and_alerts ok=13 notok=0 err=12
+ops_health_fantasy_coverage_and_scoring ok=95 notok=0 err=50
+ops_alert_delivery_confirmation ok=28 notok=6 err=0
+    not ok 15 - with the same failure
+    not ok 22 - recovery goes out
+    not ok 23 - the webhook's RECOVERED timed out, so it is sent again
+    not ok 24 - as RECOVERED
+    not ok 29 - both channels have confirmed the recovery
+    not ok 32 - both channels still stand at the recovery they confirmed
+ops_alert_email ok=25 notok=6 err=0
+    not ok 16 - the subject names the failing checks
+    not ok 17 - the text is the same message the webhook gets
+    not ok 18 - the address never travels in the request
+    not ok 23 - marked TEST
+    not ok 26 - recovery is announced
+    not ok 27 - by email as RECOVERED

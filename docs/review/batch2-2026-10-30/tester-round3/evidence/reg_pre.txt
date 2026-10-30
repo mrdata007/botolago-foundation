@@ -1,0 +1,107 @@
+{"role":"authenticated","sub":"d8000010-0000-4000-8000-000000000001","aal":"aal2"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+briefing | 8ec4249cb738f9657ab870269dbd8128 | 1
+gameweeks | d3c2719b792d692e7ef3e1f4dca863a9 | 1
+hidden_ahead gw3 r100 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead gw3 r2 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead gw3 r4000 | 5bf50e5f85112cf68b763d3c5d4c92fa | 1
+hidden_ahead r1 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead r10 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead r100 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead r2 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead r2500 | 232655d874d49a3b7ed798e22baa64b4 | 1
+hidden_ahead r3 | df733823e779f0e78e348ca1b516e710 | 1
+hidden_ahead r5000 | 5bf50e5f85112cf68b763d3c5d4c92fa | 1
+hub ar | 98661fc2d2df562877e14bf5ac1a50b1 | 1
+hub fr | 98661fc2d2df562877e14bf5ac1a50b1 | 1
+league 1 | 3ec82ed0af57b24654483f1bb04ee5e3 | 1
+league 10 | b900eaa47822664905da3aaef0efdd29 | 1
+league 11 | ad3bf1feab5ad20170f503c2f25db5eb | 1
+league 12 | 5787239a630a7188a01e5e4ae5b7ecc8 | 1
+league 13 | 8892768685b604e5549ed01b345428b4 | 1
+league 14 | 9172c454aae2ecc39b470a65bb0b6d87 | 1
+league 15 | 1277ad74ce5dca56dfd9e85e1a723672 | 1
+league 16 | c13906dcdc622d77ee41c31663a059de | 1
+league 17 | e0c81673493f9dab961360d670f2c4c7 | 1
+league 18 | 2cd250ea956ba8ec8e2f28acd857eaea | 1
+league 19 | eb80b1130bcf9e1422d519c6b4d4423e | 1
+league 2 | 44b965b8718deb49b4d6374c9ca6c6be | 1
+league 20 | 92ff82aca6d62f63d0eea0c5d8fb2fdd | 1
+league 3 | c8d3fa38af01fbcea5b5cd3c3eb9f942 | 1
+league 4 | 7af6059bd2192be62520551d5627073b | 1
+league 5 | 0c27dd6fdd7d59c4b1af2a60e8e303a6 | 1
+league 5 1row | ae51758f6e22b46cc214c55db6375bec | 1
+league 5 gw2 | 23e95dbd026cad731bed978f2fc777d0 | 1
+league 5 p2 | db7c7a65fab0cddddd3e199540a5ed84 | 1
+league 6 | 32af586a94a05afde44b1db2c87442c4 | 1
+league 7 | 035ed5a12b256b353ff620591aee66c7 | 1
+league 8 | 53c4a844c4a81fbbb012b7ddd822c886 | 1
+league 9 | f6f8bfcd27ec1922415d421bb00f0ea4 | 1
+leagues | 597dba733852893e0fb646fc3d691f69 | 1
+overall 1 row | ccdc36ff0a6ed0ea18cc1c517354c927 | 1
+overall deep | 36e60c05053126fef060f54a15c1927c | 1
+overall gw3 | 975ca844668f3f6f1a7cc2b10bb6c146 | 1
+overall gw5 p2 | beeb67165645047fc9559e1d2318fcb7 | 1
+overall p1 | a152089ae9bb15e346bff23d9ca2aa46 | 1
+overall p2 | a7ba4b378faecbddd9ac87016e327cd5 | 1
+points gw3 | cb7312072c1b140d25d057df697dae79 | 1
+points gw6 | c87964519c53d7e121fa3d0f85629fa7 | 1
+rivals | 8ec4249cb738f9657ab870269dbd8128 | 1
+summary gw1 | caf0aa18647eb06df6eadf9722945dca | 1
+summary gw2 | 0fbe4bcb364c6beb17997b4e11c313b2 | 1
+summary gw3 | 2496c9360c0eb06f978c97db4f829c83 | 1
+summary gw4 | 4aa4ce08d23b23631cf1ff287db21769 | 1
+summary gw5 | 89de59a5c94335ae4ccd000018c308c6 | 1
+summary gw6 | 2ec32d5c955f240ff18ec1bb3810670d | 1

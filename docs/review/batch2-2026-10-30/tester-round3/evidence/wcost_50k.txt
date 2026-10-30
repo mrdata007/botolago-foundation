@@ -1,0 +1,7 @@
+### pre50k
+writer season board (5000 teams) ms | 5412
+### post50k
+writer season board (5000 teams) ms | 5490
+### held50k
+writer season board (5000 teams) ms | 10399
+DONE

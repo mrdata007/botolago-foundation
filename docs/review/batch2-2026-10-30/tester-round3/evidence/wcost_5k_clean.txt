@@ -1,0 +1,9 @@
+### pre5k
+writer season board (5000 teams) ms | 581
+writer league board (250 teams) ms | 324
+### post5k
+writer season board (5000 teams) ms | 474
+writer league board (250 teams) ms | 248
+### held5k
+writer season board (5000 teams) ms | 937
+writer league board (250 teams) ms | 490

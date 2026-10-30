@@ -1,0 +1,111 @@
+Output format is unaligned.
+CREATE FUNCTION
+CREATE FUNCTION
+{"role":"service_role"}
+== S0 baseline (no gate)
+expected=600 shown=0 mismatches=600 any_held=f
+300
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+== S1 boards written before the gate, then gate switched on (J6 held; J7 held too: two journées held at once)
+-- right after the rating-season row (no refresh trigger on that table):
+expected=600 shown=0 mismatches=600 any_held=t
+-- after publication settings written (trigger refresh):
+expected=600 shown=600 mismatches=0 any_held=t
+== S2 the writer runs again while held (season + leagues)
+300
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+expected=600 shown=600 mismatches=0 any_held=t
+== S3 a correction to Journée 2 while held (final_score changed for 40 teams), writer re-run
+-- before the writer re-runs (results changed, boards not):
+expected=600 shown=600 mismatches=415 any_held=t
+300
+-- after the season board only (league boards still old):
+expected=600 shown=600 mismatches=134 any_held=t
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+15
+expected=600 shown=600 mismatches=0 any_held=t
+== S4 a new team joins a league while held, writer re-run for that league and the season
+psql:scn.sql:82: ERROR:  duplicate key value violates unique constraint "profiles_pkey"
+DETAIL:  Key (id)=(d8ffff00-0000-4000-8000-000000000001) already exists.
+expected=600 shown=600 mismatches=0 any_held=t
+301
+16
+expected=602 shown=602 mismatches=0 any_held=t
+-- new team shown rows (expect season + league 1):
+2
+== S5 a team leaves league 1 while held (membership left), league writer re-run
+psql:scn.sql:96: ERROR:  new row for relation "fantasy_league_memberships" violates check constraint "fantasy_league_memberships_status_check"
+DETAIL:  Failing row contains (4da6ef39-a830-42b8-a618-59582bf22f7b, da000002-0000-4000-8000-000000000001, d9000015-0000-4000-8000-000000000001, d8000015-0000-4000-8000-000000000001, member, left, 2026-10-30 10:02:09.332518+00, null, 2026-10-30 10:02:09.332518+00, 2026-10-30 10:02:12.839635+00).
+15
+expected=602 shown=602 mismatches=0 any_held=t
+-- is the leaver still shown in league 2 (stored and shown)?
+1|1
+== S6 release J6 only (J7 still held): table still used, correct?
+-- released but no overall ranking for J6 yet (J6 still unpublished):
+expected=602 shown=602 mismatches=0 any_held=t
+301
+-- J6 gw overall ranking written => J6 published, J7 still held:
+expected=602 shown=602 mismatches=600 any_held=t
+301
+expected=602 shown=602 mismatches=300 any_held=t
+== S7 release J7 too: table must be cleared or unused
+301
+any_held=false shown_rows=0
+== S8 stale rows left behind? Then a third journée goes held before any ranking write
+shown rows now 0

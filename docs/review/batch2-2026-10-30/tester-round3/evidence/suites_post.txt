@@ -1,0 +1,79 @@
+fantasy_actual_ratings ok=6 notok=0 err=0
+fantasy_api_rating_recovery ok=104 notok=1 err=0
+    not ok 97 - and it asks for the rating_polls job, which reads no live feed
+fantasy_catalog_activation ok=32 notok=0 err=0
+fantasy_catalog_restage_maintenance ok=35 notok=0 err=0
+fantasy_catalog_rollback_cleanup ok=18 notok=0 err=0
+fantasy_cleanup_qa_artifacts ok=27 notok=0 err=0
+fantasy_deactivate_duplicate_player ok=31 notok=0 err=0
+fantasy_deadline_mutation_lock ok=31 notok=0 err=0
+fantasy_domain ok=28 notok=0 err=0
+fantasy_durable_progression ok=29 notok=0 err=0
+fantasy_finalized_notification_batches ok=25 notok=0 err=0
+fantasy_finalizing_fixture_performance_guard ok=31 notok=0 err=0
+fantasy_finalizing_scoring_inputs_guard ok=55 notok=0 err=0
+fantasy_fixture_difficulty ok=5 notok=0 err=0
+fantasy_incremental_points ok=35 notok=0 err=0
+fantasy_league_visibility_rls ok=28 notok=0 err=0
+fantasy_legacy_identity_repairs ok=18 notok=0 err=0
+fantasy_lifecycle_tick ok=22 notok=0 err=0
+fantasy_manager_email_automation ok=46 notok=0 err=0
+fantasy_native_selection_close ok=40 notok=0 err=0
+fantasy_next_gameweek_progression ok=19 notok=0 err=0
+fantasy_not_rated_settlement ok=19 notok=0 err=0
+fantasy_open_missed_gameweek ok=22 notok=0 err=0
+fantasy_overall_standings ok=39 notok=0 err=0
+fantasy_persist_scoring_equivalence ok=18 notok=0 err=0
+fantasy_player_pool_photo ok=8 notok=0 err=0
+fantasy_player_season_stats ok=38 notok=0 err=0
+fantasy_points_read_surfaces ok=33 notok=0 err=0
+fantasy_postponement_and_enrolment ok=42 notok=0 err=0
+fantasy_postwork_journal ok=33 notok=0 err=0
+fantasy_prizes ok=125 notok=0 err=0
+fantasy_public_recaps ok=23 notok=0 err=0
+fantasy_publication_gate ok=90 notok=0 err=0
+fantasy_publication_gate_adversarial ok=21 notok=0 err=0
+fantasy_publication_gate_moved_match_e2e ok=3 notok=0 err=0
+fantasy_rating_degeneracy_guard ok=32 notok=0 err=0
+fantasy_rating_points ok=53 notok=0 err=0
+fantasy_rating_poll_mark_24h30 ok=10 notok=0 err=0
+fantasy_resolve_postponed_after_lock ok=116 notok=0 err=0
+fantasy_rls ok=16 notok=0 err=0
+fantasy_ruleset_v1 ok=21 notok=0 err=0
+fantasy_scoring_worker ok=38 notok=0 err=0
+fantasy_selection_close_moved_match ok=9 notok=0 err=0
+fantasy_trusted_lifecycle ok=18 notok=0 err=0
+fantasy_verified_finalization ok=16 notok=0 err=0
+fantasy_worker_health_backlog ok=32 notok=0 err=0
+fantasy_worker_schedule ok=96 notok=1 err=0
+    not ok 18 - 2.12 for the lifecycle job
+ops_health_adaptive_coverage ok=20 notok=0 err=0
+ops_health_and_alerts ok=13 notok=0 err=12
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_and_alerts.test.sql:97: ERROR:  invalid input syntax for type json
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_and_alerts.test.sql:99: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_and_alerts.test.sql:101: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_and_alerts.test.sql:103: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ops_health_fantasy_coverage_and_scoring ok=95 notok=0 err=50
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql:819: ERROR:  invalid input syntax for type json
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql:821: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql:824: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    psql:/home/user/botolago-foundation/.claude/worktrees/agent-a861aa9684f56fd1a/supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql:825: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ops_health_two_stage_fantasy_stats ok=35 notok=0 err=0
+ops_health_two_stage_progression ok=26 notok=0 err=0
+ops_alert_delivery_confirmation ok=28 notok=6 err=0
+    not ok 15 - with the same failure
+    not ok 22 - recovery goes out
+    not ok 23 - the webhook's RECOVERED timed out, so it is sent again
+    not ok 24 - as RECOVERED
+ops_alert_email ok=25 notok=6 err=0
+    not ok 16 - the subject names the failing checks
+    not ok 17 - the text is the same message the webhook gets
+    not ok 18 - the address never travels in the request
+    not ok 23 - marked TEST
+rapidapi_budget_guard ok=29 notok=0 err=0
+rapidapi_budget_per_host ok=67 notok=0 err=0
+rapidapi_call_budget ok=29 notok=0 err=0
+rapidapi_provider_quota_floor ok=22 notok=0 err=0
+pepites_sportapi_ratings ok=19 notok=0 err=0
+news_sitemap_snapshot ok=63 notok=0 err=0
+FINISHED

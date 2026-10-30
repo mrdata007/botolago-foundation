@@ -1,0 +1,59 @@
+DO
+BEGIN
+SET
+SET
+SET
+DO
+ hold_scheduled_jobs 
+---------------------
+ 
+(1 row)
+
+LOCK TABLE
+DO
+       set_config        
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+                                                                                                                                                                                                                          set_config                                                                                                                                                                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ ["account_deletion:ok", "browser_errors:ok", "cron_jobs:ok", "email_delivery:ok", "fantasy_fixture_coverage:ok", "fantasy_gameweek_clubs:ok", "fantasy_gameweek_lock:ok", "fantasy_lifecycle_tick:warn", "fantasy_progression:ok", "fantasy_scoring:ok", "fantasy_staged_stats:ok", "fantasy_worker:ok", "live_scores:ok", "manager_card:ok", "news_import:ok", "news_publication:fail", "news_sitemap:fail", "provider_refresh:warn", "rapidapi_budget:ok"]
+(1 row)
+
+ set_config 
+------------
+ none
+(1 row)
+
+ set_config 
+------------
+ none
+(1 row)
+
+ set_config 
+------------
+ 0
+(1 row)
+
+ set_config 
+------------
+ 
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+DO
+DO
+DO
+DO
+psql:apply_forcefail.sql:1594: ERROR:  stop: the update did not check out: {"history row missing"}
+CONTEXT:  PL/pgSQL function inline_code_block line 104 at RAISE
+ROLLBACK
+                                       result                                       
+------------------------------------------------------------------------------------
+ FAILED — nothing saved. Read the error above; do not edit a check to make it pass.
+(1 row)
+

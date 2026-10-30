@@ -1,0 +1,37 @@
+(20 rows)
+
+Time: 58416.469 ms (00:58.416)
+t|100000
+### pre50k
+overall 50 rows | 75.1
+overall 1 row | 71.0
+overall gw5 50 rows | 55.3
+league 50 rows | 5.4
+league 1 row | 0.9
+hub | 0.4
+hidden_ahead | 0.3
+### post50k
+overall 50 rows | 52.6
+overall 1 row | 62.2
+overall gw5 50 rows | 41.0
+league 50 rows | 3.9
+league 1 row | 0.7
+hub | 0.3
+hidden_ahead | 0.0
+### on50k
+overall 50 rows | 54.2
+overall 1 row | 70.6
+overall gw5 50 rows | 40.3
+league 50 rows | 3.3
+league 1 row | 0.7
+hub | 0.4
+hidden_ahead | 0.1
+### held50k
+overall 50 rows | 163.7
+overall 1 row | 101.5
+overall gw5 50 rows | 269.7
+league 50 rows | 48.9
+league 1 row | 8.7
+hub | 1.0
+hidden_ahead | 0.6
+DONE
