@@ -65,3 +65,22 @@ Tests
 - Unit tests for the French and Arabic wording and the Morocco-time formatting.
 - Contract test: `publishAt` and `publicationHeld` parse, and a database that
   lacks them still parses.
+
+## What was measured (30 Oct 2026)
+
+Rankings screen, production bundle against a local stub backend that reports
+Journée 6 as waiting for Saturday 31 Oct 14:00, headless Chromium 149 with the
+viewer's clock set to New York (the sentence must still say Morocco time):
+
+- `screenshots/rankings-before-*` (the bundle of `origin/main`) and
+  `screenshots/rankings-after-*` (this branch): French and Arabic, 320 px and
+  1280 px. `scrollWidth` equals `clientWidth` in all eight (320 = 320, 1280 =
+  1280), `dir` is `ltr` in French and `rtl` in Arabic.
+- The sentence reads «Points de la Journée 6 : samedi 31 oct. à 14h» and
+  «نقاط الجولة 6: السبت، 31 أكتوبر على الساعة 14:00». At 320 px in Arabic it wraps
+  to two lines, with the hour on the second; nothing overlaps.
+
+Not measured: the points screen. It needs a signed-in manager with a team, which
+the sandbox has no account for. It uses the same `PublicationNoticeLine`, right
+under the journée stepper, so only its position differs; it has to be looked at
+once with a real account (staging).

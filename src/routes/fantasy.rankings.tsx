@@ -182,7 +182,7 @@ function RankingsPage() {
   });
   const waiting = gameweekPointsWaiting(gwQ.data);
   // The oldest journée whose points are not published yet, and when they will be.
-  const publicationQ = usePublicationNotice(null, source !== "guest");
+  const publicationQ = usePublicationNotice(null, true);
 
   // Keep the page in range whenever the filter or sort shrinks the board.
   useEffect(() => {
