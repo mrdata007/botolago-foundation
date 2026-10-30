@@ -645,3 +645,15 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - (2) The sign-in step-up check is no longer in the outer functions, only in their copies (the test counts 94 of 99).
   - (3) The Manager Card isolation test does not know the new copies.
   - Commented on #592. The 3 build rounds are used up, so this is escalated to the owner with a recommendation for one short, limited round 4.
+
+**Batch 2a: owner decision and round 4 (30 Oct ~10:15 UTC).**
+- Owner chose "one more short round" (round 4, outside the usual 3).
+- Tester round 3 (on 25c6e40) results:
+  - Speed targets met. Nothing held: as fast as before or faster. Held: a 50-row page takes 78 ms at 5,000 teams and 164 ms at 50,000.
+  - Journées 1–5 output byte-identical (107 reader outputs).
+  - The apply script, including "FAILED — nothing saved", works.
+  - New gap F-R3-1: during the worker's normal release, from the first results batch until the overall ranking is written, the overall standings show the wrong board and league standings are empty. The stored table is empty at that moment.
+- Round 4 brief, limited to five items:
+  - fix the 3 CI failures (rivals arguments, the sign-in step-up guard in the outer functions, the Manager Card isolation test);
+  - close F-R3-1 (no moment with wrong or empty standings);
+  - push after each item, because of the frequent container restarts.
