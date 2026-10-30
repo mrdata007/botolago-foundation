@@ -11,8 +11,9 @@ import { HOME_LIST_SIZE, HOME_MATCHES_LIMIT } from "@/services/football";
  *
  * The route-ownership map (docs/engineering/tasks/BG-0012/redesign-route-ownership.md)
  * fixes Accueil's section order: greeting → matches → Fantasy gameweek entry →
- * curated News preview → standings snapshot (only with real data) → discovery
- * links. This is a lightweight source-shape check (not a full render test,
+ * curated News preview → standings snapshot (only with real data). The
+ * discovery links that closed the page were removed on 2026-10-30: they
+ * repeated the bottom menu. This is a lightweight source-shape check (not a full render test,
  * which would need to mock react-query/router/i18n) that guards the order and
  * a couple of hard "do not reproduce the News page" rules from regressing.
  */
@@ -31,19 +32,17 @@ describe("Accueil (Home) structural contract", () => {
     const fantasy = indexOfOrThrow('t("home.fantasy_hub")');
     const news = indexOfOrThrow('t("home.news_preview")');
     const standings = indexOfOrThrow('t("matches.table_preview")');
-    const discovery = indexOfOrThrow('t("home.explore")');
 
     expect(greeting).toBeLessThan(matches);
     // From 768px the sections sit in columns, so the source is grouped by
     // column and the phone order is carried by `order-N` classes. Phone order:
-    // matches 3, Pronostics 4, Fantasy 5, news 6, standings 7, discovery 8.
+    // matches 3, Pronostics 4, Fantasy 5, news 6, standings 7.
     expect(source).toContain('<Section className="order-3 xl:mt-0">'); // upcoming matches
     expect(source).toContain('<Section className="order-4 xl:order-5">'); // Pronostics
     expect(source).toContain('fantasyFirst ? "-order-1 sm:mt-0" : "order-5"'); // Fantasy
     expect(source).toContain('<Section className="order-6">'); // news
     expect(source).toContain('<Section className="order-7">'); // standings
-    expect(source).toContain('<Section className="order-8 pb-2">'); // discovery
-    expect([fantasy, news, standings, discovery].every((i) => i > matches)).toBe(true);
+    expect([fantasy, news, standings].every((i) => i > matches)).toBe(true);
   });
 
   test("the standings snapshot only renders with a real, non-empty table", () => {
@@ -70,11 +69,9 @@ describe("Accueil (Home) structural contract", () => {
     expect(source).not.toContain("newsLanguage");
   });
 
-  test("discovery links cover Matches, Fantasy, News and Profile", () => {
-    expect(source).toContain('to="/matches"');
-    expect(source).toContain('to="/fantasy"');
-    expect(source).toContain('to="/news"');
-    expect(source).toContain('to="/profile"');
+  test("no discovery grid repeats the bottom menu", () => {
+    expect(source).not.toContain('t("home.explore")');
+    expect(source).not.toContain("DiscoveryLink");
   });
 
   // Audit 2026-09-25 review: the sr-only H1 was the French `HOME_TITLE`
@@ -138,9 +135,8 @@ describe("Accueil (Home) structural contract", () => {
   });
 
   /**
-   * BG-0091 — News is hidden at launch. The section and the discovery tile
-   * above stay in the source (this is a hide, not a deletion) but both must be
-   * behind `NEWS_ENABLED`, and Home must not fetch a News edition while the
+   * BG-0091 — News is hidden at launch. The section stays in the source (this
+   * is a hide, not a deletion) but it must be behind `NEWS_ENABLED`, and Home must not fetch a News edition while the
    * flag is off. These assertions are what stops the rail reappearing by
    * accident; they are satisfied by the flag being honoured, not by its value.
    */
@@ -155,12 +151,6 @@ describe("Accueil (Home) structural contract", () => {
       // …and the section behind it is the News preview, not another one.
       const gated = source.slice(source.indexOf(gate), source.indexOf(gate) + 160);
       expect(gated).toContain('t("home.news_preview")');
-    });
-
-    test("the news discovery tile is behind the flag", () => {
-      expect(source).toContain(
-        '{NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}',
-      );
     });
 
     // Two call sites since the server renders the home page with its news

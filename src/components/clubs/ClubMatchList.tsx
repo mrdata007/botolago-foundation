@@ -1,4 +1,3 @@
-import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { MatchCard } from "@/components/common/MatchCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -53,7 +52,7 @@ export function ClubMatchList({
   if (fixtures.length === 0 && results.length === 0) {
     return (
       <Section>
-        <EmptyState illustration={noMatchesArt}>{t("club.matches_empty")}</EmptyState>
+        <EmptyState title={t("club.matches_empty_title")}>{t("club.matches_empty")}</EmptyState>
       </Section>
     );
   }

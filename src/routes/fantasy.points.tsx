@@ -1,5 +1,4 @@
 import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
-import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, LoaderCircle } from "lucide-react";
@@ -26,6 +25,7 @@ import {
   UiErrorState,
   UiHeader,
   UiKeyValueRow,
+  UiLinkButton,
   UiModal,
   UiSegmented,
   UiSkeleton,
@@ -772,7 +772,15 @@ function PointsBody() {
         </div>
       ) : !resultQ.isPending && !vm ? (
         <div className={cn("pt-4", ui.space.gutter)}>
-          <UiEmptyState illustration={pointsPendingArt} title={t("fpl.points_not_available")} />
+          <UiEmptyState
+            title={t("fpl.points_pending_title")}
+            body={t("fpl.points_not_available")}
+            action={
+              <UiLinkButton to="/fantasy/team" variant="ink" size="sm" className="mt-4">
+                {t("fantasy.tab.team")}
+              </UiLinkButton>
+            }
+          />
         </div>
       ) : null}
     </>

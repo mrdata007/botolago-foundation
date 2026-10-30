@@ -1,4 +1,3 @@
-import rulesArt from "@/assets/illustrations/rules-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -199,13 +198,6 @@ function RulesPage() {
 
   return (
     <div>
-      <img
-        src={rulesArt}
-        alt=""
-        aria-hidden
-        decoding="async"
-        className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
-      />
       {/* An h2: the header above already renders the page's h1. */}
       <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
@@ -311,18 +303,11 @@ function RuleCard({
 }) {
   return (
     <UiCard as="section">
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "grid h-10 w-10 shrink-0 place-items-center",
-            ui.radius.full,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-          aria-hidden
-        >
-          <Icon className="h-5 w-5" />
-        </span>
+      {/* The rule's icon in the brand foreground beside its title: no
+          gradient disc. The action gradient is for actions and progress
+          (DESIGN.md, The Earned Gradient Rule), not for decorating headings. */}
+      <div className="flex items-center gap-2.5">
+        <Icon className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
         <h3 className={cn(ui.display.teamSm, ui.tone.default)}>{title}</h3>
       </div>
       {children}

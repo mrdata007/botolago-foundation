@@ -121,14 +121,19 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     expect(text(html)).not.toContain(escapeHtml(fr["fantasy.intro.sign_in_note"]));
   });
 
-  it("links the rules as the one secondary action", async () => {
+  it("has one thing to click, the call to action: the rules link lives once, in the hub's list", async () => {
     const html = await render(intro());
-    const rules = anchors(html).filter((tag) => hrefOf(tag) === "/fantasy/rules");
-    expect(rules).toHaveLength(1);
-    expect(rules[0]).not.toContain("var(--ui-grad-action)");
-    expect(text(html)).toContain(escapeHtml(fr["fpl.rules"]));
-    // Nothing else to click: the call to action and the rules.
-    expect(anchors(html)).toHaveLength(2);
+    expect(anchors(html).filter((tag) => hrefOf(tag) === "/fantasy/rules")).toHaveLength(0);
+    expect(anchors(html)).toHaveLength(1);
+    expect(createLink(html)).toBeDefined();
+  });
+
+  it("lists how it works as plain points, with no icon discs", async () => {
+    const html = await render(intro());
+    const list = html.slice(html.indexOf("<ul "), html.indexOf("</ul>"));
+    expect(list.match(/<li /g)).toHaveLength(4);
+    expect(list).not.toContain("<svg");
+    expect(list).not.toContain("var(--ui-grad-action)");
   });
 
   it("names the deadline a new team has to meet, and the gameweek it starts in", async () => {
@@ -168,7 +173,7 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     expect(text(explainer)).toContain(escapeHtml(fr["fantasy.intro.lede"]));
     expect(text(explainer)).toContain(escapeHtml(fr["fantasy.intro.prizes"]));
     expect(explainer.match(/<li /g)).toHaveLength(4);
-    expect(anchors(explainer).map(hrefOf)).toEqual(["/fantasy/rules"]);
+    expect(anchors(explainer)).toHaveLength(0);
     // And no call to action: nothing in it is a step to take now.
     expect(createLink(explainer)).toBeUndefined();
   });
@@ -186,8 +191,8 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
   it("hub: the guest's shortcuts come before the explanation when registration is closed", () => {
     const hub = code("src/routes/fantasy.index.tsx");
     expect(hub).toContain("layout.intro !== null && gameweek?.enrolment === null");
-    expect(hub.indexOf("<ShortcutTiles />")).toBeGreaterThan(-1);
-    expect(hub.indexOf("<FantasyGuestExplainer")).toBeGreaterThan(hub.indexOf("<ShortcutTiles />"));
+    expect(hub.indexOf("<ShortcutList ")).toBeGreaterThan(-1);
+    expect(hub.indexOf("<FantasyGuestExplainer")).toBeGreaterThan(hub.indexOf("<ShortcutList "));
   });
 
   it("mentions prizes only when the catalog has one", async () => {
@@ -216,9 +221,8 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
       const prizes = at(escapeHtml(fr["fantasy.intro.prizes"]));
       const how = at(escapeHtml(fr["fantasy.intro.how_title"]));
       const list = at("<ul ");
-      const rules = at('href="/fantasy/rules"');
-      expect([title, lede, create, joinBy, prizes, how, list, rules]).toEqual(
-        [title, lede, create, joinBy, prizes, how, list, rules].sort((a, b) => a - b),
+      expect([title, lede, create, joinBy, prizes, how, list]).toEqual(
+        [title, lede, create, joinBy, prizes, how, list].sort((a, b) => a - b),
       );
     }
   });
@@ -315,7 +319,9 @@ describe("the Fantasy hub around the proposition", () => {
 
   it("puts the proposition in the team card's place, not the bare sign-in card", () => {
     expect(personal).toContain("<FantasyGuestIntro");
-    expect(personal).toContain("joinBy={joinTarget(gameweek)}");
+    // The deadline card above names this gameweek's deadline; the intro names one only when a team
+    // made now joins a later gameweek.
+    expect(personal).toContain("joinBy={gameweek?.enrolment ? joinTarget(gameweek) : null}");
     expect(personal).toContain("registrationClosed={gameweek?.enrolment === null}");
     expect(personal).not.toContain('phase="guest"');
     expect(hub).not.toContain('phase="guest"');

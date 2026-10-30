@@ -22,6 +22,7 @@ export const frFantasy = {
   "fantasy.scoring.policy":
     "Le barème est fixé par match 12 heures après le coup de sifflet final. Si les statistiques détaillées sont incomplètes, les passes décisives, arrêts et penalties sauvés ou manqués sont exclus. Les autres points restent identiques. Des données essentielles manquantes retardent la validation. Les statistiques reçues plus tard ne changent pas le barème.",
   "fantasy.hub.visitor_leagues": "Créer ou rejoindre une ligue",
+  "fantasy.hub.help_link": "Aide et questions fréquentes",
   "fantasy.subtitle": "Votre équipe, votre {accent}stratégie{/accent}.",
   "fantasy.total_points": "Points totaux",
   "fantasy.gw_rank": "Classement de la journée",
@@ -33,9 +34,6 @@ export const frFantasy = {
   "fantasy.price": "Prix",
   "fantasy.coming_soon": "Le module Fantasy complet arrive bientôt.",
   "fantasy.next_deadline": "Prochaine date limite",
-  "fantasy.deadline_card.hours": "Heures",
-  "fantasy.deadline_card.minutes": "Minutes",
-  "fantasy.deadline_card.seconds": "Secondes",
   "fantasy.deadline_card.starters_ok": "11 titulaires choisis",
   "fantasy.deadline_card.starters_missing": "{n} titulaires sur 11 choisis",
   "fantasy.deadline_card.captain_ok": "Capitaine choisi",
@@ -779,6 +777,7 @@ export const frFantasy = {
   "fpl.no_data_yet": "Pas encore de données.",
   "fpl.rankings": "Classement général",
   "fpl.points_not_available": "Les points de cette journée seront disponibles après les matchs.",
+  "fpl.points_pending_title": "Points pas encore calculés",
   // BG-0075 — the scoring lines behind a player's total on /fantasy/points.
   // One entry per `category` written into app.fantasy_player_point_events by
   // src/backend/fantasy/scoring.ts, plus the categories app.fantasy_scoring_

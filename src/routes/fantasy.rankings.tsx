@@ -1,5 +1,3 @@
-import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
-import rankingEmptyArt from "@/assets/illustrations/ranking-empty.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { LogIn, Share2, UserPlus } from "lucide-react";
@@ -346,7 +344,6 @@ function RankingsPage() {
                     // before the first gameweek is scored this is the expected
                     // state of the whole board, and it has to say so.
                     <UiEmptyState
-                      illustration={search.trim() ? undefined : rankingEmptyArt}
                       title={
                         search.trim()
                           ? t("fantasy.players.no_match")
@@ -660,11 +657,7 @@ function MyLeagues() {
   return (
     <div className="space-y-4">
       {rows.length === 0 ? (
-        <UiEmptyState
-          illustration={emptyLeaguesArt}
-          title={t("fantasy.leagues.empty_title")}
-          body={t("fpl.no_leagues")}
-        />
+        <UiEmptyState title={t("fantasy.leagues.empty_title")} body={t("fpl.no_leagues")} />
       ) : (
         <LeagueList rows={rows} label={t("fantasy.rankings.tab_leagues")} />
       )}

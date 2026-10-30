@@ -60,6 +60,12 @@ describe("the lock screen", () => {
     const source = read("src/components/curva/CurvaLockScreen.tsx");
     expect(source).not.toMatch(/useCurvaScreen|useMyManagerCard|useCurvaPeople|useQuery/);
     expect(source).toContain("SAMPLE_CARD_PROFILE");
-    expect(source).toContain("EXAMPLE_VIEW");
+  });
+  it("shows the card front as the teaser: no blur, no padlock, no example table", () => {
+    const source = read("src/components/curva/CurvaLockScreen.tsx");
+    expect(source).toContain("<CardStage profile={SAMPLE_CARD_PROFILE}");
+    expect(source).not.toMatch(/blur\(|<Lock\b|EXAMPLE_ROWS|EXAMPLE_VIEW/);
+    expect(source).toContain('data-testid="curva-lock-register"');
+    expect(source).toContain("search={{ next }}");
   });
 });

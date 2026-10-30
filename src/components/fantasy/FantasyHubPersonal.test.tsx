@@ -112,11 +112,14 @@ function hub({
   source,
   phase,
   team,
+  noGameweek = false,
 }: {
   authStatus: AuthStatus;
   source: FantasyDataSource;
   phase: FantasyScreenPhase;
   team: FantasyTeam | null;
+  /** No gameweek, so no deadline card above the team area. */
+  noGameweek?: boolean;
 }) {
   const layout = fantasyHubLayout({ authStatus, source, phase, hasTeam: !!team });
   const owner = layout.audience === "owner";
@@ -126,7 +129,7 @@ function hub({
         layout={layout}
         phase={phase}
         retry={() => {}}
-        gameweek={phase === "ready" ? GAMEWEEK : null}
+        gameweek={phase === "ready" && !noGameweek ? GAMEWEEK : null}
         team={team}
         displayName={null}
         summary={owner ? SUMMARY : null}
@@ -161,7 +164,19 @@ const placeholders = (html: string) =>
   [...html.matchAll(/data-testid="(fantasy-hub-[a-z]+-placeholder)"/g)].map((m) => m[1]);
 
 describe("the hub's personal parts, for each visitor", () => {
-  it("an owner gets the dashboard as before: team card, pick team, transfers, leagues, cup, switches", async () => {
+  it("an owner with no gameweek (no deadline card) keeps the team button and the transfers row", async () => {
+    const html = await hub({
+      authStatus: "authenticated",
+      source: "cloud",
+      phase: "ready",
+      team: TEAM,
+      noGameweek: true,
+    });
+    expect(anchors(html).map(hrefOf)).toContain("/fantasy/team");
+    expect(anchors(html).map(hrefOf)).toContain("/fantasy/transfers");
+  });
+
+  it("an owner gets the dashboard: team card, leagues, cup, switches (team and transfers are on the deadline card)", async () => {
     const html = await hub({
       authStatus: "authenticated",
       source: "cloud",
@@ -171,10 +186,11 @@ describe("the hub's personal parts, for each visitor", () => {
     const links = anchors(html).map(hrefOf);
     expect(text(html)).toContain(TEAM.teamName);
     expect(links).toContain("/fantasy/profile");
-    expect(links).toContain("/fantasy/team");
-    expect(links).toContain("/fantasy/transfers");
-    // Before the deadline the next action is preparing the team.
-    expect(text(html)).toContain(escapeHtml(fr["fantasy.next.prepare"]));
+    // With a gameweek the deadline card above carries « Mon équipe » and
+    // « Transferts »: no second team button and no transfers row here.
+    expect(links).not.toContain("/fantasy/transfers");
+    expect(text(html)).not.toContain(escapeHtml(fr["fantasy.next.prepare"]));
+    expect(links).not.toContain("/fantasy/team");
     expect(headings(html)).toEqual([
       escapeHtml(fr["fantasy.hub.my_leagues"]),
       escapeHtml(fr["fpl.general_leagues"]),
@@ -499,7 +515,7 @@ describe("the hub places them", () => {
   it("once each, in its order: team area, shortcuts, leagues, News, reminders, more about", () => {
     const order = [
       "<FantasyHubTeamArea",
-      "<ShortcutTiles />",
+      "<ShortcutList visitor={!hasTeam} roundShown={roundShown} />",
       "<FantasyHubLeagues",
       "{NEWS_ENABLED && (",
       "<FantasyHubReminders layout={layout} />",

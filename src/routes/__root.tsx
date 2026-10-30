@@ -1,5 +1,3 @@
-import notFoundArt from "@/assets/illustrations/not-found.webp";
-import errorArt from "@/assets/illustrations/no-connection.webp";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -85,7 +83,8 @@ function NotFoundComponent() {
 const stateActionClass = cn(
   "inline-flex items-center justify-center gap-2 px-4",
   ui.space.tap,
-  ui.radius.control,
+  // Fully round, like every other button (DESIGN.md: the control shape).
+  ui.radius.full,
   ui.text.bodyStrong,
   ui.focus,
   "transition-colors",
@@ -99,13 +98,6 @@ function NotFoundBody() {
       className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
     >
       <div className="max-w-md text-center">
-        <img
-          src={notFoundArt}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="mx-auto mb-2 h-40 w-auto max-w-full object-contain"
-        />
         {/* The one oversized figure on the screen, so it comes off the STAT
             ramp (rule 4) rather than the prose ramp with `fpl-tabular` bolted
             on: `ui.stat.hero` already carries tabular figures, the hero
@@ -175,13 +167,6 @@ function ErrorBody({ error, reset }: { error: Error; reset: () => void }) {
       className={cn("flex min-h-dvh items-center justify-center", ui.surface.page, ui.space.gutter)}
     >
       <div className="max-w-md text-center" role="alert">
-        <img
-          src={errorArt}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="mx-auto mb-4 h-40 w-auto max-w-full object-contain"
-        />
         <h1 className={cn(ui.text.title, ui.tone.default)}>{t("error.title")}</h1>
         <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("error.description")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">

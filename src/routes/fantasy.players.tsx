@@ -1,4 +1,3 @@
-import noPlayersArt from "@/assets/illustrations/empty-watchlist.webp";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Plus, Scale } from "lucide-react";
@@ -565,7 +564,6 @@ function PlayersPage() {
 
           {list.length === 0 ? (
             <UiEmptyState
-              illustration={noPlayersArt}
               title={t("fantasy.players.no_match")}
               body={t("fantasy.players.empty_filters")}
               action={

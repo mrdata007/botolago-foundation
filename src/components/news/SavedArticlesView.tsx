@@ -1,4 +1,3 @@
-import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -159,7 +158,6 @@ function SavedArticlesBody({
   if (entries.length === 0 && !hasMore) {
     return (
       <UiEmptyState
-        illustration={emptyNewsArt}
         title={t("news.saved.empty_title")}
         body={t("news.saved.empty")}
         action={

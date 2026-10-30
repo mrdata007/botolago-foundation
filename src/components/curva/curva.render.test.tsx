@@ -136,9 +136,11 @@ describe("G1 for a visitor", () => {
     );
   });
 
-  it("draws nothing of the real Curva: the preview is example data, blurred and inert", async () => {
+  it("draws nothing of the real Curva: the teaser is the example card's front, inert", async () => {
     const html = await view({ kind: "guest", closed: false });
-    expect(html).toMatch(/aria-hidden="true" inert="" class="[^"]*blur\(/);
+    expect(html).toContain('aria-hidden="true" inert="" data-testid="curva-lock-preview"');
+    expect(html).not.toContain("blur(");
+    expect(html).toContain("Exemple");
     expect(html).not.toContain('data-testid="curva-owner"');
     expect(html).not.toContain('href="/fantasy/create"');
     expect(html).not.toContain("curva-guest-points");

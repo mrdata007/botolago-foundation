@@ -11,18 +11,18 @@ import type { Gameweek } from "@/types/domain";
 import { noMatchLabel, transfersLabel } from "./deadline-card-copy";
 
 /**
- * The Fantasy hub's deadline card: the round and its date, a live countdown
- * in three tiles, and — for a manager with a team — what is still to check
- * before the deadline and the two places to do it.
+ * The Fantasy hub's deadline card: the round and its date, the time left as
+ * one scoreboard line ("37 h 59", the score face), and — for a manager with a
+ * team — what is still to check before the deadline and the two places to do
+ * it.
  *
  * The action gradient with `--ui-ink-deep` throughout, the pairing it is
- * specified for in both themes; the tiles are plain surface so their figures
- * keep full contrast. "Journée 14 · Date limite" stays ONE element: the e2e
+ * specified for in both themes, the figures included. "Journée 14 · Date limite" stays ONE element: the e2e
  * journey finds the hub by that exact text.
  *
  * `checklist` and `freeTransfers` are only given for an owner; a visitor sees
- * the round, the date and the countdown. After the deadline the tiles give
- * way to the round's state and the next deadline, as the old band did.
+ * the round, the date and the countdown. After the deadline the countdown
+ * gives way to the round's state and the next deadline, as the old band did.
  */
 export function DeadlineCard({
   gameweek,
@@ -89,27 +89,15 @@ export function DeadlineCard({
                 ? countdownText({ days: 0, hours: parts.hours, minutes: parts.minutes }, t)
                 : null}
             </span>
-            <div aria-hidden className="mt-3 grid grid-cols-3 gap-2">
-              {(
-                [
-                  [parts ? pad(parts.hours) : dash, t("fantasy.deadline_card.hours")],
-                  [parts ? pad(parts.minutes) : dash, t("fantasy.deadline_card.minutes")],
-                  [parts ? pad(parts.seconds) : dash, t("fantasy.deadline_card.seconds")],
-                ] as const
-              ).map(([value, label]) => (
-                <div
-                  key={label}
-                  className={cn(
-                    "flex flex-col items-center px-1 py-2",
-                    ui.radius.card,
-                    ui.surface.card,
-                  )}
-                >
-                  <bdi className={cn(ui.score.md, ui.text.tabular, ui.tone.ink)}>{value}</bdi>
-                  <span className={cn(ui.text.micro, ui.tone.muted)}>{label}</span>
-                </div>
-              ))}
-            </div>
+            {/* One scoreboard line, "37 h 59": hours, the hour mark,
+                minutes, each its own piece so the page direction orders
+                them (hours on the right in Arabic). Minutes, not seconds:
+                the date above is the exact time. */}
+            <p aria-hidden className="mt-2 flex items-baseline gap-2">
+              <bdi className={ui.score.hero}>{parts ? nf.format(parts.hours) : dash}</bdi>
+              <span className={ui.score.sm}>{t("home.hours")}</span>
+              <bdi className={ui.score.hero}>{parts ? pad(parts.minutes) : dash}</bdi>
+            </p>
           </>
         )}
 

@@ -1,4 +1,3 @@
-import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Award, Bookmark, ChevronRight, Crown, Medal, UserPlus } from "lucide-react";
@@ -20,6 +19,7 @@ import {
   UiEmptyState,
   UiErrorState,
   UiHeader,
+  UiLinkButton,
   UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -160,9 +160,13 @@ function TopPlayersPage() {
           {/* Not "Aucun contenu disponible": a gameweek that has not been
               scored has no top five, and saying so is the whole answer. */}
           <UiEmptyState
-            illustration={podiumSoonArt}
             title={t("fantasy.top.empty_title").replace("{n}", nf.format(currentGw))}
             body={t("fantasy.top.empty_body").replace("{n}", nf.format(currentGw))}
+            action={
+              <UiLinkButton to="/fantasy/players" variant="ink" size="sm" className="mt-4">
+                {t("fantasy.next.explore")}
+              </UiLinkButton>
+            }
           />
         </div>
       ) : null}

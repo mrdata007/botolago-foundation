@@ -1,4 +1,3 @@
-import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowDownUp,
@@ -111,9 +110,10 @@ export function FantasyHubTeamArea({
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
+        {/* The team card and the card block. No button or transfers-row
+            placeholder: with a gameweek both are the deadline card's, and
+            that is the common case. */}
         <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
-        <UiSkeleton className={cn("h-12", ui.radius.full)} />
-        <UiSkeleton className={cn("h-[63px]", ui.radius.card)} />
         <UiSkeleton className={cn("h-28", ui.radius.card)} />
       </div>
     );
@@ -140,7 +140,9 @@ export function FantasyHubTeamArea({
         ) : null}
         <FantasyGuestIntro
           audience={audience}
-          joinBy={joinTarget(gameweek)}
+          // The deadline card above already shows this gameweek's deadline;
+          // the intro names one only when a team made now joins a later one.
+          joinBy={gameweek?.enrolment ? joinTarget(gameweek) : null}
           registrationClosed={gameweek?.enrolment === null}
           prizes={prizes}
           hasDraft={resume !== null}
@@ -166,7 +168,10 @@ export function FantasyHubTeamArea({
         pending={summaryPending}
       />
       <OwnerNextAction gameweek={gameweek} />
-      <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      {/* With a gameweek the deadline card carries « Transferts · n gratuits »
+          beside « Mon équipe »; the row would be the same link again. Without
+          one there is no card, and the row is the way to the transfers. */}
+      {gameweek ? null : <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />}
       {cardLive ? (
         // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
         // the team card keeps its action beside it. The fallback holds the block's height while
@@ -201,6 +206,11 @@ function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {
     now: Date.now(),
   });
   if (!("to" in action)) return null;
+  // With a gameweek the deadline card above carries « Mon équipe » beside the
+  // checklist; a second button to the same page under the team card is the
+  // same action twice. The points actions (a round under way or done) and the
+  // team action with no gameweek stay.
+  if (action.to === "/fantasy/team" && gameweek) return null;
   const Icon = action.to === "/fantasy/points" ? Trophy : Shirt;
   return (
     <UiLinkButton to={action.to} variant="gradient" className="mt-3.5">
@@ -577,18 +587,10 @@ function LeaguesSection({
   );
 }
 
-/** "No private leagues yet", with the same spot art as the leagues page. */
+/** "No private leagues yet": one plain line; the buttons under it are the way on. */
 function NoLeaguesNote({ text }: { text: string }) {
   return (
-    <div className={cn("flex items-center gap-3 px-3 py-2.5", ui.surface.card)}>
-      <img
-        src={emptyLeaguesArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="h-12 w-auto shrink-0 object-contain"
-      />
+    <div className={cn("px-3 py-2.5", ui.surface.card)}>
       <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
     </div>
   );

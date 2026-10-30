@@ -1,4 +1,3 @@
-import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import {
   createFileRoute,
   isRedirect,
@@ -544,7 +543,7 @@ function ClubPage() {
             ) : seasonsQ.isPending || (season !== undefined && standingsQ.isPending) ? (
               <LoadingState />
             ) : standings.length === 0 ? (
-              <EmptyState compact illustration={standingsSoonArt}>
+              <EmptyState compact title={t("matches.table.empty_title")}>
                 {t("matches.table.empty")}
               </EmptyState>
             ) : (
