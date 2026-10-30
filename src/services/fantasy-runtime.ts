@@ -4,10 +4,7 @@ import { selectFantasyDataMode } from "./fantasy-v2";
 import { hubIdentity } from "./fantasy-identity";
 import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
 import { shareRead } from "./shared-read";
-import {
-  publicationNoticeOf,
-  type PublicationNotice,
-} from "./fantasy-publication-notice";
+import { publicationNoticeOf, type PublicationNotice } from "./fantasy-publication-notice";
 import {
   enrolmentGameweekOf,
   readFantasyAvailability,
