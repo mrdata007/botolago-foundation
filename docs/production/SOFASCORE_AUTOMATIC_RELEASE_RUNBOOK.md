@@ -1090,3 +1090,10 @@ it runs, before the `fantasy-lifecycle-worker` Edge Function and the website of
 the same pull request are deployed. Details are in
 `docs/backend/FANTASY_PUBLISH_ALL_AT_ONCE.md`; the owner steps are in
 `docs/review/batch2-2026-10-30/OWNER_STEPS.md`.
+
+`20261030210000_fantasy_shown_rankings_rescored_totals.sql` fixes the totals
+the season and league standings show while a journée is held: they now sum the
+same re-scored results fans see (`app_private.fantasy_visible_team_results`,
+which the ranking writer also sums), so Journées 1 to 3's rating re-scores
+count, instead of the raw results table. One function is patched in place
+(md5-guarded) and the stored figures are rebuilt.
