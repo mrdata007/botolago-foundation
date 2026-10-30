@@ -321,7 +321,7 @@ describe("the Fantasy hub around the proposition", () => {
     expect(personal).toContain("<FantasyGuestIntro");
     // The deadline card above names this gameweek's deadline; the intro names one only when a team
     // made now joins a later gameweek.
-    expect(personal).toContain("joinBy={gameweek?.enrolment ? joinTarget(gameweek) : null}");
+    expect(personal).toContain("joinBy={laterJoin(gameweek)}");
     expect(personal).toContain("registrationClosed={gameweek?.enrolment === null}");
     expect(personal).not.toContain('phase="guest"');
     expect(hub).not.toContain('phase="guest"');
