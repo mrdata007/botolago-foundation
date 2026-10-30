@@ -559,3 +559,16 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - Raja v Hassania: all 32 players rated at the 24-hour read (20:05).
 - Journée 6 is still not open. The worker keeps failing on the Fès v Berkane kick-off time, and the `fantasy_worker` check now fails too.
 - Still waiting for the owner's yes on the fix.
+
+**Journée 6 unblock: production write (30 Oct, 06:35–06:37 UTC, owner-approved "Yes for both").**
+- Database: production `tkewgajrljbwgwedqsxn`.
+- Checked first:
+  - no other agent of this session was running;
+  - the only other running session was a screen-only design session;
+  - the Fantasy worker lock was released.
+- Paused: the Fantasy tick and worker (`fantasy_automation_configure(false)`, 06:35:37).
+- Script: `scripts/backend/fix-gw5-fes-berkane-assigned-kickoff.sql`.
+  - Rehearsal raised "REHEARSAL OK" (audit id 831, rolled back). Re-read after: assigned time still 20:00 and no audit row, so the rollback held.
+  - Real run: Fès v Berkane's assigned kick-off changed from 20:00 to 17:00 (assignment 77fc2019…). Audit row 832 (`fantasy_fixture.realign_frozen_kickoff`).
+- Restored: `fantasy_automation_configure(true)` at 06:36:33. The tick and worker were on before.
+- Batch 2a Builder launched (Sonnet, own branch `claude/batch2-publish-journee-at-once`): the publication gate, F7, the 24 h 30 min rating read, and the watchdog changes.
