@@ -5,13 +5,15 @@
 export const frPrizes = {
   "prizes.title": "Lots à gagner",
   "prizes.intro":
-    "Jouez gratuitement toute la saison : chaque journée, chaque bloc de 4 journées et la saison entière ont leur lot.",
+    "Gratuit, sans achat ni pari : chaque journée, chaque bloc de 4 journées et la saison entière ont leur lot.",
   "prizes.how.gameweek": "Le meilleur score de la journée.",
   "prizes.how.monthly": "Le meilleur total sur un bloc de 4 journées (J1–J4, J5–J8…).",
   "prizes.how.season": "Le meilleur total de la saison, après la dernière journée.",
   "prizes.how.mini_league": "Terminer la saison en tête de sa ligue.",
   "prizes.how_to_win": "Comment gagner",
   "prizes.value": "Valeur estimée : {value} MAD",
+  "prizes.value_label": "Valeur estimée",
+  "prizes.currency": "MAD",
   "prizes.merch_only": "Lot en produits officiels",
   "prizes.sponsored_by": "Offert par {sponsor}",
   "prizes.sponsor_logo_alt": "Logo de {sponsor}",

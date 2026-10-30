@@ -99,7 +99,7 @@ async function render(lang: Language, node: ReactElement): Promise<string> {
 
 const text = (html: string) => html.replace(/<[^>]+>/g, "");
 
-/** The text of every `<bdi>`: the card's date, then its hours, minutes and seconds tiles. */
+/** The text of every `<bdi>`: the card's date, then the hours and minutes of its scoreboard line. */
 const bdis = (html: string) => [...html.matchAll(/<bdi[^>]*>([^<]*)<\/bdi>/g)].map((m) => m[1]);
 
 describe("DeadlineStrip writes Latin digits in both languages", () => {
@@ -150,13 +150,13 @@ describe("DeadlineStrip writes Latin digits in both languages", () => {
 
 describe("DeadlineCard writes Latin digits in both languages", () => {
   for (const lang of LANGUAGES) {
-    it(`pads minutes 0-9 with a Latin zero in the minutes tile (${lang})`, async () => {
+    it(`pads minutes 0-9 with a Latin zero on the scoreboard line (${lang})`, async () => {
       for (const minutes of SINGLE_DIGITS) {
         countdown = { hours: 37, minutes, seconds: 7, passed: false };
         try {
           const html = await render(lang, <DeadlineCard gameweek={GAMEWEEK} />);
-          const tiles = bdis(html).slice(1);
-          expect(tiles).toEqual(["37", `0${minutes}`, "07"]);
+          const line = bdis(html).slice(1);
+          expect(line).toEqual(["37", `0${minutes}`]);
           expect(html).not.toMatch(ARABIC_INDIC_DIGIT);
         } finally {
           countdown = null;
@@ -164,12 +164,12 @@ describe("DeadlineCard writes Latin digits in both languages", () => {
       }
     });
 
-    it(`pads single-digit hours and seconds the same way (${lang})`, async () => {
+    it(`writes hours as they are, like the strip, and no seconds (${lang})`, async () => {
       for (const digit of SINGLE_DIGITS) {
         countdown = { hours: digit, minutes: 30, seconds: digit, passed: false };
         try {
           const html = await render(lang, <DeadlineCard gameweek={GAMEWEEK} />);
-          expect(bdis(html).slice(1)).toEqual([`0${digit}`, "30", `0${digit}`]);
+          expect(bdis(html).slice(1)).toEqual([`${digit}`, "30"]);
           expect(html).not.toMatch(ARABIC_INDIC_DIGIT);
         } finally {
           countdown = null;
@@ -180,7 +180,7 @@ describe("DeadlineCard writes Latin digits in both languages", () => {
 
   it("shows dashes, not digits, before the countdown has started", async () => {
     const html = await render("ar", <DeadlineCard gameweek={GAMEWEEK} />);
-    expect(bdis(html).slice(1)).toEqual(["–", "–", "–"]);
+    expect(bdis(html).slice(1)).toEqual(["–", "–"]);
   });
 });
 

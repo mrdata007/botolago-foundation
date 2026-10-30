@@ -395,7 +395,7 @@ const COPY = {
   brand: "Prospects",
   kicker: "U23 BOTOLA PRO",
   title: "TOP 10",
-  subtitle: "SEMAINE {n} RISING SCORE",
+  subtitle: "SEMAINE {n} INDICE",
   footer: "botolago.com/pepites",
   legend: "Note forme contribution",
   club: (player: PepitesPlayerCard) => player.team?.name.fr.toUpperCase() ?? "",
@@ -407,7 +407,7 @@ const STORY_COPY = {
   kicker: "U23 BOTOLA PRO",
   meta: "WYDAD AC ATTAQUANT",
   legend: ["Note", "Forme", "Contribution", "Progression", "Temps"],
-  rankLine: "N°{n} RISING SCORE",
+  rankLine: "N°{n} INDICE",
   statsLine: "{minutes} MIN NOTE {rating}",
   footer: "botolago.com/pepites",
 };
@@ -556,7 +556,7 @@ describe("the share pictures' palette", () => {
 
   it("text on the gradient is Tunnel Navy", async () => {
     const post = await draw("post", "fr");
-    expect(post.ops.find((op) => op.text === "SEMAINE 16 RISING SCORE")?.paint).toBe(
+    expect(post.ops.find((op) => op.text === "SEMAINE 16 INDICE")?.paint).toBe(
       SHARE_PALETTE.ground,
     );
     const recap = await draw("recap", "fr");

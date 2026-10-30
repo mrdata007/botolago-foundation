@@ -47,7 +47,7 @@ const COPY = {
   brand: "B",
   kicker: "K",
   title: "TOP 10",
-  subtitle: "SEMAINE {n} · RISING SCORE",
+  subtitle: "SEMAINE {n} · INDICE",
   footer: "F",
   legend: "L",
   club: (player: PepitesPlayerCard) => player.team?.name.ar ?? "",
@@ -57,7 +57,7 @@ const COPY = {
 describe("the Top 10 post", () => {
   it("lists the ten in the editor's order, with the Figma's figures", () => {
     const model = shareImageModel(edition("published"), "ar", COPY)!;
-    expect(model.subtitle).toBe("SEMAINE 16 · RISING SCORE");
+    expect(model.subtitle).toBe("SEMAINE 16 · INDICE");
     expect(model.rows.map((row) => row.rank)).toEqual([
       "1",
       "2",
@@ -117,7 +117,7 @@ describe("the player's story card", () => {
     kicker: "U23 · BOTOLA PRO",
     meta: "M",
     legend: ["a", "b", "c", "d", "e"],
-    rankLine: "RISING SCORE · N°{n}",
+    rankLine: "INDICE · N°{n}",
     statsLine: "{minutes} MIN · NOTE {rating}",
     footer: "botolago.com/pepites",
   };
@@ -128,7 +128,7 @@ describe("the player's story card", () => {
     expect(model.ghost).toBe("05");
     expect(model.percentiles).toEqual([65, 77, 90, 62, null]);
     expect(model.score).toBe("70");
-    expect(model.rankLine).toBe("RISING SCORE · N°5");
+    expect(model.rankLine).toBe("INDICE · N°5");
     expect(model.statsLine).toBe("1\u202f159 MIN · NOTE 6,60");
   });
 

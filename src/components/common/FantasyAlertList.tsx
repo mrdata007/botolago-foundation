@@ -1,69 +1,60 @@
-import type { FantasyAlert, Player } from "@/types/domain";
+import type { Club, FantasyAlert, Player } from "@/types/domain";
+import { ClubCrest } from "@/components/common/ClubCrest";
+import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
+import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { ShieldAlert } from "lucide-react";
-import { UiAlert, type UiAlertTone } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /**
- * The Fantasy alert strip on Accueil — the one Fantasy surface a signed-out
- * visitor reaches.
+ * The Fantasy alerts on Accueil, as player rows: the club disc, the player's
+ * name over the alert, and the availability pill the Fantasy lists already
+ * use. One white card with a hairline between rows, like every other list on
+ * the page, rather than a stack of pink, yellow and grey tinted boxes; the
+ * pill carries the state, in words, so nothing rests on the colour.
  *
- * Each row is now a `UiAlert` rather than a hand-rolled bordered box. Two
- * things the local version got wrong and the primitive does not:
- *
- *   - the `info` tone painted its text in `--ui-ink`, which is a FILL colour
- *     and a dark navy in BOTH themes — measured 1.25:1 on the dark page. That
- *     is BG-0083. `UiAlert` composes its tint from `--ui-ink-fg` and keeps
- *     `--ui-on-surface` as the foreground, so the row reads in either theme;
- *   - the player name was `font-bold`, a raw Tailwind weight off the
- *     `--ui-weight-*` ramp. It is `UiAlert`'s `title` slot now.
- *
- * `live={false}` ON EVERY ITEM IS THE POINT, not a detail. `UiAlert` derives a
- * live region from its tone, and this component renders N of them: a five-alert
- * squad would install five simultaneous live regions and hand a screen reader
- * five interruptions for one page. The list carries none, which is exactly what
- * it announced before this conversion — these rows are part of Accueil, not
- * news about it, and the migration is not allowed to add an announcement any
- * more than it is allowed to drop one.
+ * The list is part of Accueil, not news about it: no row is a live region (a
+ * five-alert squad would otherwise hand a screen reader five interruptions
+ * for one page).
  */
-const severityTone: Record<FantasyAlert["severity"], UiAlertTone> = {
-  info: "info",
-  // `--ui-caution` is a fill and its foreground is fixed by the kit; the amber
-  // can never be the text. `UiAlert` handles that pairing.
-  warning: "caution",
-  critical: "negative",
-};
-
 export function FantasyAlertList({
   alerts,
   players,
+  clubById,
 }: {
   alerts: FantasyAlert[];
   players: Player[];
+  clubById: (id: string) => Club | undefined;
 }) {
   const { tr } = useI18n();
   return (
-    <ul className="grid gap-2">
-      {alerts.map((a) => {
-        const player = players.find((p) => p.id === a.playerId);
-        return (
-          <li key={a.id}>
-            <UiAlert
-              tone={severityTone[a.severity]}
-              live={false}
-              title={player ? tr(player.name) : undefined}
-              // `critical` is the one severity whose glyph the kit does not
-              // already draw: `negative` and `caution` both default to the
-              // warning triangle, and a shield is what this product has always
-              // used for "this player cannot play at all". `info` and `warning`
-              // take the kit's own defaults, which are the same two glyphs the
-              // local `iconMap` held.
-              icon={a.severity === "critical" ? <ShieldAlert className="h-5 w-5" /> : undefined}
+    <UiCard padding="none">
+      <ul>
+        {alerts.map((alert, index) => {
+          const player = players.find((p) => p.id === alert.playerId);
+          const club = player ? clubById(player.clubId) : undefined;
+          return (
+            <li
+              key={alert.id}
+              className={cn(
+                "flex min-w-0 items-center gap-3 px-3 py-2.5",
+                ui.space.row,
+                index < alerts.length - 1 && ui.rule.block,
+              )}
             >
-              {tr(a.message)}
-            </UiAlert>
-          </li>
-        );
-      })}
-    </ul>
+              {club ? <ClubCrest club={club} size="sm" /> : null}
+              <div className="min-w-0 flex-1">
+                {player ? (
+                  <p className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
+                    {tr(player.name)}
+                  </p>
+                ) : null}
+                <p className={cn(ui.text.meta, ui.tone.muted)}>{tr(alert.message)}</p>
+              </div>
+              {player ? <PlayerStatusBadge status={player.status} className="shrink-0" /> : null}
+            </li>
+          );
+        })}
+      </ul>
+    </UiCard>
   );
 }

@@ -1,18 +1,7 @@
 import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  BookOpen,
-  CalendarDays,
-  ChevronRight,
-  CircleHelp,
-  ListOrdered,
-  SlidersHorizontal,
-  Star,
-  TrendingUp,
-  Trophy,
-  Users,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -88,7 +77,7 @@ export const Route = createFileRoute("/fantasy/")({
  * no `UiHeader`, so the bar returns on phones here), the "Fantasy" title band,
  * the gameweek on a floodlit photo with its deadline and a countdown pill,
  * the manager's gradient team card, "Composer l'équipe" as the one gradient
- * call to action, the Transfers row, four shortcut tiles, then "Mes ligues"
+ * call to action, the Transfers row, the shortcuts as one plain list, then "Mes ligues"
  * as rows with an edge bar. Below the board's fold, the pieces of the old hub
  * that are real features stay, restyled: the cup note, the News rail (hidden
  * while News is), the Fantasy reminder and e-mail switches and the rules / help
@@ -128,8 +117,8 @@ function PrizeWelcome() {
 }
 
 const DEADLINE_SKELETON_HEIGHT = {
-  guest: { fr: "h-[199px]", ar: "h-[233px]" },
-  owner: { fr: "h-[317px]", ar: "h-[361px]" },
+  guest: { fr: "h-[187px]", ar: "h-[218px]" },
+  owner: { fr: "h-[305px]", ar: "h-[349px]" },
 } as const;
 
 function FantasyHub() {
@@ -181,6 +170,8 @@ function FantasyHub() {
     enabled: hasTeam && !!gameweek,
     staleTime: 60_000,
   });
+  // The owner's round block (it links « Difficulté des matchs » itself).
+  const roundShown = hasTeam && !!team && !!gameweek && screen.phase === "ready";
   const checklist =
     hasTeam && team && gameweek
       ? deadlineChecklist(team, screen.players, fixtures.data ?? [], gameweek.number)
@@ -209,8 +200,8 @@ function FantasyHub() {
         // Hold the height of the card that is coming, so nothing below moves
         // when it arrives. A visitor with no account gets the countdown alone;
         // anyone signed in is held at the manager's card (countdown, checklist
-        // and two buttons), the common case. Measured at 390px: French 199 and
-        // 317, Arabic 233 and 361. A signed-in reader with no team, or a
+        // and two buttons), the common case. Measured at 390px with the
+        // one-line countdown (2026-10-30): French 187 and 305, Arabic 218 and 349. A signed-in reader with no team, or a
         // gameweek past its deadline, gets a shorter card than the placeholder.
         <UiSkeleton
           className={cn(
@@ -221,8 +212,6 @@ function FantasyHub() {
           )}
         />
       ) : null}
-
-      {!hasTeam ? <VisitorBoardTiles /> : null}
 
       {/* BotolaGO+ « Briefing avant la deadline »: nothing while the feature is off. */}
       {hasTeam && gameweek && screen.phase === "ready" ? (
@@ -246,7 +235,7 @@ function FantasyHub() {
         />
       </div>
 
-      {hasTeam && team && gameweek && screen.phase === "ready" ? (
+      {roundShown && team && gameweek ? (
         <FantasyHubRound
           team={team}
           players={screen.players}
@@ -259,7 +248,7 @@ function FantasyHub() {
         />
       ) : null}
 
-      <ShortcutTiles />
+      <ShortcutList visitor={!hasTeam} roundShown={roundShown} />
 
       {closedGuest ? (
         <div className={cn("mt-4", ui.space.gutter)}>
@@ -353,88 +342,76 @@ function FantasyHub() {
 /* Shortcuts                                                            */
 /* ------------------------------------------------------------------ */
 
-type Tile = { to: string; label: string; icon: ReactNode };
+type Row = { to: string; label: string };
 
-function TileGrid({ tiles }: { tiles: Tile[] }) {
+/**
+ * A plain list of links: one white card, a row per destination, the label and
+ * a chevron. No icon discs and no tile grid; the words say where each goes.
+ */
+function LinkList({ rows }: { rows: Row[] }) {
   return (
-    <ul className="grid grid-cols-2 gap-2">
-      {tiles.map((tile) => (
-        <li key={tile.to} className="min-w-0">
-          <Link
-            to={tile.to}
-            className={cn(
-              "flex h-full items-center gap-2.5 px-2.5 py-2",
-              ui.surface.card,
-              ui.space.row,
-              ui.text.meta,
-              "[font-weight:var(--ui-weight-heavy)]",
-              ui.tone.default,
-              "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-              ui.focus,
-            )}
-          >
-            <span
+    <UiCard padding="none">
+      <ul>
+        {rows.map((row, index) => (
+          <li key={row.to} className={cn(index < rows.length - 1 && ui.rule.block)}>
+            <Link
+              to={row.to}
               className={cn(
-                "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
-                ui.radius.full,
-                ui.surface.sunken,
-                ui.tone.ink,
+                "flex items-center gap-3 py-1.5 pe-3 ps-4",
+                ui.space.row,
+                ui.text.bodyStrong,
+                ui.tone.default,
+                "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+                ui.focus,
               )}
             >
-              {tile.icon}
-            </span>
-            {/* Two lines, not an ellipsis: "Difficulté des matchs" and
-                "Statistiques joueurs" need them at 390px. */}
-            <span className="min-w-0 text-balance">{tile.label}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+              <span className="min-w-0 flex-1">{row.label}</span>
+              <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </UiCard>
   );
 }
 
 /**
- * A visitor with no team has no "Mes ligues" row to reach the board from (the
- * owner's hub carries them), and the guest proposition fills the first screens.
- * The ranking and the leagues are the best proof that the game is alive, so
- * they sit right under the deadline card, one short scroll from the top (U18).
- * The board names teams only to a visitor; the API resolves that. The leagues
- * need an account: the tile says so ("créer ou rejoindre"), and the page it
- * opens asks to sign in.
+ * The hub's shortcuts as one list, under the team area. A visitor with no team
+ * has no "Mes ligues" rows to reach the board from, so the general ranking and
+ * the leagues lead their list (the leagues need an account: the label says so,
+ * "créer ou rejoindre", and the page asks to sign in). They used to be a second
+ * grid of tiles above the proposition (U18), which put a block of links between
+ * the deadline and "Créer mon équipe"; now the deadline and that one button are
+ * the first screen, and the list follows.
  */
-function VisitorBoardTiles() {
-  const { t } = useI18n();
-  return (
-    <div className={cn("mt-3", ui.space.gutter)}>
-      <TileGrid
-        tiles={[
-          { to: "/fantasy/rankings", label: t("fpl.rankings"), icon: <ListOrdered aria-hidden /> },
-          {
-            to: "/fantasy/leagues",
-            label: t("fantasy.hub.visitor_leagues"),
-            icon: <Users aria-hidden />,
-          },
-        ]}
-      />
-    </div>
-  );
-}
-
-function ShortcutTiles() {
+function ShortcutList({
+  visitor,
+  roundShown,
+}: {
+  visitor: boolean;
+  /** The round block above already links « Difficulté des matchs ». */
+  roundShown: boolean;
+}) {
   const { t } = useI18n();
   const live = useManagerCardLive();
-  const tiles: Tile[] = [
-    { to: "/matches", label: t("fpl.fixtures"), icon: <CalendarDays aria-hidden /> },
-    { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
-    { to: "/fantasy/players", label: t("fpl.player_stats"), icon: <TrendingUp aria-hidden /> },
-    { to: "/fantasy/top-players", label: t("fpl.top_players"), icon: <Star aria-hidden /> },
+  const rows: Row[] = [
+    ...(visitor
+      ? [
+          { to: "/fantasy/rankings", label: t("fpl.rankings") },
+          { to: "/fantasy/leagues", label: t("fantasy.hub.visitor_leagues") },
+        ]
+      : []),
+    { to: "/matches", label: t("fpl.fixtures") },
+    ...(roundShown ? [] : [{ to: "/fantasy/fixtures", label: t("fpl.fdr") }]),
+    { to: "/fantasy/players", label: t("fpl.player_stats") },
+    { to: "/fantasy/top-players", label: t("fpl.top_players") },
   ];
   return (
-    <div className={cn("mt-2.5", ui.space.gutter)}>
-      <TileGrid tiles={tiles} />
+    <div className={cn("mt-4", ui.space.gutter)}>
+      <LinkList rows={rows} />
       {live ? (
         // Pépites lives inside Fantasy while the section is live (plan 3.4): its own row, under
-        // the four shortcuts, for every audience.
+        // the shortcuts, for every audience.
         <Suspense fallback={null}>
           <PepitesHubTile className="mt-2" />
         </Suspense>
@@ -447,14 +424,13 @@ function ShortcutTiles() {
 /* More about                                                           */
 /* ------------------------------------------------------------------ */
 
+/** The prizes, then one rules link and one help link: each destination once on the hub. */
 function MoreAboutSection() {
   const { t } = useI18n();
-  const rows: Array<{ to: string; label: string; icon: ReactNode }> = [
-    ...(PRIZES_ENABLED
-      ? [{ to: "/prizes", label: t("prizes.title"), icon: <Trophy aria-hidden /> }]
-      : []),
-    { to: "/fantasy/rules", label: t("fpl.rules"), icon: <BookOpen aria-hidden /> },
-    { to: "/fantasy/help", label: t("fpl.help_rules"), icon: <CircleHelp aria-hidden /> },
+  const rows: Row[] = [
+    ...(PRIZES_ENABLED ? [{ to: "/prizes", label: t("prizes.title") }] : []),
+    { to: "/fantasy/rules", label: t("fpl.rules") },
+    { to: "/fantasy/help", label: t("fantasy.hub.help_link") },
   ];
   return (
     <section className={cn("mt-6", ui.space.gutter)}>
@@ -463,38 +439,7 @@ function MoreAboutSection() {
       <h2 className={cn("pb-2.5 text-balance", ui.display.section, ui.tone.default)}>
         <BrandedText text={t("fpl.more_about")} />
       </h2>
-      <UiCard padding="none">
-        <ul>
-          {rows.map((row, index) => (
-            <li key={row.to} className={cn(index < rows.length - 1 && ui.rule.block)}>
-              <Link
-                to={row.to}
-                className={cn(
-                  "flex items-center gap-3 py-1.5 pe-3 ps-3",
-                  ui.space.row,
-                  ui.text.bodyStrong,
-                  ui.tone.default,
-                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-                  ui.focus,
-                )}
-              >
-                <span
-                  className={cn(
-                    "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
-                    ui.radius.full,
-                    ui.surface.sunken,
-                    ui.tone.ink,
-                  )}
-                >
-                  {row.icon}
-                </span>
-                <span className="min-w-0 flex-1">{row.label}</span>
-                <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </UiCard>
+      <LinkList rows={rows} />
     </section>
   );
 }

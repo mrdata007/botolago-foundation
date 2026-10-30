@@ -8,7 +8,7 @@ import { sectorPath, sliceAngles, sliceReach } from "./pepites-design";
 import { COMPONENTS, componentLabel, formatNumber } from "./pepites-format";
 
 /**
- * The five parts of the Rising score as the story card draws them
+ * The five parts of the score (« Indice ») as the story card draws them
  * (`share-image.ts`, BG-0153), for the featured N°1 on the dark photo band.
  *
  * Five 72° slices from twelve o'clock, clockwise; in Arabic each slice is the

@@ -1,4 +1,3 @@
-import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -260,7 +259,6 @@ function LeaguesBody() {
                   />
                 ) : privateView === "empty" ? (
                   <UiEmptyState
-                    illustration={emptyLeaguesArt}
                     title={t("fantasy.leagues.empty_title")}
                     body={t("fpl.no_leagues")}
                   />

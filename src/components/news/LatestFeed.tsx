@@ -1,4 +1,3 @@
-import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import type { NewsLanguage } from "@/backend/news/contracts";
@@ -50,7 +49,7 @@ export function LatestFeed({
   // newest), the rail simply has nothing more to add.
   if (fetched.length === 0) {
     return (
-      <EmptyState illustration={emptyNewsArt}>
+      <EmptyState title={t("news.empty_title")}>
         {categorySlug || teamId ? t("news.no_matching_articles") : t("news.empty")}
       </EmptyState>
     );

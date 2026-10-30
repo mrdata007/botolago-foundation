@@ -2,29 +2,18 @@ import { clubPathParam } from "@/lib/club-slug";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   keepPreviousData,
   useQuery,
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  CalendarDays,
-  CircleDot,
-  Bell,
-  Gem,
-  Newspaper,
-  Shield,
-  Target,
-  Trophy,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, CalendarDays, Bell } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { HOME_DEADLINE_FIRST, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { MyClubsRow } from "@/components/home/MyClubsRow";
 import { HomeStories } from "@/components/home/HomeStories";
@@ -261,7 +250,8 @@ const isInPlay = (match: Match) => match.status === "live";
  *                           creating a team
  *   4. News preview       — a few curated cards linking into /news (flagged)
  *   5. Standings snapshot — top of the table, only when real data exists
- *   6. Discovery links    — quick access to Matches/Fantasy/News/Profile
+ *
+ * No "Explorer BotolaGO" grid at the foot: it repeated the bottom menu.
  *
  * Nothing on the page is invented: the board's scorers line under the live
  * card needs goal events the home payload does not carry, and the Fantasy
@@ -744,35 +734,6 @@ function HomeContent() {
               )}
             </Section>
           )}
-          {/* -------------------------------------------------------- */}
-          {/* 6. Discovery links                                        */}
-          {/* -------------------------------------------------------- */}
-          <Section className="order-8 pb-2">
-            <SectionHeader title={<BrandedText text={t("home.explore")} />} />
-            {/* Four across; with News on, five tiles do not fit a 390px row
-            ("Actualités" is wider than a fifth of it), so they wrap in threes. */}
-            <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-4")}>
-              <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
-              <DiscoveryLink to="/clubs" icon={Shield} label={t("clubs.title")} />
-              <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
-              {/* News discovery tile — follows NEWS_ENABLED. */}
-              {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
-              {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
-              {PEPITES_PROMOTED ? (
-                <DiscoveryLink to="/pepites" icon={Gem} label={t("nav.pepites")} />
-              ) : (
-                <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
-              )}
-              {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
-              {PRONOSTICS_PROMOTED && (
-                <DiscoveryLink
-                  to="/pronostics"
-                  icon={Target}
-                  label={t("home.discover.predictions")}
-                />
-              )}
-            </div>
-          </Section>
         </div>
         <div className="contents md:order-3 md:flex md:min-w-0 md:flex-col">
           {/* -------------------------------------------------------- */}
@@ -842,7 +803,11 @@ function HomeContent() {
                             accentClassName={ui.tone.ink}
                           />
                         </div>
-                        <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
+                        <FantasyAlertList
+                          alerts={alertsQ.data}
+                          players={playersQ.data}
+                          clubById={clubById}
+                        />
                       </>
                     )
                   ) : (
@@ -968,45 +933,6 @@ function HomeContent() {
 /** "Tout voir" on a section heading: the shared 44px round link. */
 function ViewAllLink({ to }: { to: "/news" | "/matches" | "/matches/standings" | "/fantasy" }) {
   return <SectionHeaderLink to={to} />;
-}
-
-function DiscoveryLink({
-  to,
-  icon: Icon,
-  label,
-}: {
-  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics" | "/pepites";
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  label: string;
-}) {
-  // One quiet row of tiles. These repeat the navigation bar, so they carry
-  // the ink colour rather than the action gradient, which on this page is
-  // kept for Fantasy.
-  return (
-    <Link
-      to={to}
-      className={cn(
-        "flex min-h-16 flex-col items-center justify-center gap-1.5 px-2 py-3 text-center",
-        ui.surface.card,
-        "press-tile",
-        ui.focus,
-      )}
-    >
-      <Icon className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
-      {/* Wraps rather than truncates: "Actualités" / "الملف الشخصي" do not
-          fit a three- or four-up tile on one line at 360px. */}
-      <span
-        className={cn(
-          "min-w-0 leading-tight",
-          ui.text.meta,
-          "[font-weight:var(--ui-weight-heavy)]",
-          ui.tone.default,
-        )}
-      >
-        {label}
-      </span>
-    </Link>
-  );
 }
 
 /** Home titles are single-tone: the `{accent}` markers the dictionary

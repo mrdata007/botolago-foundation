@@ -98,7 +98,7 @@ export interface ShareCopy {
   readonly kicker: string;
   /** "TOP 10" / "توب 10". */
   readonly title: string;
-  /** "SEMAINE {n} · RISING SCORE". */
+  /** "SEMAINE {n} · INDICE". */
   readonly subtitle: string;
   readonly footer: string;
   readonly legend: string;

@@ -1,5 +1,4 @@
 import { unavailableHeaders } from "@/lib/page-availability";
-import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -243,7 +242,7 @@ function StandingsPage() {
         <ErrorState onRetry={retry} />
       ) : !data || data.overall.length === 0 ? (
         <div className="grid gap-3">
-          <EmptyState illustration={standingsSoonArt}>{t("matches.table.empty")}</EmptyState>
+          <EmptyState title={t("matches.table.empty_title")}>{t("matches.table.empty")}</EmptyState>
           {previous ? (
             <UiButton variant="soft" onClick={() => setSeasonId(previous.id)}>
               {t("standings.previous_season").replace("{season}", previous.label)}
