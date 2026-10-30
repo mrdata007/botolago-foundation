@@ -701,3 +701,9 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - A suspected display fault was the Lead reading the "Journée" tab (the Journée 5 board, ordered by Journée 5 points), which is correct.
   - Pre-existing oddity, not from this batch: the Journée 5 board's stored `total_points` (240/198/179, written 29 Oct 18:50) does not match the season sums (153/123/89). Queued for review.
   - Dropping the temporary table timed out twice waiting for the owner's approval. Still pending.
+
+**Fix after the Batch 2a release (30 Oct ~21:05 UTC; owner said "fix it").**
+- The Lead's earlier note was wrong: the Journée 5 board's 240/198/179 are the **correct** totals, because Journées 1–3 were re-scored from ratings (ak47: 58+57+56+42+27). The "Général" table showing 153/123/89 was a bug in Batch 2a: `fantasy_refresh_shown_rankings` summed the raw results table instead of the re-scored visible view. The order happened to be unchanged.
+- Fix: migration 20261030210000, branch `claude/fix-shown-standings-rescored`, PR #596. It changes one table name in one function, guarded by an md5 and a unique anchor, and adds a pgTAP check.
+- Production rehearsal (rolled back): the shown board equals the writer's board (240, 198, 179, 117, 115, 94, 88, 41), and the API returns 240/198/179/41.
+- Next: CI, merge, apply with rehearsal then commit.
