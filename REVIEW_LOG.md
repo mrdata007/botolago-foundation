@@ -669,3 +669,9 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
 - Lead merged main (#591, screen-only) into the branch as merge commit 84fdbf5. Typecheck and 639 related tests pass locally.
 - Lead verdict: **APPROVED**, subject to CI on 84fdbf5. Waiting for the owner's yes to go live.
 - Not measured: the one-time standings rebuild at 50,000 teams (production has 8 teams).
+
+**Batch 2a: go-live (owner said "yes", 30 Oct).**
+- The automatic reviewer (Codex) raised a P2 on the merge: for a few seconds at publish time, the journée's points show next to the old season totals. Lead traced it as real but tiny (seconds, once a week; league boards already lag the same way on main). Answered on the thread, resolved, logged as a follow-up.
+- `database-quality` was red once on cd553c9: a test checked the "stuck" alarm with the real clock, so it failed after 14:31 UTC. Test fix 165bbe1, then CI green.
+- Step 1: merged PR #592 at 15:06 UTC, merge commit 386e1f1.
+- Step 2: dispatched `fantasy-scoring-worker-deploy.yml` for 386e1f1.
