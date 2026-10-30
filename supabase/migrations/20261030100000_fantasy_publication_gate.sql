@@ -83,7 +83,7 @@ $$;
 -- sequence is at or past the season's first gated gameweek. A settled
 -- gameweek is never gated (its points are out).
 create function app_private.fantasy_publication_gated(p_gameweek_id uuid)
-returns boolean language sql stable security definer set search_path = '' as $$
+returns boolean language sql stable security definer cost 10000 set search_path = '' as $$
   select exists (
     select 1
     from app.fantasy_gameweeks g
@@ -185,6 +185,7 @@ begin
     return jsonb_build_object('gated', false, 'released', true, 'held', false);
   end if;
   insert into app_private.fantasy_publication_state(gameweek_id) values (g.id) on conflict do nothing;
+  perform app_private.fantasy_refresh_shown_rankings();
   select * into st from app_private.fantasy_publication_state where gameweek_id = g.id for update;
   if st.released_at is not null then
     return jsonb_build_object('gated', true, 'released', true, 'held', false,
@@ -454,36 +455,88 @@ cross join lateral jsonb_array_elements(t->'substitutions') with ordinality x(s,
 -- Standings. A gated journée that is not published has no row of its own, and
 -- the season and league totals that were written with it (points can be written
 -- before the gate is switched on, or while a release is under way) are shown
--- without it: its score is taken off every total, the ranks are worked out
--- again on what is shown, and the journée's own points column is empty.
+-- without it: its score is taken off every total, and the ranks are worked out
+-- again on what is shown, with the ranking writer's own tie-break.
+--
+-- Cost. With no held journée that already has results (every day but the rare
+-- one), the view is the raw table behind a one-time filter: the readers take
+-- exactly the old path. While one is held, the shown totals and ranks are NOT
+-- worked out per row or per request: app_private.fantasy_shown_rankings holds
+-- them, refreshed once per change (the ranking writer's statements, a change of
+-- setting, every worker decision, and at the end of this migration). A row whose
+-- stored figures do not belong to its current calculation is left out, never
+-- shown with the held journée's points.
 create view app_private.fantasy_held_result_seasons with (security_invoker = true) as
 select distinct g.fantasy_season_id as season_id
-from app_private.fantasy_unpublished_gameweeks h
-join app.fantasy_gameweeks g on g.id = h.gameweek_id
-where exists (select 1 from app.fantasy_team_gameweek_results r where r.gameweek_id = h.gameweek_id);
+from app.fantasy_gameweeks g
+where g.status not in ('finalized', 'corrected', 'cancelled')
+  and exists (select 1 from app.fantasy_team_gameweek_results r where r.gameweek_id = g.id)
+  and exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = g.id);
 revoke all on app_private.fantasy_held_result_seasons from public, anon, authenticated, service_role;
+
+create table app_private.fantasy_shown_rankings (
+  ranking_id uuid primary key,
+  source_calculated_at timestamptz not null,
+  shown_total integer not null,
+  shown_rank bigint not null
+);
+alter table app_private.fantasy_shown_rankings enable row level security;
+alter table app_private.fantasy_shown_rankings force row level security;
+revoke all on app_private.fantasy_shown_rankings from public, anon, authenticated, service_role;
+
+create function app_private.fantasy_refresh_shown_rankings()
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  delete from app_private.fantasy_shown_rankings;
+  if not exists (select 1 from app_private.fantasy_held_result_seasons) then return; end if;
+  insert into app_private.fantasy_shown_rankings(ranking_id, source_calculated_at, shown_total, shown_rank)
+  select x.id, x.calculated_at, x.shown_total,
+    row_number() over (partition by x.fantasy_season_id, x.league_id order by x.shown_total desc,
+      x.transfer_hits asc, x.confirmed_transfers asc, x.latest_finalized_gameweek_score desc nulls last,
+      x.team_created_at asc, x.fantasy_team_id asc)
+  from (
+    select r.*, r.total_points - coalesce((
+      select sum(coalesce(t.final_score, t.provisional_score))
+      from app.fantasy_team_gameweek_results t
+      where t.fantasy_team_id = r.fantasy_team_id
+        and t.gameweek_id in (select h.gameweek_id from app_private.fantasy_unpublished_gameweeks h)), 0) as shown_total
+    from app.fantasy_rankings r
+    where r.gameweek_id is null
+      and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons)
+  ) x;
+end $$;
+revoke all on function app_private.fantasy_refresh_shown_rankings() from public, anon, authenticated, service_role;
+
+create function app_private.fantasy_refresh_shown_rankings_trigger()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  perform app_private.fantasy_refresh_shown_rankings();
+  return null;
+end $$;
+revoke all on function app_private.fantasy_refresh_shown_rankings_trigger() from public, anon, authenticated, service_role;
+create trigger fantasy_rankings_refresh_shown after insert or update or delete on app.fantasy_rankings
+  for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
+create trigger fantasy_publication_settings_refresh_shown after insert or update or delete on app_private.fantasy_publication_settings
+  for each statement execute function app_private.fantasy_refresh_shown_rankings_trigger();
 
 create view app_private.fantasy_visible_rankings with (security_invoker = true) as
 select r.* from app.fantasy_rankings r
-where (r.gameweek_id is not null
-    and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id))
-  or (r.gameweek_id is null
-    and r.fantasy_season_id not in (select season_id from app_private.fantasy_held_result_seasons))
+where not exists (select 1 from app_private.fantasy_held_result_seasons)
 union all
-select (jsonb_populate_record(null::app.fantasy_rankings, to_jsonb(x) || jsonb_build_object(
-  'total_points', x.shown_total, 'gameweek_points', null,
-  'rank', rank() over (partition by x.fantasy_season_id, x.league_id order by x.shown_total desc, x.rank, x.fantasy_team_id)
-))).*
-from (
-  select r.*, r.total_points - coalesce((
-    select sum(coalesce(t.final_score, t.provisional_score))
-    from app.fantasy_team_gameweek_results t
-    where t.fantasy_team_id = r.fantasy_team_id
-      and t.gameweek_id in (select h.gameweek_id from app_private.fantasy_unpublished_gameweeks h)), 0) as shown_total
-  from app.fantasy_rankings r
-  where r.gameweek_id is null
-    and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons)
-) x;
+select r.* from app.fantasy_rankings r
+where exists (select 1 from app_private.fantasy_held_result_seasons)
+  and ((r.gameweek_id is not null
+      and not exists (select 1 from app_private.fantasy_unpublished_gameweeks h where h.gameweek_id = r.gameweek_id))
+    or (r.gameweek_id is null
+      and r.fantasy_season_id not in (select season_id from app_private.fantasy_held_result_seasons)))
+union all
+select (jsonb_populate_record(null::app.fantasy_rankings, to_jsonb(r) || jsonb_build_object(
+  'total_points', s.shown_total, 'gameweek_points', null, 'rank', s.shown_rank))).*
+from app.fantasy_rankings r
+join app_private.fantasy_shown_rankings s on s.ranking_id = r.id and s.source_calculated_at = r.calculated_at
+where exists (select 1 from app_private.fantasy_held_result_seasons)
+  and r.gameweek_id is null
+  and r.fantasy_season_id in (select season_id from app_private.fantasy_held_result_seasons);
 revoke all on app_private.fantasy_visible_rankings from public, anon, authenticated, service_role;
 
 -- The readers that took standings and journée points straight from the tables
@@ -594,5 +647,7 @@ begin
   ) into result from page;
   return result;
 end $$;
+
+select app_private.fantasy_refresh_shown_rankings();
 
 notify pgrst, 'reload schema';
