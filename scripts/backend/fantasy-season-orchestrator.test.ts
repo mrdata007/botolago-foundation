@@ -12,6 +12,7 @@ import {
   orchestrateFantasySeason,
   orchestratorEnvironment,
   parseFootballDataSource,
+  PUBLICATION_GRACE_MINUTES,
   PROVISIONAL_POINTS_OUTCOME,
   renderHealthSummary,
   selectWorkerTargets,
@@ -985,6 +986,47 @@ describe("fantasy season orchestrator", () => {
       [4, null, true],
       [6, 1, false],
     ]);
+  });
+
+  test("a journée held for its publication moment is late only 30 minutes after it (migration 20261030100000)", () => {
+    const publishAt = "2026-10-31T14:00:00Z";
+    const held = (nowIso: string, over: Record<string, unknown> = {}) =>
+      assessScoring(
+        {
+          items: [
+            {
+              id: id(106),
+              sequence: 6,
+              status: "provisional" as const,
+              endsAt: "2026-10-29T22:00:00Z",
+              publicationHeld: true,
+              publishAt,
+              ...over,
+            },
+          ],
+        },
+        [],
+        new Date(nowIso),
+        6,
+      );
+    // 40 hours after its window, far past the ordinary 6 hours: nothing is due before its moment.
+    expect(held("2026-10-31T13:59:00Z")[0]).toMatchObject({ overdue: false });
+    expect(held("2026-10-31T14:29:00Z")[0]).toMatchObject({
+      overdue: false,
+      publication: { publishAt, minutesPastPublishAt: 29 },
+    });
+    expect(held("2026-10-31T14:30:00Z")[0]).toMatchObject({ overdue: true });
+    // The database moves the moment to the next slot when a rating was pending at it.
+    expect(held("2026-11-01T10:00:00Z", { publishAt: "2026-11-01T14:00:00Z" })[0]).toMatchObject({
+      overdue: false,
+    });
+    // No moment known (a counted match unfinished): the ordinary window rule.
+    expect(held("2026-10-31T13:59:00Z", { publishAt: null })[0]).toMatchObject({ overdue: true });
+    // A journée that is not held (Journée 5 and earlier): the ordinary window rule.
+    expect(held("2026-10-31T13:59:00Z", { publicationHeld: false })[0]).toMatchObject({
+      overdue: true,
+    });
+    expect(PUBLICATION_GRACE_MINUTES).toBe(30);
   });
 
   test("provider refresh evidence: a squad-guard failure after the fixture phase still counts as refreshed", async () => {

@@ -1074,3 +1074,19 @@ applied with the guarded
 `scripts/backend/apply-20261028140000-pepites-sportapi-ratings.sql` (rehearsal,
 then commit), which holds the `pepites_tick` lock while it runs. Details are in
 `docs/engineering/PEPITES_ARCHITECTURE.md` §4.1.
+
+`20261030100000_fantasy_publication_gate.sql`,
+`20261030100100_selection_close_accepts_moved_match.sql`,
+`20261030100200_rating_poll_mark_24h30.sql` and
+`20261030100300_ops_health_publication.sql` publish a Fantasy journée's points
+all at once, from Journée 6 (owner request 2026-10-29): a publication time per
+journée, the database refusing to write points, rankings or finalization before
+the journée is released, the selection close accepting a finished match whose
+kickoff moved after the lock, one more rating poll 24 h 30 min after full time,
+and the watchdog following the rule. They are applied together with the guarded
+`scripts/backend/apply-20261030100000-publish-journee-at-once.sql` (rehearsal,
+then commit), which holds every scheduled job and the Fantasy worker lease while
+it runs, before the `fantasy-lifecycle-worker` Edge Function and the website of
+the same pull request are deployed. Details are in
+`docs/backend/FANTASY_PUBLISH_ALL_AT_ONCE.md`; the owner steps are in
+`docs/review/batch2-2026-10-30/OWNER_STEPS.md`.

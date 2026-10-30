@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { PublicationNoticeLine } from "@/components/fantasy/PublicationNoticeLine";
 import { FantasyAmount } from "@/components/fantasy/FantasyAmount";
 import { RatingPoints } from "@/components/fantasy/RatingPoints";
 import { findClub } from "@/components/fpl/club-lookup";
@@ -33,6 +34,7 @@ import { useI18n } from "@/i18n/provider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { usePublicationNotice } from "@/services/use-publication-notice";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildGameweekRecap } from "@/services/gameweek-recap";
 import { resolveRoundPlayers, roundRoles } from "@/services/points-round";
@@ -210,6 +212,8 @@ function PointsBody() {
     refetchInterval: (query) =>
       isCloud && query.state.data?.authoritative?.finalized !== true ? 30_000 : false,
   });
+  // The journée's points are published all at once: until then, say when.
+  const publicationQ = usePublicationNotice(gw, screen.phase === "ready" && isCloud && gw !== null);
   const hasPendingRatings =
     resultQ.data?.authoritative?.ratingPublication?.pending === true ||
     resultQ.data?.breakdown.some((player) => player.ratingPending === true) === true;
@@ -416,6 +420,10 @@ function PointsBody() {
           onChange={setGw}
         />
       </UiHeader>
+
+      {publicationQ.data ? (
+        <PublicationNoticeLine notice={publicationQ.data} className="mx-[var(--ui-gutter)] mt-3" />
+      ) : null}
 
       {recap ? (
         <GameweekRecapCard

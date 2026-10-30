@@ -4,6 +4,7 @@ import {
   databaseHealth,
   fantasyPoints,
   pointsEscalateHours,
+  PUBLICATION_GRACE_MINUTES,
   orchestratorRecency,
   overall,
   publicSurface,
@@ -638,6 +639,53 @@ describe("production watchdog", () => {
     expect(pointsEscalateHours("12")).toBe(12);
     expect(pointsEscalateHours("0")).toBeNull();
     expect(pointsEscalateHours("6h")).toBeNull();
+  });
+
+  test("a journée held for its publication moment is late only 30 minutes after it (20261030100000)", async () => {
+    const season = "00000000-0000-4000-8000-000000000001";
+    const publishAt = "2026-10-31T14:00:00Z";
+    const database = (gw: Record<string, unknown>) => async (target: string) =>
+      target.endsWith("/fantasy_hub")
+        ? Response.json({ season: { id: season } })
+        : Response.json({
+            items: [
+              {
+                id: "a",
+                sequence: 6,
+                status: "provisional",
+                endsAt: "2026-10-29T22:00:00+00:00",
+                ...gw,
+              },
+            ],
+          });
+    const at = (iso: string, gw: Record<string, unknown> = { publicationHeld: true, publishAt }) =>
+      fantasyPoints(database(gw), url, "secret", new Date(iso));
+    // 40 hours after its window: nothing is due before the moment, and it is said.
+    expect(await at("2026-10-31T13:00:00Z")).toMatchObject({
+      status: "ok",
+      detail: expect.stringContaining("GW6 waiting for its publication time"),
+    });
+    expect((await at("2026-10-31T14:29:00Z")).status).toBe("ok");
+    expect(await at("2026-10-31T14:30:00Z")).toMatchObject({
+      status: "fail",
+      detail: expect.stringContaining("GW6 30 min past its publication time and still unpublished"),
+    });
+    // The database moves the moment to the next slot when a rating was pending at it.
+    expect(
+      (
+        await at("2026-11-01T10:00:00Z", {
+          publicationHeld: true,
+          publishAt: "2026-11-01T14:00:00Z",
+        })
+      ).status,
+    ).toBe("ok");
+    // No moment known, or not held (Journée 5 and earlier): the ordinary window rule.
+    expect(
+      (await at("2026-10-31T13:00:00Z", { status: "live", publicationHeld: true, publishAt: null }))
+        .status,
+    ).toBe("fail");
+    expect((await at("2026-10-31T13:00:00Z", { status: "live" })).status).toBe("fail");
+    expect(PUBLICATION_GRACE_MINUTES).toBe(30);
   });
 
   test("a live site behind main is a warning after a day and a failure after three", async () => {

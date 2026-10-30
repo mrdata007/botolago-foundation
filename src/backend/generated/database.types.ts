@@ -1023,6 +1023,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      fantasy_gameweek_summary_before_hold: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       fantasy_gameweek_summary_before_publication: {
         Args: { p_gameweek_id: string }
         Returns: Json
@@ -1036,7 +1040,29 @@ export type Database = {
         Returns: Json
       }
       fantasy_hub: { Args: { p_language?: string }; Returns: Json }
+      fantasy_hub_held: { Args: { p_language?: string }; Returns: Json }
+      fantasy_hub_ungated: { Args: { p_language?: string }; Returns: Json }
       fantasy_league_standings: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_league_id: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      fantasy_league_standings_held: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_league_id: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      fantasy_league_standings_ungated: {
         Args: {
           p_after_rank?: number
           p_after_team_id?: string
@@ -1050,7 +1076,35 @@ export type Database = {
         Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
         Returns: Json
       }
+      fantasy_leagues_held: {
+        Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
+        Returns: Json
+      }
+      fantasy_leagues_ungated: {
+        Args: { p_limit?: number; p_season_id: string; p_visibility?: string }
+        Returns: Json
+      }
       fantasy_overall_standings: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_limit?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      fantasy_overall_standings_held: {
+        Args: {
+          p_after_rank?: number
+          p_after_team_id?: string
+          p_gameweek_id?: string
+          p_limit?: number
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      fantasy_overall_standings_ungated: {
         Args: {
           p_after_rank?: number
           p_after_team_id?: string
@@ -1302,6 +1356,14 @@ export type Database = {
         Args: { p_season_id?: string }
         Returns: Json
       }
+      get_my_deadline_briefing_held: {
+        Args: { p_season_id?: string }
+        Returns: Json
+      }
+      get_my_deadline_briefing_ungated: {
+        Args: { p_season_id?: string }
+        Returns: Json
+      }
       get_my_fantasy_history: {
         Args: {
           p_before_gameweek_sequence?: number
@@ -1311,6 +1373,10 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_points: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_before_hold: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
@@ -1344,6 +1410,8 @@ export type Database = {
       get_my_premium: { Args: never; Returns: Json }
       get_my_premium_pay_code: { Args: never; Returns: Json }
       get_my_rivals: { Args: { p_season?: string }; Returns: Json }
+      get_my_rivals_held: { Args: { p_season?: string }; Returns: Json }
+      get_my_rivals_ungated: { Args: { p_season?: string }; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       get_my_trophies: { Args: { p_season?: string }; Returns: Json }
       get_premium_payment_details: { Args: never; Returns: Json }
@@ -1940,6 +2008,14 @@ export type Database = {
         }
         Returns: Json
       }
+      service_begin_fantasy_finalization_before_publication: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
       service_begin_fantasy_finalization_before_staged: {
         Args: {
           p_calculation_version: number
@@ -2078,6 +2154,10 @@ export type Database = {
       }
       service_evaluate_fantasy_prizes: {
         Args: { p_limit?: number }
+        Returns: Json
+      }
+      service_evaluate_fantasy_publication: {
+        Args: { p_gameweek_id: string }
         Returns: Json
       }
       service_fail_ai_home_story: {
@@ -2243,6 +2323,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_prepare_fantasy_live_scoring_before_publication: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_prepare_next_fantasy_gameweek: {
         Args: {
           p_batch_size?: number
@@ -2265,6 +2349,15 @@ export type Database = {
       service_rapidapi_budget: { Args: never; Returns: Json }
       service_rapidapi_host_budget: { Args: { p_host: string }; Returns: Json }
       service_recalculate_fantasy_rankings: {
+        Args: {
+          p_calculation_version?: number
+          p_gameweek_id?: string
+          p_league_id?: string
+          p_season_id: string
+        }
+        Returns: number
+      }
+      service_recalculate_fantasy_rankings_before_publication: {
         Args: {
           p_calculation_version?: number
           p_gameweek_id?: string

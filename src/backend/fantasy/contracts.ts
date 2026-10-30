@@ -164,6 +164,14 @@ export const fantasyGameweekSchema = z.object({
   status: z.enum(FANTASY_GAMEWEEK_STATUSES),
   pointsState: z.enum(["provisional", "final"]),
   closedAt: z.string().nullable().optional(),
+  /**
+   * Publish a journée's points all at once (migration 20261030100000): the
+   * journée's points are held until `publishAt`, the moment fans are told. Both
+   * are absent from a database that predates the migration, and for a journée
+   * that is not held (Journée 5 and earlier, or already published).
+   */
+  publicationHeld: z.boolean().optional(),
+  publishAt: z.string().nullable().optional(),
 });
 export type FantasyGameweekDto = z.infer<typeof fantasyGameweekSchema>;
 

@@ -4,6 +4,7 @@ import { selectFantasyDataMode } from "./fantasy-v2";
 import { hubIdentity } from "./fantasy-identity";
 import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
 import { shareRead } from "./shared-read";
+import { publicationNoticeOf, type PublicationNotice } from "./fantasy-publication-notice";
 import {
   enrolmentGameweekOf,
   readFantasyAvailability,
@@ -977,6 +978,18 @@ export const fantasyService = {
     const current = await hub();
     const gameweeks = await gameweeksOf(current.season.id);
     return gameweeks.items.map((gameweek) => gameweek.sequence).sort((a, b) => a - b);
+  },
+  /**
+   * When the points of a journée that is waiting will be published (a journée's
+   * points go out all at once, migration 20261030100000). With a journée number,
+   * that journée's; without, the oldest one still waiting. `null` when nothing is
+   * waiting for a known moment, in mock mode and on a database that predates it.
+   */
+  async getPublicationNotice(sequence: number | null): Promise<PublicationNotice | null> {
+    if (mode() === "mock") return null;
+    const current = await hub();
+    const gameweeks = await gameweeksOf(current.season.id);
+    return publicationNoticeOf(gameweeks.items, sequence);
   },
   async createLeague(name: string): Promise<{ id: string; code?: string }> {
     if (mode() === "mock") {

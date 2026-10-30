@@ -1682,6 +1682,11 @@ select extensions.ok(
         -- BotolaGO+ Rivaux (20261015130100, 20261015130200): the head-to-head read, its season
         -- helper and the lead-change tick read the card's season and label only, never a card table.
         'get_my_rivals', 'rivals_season', 'rivals_tick',
+        -- The publication gate (20261030100000) turned get_my_rivals into a wrapper that picks one of two
+        -- copies per request: get_my_rivals_ungated is the body unchanged, get_my_rivals_held the same body
+        -- reading the visible standings views. Neither is a new reader of the card: they read exactly what
+        -- get_my_rivals read, and no browser role can call them. Named exactly, not by pattern.
+        'get_my_rivals_ungated', 'get_my_rivals_held',
         -- The BotolaGO+ trophies (20261015150100, 20261015150200) read the card's rating and tier to
         -- award and show the « Paliers » trophies: they only read the card, write only their own
         -- trophy tables, and no prize, ranking or Fantasy rule reads a trophy. The league mates'

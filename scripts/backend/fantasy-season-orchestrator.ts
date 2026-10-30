@@ -319,8 +319,31 @@ export function assessCoverage(
  * after its last counted kickoff (27 Sep 20:00 UTC).
  */
 export const gameweekWindowsSchema = z.object({
-  items: z.array(z.object({ id: uuid, sequence: z.number().int(), status, endsAt: z.string() })),
+  items: z.array(
+    z.object({
+      id: uuid,
+      sequence: z.number().int(),
+      status,
+      endsAt: z.string(),
+      // Publish a journée's points all at once (migration 20261030100000): the
+      // moment fans are told, while the journée is held. Absent before it.
+      publicationHeld: z.boolean().optional(),
+      publishAt: z.string().nullable().optional(),
+    }),
+  ),
 });
+
+/**
+ * A held (gated) journée is late only when it is still unpublished this long
+ * after its publication moment. Mirrors the 30 minutes of
+ * app_private.fantasy_publication_alarm_at (migration 20261030100300); the
+ * 7 days after which missing ratings ask the owner to decide are the
+ * database's `fantasy_fixture_coverage`, `fantasy_scoring` and
+ * `fantasy_progression` alone (the listing does not carry the first moment).
+ * Until then a missing rating or a missing point for a held journée is
+ * information, not lateness. Change them together.
+ */
+export const PUBLICATION_GRACE_MINUTES = 30;
 
 /** A gameweek in one of these still owes its points. */
 const POINTS_PENDING: readonly string[] = ["open", "locked", "live", "provisional", "finalizing"];
@@ -344,6 +367,12 @@ export type ScoringGap = {
    * without full statistics at the same age).
    */
   provisional?: true;
+  /**
+   * The journée is held for its publication moment (20261030100000). It is late
+   * only `PUBLICATION_GRACE_MINUTES` after `publishAt`; its window and the
+   * ratings still to come do not count against it.
+   */
+  publication?: { publishAt: string; minutesPastPublishAt: number };
 };
 
 /**
@@ -374,6 +403,26 @@ export function assessScoring(
         : Math.round(((now.getTime() - end) / 3_600_000) * 10) / 10;
       const run = workers.find((candidate) => candidate.gameweekId === gw.id);
       const workerCode = run?.code;
+      // A held journée: its points are published all at once at `publishAt`,
+      // so nothing is due before it and a missing rating is information. Late
+      // only when still unpublished PUBLICATION_GRACE_MINUTES after it (the
+      // database moves publishAt to the next slot when a rating was pending
+      // at it). Without a known moment (a counted match not finished) the
+      // ordinary window rule applies.
+      const publishAtMs = gw.publicationHeld === true ? Date.parse(gw.publishAt ?? "") : Number.NaN;
+      if (!Number.isNaN(publishAtMs)) {
+        const minutes = Math.round((now.getTime() - publishAtMs) / 60_000);
+        return {
+          gameweekId: gw.id,
+          sequence: gw.sequence,
+          status: gw.status,
+          windowEndsAt: gw.endsAt,
+          hoursSinceWindowEnd: hours,
+          overdue: minutes >= PUBLICATION_GRACE_MINUTES,
+          ...(workerCode ? { workerCode } : {}),
+          publication: { publishAt: gw.publishAt as string, minutesPastPublishAt: minutes },
+        };
+      }
       // Provisional points count as points. A gameweek the worker has just
       // published core points for is waiting for full statistics, which never
       // block it: not late, until the full statistics window is over. A match

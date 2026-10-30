@@ -287,7 +287,8 @@ null, false);` before a write that touches fixtures or notifications, and
    enqueues the finalized notifications, evaluates prizes and opens the next
    gameweek. It calls the function only while a gameweek has work, and writes
    the Fantasy tables (results, rankings, lineups, transfers, prices,
-   gameweeks), `app.notifications` and `app_private.fantasy_worker_runs`, under
+   gameweeks), `app.notifications`, `app_private.fantasy_publication_state` and
+   `app_private.fantasy_worker_runs`, under
    one lease (`app_private.fantasy_worker_lease`) that the hourly GitHub
    orchestrator and the manual worker workflow take too
    ([FANTASY_WORKER_SCHEDULE.md](docs/backend/FANTASY_WORKER_SCHEDULE.md)). It
