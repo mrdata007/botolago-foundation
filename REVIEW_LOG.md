@@ -572,3 +572,4 @@ They now go to SportAPI. Either SportAPI has the ratings, or the second empty re
   - Real run: Fès v Berkane's assigned kick-off changed from 20:00 to 17:00 (assignment 77fc2019…). Audit row 832 (`fantasy_fixture.realign_frozen_kickoff`).
 - Restored: `fantasy_automation_configure(true)` at 06:36:33. The tick and worker were on before.
 - Batch 2a Builder launched (Sonnet, own branch `claude/batch2-publish-journee-at-once`): the publication gate, F7, the 24 h 30 min rating read, and the watchdog changes.
+- Verified at 06:42: the worker pass at 06:40 ran OK ("closed"). Journée 5 closed at 06:40:03. **Journée 6 is open**, with its deadline at 18:30 UTC today.
