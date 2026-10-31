@@ -196,14 +196,17 @@ select extensions.is(app_private.fantasy_publication_next_slot(pg_temp.ma('2026-
 select extensions.is(app_private.fantasy_publication_next_slot(pg_temp.ma('2026-10-31 23:30')),pg_temp.ma('2026-11-01 14:00'),
   'late in the evening the next slot is the next afternoon');
 -- The worked example: last match Thursday evening, published Saturday 14:00.
+-- It uses a Thursday far in the future (29 October 2099) so the fixed time stays
+-- after the kickoff, which is yesterday: fixtures_finalized_at_check refuses a
+-- final whistle before the kickoff, and the 2026 dates fell behind it on 2026-10-31.
 select set_config('app.allow_fixture_correction','on',true);
-update app.fixtures set finalized_at=pg_temp.ma('2026-10-29 22:00'),source_sequence=11 where id in (select pg_temp.fx(i) from generate_series(1,8) i);
-select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),pg_temp.ma('2026-10-31 14:00'),
+update app.fixtures set finalized_at=pg_temp.ma('2099-10-29 22:00'),source_sequence=11 where id in (select pg_temp.fx(i) from generate_series(1,8) i);
+select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),pg_temp.ma('2099-10-31 14:00'),
   'Thursday 22:00 Moroccan time gives Saturday 14:00 Moroccan time');
-select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),'2026-10-31 14:00:00+00'::timestamptz,
+select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),'2099-10-31 14:00:00+00'::timestamptz,
   'Morocco keeps UTC+0 from 2026-09-20, so Saturday 14:00 Moroccan time is 14:00 UTC, whatever zone data the database carries');
-update app.fixtures set finalized_at=pg_temp.ma('2026-10-30 00:30'),source_sequence=12 where id=pg_temp.fx(8);
-select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),pg_temp.ma('2026-11-01 14:00'),
+update app.fixtures set finalized_at=pg_temp.ma('2099-10-30 00:30'),source_sequence=12 where id=pg_temp.fx(8);
+select extensions.is(app_private.fantasy_publish_not_before('f6400000-0000-4000-8000-000000000001'),pg_temp.ma('2099-11-01 14:00'),
   'a match ending at 00:30 Moroccan time on Friday counts as Friday: Sunday 14:00');
 update app.fixtures set finalized_at=current_setting('test.final')::timestamptz,source_sequence=13 where id in (select pg_temp.fx(i) from generate_series(1,8) i);
 -- Null until every counted match is finished.
